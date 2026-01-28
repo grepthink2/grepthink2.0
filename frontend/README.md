@@ -1,73 +1,34 @@
-# React + TypeScript + Vite
+# Grepthink 2.0 Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Table of Contents
 
-Currently, two official plugins are available:
+- [Linting & Style Guide](#linting--style-guide-eslint--airbnb)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## React Compiler
+## Linting & Style Guide (ESLint + Airbnb)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+This project uses the **Airbnb JavaScript/React style guide** (including Airbnb’s TypeScript rules) enforced with **ESLint v9**.
 
-## Expanding the ESLint configuration
+### Stack
+- ESLint v9 (flat config)
+- `eslint-config-airbnb`
+- `eslint-config-airbnb-typescript`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Notes on compatibility
+Airbnb’s current ESLint configs officially target ESLint v8. To use them with ESLint v9:
+- Legacy configs are loaded via `FlatCompat`
+- Dependencies are installed with legacy peer resolution
+- `@typescript-eslint/*` is pinned to a compatible major version
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+The configuration lives in `frontend/eslint.config.mjs`.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Scope
+- `src/**/*.{js,jsx,ts,tsx}` → base Airbnb rules
+- `src/**/*.{ts,tsx}` → Airbnb TypeScript rules  
+- Type-aware rules are enabled via `parserOptions.project`
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Running lint
+From `frontend/`:
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- `npm run lint` — checks for lint errors
+- `npm run lint -- --fix` — auto-fixes issues that are safely fixable
