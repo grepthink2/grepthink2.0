@@ -1,8 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
-import StudentSignUp from './pages/StudentSignUp';
-import InstructorSignUp from './pages/InstructorSignUp';
+import SignUpOrchestrator from './pages/SignUpOrchestrator';
 import RoleSelection from './pages/RoleSelection';
 
 function App() {
@@ -11,8 +10,8 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/studentsignup" element={<StudentSignUp />} />
-        <Route path="/instructorsignup" element={<InstructorSignUp />} />
+        <Route path="/studentsignup" element={<SignUpOrchestrator />} />
+        <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
         <Route path="/select" element={<RoleSelection />} />
       </Routes>
     </Router>

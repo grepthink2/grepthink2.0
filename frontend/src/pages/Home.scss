@@ -1,3 +1,5 @@
+@import '../styles/index.scss';
+
 .home-page {
   display: flex;
   flex-direction: column;
@@ -5,13 +7,13 @@
   align-items: center;
   width: 100vw;
   height: 100vh;
-  background-color: #fff;
+  background-color: $white;
 
   h1 {
-    margin-bottom: 16px;
+    margin-bottom: $spacing-md;
   }
 
   p {
-    color: #666;
+    color: $text-secondary;
   }
 }

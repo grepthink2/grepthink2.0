@@ -1,10 +1,12 @@
+@import '../styles/index.scss';
+
 .landing-page {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100vw;
   height: 100vh;
-  background-color: #fff;
+  background-color: $white;
 }
 
 .button-container {
@@ -14,17 +16,18 @@
 
 .auth-button {
   padding: 12px 32px;
-  font-size: 16px;
-  font-weight: 500;
+  font-family: $primary-font;
+  font-size: $font-size-large;
+  font-weight: $font-weight-medium;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: #10b981;
-  color: white;
+  transition: all $transition-fast;
+  background-color: $primary-color;
+  color: $white;
 
   &:hover {
-    background-color: #059669;
+    background-color: $primary-hover;
     transform: translateY(-1px);
   }
 

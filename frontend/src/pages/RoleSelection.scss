@@ -1,8 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
-
-:root {
-  --primary-font: 'Poppins', sans-serif;
-}
+@import '../styles/index.scss';
 
 /* Parent container for centering */
 .pageWrapper {
@@ -21,41 +17,41 @@
 }
 
 .container {
-  background-color: #F6F6F7;
-  border-radius: 20px;
-  padding: 60px;
-  width: 543px;
+  background-color: $background;
+  border-radius: $border-radius-lg;
+  padding: $spacing-xxl;
+  width: $container-width;
   height: 380px;
   box-sizing: border-box;
   margin: 0;
 }
 
 .header {
-  font-family: var(--primary-font);
-  font-size: 24px;
-  font-weight: 600;
-  color: #303030;
+  font-family: $primary-font;
+  font-size: $font-size-header;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
   margin: 0;
   text-align: left;
 }
 
 .subtext {
-  font-family: var(--primary-font);
-  color: #7C7C7C;
-  font-size: 14px;
-  margin-top: 8px;
+  font-family: $primary-font;
+  color: $text-secondary;
+  font-size: $font-size-base;
+  margin-top: $spacing-sm;
   text-align: left;
 }
 
 .button-rectangle {
-  background-color: #DADADA;
-  border-radius: 7px;
-  padding: 14px 16px;
-  margin-top: 16px;
+  background-color: $button-secondary;
+  border-radius: $border-radius-sm;
+  padding: 14px $spacing-md;
+  margin-top: $spacing-md;
   text-align: center;
-  font-family: var(--primary-font);
-  font-size: 14px;
-  color: #212B36;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  color: $text-dark;
   cursor: pointer;
   border: none;
   width: 100%;
@@ -63,23 +59,23 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  font-weight: 500;
+  font-weight: $font-weight-medium;
   transition: all 0.25s ease;
 
   svg {
     flex-shrink: 0;
     stroke-width: 2;
-    color: #303030;
+    color: $text-primary;
     transition: all 0.25s ease;
   }
 
   &:hover {
-    background-color: #C8C8C8;
+    background-color: $button-secondary-hover;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
     svg {
-      color: #212B36;
+      color: $text-dark;
       transform: scale(1.05);
     }
   }
@@ -106,41 +102,41 @@
 .divider-line {
   flex-grow: 1;
   height: 1px;
-  background-color: #616161;
+  background-color: $text-tertiary;
   max-width: 170px;
 }
 
 .divider-text {
-  font-family: var(--primary-font);
-  color: #616161;
-  font-size: 14px;
-  font-weight: 500;
+  font-family: $primary-font;
+  color: $text-tertiary;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
 }
 
 .login-section {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: $spacing-sm;
   margin-top: 20px;
   text-align: center;
 }
 
 .login-text {
-  font-family: var(--primary-font);
-  color: #303030;
-  font-size: 14px;
+  font-family: $primary-font;
+  color: $text-primary;
+  font-size: $font-size-base;
 }
 
 .login-link {
-  font-family: var(--primary-font);
-  color: #2771FF;
-  font-size: 14px;
-  font-weight: 600;
+  font-family: $primary-font;
+  color: $accent-color;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: $spacing-xs;
   cursor: pointer;
 
   &:hover .arrow-icon {
@@ -151,5 +147,5 @@
 .arrow-icon {
   width: 16px;
   height: 16px;
-  transition: transform 0.2s ease-in-out;
+  transition: transform $transition-fast;
 }
