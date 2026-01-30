@@ -3,6 +3,7 @@ import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import SignUpOrchestrator from './pages/SignUpOrchestrator';
 import RoleSelection from './pages/RoleSelection';
+import ForgetPassword from './pages/ForgotPassword';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/studentsignup" element={<SignUpOrchestrator />} />
         <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
         <Route path="/select" element={<RoleSelection />} />
+        <Route path="/forgot-password" element={<ForgetPassword />} />
       </Routes>
     </Router>
   );
