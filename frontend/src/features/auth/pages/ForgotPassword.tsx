@@ -8,7 +8,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ForgotPassword.scss';
-import GradientBackgroundWrapper from '../components/GradientBackGroundWrapper';
+import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();

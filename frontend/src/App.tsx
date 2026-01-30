@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import LandingPage from './pages/LandingPage';
-import Login from './pages/Login';
-import SignUpOrchestrator from './pages/SignUpOrchestrator';
-import RoleSelection from './pages/RoleSelection';
-import ForgetPassword from './pages/ForgotPassword';
+import LandingPage from '@pages/LandingPage';
+import Login from '@features/auth/pages/Login';
+import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
+import RoleSelection from '@features/auth/pages/RoleSelection';
+import ForgetPassword from '@features/auth/pages/ForgotPassword';
 
 function App() {
   return (

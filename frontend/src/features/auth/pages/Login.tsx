@@ -9,11 +9,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Login.scss';
-import GradientBackgroundWrapper from '../components/GradientBackGroundWrapper';
-import eyeIcon from '../assets/ph_eye.svg?url';
-import eyeSlashIcon from '../assets/eye-slash.svg?url';
-import googleIcon from '../assets/google.svg?url';
-import arrowIcon from '../assets/Arrow.svg?url';
+import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
+import eyeIcon from '@assets/ph_eye.svg?url';
+import eyeSlashIcon from '@assets/eye-slash.svg?url';
+import googleIcon from '@assets/google.svg?url';
+import arrowIcon from '@assets/Arrow.svg?url';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();

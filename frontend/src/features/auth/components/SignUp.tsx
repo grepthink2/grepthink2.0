@@ -8,10 +8,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SignUp.scss';
-import eyeIcon from '../assets/ph_eye.svg?url';
-import eyeSlashIcon from '../assets/eye-slash.svg?url';
-import googleIcon from '../assets/google.svg?url';
-import arrowIcon from '../assets/Arrow.svg?url';
+import eyeIcon from '@assets/ph_eye.svg?url';
+import eyeSlashIcon from '@assets/eye-slash.svg?url';
+import googleIcon from '@assets/google.svg?url';
+import arrowIcon from '@assets/Arrow.svg?url';
 
 interface SignUpProps {
   userType?: 'instructor' | 'student';

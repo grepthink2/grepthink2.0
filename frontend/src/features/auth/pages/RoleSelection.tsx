@@ -8,8 +8,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Presentation, GraduationCap } from 'lucide-react';
-import GradientBackgroundWrapper from '../components/GradientBackGroundWrapper';
-import arrowIcon from '../assets/Arrow.svg?url';
+import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
+import arrowIcon from '@assets/Arrow.svg?url';
 import './RoleSelection.scss';
 
 const RoleSelection: React.FC = () => {

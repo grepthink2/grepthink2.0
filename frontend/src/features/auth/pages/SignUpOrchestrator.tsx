@@ -7,8 +7,8 @@
  */
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import SignUp from '../components/SignUp';
-import GradientBackgroundWrapper from '../components/GradientBackGroundWrapper';
+import SignUp from '@features/auth/components/SignUp';
+import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import './SignUpOrchestrator.scss';
 
 const SignUpOrchestrator: React.FC = () => {
