@@ -1,0 +1,31 @@
+/**
+ * Global Variables
+ * 
+ * Additional global variables for spacing, borders, transitions, etc.
+ */
+
+// Spacing
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-xxl: 60px;
+
+// Border Radius
+$border-radius-sm: 7px;
+$border-radius-md: 10px;
+$border-radius-lg: 20px;
+
+// Transitions
+$transition-fast: 0.2s ease;
+$transition-medium: 0.3s ease;
+
+// Container Widths
+$container-width: 543px;
+
+// Z-index layers
+$z-index-base: 1;
+$z-index-dropdown: 10;
+$z-index-modal: 100;
+$z-index-tooltip: 1000;

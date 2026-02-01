@@ -1,0 +1,151 @@
+@import '@styles/index.scss';
+
+/* Parent container for centering */
+.pageWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  background-color: $background;
+  border-radius: $border-radius-lg;
+  padding: $spacing-xxl;
+  width: $container-width;
+  height: 380px;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.header {
+  font-family: $primary-font;
+  font-size: $font-size-header;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  margin: 0;
+  text-align: left;
+}
+
+.subtext {
+  font-family: $primary-font;
+  color: $text-secondary;
+  font-size: $font-size-base;
+  margin-top: $spacing-sm;
+  text-align: left;
+}
+
+.button-rectangle {
+  background-color: $button-secondary;
+  border-radius: $border-radius-sm;
+  padding: 14px $spacing-md;
+  margin-top: $spacing-md;
+  text-align: center;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  color: $text-dark;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: $font-weight-medium;
+  transition: all 0.25s ease;
+
+  svg {
+    flex-shrink: 0;
+    stroke-width: 2;
+    color: $text-primary;
+    transition: all 0.25s ease;
+  }
+
+  &:hover {
+    background-color: $button-secondary-hover;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+    svg {
+      color: $text-dark;
+      transform: scale(1.05);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.button-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  gap: 10px;
+  justify-content: center;
+}
+
+.divider-line {
+  flex-grow: 1;
+  height: 1px;
+  background-color: $text-tertiary;
+  max-width: 170px;
+}
+
+.divider-text {
+  font-family: $primary-font;
+  color: $text-tertiary;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+}
+
+.login-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.login-text {
+  font-family: $primary-font;
+  color: $text-primary;
+  font-size: $font-size-base;
+}
+
+.login-link {
+  font-family: $primary-font;
+  color: $accent-color;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  cursor: pointer;
+
+  &:hover .arrow-icon {
+    transform: translateX(4px);
+  }
+}
+
+.arrow-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform $transition-fast;
+}

@@ -1,0 +1,20 @@
+/**
+ * Global Font Variables
+ * 
+ * Centralized font definitions used across the application.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+
+// Font Families
+$primary-font: 'Poppins', sans-serif;
+
+// Font Sizes
+$font-size-base: 14px;
+$font-size-large: 16px;
+$font-size-header: 24px;
+
+// Font Weights
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
