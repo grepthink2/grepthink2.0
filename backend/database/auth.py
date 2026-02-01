@@ -1,12 +1,16 @@
 from database.client import supabase
 
 class AuthService:
-    def sign_up(self, email, password):
+    def sign_up(self, email, password, data=None):
         try:
-            response = supabase.auth.sign_up({
+            payload = {
                 "email": email,
                 "password": password,
-            })
+            }
+            if data:
+                payload["options"] = {"data": data}
+            
+            response = supabase.auth.sign_up(payload)
             return response
         except Exception as e:
             print(f"Sign up error: {e}")

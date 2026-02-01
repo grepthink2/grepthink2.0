@@ -8,6 +8,7 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSignIn } from '@clerk/clerk-react';
 import './Login.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import eyeIcon from '@assets/ph_eye.svg?url';
@@ -17,6 +18,8 @@ import arrowIcon from '@assets/Arrow.svg?url';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { isLoaded, signIn, setActive } = useSignIn();
+  
   // State for password visibility toggle
   const [showPassword, setShowPassword] = React.useState(false);
   // State to manage form inputs
@@ -33,9 +36,12 @@ const Login: React.FC = () => {
     setError('');
     
     try {
-      // TODO: Implement Supabase Google authentication
-      console.log('Google sign in clicked');
-      // Placeholder for future Supabase auth implementation
+      if (!isLoaded) return;
+      await signIn.authenticateWithRedirect({
+        strategy: "oauth_google",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: "/",
+      });
     } catch (error: any) {
       console.error('Google sign in error:', error);
       setError('Google sign in failed. Please try again.');
@@ -56,16 +62,26 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLoaded) return;
     setError('');
     setIsLoading(true);
 
     try {
-      // TODO: Implement Supabase email/password authentication
-      console.log('Login form submitted:', { email: formData.email });
-      // Placeholder for future Supabase auth implementation
-    } catch (err) {
+      const result = await signIn.create({
+        identifier: formData.email,
+        password: formData.password,
+      });
+
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+        navigate("/");
+      } else {
+        console.log(result);
+        setError("Login unsuccessful. Please checks your credentials.");
+      }
+    } catch (err: any) {
       console.error('Login error:', err);
-      setError('Login failed. Please try again.');
+      setError(err.errors?.[0]?.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
