@@ -1,11 +1,12 @@
 import React from 'react';
-import { useUser, useClerk } from '@clerk/clerk-react';
+import { useUser, useClerk, useAuth } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
+import LogoutButton from '@features/auth/components/LogoutButton';
 import './Home.scss';
 
 const Home: React.FC = () => {
   const { user, isLoaded } = useUser();
-  const { signOut, getToken } = useClerk();
+  const { getToken } = useAuth(); // Correct hook for getToken
   const navigate = useNavigate();
   const [backendStatus, setBackendStatus] = React.useState<string>('Checking backend...');
 
@@ -55,7 +56,7 @@ const Home: React.FC = () => {
          <p><strong>Backend Status:</strong> {backendStatus}</p>
       </div>
 
-      <button onClick={() => signOut(() => navigate('/'))}>Sign Out</button>
+      <LogoutButton />
     </div>
   );
 };

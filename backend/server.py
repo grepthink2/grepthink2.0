@@ -148,6 +148,17 @@ def create_user(request: Request, data: SignupRequest, payload: dict = Depends(v
         # But for now return 500
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post('/api/logout')
+def logout(payload: dict = Depends(verify_clerk_token)):
+    # In a stateless JWT setup, "logout" is mostly a frontend action (deleting the token).
+    # However, we can use this endpoint to invalidating sessions if we were tracking them,
+    # or simply to log the logout event.
+    if payload:
+        user_id = payload.get('sub')
+        print(f"User {user_id} logged out.")
+        return {"message": "Logged out successfully"}
+    return {"message": "Logged out (no active session found)"}
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     print(f"Starting server on port {port}...")

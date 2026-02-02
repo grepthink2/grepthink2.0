@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import LandingPage from '@pages/LandingPage';
+import Home from '@features/app/pages/Home';
 import Login from '@features/auth/pages/Login';
 import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
 import RoleSelection from '@features/auth/pages/RoleSelection';
@@ -11,6 +12,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/clerk" element={<ClerkDemo />} />
         <Route path="/login" element={<Login />} />
         <Route path="/studentsignup" element={<SignUpOrchestrator />} />
@@ -21,7 +23,7 @@ function App() {
       
       {/* Temporary Navigation for testing */}
       <div style={{ position: 'fixed', bottom: 10, right: 10, background: 'white', padding: 10, border: '1px solid #ccc', zIndex: 9999 }}>
-        <Link to="/clerk">Go to Clerk Demo</Link>
+        <Link to="/home">Dashboard</Link> | <Link to="/clerk">Clerk Demo</Link>
       </div>
     </Router>
   );
