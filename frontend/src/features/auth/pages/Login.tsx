@@ -8,7 +8,7 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSignIn } from '@clerk/clerk-react';
+import { useSignIn, useClerk } from '@clerk/clerk-react';
 import './Login.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import eyeIcon from '@assets/ph_eye.svg?url';
@@ -19,6 +19,7 @@ import arrowIcon from '@assets/Arrow.svg?url';
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const { isLoaded, signIn, setActive } = useSignIn();
+  const { signOut } = useClerk();
   
   // State for password visibility toggle
   const [showPassword, setShowPassword] = React.useState(false);
@@ -30,7 +31,6 @@ const Login: React.FC = () => {
   // State for error handling and loading
   const [error, setError] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
-
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError('');
@@ -40,7 +40,7 @@ const Login: React.FC = () => {
       await signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",
-        redirectUrlComplete: "/",
+        redirectUrlComplete: "/home",
       });
     } catch (error: any) {
       console.error('Google sign in error:', error);
@@ -67,6 +67,15 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Always sign out first to clear any existing sessions
+      // Pass an empty callback to prevent automatic navigation
+      await signOut(() => {
+        // Do nothing - prevent redirect
+      });
+      
+      // Wait a bit for sign out to fully complete
+
+      // Now sign in with new credentials
       const result = await signIn.create({
         identifier: formData.email,
         password: formData.password,
@@ -74,10 +83,11 @@ const Login: React.FC = () => {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        navigate("/home");
+        // Navigate to home after successful login
+        navigate("/home", { replace: true });
       } else {
         console.log(result);
-        setError("Login unsuccessful. Please checks your credentials.");
+        setError("Login unsuccessful. Please check your credentials.");
       }
     } catch (err: any) {
       console.error('Login error:', err);
