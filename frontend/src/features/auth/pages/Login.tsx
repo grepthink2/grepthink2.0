@@ -33,9 +33,10 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = React.useState(false);
   // State for 2FA (email code) step
   const [needsSecondFactor, setNeedsSecondFactor] = React.useState(false);
-  const [secondFactorCode, setSecondFactorCode] = React.useState('');
+  const [secondFactorCode, setSecondFactorCode] = React.useState(['', '', '', '', '', '']);
   const [emailCodeSent, setEmailCodeSent] = React.useState(false);
   const [sendingCode, setSendingCode] = React.useState(false);
+  const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
 
   const sendSecondFactorEmail = React.useCallback(async () => {
     if (!signIn) return;
@@ -136,15 +137,15 @@ const Login: React.FC = () => {
     navigate('/select');
   };
 
-  const handleSecondFactorSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSecondFactorSubmit = async (codeArray?: string[]) => {
     if (!isLoaded || !signIn) return;
     setError('');
     setIsLoading(true);
+    const code = (codeArray || secondFactorCode).join('');
     try {
       const result = await signIn.attemptSecondFactor({
         strategy: 'email_code',
-        code: secondFactorCode,
+        code: code,
       });
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
@@ -159,6 +160,58 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleCodeChange = (index: number, value: string) => {
+    // Only allow digits
+    if (value && !/^\d$/.test(value)) return;
+    
+    const newCode = [...secondFactorCode];
+    newCode[index] = value;
+    setSecondFactorCode(newCode);
+    setError('');
+
+    // Move to next input if value is entered
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit when all 6 digits are filled
+    if (value && index === 5 && newCode.every(digit => digit !== '')) {
+      handleSecondFactorSubmit(newCode);
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !secondFactorCode[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').slice(0, 6);
+    const digits = pastedData.split('').filter(char => /^\d$/.test(char));
+    
+    if (digits.length > 0) {
+      const newCode = [...secondFactorCode];
+      digits.forEach((digit, i) => {
+        if (i < 6) newCode[i] = digit;
+      });
+      setSecondFactorCode(newCode);
+      
+      // Focus the next empty input or the last one
+      const nextEmptyIndex = newCode.findIndex(d => d === '');
+      if (nextEmptyIndex !== -1) {
+        inputRefs.current[nextEmptyIndex]?.focus();
+      } else {
+        inputRefs.current[5]?.focus();
+        // Auto-submit if all digits are filled
+        if (newCode.every(digit => digit !== '')) {
+          handleSecondFactorSubmit(newCode);
+        }
+      }
+    }
+  };
+
   // Show 2FA (email code) step when Clerk requires it
   if (needsSecondFactor) {
     return (
@@ -170,27 +223,29 @@ const Login: React.FC = () => {
             <p className="subtext">
               {sendingCode ? 'Sending verification code...' : emailCodeSent ? `We sent a verification code to ${formData.email}` : 'Preparing to send a code...'}
             </p>
-            <form onSubmit={handleSecondFactorSubmit} className="loginForm">
+            <div className="loginForm">
               {error && <div className="error">{error}</div>}
               <div className="formGroup">
-                <label htmlFor="code">Verification code</label>
-                <input
-                  type="text"
-                  id="code"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  value={secondFactorCode}
-                  onChange={(e) => {
-                    setSecondFactorCode(e.target.value);
-                    setError('');
-                  }}
-                  placeholder="Enter 6-digit code"
-                  required
-                />
+                <label>Verification code</label>
+                <div className="codeInputContainer">
+                  {secondFactorCode.map((digit, index) => (
+                    <input
+                      key={index}
+                      ref={el => { inputRefs.current[index] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      className="codeInput"
+                      value={digit}
+                      onChange={(e) => handleCodeChange(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(index, e)}
+                      onPaste={handlePaste}
+                      autoComplete="one-time-code"
+                      disabled={isLoading}
+                    />
+                  ))}
+                </div>
               </div>
-              <button type="submit" className="buttonRectangle" disabled={isLoading}>
-                {isLoading ? 'Verifying...' : 'Verify'}
-              </button>
               <button
                 type="button"
                 className="authButton"
@@ -199,20 +254,7 @@ const Login: React.FC = () => {
               >
                 {sendingCode ? 'Sending...' : 'Resend code'}
               </button>
-              <button
-                type="button"
-                className="authButton"
-                onClick={() => {
-                  setNeedsSecondFactor(false);
-                  setSecondFactorCode('');
-                  setEmailCodeSent(false);
-                  setError('');
-                }}
-                disabled={isLoading}
-              >
-                Use different email or password
-              </button>
-            </form>
+            </div>
           </div>
         </div>
       </>
