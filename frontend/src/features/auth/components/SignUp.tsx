@@ -9,6 +9,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignUp, useAuth } from '@clerk/clerk-react';
 import './SignUp.scss';
+import VerifyEmail from './VerifyEmail';
 import eyeIcon from '@assets/ph_eye.svg?url';
 import eyeSlashIcon from '@assets/eye-slash.svg?url';
 import googleIcon from '@assets/google.svg?url';
@@ -39,7 +40,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
   
   // Verification state
   const [pendingVerification, setPendingVerification] = React.useState(false);
-  const [code, setCode] = React.useState('');
+  const [sendingCode, setSendingCode] = React.useState(false);
 
   // Handler for form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,8 +114,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     }
   };
 
-  const handleVerification = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleVerification = async (code: string) => {
     if (!isLoaded) return;
     setIsLoading(true);
     setError('');
@@ -168,6 +168,19 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     }
   };
 
+  const handleResendCode = async () => {
+    if (!isLoaded) return;
+    setSendingCode(true);
+    setError('');
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+    } catch (err: any) {
+      setError('Failed to resend code. Please try again.');
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
   // Handler for login page navigation
   const handleLogin = () => {
     navigate('/login');
@@ -184,25 +197,21 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     return (
       <div className="pageWrapper">
         <div className="container">
-          <h1 className="header">Verify your email</h1>
-          <p className="subtext">We sent a code to {formData.email}</p>
-          <form onSubmit={handleVerification} className="signupForm">
-             {error && <div className="error">{error}</div>}
-             <div className="formGroup">
-                <label htmlFor="code">Verification Code</label>
-                <input
-                  value={code}
-                  id="code"
-                  name="code"
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="Enter verification code"
-                  required
-                />
-             </div>
-             <button type="submit" className="buttonRectangle" disabled={isLoading}>
-                {isLoading ? 'Verifying...' : 'Verify Email'}
-             </button>
-          </form>
+          <VerifyEmail
+            email={formData.email}
+            onVerify={handleVerification}
+            onResend={handleResendCode}
+            onBack={() => {
+              setPendingVerification(false);
+              setError('');
+            }}
+            error={error}
+            isLoading={isLoading}
+            isSending={sendingCode}
+            title="Verify your email"
+            backText="Wrong email?"
+            backLabel="Back to Sign Up"
+          />
         </div>
       </div>
     );
