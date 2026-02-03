@@ -7,6 +7,7 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSignUp, useAuth } from '@clerk/clerk-react';
 import './SignUp.scss';
 import eyeIcon from '@assets/ph_eye.svg?url';
 import eyeSlashIcon from '@assets/eye-slash.svg?url';
@@ -19,6 +20,8 @@ interface SignUpProps {
 
 const SignUp: React.FC<SignUpProps> = ({ userType }) => {
   const navigate = useNavigate();
+  const { isLoaded, signUp, setActive } = useSignUp();
+  const { getToken } = useAuth();
   
   // State to toggle password visibility
   const [showPassword, setShowPassword] = React.useState(false);
@@ -33,6 +36,10 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
   // State for error handling and loading
   const [error, setError] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
+  
+  // Verification state
+  const [pendingVerification, setPendingVerification] = React.useState(false);
+  const [code, setCode] = React.useState('');
 
   // Handler for form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,9 +58,12 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     setError('');
     
     try {
-      // TODO: Implement Supabase Google authentication
-      console.log('Google sign up clicked for user type:', userType);
-      // Placeholder for future Supabase auth implementation
+      if (!isLoaded) return;
+      await signUp.authenticateWithRedirect({
+        strategy: "oauth_google",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: "/",
+      });
     } catch (error: any) {
       console.error('Google sign up error:', error);
       setError('Google sign up failed. Please try again.');
@@ -65,6 +75,8 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
   // Handler for form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLoaded) return;
+
     setError('');
     setIsLoading(true);
 
@@ -75,22 +87,82 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       setIsLoading(false);
       return;
     }
 
     try {
-      // TODO: Implement Supabase email/password signup
-      console.log('Signup form submitted:', { 
-        email: formData.email, 
-        userType 
+      // 1. Create Clerk user
+      await signUp.create({
+        emailAddress: formData.email,
+        password: formData.password,
       });
-      // Placeholder for future Supabase auth implementation
-    } catch (err) {
+
+      // 2. Start email verification
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      
+      setPendingVerification(true);
+      
+    } catch (err: any) {
       console.error('Signup error:', err);
-      setError('Failed to create account. Please try again.');
+      setError(err.errors?.[0]?.message || 'Failed to create account. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoaded) return;
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // 3. Attempt verification
+      const completeSignUp = await signUp.attemptEmailAddressVerification({
+        code,
+      });
+
+      if (completeSignUp.status !== 'complete') {
+        console.log(JSON.stringify(completeSignUp, null, 2));
+        setError('Verification failed. Please check the code.');
+        setIsLoading(false);
+        return;
+      }
+      
+      if (completeSignUp.status === 'complete') {
+        await setActive({ session: completeSignUp.createdSessionId });
+        
+        // 4. Sync with Backend
+        try {
+          const token = await getToken();
+          const response = await fetch('/api/create-user', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              userId: completeSignUp.createdUserId,
+              email: formData.email,
+              userType: userType
+            }),
+          });
+          
+          if (!response.ok) {
+            console.error('Failed to sync user to database, but auth succeeded');
+          }
+        } catch (syncError) {
+             console.error('Sync error:', syncError);
+        }
+
+        navigate('/');
+      }
+    } catch (err: any) {
+      console.error('Verification error:', err);
+      setError(err.errors?.[0]?.message || 'Verification failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +179,34 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     : userType === 'student' 
     ? 'Create a Student Account'
     : 'Create an Account';
+
+  if (pendingVerification) {
+    return (
+      <div className="pageWrapper">
+        <div className="container">
+          <h1 className="header">Verify your email</h1>
+          <p className="subtext">We sent a code to {formData.email}</p>
+          <form onSubmit={handleVerification} className="signupForm">
+             {error && <div className="error">{error}</div>}
+             <div className="formGroup">
+                <label htmlFor="code">Verification Code</label>
+                <input
+                  value={code}
+                  id="code"
+                  name="code"
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Enter verification code"
+                  required
+                />
+             </div>
+             <button type="submit" className="buttonRectangle" disabled={isLoading}>
+                {isLoading ? 'Verifying...' : 'Verify Email'}
+             </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pageWrapper">
