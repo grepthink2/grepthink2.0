@@ -158,7 +158,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
              console.error('Sync error:', syncError);
         }
 
-        navigate('/');
+        navigate('/home');
       }
     } catch (err: any) {
       console.error('Verification error:', err);
@@ -305,7 +305,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
         {/* Login Section */}
         <div className="loginSection">
           <span className="loginText">Already have an account?</span>
-          <div className="loginLink" onClick={handleLogin}>
+          <div className="signUpLoginLink" onClick={handleLogin}>
             Login
             <img src={arrowIcon} alt="arrow" className="arrowIcon" />
           </div>

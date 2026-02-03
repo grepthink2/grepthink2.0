@@ -22,9 +22,9 @@ function App() {
       </Routes>
       
       {/* Temporary Navigation for testing */}
-      <div style={{ position: 'fixed', bottom: 10, right: 10, background: 'white', padding: 10, border: '1px solid #ccc', zIndex: 9999 }}>
+      {/* <div style={{ position: 'fixed', bottom: 10, right: 10, background: 'white', padding: 10, border: '1px solid #ccc', zIndex: 9999 }}>
         <Link to="/home">Dashboard</Link> | <Link to="/clerk">Clerk Demo</Link>
-      </div>
+      </div> */}
     </Router>
   );
 }
