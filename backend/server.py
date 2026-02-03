@@ -63,6 +63,17 @@ def verify_clerk_token(request: Request):
         print(f"Token verification failed: {e}")
         raise HTTPException(status_code=401, detail="Invalid authentication token")
 
+
+def get_user_role(user_id: str) -> str | None:
+    try:
+        client = service_client if service_client else supabase
+        result = client.table('users').select('role').eq('user_id', user_id).execute()
+        if result.data and len(result.data) > 0:
+            return result.data[0].get('role')
+    except Exception as e:
+        print(f"Error fetching user role: {e}")
+    return None
+
 class SignupRequest(BaseModel):
     email: str
     userId: str  # Changed from password
@@ -83,6 +94,21 @@ def test_auth(payload: dict = Depends(verify_clerk_token)):
          # Fallback if no token provided during simple browser test
         return {
             "message": "Backend is reachable. No token provided."
+        }
+
+@app.get('/api/login-check')
+def test_auth(payload: dict = Depends(verify_clerk_token)):
+    if payload:
+        user_id = payload.get('sub')
+        role = get_user_role(user_id) if user_id else None
+        return {
+            "message": f"Backend connected & Authenticated. Hello {user_id}",
+            "user_id": user_id,
+            "role": role
+        }
+    else:
+        return {
+            "message": "User not authenticated."
         }
 
 @app.post('/api/create-user')
@@ -117,7 +143,8 @@ def create_user(request: Request, data: SignupRequest, payload: dict = Depends(v
                 print(f"Created user record for {email} (via Service Role)")
                 return {
                     "message": "User record created successfully.",
-                    "email": email
+                    "email": email,
+                    "role": user_type
                 }
             except Exception as e:
                 print(f"Service Role insert failed: {e}")
@@ -138,7 +165,8 @@ def create_user(request: Request, data: SignupRequest, payload: dict = Depends(v
 
         return {
             "message": "User record created successfully.",
-            "email": email
+            "email": email,
+            "role": user_type
         }
 
     except Exception as e:
