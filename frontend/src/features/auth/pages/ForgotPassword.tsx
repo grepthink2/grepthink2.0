@@ -7,13 +7,14 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSignIn } from '@clerk/clerk-react';
+import { useSignIn, useClerk } from '@clerk/clerk-react';
 import './ForgotPassword.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
   const { signIn, isLoaded } = useSignIn();
+  const { signOut } = useClerk();
   
   // State to manage form input and UI states
   const [formData, setFormData] = React.useState({
@@ -41,17 +42,21 @@ const ForgotPassword: React.FC = () => {
     setError('');
 
     try {
+      // Clear any existing sign-in session to avoid "Session already exists" error
+      // This ensures a clean state before initiating password reset
+      await signOut(() => {
+        // Do nothing - prevent redirect
+      });
+
       const result = await signIn.create({
         strategy: 'reset_password_email_code',
         identifier: formData.email,
       });
 
       if (result.status === 'needs_first_factor') {
-         // Success - navigate to reset password page which will handle the code
+         // Success - navigate to verify email page
          setSuccess(true);
-         // Small delay for user to see success or just navigate?
-         // Navigating creates a better flow for "enter code now"
-         navigate('/reset-password', { state: { email: formData.email } });
+         navigate('/verify-reset-password', { state: { email: formData.email } });
       }
     } catch (err: any) {
       console.error('Password reset error:', err);

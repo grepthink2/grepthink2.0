@@ -5,6 +5,7 @@ import Login from '@features/auth/pages/Login';
 import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
 import RoleSelection from '@features/auth/pages/RoleSelection';
 import ForgetPassword from '@features/auth/pages/ForgotPassword';
+import VerifyResetPassword from '@features/auth/pages/VerifyResetPassword';
 import ResetPassword from '@features/auth/pages/ResetPassword';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
         <Route path="/select" element={<RoleSelection />} />
         <Route path="/forgot-password" element={<ForgetPassword />} />
+        <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
       
