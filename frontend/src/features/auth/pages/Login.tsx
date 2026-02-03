@@ -74,7 +74,7 @@ const Login: React.FC = () => {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        navigate("/");
+        navigate("/home");
       } else {
         console.log(result);
         setError("Login unsuccessful. Please checks your credentials.");
