@@ -31,6 +31,40 @@ const Login: React.FC = () => {
   // State for error handling and loading
   const [error, setError] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
+  // State for 2FA (email code) step
+  const [needsSecondFactor, setNeedsSecondFactor] = React.useState(false);
+  const [secondFactorCode, setSecondFactorCode] = React.useState('');
+  const [emailCodeSent, setEmailCodeSent] = React.useState(false);
+  const [sendingCode, setSendingCode] = React.useState(false);
+
+  const sendSecondFactorEmail = React.useCallback(async () => {
+    if (!signIn) return;
+    const emailFactor = signIn.supportedSecondFactors?.find(
+      (f: { strategy: string }) => f.strategy === 'email_code'
+    );
+    const emailAddressId = (emailFactor as { emailAddressId?: string } | undefined)?.emailAddressId;
+    if (!emailAddressId) return;
+    setSendingCode(true);
+    setError('');
+    try {
+      await signIn.prepareSecondFactor({
+        strategy: 'email_code',
+        emailAddressId,
+      } as Parameters<typeof signIn.prepareSecondFactor>[0]);
+      setEmailCodeSent(true);
+    } catch (err) {
+      setError('Failed to send verification email. Please try again.');
+    } finally {
+      setSendingCode(false);
+    }
+  }, [signIn]);
+
+  // When the 2FA screen is shown, tell Clerk to send the email code
+  React.useEffect(() => {
+    if (!needsSecondFactor || emailCodeSent) return;
+    sendSecondFactorEmail();
+  }, [needsSecondFactor, emailCodeSent, sendSecondFactorEmail]);
+
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError('');
@@ -83,10 +117,11 @@ const Login: React.FC = () => {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        // Navigate to home after successful login
         navigate("/home", { replace: true });
+      } else if (result.status === "needs_second_factor") {
+        setNeedsSecondFactor(true);
+        setError('');
       } else {
-        console.log(result);
         setError("Login unsuccessful. Please check your credentials.");
       }
     } catch (err: any) {
@@ -100,6 +135,89 @@ const Login: React.FC = () => {
   const handleSignUp = () => {
     navigate('/select');
   };
+
+  const handleSecondFactorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoaded || !signIn) return;
+    setError('');
+    setIsLoading(true);
+    try {
+      const result = await signIn.attemptSecondFactor({
+        strategy: 'email_code',
+        code: secondFactorCode,
+      });
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        navigate("/home", { replace: true });
+      } else {
+        setError("Invalid or expired code. Please try again.");
+      }
+    } catch (err: any) {
+      setError(err.errors?.[0]?.message || "Verification failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Show 2FA (email code) step when Clerk requires it
+  if (needsSecondFactor) {
+    return (
+      <>
+        <GradientBackgroundWrapper />
+        <div className="pageWrapper">
+          <div className="container">
+            <h1 className="header">Check your email</h1>
+            <p className="subtext">
+              {sendingCode ? 'Sending verification code...' : emailCodeSent ? `We sent a verification code to ${formData.email}` : 'Preparing to send a code...'}
+            </p>
+            <form onSubmit={handleSecondFactorSubmit} className="loginForm">
+              {error && <div className="error">{error}</div>}
+              <div className="formGroup">
+                <label htmlFor="code">Verification code</label>
+                <input
+                  type="text"
+                  id="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={secondFactorCode}
+                  onChange={(e) => {
+                    setSecondFactorCode(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="Enter 6-digit code"
+                  required
+                />
+              </div>
+              <button type="submit" className="buttonRectangle" disabled={isLoading}>
+                {isLoading ? 'Verifying...' : 'Verify'}
+              </button>
+              <button
+                type="button"
+                className="authButton"
+                onClick={sendSecondFactorEmail}
+                disabled={isLoading || sendingCode}
+              >
+                {sendingCode ? 'Sending...' : 'Resend code'}
+              </button>
+              <button
+                type="button"
+                className="authButton"
+                onClick={() => {
+                  setNeedsSecondFactor(false);
+                  setSecondFactorCode('');
+                  setEmailCodeSent(false);
+                  setError('');
+                }}
+                disabled={isLoading}
+              >
+                Use different email or password
+              </button>
+            </form>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
