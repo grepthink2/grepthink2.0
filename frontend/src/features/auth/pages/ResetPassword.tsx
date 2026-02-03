@@ -6,7 +6,7 @@
  * with password visibility toggle functionality.
  */
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSignIn } from '@clerk/clerk-react';
 import './ResetPassword.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
@@ -15,13 +15,24 @@ import eyeSlashIcon from '@assets/eye-slash.svg?url';
 
 const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, setActive, isLoaded } = useSignIn();
+
+  // Get email and code from navigation state
+  const email = location.state?.email || '';
+  const code = location.state?.code || '';
+
+  // Redirect to forgot password if no code is provided
+  React.useEffect(() => {
+    if (!code || !email) {
+      navigate('/forgot-password');
+    }
+  }, [code, email, navigate]);
 
   // State for password visibility toggle
   const [showPassword, setShowPassword] = React.useState(false);
   // State to manage form inputs
   const [formData, setFormData] = React.useState({
-    code: '',
     password: '',
     confirmPassword: ''
   });
@@ -60,7 +71,7 @@ const ResetPassword: React.FC = () => {
 
       const result = await signIn.attemptFirstFactor({
         strategy: 'reset_password_email_code',
-        code: formData.code,
+        code: code,
         password: formData.password,
       });
 
@@ -69,7 +80,7 @@ const ResetPassword: React.FC = () => {
         navigate('/home');
       } else {
         console.error(result);
-        setError('Verification failed. Please try again.');
+        setError('Password reset failed. Please try again.');
       }
     } catch (err: any) {
       console.error('Reset password error:', err);
@@ -97,20 +108,6 @@ const ResetPassword: React.FC = () => {
             {/* Error Message Display */}
             {error && <div className="error">{error}</div>}
 
-            {/* Verification Code Input Field */}
-            <div className="formGroup">
-              <label htmlFor="code">Verification Code</label>
-              <input
-                type="text"
-                id="code"
-                name="code"
-                value={formData.code}
-                onChange={handleChange}
-                placeholder="Enter code from email"
-                required
-              />
-            </div>
-
             {/* New Password Input Field */}
             <div className="formGroup">
               <label htmlFor="password">New Password</label>
@@ -122,6 +119,7 @@ const ResetPassword: React.FC = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  disabled={isLoading}
                 />
                 <img
                   src={showPassword ? eyeSlashIcon : eyeIcon}
@@ -143,6 +141,7 @@ const ResetPassword: React.FC = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
+                  disabled={isLoading}
                 />
                 <img
                   src={showPassword ? eyeSlashIcon : eyeIcon}
