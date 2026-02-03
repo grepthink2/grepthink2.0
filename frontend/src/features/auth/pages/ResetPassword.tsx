@@ -7,6 +7,7 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSignIn } from '@clerk/clerk-react';
 import './ResetPassword.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import eyeIcon from '@assets/ph_eye.svg?url';
@@ -14,10 +15,13 @@ import eyeSlashIcon from '@assets/eye-slash.svg?url';
 
 const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
+  const { signIn, setActive, isLoaded } = useSignIn();
+
   // State for password visibility toggle
   const [showPassword, setShowPassword] = React.useState(false);
   // State to manage form inputs
   const [formData, setFormData] = React.useState({
+    code: '',
     password: '',
     confirmPassword: ''
   });
@@ -37,16 +41,39 @@ const ResetPassword: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLoaded) return;
+
     setError('');
     setIsLoading(true);
 
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // TODO: Implement Supabase password reset
-      console.log('Reset password form submitted');
-      // Placeholder for future Supabase auth implementation
-    } catch (err) {
+      if (!signIn) {
+        setError('No password reset attempt found. Please try again.');
+        return;
+      }
+
+      const result = await signIn.attemptFirstFactor({
+        strategy: 'reset_password_email_code',
+        code: formData.code,
+        password: formData.password,
+      });
+
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        navigate('/home');
+      } else {
+        console.error(result);
+        setError('Verification failed. Please try again.');
+      }
+    } catch (err: any) {
       console.error('Reset password error:', err);
-      setError('Failed to reset password. Please try again.');
+      setError(err.errors?.[0]?.message || 'Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -69,6 +96,20 @@ const ResetPassword: React.FC = () => {
           <form onSubmit={handleSubmit} className="resetForm">
             {/* Error Message Display */}
             {error && <div className="error">{error}</div>}
+
+            {/* Verification Code Input Field */}
+            <div className="formGroup">
+              <label htmlFor="code">Verification Code</label>
+              <input
+                type="text"
+                id="code"
+                name="code"
+                value={formData.code}
+                onChange={handleChange}
+                placeholder="Enter code from email"
+                required
+              />
+            </div>
 
             {/* New Password Input Field */}
             <div className="formGroup">

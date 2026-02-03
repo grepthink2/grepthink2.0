@@ -5,7 +5,7 @@ import Login from '@features/auth/pages/Login';
 import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
 import RoleSelection from '@features/auth/pages/RoleSelection';
 import ForgetPassword from '@features/auth/pages/ForgotPassword';
-import ClerkDemo from './ClerkDemo';
+import ResetPassword from '@features/auth/pages/ResetPassword';
 
 function App() {
   return (
@@ -13,12 +13,12 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/home" element={<Home />} />
-        <Route path="/clerk" element={<ClerkDemo />} />
         <Route path="/login" element={<Login />} />
         <Route path="/studentsignup" element={<SignUpOrchestrator />} />
         <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
         <Route path="/select" element={<RoleSelection />} />
         <Route path="/forgot-password" element={<ForgetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
       
       {/* Temporary Navigation for testing */}

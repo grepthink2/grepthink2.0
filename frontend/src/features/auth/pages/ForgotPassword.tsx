@@ -7,11 +7,14 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSignIn } from '@clerk/clerk-react';
 import './ForgotPassword.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
+  const { signIn, isLoaded } = useSignIn();
+  
   // State to manage form input and UI states
   const [formData, setFormData] = React.useState({
     email: ''
@@ -32,17 +35,27 @@ const ForgotPassword: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLoaded) return;
+
     setIsLoading(true);
     setError('');
 
     try {
-      // TODO: Implement Supabase password reset
-      console.log('Password reset requested for:', formData.email);
-      // Placeholder for future Supabase auth implementation
-      setSuccess(true);
-    } catch (err) {
+      const result = await signIn.create({
+        strategy: 'reset_password_email_code',
+        identifier: formData.email,
+      });
+
+      if (result.status === 'needs_first_factor') {
+         // Success - navigate to reset password page which will handle the code
+         setSuccess(true);
+         // Small delay for user to see success or just navigate?
+         // Navigating creates a better flow for "enter code now"
+         navigate('/reset-password', { state: { email: formData.email } });
+      }
+    } catch (err: any) {
       console.error('Password reset error:', err);
-      setError('Failed to send password reset email. Please try again.');
+      setError(err.errors?.[0]?.message || 'Failed to send password reset email. Please try again.');
     } finally {
       setIsLoading(false);
     }
