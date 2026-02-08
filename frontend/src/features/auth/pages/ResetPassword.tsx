@@ -77,7 +77,7 @@ const ResetPassword: React.FC = () => {
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
-        navigate('/home');
+        navigate('/app');
       } else {
         console.error(result);
         setError('Password reset failed. Please try again.');
