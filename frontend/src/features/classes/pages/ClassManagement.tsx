@@ -8,6 +8,7 @@ interface Class {
   description: string;
   created_by: string;
   created_at: string;
+  teacher_email?: string;
 }
 
 interface Student {
@@ -248,6 +249,9 @@ const ClassManagement: React.FC = () => {
                 >
                   <h3>{cls.name}</h3>
                   <p>{cls.description || 'No description'}</p>
+                  {userRole !== 'teacher' && userRole !== 'instructor' && cls.teacher_email && (
+                    <p className="teacher-email">Teacher: {cls.teacher_email}</p>
+                  )}
                   <small>Created: {new Date(cls.created_at).toLocaleDateString()}</small>
                 </div>
               ))}
@@ -262,6 +266,9 @@ const ClassManagement: React.FC = () => {
               <div className="class-details">
                 <h2>{selectedClass.name}</h2>
                 <p>{selectedClass.description || 'No description'}</p>
+                {userRole !== 'teacher' && userRole !== 'instructor' && selectedClass.teacher_email && (
+                  <p className="teacher-email">Teacher: {selectedClass.teacher_email}</p>
+                )}
               </div>
 
               {userRole === 'teacher' && (

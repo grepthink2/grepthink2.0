@@ -262,15 +262,25 @@ def get_classes(payload: dict = Depends(verify_clerk_token)):
             # Teachers see classes they created
             result = client.table('classes').select('*').eq('created_by', db_user_id).execute()
         else:
-            # Students see classes they're enrolled in
-            # First get class_enrollments for this student
-            enrollments = client.table('class_enrollments').select('class_id').eq('user_id', db_user_id).execute()
-            
-            if not enrollments.data or len(enrollments.data) == 0:
+            # Students: fetch enrollments with joined class + teacher in one call
+            enrollments = client.table('class_enrollments').select(
+                'classes ( id, name, description, created_by, created_at, users ( email ) )'
+            ).eq('user_id', db_user_id).execute()
+
+            if not enrollments.data:
                 return {"classes": []}
-            
-            class_ids = [e['class_id'] for e in enrollments.data]
-            result = client.table('classes').select('*').in_('id', class_ids).execute()
+
+            classes = []
+            for row in enrollments.data:
+                cls = row.get('classes')
+                if not cls:
+                    continue
+                teacher = cls.get('users') or {}
+                cls['teacher_email'] = teacher.get('email')
+                cls.pop('users', None)
+                classes.append(cls)
+
+            return {"classes": classes}
         
         return {"classes": result.data}
     except Exception as e:
