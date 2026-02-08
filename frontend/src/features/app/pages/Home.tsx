@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUser, useClerk, useAuth } from '@clerk/clerk-react';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import LogoutButton from '@features/auth/components/LogoutButton';
 import './Home.scss';

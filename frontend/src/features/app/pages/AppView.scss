@@ -1,0 +1,20 @@
+@import '@styles/index.scss';
+
+.app-view {
+  display: flex;
+  min-height: 100vh;
+  background-color: $white;
+}
+
+.app-main {
+  margin-left: 256px; // Account for sidebar width
+  width: calc(100vw - 256px);
+  min-height: 100vh;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+  
+  // Handle collapsed sidebar (if you implement that feature)
+  .sidebar.collapsed ~ & {
+    margin-left: 64px;
+    width: calc(100vw - 64px);
+  }
+}
