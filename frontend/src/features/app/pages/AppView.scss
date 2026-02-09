@@ -20,7 +20,7 @@
 /* Dev Mode Toggle - Top Right Outside Navbar */
 .dev-mode-toggle {
   position: fixed;
-  top: 1rem;
+  bottom: 1rem;
   left: 18rem;
   z-index: 1001; // Above sidebar
   display: flex;

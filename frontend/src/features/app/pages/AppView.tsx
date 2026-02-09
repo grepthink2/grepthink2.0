@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Code } from 'lucide-react';
 import Sidebar from '@features/app/components/Sidebar';
+import Header from '@features/app/components/Header';
 import type { UserRole } from '@features/app/config/sidebar';
 import './AppView.scss';
 
@@ -33,6 +34,7 @@ const AppView: React.FC = () => {
       </div>
 
       <main className="app-main">
+        <Header />
         <Outlet />
       </main>
     </div>
