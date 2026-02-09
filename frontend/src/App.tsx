@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import './App.scss';
 import LandingPage from '@pages/LandingPage';
 import AppView from '@features/app/pages/AppView';
 import Home from '@features/app/pages/Home';
@@ -27,10 +28,20 @@ function App() {
         <Route path="/app" element={<AppView />}>
           <Route index element={<Navigate to="/app/home" replace />} />
           <Route path="home" element={<Home />} />
-          {/* Add more routes here as you build them */}
-          {/* <Route path="messages" element={<Messages />} /> */}
-          {/* <Route path="my-classes" element={<MyClasses />} /> */}
-          {/* <Route path="dashboard" element={<Dashboard />} /> */}
+          <Route path="messages" element={<div>Messages - Coming Soon</div>} />
+          <Route path="my-classes" element={<div>My Classes - Coming Soon</div>} />
+          <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
+          <Route path="create-class" element={<div>Create Class - Coming Soon</div>} />
+          <Route path="dashboard" element={<div>Dashboard - Coming Soon</div>} />
+          <Route path="projects" element={<div>Projects - Coming Soon</div>} />
+          <Route path="roster" element={<div>Roster - Coming Soon</div>} />
+          <Route path="modules" element={<div>Modules - Coming Soon</div>} />
+          <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
+          <Route path="create-project" element={<div>Create Project - Coming Soon</div>} />
+          <Route path="browse-projects" element={<div>Browse Projects - Coming Soon</div>} />
+          <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
+          <Route path="settings" element={<div>Settings - Coming Soon</div>} />
+          <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
         </Route>
       </Routes>
     </Router>

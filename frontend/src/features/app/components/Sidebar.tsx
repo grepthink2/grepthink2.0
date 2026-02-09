@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { TbLayoutSidebar, TbMoonFilled } from "react-icons/tb";
+import { TbLayoutSidebar } from "react-icons/tb";
 import { ChevronDown } from 'lucide-react';
-import { Code } from 'lucide-react';
 import { instructorSidebarConfig, studentSidebarConfig, type UserRole } from '../config/sidebar';
 import logo from '@assets/grepthink l logo.svg?url';
 import './Sidebar.scss';
@@ -11,15 +10,11 @@ interface SidebarProps {
   role: UserRole;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role: propRole }) => {
+const Sidebar: React.FC<SidebarProps> = ({ role }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [devRole, setDevRole] = useState<UserRole>(propRole);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Use dev role for development purposes
-  const role = devRole;
   const sidebarConfig = role === 'instructor' ? instructorSidebarConfig : studentSidebarConfig;
 
   const handleNavigation = (path: string) => {
@@ -30,17 +25,8 @@ const Sidebar: React.FC<SidebarProps> = ({ role: propRole }) => {
     setIsCollapsed(!isCollapsed);
   };
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    // TODO: Implement dark mode logic
-  };
-
-  const toggleDevRole = () => {
-    setDevRole(devRole === 'instructor' ? 'student' : 'instructor');
-  };
-
   return (
-    <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+    <div className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${role === 'instructor' ? 'instructor' : 'student'}`}>
       {/* Header with Logo */}
       <div className="sidebar-header">
         {!isCollapsed && (
@@ -93,51 +79,6 @@ const Sidebar: React.FC<SidebarProps> = ({ role: propRole }) => {
           </div>
         ))}
       </nav>
-
-      {/* Bottom Controls */}
-      <div className="sidebar-footer">
-        {/* Dark Mode Toggle */}
-        <div className="footer-control">
-          {!isCollapsed && (
-            <div className="control-label">
-              <TbMoonFilled size={20} />
-              <span>Dark Mode</span>
-            </div>
-          )}
-          <button
-            className={`toggle-switch ${isDarkMode ? 'active' : ''}`}
-            onClick={toggleDarkMode}
-            title={isCollapsed ? 'Toggle Dark Mode' : undefined}
-          >
-            {isCollapsed ? (
-              <TbMoonFilled size={20} />
-            ) : (
-              <div className="toggle-slider"></div>
-            )}
-          </button>
-        </div>
-
-        {/* Dev Mode Toggle */}
-        <div className="footer-control dev-control">
-          {!isCollapsed && (
-            <div className="control-label">
-              <Code size={20} />
-              <span>Dev: {role === 'instructor' ? 'Instructor' : 'Student'}</span>
-            </div>
-          )}
-          <button
-            className={`toggle-switch ${role === 'instructor' ? 'active' : ''}`}
-            onClick={toggleDevRole}
-            title={isCollapsed ? `Dev Mode: ${role}` : undefined}
-          >
-            {isCollapsed ? (
-              <Code size={20} />
-            ) : (
-              <div className="toggle-slider"></div>
-            )}
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
