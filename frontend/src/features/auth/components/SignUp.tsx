@@ -158,7 +158,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
              console.error('Sync error:', syncError);
         }
 
-        navigate('/home');
+        navigate('/app');
       }
     } catch (err: any) {
       console.error('Verification error:', err);

@@ -117,7 +117,7 @@ const Login: React.FC = () => {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        navigate("/home", { replace: true });
+        navigate("/app", { replace: true });
       } else if (result.status === "needs_second_factor") {
         setNeedsSecondFactor(true);
         setError('');
@@ -147,7 +147,7 @@ const Login: React.FC = () => {
       });
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
-        navigate("/home", { replace: true });
+        navigate("/app", { replace: true });
       } else {
         setError("Invalid or expired code. Please try again.");
       }

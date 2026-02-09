@@ -1,5 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import './App.scss';
 import LandingPage from '@pages/LandingPage';
+import AppView from '@features/app/pages/AppView';
 import Home from '@features/app/pages/Home';
 import Login from '@features/auth/pages/Login';
 import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
@@ -13,8 +15,8 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/studentsignup" element={<SignUpOrchestrator />} />
         <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
@@ -22,13 +24,29 @@ function App() {
         <Route path="/forgot-password" element={<ForgetPassword />} />
         <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* App routes with persistent sidebar */}
+        <Route path="/app" element={<AppView />}>
+          <Route index element={<Navigate to="/app/home" replace />} />
+          <Route path="home" element={<Home />} />
+          <Route path="messages" element={<div>Messages - Coming Soon</div>} />
+          <Route path="my-classes" element={<div>My Classes - Coming Soon</div>} />
+          <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
+          <Route path="create-class" element={<div>Create Class - Coming Soon</div>} />
+          <Route path="dashboard" element={<div>Dashboard - Coming Soon</div>} />
+          <Route path="projects" element={<div>Projects - Coming Soon</div>} />
+          <Route path="roster" element={<div>Roster - Coming Soon</div>} />
+          <Route path="modules" element={<div>Modules - Coming Soon</div>} />
+          <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
+          <Route path="create-project" element={<div>Create Project - Coming Soon</div>} />
+          <Route path="browse-projects" element={<div>Browse Projects - Coming Soon</div>} />
+          <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
+          <Route path="settings" element={<div>Settings - Coming Soon</div>} />
+          <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
+        </Route>
+        
         <Route path="/classes" element={<ClassManagement />} />
       </Routes>
-      
-      {/* Temporary Navigation for testing */}
-      {/* <div style={{ position: 'fixed', bottom: 10, right: 10, background: 'white', padding: 10, border: '1px solid #ccc', zIndex: 9999 }}>
-        <Link to="/home">Dashboard</Link> | <Link to="/clerk">Clerk Demo</Link>
-      </div> */}
     </Router>
   );
 }
