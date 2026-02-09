@@ -9,6 +9,7 @@ import RoleSelection from '@features/auth/pages/RoleSelection';
 import ForgetPassword from '@features/auth/pages/ForgotPassword';
 import VerifyResetPassword from '@features/auth/pages/VerifyResetPassword';
 import ResetPassword from '@features/auth/pages/ResetPassword';
+import ClassManagement from '@features/classes/pages/ClassManagement';
 
 function App() {
   return (
@@ -43,6 +44,8 @@ function App() {
           <Route path="settings" element={<div>Settings - Coming Soon</div>} />
           <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
         </Route>
+        
+        <Route path="/classes" element={<ClassManagement />} />
       </Routes>
     </Router>
   );
