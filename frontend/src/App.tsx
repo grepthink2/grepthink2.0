@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from '@pages/LandingPage';
 import Home from '@features/app/pages/Home';
 import Login from '@features/auth/pages/Login';
@@ -7,6 +7,7 @@ import RoleSelection from '@features/auth/pages/RoleSelection';
 import ForgetPassword from '@features/auth/pages/ForgotPassword';
 import VerifyResetPassword from '@features/auth/pages/VerifyResetPassword';
 import ResetPassword from '@features/auth/pages/ResetPassword';
+import ClassManagement from '@features/classes/pages/ClassManagement';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgetPassword />} />
         <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/classes" element={<ClassManagement />} />
       </Routes>
       
       {/* Temporary Navigation for testing */}
