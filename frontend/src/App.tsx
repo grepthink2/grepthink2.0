@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.scss';
 import LandingPage from '@pages/LandingPage';
-import AppView from '@features/app/pages/AppView';
+import AppView from '@/features/app/AppView';
 import Home from '@features/app/pages/Home';
 import Login from '@features/auth/pages/Login';
 import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
@@ -10,6 +10,8 @@ import ForgetPassword from '@features/auth/pages/ForgotPassword';
 import VerifyResetPassword from '@features/auth/pages/VerifyResetPassword';
 import ResetPassword from '@features/auth/pages/ResetPassword';
 import ClassManagement from '@features/classes/pages/ClassManagement';
+import Roster from '@features/app/pages/Roster'
+import Dashboard from '@features/app/pages/Dashboard';
 
 function App() {
   return (
@@ -32,10 +34,9 @@ function App() {
           <Route path="messages" element={<div>Messages - Coming Soon</div>} />
           <Route path="my-classes" element={<div>My Classes - Coming Soon</div>} />
           <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
-          <Route path="create-class" element={<div>Create Class - Coming Soon</div>} />
-          <Route path="dashboard" element={<div>Dashboard - Coming Soon</div>} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="projects" element={<div>Projects - Coming Soon</div>} />
-          <Route path="roster" element={<div>Roster - Coming Soon</div>} />
+          <Route path="roster" element={<Roster />} />
           <Route path="modules" element={<div>Modules - Coming Soon</div>} />
           <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
           <Route path="create-project" element={<div>Create Project - Coming Soon</div>} />
