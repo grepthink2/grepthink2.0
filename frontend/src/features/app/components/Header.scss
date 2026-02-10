@@ -8,7 +8,6 @@ $app-header-text: #424242;
   align-items: center;
   justify-content: space-between;
   padding: $spacing-md $spacing-lg;
-  background-color: $white;
   height: 64px;
   position: sticky;
   top: 0;
@@ -20,6 +19,7 @@ $app-header-text: #424242;
     color: $app-header-text;
     font-family: $primary-font;
     margin: 0;
+    padding-left: 8px;
   }
 
   .app-header__right {
@@ -46,7 +46,8 @@ $app-header-text: #424242;
   .app-header__search-input {
     width: 100%;
     padding: 8px 12px 8px 40px;
-    background-color: $background;
+    background-color: #ffffff;
+    box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
     border: 1px solid transparent;
     border-radius: $border-radius-sm;
     font-size: $font-size-base;
@@ -80,7 +81,6 @@ $app-header-text: #424242;
   border-radius: $border-radius-sm;
   cursor: pointer;
   color: $app-header-text;
-  transition: all $transition-fast;
 
   img {
     // Bell icon (SVG as img) - darken to match $app-header-text (#424242)
@@ -98,6 +98,10 @@ $app-header-text: #424242;
 
   &:focus {
     outline: none;
+  }
+
+  &:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
   }
 }
 
@@ -131,11 +135,10 @@ $app-header-text: #424242;
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background-color: transparent;
+  background-color: #ffffff;
   box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
   border-radius: $border-radius-sm;
   cursor: pointer;
-  transition: all $transition-fast;
   font-family: $primary-font;
 
   &:hover {
@@ -145,6 +148,10 @@ $app-header-text: #424242;
 
   &:focus {
     outline: none;
+  }
+
+  &:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
   }
 
   .app-header__profile-icon {

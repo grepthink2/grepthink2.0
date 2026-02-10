@@ -19,7 +19,6 @@ const pageTitles: Record<string, string> = {
   '/app/messages': 'Messages',
   '/app/my-classes': 'My Classes',
   '/app/join-class': 'Join Class',
-  '/app/create-class': 'Create Class',
   '/app/dashboard': 'Dashboard',
   '/app/projects': 'Projects',
   '/app/roster': 'Roster',

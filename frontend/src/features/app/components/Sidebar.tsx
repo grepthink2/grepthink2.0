@@ -8,9 +8,10 @@ import './Sidebar.scss';
 
 interface SidebarProps {
   role: UserRole;
+  onOpenCreateClass?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role }) => {
+const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,7 +19,12 @@ const Sidebar: React.FC<SidebarProps> = ({ role }) => {
   const sidebarConfig = role === 'instructor' ? instructorSidebarConfig : studentSidebarConfig;
 
   const handleNavigation = (path: string) => {
-    navigate(path);
+    // If it's the create class path, open the modal instead
+    if (path === '/app/create-class' && onOpenCreateClass) {
+      onOpenCreateClass();
+    } else {
+      navigate(path);
+    }
   };
 
   const toggleCollapse = () => {
