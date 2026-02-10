@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUser, useAuth } from '@clerk/clerk-react';
+import { useUser, useAuth } from '@/lib/auth';
 import { useNavigate } from 'react-router-dom';
 import LogoutButton from '@features/auth/components/LogoutButton';
 import './Home.scss';
@@ -14,6 +14,10 @@ const Home: React.FC = () => {
     const checkBackend = async () => {
         try {
             const token = await getToken();
+        if (!token) {
+          setBackendStatus('Not authenticated');
+          return;
+        }
             const res = await fetch('/api/test-auth', {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -29,7 +33,7 @@ const Home: React.FC = () => {
     if (user) {
         checkBackend();
     }
-  }, [user]);
+  }, [user, getToken]);
 
   if (!isLoaded) {
     return <div>Loading...</div>;
@@ -47,12 +51,12 @@ const Home: React.FC = () => {
 
   return (
     <div className="home-page">
-      <h1>Welcome, {user.firstName || user.emailAddresses[0].emailAddress}!</h1>
+      <h1>Welcome, {user.user_metadata?.full_name || user.email}!</h1>
       <p>You have successfully logged in.</p>
       
       <div className="user-details">
          <p><strong>User ID:</strong> {user.id}</p>
-         <p><strong>Email:</strong> {user.emailAddresses[0].emailAddress}</p>
+        <p><strong>Email:</strong> {user.email}</p>
          <p><strong>Backend Status:</strong> {backendStatus}</p>
       </div>
 

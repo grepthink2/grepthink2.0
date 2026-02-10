@@ -6,8 +6,8 @@
  * with password visibility toggle functionality.
  */
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useSignIn } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabaseClient';
 import './ResetPassword.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import eyeIcon from '@assets/ph_eye.svg?url';
@@ -15,19 +15,31 @@ import eyeSlashIcon from '@assets/eye-slash.svg?url';
 
 const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { signIn, setActive, isLoaded } = useSignIn();
+  const [canReset, setCanReset] = React.useState(false);
+  const [checkingSession, setCheckingSession] = React.useState(true);
 
-  // Get email and code from navigation state
-  const email = location.state?.email || '';
-  const code = location.state?.code || '';
-
-  // Redirect to forgot password if no code is provided
   React.useEffect(() => {
-    if (!code || !email) {
-      navigate('/forgot-password');
-    }
-  }, [code, email, navigate]);
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setCanReset(!!data.session);
+      setCheckingSession(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        setCanReset(!!session);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // State for password visibility toggle
   const [showPassword, setShowPassword] = React.useState(false);
@@ -52,8 +64,6 @@ const ResetPassword: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded) return;
-
     setError('');
     setIsLoading(true);
 
@@ -64,27 +74,25 @@ const ResetPassword: React.FC = () => {
     }
 
     try {
-      if (!signIn) {
-        setError('No password reset attempt found. Please try again.');
+      if (!canReset) {
+        setError('No password reset session found. Please open the reset link from your email.');
+        setIsLoading(false);
         return;
       }
 
-      const result = await signIn.attemptFirstFactor({
-        strategy: 'reset_password_email_code',
-        code: code,
+      const { error: updateError } = await supabase.auth.updateUser({
         password: formData.password,
       });
 
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
-        navigate('/app');
-      } else {
-        console.error(result);
-        setError('Password reset failed. Please try again.');
+      if (updateError) {
+        throw updateError;
       }
+
+      await supabase.auth.signOut();
+      navigate('/login');
     } catch (err: any) {
       console.error('Reset password error:', err);
-      setError(err.errors?.[0]?.message || 'Failed to reset password. Please try again.');
+      setError(err.message || 'Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -103,6 +111,14 @@ const ResetPassword: React.FC = () => {
           <h1 className="header">Reset your Password</h1>
           <p className="subtext">Enter and confirm your new password.</p>
 
+          {checkingSession ? (
+            <div className="subtext">Checking reset link...</div>
+          ) : !canReset ? (
+            <div className="error">
+              No reset session found. Please open the reset link from your email.
+            </div>
+          ) : null}
+
           {/* Reset Password Form */}
           <form onSubmit={handleSubmit} className="resetForm">
             {/* Error Message Display */}
@@ -119,7 +135,7 @@ const ResetPassword: React.FC = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || !canReset || checkingSession}
                 />
                 <img
                   src={showPassword ? eyeSlashIcon : eyeIcon}
@@ -141,7 +157,7 @@ const ResetPassword: React.FC = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  disabled={isLoading}
+                  disabled={isLoading || !canReset || checkingSession}
                 />
                 <img
                   src={showPassword ? eyeSlashIcon : eyeIcon}
@@ -155,7 +171,7 @@ const ResetPassword: React.FC = () => {
             <button 
               type="submit" 
               className="buttonRectangle"
-              disabled={isLoading}
+              disabled={isLoading || !canReset || checkingSession}
             >
               {isLoading ? 'Resetting Password...' : 'Reset Password'}
             </button>

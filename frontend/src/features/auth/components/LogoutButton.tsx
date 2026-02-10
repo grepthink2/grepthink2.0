@@ -1,5 +1,5 @@
 import React from 'react';
-import { useClerk, useUser } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@/lib/auth';
 import { useNavigate } from 'react-router-dom';
 import './LogoutButton.scss';
 
@@ -9,16 +9,15 @@ interface LogoutButtonProps {
 }
 
 const LogoutButton: React.FC<LogoutButtonProps> = ({ onLogout, className = '' }) => {
-    const { signOut } = useClerk();
+    const { signOut } = useAuth();
     const { user } = useUser();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         // Always sign out on the client
-        await signOut(() => {
-            if (onLogout) onLogout();
-            navigate('/');
-        });
+        await signOut();
+        if (onLogout) onLogout();
+        navigate('/');
     };
 
     if (!user) return null;

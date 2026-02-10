@@ -7,14 +7,12 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSignIn, useClerk } from '@clerk/clerk-react';
+import { supabase } from '@/lib/supabaseClient';
 import './ForgotPassword.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
-  const { signIn, isLoaded } = useSignIn();
-  const { signOut } = useClerk();
   
   // State to manage form input and UI states
   const [formData, setFormData] = React.useState({
@@ -36,31 +34,26 @@ const ForgotPassword: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded) return;
-
     setIsLoading(true);
     setError('');
 
     try {
-      // Clear any existing sign-in session to avoid "Session already exists" error
-      // This ensures a clean state before initiating password reset
-      await signOut(() => {
-        // Do nothing - prevent redirect
-      });
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        formData.email,
+        {
+          redirectTo: `${window.location.origin}/reset-password`,
+        }
+      );
 
-      const result = await signIn.create({
-        strategy: 'reset_password_email_code',
-        identifier: formData.email,
-      });
-
-      if (result.status === 'needs_first_factor') {
-         // Success - navigate to verify email page
-         setSuccess(true);
-         navigate('/verify-reset-password', { state: { email: formData.email } });
+      if (resetError) {
+        throw resetError;
       }
+
+      setSuccess(true);
+      navigate('/verify-reset-password', { state: { email: formData.email } });
     } catch (err: any) {
       console.error('Password reset error:', err);
-      setError(err.errors?.[0]?.message || 'Failed to send password reset email. Please try again.');
+      setError(err.message || 'Failed to send password reset email. Please try again.');
     } finally {
       setIsLoading(false);
     }
