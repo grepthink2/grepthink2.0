@@ -120,6 +120,67 @@
     }
   }
 
+  .join-class-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f0f0f0;
+
+    h2 {
+      margin-bottom: 1rem;
+      color: #333;
+      font-size: 1.5rem;
+    }
+
+    form {
+      .form-group {
+        margin-bottom: 1rem;
+
+        label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 600;
+          color: #555;
+        }
+
+        input {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          font-size: 1rem;
+          font-family: inherit;
+          transition: border-color 0.2s;
+
+          &:focus {
+            outline: none;
+            border-color: #4a90e2;
+          }
+        }
+      }
+
+      button {
+        background: #4a90e2;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+
+        &:hover:not(:disabled) {
+          background: #357abd;
+        }
+
+        &:disabled {
+          background: #ccc;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
   .classes-list-section {
     h2 {
       margin-bottom: 1rem;
@@ -173,6 +234,11 @@
           font-weight: 500;
         }
 
+        .course-code {
+          color: #2a5aa5;
+          font-weight: 600;
+        }
+
         small {
           color: #999;
           font-size: 0.85rem;
@@ -208,6 +274,11 @@
       .teacher-email {
         color: #444;
         font-weight: 500;
+      }
+
+      .course-code {
+        color: #2a5aa5;
+        font-weight: 600;
       }
     }
 

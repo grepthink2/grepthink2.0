@@ -6,7 +6,7 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   envDir: '..', // Point to the root directory for .env file
-  envPrefix: ['VITE_', 'SUPABASE_', 'CLERK_'], // Expose these prefixes to the client
+  envPrefix: ['VITE_', 'SUPABASE_'], // Expose these prefixes to the client
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

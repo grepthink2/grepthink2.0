@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '@/lib/auth';
 import { Search, User, ChevronDown, Settings, LogOut } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
 import './Header.scss';
@@ -78,6 +78,7 @@ const Header: React.FC = () => {
 
   const handleLogout = async () => {
     await signOut();
+    navigate('/');
   };
 
   const handleSettingsClick = () => {

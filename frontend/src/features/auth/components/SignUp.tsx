@@ -7,9 +7,9 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSignUp, useAuth } from '@clerk/clerk-react';
+import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/auth';
 import './SignUp.scss';
-import VerifyEmail from './VerifyEmail';
 import eyeIcon from '@assets/ph_eye.svg?url';
 import eyeSlashIcon from '@assets/eye-slash.svg?url';
 import googleIcon from '@assets/google.svg?url';
@@ -21,7 +21,6 @@ interface SignUpProps {
 
 const SignUp: React.FC<SignUpProps> = ({ userType }) => {
   const navigate = useNavigate();
-  const { isLoaded, signUp, setActive } = useSignUp();
   const { getToken } = useAuth();
   
   // State to toggle password visibility
@@ -38,10 +37,6 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
   const [error, setError] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
   
-  // Verification state
-  const [pendingVerification, setPendingVerification] = React.useState(false);
-  const [sendingCode, setSendingCode] = React.useState(false);
-
   // Handler for form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -59,12 +54,16 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     setError('');
     
     try {
-      if (!isLoaded) return;
-      await signUp.authenticateWithRedirect({
-        strategy: "oauth_google",
-        redirectUrl: "/sso-callback",
-        redirectUrlComplete: "/",
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/app`,
+        },
       });
+
+      if (oauthError) {
+        throw oauthError;
+      }
     } catch (error: any) {
       console.error('Google sign up error:', error);
       setError('Google sign up failed. Please try again.');
@@ -76,8 +75,6 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
   // Handler for form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded) return;
-
     setError('');
     setIsLoading(true);
 
@@ -95,89 +92,61 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     }
 
     try {
-      // 1. Create Clerk user
-      await signUp.create({
-        emailAddress: formData.email,
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            role: userType,
+          },
+        },
       });
 
-      // 2. Start email verification
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-      
-      setPendingVerification(true);
-      
-    } catch (err: any) {
-      console.error('Signup error:', err);
-      setError(err.errors?.[0]?.message || 'Failed to create account. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      if (signUpError) {
+        throw signUpError;
+      }
 
-  const handleVerification = async (code: string) => {
-    if (!isLoaded) return;
-    setIsLoading(true);
-    setError('');
-
-    try {
-      // 3. Attempt verification
-      const completeSignUp = await signUp.attemptEmailAddressVerification({
-        code,
-      });
-
-      if (completeSignUp.status !== 'complete') {
-        console.log(JSON.stringify(completeSignUp, null, 2));
-        setError('Verification failed. Please check the code.');
+      if (!data.session || !data.user) {
+        setError('Email confirmations are enabled. Disable email confirmations in Supabase Auth settings to avoid verification emails.');
         setIsLoading(false);
         return;
       }
-      
-      if (completeSignUp.status === 'complete') {
-        await setActive({ session: completeSignUp.createdSessionId });
-        
-        // 4. Sync with Backend
-        try {
-          const token = await getToken();
-          const response = await fetch('/api/create-user', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              userId: completeSignUp.createdUserId,
-              email: formData.email,
-              userType: userType
-            }),
-          });
-          
-          if (!response.ok) {
-            console.error('Failed to sync user to database, but auth succeeded');
-          }
-        } catch (syncError) {
-             console.error('Sync error:', syncError);
-        }
 
-        navigate('/app');
+      const token = data.session?.access_token || (await getToken());
+      if (!token) {
+        setError('Failed to retrieve auth token. Please try again.');
+        setIsLoading(false);
+        return;
       }
+
+      // Sync with Backend
+      try {
+        const response = await fetch('/api/create-user', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            userId: data.user.id,
+            email: formData.email,
+            userType: userType
+          }),
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to sync user to database, but auth succeeded');
+        }
+      } catch (syncError) {
+           console.error('Sync error:', syncError);
+      }
+
+      navigate('/app');
     } catch (err: any) {
-      console.error('Verification error:', err);
-      setError(err.errors?.[0]?.message || 'Verification failed. Please try again.');
+      console.error('Signup error:', err);
+      setError(err.message || 'Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    if (!isLoaded) return;
-    setSendingCode(true);
-    setError('');
-    try {
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-    } catch (err: any) {
-      setError('Failed to resend code. Please try again.');
-    } finally {
-      setSendingCode(false);
     }
   };
 
@@ -192,30 +161,6 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     : userType === 'student' 
     ? 'Create a Student Account'
     : 'Create an Account';
-
-  if (pendingVerification) {
-    return (
-      <div className="pageWrapper">
-        <div className="container">
-          <VerifyEmail
-            email={formData.email}
-            onVerify={handleVerification}
-            onResend={handleResendCode}
-            onBack={() => {
-              setPendingVerification(false);
-              setError('');
-            }}
-            error={error}
-            isLoading={isLoading}
-            isSending={sendingCode}
-            title="Verify your email"
-            backText="Wrong email?"
-            backLabel="Back to Sign Up"
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="pageWrapper">
