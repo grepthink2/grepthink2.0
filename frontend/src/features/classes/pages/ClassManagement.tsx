@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '@/lib/auth';
 import './ClassManagement.scss';
 
 interface Class {
@@ -46,9 +46,17 @@ const ClassManagement: React.FC = () => {
     }
   }, [selectedClass]);
 
+  const getAccessToken = async () => {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+    return token;
+  };
+
   const checkUserRole = async () => {
     try {
-      const token = await getToken();
+      const token = await getAccessToken();
       const response = await fetch('http://localhost:5001/api/login-check', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -65,7 +73,7 @@ const ClassManagement: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = await getToken();
+      const token = await getAccessToken();
       const response = await fetch('http://localhost:5001/api/classes', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -92,7 +100,7 @@ const ClassManagement: React.FC = () => {
     setSuccessMessage(null);
 
     try {
-      const token = await getToken();
+      const token = await getAccessToken();
       const response = await fetch('http://localhost:5001/api/classes', {
         method: 'POST',
         headers: {
@@ -131,7 +139,7 @@ const ClassManagement: React.FC = () => {
     setSuccessMessage(null);
 
     try {
-      const token = await getToken();
+      const token = await getAccessToken();
       const response = await fetch(
         `http://localhost:5001/api/classes/${selectedClass.id}/invite`,
         {
@@ -164,7 +172,7 @@ const ClassManagement: React.FC = () => {
 
   const fetchStudents = async (classId: string) => {
     try {
-      const token = await getToken();
+      const token = await getAccessToken();
       const response = await fetch(
         `http://localhost:5001/api/classes/${classId}/students`,
         {

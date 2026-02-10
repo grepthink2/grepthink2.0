@@ -5,9 +5,6 @@ from database.client import supabase, get_authenticated_client, service_client
 import os
 import uvicorn
 import jwt
-import requests
-from jwt.algorithms import RSAAlgorithm
-import json
 from uuid import UUID
 
 app = FastAPI()
@@ -21,44 +18,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CLERK_ISSUER = os.environ.get("CLERK_ISSUER_URL")
-if not CLERK_ISSUER:
-    print("WARNING: CLERK_ISSUER_URL not set in .env. JWT verification will fail.")
+SUPABASE_JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET")
+if not SUPABASE_JWT_SECRET:
+    print("WARNING: SUPABASE_JWT_SECRET not set in .env. JWT verification will fail.")
 
-def get_jwks():
-    if not CLERK_ISSUER:
-        return None
-    try:
-        jwks_url = f"{CLERK_ISSUER}/.well-known/jwks.json"
-        response = requests.get(jwks_url)
-        return response.json()
-    except Exception as e:
-        print(f"Error fetching JWKS: {e}")
-        return None
-
-def verify_clerk_token(request: Request):
+def verify_supabase_token(request: Request):
     auth_header = request.headers.get("Authorization")
     if not auth_header:
          # For testing endpoints that don't strictly require it yet, or pass None
          # But safer to return None
          return None
     
-    token = auth_header.split(" ")[1]
-    
+    parts = auth_header.split(" ")
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+
+    token = parts[1]
+
     try:
-        jwks = get_jwks()
-        if not jwks:
-            raise Exception("Could not fetch JWKS")
-
-        public_keys = {}
-        for jwk in jwks['keys']:
-            kid = jwk['kid']
-            public_keys[kid] = RSAAlgorithm.from_jwk(json.dumps(jwk))
-
-        kid = jwt.get_unverified_header(token)['kid']
-        key = public_keys.get(kid)
-        
-        payload = jwt.decode(token, key=key, algorithms=['RS256'])
+        if not SUPABASE_JWT_SECRET:
+            raise Exception("Missing SUPABASE_JWT_SECRET")
+        payload = jwt.decode(
+            token,
+            SUPABASE_JWT_SECRET,
+            algorithms=["HS256"],
+            options={"verify_aud": False},
+        )
         return payload
     except Exception as e:
         print(f"Token verification failed: {e}")
@@ -103,7 +88,7 @@ def health_check():
     return {"status": "healthy", "service": "backend"}
 
 @app.get('/api/test-auth')
-def test_auth(payload: dict = Depends(verify_clerk_token)):
+def test_auth(payload: dict = Depends(verify_supabase_token)):
     if payload:
         return {
             "message": f"Backend connected & Authenticated. Hello {payload.get('sub')}",
@@ -116,7 +101,7 @@ def test_auth(payload: dict = Depends(verify_clerk_token)):
         }
 
 @app.get('/api/login-check')
-def login_check(payload: dict = Depends(verify_clerk_token)):
+def login_check(payload: dict = Depends(verify_supabase_token)):
     if payload:
         user_id = payload.get('sub')
         role = get_user_role(user_id) if user_id else None
@@ -131,8 +116,8 @@ def login_check(payload: dict = Depends(verify_clerk_token)):
         }
 
 @app.post('/api/create-user')
-def create_user(request: Request, data: SignupRequest, payload: dict = Depends(verify_clerk_token)):
-    # This endpoint is called AFTER Clerk verifies the user
+def create_user(request: Request, data: SignupRequest, payload: dict = Depends(verify_supabase_token)):
+    # This endpoint is called AFTER Supabase authenticates the user
     if not payload:
         raise HTTPException(status_code=401, detail="Missing or invalid authentication token")
     
@@ -197,7 +182,7 @@ def create_user(request: Request, data: SignupRequest, payload: dict = Depends(v
 # ==================== CLASS MANAGEMENT ENDPOINTS ====================
 
 @app.post('/api/classes')
-def create_class(data: CreateClassRequest, payload: dict = Depends(verify_clerk_token)):
+def create_class(data: CreateClassRequest, payload: dict = Depends(verify_supabase_token)):
     """Create a new class (teachers only)"""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -240,7 +225,7 @@ def create_class(data: CreateClassRequest, payload: dict = Depends(verify_clerk_
         raise HTTPException(status_code=500, detail=f"Failed to create class: {str(e)}")
 
 @app.get('/api/classes')
-def get_classes(payload: dict = Depends(verify_clerk_token)):
+def get_classes(payload: dict = Depends(verify_supabase_token)):
     """Get all classes for the current user"""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -288,7 +273,7 @@ def get_classes(payload: dict = Depends(verify_clerk_token)):
         raise HTTPException(status_code=500, detail=f"Failed to fetch classes: {str(e)}")
 
 @app.get('/api/classes/{class_id}')
-def get_class(class_id: UUID, payload: dict = Depends(verify_clerk_token)):
+def get_class(class_id: UUID, payload: dict = Depends(verify_supabase_token)):
     """Get details of a specific class"""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -308,7 +293,7 @@ def get_class(class_id: UUID, payload: dict = Depends(verify_clerk_token)):
         raise HTTPException(status_code=500, detail=f"Failed to fetch class: {str(e)}")
 
 @app.post('/api/classes/{class_id}/invite')
-def invite_student(class_id: UUID, data: InviteStudentRequest, payload: dict = Depends(verify_clerk_token)):
+def invite_student(class_id: UUID, data: InviteStudentRequest, payload: dict = Depends(verify_supabase_token)):
     """Invite a student to a class (teachers only)"""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -369,7 +354,7 @@ def invite_student(class_id: UUID, data: InviteStudentRequest, payload: dict = D
         raise HTTPException(status_code=500, detail=f"Failed to invite student: {str(e)}")
 
 @app.get('/api/classes/{class_id}/students')
-def get_class_students(class_id: UUID, payload: dict = Depends(verify_clerk_token)):
+def get_class_students(class_id: UUID, payload: dict = Depends(verify_supabase_token)):
     """Get all students enrolled in a class"""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")

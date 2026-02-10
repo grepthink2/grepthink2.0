@@ -32,7 +32,7 @@ if service_key:
 
 def get_authenticated_client(access_token: str) -> Client:
     """
-    Returns a Supabase client authenticated as the user via the provided Bearer token (e.g. from Clerk).
+    Returns a Supabase client authenticated as the user via the provided Bearer token (from Supabase Auth).
     """
     try:
         # Create a new client instance sharing the same URL and Key
