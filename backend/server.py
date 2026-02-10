@@ -474,6 +474,54 @@ def get_class_students(class_id: UUID, payload: dict = Depends(verify_supabase_t
         print(f"Error fetching students: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch students: {str(e)}")
 
+@app.post('/api/classes/{class_id}/join')
+def join_class(class_id: UUID, payload: dict = Depends(verify_supabase_token)):
+    """Allows a user to join a class"""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    user_id = payload.get('sub')
+    role = get_user_role(user_id)
+
+    # Check if user is a not a teacher
+    if is_teacher_role(role):
+        raise HTTPException(status_code=403, detail="Only students or guests can join")
+    
+    try:
+        client = service_client if service_client else supabase
+        
+        # Check if user in table
+        # user_result = client.table('users').select('id').eq('user_id', user_id).execute()
+        # if not user_result.data or len(user_result.data) == 0:
+        #     raise HTTPException(status_code=404, detail="User not found in database")
+
+        # Verify the class exists
+        class_result = client.table('classes').select('*').eq('id', str(class_id)).execute()
+        if not class_result.data or len(class_result.data) == 0:
+            raise HTTPException(status_code=404, detail="Class not found or you don't have permission")
+                
+        # Check if already enrolled
+        existing = client.table('class_enrollments').select('*').eq('class_id', str(class_id)).eq('user_id', user_id).execute()
+        if existing.data and len(existing.data) > 0:
+            return {"message": "Already enrolled in this class"}
+        
+        # Create enrollment
+        enrollment_data = {
+            "class_id": str(class_id),
+            "user_id": user_id
+        }
+        client.table('class_enrollments').insert(enrollment_data).execute()
+        
+        return {
+            "message": "User sucessfully enrolled",
+            "class_id": str(class_id)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error joining class: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to join: {str(e)}")
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
     print(f"Starting server on port {port}...")
