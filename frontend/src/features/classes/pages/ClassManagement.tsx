@@ -8,6 +8,7 @@ interface Class {
   description: string;
   created_by: string;
   created_at: string;
+  course_code?: string;
   teacher_email?: string;
 }
 
@@ -31,6 +32,7 @@ const ClassManagement: React.FC = () => {
   const [className, setClassName] = useState('');
   const [classDescription, setClassDescription] = useState('');
   const [studentEmail, setStudentEmail] = useState('');
+  const [courseCode, setCourseCode] = useState('');
 
   // Success messages
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -170,6 +172,41 @@ const ClassManagement: React.FC = () => {
     }
   };
 
+  const joinClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const token = await getAccessToken();
+      const response = await fetch('http://localhost:5001/api/classes/join', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          course_code: courseCode,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to join class');
+      }
+
+      const data = await response.json();
+      setSuccessMessage(data.message || 'Joined class successfully');
+      setCourseCode('');
+      fetchClasses();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchStudents = async (classId: string) => {
     try {
       const token = await getAccessToken();
@@ -242,6 +279,28 @@ const ClassManagement: React.FC = () => {
             </div>
           )}
 
+          {userRole === 'student' && (
+            <div className="join-class-section">
+              <h2>Join a Class</h2>
+              <form onSubmit={joinClass}>
+                <div className="form-group">
+                  <label htmlFor="courseCode">Course Code</label>
+                  <input
+                    type="text"
+                    id="courseCode"
+                    value={courseCode}
+                    onChange={(e) => setCourseCode(e.target.value.toUpperCase())}
+                    required
+                    placeholder="e.g., AB12CD34"
+                  />
+                </div>
+                <button type="submit" disabled={loading}>
+                  {loading ? 'Joining...' : 'Join Class'}
+                </button>
+              </form>
+            </div>
+          )}
+
           <div className="classes-list-section">
             <h2>My Classes</h2>
             {loading && <p>Loading classes...</p>}
@@ -260,6 +319,9 @@ const ClassManagement: React.FC = () => {
                   {userRole !== 'teacher' && userRole !== 'instructor' && cls.teacher_email && (
                     <p className="teacher-email">Teacher: {cls.teacher_email}</p>
                   )}
+                  {userRole === 'teacher' && cls.course_code && (
+                    <p className="course-code">Course Code: {cls.course_code}</p>
+                  )}
                   <small>Created: {new Date(cls.created_at).toLocaleDateString()}</small>
                 </div>
               ))}
@@ -276,6 +338,9 @@ const ClassManagement: React.FC = () => {
                 <p>{selectedClass.description || 'No description'}</p>
                 {userRole !== 'teacher' && userRole !== 'instructor' && selectedClass.teacher_email && (
                   <p className="teacher-email">Teacher: {selectedClass.teacher_email}</p>
+                )}
+                {userRole === 'teacher' && selectedClass.course_code && (
+                  <p className="course-code">Course Code: {selectedClass.course_code}</p>
                 )}
               </div>
 
