@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, X } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useClass } from '@/lib/classContext';
 import './CreateClassModal.scss';
 
 type Term = 'Fall' | 'Winter' | 'Spring' | 'Summer';
@@ -15,7 +17,10 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [instructorOnly, setInstructorOnly] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  const { refreshClasses } = useClass();
   const terms: Term[] = ['Fall', 'Winter', 'Spring', 'Summer'];
 
   const handleClose = () => {
@@ -60,15 +65,48 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
     }
   };
 
-  const handleCreateClass = () => {
-    // TODO: Implement class creation logic
-    console.log({
-      courseName,
-      selectedTerm,
-      csvFile,
-      instructorOnly,
-    });
-    handleClose();
+  const handleCreateClass = async () => {
+    if (!courseName.trim()) {
+      setError('Course name is required');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Create the class with name and description
+      const description = `${selectedTerm} term`;
+      await api.createClass({
+        name: courseName,
+        description,
+      });
+
+      // Refresh the classes list
+      await refreshClasses();
+
+      // TODO: Handle CSV file upload if provided
+      if (csvFile) {
+        console.log('CSV upload not yet implemented:', csvFile);
+      }
+
+      // TODO: Handle instructor-only setting
+      if (instructorOnly) {
+        console.log('Instructor-only setting not yet implemented');
+      }
+
+      // Reset form and close
+      setCourseName('');
+      setSelectedTerm('Fall');
+      setCsvFile(null);
+      setInstructorOnly(false);
+      handleClose();
+    } catch (err) {
+      console.error('Failed to create class:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create class');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -158,12 +196,20 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
             </label>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="create-class-modal__error">
+              {error}
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="create-class-modal__actions">
             <button
               type="button"
               className="create-class-modal__cancel-button"
               onClick={handleClose}
+              disabled={isSubmitting}
             >
               Cancel
             </button>
@@ -171,8 +217,9 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
               type="button"
               className="create-class-modal__submit-button"
               onClick={handleCreateClass}
+              disabled={isSubmitting || !courseName.trim()}
             >
-              Create Class
+              {isSubmitting ? 'Creating...' : 'Create Class'}
             </button>
           </div>
         </div>

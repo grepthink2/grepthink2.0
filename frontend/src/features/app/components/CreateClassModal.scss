@@ -367,3 +367,14 @@
     cursor: not-allowed;
   }
 }
+
+// Error Message
+.create-class-modal__error {
+  padding: 12px;
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: $border-radius-sm;
+  color: #c33;
+  font-size: $font-size-sm;
+  margin-bottom: 16px;
+}
