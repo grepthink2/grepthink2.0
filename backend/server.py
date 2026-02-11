@@ -96,23 +96,15 @@ def verify_supabase_token(request: Request):
         raise HTTPException(status_code=401, detail="Invalid authentication token")
 
 
-def normalize_role(role: str | None) -> str | None:
-    if not role:
-        return None
-    role_normalized = role.strip().lower()
-    if role_normalized == "instructor":
-        return "teacher"
-    return role_normalized
-
-def is_teacher_role(role: str | None) -> bool:
-    return normalize_role(role) == "teacher"
+def is_instructor_role(role: str | None) -> bool:
+    return role == "instructor"
 
 def get_user_role(user_id: str) -> str | None:
     try:
         client = service_client if service_client else supabase
         result = client.table('profiles').select('role').eq('id', user_id).execute()
         if result.data and len(result.data) > 0:
-            return normalize_role(result.data[0].get('role'))
+            return result.data[0].get('role')
     except Exception as e:
         print(f"Error fetching user role: {e}")
     return None
@@ -236,16 +228,16 @@ def create_user(request: Request, data: SignupRequest, payload: dict = Depends(v
 
 @app.post('/api/classes')
 def create_class(data: CreateClassRequest, payload: dict = Depends(verify_supabase_token)):
-    """Create a new class (teachers only)"""
+    """Create a new class (instructors only)"""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
     
     user_id = payload.get('sub')
     role = get_user_role(user_id)
     
-    # Check if user is a teacher
-    if not is_teacher_role(role):
-        raise HTTPException(status_code=403, detail="Only teachers can create classes")
+    # Check if user is a instructor
+    if not is_instructor_role(role):
+        raise HTTPException(status_code=403, detail="Only instructors can create classes")
     
     try:
         client = service_client if service_client else supabase
@@ -293,11 +285,11 @@ def get_classes(payload: dict = Depends(verify_supabase_token)):
     try:
         client = service_client if service_client else supabase
         
-        if is_teacher_role(role):
-            # Teachers see classes they created
+        if is_instructor_role(role):
+            # Instructors see classes they created
             result = client.table('classes').select('*').eq('created_by', user_id).execute()
         else:
-            # Students: fetch enrollments with joined class + teacher in one call
+            # Students: fetch enrollments with joined class + instructor in one call
             enrollments = client.table('class_enrollments').select(
                 'class_id, classes ( id, name, description, created_by, created_at, course_code )'
             ).eq('user_id', user_id).execute()
@@ -306,23 +298,23 @@ def get_classes(payload: dict = Depends(verify_supabase_token)):
                 return {"classes": []}
 
             classes = []
-            teacher_ids = []
+            instructor_ids = []
             for row in enrollments.data:
                 cls = row.get('classes')
                 if not cls:
                     continue
                 if cls.get('created_by'):
-                    teacher_ids.append(cls['created_by'])
+                    instructor_ids.append(cls['created_by'])
                 classes.append(cls)
 
-            teacher_emails = {}
-            if teacher_ids:
-                teachers = client.table('profiles').select('id, email').in_('id', teacher_ids).execute()
-                for t in teachers.data or []:
-                    teacher_emails[t['id']] = t.get('email')
+            instructor_emails = {}
+            if instructor_ids:
+                instructors = client.table('profiles').select('id, email').in_('id', instructor_ids).execute()
+                for t in instructors.data or []:
+                    instructor_emails[t['id']] = t.get('email')
 
             for cls in classes:
-                cls['teacher_email'] = teacher_emails.get(cls.get('created_by'))
+                cls['instructor_email'] = instructor_emails.get(cls.get('created_by'))
 
             return {"classes": classes}
         
@@ -360,7 +352,7 @@ def join_class(data: JoinClassRequest, payload: dict = Depends(verify_supabase_t
     user_id = payload.get('sub')
     role = get_user_role(user_id)
 
-    if normalize_role(role) != "student":
+    if role != "student":
         raise HTTPException(status_code=403, detail="Only students can join classes")
 
     try:
@@ -392,21 +384,21 @@ def join_class(data: JoinClassRequest, payload: dict = Depends(verify_supabase_t
 
 @app.post('/api/classes/{class_id}/invite')
 def invite_student(class_id: UUID, data: InviteStudentRequest, payload: dict = Depends(verify_supabase_token)):
-    """Invite a student to a class (teachers only)"""
+    """Invite a student to a class (instructors only)"""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
     
     user_id = payload.get('sub')
     role = get_user_role(user_id)
     
-    # Check if user is a teacher
-    if not is_teacher_role(role):
-        raise HTTPException(status_code=403, detail="Only teachers can invite students")
+    # Check if user is a instructor
+    if not is_instructor_role(role):
+        raise HTTPException(status_code=403, detail="Only instructors can invite students")
     
     try:
         client = service_client if service_client else supabase
         
-        # Verify the class exists and belongs to this teacher
+        # Verify the class exists and belongs to this instructor
         class_result = client.table('classes').select('*').eq('id', str(class_id)).eq('created_by', user_id).execute()
         if not class_result.data or len(class_result.data) == 0:
             raise HTTPException(status_code=404, detail="Class not found or you don't have permission")
