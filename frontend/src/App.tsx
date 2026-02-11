@@ -13,6 +13,7 @@ import ClassManagement from '@features/classes/pages/ClassManagement';
 import Roster from '@features/app/pages/Roster'
 import Dashboard from '@features/app/pages/Dashboard';
 import CreateProject from '@features/app/pages/CreateProject';
+import MyClasses from '@features/app/pages/MyClasses';
 
 function App() {
   return (
@@ -33,7 +34,7 @@ function App() {
           <Route index element={<Navigate to="/app/home" replace />} />
           <Route path="home" element={<Home />} />
           <Route path="messages" element={<div>Messages - Coming Soon</div>} />
-          <Route path="my-classes" element={<div>My Classes - Coming Soon</div>} />
+          <Route path="my-classes" element={<MyClasses />} />
           <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="projects" element={<div>Projects - Coming Soon</div>} />
@@ -46,7 +47,7 @@ function App() {
           <Route path="settings" element={<div>Settings - Coming Soon</div>} />
           <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
         </Route>
-        
+
         <Route path="/classes" element={<ClassManagement />} />
       </Routes>
     </Router>
