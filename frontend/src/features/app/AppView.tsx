@@ -95,7 +95,7 @@ const AppView: React.FC = () => {
         />
         
         {/* Dev Mode Toggle - Top Right */}
-        <div className="dev-mode-toggle">
+        {/* <div className="dev-mode-toggle">
           <div className="dev-control-label">
             <Code size={18} />
             <span>
@@ -116,7 +116,7 @@ const AppView: React.FC = () => {
           >
             <div className="dev-toggle-slider"></div>
           </button>
-        </div>
+        </div> */}
 
         <main className="app-main">
           <Header />

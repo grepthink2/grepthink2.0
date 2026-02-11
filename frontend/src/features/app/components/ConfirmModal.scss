@@ -1,0 +1,105 @@
+@import '@styles/index.scss';
+
+.confirm-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.confirm-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+  &__close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: $background;
+    }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  &__title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0;
+    font-family: $primary-font;
+  }
+
+  &__message {
+    font-size: 1rem;
+    color: $text-secondary;
+    margin: 0;
+    line-height: 1.5;
+    font-family: $primary-font;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+  }
+
+  &__button {
+    padding: 0.75rem 1.5rem;
+    border-radius: $border-radius-sm;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+    border: none;
+    font-family: $primary-font;
+
+    &--cancel {
+      background: white;
+      color: $text-secondary;
+      border: 1px solid $border-color;
+
+      &:hover {
+        background: $background;
+        color: $text-primary;
+      }
+    }
+
+    &--confirm {
+      background: $primary-color;
+      color: white;
+
+      &:hover {
+        background: $primary-hover;
+      }
+    }
+  }
+}
