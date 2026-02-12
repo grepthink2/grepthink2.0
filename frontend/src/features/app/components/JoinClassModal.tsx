@@ -15,7 +15,8 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const { refreshClasses } = useClass();
+  // Use setSuccessMessage to display mint green "Successfully enrolled" popup on MyClasses page
+  const { refreshClasses, setSuccessMessage } = useClass();
 
   // Reset state when modal opens
   useEffect(() => {
@@ -87,11 +88,24 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
     setError(null);
 
     try {
-      await api.joinClass(courseCode);
+      const response = await api.joinClass(courseCode);
+
+      // Check if already enrolled
+      if (response.message?.toLowerCase().includes('already enrolled')) {
+        setError('You are already enrolled in this class');
+        return;
+      }
+
+      // Get class name from response
+      const className = response.class?.name || 'class';
+
+      // Set success message for MyClasses page
+      setSuccessMessage(`Successfully enrolled in ${className}`);
+
       setSuccess(true);
-      
-      // Refresh the classes list
-      await refreshClasses();
+
+      // Refresh the classes list without loading state
+      await refreshClasses(false);
 
       // Close modal after a brief success message
       setTimeout(() => {

@@ -1,15 +1,17 @@
 @use '@styles/index.scss' as *;
 
 .my-classes {
-  padding: $spacing-lg;
-  max-width: 900px;
-  margin: 0 auto;
+  padding: 0 $spacing-md $spacing-lg;
+  max-width: 1200px;
+  margin: 0;
 }
 
 .my-classes-header {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: $spacing-lg;
+  padding: 0 $spacing-lg;
+  height: 64px;
+  align-items: center;
 }
 
 .my-classes-refresh-btn {
@@ -60,10 +62,23 @@
   margin-bottom: $spacing-md;
 }
 
+.my-classes-success {
+  padding: $spacing-sm $spacing-md;
+  background-color: #d1fae5;
+  border: 1px solid #c4e7d3;
+  border-radius: $border-radius-sm;
+  color: #0d5a2f;
+  font-size: $font-size-base;
+  font-weight: 500;
+  margin-bottom: $spacing-md;
+}
+
 .my-classes-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: $spacing-md;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 320px));
+  justify-content: start;
+  gap: $spacing-lg;
+  padding: 0 $spacing-lg;
 }
 
 .my-classes-empty {
@@ -79,46 +94,76 @@
 
 .my-classes-card {
   background-color: $white;
-  padding: $spacing-lg;
   border-radius: $border-radius-md;
-  border: 2px solid $border-color;
-  transition: $transition-fast;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
-  &:hover {
-    border-color: $accent-color;
-    box-shadow: 0 4px 12px rgba(39, 113, 255, 0.15);
+.my-classes-card-hero {
+  background-color: #D9DEE5;
+  padding: $spacing-xxl $spacing-xl;
+  text-align: center;
+}
+
+.my-classes-card-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: $text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.my-classes-card-subtitle {
+  font-size: 1rem;
+  color: $text-secondary;
+  font-weight: 500;
+}
+
+.my-classes-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid #f0f0f0;
+
+  &--muted {
+    background-color: #E9EFF5;
   }
 }
 
-.my-classes-card-name {
-  margin: 0 0 $spacing-sm 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: $text-primary;
-}
-
-.my-classes-card-description {
-  margin: 0 0 $spacing-md 0;
-  font-size: 0.9rem;
-  color: $text-secondary;
-}
-
-.my-classes-card-meta {
+.my-classes-card-row-left {
   display: flex;
-  flex-direction: column;
-  gap: $spacing-xs;
+  align-items: center;
+  gap: $spacing-sm;
 }
 
-.my-classes-card-code {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: $accent-color;
-  letter-spacing: 0.05em;
+.my-classes-card-row-right {
+  display: flex;
+  align-items: center;
 }
 
-.my-classes-card-teacher {
+.my-classes-card-label {
   font-size: 0.85rem;
-  color: $text-tertiary;
+  color: $text-secondary;
+  font-weight: 500;
+}
+
+.my-classes-card-value {
+  font-size: 0.85rem;
+  color: $text-primary;
+  font-weight: 600;
+}
+
+.my-classes-card-pill {
+  background-color: $accent-color;
+  color: $white;
+  padding: 1px 4px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-left: 8px;
 }
 
 .my-classes-loading {

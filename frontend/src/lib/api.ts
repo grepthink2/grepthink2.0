@@ -82,8 +82,9 @@ export const api = {
     return apiRequest<{ class: ApiClass }>(`/api/classes/${classId}`);
   },
 
+  // Student joins class by course code. Returns {message, class} with class details
   joinClass: async (courseCode: string) => {
-    return apiRequest('/api/classes/join', {
+    return apiRequest<{ message: string; class: ApiClass }>('/api/classes/join', {
       method: 'POST',
       body: JSON.stringify({ course_code: courseCode }),
     });

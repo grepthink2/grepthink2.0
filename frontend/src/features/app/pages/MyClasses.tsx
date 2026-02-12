@@ -1,12 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
 import './MyClasses.scss';
 
 const MyClasses: React.FC = () => {
-    const { classes, loading, refreshClasses } = useClass();
+    const { classes, loading, refreshClasses, successMessage, setSuccessMessage } = useClass();
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Auto-hide success message after 4 seconds
+    useEffect(() => {
+        if (successMessage) {
+            const timer = setTimeout(() => {
+                setSuccessMessage(null);
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage, setSuccessMessage]);
 
     const handleRefresh = async () => {
         setRefreshing(true);
@@ -27,6 +37,7 @@ const MyClasses: React.FC = () => {
 
     return (
         <div className="my-classes">
+            {/* Header with Refresh button - aligns with "My Classes" in Header */}
             <div className="my-classes-header">
                 <button
                     className="my-classes-refresh-btn"
@@ -38,6 +49,13 @@ const MyClasses: React.FC = () => {
                     Refresh
                 </button>
             </div>
+
+            {/* Success Message */}
+            {successMessage && (
+                <div className="my-classes-success">
+                    {successMessage}
+                </div>
+            )}
 
             {/* Error Message */}
             {error && (
@@ -54,16 +72,27 @@ const MyClasses: React.FC = () => {
                         <p>Click "Join Class" in the sidebar to join a class with a course code.</p>
                     </div>
                 ) : (
-                    // once the student is able to enroll into the course, devtools should show class contents
                     classes.map((cls) => (
                         <div key={cls.id} className="my-classes-card">
-                            <h3 className="my-classes-card-name">{cls.name}</h3>
-                            {cls.description && (
-                                <p className="my-classes-card-description">{cls.description}</p>
-                            )}
-                            <div className="my-classes-card-meta">
-                                <span className="my-classes-card-code">Course Code: {cls.course_code}</span>
-                                <span className="my-classes-card-teacher">Instructor: {cls.teacher_email || cls.created_by}</span>
+                            <div className="my-classes-card-hero">
+                                <div className="my-classes-card-title">{cls.name}</div>
+                                <div className="my-classes-card-subtitle">Winter term</div>
+                            </div>
+                            <div className="my-classes-card-row my-classes-card-row--muted">
+                                <div className="my-classes-card-row-left">
+                                    <span className="my-classes-card-label">Skills:</span>
+                                </div>
+                            </div>
+                            <div className="my-classes-card-row">
+                                <div className="my-classes-card-row-left">
+                                    <span className="my-classes-card-label">Owner:</span>
+                                    <span className="my-classes-card-value">{cls.teacher_email}</span>
+                                </div>
+                                <div className="my-classes-card-row-right">
+                                    {cls.course_code && (
+                                        <span className="my-classes-card-pill">{cls.course_code}</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))

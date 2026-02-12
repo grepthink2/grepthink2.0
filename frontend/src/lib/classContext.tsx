@@ -16,8 +16,12 @@ interface ClassContextValue {
   classes: Class[];
   selectedClass: Class | null;
   setSelectedClass: (classItem: Class | null) => void;
-  refreshClasses: () => Promise<void>;
+  // Accept showLoading param to avoid blocking UI when refreshing after join
+  refreshClasses: (showLoading?: boolean) => Promise<void>;
   loading: boolean;
+  // Success message state for cross-component notifications (e.g., after joining class)
+  successMessage: string | null;
+  setSuccessMessage: (message: string | null) => void;
 }
 
 const ClassContext = createContext<ClassContextValue | undefined>(undefined);
@@ -26,10 +30,11 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [loading, setLoading] = useState(true);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const refreshClasses = async () => {
+  const refreshClasses = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const response = await api.getClasses();
       setClasses(response.classes);
       
@@ -65,6 +70,8 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setSelectedClass,
         refreshClasses,
         loading,
+        successMessage,
+        setSuccessMessage,
       }}
     >
       {children}
