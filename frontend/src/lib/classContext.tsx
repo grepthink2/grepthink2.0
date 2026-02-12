@@ -2,11 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { api } from './api';
 
-interface Class {
+export interface Class {
   id: string;
   name: string;
   description?: string;
-  course_code: string;
+  course_code?: string;
   created_by: string;
   created_at: string;
   teacher_email?: string;
