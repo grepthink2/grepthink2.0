@@ -38,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
     setIsCollapsed(!isCollapsed);
   };
 
-  const handleClassSelect = (classItem: any) => {
+  const handleClassSelect = (classItem: (typeof classes)[number]) => {
     setSelectedClass(classItem);
     setShowClassDropdown(false);
   };

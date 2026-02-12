@@ -64,7 +64,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
       if (oauthError) {
         throw oauthError;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Google sign up error:', error);
       setError('Google sign up failed. Please try again.');
     } finally {
@@ -142,9 +142,9 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
       }
 
       navigate('/app');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Signup error:', err);
-      setError(err.message || 'Failed to create account. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }

@@ -116,7 +116,7 @@ function parseTemplateFromMarkdown(md: string): {
     'workingOn',
     'techStack',
   ];
-  let remaining = md;
+  const remaining = md;
   for (let i = 0; i < sectionHeaders.length; i++) {
     const header = sectionHeaders[i];
     const key = keys[i];
@@ -273,10 +273,6 @@ const CreateProject: React.FC = () => {
 
   const handleSaveDraft = () => {
     console.log('Saving draft');
-  };
-
-  const handleCancel = () => {
-    console.log('Cancelling');
   };
 
   return (

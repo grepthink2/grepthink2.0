@@ -25,8 +25,10 @@ const Home: React.FC = () => {
             });
             const data = await res.json();
             setBackendStatus(data.message || 'Backend Connected');
-        } catch (err: any) {
-            setBackendStatus('Backend unreachable: ' + err.message);
+        } catch (err: unknown) {
+          setBackendStatus(
+            'Backend unreachable: ' + (err instanceof Error ? err.message : 'Unknown error')
+          );
         }
     }
     
