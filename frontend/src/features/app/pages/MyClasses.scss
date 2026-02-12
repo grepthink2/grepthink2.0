@@ -1,0 +1,129 @@
+@import '@styles/index.scss';
+
+.my-classes {
+  padding: $spacing-lg;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.my-classes-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: $spacing-lg;
+}
+
+.my-classes-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-weight: 500;
+  color: $text-primary;
+  cursor: pointer;
+  transition: $transition-fast;
+
+  &:hover:not(:disabled) {
+    background-color: $background;
+    border-color: $accent-color;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .spinning {
+    animation: spin 0.5s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.my-classes-error {
+  padding: $spacing-sm $spacing-md;
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: $border-radius-sm;
+  color: #c62828;
+  font-size: $font-size-base;
+  margin-bottom: $spacing-md;
+}
+
+.my-classes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: $spacing-md;
+}
+
+.my-classes-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: $spacing-xxl $spacing-lg;
+  color: $text-secondary;
+
+  p {
+    margin: $spacing-sm 0;
+  }
+}
+
+.my-classes-card {
+  background-color: $white;
+  padding: $spacing-lg;
+  border-radius: $border-radius-md;
+  border: 2px solid $border-color;
+  transition: $transition-fast;
+
+  &:hover {
+    border-color: $accent-color;
+    box-shadow: 0 4px 12px rgba(39, 113, 255, 0.15);
+  }
+}
+
+.my-classes-card-name {
+  margin: 0 0 $spacing-sm 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.my-classes-card-description {
+  margin: 0 0 $spacing-md 0;
+  font-size: 0.9rem;
+  color: $text-secondary;
+}
+
+.my-classes-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.my-classes-card-code {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $accent-color;
+  letter-spacing: 0.05em;
+}
+
+.my-classes-card-teacher {
+  font-size: 0.85rem;
+  color: $text-tertiary;
+}
+
+.my-classes-loading {
+  padding: $spacing-xxl;
+  text-align: center;
+  color: $text-secondary;
+  font-size: 1.1rem;
+}
