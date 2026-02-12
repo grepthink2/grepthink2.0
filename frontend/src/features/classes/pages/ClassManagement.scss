@@ -1,5 +1,5 @@
-@import '../../../styles/colors';
-@import '../../../styles/variables';
+@use '@styles/colors' as *;
+@use '@styles/variables' as *;
 
 .class-management {
   padding: 2rem;

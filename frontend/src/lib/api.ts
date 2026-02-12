@@ -2,10 +2,27 @@ import { supabase } from './supabaseClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
+export interface ApiClass {
+  id: string;
+  name: string;
+  description?: string;
+  course_code?: string;
+  created_by: string;
+  created_at: string;
+  teacher_email?: string;
+}
+
+export interface ApiStudent {
+  id: string;
+  email: string;
+  user_id: string;
+  role: string;
+}
+
 /**
  * Make an authenticated API request to the backend
  */
-export async function apiRequest<T = any>(
+export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
@@ -58,11 +75,11 @@ export const api = {
   },
 
   getClasses: async () => {
-    return apiRequest<{ classes: any[] }>('/api/classes');
+    return apiRequest<{ classes: ApiClass[] }>('/api/classes');
   },
 
   getClass: async (classId: string) => {
-    return apiRequest<{ class: any }>(`/api/classes/${classId}`);
+    return apiRequest<{ class: ApiClass }>(`/api/classes/${classId}`);
   },
 
   joinClass: async (courseCode: string) => {
@@ -73,6 +90,6 @@ export const api = {
   },
 
   getClassStudents: async (classId: string) => {
-    return apiRequest<{ students: any[] }>(`/api/classes/${classId}/students`);
+    return apiRequest<{ students: ApiStudent[] }>(`/api/classes/${classId}/students`);
   },
 };

@@ -51,9 +51,9 @@ const ForgotPassword: React.FC = () => {
 
       setSuccess(true);
       navigate('/verify-reset-password', { state: { email: formData.email } });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Password reset error:', err);
-      setError(err.message || 'Failed to send password reset email. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to send password reset email. Please try again.');
     } finally {
       setIsLoading(false);
     }

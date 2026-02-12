@@ -46,7 +46,7 @@ const Login: React.FC = () => {
       if (oauthError) {
         throw oauthError;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Google sign in error:', error);
       setError('Google sign in failed. Please try again.');
     } finally {
@@ -87,9 +87,9 @@ const Login: React.FC = () => {
       }
 
       navigate("/app", { replace: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError(err.message || 'Login failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

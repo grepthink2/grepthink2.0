@@ -37,6 +37,9 @@ const ClassManagement: React.FC = () => {
   // Success messages
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const getErrorMessage = (err: unknown, fallback: string) =>
+    err instanceof Error ? err.message : fallback;
+
   useEffect(() => {
     checkUserRole();
     fetchClasses();
@@ -88,8 +91,8 @@ const ClassManagement: React.FC = () => {
 
       const data = await response.json();
       setClasses(data.classes || []);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to fetch classes'));
     } finally {
       setLoading(false);
     }
@@ -125,8 +128,8 @@ const ClassManagement: React.FC = () => {
       setClassName('');
       setClassDescription('');
       fetchClasses();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to create class'));
     } finally {
       setLoading(false);
     }
@@ -165,8 +168,8 @@ const ClassManagement: React.FC = () => {
       setSuccessMessage(data.message);
       setStudentEmail('');
       fetchStudents(selectedClass.id);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to invite student'));
     } finally {
       setLoading(false);
     }
@@ -200,8 +203,8 @@ const ClassManagement: React.FC = () => {
       setSuccessMessage(data.message || 'Joined class successfully');
       setCourseCode('');
       fetchClasses();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to join class'));
     } finally {
       setLoading(false);
     }
@@ -225,7 +228,7 @@ const ClassManagement: React.FC = () => {
 
       const data = await response.json();
       setStudents(data.students || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching students:', err);
     }
   };

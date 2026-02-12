@@ -1,4 +1,5 @@
-@import '@styles/index.scss';
+@use 'sass:color';
+@use '@styles/index.scss' as *;
 
 .dashboard {
   padding: 2rem;
@@ -151,8 +152,8 @@
   transition: all 0.2s;
 
   &:hover {
-    background-color: darken($background, 3%);
-    border-color: darken($border-color, 10%);
+    background-color: color.adjust($background, $lightness: -3%);
+    border-color: color.adjust($border-color, $lightness: -10%);
   }
 }
 
