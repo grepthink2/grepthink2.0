@@ -75,6 +75,9 @@ const MyClasses: React.FC = () => {
                     classes.map((cls) => (
                         <div key={cls.id} className="my-classes-card">
                             <div className="my-classes-card-hero">
+                                {cls.course_code && (
+                                    <span className="my-classes-card-pill my-classes-card-pill--hero">{cls.course_code}</span>
+                                )}
                                 <div className="my-classes-card-title">{cls.name}</div>
                                 <div className="my-classes-card-subtitle">Winter term</div>
                             </div>
@@ -87,11 +90,6 @@ const MyClasses: React.FC = () => {
                                 <div className="my-classes-card-row-left">
                                     <span className="my-classes-card-label">Owner:</span>
                                     <span className="my-classes-card-value">{cls.teacher_email}</span>
-                                </div>
-                                <div className="my-classes-card-row-right">
-                                    {cls.course_code && (
-                                        <span className="my-classes-card-pill">{cls.course_code}</span>
-                                    )}
                                 </div>
                             </div>
                         </div>

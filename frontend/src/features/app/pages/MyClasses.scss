@@ -102,6 +102,7 @@
 }
 
 .my-classes-card-hero {
+  position: relative;
   background-color: #D9DEE5;
   padding: $spacing-xxl $spacing-xl;
   text-align: center;
@@ -163,7 +164,13 @@
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  margin-left: 8px;
+
+  &--hero {
+    position: absolute;
+    top: $spacing-md;
+    left: $spacing-md;
+    margin-left: 0;
+  }
 }
 
 .my-classes-loading {
