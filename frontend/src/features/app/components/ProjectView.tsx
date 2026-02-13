@@ -48,26 +48,26 @@ const ProjectView: React.FC<ProjectViewProps> = ({
 
   const generateTemplateMarkdown = () => {
     return `
-# Project Overview
+### Project Overview
 
 A concise summary of the problem, goals, scope, and tools behind this project.
 
-### Problem Statement
+#### Problem Statement
 
 ${problemStatement || '{{what_are_you_solving}}'}
 
 
-### Project Goals
+#### Project Goals
 
 ${projectGoals || '{{project_goals}}'}
 
 
-### Scope of Work
+#### Scope of Work
 
 ${workingOn || '{{what_you_are_working_on}}'}
 
 
-### Tech Stack
+#### Tech Stack
 
 ${techStack || '{{tech_stack}}'}
 

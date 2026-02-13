@@ -64,26 +64,26 @@ function generateTemplateMarkdown(
   workingOn: string,
   techStack: string
 ): string {
-  return `# Project Overview
+  return `### Project Overview
 
 A concise summary of the problem, goals, scope, and tools behind this project.
 
-### Problem Statement
+#### Problem Statement
 
 ${problemStatement.trim() || '{{what_are_you_solving}}'}
 
 
-### Project Goals
+#### Project Goals
 
 ${projectGoals.trim() || '{{project_goals}}'}
 
 
-### Scope of Work
+#### Scope of Work
 
 ${workingOn.trim() || '{{what_you_are_working_on}}'}
 
 
-### Tech Stack
+#### Tech Stack
 
 ${techStack.trim() || '{{tech_stack}}'}
 
