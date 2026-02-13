@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
+import type { UserRole } from '@/features/app/config/sidebar';
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  role: UserRole;
   getToken: () => Promise<string | null>;
   signOut: () => Promise<void>;
 }
@@ -38,11 +40,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
+  const value = useMemo<AuthContextValue>(() => {
+    const raw = String(
+      (session?.user?.user_metadata as { role?: string } | undefined)?.role ?? ''
+    ).toLowerCase();
+    const role: UserRole = raw === 'instructor' ? 'instructor' : 'student';
+
+    return {
       session,
       user: session?.user ?? null,
       loading,
+      role,
       getToken: async () => {
         const { data } = await supabase.auth.getSession();
         return data.session?.access_token ?? null;
@@ -50,9 +58,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signOut: async () => {
         await supabase.auth.signOut();
       },
-    }),
-    [session, loading]
-  );
+    };
+  }, [session, loading]);
+
+  useEffect(() => {
+    if (session && !loading) {
+      const userMetadata = session?.user?.user_metadata as { role?: unknown } | undefined;
+      console.log('[Auth] user_metadata.role (raw_user_meta_data.role):', userMetadata?.role, typeof userMetadata?.role);
+      console.log('[Auth] full user_metadata:', session?.user?.user_metadata);
+    }
+  }, [session, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
