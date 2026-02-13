@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import './App.scss';
 import LandingPage from '@pages/LandingPage';
 import AppView from '@/features/app/AppView';
+import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
 import Login from '@features/auth/pages/Login';
 import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
@@ -29,23 +30,25 @@ function App() {
         <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* App routes with persistent sidebar */}
-        <Route path="/app" element={<AppView />}>
-          <Route index element={<Navigate to="/app/home" replace />} />
-          <Route path="home" element={<Home />} />
-          <Route path="messages" element={<div>Messages - Coming Soon</div>} />
-          <Route path="my-classes" element={<MyClasses />} />
-          <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="projects" element={<div>Projects - Coming Soon</div>} />
-          <Route path="roster" element={<Roster />} />
-          <Route path="modules" element={<div>Modules - Coming Soon</div>} />
-          <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
-          <Route path="create-project" element={<CreateProject />} />
-          <Route path="browse-projects" element={<div>Browse Projects - Coming Soon</div>} />
-          <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
-          <Route path="settings" element={<div>Settings - Coming Soon</div>} />
-          <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
+        {/* App routes with persistent sidebar (protected: requires auth) */}
+        <Route path="/app" element={<ProtectedRoute />}>
+          <Route element={<AppView />}>
+            <Route index element={<Navigate to="/app/home" replace />} />
+            <Route path="home" element={<Home />} />
+            <Route path="messages" element={<div>Messages - Coming Soon</div>} />
+            <Route path="my-classes" element={<MyClasses />} />
+            <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="projects" element={<div>Projects - Coming Soon</div>} />
+            <Route path="roster" element={<Roster />} />
+            <Route path="modules" element={<div>Modules - Coming Soon</div>} />
+            <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
+            <Route path="create-project" element={<CreateProject />} />
+            <Route path="browse-projects" element={<div>Browse Projects - Coming Soon</div>} />
+            <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
+            <Route path="settings" element={<div>Settings - Coming Soon</div>} />
+            <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
+          </Route>
         </Route>
 
         <Route path="/classes" element={<ClassManagement />} />

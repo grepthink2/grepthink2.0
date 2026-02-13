@@ -7,7 +7,7 @@
  * and new user registration.
  */
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/auth';
 import './Login.scss';
@@ -19,7 +19,9 @@ import arrowIcon from '@assets/Arrow.svg?url';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signOut } = useAuth();
+  const from = (location.state as { from?: string } | null)?.from ?? '/app';
   
   // State for password visibility toggle
   const [showPassword, setShowPassword] = React.useState(false);
@@ -86,7 +88,7 @@ const Login: React.FC = () => {
         throw signInError;
       }
 
-      navigate("/app", { replace: true });
+      navigate(from, { replace: true });
     } catch (err: unknown) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
