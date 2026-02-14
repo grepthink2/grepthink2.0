@@ -14,6 +14,8 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [history, setHistory] = useState<string[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   // Use setSuccessMessage to display mint green "Successfully enrolled" popup on MyClasses page
   const { refreshClasses, setSuccessMessage } = useClass();
@@ -22,6 +24,8 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       setCode(['', '', '', '', '', '', '', '']);
+      setHistory([]);
+      setHistoryIndex(-1);
       setError(null);
       setSuccess(false);
       // Focus first input after a brief delay
@@ -35,9 +39,16 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
     // Only allow alphanumeric characters (uppercase)
     const upperValue = value.toUpperCase();
     if (value && !/^[A-Z0-9]$/.test(upperValue)) return;
-    
+
     const newCode = [...code];
     newCode[index] = upperValue;
+
+    // Save to history: slice to current index, then append new state
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newCode);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+
     setCode(newCode);
 
     // Move to next input if value is entered
@@ -52,7 +63,42 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Handle Ctrl+Z for undo
+    if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        const previousCode = history[newIndex];
+        setHistoryIndex(newIndex);
+        setCode(previousCode);
+
+        // Focus the input that was just undone
+        inputRefs.current[index]?.focus();
+      }
+      return;
+    }
+
+    // Handle Ctrl+Y for redo
+    if (e.key === 'y' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (historyIndex < history.length - 1) {
+        const newIndex = historyIndex + 1;
+        const nextCode = history[newIndex];
+        setHistoryIndex(newIndex);
+        setCode(nextCode);
+
+        // Focus the input that was just redone
+        inputRefs.current[index]?.focus();
+      }
+      return;
+    }
+
     if (e.key === 'Backspace' && !code[index] && index > 0) {
+      // Save to history before backspace navigation
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(code);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
       inputRefs.current[index - 1]?.focus();
     }
   };
@@ -61,14 +107,21 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text').toUpperCase().slice(0, 8);
     const chars = pastedData.split('').filter(char => /^[A-Z0-9]$/.test(char));
-    
+
     if (chars.length > 0) {
       const newCode = [...code];
       chars.forEach((char, i) => {
         if (i < 8) newCode[i] = char;
       });
+
+      // Save to history: slice to current index, then append new state
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(newCode);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+
       setCode(newCode);
-      
+
       // Focus the next empty input or the last one
       const nextEmptyIndex = newCode.findIndex(c => c === '');
       if (nextEmptyIndex !== -1) {
@@ -114,8 +167,10 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
     } catch (err) {
       console.error('Failed to join class:', err);
       setError(err instanceof Error ? err.message : 'Failed to join class');
-      // Clear the code on error
+      // Clear the code and history on error
       setCode(['', '', '', '', '', '', '', '']);
+      setHistory([]);
+      setHistoryIndex(-1);
       inputRefs.current[0]?.focus();
     } finally {
       setIsSubmitting(false);
@@ -142,49 +197,74 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
           <X size={24} />
         </button>
 
-        <div className="join-class-modal__content">
-          <h1 className="join-class-modal__title">Join Class</h1>
-          <p className="join-class-modal__subtitle">
-            Enter the 8-character class code provided by your instructor
-          </p>
+        <div className="join-class-modal__header">
+          <h1 className="join-class-modal__title">Join a New Course</h1>
+          <p className="join-class-modal__subtitle">Enter your 8 code to enroll.</p>
+        </div>
 
-          {error && (
-            <div className="join-class-modal__error">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="join-class-modal__success">
-              Successfully joined class!
-            </div>
-          )}
-
-          <div className="join-class-modal__code-container">
-            {code.map((char, index) => (
-              <input
-                key={index}
-                ref={el => { inputRefs.current[index] = el; }}
-                type="text"
-                maxLength={1}
-                className="join-class-modal__code-input"
-                value={char}
-                onChange={(e) => handleCodeChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                onPaste={handlePaste}
-                disabled={isSubmitting || success}
-                autoComplete="off"
-              />
+        <div className="join-class-modal__body">
+          <label className="join-class-modal__label">ACCESS CODE</label>
+          <div className="join-class-modal__code-inputs">
+            {code.map((char, i) => (
+              <div key={i} className="join-class-modal__code-input-wrapper">
+                <input
+                  ref={el => { inputRefs.current[i] = el; }}
+                  type="text"
+                  maxLength={1}
+                  className="join-class-modal__code-input"
+                  value={char}
+                  onChange={(e) => handleCodeChange(i, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(i, e)}
+                  onPaste={handlePaste}
+                  disabled={isSubmitting || success}
+                  autoComplete="off"
+                />
+              </div>
             ))}
           </div>
 
-          {isSubmitting && (
-            <p className="join-class-modal__status">Joining class...</p>
-          )}
+          <div className="join-class-modal__info">
+            <div className="join-class-modal__info-icon">
+              <span>i</span>
+            </div>
+            <p className="join-class-modal__info-text">Ask your instructor if you don't have a code.</p>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="join-class-modal__message join-class-modal__message--error">
+            {error}
+          </div>
+        )}
+
+        {/* Success Message */}
+        {success && (
+          <div className="join-class-modal__message join-class-modal__message--success">
+            Successfully joined class!
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="join-class-modal__footer">
+          <button
+            className="join-class-modal__button join-class-modal__button--cancel"
+            onClick={handleClose}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            className="join-class-modal__button join-class-modal__button--submit"
+            disabled={isSubmitting}
+          >
+            Join Course
+          </button>
         </div>
       </div>
     </div>
   );
 };
+
 
 export default JoinClassModal;
