@@ -199,7 +199,7 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
 
         <div className="join-class-modal__header">
           <h1 className="join-class-modal__title">Join a New Course</h1>
-          <p className="join-class-modal__subtitle">Enter your 8 code to enroll.</p>
+          <p className="join-class-modal__subtitle">Enter your eight-digit code to enroll.</p>
         </div>
 
         <div className="join-class-modal__body">
