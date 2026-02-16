@@ -19,6 +19,16 @@ export interface ApiStudent {
   role: string;
 }
 
+export interface ApiProject {
+  id: string;
+  class_id: string;
+  name: string;
+  description?: string;
+  created_by: string;
+  created_at: string;
+  creator_email?: string;
+}
+
 /**
  * Make an authenticated API request to the backend
  */
@@ -92,5 +102,17 @@ export const api = {
 
   getClassStudents: async (classId: string) => {
     return apiRequest<{ students: ApiStudent[] }>(`/api/classes/${classId}/students`);
+  },
+
+  // Projects
+  createClassProject: async (classId: string, data: { name: string; description?: string }) => {
+    return apiRequest<{ message: string; project: ApiProject }>(`/api/classes/${classId}/projects`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getClassProjects: async (classId: string) => {
+    return apiRequest<{ projects: ApiProject[] }>(`/api/classes/${classId}/projects`);
   },
 };

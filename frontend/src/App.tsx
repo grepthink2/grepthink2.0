@@ -15,6 +15,7 @@ import Roster from '@features/app/pages/Roster'
 import Dashboard from '@features/app/pages/Dashboard';
 import CreateProject from '@features/app/pages/CreateProject';
 import MyClasses from './features/app/pages/MyClasses';
+import TestProjects from '@pages/TestProjects';
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
         </Route>
 
         <Route path="/classes" element={<ClassManagement />} />
+        <Route path="/test-projects" element={<TestProjects />} />
       </Routes>
     </Router>
   );
