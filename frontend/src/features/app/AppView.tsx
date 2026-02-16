@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '@features/app/components/Sidebar';
 import Header from '@features/app/components/Header';
 import CreateClassModal from '@features/app/components/CreateClassModal';
 import JoinClassModal from '@features/app/components/JoinClassModal';
 import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
+import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/routePermissions';
 import './AppView.scss';
 
 const AppView: React.FC = () => {
@@ -42,6 +43,15 @@ const AppView: React.FC = () => {
         <div className="loading-spinner">Loading...</div>
       </div>
     );
+  }
+
+  // Role-based route guard: redirect if user hit a path for the other role
+  const pathname = location.pathname;
+  if (instructorOnlyPaths.includes(pathname) && role !== 'instructor') {
+    return <Navigate to="/app/home" replace />;
+  }
+  if (studentOnlyPaths.includes(pathname) && role !== 'student') {
+    return <Navigate to="/app/home" replace />;
   }
 
   return (
