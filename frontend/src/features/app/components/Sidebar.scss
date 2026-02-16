@@ -232,6 +232,12 @@
   transition: all 0.2s;
   text-align: left;
   border-radius: 8px; // Rounded corners for the button
+  white-space: nowrap;
+  overflow: hidden;
+
+  span {
+    min-width: 0;
+  }
 
   .icon-svg {
     width: 18px;
