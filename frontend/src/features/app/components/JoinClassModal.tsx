@@ -227,7 +227,7 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
             <div className="join-class-modal__info-icon">
               <span>i</span>
             </div>
-            <p className="join-class-modal__info-text">Ask your instructor if you don't have a code.</p>
+            <p className="join-class-disclaimer">Ask your instructor if you don't have a code.</p>
           </div>
         </div>
 
