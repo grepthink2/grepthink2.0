@@ -203,7 +203,7 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div className="join-class-modal__body">
-          <label className="join-class-modal__label">ACCESS CODE</label>
+          <label className="join-class-access_code">ACCESS CODE</label>
           <div className="join-class-modal__code-inputs">
             {code.map((char, i) => (
               <div key={i} className="join-class-modal__code-input-wrapper">
