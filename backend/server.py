@@ -18,6 +18,9 @@ load_dotenv(dotenv_path=env_path)
 
 app = FastAPI()
 
+from fastapi.security import HTTPBearer
+security = HTTPBearer()
+
 # Enable CORS for all routes
 app.add_middleware(
     CORSMiddleware,
@@ -94,7 +97,6 @@ def verify_supabase_token(request: Request):
     except Exception as e:
         print(f"Token verification failed: {e}")
         raise HTTPException(status_code=401, detail="Invalid authentication token")
-
 
 def normalize_role(role: str | None) -> str | None:
     if not role:
