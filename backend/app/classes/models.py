@@ -1,13 +1,14 @@
 """
 Class management request models
 """
+from typing import Optional
 from pydantic import BaseModel
 
 
 class CreateClassRequest(BaseModel):
     """Request model for creating a new class"""
     name: str
-    description: str = None
+    description: Optional[str] = None
 
 
 class InviteStudentRequest(BaseModel):

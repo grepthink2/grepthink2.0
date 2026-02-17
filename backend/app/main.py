@@ -7,6 +7,7 @@ from app.config import settings
 from app.health.url import router as health_router
 from app.auth.url import router as auth_router
 from app.classes.url import router as classes_router
+from app.projects.url import router as projects_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -28,3 +29,4 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(classes_router)
+app.include_router(projects_router)

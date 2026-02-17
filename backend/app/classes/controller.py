@@ -1,29 +1,46 @@
 """
 Class management business logic
 """
+from datetime import datetime
+from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
 from app.utils.generators import generate_course_code
 
 
-def create_class(name: str, description: str, user_id: str) -> dict:
+def create_class(name: str, description: Optional[str], term: str, user_id: str) -> dict:
     """
-    Create a new class with a unique course code
-    
+    Create a new class with a unique course code.
+
+    Description is optional. Year is derived from the creator's profile
+    (year or graduation_year) or current year as fallback.
+
     Args:
         name: Class name
-        description: Class description
+        description: Optional class description
         user_id: ID of the instructor creating the class
-        
+
     Returns:
         Dictionary containing class data
-        
+
     Raises:
         HTTPException: If course code generation fails or database error occurs
     """
     try:
         client = service_client if service_client else supabase
+
+        # Get year from creator's profile (year or graduation_year) or use current year
+        year = datetime.now().year
+        try:
+            profile = client.table('profiles').select('*').eq('id', user_id).execute()
+            if profile.data and len(profile.data) > 0:
+                row = profile.data[0]
+                raw = row.get('year') or row.get('graduation_year')
+                if raw is not None:
+                    year = int(raw)
+        except Exception:
+            pass
 
         # Generate unique course code
         course_code = None
@@ -40,10 +57,12 @@ def create_class(name: str, description: str, user_id: str) -> dict:
         # Create the class
         class_data = {
             "name": name,
-            "description": description,
             "created_by": user_id,
-            "course_code": course_code
+            "course_code": course_code,
+            "year": year,
         }
+        if description is not None:
+            class_data["description"] = description
 
         result = client.table('classes').insert(class_data).execute()
         return result.data[0]
