@@ -24,7 +24,7 @@ def create_class_endpoint(data: CreateClassRequest, payload: dict = Depends(veri
     if not is_instructor_role(role):
         raise HTTPException(status_code=403, detail="Only instructors can create classes")
     
-    result = controller.create_class(data.name, data.description, user_id)
+    result = controller.create_class(data.name, data.description, data.term, user_id)
     return {
         "message": "Class created successfully",
         "class": result
