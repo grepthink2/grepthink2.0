@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { RotateCw } from 'lucide-react';
 import ProjectView from '../components/ProjectView';
 import ConfirmModal from '../components/ConfirmModal';
 import { generateTemplateMarkdown, parseTemplateFromMarkdown } from '../utils/projectDescriptionTemplate';
+import { api } from '@/lib/api';
+import { useClass } from '@/lib/classContext';
 import './CreateProject.scss';
 
 interface RoleTag {
@@ -74,6 +77,14 @@ const CreateProject: React.FC = () => {
   const [markdownContent, setMarkdownContent] = useState('');
   const [showClearDescriptionModal, setShowClearDescriptionModal] = useState(false);
   const [showSwitchToTemplateWarningModal, setShowSwitchToTemplateWarningModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [classError, setClassError] = useState<string | null>(null);
+  const [teamSizeError, setTeamSizeError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const navigate = useNavigate();
+  const { selectedClass } = useClass();
 
   const filteredSkills = PRESET_SKILLS.filter(
     (skill) =>
@@ -181,17 +192,51 @@ const CreateProject: React.FC = () => {
     performSwitchToTemplate();
   };
 
-  const handleCreateProject = () => {
-    console.log('Creating project:', {
-      projectTitle,
-      problemStatement,
-      projectGoals,
-      workingOn,
-      techStack,
-      teamSize,
-      skills,
-      selectedRoles,
-    });
+  const handleCreateProject = async () => {
+    // Clear all errors
+    setTitleError(null);
+    setClassError(null);
+    setTeamSizeError(null);
+    setApiError(null);
+
+    // Validate
+    const name = projectTitle.trim();
+    if (!name) {
+      setTitleError('Project title is required');
+      return;
+    }
+    if (!selectedClass) {
+      setClassError('Please select a class in the sidebar');
+      return;
+    }
+
+    const teamSizeNum = parseInt(teamSize.trim(), 10);
+    if (!Number.isFinite(teamSizeNum) || teamSizeNum < 1) {
+      setTeamSizeError('Team size must be a number greater than 0');
+      return;
+    }
+
+    const description =
+      descriptionMode === 'markdown'
+        ? markdownContent.trim()
+        : generateTemplateMarkdown(problemStatement, projectGoals, workingOn, techStack).trim();
+
+    setSubmitting(true);
+    try {
+      await api.createProject({
+        class_id: selectedClass.id,
+        name,
+        description: description || undefined,
+        team_size: teamSizeNum,
+        looking_for_roles: selectedRoles.length > 0 ? selectedRoles : undefined,
+        skills: skills.length > 0 ? skills : undefined,
+      });
+      navigate('/app/my-classes', { replace: true });
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Failed to create project');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSaveDraft = () => {
@@ -200,6 +245,20 @@ const CreateProject: React.FC = () => {
 
   return (
     <div className="create-project">
+      {/* Class error banner at the top */}
+      {classError && (
+        <div className="create-project__banner-error" role="alert">
+          {classError}
+        </div>
+      )}
+      
+      {/* API error banner at the top */}
+      {apiError && (
+        <div className="create-project__banner-error" role="alert">
+          {apiError}
+        </div>
+      )}
+
       {/* Header with Title and Preview Toggle */}
       <div className="create-project__header">
         <div className="create-project__header-left">
@@ -211,13 +270,20 @@ const CreateProject: React.FC = () => {
               </p>
             </div>
           ) : (
-            <input
-              type="text"
-              className="create-project__title-input"
-              value={projectTitle}
-              onChange={(e) => setProjectTitle(e.target.value)}
-              placeholder="Project Title"
-            />
+            <>
+              <input
+                type="text"
+                className="create-project__title-input"
+                value={projectTitle}
+                onChange={(e) => setProjectTitle(e.target.value)}
+                placeholder="Project Title"
+              />
+              {titleError && (
+                <div className="create-project__field-error" role="alert">
+                  {titleError}
+                </div>
+              )}
+            </>
           )}
         </div>
         <div className="create-project__preview-toggle">
@@ -364,6 +430,11 @@ const CreateProject: React.FC = () => {
               value={teamSize}
               onChange={(e) => setTeamSize(e.target.value)}
             />
+            {teamSizeError && (
+              <div className="create-project__field-error" role="alert">
+                {teamSizeError}
+              </div>
+            )}
           </div>
 
           {/* Skills */}
@@ -445,24 +516,22 @@ const CreateProject: React.FC = () => {
 
       {/* Footer Actions */}
       <div className="create-project__footer">
-        <button
-          className="create-project__button create-project__button--secondary"
-          onClick={handleSaveDraft}
-        >
-          Save as Draft
-        </button>
-        <div className="create-project__footer-right">
-          {/* <button
-            className="create-project__button create-project__button--cancel"
-            onClick={handleCancel}
+        <div className="create-project__footer-left">
+          <button
+            className="create-project__button create-project__button--secondary"
+            onClick={handleSaveDraft}
+            disabled={submitting}
           >
-            Cancel
-          </button> */}
+            Save as Draft
+          </button>
+        </div>
+        <div className="create-project__footer-right">
           <button
             className="create-project__button create-project__button--primary"
             onClick={handleCreateProject}
+            disabled={submitting || !selectedClass}
           >
-            Create Project
+            {submitting ? 'Creating...' : 'Create Project'}
           </button>
         </div>
       </div>
