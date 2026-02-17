@@ -12,14 +12,9 @@ interface ProjectViewProps {
   projectTitle: string;
   teamSize?: string;
   className?: string;
-  problemStatement: string;
-  projectGoals: string;
-  workingOn: string;
-  techStack: string;
+  descriptionMarkdown: string;
   skills: string[];
   selectedRoles: string[];
-  descriptionMode: 'template' | 'markdown';
-  markdownContent?: string;
 }
 
 const CURRENT_MEMBERS_PREVIEW = 1;
@@ -28,14 +23,9 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   projectTitle,
   teamSize: teamSizeInput = '',
   className = 'CSE 115B',
-  problemStatement,
-  projectGoals,
-  workingOn,
-  techStack,
+  descriptionMarkdown,
   skills,
   selectedRoles,
-  descriptionMode,
-  markdownContent,
 }) => {
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
@@ -45,42 +35,6 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     : `${CURRENT_MEMBERS_PREVIEW}/ Members`;
   const spotsAvailable = hasValidTeamSize ? totalMembers - CURRENT_MEMBERS_PREVIEW : null;
   const spotsText = spotsAvailable !== null ? `${spotsAvailable} Spots Available` : 'Spots Available';
-
-  const generateTemplateMarkdown = () => {
-    return `
-### Project Overview
-
-A concise summary of the problem, goals, scope, and tools behind this project.
-
-#### Problem Statement
-
-${problemStatement || '{{what_are_you_solving}}'}
-
-
-#### Project Goals
-
-${projectGoals || '{{project_goals}}'}
-
-
-#### Scope of Work
-
-${workingOn || '{{what_you_are_working_on}}'}
-
-
-#### Tech Stack
-
-${techStack || '{{tech_stack}}'}
-
-
-`;
-  };
-
-  const getMarkdownContent = () => {
-    if (descriptionMode === 'markdown' && markdownContent) {
-      return markdownContent;
-    }
-    return generateTemplateMarkdown();
-  };
 
   const getRoleIcon = (roleId: string) => {
     switch (roleId) {
@@ -164,7 +118,7 @@ ${techStack || '{{tech_stack}}'}
         {/* Left Column - Markdown Preview */}
         <div className="project-view__left-column">
           <div className="project-view__markdown">
-            <ReactMarkdown>{getMarkdownContent()}</ReactMarkdown>
+            <ReactMarkdown>{descriptionMarkdown}</ReactMarkdown>
           </div>
         </div>
 
