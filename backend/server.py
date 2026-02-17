@@ -128,6 +128,10 @@ class InviteStudentRequest(BaseModel):
 class JoinClassRequest(BaseModel):
     course_code: str
 
+class CreateProjectRequest(BaseModel):
+    name: str
+    description: str | None = None
+
 @app.get('/health')
 def health_check():
     return {"status": "healthy", "service": "backend"}
@@ -465,6 +469,202 @@ def get_class_students(class_id: UUID, payload: dict = Depends(verify_supabase_t
     except Exception as e:
         print(f"Error fetching students: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch students: {str(e)}")
+
+@app.post('/api/classes/{class_id}/join')
+def join_class_by_id(class_id: UUID, payload: dict = Depends(verify_supabase_token)):
+    """Allows a user to join a class"""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    user_id = payload.get('sub')
+    role = get_user_role(user_id)
+
+    # Check if user is a not a teacher
+    if is_teacher_role(role):
+        raise HTTPException(status_code=403, detail="Only students or guests can join")
+    
+    try:
+        client = service_client if service_client else supabase
+        
+        # Check if user in table
+        # user_result = client.table('users').select('id').eq('user_id', user_id).execute()
+        # if not user_result.data or len(user_result.data) == 0:
+        #     raise HTTPException(status_code=404, detail="User not found in database")
+
+        # Verify the class exists
+        class_result = client.table('classes').select('*').eq('id', str(class_id)).execute()
+        if not class_result.data or len(class_result.data) == 0:
+            raise HTTPException(status_code=404, detail="Class not found or you don't have permission")
+                
+        # Check if already enrolled
+        existing = client.table('class_enrollments').select('*').eq('class_id', str(class_id)).eq('user_id', user_id).execute()
+        if existing.data and len(existing.data) > 0:
+            return {"message": "Already enrolled in this class"}
+        
+        # Create enrollment
+        enrollment_data = {
+            "class_id": str(class_id),
+            "user_id": user_id
+        }
+        client.table('class_enrollments').insert(enrollment_data).execute()
+        
+        return {
+            "message": "User sucessfully enrolled",
+            "class_id": str(class_id)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error joining class: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to join: {str(e)}")
+
+@app.post('/api/classes/{class_id}/projects')
+def create_project_for_class(
+    class_id: UUID,
+    data: CreateProjectRequest,
+    payload: dict = Depends(verify_supabase_token),
+):
+    """Create a project in a class (students only)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user_id = payload.get('sub')
+    role = get_user_role(user_id)
+
+    if normalize_role(role) != 'student':
+        raise HTTPException(status_code=403, detail="Only students can create projects")
+
+    name = data.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Project name is required")
+
+    try:
+        client = service_client if service_client else supabase
+
+        class_result = client.table('classes').select('id').eq('id', str(class_id)).execute()
+        if not class_result.data:
+            raise HTTPException(status_code=404, detail="Class not found")
+
+        enrollment_result = (
+            client.table('class_enrollments')
+            .select('id')
+            .eq('class_id', str(class_id))
+            .eq('user_id', user_id)
+            .execute()
+        )
+        if not enrollment_result.data:
+            raise HTTPException(status_code=403, detail="Join the class before creating a project")
+
+        project_result = (
+            client.table('projects')
+            .insert(
+                {
+                    'class_id': str(class_id),
+                    'name': name,
+                    'description': data.description,
+                    'created_by': user_id,
+                }
+            )
+            .execute()
+        )
+
+        if not project_result.data:
+            raise HTTPException(status_code=500, detail="Failed to create project")
+
+        project = project_result.data[0]
+
+        try:
+            client.table('project_members').insert(
+                {
+                    'project_id': project['id'],
+                    'user_id': user_id,
+                    'role': 'owner',
+                }
+            ).execute()
+        except Exception as membership_error:
+            print(f"Error adding creator as project member: {membership_error}")
+            try:
+                client.table('projects').delete().eq('id', project['id']).execute()
+            except Exception as rollback_error:
+                print(f"Error rolling back project creation: {rollback_error}")
+            raise HTTPException(status_code=500, detail="Failed to assign project membership")
+
+        return {
+            'message': 'Project created successfully',
+            'project': project,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error creating project: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create project: {str(e)}")
+
+@app.get('/api/classes/{class_id}/projects')
+def get_class_projects(class_id: UUID, payload: dict = Depends(verify_supabase_token)):
+    """Get all projects for a class (visible to enrolled students and class teacher)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user_id = payload.get('sub')
+    role = get_user_role(user_id)
+
+    try:
+        client = service_client if service_client else supabase
+
+        class_result = (
+            client.table('classes')
+            .select('id, created_by')
+            .eq('id', str(class_id))
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(status_code=404, detail='Class not found')
+
+        class_row = class_result.data[0]
+
+        has_access = False
+        if is_teacher_role(role) and class_row.get('created_by') == user_id:
+            has_access = True
+
+        if not has_access:
+            enrollment_result = (
+                client.table('class_enrollments')
+                .select('id')
+                .eq('class_id', str(class_id))
+                .eq('user_id', user_id)
+                .execute()
+            )
+            has_access = bool(enrollment_result.data)
+
+        if not has_access:
+            raise HTTPException(status_code=403, detail='You do not have access to this class projects list')
+
+        projects_result = (
+            client.table('projects')
+            .select('id, class_id, name, description, created_by, created_at')
+            .eq('class_id', str(class_id))
+            .order('created_at', desc=True)
+            .execute()
+        )
+
+        projects = projects_result.data or []
+
+        creator_ids = list({project['created_by'] for project in projects if project.get('created_by')})
+        creator_emails: dict[str, str | None] = {}
+        if creator_ids:
+            creators = client.table('profiles').select('id, email').in_('id', creator_ids).execute()
+            for creator in creators.data or []:
+                creator_emails[creator['id']] = creator.get('email')
+
+        for project in projects:
+            project['creator_email'] = creator_emails.get(project.get('created_by'))
+
+        return {'projects': projects}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching projects: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch projects: {str(e)}")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))

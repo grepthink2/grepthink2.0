@@ -7,7 +7,7 @@ interface ClassDetails {
   id: string;
   name: string;
   description?: string;
-  course_code: string;
+  course_code?: string;
   created_by: string;
   created_at: string;
 }

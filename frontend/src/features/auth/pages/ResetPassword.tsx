@@ -90,9 +90,9 @@ const ResetPassword: React.FC = () => {
 
       await supabase.auth.signOut();
       navigate('/login');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Reset password error:', err);
-      setError(err.message || 'Failed to reset password. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
     }

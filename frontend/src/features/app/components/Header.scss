@@ -1,10 +1,11 @@
-@import '@styles/index.scss';
+@use '@styles/index.scss' as *;
 
 // Header-specific text/icon color (darker, more visible)
 $app-header-text: #424242;
 
 .app-header {
   display: flex;
+  background: #ffffff;
   align-items: center;
   justify-content: space-between;
   padding: $spacing-md $spacing-lg;
