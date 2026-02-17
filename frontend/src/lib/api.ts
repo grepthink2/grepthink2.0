@@ -27,6 +27,18 @@ export interface ApiProject {
   created_by: string;
   created_at: string;
   creator_email?: string;
+  team_size?: number;
+  looking_for_roles?: string[];
+  skills?: string[];
+}
+
+export interface CreateProjectPayload {
+  class_id: string;
+  name: string;
+  description?: string;
+  team_size: number;
+  looking_for_roles?: string[];
+  skills?: string[];
 }
 
 /**
@@ -114,5 +126,13 @@ export const api = {
 
   getClassProjects: async (classId: string) => {
     return apiRequest<{ projects: ApiProject[] }>(`/api/classes/${classId}/projects`);
+  },
+
+  /** Create a project (full form: POST /api/projects) */
+  createProject: async (data: CreateProjectPayload) => {
+    return apiRequest<{ message: string; project: ApiProject }>('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 };
