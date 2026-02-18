@@ -60,6 +60,7 @@ def create_class(name: str, description: Optional[str], term: str, user_id: str)
             "created_by": user_id,
             "course_code": course_code,
             "year": year,
+            "term": term,
         }
         if description is not None:
             class_data["description"] = description
