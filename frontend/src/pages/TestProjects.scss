@@ -138,35 +138,188 @@
 .test-projects-page__project-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: $spacing-sm;
+  align-items: flex-start;
+  gap: $spacing-md;
   margin-bottom: $spacing-xs;
+}
+
+.test-projects-page__project-actions {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.test-projects-page__action-btn {
+  border: 1px solid $border-color;
+  background: $white;
+  color: $text-primary;
+  border-radius: $border-radius-sm;
+  padding: 0.5rem 0.8rem;
+  font-size: $font-size-sm;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition-fast;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: $background;
+    border-color: $primary-color;
+    color: $primary-color;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    border-color: $primary-color;
+    background: $primary-color;
+    color: $white;
+
+    &:hover:not(:disabled) {
+      background: $primary-hover;
+      border-color: $primary-hover;
+    }
+  }
 }
 
 .test-projects-page__project-name {
   font-weight: 700;
   color: $text-primary;
+  margin-bottom: $spacing-xs;
 }
 
-.test-projects-page__pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: $accent-color;
-  color: $white;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.test-projects-page__project-meta {
+.test-projects-page__project-description {
   color: $text-secondary;
   font-size: $font-size-sm;
+  margin: $spacing-sm 0 0;
+  line-height: 1.5;
+}
+
+.test-projects-page__requests-section {
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $border-color;
+}
+
+.test-projects-page__requests-loading,
+.test-projects-page__requests-empty {
+  color: $text-secondary;
+  font-size: $font-size-sm;
+  margin: 0;
+  padding: $spacing-sm 0;
+}
+
+.test-projects-page__requests-list {
+  h4 {
+    margin: 0 0 $spacing-md 0;
+    font-size: $font-size-base;
+    color: $text-primary;
+  }
+}
+
+.test-projects-page__request-item {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: $spacing-md;
+  align-items: center;
+  padding: $spacing-sm;
+  background: $background;
+  border-radius: $border-radius-sm;
+  border: 1px solid $border-color;
   margin-bottom: $spacing-sm;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.test-projects-page__request-user {
+  font-weight: 600;
+  color: $text-primary;
+  word-break: break-all;
+}
+
+.test-projects-page__request-status {
+  display: flex;
+  justify-content: center;
+}
+
+.test-projects-page__status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &--in-review {
+    background: #fff3e0;
+    color: #e65100;
+  }
+
+  &--approved {
+    background: #e8f5e9;
+    color: #1b5e20;
+  }
+
+  &--rejected {
+    background: #ffebee;
+    color: #b71c1c;
+  }
+}
+
+.test-projects-page__request-date {
+  text-align: right;
+  color: $text-secondary;
+  font-size: $font-size-sm;
+}
+
+.test-projects-page__request-actions {
+  display: flex;
+  gap: $spacing-xs;
+  align-items: center;
+}
+
+.test-projects-page__action-btn--accept {
+  border-color: #4caf50;
+  background: #4caf50;
+  color: $white;
+
+  &:hover:not(:disabled) {
+    background: #45a049;
+    border-color: #45a049;
+  }
+}
+
+.test-projects-page__action-btn--reject {
+  border-color: #f44336;
+  background: #f44336;
+  color: $white;
+
+  &:hover:not(:disabled) {
+    background: #da190b;
+    border-color: #da190b;
+  }
+}
+
+.test-projects-page__list li.test-projects-page__list-item--expanded {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: $primary-color;
 }
 
 @media (max-width: 840px) {
   .test-projects-page__control-row {
     grid-template-columns: 1fr;
+  }
+
+  .test-projects-page__request-item {
+    grid-template-columns: 1fr;
+    gap: $spacing-sm;
   }
 }

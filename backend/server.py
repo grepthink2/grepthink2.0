@@ -13,13 +13,19 @@ from dotenv import load_dotenv
 import secrets
 import string
 
+from services.projects import (
+    send_project_join_request, 
+    get_project_join_requests, 
+    review_project_join_request, 
+    set_project_role,
+    ReviewRequest,
+    RoleRequest,
+)
+
 env_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
 app = FastAPI()
-
-from fastapi.security import HTTPBearer
-security = HTTPBearer()
 
 # Enable CORS for all routes
 app.add_middleware(
@@ -675,6 +681,29 @@ def get_class_projects(class_id: UUID, payload: dict = Depends(verify_supabase_t
     except Exception as e:
         print(f"Error fetching projects: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch projects: {str(e)}")
+
+@app.get('/api/projects/{project_id}/requests')
+def get_join_requests(project_id: UUID, payload: dict = Depends(verify_supabase_token)):
+    """
+    See all join requests for a project if you are teacher or project owner
+    View only your join request if regular user
+    """
+    return get_project_join_requests(project_id, payload)
+
+@app.post('/api/projects/{project_id}/send_request')
+def send_join_request(project_id: UUID, payload: dict = Depends(verify_supabase_token)):
+    """Send a join request to the project"""
+    return send_project_join_request(project_id, payload)
+
+@app.post('/api/projects/{request_id}/review_request')
+def review_request(request_id: UUID, data: ReviewRequest, payload: dict = Depends(verify_supabase_token)):
+    """Review a project join request"""
+    return review_project_join_request(request_id, data, payload)
+
+@app.post('/api/projects/{project_id}/update_role')
+def update_role(project_id: UUID, data: RoleRequest, payload: dict = Depends(verify_supabase_token)):
+    """Update role of a project member"""
+    return set_project_role(project_id, data, payload)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))

@@ -115,4 +115,31 @@ export const api = {
   getClassProjects: async (classId: string) => {
     return apiRequest<{ projects: ApiProject[] }>(`/api/classes/${classId}/projects`);
   },
+
+  // Project Requests
+  getProjectRequests: async (projectId: string) => {
+    return apiRequest<{ requests: Array<{ id: string; user_id: string; created_at: string; request_status: string }> }>(
+      `/api/projects/${projectId}/requests`
+    );
+  },
+
+  sendProjectRequest: async (projectId: string) => {
+    return apiRequest<{ message: string }>(`/api/projects/${projectId}/send_request`, {
+      method: 'POST',
+    });
+  },
+
+  reviewProjectRequest: async (requestId: string, data: { request_status: string }) => {
+    return apiRequest<{ message: string; request_status: string }>(`/api/projects/${requestId}/review_request`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateProjectRole: async (projectId: string, data: { user_id: string; role: string }) => {
+    return apiRequest<{ message: string; member: string; role: string }>(`/api/projects/${projectId}/update_role`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };
