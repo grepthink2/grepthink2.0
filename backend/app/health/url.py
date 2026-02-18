@@ -2,11 +2,8 @@
 Health check routes
 """
 from fastapi import APIRouter
+from app.health import views
 
 router = APIRouter(tags=["health"])
 
-
-@router.get('/health')
-def health_check():
-    """Basic health check endpoint"""
-    return {"status": "healthy", "service": "backend"}
+router.get('/health')(views.health_check)
