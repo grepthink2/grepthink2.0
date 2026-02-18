@@ -7,7 +7,9 @@
  * and new user registration.
  */
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/auth';
 import './Login.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import eyeIcon from '@assets/ph_eye.svg?url';
@@ -17,6 +19,10 @@ import arrowIcon from '@assets/Arrow.svg?url';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { signOut } = useAuth();
+  const from = (location.state as { from?: string } | null)?.from ?? '/app';
+  
   // State for password visibility toggle
   const [showPassword, setShowPassword] = React.useState(false);
   // State to manage form inputs
@@ -27,16 +33,22 @@ const Login: React.FC = () => {
   // State for error handling and loading
   const [error, setError] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
-
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError('');
     
     try {
-      // TODO: Implement Supabase Google authentication
-      console.log('Google sign in clicked');
-      // Placeholder for future Supabase auth implementation
-    } catch (error: any) {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/app`,
+        },
+      });
+
+      if (oauthError) {
+        throw oauthError;
+      }
+    } catch (error: unknown) {
       console.error('Google sign in error:', error);
       setError('Google sign in failed. Please try again.');
     } finally {
@@ -60,12 +72,26 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Implement Supabase email/password authentication
-      console.log('Login form submitted:', { email: formData.email });
-      // Placeholder for future Supabase auth implementation
-    } catch (err) {
+      // Always sign out first to clear any existing sessions
+      // Pass an empty callback to prevent automatic navigation
+      await signOut();
+      
+      // Wait a bit for sign out to fully complete
+
+      // Now sign in with new credentials
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (signInError) {
+        throw signInError;
+      }
+
+      navigate(from, { replace: true });
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError('Login failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

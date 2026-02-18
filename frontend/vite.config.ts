@@ -5,6 +5,8 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  envDir: '..', // Point to the root directory for .env file
+  envPrefix: ['VITE_', 'SUPABASE_'], // Expose these prefixes to the client
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -15,4 +17,12 @@ export default defineConfig({
       '@styles': path.resolve(__dirname, './src/styles'),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      }
+    }
+  }
 })

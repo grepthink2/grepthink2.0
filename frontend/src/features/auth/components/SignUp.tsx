@@ -7,6 +7,8 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/auth';
 import './SignUp.scss';
 import eyeIcon from '@assets/ph_eye.svg?url';
 import eyeSlashIcon from '@assets/eye-slash.svg?url';
@@ -19,6 +21,7 @@ interface SignUpProps {
 
 const SignUp: React.FC<SignUpProps> = ({ userType }) => {
   const navigate = useNavigate();
+  const { getToken } = useAuth();
   
   // State to toggle password visibility
   const [showPassword, setShowPassword] = React.useState(false);
@@ -33,7 +36,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
   // State for error handling and loading
   const [error, setError] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
-
+  
   // Handler for form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -51,10 +54,17 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     setError('');
     
     try {
-      // TODO: Implement Supabase Google authentication
-      console.log('Google sign up clicked for user type:', userType);
-      // Placeholder for future Supabase auth implementation
-    } catch (error: any) {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/app`,
+        },
+      });
+
+      if (oauthError) {
+        throw oauthError;
+      }
+    } catch (error: unknown) {
       console.error('Google sign up error:', error);
       setError('Google sign up failed. Please try again.');
     } finally {
@@ -75,22 +85,66 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       setIsLoading(false);
       return;
     }
 
     try {
-      // TODO: Implement Supabase email/password signup
-      console.log('Signup form submitted:', { 
-        email: formData.email, 
-        userType 
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            role: userType,
+          },
+        },
       });
-      // Placeholder for future Supabase auth implementation
-    } catch (err) {
+
+      if (signUpError) {
+        throw signUpError;
+      }
+
+      if (!data.session || !data.user) {
+        setError('Email confirmations are enabled. Disable email confirmations in Supabase Auth settings to avoid verification emails.');
+        setIsLoading(false);
+        return;
+      }
+
+      const token = data.session?.access_token || (await getToken());
+      if (!token) {
+        setError('Failed to retrieve auth token. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Sync with Backend
+      try {
+        const response = await fetch('/api/create-user', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            userId: data.user.id,
+            email: formData.email,
+            userType: userType
+          }),
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to sync user to database, but auth succeeded');
+        }
+      } catch (syncError) {
+           console.error('Sync error:', syncError);
+      }
+
+      navigate('/app');
+    } catch (err: unknown) {
       console.error('Signup error:', err);
-      setError('Failed to create account. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -205,7 +259,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
         {/* Login Section */}
         <div className="loginSection">
           <span className="loginText">Already have an account?</span>
-          <div className="loginLink" onClick={handleLogin}>
+          <div className="signUpLoginLink" onClick={handleLogin}>
             Login
             <img src={arrowIcon} alt="arrow" className="arrowIcon" />
           </div>

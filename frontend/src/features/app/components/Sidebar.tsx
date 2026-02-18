@@ -1,0 +1,140 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { TbLayoutSidebar } from "react-icons/tb";
+import { ChevronDown } from 'lucide-react';
+import { instructorSidebarConfig, studentSidebarConfig, type UserRole } from '../config/sidebar';
+import { useClass } from '@/lib/classContext';
+import logo from '@assets/grepthink l logo.svg?url';
+import './Sidebar.scss';
+
+interface SidebarProps {
+  role: UserRole;
+  onOpenCreateClass?: () => void;
+  onOpenJoinClass?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinClass }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showClassDropdown, setShowClassDropdown] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const { classes, selectedClass, setSelectedClass } = useClass();
+  const sidebarConfig = role === 'instructor' ? instructorSidebarConfig : studentSidebarConfig;
+
+  const handleNavigation = (path: string) => {
+    // If it's the create class path, open the modal instead
+    if (path === '/app/create-class' && onOpenCreateClass) {
+      onOpenCreateClass();
+    } else if (path === '/app/join-class' && onOpenJoinClass) {
+      onOpenJoinClass();
+    } else {
+      navigate(path);
+    }
+  };
+
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const handleClassSelect = (classItem: (typeof classes)[number]) => {
+    setSelectedClass(classItem);
+    setShowClassDropdown(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowClassDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${role === 'instructor' ? 'instructor' : 'student'}`}>
+      {/* Header with Logo */}
+      <div className="sidebar-header">
+        {!isCollapsed && (
+          <div className="sidebar-logo">
+            <img src={logo} alt="GrepThink Logo" />
+          </div>
+        )}
+        <button className="collapse-button" onClick={toggleCollapse}>
+          <TbLayoutSidebar size={20} />
+        </button>
+      </div>
+
+      {/* Class Selector */}
+      {!isCollapsed && (
+        <div className="class-selector" ref={dropdownRef}>
+          <button
+            className="class-selector-header"
+            onClick={() => setShowClassDropdown(!showClassDropdown)}
+          >
+            <span className="class-name">
+              {selectedClass ? selectedClass.name : 'No class selected'}
+            </span>
+            <ChevronDown size={16} className={showClassDropdown ? 'rotated' : ''} />
+          </button>
+
+          {showClassDropdown && (
+            <div className="class-selector-dropdown">
+              {classes.length === 0 ? (
+                <div className="class-selector-empty">No classes available</div>
+              ) : (
+                classes.map((classItem) => (
+                  <button
+                    key={classItem.id}
+                    className={`class-selector-item ${selectedClass?.id === classItem.id ? 'active' : ''}`}
+                    onClick={() => handleClassSelect(classItem)}
+                  >
+                    <div className="class-item-name">{classItem.name}</div>
+                    <div className="class-item-code">{classItem.course_code}</div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Navigation Sections */}
+      <nav className="sidebar-nav">
+        {sidebarConfig.map((section) => (
+          <div key={section.title} className="sidebar-section">
+            {!isCollapsed && <h3 className="section-title">{section.title}</h3>}
+            <ul className="section-items">
+              {section.items.map((item) => {
+                const isActive = location.pathname === item.path;
+                
+                return (
+                  <li key={item.path}>
+                    <button
+                      className={`sidebar-item ${isActive ? 'active' : ''}`}
+                      onClick={() => handleNavigation(item.path)}
+                      title={isCollapsed ? item.label : undefined}
+                    >
+                      {item.icon ? (
+                        React.createElement(item.icon, { size: 18 })
+                      ) : item.iconSvg ? (
+                        <img src={item.iconSvg} alt={item.label} className="icon-svg" />
+                      ) : null}
+                      {!isCollapsed && <span>{item.label}</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+    </div>
+  );
+};
+
+export default Sidebar;

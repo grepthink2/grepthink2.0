@@ -1,0 +1,849 @@
+@use '@styles/index.scss' as *;
+
+.create-project {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-family: $primary-font;
+
+  // Header Section
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1.5rem;
+  }
+
+  &__header-left {
+    flex: 0 0 calc(100% - 320px - 1.5rem);
+    max-width: calc(100% - 320px - 1.5rem);
+  }
+
+  &__title-input {
+    width: 100%;
+    padding: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border: none;
+    border-bottom: 1px solid $border-color;
+    border-radius: 0;
+    background: transparent;
+    color: $text-primary;
+    transition: border-color $transition-fast;
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-bottom-color: $primary-color;
+    }
+
+    &::placeholder {
+      color: $text-primary;
+      font-family: inherit;
+    }
+
+    &:focus::placeholder {
+      color: transparent;
+    }
+  }
+
+  &__preview-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  &__preview-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.875rem;
+    background: $primary-color;
+    color: white;
+    border-radius: $border-radius-sm;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  &__preview-text {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    margin: 0;
+  }
+
+  &__preview-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__preview-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: $text-secondary;
+    font-weight: 500;
+
+    svg {
+      color: $text-secondary;
+    }
+  }
+
+  &__toggle-button {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: $border-color;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color $transition-fast;
+
+    &.active {
+      background: $primary-color;
+    }
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  &__toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform $transition-fast;
+
+    .create-project__toggle-button.active & {
+      transform: translateX(20px);
+    }
+  }
+
+  // Main Content Grid
+  &__content {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.5rem;
+    align-items: stretch;
+  }
+
+  &__left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: 100%;
+  }
+
+  &__right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  // Section Styling
+  &__section {
+    background: $background;
+    box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+    border-radius: $border-radius-md;
+    padding: 1.5rem;
+    overflow: visible;
+  }
+
+  &__section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    h2 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #424242;
+      margin: 0;
+    }
+  }
+
+  &__section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #424242;
+    margin-bottom: 0.75rem;
+  }
+
+  // Description Section
+  &__description-section {
+    background: $background;
+    border: none;
+    box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__mode-toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__mode-toggle {
+    display: flex;
+    gap: 0;
+    background: white;
+    border-radius: $border-radius-sm;
+    overflow: hidden;
+    border: 1px solid $border-color;
+  }
+
+  &__refresh-description {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    color: $text-secondary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $background;
+      color: $primary-color;
+      border-color: $primary-color;
+    }
+  }
+
+  &__mode-button {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: white;
+    color: $text-secondary;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &.active {
+      background: $primary-color;
+      color: white;
+    }
+
+    &:hover:not(.active) {
+      background: $background;
+    }
+  }
+
+  // Template Fields
+  &__template-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__textarea {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: white;
+    color: $text-primary;
+    resize: vertical;
+    font-family: inherit;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+
+    &::placeholder {
+      color: $text-secondary;
+      font-family: inherit;
+    }
+
+    &--markdown {
+      min-height: 400px;
+      font-family: 'Courier New', monospace;
+    }
+  }
+
+  // Input Styling
+  &__input {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: white;
+    color: $text-primary;
+    transition: border-color $transition-fast;
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+
+    &::placeholder {
+      color: $text-secondary;
+      font-family: inherit;
+    }
+  }
+
+  // Skills Section
+  &__skills-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    position: relative;
+  }
+
+  &__skills-input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    position: relative;
+  }
+
+  &__add-skill-button {
+    width: 40px;
+    height: 40px;
+    background: $primary-color;
+    color: white;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background-color $transition-fast;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    &:hover {
+      background: $primary-hover;
+    }
+  }
+
+  &__skill-suggestions {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    left: 0;
+    right: 50px;
+    background: white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  &__skill-suggestion {
+    padding: 0.625rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: $text-primary;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background: $background;
+    }
+
+    &:not(:last-child) {
+      border-bottom: 1px solid $border-color;
+    }
+  }
+
+  &__skills-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__skill-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background: white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: 0.8125rem;
+    color: $text-primary;
+    cursor: pointer;
+    transition: all $transition-fast;
+    user-select: none;
+
+    &:hover {
+      background: rgba($error-color, 0.05);
+      
+      .create-project__skill-remove {
+        color: $error-color;
+      }
+    }
+  }
+
+  &__skill-remove {
+    color: $text-secondary;
+    font-size: 1.25rem;
+    line-height: 1;
+    margin-left: 0.25rem;
+    transition: color $transition-fast;
+    pointer-events: none;
+  }
+
+  // Looking For Section
+  &__roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__role-tag {
+    padding: 0.375rem 0.75rem;
+    background: white;
+    border-radius: $border-radius-sm;
+    font-size: 0.8125rem;
+    color: $text-primary;
+    cursor: pointer;
+    transition: all $transition-fast;
+    text-align: center;
+    font-weight: 500;
+
+    &:hover {
+      border-color: $primary-color;
+      background: rgba($primary-color, 0.05);
+    }
+
+    &.active {
+      background: $primary-color;
+      color: white;
+      border-color: $primary-color;
+    }
+  }
+
+  // Footer
+  &__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid $border-color;
+  }
+
+  &__footer-right {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  &__button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+    border: none;
+
+    &--primary {
+      background: $primary-color;
+      color: white;
+
+      &:hover {
+        background: $primary-hover;
+      }
+    }
+
+    &--secondary {
+      background: white;
+      color: $text-primary;
+
+      &:hover {
+        background: $background;
+      }
+    }
+
+    &--cancel {
+      background: white;
+      color: #424242;
+      border: 1px solid $border-color;
+
+      &:hover {
+        background: $background;
+        color: $text-primary;
+      }
+    }
+  }
+}
+
+// Responsive Design
+// Medium laptop screens (MacBook 14", etc.)
+@media (max-width: 1512px) {
+  .create-project {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    gap: 1.25rem;
+
+    &__header {
+      padding-bottom: 1.25rem;
+    }
+
+    &__header-left {
+      flex: 0 0 calc(100% - 300px - 1.5rem);
+      max-width: calc(100% - 300px - 1.5rem);
+    }
+
+    &__content {
+      grid-template-columns: 1fr 300px;
+      gap: 1.25rem;
+    }
+
+    &__left-column,
+    &__right-column {
+      gap: 1.25rem;
+    }
+
+    &__section {
+      padding: 1.25rem;
+    }
+
+    &__title-input {
+      font-size: 1.125rem;
+    }
+
+    &__section-header h2 {
+      font-size: 1rem;
+    }
+
+    &__section-title {
+      font-size: 0.9375rem;
+    }
+  }
+}
+
+@media (max-width: 1280px) {
+  .create-project {
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+    gap: 1rem;
+
+    &__header {
+      padding-bottom: 1rem;
+    }
+
+    &__header-left {
+      flex: 0 0 calc(100% - 280px - 1.25rem);
+      max-width: calc(100% - 280px - 1.25rem);
+    }
+
+    &__content {
+      grid-template-columns: 1fr 280px;
+      gap: 1rem;
+    }
+
+    &__left-column,
+    &__right-column {
+      gap: 1rem;
+    }
+
+    &__section {
+      padding: 1.125rem;
+    }
+
+    &__title-input {
+      font-size: 1.0625rem;
+    }
+
+    &__textarea,
+    &__input {
+      padding: 0.625rem;
+      font-size: 0.8125rem;
+    }
+
+    &__button {
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .create-project {
+    &__content {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    &__right-column {
+      order: 2;
+    }
+
+    &__header-left {
+      flex: 1;
+      max-width: 100%;
+    }
+
+    &__left-column,
+    &__right-column {
+      gap: 1rem;
+    }
+
+    &__section {
+      padding: 1.25rem;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .create-project {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    gap: 1rem;
+
+    &__header {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+      padding-bottom: 1rem;
+    }
+
+    &__header-left {
+      width: 100%;
+    }
+
+    &__title-input {
+      font-size: 1.125rem;
+    }
+
+    &__preview-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    &__preview-badge {
+      font-size: 0.8125rem;
+      padding: 0.3rem 0.75rem;
+    }
+
+    &__preview-text {
+      font-size: 0.8125rem;
+    }
+
+    &__preview-toggle {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    &__content {
+      gap: 1rem;
+    }
+
+    &__left-column,
+    &__right-column {
+      gap: 1rem;
+    }
+
+    &__section {
+      padding: 1rem;
+    }
+
+    &__section-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+
+      h2 {
+        font-size: 1rem;
+      }
+    }
+
+    &__section-title {
+      font-size: 0.9375rem;
+      margin-bottom: 0.5rem;
+    }
+
+    &__mode-toggle {
+      width: 100%;
+    }
+
+    &__mode-button {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    &__template-fields {
+      gap: 0.75rem;
+    }
+
+    &__field-row {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    &__textarea {
+      padding: 0.625rem;
+      font-size: 0.8125rem;
+    }
+
+    &__input {
+      padding: 0.625rem;
+      font-size: 0.8125rem;
+    }
+
+    &__add-skill-button {
+      width: 36px;
+      height: 36px;
+      font-size: 1.25rem;
+    }
+
+    &__skill-tag {
+      padding: 0.3rem 0.625rem;
+      font-size: 0.75rem;
+    }
+
+    &__role-tag {
+      padding: 0.3rem 0.625rem;
+      font-size: 0.75rem;
+    }
+
+    &__footer {
+      flex-direction: column;
+      gap: 1rem;
+      padding-top: 1rem;
+    }
+
+    &__footer-right {
+      width: 100%;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    &__button {
+      width: 100%;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .create-project {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    gap: 0.75rem;
+
+    &__header {
+      gap: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+
+    &__title-input {
+      font-size: 1rem;
+      padding: 0 0 0.375rem 0;
+    }
+
+    &__preview-label {
+      font-size: 0.8125rem;
+    }
+
+    &__toggle-button {
+      width: 40px;
+      height: 22px;
+    }
+
+    &__toggle-slider {
+      width: 18px;
+      height: 18px;
+
+      .create-project__toggle-button.active & {
+        transform: translateX(18px);
+      }
+    }
+
+    &__section {
+      padding: 0.875rem;
+    }
+
+    &__section-header {
+      margin-bottom: 0.625rem;
+
+      h2 {
+        font-size: 0.9375rem;
+      }
+    }
+
+    &__section-title {
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+
+    &__mode-button {
+      padding: 0.35rem 0.625rem;
+      font-size: 0.75rem;
+    }
+
+    &__textarea {
+      padding: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    &__input {
+      padding: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    &__add-skill-button {
+      width: 32px;
+      height: 32px;
+      font-size: 1.125rem;
+    }
+
+    &__skill-tag {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.6875rem;
+    }
+
+    &__skill-remove {
+      font-size: 1.125rem;
+    }
+
+    &__role-tag {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.6875rem;
+    }
+
+    &__button {
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+    }
+  }
+}
