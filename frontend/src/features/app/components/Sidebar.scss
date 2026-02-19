@@ -211,9 +211,14 @@
   list-style: none;
   padding: 0 1.2rem; // Add horizontal padding to the list
   margin: 0;
+  overflow: visible; // Allow ::before pseudo-elements to extend beyond
 
   .sidebar.collapsed & {
     padding: 0 0.5rem; // Reduced padding for collapsed state
+  }
+
+  li {
+    overflow: visible; // Ensure list items don't clip the ::before element
   }
 }
 
@@ -233,7 +238,7 @@
   text-align: left;
   border-radius: 8px; // Rounded corners for the button
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible; // Allow ::before pseudo-element to extend beyond button bounds
 
   span {
     min-width: 0;
@@ -258,17 +263,18 @@
       filter: brightness(0); // Make SVG black for active state
     }
 
-    // Half-rounded rectangle indicator on the left edge
+    // Left-hand half pill indicator
     &::before {
       content: '';
       position: absolute;
-      left: -1.2rem; // Offset to align with sidebar edge
+      left: -1.2rem; // Offset to align with sidebar edge (matches section-items padding)
       top: 50%;
       transform: translateY(-50%);
       width: 6px;
-      height: 95%; // 70% of button height
+      height: 95%; // Height of the half pill
       background-color: #eeeeee; // Same as button background
-      border-radius: 0 8px 8px 0; // Rounded on the right side only (half circle effect)
+      border-radius: 0 8px 8px 0; // Rounded on the right side (facing the button)
+      z-index: 1;
     }
   }
 
