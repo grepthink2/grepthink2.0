@@ -1,11 +1,10 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import CodeIcon from '@assets/material-symbols_code-rounded.svg';
-import MonitorIcon from '@assets/material-symbols_monitor-outline-rounded.svg';
-import DatabaseIcon from '@assets/material-symbols_database-outline.svg';
+import { Brush, MonitorSmartphone, MonitorCog, Database } from 'lucide-react';
 import EmailIcon from '@assets/ic_outline-email.svg';
 import GithubIcon from '@assets/line-md_github.svg';
 import LinkedInIcon from '@assets/mdi_linkedin.svg';
+import CodeIcon from '@assets/material-symbols_code-rounded.svg';
 import './ProjectView.scss';
 
 interface ProjectViewProps {
@@ -37,13 +36,19 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const spotsText = spotsAvailable !== null ? `${spotsAvailable} Spots Available` : 'Spots Available';
 
   const getRoleIcon = (roleId: string) => {
+    const size = 18;
+    const iconProps = { size, color: 'white', strokeWidth: 2 };
     switch (roleId) {
+      case 'designer':
+        return <Brush {...iconProps} />;
       case 'frontend':
-        return MonitorIcon;
+        return <MonitorSmartphone {...iconProps} />;
+      case 'backend':
+        return <MonitorCog {...iconProps} />;
       case 'database':
-        return DatabaseIcon;
+        return <Database {...iconProps} />;
       default:
-        return CodeIcon;
+        return <img src={CodeIcon} alt={roleId} className="project-view__role-icon-img" />;
     }
   };
 
@@ -155,11 +160,9 @@ const ProjectView: React.FC<ProjectViewProps> = ({
               <div className="project-view__roles-list">
                 {selectedRoles.map((roleId) => (
                   <div key={roleId} className="project-view__role-item">
-                    <img
-                      src={getRoleIcon(roleId)}
-                      alt={roleId}
-                      className="project-view__role-icon"
-                    />
+                    <div className="project-view__role-icon-wrap">
+                      {getRoleIcon(roleId)}
+                    </div>
                     <span className="project-view__role-label">{getRoleLabel(roleId)}</span>
                     <span className="project-view__role-count">+1</span>
                   </div>

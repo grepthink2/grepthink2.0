@@ -323,10 +323,27 @@
     border-radius: $border-radius-sm;
   }
 
-  &__role-icon {
-    width: 24px;
-    height: 24px;
+  &__role-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     flex-shrink: 0;
+    background-color: $primary-color;
+    border-radius: 8px;
+    color: white;
+
+    svg {
+      color: white;
+      stroke: white;
+    }
+  }
+
+  &__role-icon-img {
+    width: 18px;
+    height: 18px;
+    filter: brightness(0) invert(1);
   }
 
   &__role-label {
