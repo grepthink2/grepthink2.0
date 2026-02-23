@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { Search, User, ChevronDown, Settings, LogOut } from 'lucide-react';
+import { Search, User, ChevronDown, Settings, LogOut, Copy, Check } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
+import { useClass } from '@/lib/classContext';
 import './Header.scss';
 
 interface Notification {
@@ -31,14 +32,28 @@ const pageTitles: Record<string, string> = {
   '/app/help-center': 'Help Center',
 };
 
+// Routes that belong to a selected class (show breadcrumb + access code)
+const classRoutes = new Set([
+  '/app/dashboard',
+  '/app/projects',
+  '/app/roster',
+  '/app/modules',
+  '/app/ta-management',
+  '/app/create-project',
+  '/app/browse-projects',
+  '/app/my-project',
+]);
+
 const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, role } = useAuth();
+  const { selectedClass } = useClass();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   
   // Mock notification data
   const [notifications] = useState<Notification[]>([
@@ -55,11 +70,25 @@ const Header: React.FC = () => {
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // Get page title from current route
-  const pageTitle = pageTitles[location.pathname] || 'GrepThink';
-  
+  const pageName = pageTitles[location.pathname] || 'GrepThink';
+  const isClassRoute = classRoutes.has(location.pathname) && !!selectedClass;
+  const showInstructorClassMeta = isClassRoute && role === 'instructor';
+
+  // Breadcrumb title for class routes: "ClassName > PageName"
+  const pageTitle = isClassRoute && selectedClass
+    ? `${selectedClass.name} > ${pageName}`
+    : pageName;
+
   // Count unread notifications
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleCopyCode = () => {
+    if (selectedClass?.course_code) {
+      navigator.clipboard.writeText(selectedClass.course_code);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    }
+  };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -87,9 +116,47 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="app-header">
+    <header className={`app-header${isClassRoute ? ' app-header--class' : ''}`}>
       {/* Left: Page Title */}
-      <h1 className="app-header__page-title">{pageTitle}</h1>
+      <div className="app-header__title-block">
+        <h1 className="app-header__page-title">{pageTitle}</h1>
+        {showInstructorClassMeta && selectedClass && (
+          <div className="app-header__class-meta">
+            {selectedClass.description && (
+              <span className="app-header__class-term">{selectedClass.description}</span>
+            )}
+            {selectedClass.course_code && (
+              <>
+                {selectedClass.description && (
+                  <span className="app-header__meta-dot">•</span>
+                )}
+                <span className="app-header__meta-label">Access Code:</span>
+                <button
+                  type="button"
+                  className={`app-header__access-pill${
+                    copiedCode ? ' app-header__access-pill--copied' : ''
+                  }`}
+                  onClick={handleCopyCode}
+                  aria-label="Copy access code"
+                  title="Copy access code"
+                >
+                  <span className="app-header__access-code">
+                    {selectedClass.course_code}
+                  </span>
+                  <span
+                    className={`app-header__copy-btn${
+                      copiedCode ? ' app-header__copy-btn--copied' : ''
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {copiedCode ? <Check size={14} /> : <Copy size={14} />}
+                  </span>
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Right: Notifications, Search Bar & Profile */}
       <div className="app-header__right">

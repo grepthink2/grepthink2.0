@@ -1,0 +1,155 @@
+@use '@styles/index.scss' as *;
+
+$health-green: #018156;
+$health-green-light: #e6f5ef;
+$health-orange: #e6a817;
+$health-orange-light: #fdf3dc;
+
+// ── Wrapper (floating heading + scrollable container) ──────────
+.project-health {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.project-health__heading {
+  font-size: 1.1rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  margin: 0;
+}
+
+// ── Scrollable container ───────────────────────────────────────
+.project-health__container {
+  background-color: #eeeeee;
+  border-radius: $border-radius-md;
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  max-height: 290px;
+  overflow-y: auto;
+  flex-shrink: 0;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: #cccccc;
+    border-radius: 4px;
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: #cccccc transparent;
+}
+
+// ── Health cards ───────────────────────────────────────────────
+.health-card {
+  border-radius: $border-radius-md;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  &--excellent {
+    background-color: $health-green;
+    color: $white;
+
+    .health-card__header  { background-color: $health-green; }
+    .health-card__body    { background-color: $health-green-light; color: $text-primary; }
+    .health-card__via,
+    .health-card__description { color: $text-secondary; }
+  }
+
+  &--warning {
+    background-color: $health-orange;
+    color: $white;
+
+    .health-card__header  { background-color: $health-orange; }
+    .health-card__body    { background-color: $health-orange-light; color: $text-primary; }
+    .health-card__via,
+    .health-card__description { color: $text-secondary; }
+  }
+
+  &--poor {
+    background-color: #c0392b;
+    color: $white;
+
+    .health-card__header  { background-color: #c0392b; }
+    .health-card__body    { background-color: #fdecea; color: $text-primary; }
+    .health-card__via,
+    .health-card__description { color: $text-secondary; }
+  }
+}
+
+.health-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px $spacing-md;
+}
+
+.health-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.health-card__face-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  color: currentColor;
+}
+
+.health-card__name {
+  font-size: 0.9375rem;
+  font-weight: $font-weight-semibold;
+  color: $white;
+}
+
+.health-card__trend-icon {
+  color: $white;
+  display: flex;
+  align-items: center;
+  opacity: 0.9;
+}
+
+.health-card__body {
+  padding: 10px $spacing-md $spacing-md;
+}
+
+.health-card__description {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin: 0 0 $spacing-sm;
+}
+
+.health-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.health-card__via {
+  font-size: 0.75rem;
+}
+
+.health-card__details-btn {
+  background: transparent;
+  border: none;
+  font-family: $primary-font;
+  font-size: 0.8rem;
+  font-weight: $font-weight-semibold;
+  color: $text-secondary;
+  cursor: pointer;
+  padding: 0;
+  transition: color $transition-fast;
+
+  &:hover  { color: $text-primary; }
+  &:focus  { outline: none; }
+}

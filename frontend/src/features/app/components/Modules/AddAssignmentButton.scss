@@ -1,0 +1,30 @@
+@use '@styles/index.scss' as *;
+
+.add-assignment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 10px $spacing-md;
+  background-color: $primary-color;
+  color: $white;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+  align-self: flex-start;
+
+  &:hover {
+    background-color: $primary-hover;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+  }
+}
