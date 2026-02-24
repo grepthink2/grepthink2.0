@@ -9,7 +9,7 @@
   &__toggle-container {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: end;
     gap: $spacing-sm;
     padding: $spacing-md $spacing-lg;
   }
@@ -109,7 +109,7 @@
 // Project Card - 249px width, min 204px height (expandable)
 .project-card {
   width: 249px;
-  min-height: 204px;
+  min-height: 170px;
   border-radius: $border-radius-md;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow: hidden;
