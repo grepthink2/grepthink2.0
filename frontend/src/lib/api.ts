@@ -32,6 +32,15 @@ export interface ApiProject {
   skills?: string[];
 }
 
+export interface ApiProjectJoinRequest {
+  request_id: string;
+  user_id: string;
+  email?: string;
+  user_role?: string;
+  requested_at?: string;
+  status: string;
+}
+
 export interface CreateProjectPayload {
   class_id: string;
   name: string;
@@ -126,6 +135,48 @@ export const api = {
 
   getClassProjects: async (classId: string) => {
     return apiRequest<{ projects: ApiProject[] }>(`/api/classes/${classId}/projects`);
+  },
+
+  getProjects: async (classId?: string) => {
+    const searchParams = new URLSearchParams();
+    if (classId) {
+      searchParams.set('class_id', classId);
+    }
+    const query = searchParams.toString();
+    return apiRequest<{ projects: ApiProject[] }>(`/api/projects${query ? `?${query}` : ''}`);
+  },
+
+  requestJoinProject: async (projectId: string) => {
+    return apiRequest<{ message: string; request: { id: string; project_id: string; user_id: string }; project: ApiProject }>('/api/projects/request-join', {
+      method: 'POST',
+      body: JSON.stringify({ project_id: projectId }),
+    });
+  },
+
+  getProjectJoinRequests: async (projectId: string) => {
+    return apiRequest<{ requests: ApiProjectJoinRequest[] }>(`/api/projects/${projectId}/join-requests`);
+  },
+
+  acceptProjectJoinRequest: async (requestId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('No authenticated user available');
+    }
+    return apiRequest<{ message: string; user_id: string }>('/api/projects/accept-request', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId, user_id: user.id }),
+    });
+  },
+
+  rejectProjectJoinRequest: async (requestId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('No authenticated user available');
+    }
+    return apiRequest<{ message: string; user_id: string }>('/api/projects/reject-request', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId, user_id: user.id }),
+    });
   },
 
   /** Create a project (full form: POST /api/projects) */

@@ -165,6 +165,42 @@
   margin-bottom: $spacing-sm;
 }
 
+.test-projects-page__actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+}
+
+.test-projects-page__join-requests {
+  margin-top: $spacing-sm;
+  border-top: 1px solid $border-color;
+  padding-top: $spacing-sm;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: $spacing-sm;
+  }
+
+  li {
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $white;
+    padding: $spacing-sm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+}
+
+.test-projects-page__request-actions {
+  display: flex;
+  gap: $spacing-xs;
+}
+
 @media (max-width: 840px) {
   .test-projects-page__control-row {
     grid-template-columns: 1fr;
