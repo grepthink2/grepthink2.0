@@ -5,7 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
-
+from models import CreateTSRRequest
 
 def create_project(
     class_id: UUID,
@@ -576,3 +576,90 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
     except Exception as e:
         print(f"Error fetching join requests: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch join requests: {str(e)}")
+
+def create_tsr(user_id: UUID, project_id: UUID, data: CreateTSRRequest) -> dict:
+    """
+    Create a new TSR 
+    Returns:
+        Dictionary containing TSR data
+    Raises:
+        HTTPException: If database error occurs
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        # Create the TSR
+        tsr_data = {
+            "evaluator_id": str(user_id),
+            "evaluatee_id": str(data.evaluatee_id),
+            "project_id": project_id,
+            "percent_contribution": data.percent_contribution,
+            "positive_feedback": data.positive_feedback,
+            "constructive_feedback": data.constructive_feedback,
+            "scrum_master_notes": data.scrum_master_notes,
+        }
+
+        result = client.table('TSRs').insert(tsr_data).execute()
+        
+        if not result.data or len(result.data) == 0:
+            raise HTTPException(status_code=500, detail="Failed to create TSR")
+        return result.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error creating TSR: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create TSR: {str(e)}")
+
+def view_tsrs(user_id: UUID, project_id: UUID, data: CreateTSRRequest) -> dict:
+    """
+    Receive TSR for a specified project
+    Returns all TSRs if you are admin or scrum master
+    Otherwise returns only TSRs sent to you
+    Returns:
+        Dictionary containing TSR data
+    Raises:
+        HTTPException: If database error occurs
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        # Fetch the your role in the project
+        membership = (client.table('project_members')
+            .select('role')
+            .eq('project_id', project_id)
+            .eq('user_id', user_id)
+            .execute()
+        )
+        
+        if not membership.data or len(membership.data) == 0:
+            raise HTTPException(status_code=403, detail="Not a member of this project")
+        
+        user_role = membership.data[0]['role']
+        tsr_result = []
+        if user_role in ["admin", "scrum master"]:
+            tsr_result = (client.table('TSRs')
+                .select('evaluatee_id, percent_contribution, positive_feedback, constructive_feedback')
+                .eq('project_id', project_id)
+                .execute()
+            )
+        else:
+            tsr_result = (client.table('TSRs')
+                .select('evaluator_id, percent_contribution, positive_feedback, constructive_feedback')
+                .eq('project_id', project_id)
+                .eq('evaluatee_id', user_id)
+                .execute()
+            )
+        
+        # fetch evaluator emails
+        evaluator_ids = [r['evaluator_id'] for r in tsr_result.data]
+        evaluators = client.table('profiles').select('id, email, role').in_('id', evaluator_ids).execute()
+        evaluator_map = {u['id']: u['email'] for u in evaluators.data} if evaluators.data else {}
+        
+        for tsr in tsr_result.data:
+            tsr['email'] = evaluator_map.get(tsr['evaluator_id'], "Email Not Found")
+        return tsr_result.data
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting TSRs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get TSRs: {str(e)}")

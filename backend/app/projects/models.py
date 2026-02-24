@@ -30,3 +30,11 @@ class AcceptJoinRequestRequest(BaseModel):
     """Request model for accepting a join request"""
     request_id: UUID
     user_id: UUID
+
+class CreateTSRRequest(BaseModel):
+    """Request model for creating a TSR"""
+    evaluatee_id: UUID
+    percent_contribution: int
+    positive_feedback: str
+    constructive_feedback: str
+    scrum_master_notes: str

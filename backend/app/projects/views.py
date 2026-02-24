@@ -5,7 +5,7 @@ from uuid import UUID
 from typing import Optional
 from fastapi import HTTPException, Depends, Query
 from app.dependencies import verify_supabase_token
-from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest
+from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, CreateTSRRequest
 from app.projects import controller
 
 
@@ -71,3 +71,15 @@ def get_join_requests(project_id: UUID, payload: dict = Depends(verify_supabase_
         raise HTTPException(status_code=401, detail="Authentication required")
     requests = controller.get_pending_join_requests(project_id, payload.get('sub'))
     return {"requests": requests}
+
+def create_tsr(project_id:UUID, data: CreateTSRRequest, payload: dict = Depends(verify_supabase_token)):
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    TSR = controller.create_tsr(payload.get('sub'), project_id, data)
+    return {"TSR": TSR}
+
+def view_tsrs(project_id: UUID, payload: dict = Depends(verify_supabase_token)):
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    TSRS = controller.view_tsrs(payload.get('sub'), project_id)
+    return {"TSR": TSRS}
