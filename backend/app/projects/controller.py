@@ -139,6 +139,54 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
     """
     try:
         client = service_client if service_client else supabase
+
+        if class_id:
+            # Class-scoped view: allow class instructor or enrolled students to view all class projects
+            class_result = client.table('classes').select('id, created_by').eq('id', str(class_id)).execute()
+            if not class_result.data or len(class_result.data) == 0:
+                raise HTTPException(status_code=404, detail="Class not found")
+
+            class_row = class_result.data[0]
+            has_access = class_row.get('created_by') == user_id
+
+            if not has_access:
+                enrollment = client.table('class_enrollments').select('id').eq(
+                    'class_id', str(class_id)
+                ).eq('user_id', user_id).execute()
+                has_access = bool(enrollment.data)
+
+            if not has_access:
+                raise HTTPException(status_code=403, detail="You do not have access to this class projects list")
+
+            projects_result = client.table('projects').select(
+                'id, name, description, class_id, created_by, created_at, team_size, looking_for_roles, skills'
+            ).eq('class_id', str(class_id)).order('created_at', desc=True).execute()
+
+            projects = projects_result.data or []
+            if not projects:
+                return []
+
+            creator_ids = list({project['created_by'] for project in projects if project.get('created_by')})
+            creator_emails = {}
+            if creator_ids:
+                creators = client.table('profiles').select('id, email').in_('id', creator_ids).execute()
+                for creator in creators.data or []:
+                    creator_emails[creator['id']] = creator.get('email')
+
+            project_ids = [project['id'] for project in projects if project.get('id')]
+            user_membership_map = {}
+            if project_ids:
+                memberships = client.table('project_members').select('project_id, role').eq(
+                    'user_id', user_id
+                ).in_('project_id', project_ids).execute()
+                for membership in memberships.data or []:
+                    user_membership_map[membership['project_id']] = membership.get('role')
+
+            for project in projects:
+                project['creator_email'] = creator_emails.get(project.get('created_by'))
+                project['user_role'] = user_membership_map.get(project.get('id'))
+
+            return projects
         
         # Get projects where user is a member
         query = client.table('project_members').select(
@@ -248,7 +296,7 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
         # Check if there's already a pending request
         existing_request = client.table('project_join_requests').select('id, request_status').eq(
             'project_id', str(project_id)
-        ).eq('user_id', user_id).eq('status', 'pending').execute()
+        ).eq('user_id', user_id).eq('request_status', 'pending').execute()
         
         if existing_request.data and len(existing_request.data) > 0:
             raise HTTPException(status_code=400, detail="Join request already pending")
@@ -257,7 +305,9 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
         request_data = {
             "project_id": str(project_id),
             "user_id": user_id,
-            "request_status": "pending"
+            "request_status": "pending",
+            "reviewer_id": None,
+            "reviewed_at": None,
         }
         
         result = client.table('project_join_requests').insert(request_data).execute()
@@ -293,7 +343,7 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
         
         # Get the join request
         request_result = client.table('project_join_requests').select(
-            'id, project_id, user_id, status'
+            'id, project_id, user_id, request_status'
         ).eq('id', str(request_id)).execute()
         
         if not request_result.data or len(request_result.data) == 0:
@@ -302,8 +352,8 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
         join_request = request_result.data[0]
         
         # Check if request is still pending
-        if join_request['status'] != 'pending':
-            raise HTTPException(status_code=400, detail=f"Request already {join_request['status']}")
+        if join_request['request_status'] != 'pending':
+            raise HTTPException(status_code=400, detail=f"Request already {join_request['request_status']}")
         
         # Verify the reviewer is a project owner or admin
         membership = client.table('project_members').select('role').eq(
@@ -319,7 +369,7 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
         
         # Update the request status
         update_data = {
-            "status": "approved",
+            "request_status": "approved",
             "reviewed_at": "now()",
             "reviewer_id": reviewer_id
         }
@@ -365,7 +415,7 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
         
         # Get the join request
         request_result = client.table('project_join_requests').select(
-            'id, project_id, user_id, status'
+            'id, project_id, user_id, request_status'
         ).eq('id', str(request_id)).execute()
         
         if not request_result.data or len(request_result.data) == 0:
@@ -374,8 +424,8 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
         join_request = request_result.data[0]
         
         # Check if request is still pending
-        if join_request['status'] != 'pending':
-            raise HTTPException(status_code=400, detail=f"Request already {join_request['status']}")
+        if join_request['request_status'] != 'pending':
+            raise HTTPException(status_code=400, detail=f"Request already {join_request['request_status']}")
         
         # Verify the reviewer is a project owner or admin
         membership = client.table('project_members').select('role').eq(
@@ -391,7 +441,7 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
         
         # Update the request status
         update_data = {
-            "status": "rejected",
+            "request_status": "rejected",
             "reviewed_at": "now()",
             "reviewer_id": reviewer_id
         }
@@ -495,8 +545,8 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
         
         # Get pending requests
         requests = client.table('project_join_requests').select(
-            'id, user_id, requested_at, status'
-        ).eq('project_id', str(project_id)).eq('status', 'pending').execute()
+            'id, user_id, created_at, request_status'
+        ).eq('project_id', str(project_id)).eq('request_status', 'pending').execute()
         
         if not requests.data or len(requests.data) == 0:
             return []
@@ -516,8 +566,8 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
                 "user_id": request['user_id'],
                 "email": user_info.get('email'),
                 "user_role": user_info.get('role'),
-                "requested_at": request['requested_at'],
-                "status": request['status']
+                "requested_at": request.get('created_at'),
+                "status": request['request_status']
             })
         
         return result
