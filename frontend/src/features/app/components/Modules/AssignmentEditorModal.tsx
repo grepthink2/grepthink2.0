@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { parse, isValid } from 'date-fns';
 import { X, FileText, Globe } from 'lucide-react';
-import DatePickerField, { DATETIME_FORMAT } from '@features/app/components/DatePickerField';
+import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
 import { type Assignment, type AssignmentStatus } from './AssignmentList';
 import './AssignmentEditorModal.scss';
 
