@@ -5,7 +5,7 @@ from uuid import UUID
 from typing import Optional
 from fastapi import HTTPException, Depends, Query
 from app.dependencies import verify_supabase_token
-from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest
+from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, RoleRequest
 from app.projects import controller
 
 
@@ -71,3 +71,8 @@ def get_join_requests(project_id: UUID, payload: dict = Depends(verify_supabase_
         raise HTTPException(status_code=401, detail="Authentication required")
     requests = controller.get_pending_join_requests(project_id, payload.get('sub'))
     return {"requests": requests}
+
+def set_role(project_id: UUID, data: RoleRequest, payload: dict = Depends(verify_supabase_token)):
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return controller.set_role(payload.get('sub'), data.target_id, project_id, data.role)

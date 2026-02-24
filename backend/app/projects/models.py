@@ -30,3 +30,9 @@ class AcceptJoinRequestRequest(BaseModel):
     """Request model for accepting a join request"""
     request_id: UUID
     user_id: UUID
+
+class RoleRequest(BaseModel):
+    """Request model for accepting a join request"""
+    target_id: UUID
+    role: str
+

@@ -526,3 +526,52 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
     except Exception as e:
         print(f"Error fetching join requests: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch join requests: {str(e)}")
+
+def set_project_role(user_id: UUID, target_id: UUID, project_id: UUID, role: str):
+    """
+    Set the role of a given user (owner/admin only)
+    
+    Args:
+        user_id: user unique indentifier
+        target_id: target unique identifier
+        project_id: Project unique identifier
+        role: name of role to set to 
+        
+    Returns:
+        Dictionary of success message
+        
+    Raises:
+        HTTPException: If no permission or database error occurs
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        membership = client.table('project_members').select('role').eq(
+            'project_id', str(project_id)
+        ).eq('user_id', user_id).execute()
+        
+        reviewer_role = membership.data[0]['role']
+        if reviewer_role not in ['owner', 'admin']:
+            raise HTTPException(status_code=403, detail="Only project owners and admins can view join requests")
+
+        # update user role
+        response = (
+            client.table("project_members")
+            .update({"role": role})
+            .eq("user_id", target_id).eq("project_id", project_id)
+            .execute()
+        )
+        if response.data:
+            return {
+                "message": "Changed roles successfully",
+                "member": target_id,
+                "role": role
+            }
+        else:
+            raise HTTPException(status_code=404, detail=f'Could not find project member')
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error sending join request: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to review project join request: {str(e)}")
+    
