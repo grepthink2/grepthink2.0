@@ -298,8 +298,18 @@ def get_class_students(class_id: UUID) -> list:
         print(f"Error fetching students: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch students: {str(e)}")
 
-def get_class_projects(class_id: UUID, user_id: UUID, role: str):
-    """Get all projects for a class (visible to enrolled students and class teacher)."""
+def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
+    """
+    Get all projects for a class.
+
+    Access rules:
+    - Instructors who own the class see all projects.
+    - Students enrolled in the class see all projects.
+
+    Each project is enriched with:
+    - creator_email: email of the project creator
+    - user_role: the requester's role in that project (None if not a member)
+    """
     try:
         client = service_client if service_client else supabase
 
@@ -314,10 +324,7 @@ def get_class_projects(class_id: UUID, user_id: UUID, role: str):
 
         class_row = class_result.data[0]
 
-        has_access = False
-        if role == "instructor" and class_row.get('created_by') == user_id:
-            has_access = True
-
+        has_access = role == 'instructor' and class_row.get('created_by') == user_id
         if not has_access:
             enrollment_result = (
                 client.table('class_enrollments')
@@ -333,15 +340,17 @@ def get_class_projects(class_id: UUID, user_id: UUID, role: str):
 
         projects_result = (
             client.table('projects')
-            .select('id, class_id, name, description, created_by, created_at')
+            .select('id, class_id, name, description, created_by, created_at, team_size, looking_for_roles, skills')
             .eq('class_id', str(class_id))
             .order('created_at', desc=True)
             .execute()
         )
 
         projects = projects_result.data or []
+        if not projects:
+            return []
 
-        creator_ids = list({project['created_by'] for project in projects if project.get('created_by')})
+        creator_ids = list({p['created_by'] for p in projects if p.get('created_by')})
         creator_emails: dict[str, str | None] = {}
         if creator_ids:
             creators = client.table('profiles').select('id, email').in_('id', creator_ids).execute()
