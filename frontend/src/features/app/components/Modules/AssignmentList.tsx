@@ -7,7 +7,12 @@ export type AssignmentStatus = 'active' | 'draft' | 'closed';
 export interface Assignment {
   id: string;
   title: string;
+  /** Display string for the table, e.g. "Jan 12, 2026" */
   dueDate: string;
+  /** Datetime for the editor — "yyyy-MM-dd HH:mm" */
+  openDate: string;
+  /** Datetime for the editor — "yyyy-MM-dd HH:mm" */
+  dueDatetime: string;
   submitted: number;
   total: number;
   status: AssignmentStatus;
@@ -15,7 +20,7 @@ export interface Assignment {
 
 interface AssignmentListProps {
   assignments: Assignment[];
-  onEdit?: (assignmentId: string) => void;
+  onEdit?: (assignment: Assignment) => void;
 }
 
 const statusLabel: Record<AssignmentStatus, string> = {
@@ -27,9 +32,9 @@ const statusLabel: Record<AssignmentStatus, string> = {
 const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit }) => {
   const [_editingId, setEditingId] = useState<string | null>(null);
 
-  const handleEdit = (id: string) => {
-    setEditingId(id);
-    onEdit?.(id);
+  const handleEdit = (assignment: Assignment) => {
+    setEditingId(assignment.id);
+    onEdit?.(assignment);
   };
 
   return (
@@ -78,7 +83,7 @@ const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit }) 
                     <td className="assignment-list__td-actions">
                       <button
                         className="edit-btn"
-                        onClick={() => handleEdit(assignment.id)}
+                        onClick={() => handleEdit(assignment)}
                       >
                         <SquarePen size={13} />
                         Edit

@@ -261,22 +261,95 @@
   flex-shrink: 0;
 }
 
-// Popover — right-aligned, floats below trigger
+// Popover — right-aligned, floats below or above trigger
 .date-field__popover {
   position: absolute;
-  top: calc(100% + 6px);
   right: 0;
   z-index: $z-index-modal + 1;
   background: $white;
   border-radius: $border-radius-md;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 12px;
-  animation: datePopoverIn 0.15s ease-out;
+
+  &--down {
+    top: calc(100% + 6px);
+    animation: datePopoverInDown 0.15s ease-out;
+  }
+
+  &--up {
+    bottom: calc(-10%);
+    animation: datePopoverInUp 0.15s ease-out;
+  }
 }
 
-@keyframes datePopoverIn {
+@keyframes datePopoverInDown {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes datePopoverInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// Time row inside popover
+.date-field__time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px 4px;
+  border-top: 1px solid $border-color;
+  margin-top: 4px;
+}
+
+.date-field__time-icon {
+  color: $text-tertiary;
+  flex-shrink: 0;
+}
+
+.date-field__time-label {
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  font-weight: $font-weight-medium;
+  color: $text-secondary;
+  flex-shrink: 0;
+}
+
+.date-field__time-input {
+  padding: 6px 10px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  color: $text-primary;
+  background-color: $white;
+
+  &:focus { outline: none; border-color: $primary-color; }
+}
+
+// Done / confirm button row
+.date-field__popover-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid $border-color;
+}
+
+.date-field__confirm-btn {
+  padding: 7px 20px;
+  background-color: $primary-color;
+  color: $white;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  cursor: pointer;
+
+  &:hover { background-color: $primary-hover; }
+  &:focus { outline: none; }
+  &:disabled { background-color: $disabled-bg; cursor: not-allowed; }
 }
 
 // ── react-day-picker overrides (scoped inside popover) ─────────
