@@ -246,7 +246,7 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
             raise HTTPException(status_code=400, detail="Already a member of this project")
         
         # Check if there's already a pending request
-        existing_request = client.table('project_join_requests').select('id, status').eq(
+        existing_request = client.table('project_join_requests').select('id, request_status').eq(
             'project_id', str(project_id)
         ).eq('user_id', user_id).eq('status', 'pending').execute()
         
@@ -257,7 +257,7 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
         request_data = {
             "project_id": str(project_id),
             "user_id": user_id,
-            "status": "pending"
+            "request_status": "pending"
         }
         
         result = client.table('project_join_requests').insert(request_data).execute()
