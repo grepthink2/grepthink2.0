@@ -62,11 +62,11 @@ def create_project(
         
         project = result.data[0]
         
-        # Automatically add creator as project member with 'product owner' role
+        # Automatically add creator as project member with 'owner' role
         member_data = {
             "project_id": project['id'],
             "user_id": user_id,
-            "role": "product owner"
+            "role": "owner"
         }
         client.table('project_members').insert(member_data).execute()
         
@@ -108,7 +108,7 @@ def update_project(project_id: UUID, user_id: str, team_size: int) -> dict:
         if not membership.data or len(membership.data) == 0:
             raise HTTPException(status_code=403, detail="Not a member of this project")
         role = membership.data[0]['role']
-        if role not in ('product owner', 'owner', 'admin'):
+        if role not in ('owner', 'admin'):
             raise HTTPException(status_code=403, detail="Only project owners and admins can update the project")
 
         result = client.table('projects').update({"team_size": team_size}).eq('id', str(project_id)).execute()
