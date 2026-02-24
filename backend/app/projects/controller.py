@@ -5,7 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
-from models import CreateTSRRequest
+from app.projects.models import CreateTSRRequest
 
 def create_project(
     class_id: UUID,
@@ -592,7 +592,7 @@ def create_tsr(user_id: UUID, project_id: UUID, data: CreateTSRRequest) -> dict:
         tsr_data = {
             "evaluator_id": str(user_id),
             "evaluatee_id": str(data.evaluatee_id),
-            "project_id": project_id,
+            "project_id": str(project_id),
             "percent_contribution": data.percent_contribution,
             "positive_feedback": data.positive_feedback,
             "constructive_feedback": data.constructive_feedback,
@@ -610,7 +610,7 @@ def create_tsr(user_id: UUID, project_id: UUID, data: CreateTSRRequest) -> dict:
         print(f"Error creating TSR: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create TSR: {str(e)}")
 
-def view_tsrs(user_id: UUID, project_id: UUID, data: CreateTSRRequest) -> dict:
+def view_tsrs(user_id: UUID, project_id: UUID) -> dict:
     """
     Receive TSR for a specified project
     Returns all TSRs if you are admin or scrum master
@@ -638,26 +638,28 @@ def view_tsrs(user_id: UUID, project_id: UUID, data: CreateTSRRequest) -> dict:
         tsr_result = []
         if user_role in ["admin", "scrum master"]:
             tsr_result = (client.table('TSRs')
-                .select('evaluatee_id, percent_contribution, positive_feedback, constructive_feedback')
-                .eq('project_id', project_id)
+                .select('evaluator_id, evaluatee_id, percent_contribution, positive_feedback, constructive_feedback, scrum_master_notes')
+                .eq('project_id', str(project_id))
                 .execute()
             )
         else:
             tsr_result = (client.table('TSRs')
-                .select('evaluator_id, percent_contribution, positive_feedback, constructive_feedback')
-                .eq('project_id', project_id)
-                .eq('evaluatee_id', user_id)
+                .select('evaluator_id, evaluatee_id, percent_contribution, positive_feedback, constructive_feedback, scrum_master_notes')
+                .eq('project_id', str(project_id))
+                .eq('evaluator_id', str(user_id))
                 .execute()
             )
         
         # fetch evaluator emails
-        evaluator_ids = [r['evaluator_id'] for r in tsr_result.data]
-        evaluators = client.table('profiles').select('id, email, role').in_('id', evaluator_ids).execute()
-        evaluator_map = {u['id']: u['email'] for u in evaluators.data} if evaluators.data else {}
+        evaluator_ids = [r['evaluator_id'] for r in (tsr_result.data or []) if r.get('evaluator_id')]
+        evaluator_map = {}
+        if evaluator_ids:
+            evaluators = client.table('profiles').select('id, email, role').in_('id', evaluator_ids).execute()
+            evaluator_map = {u['id']: u['email'] for u in evaluators.data} if evaluators.data else {}
         
-        for tsr in tsr_result.data:
-            tsr['email'] = evaluator_map.get(tsr['evaluator_id'], "Email Not Found")
-        return tsr_result.data
+        for tsr in tsr_result.data or []:
+            tsr['email'] = evaluator_map.get(tsr.get('evaluator_id'), "Email Not Found")
+        return tsr_result.data or []
     except HTTPException:
         raise
     except Exception as e:

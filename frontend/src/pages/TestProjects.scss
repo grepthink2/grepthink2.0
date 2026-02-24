@@ -63,8 +63,12 @@
   padding: 0.7rem 0.8rem;
   border: 1px solid $border-color;
   border-radius: $border-radius-sm;
-  color: $text-primary;
+  color: $white;
   font-size: $font-size-base;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.8);
+  }
 
   &:focus {
     outline: none;
@@ -201,8 +205,100 @@
   gap: $spacing-xs;
 }
 
+.test-projects-page__tsr {
+  margin-top: $spacing-md;
+  border-top: 1px solid $border-color;
+  padding-top: $spacing-md;
+  display: grid;
+  gap: $spacing-sm;
+}
+
+.test-projects-page__subheading {
+  margin: 0;
+  color: $text-primary;
+  font-size: $font-size-base;
+}
+
+.test-projects-page__hint {
+  margin: 0;
+  color: $text-secondary;
+  font-size: $font-size-sm;
+}
+
+.test-projects-page__team-builder {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: $spacing-sm;
+  align-items: end;
+}
+
+.test-projects-page__members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.test-projects-page__member-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(1, 129, 86, 0.12);
+  color: $primary-color;
+  font-size: $font-size-sm;
+  font-weight: 600;
+}
+
+.test-projects-page__tsr-form {
+  display: grid;
+  gap: $spacing-sm;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  padding: $spacing-sm;
+  background: $white;
+}
+
+.test-projects-page__tsr-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 180px;
+  gap: $spacing-sm;
+}
+
+.test-projects-page__tsr-history {
+  border-top: 1px solid $border-color;
+  padding-top: $spacing-sm;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: $spacing-sm;
+  }
+
+  li {
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $background;
+    padding: $spacing-sm;
+  }
+
+  p {
+    margin: $spacing-xs 0 0;
+  }
+}
+
+.test-projects-page__tsr-meta {
+  color: $text-primary;
+}
+
 @media (max-width: 840px) {
   .test-projects-page__control-row {
+    grid-template-columns: 1fr;
+  }
+
+  .test-projects-page__team-builder,
+  .test-projects-page__tsr-row {
     grid-template-columns: 1fr;
   }
 }

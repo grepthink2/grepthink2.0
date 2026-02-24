@@ -41,6 +41,14 @@ export interface ApiProjectJoinRequest {
   status: string;
 }
 
+export interface ApiProjectMember {
+  user_id: string;
+  email?: string;
+  user_role?: string;
+  project_role: string;
+  joined_at: string;
+}
+
 export interface CreateProjectPayload {
   class_id: string;
   name: string;
@@ -48,6 +56,24 @@ export interface CreateProjectPayload {
   team_size: number;
   looking_for_roles?: string[];
   skills?: string[];
+}
+
+export interface CreateTsrPayload {
+  evaluatee_id: string;
+  percent_contribution: number;
+  positive_feedback: string;
+  constructive_feedback: string;
+  scrum_master_notes: string;
+}
+
+export interface ApiTSR {
+  evaluator_id?: string;
+  evaluatee_id?: string;
+  percent_contribution: number;
+  positive_feedback: string;
+  constructive_feedback: string;
+  scrum_master_notes?: string;
+  email?: string;
 }
 
 /**
@@ -155,6 +181,21 @@ export const api = {
 
   getProjectJoinRequests: async (projectId: string) => {
     return apiRequest<{ requests: ApiProjectJoinRequest[] }>(`/api/projects/${projectId}/join-requests`);
+  },
+
+  getProjectMembers: async (projectId: string) => {
+    return apiRequest<{ members: ApiProjectMember[] }>(`/api/projects/${projectId}/members`);
+  },
+
+  createProjectTsr: async (projectId: string, data: CreateTsrPayload) => {
+    return apiRequest<{ TSR: ApiTSR }>(`/api/projects/${projectId}/create_tsr`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getProjectTsrs: async (projectId: string) => {
+    return apiRequest<{ TSR: ApiTSR[] }>(`/api/projects/${projectId}/view_tsrs`);
   },
 
   acceptProjectJoinRequest: async (requestId: string) => {
