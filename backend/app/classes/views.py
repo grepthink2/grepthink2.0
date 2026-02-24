@@ -61,3 +61,12 @@ def get_class_students(class_id: UUID, payload: dict = Depends(verify_supabase_t
         raise HTTPException(status_code=401, detail="Authentication required")
     students = controller.get_class_students(class_id)
     return {"students": students}
+
+def get_class_projects(class_id: UUID, payload: dict = Depends(verify_supabase_token)):
+    """Get all projects for a class (visible to enrolled students and class teacher)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    user_id = payload.get('sub')
+    role = get_user_role(user_id)
+    projects = controller.get_class_projects(class_id, user_id, role)
+    return {"projects": projects}

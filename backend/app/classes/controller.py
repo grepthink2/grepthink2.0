@@ -297,3 +297,63 @@ def get_class_students(class_id: UUID) -> list:
     except Exception as e:
         print(f"Error fetching students: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch students: {str(e)}")
+
+def get_class_projects(class_id: UUID, user_id: UUID, role: str):
+    """Get all projects for a class (visible to enrolled students and class teacher)."""
+    try:
+        client = service_client if service_client else supabase
+
+        class_result = (
+            client.table('classes')
+            .select('id, created_by')
+            .eq('id', str(class_id))
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(status_code=404, detail='Class not found')
+
+        class_row = class_result.data[0]
+
+        has_access = False
+        if role == "instructor" and class_row.get('created_by') == user_id:
+            has_access = True
+
+        if not has_access:
+            enrollment_result = (
+                client.table('class_enrollments')
+                .select('id')
+                .eq('class_id', str(class_id))
+                .eq('user_id', user_id)
+                .execute()
+            )
+            has_access = bool(enrollment_result.data)
+
+        if not has_access:
+            raise HTTPException(status_code=403, detail='You do not have access to this class projects list')
+
+        projects_result = (
+            client.table('projects')
+            .select('id, class_id, name, description, created_by, created_at')
+            .eq('class_id', str(class_id))
+            .order('created_at', desc=True)
+            .execute()
+        )
+
+        projects = projects_result.data or []
+
+        creator_ids = list({project['created_by'] for project in projects if project.get('created_by')})
+        creator_emails: dict[str, str | None] = {}
+        if creator_ids:
+            creators = client.table('profiles').select('id, email').in_('id', creator_ids).execute()
+            for creator in creators.data or []:
+                creator_emails[creator['id']] = creator.get('email')
+
+        for project in projects:
+            project['creator_email'] = creator_emails.get(project.get('created_by'))
+
+        return projects
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching projects: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch projects: {str(e)}")
