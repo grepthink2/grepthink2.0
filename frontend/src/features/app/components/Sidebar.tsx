@@ -107,7 +107,13 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
       <nav className="sidebar-nav">
         {sidebarConfig.map((section) => (
           <div key={section.title} className="sidebar-section">
-            {!isCollapsed && <h3 className="section-title">{section.title}</h3>}
+            {!isCollapsed && (
+              <h3 className="section-title">
+                {section.title === 'Class' && selectedClass
+                  ? `Class: ${selectedClass.name}`
+                  : section.title}
+              </h3>
+            )}
             <ul className="section-items">
               {section.items.map((item) => {
                 const isActive = location.pathname === item.path;

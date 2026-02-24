@@ -1,0 +1,427 @@
+@use '@styles/index.scss' as *;
+
+// ── Backdrop ───────────────────────────────────────────────────
+.create-assignment-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-index-modal;
+  padding: $spacing-lg;
+  animation: createAssignmentFadeIn 0.2s ease-out;
+
+  &.closing {
+    animation: createAssignmentFadeOut 0.2s ease-out;
+  }
+}
+
+@keyframes createAssignmentFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes createAssignmentFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+// ── Modal shell ────────────────────────────────────────────────
+.create-assignment-modal {
+  background-color: #eeeeee;
+  border-radius: $border-radius-md;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  animation: createAssignmentSlideIn 0.2s ease-out;
+
+  &.closing {
+    animation: createAssignmentSlideOut 0.2s ease-out;
+  }
+}
+
+@keyframes createAssignmentSlideIn {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes createAssignmentSlideOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-16px); }
+}
+
+// ── Header ─────────────────────────────────────────────────────
+.create-assignment-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg $spacing-xl;
+  background-color: #eeeeee;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.create-assignment-modal__title {
+  font-size: $font-size-header;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $text-primary;
+  margin: 0;
+}
+
+.create-assignment-modal__close-button {
+  background: none;
+  border: none;
+  color: $text-primary;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $border-radius-sm;
+
+  &:hover { background-color: rgba(0, 0, 0, 0.05); }
+  &:focus { outline: none; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+}
+
+// ── Content ────────────────────────────────────────────────────
+.create-assignment-modal__content {
+  padding: $spacing-xl;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.create-assignment-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.create-assignment-modal__label {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $text-primary;
+}
+
+.create-assignment-modal__sublabel {
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  color: $text-secondary;
+}
+
+// ── Template button ────────────────────────────────────────────
+.create-assignment-modal__template-buttons {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.create-assignment-modal__template-button {
+  flex: 1;
+  min-width: 140px;
+  padding: 12px 16px;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  color: $text-primary;
+  cursor: default;
+
+  &.active {
+    background-color: $primary-color;
+    border-color: $primary-color;
+    color: $white;
+  }
+}
+
+// ── Details section ────────────────────────────────────────────
+.create-assignment-modal__details {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.create-assignment-modal__input-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.create-assignment-modal__input {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-family: $primary-font;
+  color: $text-primary;
+  box-sizing: border-box;
+
+  &::placeholder { color: $text-secondary; }
+  &:focus { outline: none; border-color: $accent-color; }
+}
+
+// ── Actions ────────────────────────────────────────────────────
+.create-assignment-modal__actions {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+  justify-content: flex-end;
+}
+
+.create-assignment-modal__cancel-button {
+  padding: 14px 24px;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-family: $primary-font;
+  color: $text-primary;
+  cursor: pointer;
+
+  &:hover { background-color: $background; }
+  &:focus { outline: none; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+}
+
+.create-assignment-modal__submit-button {
+  padding: 14px 24px;
+  background-color: $primary-color;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $white;
+  cursor: pointer;
+
+  &:hover { background-color: $primary-hover; }
+  &:focus { outline: none; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  &:disabled { background-color: $disabled-bg; cursor: not-allowed; }
+}
+
+.create-assignment-modal__error {
+  padding: 12px;
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: $border-radius-sm;
+  color: #c33;
+  font-size: $font-size-sm;
+}
+
+// ── Custom date picker field ───────────────────────────────────
+.date-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+// Trigger button (looks like an input, shows selected date)
+.date-field__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-family: $primary-font;
+  color: $text-secondary;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color $transition-fast;
+
+  &:hover   { border-color: darken(#DADADA, 12%); }
+  &:focus   { outline: none; border-color: $accent-color; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+
+  &--open   { border-color: $primary-color; }
+  &--filled { color: $text-primary; }
+}
+
+.date-field__text {
+  flex: 1;
+}
+
+.date-field__icon {
+  color: $text-tertiary;
+  flex-shrink: 0;
+}
+
+// Popover — right-aligned, floats below or above trigger
+.date-field__popover {
+  position: absolute;
+  right: 0;
+  z-index: $z-index-modal + 1;
+  background: $white;
+  border-radius: $border-radius-md;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 12px;
+
+  &--down {
+    top: calc(100% + 6px);
+    animation: datePopoverInDown 0.15s ease-out;
+  }
+
+  &--up {
+    bottom: calc(-10%);
+    animation: datePopoverInUp 0.15s ease-out;
+  }
+}
+
+@keyframes datePopoverInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes datePopoverInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// Time row inside popover
+.date-field__time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px 4px;
+  border-top: 1px solid $border-color;
+  margin-top: 4px;
+}
+
+.date-field__time-icon {
+  color: $text-tertiary;
+  flex-shrink: 0;
+}
+
+.date-field__time-label {
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  font-weight: $font-weight-medium;
+  color: $text-secondary;
+  flex-shrink: 0;
+}
+
+.date-field__time-input {
+  padding: 6px 10px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  color: $text-primary;
+  background-color: $white;
+
+  &:focus { outline: none; border-color: $primary-color; }
+}
+
+// Done / confirm button row
+.date-field__popover-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid $border-color;
+}
+
+.date-field__confirm-btn {
+  padding: 7px 20px;
+  background-color: $primary-color;
+  color: $white;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  cursor: pointer;
+
+  &:hover { background-color: $primary-hover; }
+  &:focus { outline: none; }
+  &:disabled { background-color: $disabled-bg; cursor: not-allowed; }
+}
+
+// ── react-day-picker overrides (scoped inside popover) ─────────
+.date-field__popover {
+  // Month/year caption
+  .rdp-month_caption {
+    font-family: $primary-font;
+    font-size: 0.9rem;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    padding-bottom: $spacing-sm;
+  }
+
+  // Nav chevron buttons
+  .rdp-nav button {
+    color: $text-secondary;
+    border-radius: $border-radius-sm;
+    padding: 4px;
+
+    &:hover { background-color: $background; color: $text-primary; }
+    &:focus { outline: none; }
+  }
+
+  // Weekday header row
+  .rdp-weekdays .rdp-weekday {
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    font-weight: $font-weight-semibold;
+    color: $text-tertiary;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  // Individual day cells
+  .rdp-day {
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: 0.85rem;
+    color: $text-primary;
+    transition: background-color $transition-fast, color $transition-fast;
+
+    &:hover:not([disabled]) {
+      background-color: rgba($primary-color, 0.1);
+      color: $primary-color;
+    }
+  }
+
+  // Selected day
+  .rdp-selected .rdp-day_button {
+    background-color: $primary-color !important;
+    color: $white !important;
+    border-radius: $border-radius-sm;
+    border: none;
+  }
+
+  // Today dot
+  .rdp-today:not(.rdp-selected) .rdp-day_button {
+    font-weight: $font-weight-semibold;
+    color: $primary-color;
+    border: 1.5px solid $primary-color;
+    border-radius: $border-radius-sm;
+  }
+
+  // Disabled days
+  .rdp-disabled {
+    color: $border-color;
+    pointer-events: none;
+  }
+
+  // Remove default outline on day buttons
+  .rdp-day_button {
+    &:focus { outline: none; }
+    &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  }
+}
