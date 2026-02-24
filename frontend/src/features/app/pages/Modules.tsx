@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useClass } from '@/lib/classContext';
 import AddAssignmentButton from '@features/app/components/Modules/AddAssignmentButton';
 import AssignmentList, { type Assignment } from '@features/app/components/Modules/AssignmentList';
 import AssignmentTurnInRate, { type TurnInRateData } from '@features/app/components/Modules/AssignmentTurnInRate';
 import ProjectHealth, { type ProjectHealthItem } from '@features/app/components/Modules/ProjectHealth';
+import CreateAssignmentModal from '@features/app/components/Modules/CreateAssignmentModal';
 import './Modules.scss';
 
 // ── Mock data ─────────────────────────────────────────────────
@@ -30,6 +31,7 @@ const mockProjectHealth: ProjectHealthItem[] = [
 // ── Page ──────────────────────────────────────────────────────
 const Modules: React.FC = () => {
   const { selectedClass } = useClass();
+  const [createAssignmentModalOpen, setCreateAssignmentModalOpen] = useState(false);
 
   if (!selectedClass) {
     return (
@@ -47,7 +49,7 @@ const Modules: React.FC = () => {
       <div className="modules__layout">
         {/* ── Left ── */}
         <div className="modules__main">
-          <AddAssignmentButton onClick={() => {}} />
+          <AddAssignmentButton onClick={() => setCreateAssignmentModalOpen(true)} />
           <AssignmentList assignments={mockAssignments} />
         </div>
 
@@ -57,6 +59,15 @@ const Modules: React.FC = () => {
           <ProjectHealth projects={mockProjectHealth} />
         </div>
       </div>
+
+      <CreateAssignmentModal
+        isOpen={createAssignmentModalOpen}
+        onClose={() => setCreateAssignmentModalOpen(false)}
+        onCreateAssignment={(data) => {
+          // TODO: call API to create assignment, then refresh list
+          console.log('Create assignment:', data);
+        }}
+      />
     </div>
   );
 };
