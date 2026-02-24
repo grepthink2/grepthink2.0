@@ -1,4 +1,4 @@
-@import '@styles/index.scss';
+@use '@styles/index.scss' as *;
 
 // Page wrapper
 .pageWrapper {
@@ -24,7 +24,7 @@
   width: 543px;
   box-sizing: border-box;
   margin: 0;
-  min-height: fit-content;
+  height: auto;
 }
 
 // Typography

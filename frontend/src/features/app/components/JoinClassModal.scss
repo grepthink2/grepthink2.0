@@ -1,0 +1,230 @@
+@use '@styles/index.scss' as *;
+
+.join-class-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.join-class-modal {
+  width: clamp(720px, 70vw, 900px);
+  min-height: 520px;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  position: relative;
+
+}
+
+.join-class-modal__close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  color: #006b3e;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #005a32;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+// Header
+.join-class-modal__header {
+  background-color: #006b3e;
+  padding: 55px 40px;
+}
+
+.join-class-modal__title {
+  margin: 0;
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.join-class-modal__subtitle {
+  margin: 8px 0 0 0;
+  font-size: 1rem;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+// Body
+.join-class-modal__body {
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.join-class-access_code {
+  align-self: flex-start;
+  font-size: 0.95rem;
+  font-weight: 550;
+  color: #000000;
+  letter-spacing: 0.05em;
+  margin-bottom: 24px;
+  margin-left: 7em;
+}
+
+.join-class-modal__code-inputs {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-right: auto;
+}
+
+.join-class-modal__code-input-wrapper {
+  position: relative;
+}
+
+.join-class-modal__code-input {
+  width: 56px;
+  height: 64px;
+  background-color: #d1d5db;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4a5568;
+  text-align: center;
+  outline: none;
+  transition: all 0.2s;
+  cursor: text;
+
+  &::placeholder {
+    color: #9ca3af;
+    font-weight: 600;
+  }
+
+  &:focus {
+    background-color: #ffffff;
+    color: #374151;
+    outline: 2px solid #006b3e;
+    outline-offset: -2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.join-class-modal__info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.join-class-modal__info-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #006b3e;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.join-class-disclaimer {
+  font-size: 15px;
+  color: #006b3e;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  margin: auto;
+}
+
+// Messages
+.join-class-modal__message {
+  margin-top: 16px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  text-align: center;
+
+  &--error {
+    background-color: #ffebee;
+    color: #c62828;
+  }
+
+  &--success {
+    background-color: #d1fae5;
+    color: #0d5a2f;
+  }
+}
+
+// Footer
+.join-class-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 40px;
+  border-top: 1px solid #f0f0f0;
+  
+}
+
+.join-class-modal__button {
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--cancel {
+    background-color: #f3f4f6;
+    color: #4a5568;
+    border: none;
+
+    &:hover:not(:disabled) {
+      background-color: #e5e7eb;
+    }
+  }
+
+  &--submit {
+    background-color: #374151;
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 4px 12px rgba(55, 65, 81, 0.3);
+
+    &:hover:not(:disabled) {
+      background-color: #2f3f3f;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(55, 65, 81, 0.4);
+    }
+  }
+}
