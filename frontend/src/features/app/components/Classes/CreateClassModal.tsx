@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Upload, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
-import DatePickerField from '@features/app/components/DatePickerField';
+import DatePickerField from '@/features/app/components/Fields/DatePickerField';
 import './CreateClassModal.scss';
 
 type Term = 'Fall' | 'Winter' | 'Spring' | 'Summer';

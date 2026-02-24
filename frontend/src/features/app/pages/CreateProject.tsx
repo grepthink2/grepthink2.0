@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RotateCw } from 'lucide-react';
-import ProjectView from '../components/ProjectView';
-import ConfirmModal from '../components/ConfirmModal';
+import ProjectView from '../components/Project/ProjectView';
+import ConfirmModal from '../components/Overlays/ConfirmModal';
 import { generateTemplateMarkdown, parseTemplateFromMarkdown } from '../utils/projectDescriptionTemplate';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
