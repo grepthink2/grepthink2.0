@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import Sidebar from '@features/app/components/Sidebar';
-import Header from '@features/app/components/Header';
-import CreateClassModal from '@features/app/components/CreateClassModal';
-import JoinClassModal from '@features/app/components/JoinClassModal';
+import Sidebar from '@features/app/components/Layout/Sidebar';
+import Header from '@features/app/components/Layout/Header';
+import CreateClassModal from '@/features/app/components/Classes/CreateClassModal';
+import JoinClassModal from '@/features/app/components/Classes/JoinClassModal';
 import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/routePermissions';
