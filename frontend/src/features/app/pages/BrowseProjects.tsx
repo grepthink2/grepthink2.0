@@ -6,7 +6,6 @@ interface Project {
   id: string;
   title: string;
   className: string;
-  description: string;
   teamSize: string;
   memberCount: number;
   spotsAvailable: number;
@@ -22,7 +21,6 @@ const BrowseProjects: React.FC = () => {
       id: '1',
       title: 'AI Chatbot Assistant',
       className: 'CSE 115B',
-      description: 'Building an intelligent chatbot using natural language processing to help students with course-related questions.',
       teamSize: '3/4',
       memberCount: 3,
       spotsAvailable: 1,
@@ -32,7 +30,6 @@ const BrowseProjects: React.FC = () => {
       id: '2',
       title: 'E-commerce Platform',
       className: 'CMPM 150',
-      description: 'A full-stack e-commerce solution with real-time inventory management and payment processing.',
       teamSize: '2/4',
       memberCount: 2,
       spotsAvailable: 2,
@@ -42,7 +39,6 @@ const BrowseProjects: React.FC = () => {
       id: '3',
       title: 'Campus Event Finder',
       className: 'CSE 115B',
-      description: 'Mobile-first web app to discover and register for campus events with personalized recommendations.',
       teamSize: '4/4',
       memberCount: 4,
       spotsAvailable: 0,
@@ -52,7 +48,6 @@ const BrowseProjects: React.FC = () => {
       id: '4',
       title: 'Study Group Matcher',
       className: 'CMPS 111',
-      description: 'Platform connecting students with similar study habits and schedules for effective group study sessions.',
       teamSize: '3/3',
       memberCount: 3,
       spotsAvailable: 0,
@@ -62,7 +57,6 @@ const BrowseProjects: React.FC = () => {
       id: '5',
       title: 'Fitness Tracker App',
       className: 'CSE 115B',
-      description: 'Web application for tracking workouts.',
       teamSize: '2/3',
       memberCount: 2,
       spotsAvailable: 1,
@@ -72,7 +66,6 @@ const BrowseProjects: React.FC = () => {
       id: '6',
       title: 'Recipe Sharing Platform',
       className: 'CMPM 150',
-      description: 'Community-driven recipe platform.',
       teamSize: '1/4',
       memberCount: 1,
       spotsAvailable: 3,
@@ -127,9 +120,6 @@ const BrowseProjects: React.FC = () => {
 
             {/* Card Body - Light Grey */}
             <div className="project-card__body">
-              {/* Description */}
-              <p className="project-card__description">{project.description}</p>
-
               {/* Team Size */}
               <div className="project-card__stat">
                 <Users size={14} />
