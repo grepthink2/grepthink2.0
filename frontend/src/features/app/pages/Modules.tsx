@@ -74,6 +74,7 @@ const Modules: React.FC = () => {
         assignment={editingAssignment}
         onClose={() => setEditingAssignment(null)}
         onSave={(id, data) => {
+          // TODO: call API to update assignment, then refresh list
           console.log('Save assignment:', id, data);
           setEditingAssignment(null);
         }}
