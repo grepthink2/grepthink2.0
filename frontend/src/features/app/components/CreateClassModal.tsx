@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Upload, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
+import DatePickerField from '@features/app/components/DatePickerField';
 import './CreateClassModal.scss';
 
 type Term = 'Fall' | 'Winter' | 'Spring' | 'Summer';
@@ -14,6 +15,7 @@ interface CreateClassModalProps {
 const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) => {
   const [courseName, setCourseName] = useState('');
   const [selectedTerm, setSelectedTerm] = useState<Term>('Fall');
+  const [termStartDate, setTermStartDate] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [instructorOnly, setInstructorOnly] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -98,6 +100,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       // Reset form and close
       setCourseName('');
       setSelectedTerm('Fall');
+      setTermStartDate('');
       setCsvFile(null);
       setInstructorOnly(false);
       handleClose();
@@ -162,6 +165,14 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
               ))}
             </div>
           </div>
+
+          {/* Term Start Date */}
+          <DatePickerField
+            label="First Week of Term"
+            value={termStartDate}
+            onChange={setTermStartDate}
+            labelClassName="create-class-modal__label"
+          />
 
           {/* Upload Roster */}
           <div className="create-class-modal__field">

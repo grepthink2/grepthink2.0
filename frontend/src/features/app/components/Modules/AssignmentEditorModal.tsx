@@ -1,154 +1,13 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { DayPicker } from 'react-day-picker';
-import { format, parse, isValid } from 'date-fns';
-import { X, CalendarDays, Clock, ChevronLeft, ChevronRight, FileText, Globe } from 'lucide-react';
-import 'react-day-picker/dist/style.css';
+import React, { useState, useEffect } from 'react';
+import { parse, isValid } from 'date-fns';
+import { X, FileText, Globe } from 'lucide-react';
+import DatePickerField, { DATETIME_FORMAT } from '@features/app/components/DatePickerField';
 import { type Assignment, type AssignmentStatus } from './AssignmentList';
 import './AssignmentEditorModal.scss';
 
-// ── Datetime helpers ───────────────────────────────────────────
-const DT_FORMAT      = 'yyyy-MM-dd HH:mm';
-const DATE_ONLY      = 'yyyy-MM-dd';
-const DISPLAY_FORMAT = "MMM d, yyyy 'at' h:mm a";
-
-// ── Inline DateTimePickerField ─────────────────────────────────
-interface DateTimePickerFieldProps {
-  label: string;
-  value: string;
-  onChange: (val: string) => void;
-  disabledBefore?: Date;
-}
-
-const DateTimePickerField: React.FC<DateTimePickerFieldProps> = ({
-  label,
-  value,
-  onChange,
-  disabledBefore,
-}) => {
-  const [open, setOpen]           = useState(false);
-  const [popoverDir, setPopoverDir] = useState<'down' | 'up'>('down');
-  const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef   = useRef<HTMLButtonElement>(null);
-  const popoverRef   = useRef<HTMLDivElement>(null);
-  const timeRef      = useRef<HTMLInputElement>(null);
-
-  const parsed    = value ? parse(value, DT_FORMAT, new Date()) : undefined;
-  const validDate = parsed && isValid(parsed) ? parsed : undefined;
-
-  const selectedDay  = validDate
-    ? new Date(validDate.getFullYear(), validDate.getMonth(), validDate.getDate())
-    : undefined;
-  const selectedTime = validDate
-    ? `${String(validDate.getHours()).padStart(2, '0')}:${String(validDate.getMinutes()).padStart(2, '0')}`
-    : '08:00';
-
-  const displayText = validDate ? format(validDate, DISPLAY_FORMAT) : 'Select date & time';
-
-  useLayoutEffect(() => {
-    if (!open || !triggerRef.current) return;
-    const rect       = triggerRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    setPopoverDir(spaceBelow < 360 && spaceAbove > spaceBelow ? 'up' : 'down');
-  }, [open]);
-
-  useEffect(() => {
-    if (timeRef.current && timeRef.current !== document.activeElement) {
-      timeRef.current.value = selectedTime;
-    }
-  }, [selectedTime]);
-
-  useEffect(() => {
-    const onPointerDown = (e: PointerEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, []);
-
-  const handleDaySelect = (day: Date | undefined) => {
-    if (!day) return;
-    const dateStr = format(day, DATE_ONLY);
-    onChange(`${dateStr} ${selectedTime}`);
-  };
-
-  const handleTimeChange = (time: string) => {
-    const dateStr = selectedDay ? format(selectedDay, DATE_ONLY) : format(new Date(), DATE_ONLY);
-    onChange(`${dateStr} ${time}`);
-  };
-
-  return (
-    <div className="aem-date-field" ref={containerRef}>
-      <label className="aem__sublabel">{label}</label>
-
-      <button
-        ref={triggerRef}
-        type="button"
-        className={[
-          'aem-date-field__trigger',
-          open  ? 'aem-date-field__trigger--open'   : '',
-          value ? 'aem-date-field__trigger--filled' : '',
-        ].filter(Boolean).join(' ')}
-        onClick={() => setOpen(v => !v)}
-        aria-label={`Pick ${label}`}
-      >
-        <span className="aem-date-field__text">{displayText}</span>
-        <CalendarDays size={16} className="aem-date-field__icon" />
-      </button>
-
-      {open && (
-        <div
-          ref={popoverRef}
-          className={`aem-date-field__popover aem-date-field__popover--${popoverDir}`}
-        >
-          <DayPicker
-            mode="single"
-            selected={selectedDay}
-            onSelect={handleDaySelect}
-            defaultMonth={selectedDay ?? new Date()}
-            disabled={disabledBefore ? { before: disabledBefore } : undefined}
-            components={{
-              Chevron: ({ orientation }) =>
-                orientation === 'left'
-                  ? <ChevronLeft size={16} />
-                  : <ChevronRight size={16} />,
-            }}
-          />
-
-          <div className="aem-date-field__time-row">
-            <Clock size={14} className="aem-date-field__time-icon" />
-            <span className="aem-date-field__time-label">Time</span>
-            <input
-              ref={timeRef}
-              type="time"
-              className="aem-date-field__time-input"
-              defaultValue={selectedTime}
-              onChange={e => handleTimeChange(e.target.value)}
-            />
-          </div>
-
-          <div className="aem-date-field__popover-footer">
-            <button
-              type="button"
-              className="aem-date-field__confirm-btn"
-              onClick={() => setOpen(false)}
-              disabled={!value}
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ── Editor status type ─────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────
 type EditorStatus = 'draft' | 'published';
 
-// ── Modal ──────────────────────────────────────────────────────
 interface AssignmentEditorModalProps {
   assignment: Assignment | null;
   onClose: () => void;
@@ -161,6 +20,7 @@ interface AssignmentEditorModalProps {
 const toEditorStatus = (s: AssignmentStatus): EditorStatus =>
   s === 'draft' ? 'draft' : 'published';
 
+// ── Component ──────────────────────────────────────────────────
 const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
   assignment,
   onClose,
@@ -168,15 +28,14 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
 }) => {
   const isOpen = assignment !== null;
 
-  const [name,        setName]        = useState('');
-  const [openDate,    setOpenDate]    = useState('');
-  const [dueDate,     setDueDate]     = useState('');
-  const [status,      setStatus]      = useState<EditorStatus>('published');
-  const [isClosing,   setIsClosing]   = useState(false);
+  const [name,         setName]         = useState('');
+  const [openDate,     setOpenDate]     = useState('');
+  const [dueDate,      setDueDate]      = useState('');
+  const [status,       setStatus]       = useState<EditorStatus>('published');
+  const [isClosing,    setIsClosing]    = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error,       setError]       = useState<string | null>(null);
+  const [error,        setError]        = useState<string | null>(null);
 
-  // Populate fields when a new assignment is opened
   useEffect(() => {
     if (assignment) {
       setName(assignment.title);
@@ -205,15 +64,14 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
 
   const handleSave = async () => {
     setError(null);
-    if (!name.trim()) { setError('Assignment name is required'); return; }
+    if (!name.trim()) { setError('Assignment name is required');  return; }
     if (!openDate)    { setError('Open date & time is required'); return; }
     if (!dueDate)     { setError('Due date & time is required');  return; }
 
-    const openParsed = parse(openDate, DT_FORMAT, new Date());
-    const dueParsed  = parse(dueDate,  DT_FORMAT, new Date());
+    const openParsed = parse(openDate, DATETIME_FORMAT, new Date());
+    const dueParsed  = parse(dueDate,  DATETIME_FORMAT, new Date());
     if (isValid(openParsed) && isValid(dueParsed) && dueParsed < openParsed) {
-      setError('Due date must be on or after open date');
-      return;
+      setError('Due date must be on or after open date'); return;
     }
 
     setIsSubmitting(true);
@@ -226,19 +84,17 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
     }
   };
 
-  const openDateObj = openDate ? parse(openDate, DT_FORMAT, new Date()) : undefined;
+  const openDateObj = openDate ? parse(openDate, DATETIME_FORMAT, new Date()) : undefined;
 
   if (!isOpen && !isClosing) return null;
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className={`aem-backdrop ${isClosing ? 'aem-backdrop--closing' : ''}`}
         onClick={handleClose}
       />
 
-      {/* Panel */}
       <div className={`aem ${isClosing ? 'aem--closing' : ''}`} role="dialog" aria-modal="true">
         {/* Header */}
         <div className="aem__header">
@@ -270,17 +126,21 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
 
           {/* Dates */}
           <div className="aem__section">
-            <DateTimePickerField
+            <DatePickerField
               label="Open Date & Time"
               value={openDate}
               onChange={setOpenDate}
+              showTime
+              labelClassName="aem__sublabel"
             />
 
-            <DateTimePickerField
+            <DatePickerField
               label="Due Date & Time"
               value={dueDate}
               onChange={setDueDate}
+              showTime
               disabledBefore={openDateObj && isValid(openDateObj) ? openDateObj : undefined}
+              labelClassName="aem__sublabel"
             />
           </div>
 
