@@ -298,8 +298,19 @@ def get_class_students(class_id: UUID) -> list:
         print(f"Error fetching students: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch students: {str(e)}")
 
-def get_class_projects(class_id: UUID, user_id: UUID, role: str):
-    """Get all projects for a class (visible to enrolled students and class teacher)."""
+def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
+    """
+    Get all projects for a class.
+
+    Access rules:
+    - Instructors who own the class see all projects.
+    - Students enrolled in the class see all projects.
+
+    Each project returns:
+    - name, team_size, sentiment
+    - product_owner_name, product_owner_email
+    - scrum_master_name, scrum_master_email (None if no scrum master assigned)
+    """
     try:
         client = service_client if service_client else supabase
 
@@ -314,10 +325,7 @@ def get_class_projects(class_id: UUID, user_id: UUID, role: str):
 
         class_row = class_result.data[0]
 
-        has_access = False
-        if role == "instructor" and class_row.get('created_by') == user_id:
-            has_access = True
-
+        has_access = role == 'instructor' and class_row.get('created_by') == user_id
         if not has_access:
             enrollment_result = (
                 client.table('class_enrollments')
@@ -333,25 +341,74 @@ def get_class_projects(class_id: UUID, user_id: UUID, role: str):
 
         projects_result = (
             client.table('projects')
-            .select('id, class_id, name, description, created_by, created_at')
+            .select('id, name, team_size, sentiment')
             .eq('class_id', str(class_id))
             .order('created_at', desc=True)
             .execute()
         )
 
         projects = projects_result.data or []
+        if not projects:
+            return []
 
-        creator_ids = list({project['created_by'] for project in projects if project.get('created_by')})
-        creator_emails: dict[str, str | None] = {}
-        if creator_ids:
-            creators = client.table('profiles').select('id, email').in_('id', creator_ids).execute()
-            for creator in creators.data or []:
-                creator_emails[creator['id']] = creator.get('email')
+        project_ids = [p['id'] for p in projects]
 
+        # Fetch all product owner and scrum master memberships for these projects in one query
+        memberships_result = (
+            client.table('project_members')
+            .select('project_id, user_id, role')
+            .in_('project_id', project_ids)
+            .in_('role', ['product owner', 'owner', 'scrum master'])
+            .execute()
+        )
+
+        # Collect all user IDs we need to look up
+        member_user_ids = list({m['user_id'] for m in (memberships_result.data or []) if m.get('user_id')})
+        profile_map: dict[str, dict] = {}
+        if member_user_ids:
+            profiles_result = (
+                client.table('profiles')
+                .select('id, email, name')
+                .in_('id', member_user_ids)
+                .execute()
+            )
+            for p in profiles_result.data or []:
+                profile_map[p['id']] = p
+
+        # Build a lookup: project_id -> {role -> profile}
+        project_member_map: dict[str, dict] = {}
+        for m in memberships_result.data or []:
+            pid = m['project_id']
+            if pid not in project_member_map:
+                project_member_map[pid] = {}
+            project_member_map[pid][m['role']] = profile_map.get(m['user_id'], {})
+
+        def _name(profile: dict) -> str | None:
+            if not profile:
+                return None
+            return profile.get('name') or profile.get('email')
+
+        results = []
         for project in projects:
-            project['creator_email'] = creator_emails.get(project.get('created_by'))
+            pid = project['id']
+            members = project_member_map.get(pid, {})
 
-        return projects
+            # Product owner stored as 'product owner' or 'owner' depending on creation path
+            owner_profile = members.get('product owner') or members.get('owner') or {}
+            scrum_profile = members.get('scrum master') or {}
+
+            results.append({
+                'id': pid,
+                'name': project.get('name'),
+                'team_size': project.get('team_size'),
+                'sentiment': project.get('sentiment'),
+                'product_owner_name': _name(owner_profile),
+                'product_owner_email': owner_profile.get('email'),
+                'scrum_master_name': _name(scrum_profile) if scrum_profile else None,
+                'scrum_master_email': scrum_profile.get('email') if scrum_profile else None,
+            })
+
+        return results
     except HTTPException:
         raise
     except Exception as e:

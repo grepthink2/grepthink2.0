@@ -32,9 +32,15 @@ class AcceptJoinRequestRequest(BaseModel):
     user_id: UUID
 
 class CreateTSRRequest(BaseModel):
-    """Request model for creating a TSR"""
+    """Request model for submitting a TSR.
+
+    evaluator_id is derived from the auth token; project_id comes from the URL.
+    scrum_master_notes is optional.
+    week is a 1-based sprint/week number used to group TSRs over time.
+    """
     evaluatee_id: UUID
+    week: int
     percent_contribution: int
     positive_feedback: str
     constructive_feedback: str
-    scrum_master_notes: str
+    scrum_master_notes: Optional[str] = None

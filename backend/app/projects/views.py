@@ -9,6 +9,7 @@ from app.projects.models import CreateProjectRequest, UpdateProjectRequest, Join
 from app.projects import controller
 
 
+
 def create_project(data: CreateProjectRequest, payload: dict = Depends(verify_supabase_token)):
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -83,3 +84,39 @@ def view_tsrs(project_id: UUID, payload: dict = Depends(verify_supabase_token)):
         raise HTTPException(status_code=401, detail="Authentication required")
     TSRS = controller.view_tsrs(payload.get('sub'), project_id)
     return {"TSR": TSRS}
+
+
+def get_submitted_tsrs(
+    project_id: UUID,
+    user_id: Optional[UUID] = Query(None, description="Target user (admin/scrum master only; defaults to self)"),
+    week: Optional[int] = Query(None, description="Filter by week number"),
+    payload: dict = Depends(verify_supabase_token),
+):
+    """TSRs submitted (evaluator) by a user in a project, optionally filtered by week."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    tsrs = controller.get_tsrs_submitted_by(
+        requester_id=payload.get('sub'),
+        project_id=project_id,
+        target_user_id=str(user_id) if user_id else None,
+        week=week,
+    )
+    return {"tsrs": tsrs}
+
+
+def get_received_tsrs(
+    project_id: UUID,
+    user_id: Optional[UUID] = Query(None, description="Target user (admin/scrum master only; defaults to self)"),
+    week: Optional[int] = Query(None, description="Filter by week number"),
+    payload: dict = Depends(verify_supabase_token),
+):
+    """TSRs received (evaluatee) by a user in a project, optionally filtered by week."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    tsrs = controller.get_tsrs_received_by(
+        requester_id=payload.get('sub'),
+        project_id=project_id,
+        target_user_id=str(user_id) if user_id else None,
+        week=week,
+    )
+    return {"tsrs": tsrs}

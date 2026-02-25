@@ -579,20 +579,50 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
 
 def create_tsr(user_id: UUID, project_id: UUID, data: CreateTSRRequest) -> dict:
     """
-    Create a new TSR 
+    Create a new TSR for a project.
+
+    Validates that the submitting user (evaluator) is enrolled in the class
+    that the project belongs to, linking the TSR to the student's current class.
+
     Returns:
         Dictionary containing TSR data
     Raises:
-        HTTPException: If database error occurs
+        HTTPException: If user is not enrolled, project not found, or database error
     """
     try:
         client = service_client if service_client else supabase
 
-        # Create the TSR
+        # Resolve the project to get its class_id
+        project_result = (
+            client.table('projects')
+            .select('id, class_id')
+            .eq('id', str(project_id))
+            .execute()
+        )
+        if not project_result.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        class_id = project_result.data[0].get('class_id')
+
+        # Verify the evaluator is enrolled in the class this project belongs to
+        enrollment = (
+            client.table('class_enrollments')
+            .select('id')
+            .eq('class_id', str(class_id))
+            .eq('user_id', str(user_id))
+            .execute()
+        )
+        if not enrollment.data:
+            raise HTTPException(
+                status_code=403,
+                detail="You must be enrolled in this project's class to submit a TSR",
+            )
+
         tsr_data = {
             "evaluator_id": str(user_id),
             "evaluatee_id": str(data.evaluatee_id),
             "project_id": str(project_id),
+            "week": data.week,
             "percent_contribution": data.percent_contribution,
             "positive_feedback": data.positive_feedback,
             "constructive_feedback": data.constructive_feedback,
@@ -600,7 +630,7 @@ def create_tsr(user_id: UUID, project_id: UUID, data: CreateTSRRequest) -> dict:
         }
 
         result = client.table('TSRs').insert(tsr_data).execute()
-        
+
         if not result.data or len(result.data) == 0:
             raise HTTPException(status_code=500, detail="Failed to create TSR")
         return result.data[0]
@@ -638,13 +668,13 @@ def view_tsrs(user_id: UUID, project_id: UUID) -> dict:
         tsr_result = []
         if user_role in ["admin", "scrum master"]:
             tsr_result = (client.table('TSRs')
-                .select('evaluator_id, evaluatee_id, percent_contribution, positive_feedback, constructive_feedback, scrum_master_notes')
+                .select('id, evaluator_id, evaluatee_id, week, percent_contribution, positive_feedback, constructive_feedback, scrum_master_notes')
                 .eq('project_id', str(project_id))
                 .execute()
             )
         else:
             tsr_result = (client.table('TSRs')
-                .select('evaluator_id, evaluatee_id, percent_contribution, positive_feedback, constructive_feedback, scrum_master_notes')
+                .select('id, evaluator_id, evaluatee_id, week, percent_contribution, positive_feedback, constructive_feedback, scrum_master_notes')
                 .eq('project_id', str(project_id))
                 .eq('evaluator_id', str(user_id))
                 .execute()
@@ -665,3 +695,119 @@ def view_tsrs(user_id: UUID, project_id: UUID) -> dict:
     except Exception as e:
         print(f"Error getting TSRs: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get TSRs: {str(e)}")
+
+TSR_FIELDS = 'id, evaluator_id, evaluatee_id, week, percent_contribution, positive_feedback, constructive_feedback, scrum_master_notes, created_at'
+
+
+def _enrich_tsrs(client, tsrs: list) -> list:
+    """Add evaluator_email and evaluatee_email to each TSR dict."""
+    all_ids = list({r['evaluator_id'] for r in tsrs if r.get('evaluator_id')} |
+                   {r['evaluatee_id'] for r in tsrs if r.get('evaluatee_id')})
+    if not all_ids:
+        return tsrs
+    profiles = client.table('profiles').select('id, email').in_('id', all_ids).execute()
+    email_map = {p['id']: p['email'] for p in (profiles.data or [])}
+    for tsr in tsrs:
+        tsr['evaluator_email'] = email_map.get(tsr.get('evaluator_id'))
+        tsr['evaluatee_email'] = email_map.get(tsr.get('evaluatee_id'))
+    return tsrs
+
+
+def _get_project_role(client, project_id: str, user_id: str) -> str:
+    """Return the user's role in a project, or raise 403 if not a member."""
+    membership = (
+        client.table('project_members')
+        .select('role')
+        .eq('project_id', project_id)
+        .eq('user_id', user_id)
+        .execute()
+    )
+    if not membership.data:
+        raise HTTPException(status_code=403, detail="Not a member of this project")
+    return membership.data[0]['role']
+
+
+def get_tsrs_submitted_by(
+    requester_id: str,
+    project_id: UUID,
+    target_user_id: str | None = None,
+    week: int | None = None,
+) -> list:
+    """
+    Return TSRs submitted (evaluator) by a user in a project.
+
+    - Any member can view their own submitted TSRs.
+    - Admin / scrum master can view any member's submitted TSRs via target_user_id.
+    - Optionally filter by week number.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        requester_role = _get_project_role(client, str(project_id), requester_id)
+
+        subject_id = target_user_id or requester_id
+        if subject_id != requester_id and requester_role not in ('admin', 'scrum master'):
+            raise HTTPException(
+                status_code=403,
+                detail="Only admins and scrum masters can view another member's submitted TSRs",
+            )
+
+        query = (
+            client.table('TSRs')
+            .select(TSR_FIELDS)
+            .eq('project_id', str(project_id))
+            .eq('evaluator_id', subject_id)
+        )
+        if week is not None:
+            query = query.eq('week', week)
+
+        result = query.order('week').order('created_at').execute()
+        return _enrich_tsrs(client, result.data or [])
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching submitted TSRs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch submitted TSRs: {str(e)}")
+
+
+def get_tsrs_received_by(
+    requester_id: str,
+    project_id: UUID,
+    target_user_id: str | None = None,
+    week: int | None = None,
+) -> list:
+    """
+    Return TSRs received (evaluatee) by a user in a project.
+
+    - Any member can view their own received TSRs.
+    - Admin / scrum master can view any member's received TSRs via target_user_id.
+    - Optionally filter by week number.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        requester_role = _get_project_role(client, str(project_id), requester_id)
+
+        subject_id = target_user_id or requester_id
+        if subject_id != requester_id and requester_role not in ('admin', 'scrum master'):
+            raise HTTPException(
+                status_code=403,
+                detail="Only admins and scrum masters can view another member's received TSRs",
+            )
+
+        query = (
+            client.table('TSRs')
+            .select(TSR_FIELDS)
+            .eq('project_id', str(project_id))
+            .eq('evaluatee_id', subject_id)
+        )
+        if week is not None:
+            query = query.eq('week', week)
+
+        result = query.order('week').order('created_at').execute()
+        return _enrich_tsrs(client, result.data or [])
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching received TSRs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch received TSRs: {str(e)}")
