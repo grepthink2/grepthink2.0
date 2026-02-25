@@ -28,6 +28,7 @@ const pageTitles: Record<string, string> = {
   '/app/create-project': 'Create Project',
   '/app/browse-projects': 'Browse Projects',
   '/app/my-project': 'My Project',
+  '/app/assignments': 'Assignments',
   '/app/settings': 'Settings',
   '/app/help-center': 'Help Center',
 };
@@ -42,6 +43,7 @@ const classRoutes = new Set([
   '/app/create-project',
   '/app/browse-projects',
   '/app/my-project',
+  '/app/assignments',
 ]);
 
 const Header: React.FC = () => {

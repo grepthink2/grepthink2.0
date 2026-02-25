@@ -17,7 +17,8 @@ import Modules from '@features/app/pages/Modules';
 import Dashboard from '@features/app/pages/Dashboard';
 import ProjectDetails from '@features/app/pages/ProjectDetails';
 import CreateProject from '@features/app/pages/CreateProject';
-import MyClasses from './features/app/pages/MyClasses';
+import MyClasses from '@features/app/pages/MyClasses';
+import Assignments from '@features/app/pages/Assignments';
 import TestProjects from '@pages/TestProjects';
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
             <Route path="create-project" element={<CreateProject />} />
             <Route path="browse-projects" element={<div>Browse Projects - Coming Soon</div>} />
             <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
+            <Route path="assignments" element={<Assignments />} />
             <Route path="settings" element={<div>Settings - Coming Soon</div>} />
             <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
           </Route>
