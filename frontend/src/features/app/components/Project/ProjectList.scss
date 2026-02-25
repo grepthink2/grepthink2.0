@@ -1,0 +1,50 @@
+@use '@styles/index.scss' as *;
+
+// ── Table-specific helpers for project list ────────────────────
+.projects-table__empty-state {
+  padding: $spacing-lg;
+  text-align: center;
+  color: $text-secondary;
+  font-size: 0.9rem;
+}
+
+.projects-table__person-cell {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+.projects-table__person-name {
+  font-weight: $font-weight-medium;
+  color: $text-primary;
+}
+
+.projects-table__person-email {
+  color: #2771ff;
+  font-size: 0.78rem;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.projects-table__sentiment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+
+  &--positive {
+    color: #018156;
+  }
+
+  &--neutral {
+    color: #e6a817;
+  }
+
+  &--negative {
+    color: #d32f2f;
+  }
+}
+
