@@ -70,14 +70,39 @@ const Header: React.FC = () => {
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const pageName = pageTitles[location.pathname] || 'GrepThink';
-  const isClassRoute = classRoutes.has(location.pathname) && !!selectedClass;
+  const path = location.pathname;
+  const isProjectDetailRoute = path.startsWith('/app/projects/') && path !== '/app/projects';
+  const isCreateProjectRoute = path === '/app/create-project';
+
+  const basePageName = pageTitles[path] || 'GrepThink';
+  const isClassRouteBase = classRoutes.has(path);
+  const isClassRoute = (isClassRouteBase || isProjectDetailRoute) && !!selectedClass;
   const showInstructorClassMeta = isClassRoute && role === 'instructor';
 
-  // Breadcrumb title for class routes: "ClassName > PageName"
-  const pageTitle = isClassRoute && selectedClass
-    ? `${selectedClass.name} > ${pageName}`
-    : pageName;
+  // Breadcrumb for class routes.
+  // Projects detail: "{Class} > Projects > {Project Name}" if provided in location state.
+  // Create project:
+  //   - Instructor: "{Class} > Projects > Create Project"
+  //   - Student: "{Class} > Create Project"
+  let pageName = basePageName;
+
+  if (isProjectDetailRoute) {
+    const state = location.state as { projectName?: string } | null;
+    const projectName = state?.projectName;
+    pageName = projectName ? `Projects > ${projectName}` : 'Projects';
+  } else if (isCreateProjectRoute) {
+    pageName = role === 'instructor' ? 'Projects > Create Project' : basePageName;
+  }
+
+  const pageTitle =
+    isClassRoute && selectedClass ? `${selectedClass.name} > ${pageName}` : pageName;
+
+  const hasProjectsPrefix = pageName.startsWith('Projects');
+  const projectsSeparatorIndex = hasProjectsPrefix ? pageName.indexOf('>') : -1;
+  const pageNameRest =
+    hasProjectsPrefix && projectsSeparatorIndex !== -1
+      ? pageName.slice(projectsSeparatorIndex + 1).trim()
+      : '';
 
   // Count unread notifications
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -119,7 +144,45 @@ const Header: React.FC = () => {
     <header className={`app-header${isClassRoute ? ' app-header--class' : ''}`}>
       {/* Left: Page Title */}
       <div className="app-header__title-block">
-        <h1 className="app-header__page-title">{pageTitle}</h1>
+        <h1 className="app-header__page-title">
+          {isClassRoute && selectedClass ? (
+            <>
+              <button
+                type="button"
+                className="app-header__breadcrumb-link"
+                onClick={() => {
+                  if (role === 'instructor') {
+                    navigate('/app/dashboard');
+                  }
+                }}
+              >
+                {selectedClass.name}
+              </button>
+              <span className="app-header__breadcrumb-separator"> &gt; </span>
+              {hasProjectsPrefix ? (
+                <>
+                  <button
+                    type="button"
+                    className="app-header__breadcrumb-link"
+                    onClick={() => navigate('/app/projects')}
+                  >
+                    Projects
+                  </button>
+                  {pageNameRest && (
+                    <>
+                      <span className="app-header__breadcrumb-separator"> &gt; </span>
+                      <span className="app-header__breadcrumb-rest">{pageNameRest}</span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <span className="app-header__breadcrumb-rest">{pageName}</span>
+              )}
+            </>
+          ) : (
+            pageTitle
+          )}
+        </h1>
         {showInstructorClassMeta && selectedClass && (
           <div className="app-header__class-meta">
             {selectedClass.description && (

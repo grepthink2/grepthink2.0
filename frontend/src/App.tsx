@@ -11,9 +11,11 @@ import ForgetPassword from '@features/auth/pages/ForgotPassword';
 import VerifyResetPassword from '@features/auth/pages/VerifyResetPassword';
 import ResetPassword from '@features/auth/pages/ResetPassword';
 import ClassManagement from '@features/classes/pages/ClassManagement';
+import Projects from '@features/app/pages/Projects';
 import Roster from '@features/app/pages/Roster';
 import Modules from '@features/app/pages/Modules';
 import Dashboard from '@features/app/pages/Dashboard';
+import ProjectDetails from '@features/app/pages/ProjectDetails';
 import CreateProject from '@features/app/pages/CreateProject';
 import MyClasses from './features/app/pages/MyClasses';
 import TestProjects from '@pages/TestProjects';
@@ -41,7 +43,8 @@ function App() {
             <Route path="my-classes" element={<MyClasses />} />
             <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="projects" element={<div>Projects - Coming Soon</div>} />
+            <Route path="projects" element={<Projects />} />
+            <Route path="projects/:projectId" element={<ProjectDetails />} />
             <Route path="roster" element={<Roster />} />
             <Route path="modules" element={<Modules />} />
             <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
