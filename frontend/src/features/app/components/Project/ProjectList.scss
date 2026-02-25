@@ -48,3 +48,25 @@
   }
 }
 
+.projects-table__row {
+  cursor: pointer;
+}
+
+.projects-table__arrow-cell {
+  width: 32px;
+  text-align: right;
+  color: $primary-color;
+  opacity: 0;
+  transition: opacity $transition-fast;
+}
+
+.projects-table__row:hover .projects-table__arrow-cell {
+  opacity: 1;
+}
+
+// Ensure arrow color wins over base table cell color
+.assignment-list__table td.projects-table__arrow-cell {
+  color: $primary-color;
+}
+
+

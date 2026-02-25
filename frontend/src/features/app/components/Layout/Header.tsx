@@ -70,14 +70,30 @@ const Header: React.FC = () => {
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const pageName = pageTitles[location.pathname] || 'GrepThink';
-  const isClassRoute = classRoutes.has(location.pathname) && !!selectedClass;
+  const path = location.pathname;
+  const isProjectDetailRoute = path.startsWith('/app/projects/') && path !== '/app/projects';
+  const isCreateProjectRoute = path === '/app/create-project';
+
+  const basePageName = pageTitles[path] || 'GrepThink';
+  const isClassRouteBase = classRoutes.has(path);
+  const isClassRoute = (isClassRouteBase || isProjectDetailRoute) && !!selectedClass;
   const showInstructorClassMeta = isClassRoute && role === 'instructor';
 
-  // Breadcrumb title for class routes: "ClassName > PageName"
-  const pageTitle = isClassRoute && selectedClass
-    ? `${selectedClass.name} > ${pageName}`
-    : pageName;
+  // Breadcrumb for class routes.
+  // Projects detail: "{Class} > Projects > {Project Name}" if provided in location state.
+  // Create project: "{Class} > Projects > Create Project".
+  let pageName = basePageName;
+
+  if (isProjectDetailRoute) {
+    const state = location.state as { projectName?: string } | null;
+    const projectName = state?.projectName;
+    pageName = projectName ? `Projects > ${projectName}` : 'Projects';
+  } else if (isCreateProjectRoute) {
+    pageName = 'Projects > Create Project';
+  }
+
+  const pageTitle =
+    isClassRoute && selectedClass ? `${selectedClass.name} > ${pageName}` : pageName;
 
   // Count unread notifications
   const unreadCount = notifications.filter(n => !n.read).length;

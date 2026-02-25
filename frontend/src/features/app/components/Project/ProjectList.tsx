@@ -1,5 +1,5 @@
 import React from 'react';
-import { Smile, Meh, Frown } from 'lucide-react';
+import { Smile, Meh, Frown, ChevronRight } from 'lucide-react';
 import './ProjectList.scss';
 
 export type ProjectSentiment = 'positive' | 'neutral' | 'negative';
@@ -19,9 +19,10 @@ interface ProjectListProps {
   projects: UiProject[];
   loading: boolean;
   error: string | null;
+  onProjectClick?: (project: UiProject) => void;
 }
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error }) => {
+const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onProjectClick }) => {
   const renderSentiment = (sentiment: ProjectSentiment) => {
     const label =
       sentiment === 'positive' ? 'Positive' : sentiment === 'neutral' ? 'Neutral' : 'Negative';
@@ -98,11 +99,16 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error }) =
                 <th>PO</th>
                 <th>SM</th>
                 <th>Sentiment</th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {projects.map((project) => (
-                <tr key={project.id}>
+                <tr
+                  key={project.id}
+                  className="projects-table__row"
+                  onClick={() => onProjectClick?.(project)}
+                >
                   <td className="assignment-list__td-title">{project.name}</td>
                   <td>{project.students}</td>
                   <td className="projects-table__person-cell">
@@ -124,6 +130,9 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error }) =
                     </a>
                   </td>
                   <td>{renderSentiment(project.sentiment)}</td>
+                  <td className="projects-table__arrow-cell">
+                    <ChevronRight size={16} />
+                  </td>
                 </tr>
               ))}
             </tbody>

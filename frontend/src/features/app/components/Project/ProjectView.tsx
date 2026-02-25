@@ -1,11 +1,12 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Brush, MonitorSmartphone, MonitorCog, Database } from 'lucide-react';
+import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen } from 'lucide-react';
 import EmailIcon from '@assets/ic_outline-email.svg';
 import GithubIcon from '@assets/line-md_github.svg';
 import LinkedInIcon from '@assets/mdi_linkedin.svg';
 import CodeIcon from '@assets/material-symbols_code-rounded.svg';
 import './ProjectView.scss';
+import { useAuth } from '@/lib/auth';
 
 interface ProjectViewProps {
   projectTitle: string;
@@ -26,6 +27,9 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   skills,
   selectedRoles,
 }) => {
+  const { role } = useAuth();
+  const isInstructor = role === 'instructor';
+
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
   const hasValidTeamSize = !isNaN(totalMembers) && totalMembers >= 1;
@@ -105,15 +109,40 @@ const ProjectView: React.FC<ProjectViewProps> = ({
             </div>
           </div>
           <div className="project-view__header-right">
-            <button className="project-view__request-button">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="8.5" cy="7" r="4" />
-                <line x1="20" y1="8" x2="20" y2="14" />
-                <line x1="23" y1="11" x2="17" y2="11" />
-              </svg>
-              Request to Join
-            </button>
+            {isInstructor ? (
+              <div className="project-view__instructor-actions">
+                <button className="project-view__request-button">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="8.5" cy="7" r="4" />
+                    <line x1="20" y1="8" x2="20" y2="14" />
+                    <line x1="23" y1="11" x2="17" y2="11" />
+                  </svg>
+                  Add/Drop Members
+                </button>
+                <button className="project-view__request-button">
+                  <SquarePen size={18} />
+                  Edit Project
+                </button>
+              </div>
+            ) : (
+              <button className="project-view__request-button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <line x1="20" y1="8" x2="20" y2="14" />
+                  <line x1="23" y1="11" x2="17" y2="11" />
+                </svg>
+                Request to Join
+              </button>
+            )}
           </div>
         </div>
       </div>

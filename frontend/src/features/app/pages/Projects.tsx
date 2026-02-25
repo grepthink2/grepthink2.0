@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { ApiProject } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
-import AddAssignmentButton from '@features/app/components/Modules/AddAssignmentButton';
 import AddProjectButton from '@features/app/components/Project/AddProjectButton';
 import ProjectList, {
   type UiProject,
@@ -81,6 +81,7 @@ const buildUiProject = (project: ApiProject, index: number): UiProject => {
 
 const Projects: React.FC = () => {
   const { selectedClass } = useClass();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<UiProject[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,11 +141,19 @@ const Projects: React.FC = () => {
           <div className="projects__header">
             <div className="projects__header-actions">
               <AddProjectButton />
-              <AddAssignmentButton />
             </div>
           </div>
 
-          <ProjectList projects={projects} loading={loading} error={error} />
+          <ProjectList
+            projects={projects}
+            loading={loading}
+            error={error}
+            onProjectClick={(project) =>
+              navigate(`/app/projects/${project.id}`, {
+                state: { projectName: project.name },
+              })
+            }
+          />
         </div>
 
         {/* Right: stats column */}

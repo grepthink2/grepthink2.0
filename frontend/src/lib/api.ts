@@ -163,6 +163,10 @@ export const api = {
     return apiRequest<{ projects: ApiProject[] }>(`/api/classes/${classId}/projects`);
   },
 
+  getProject: async (projectId: string) => {
+    return apiRequest<{ project: ApiProject }>(`/api/projects/${projectId}`);
+  },
+
   getProjects: async (classId?: string) => {
     const searchParams = new URLSearchParams();
     if (classId) {

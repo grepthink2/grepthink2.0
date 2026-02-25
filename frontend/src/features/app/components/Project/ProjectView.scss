@@ -121,6 +121,12 @@
     }
   }
 
+  &__instructor-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
   &__content {
     display: grid;
     grid-template-columns: 1fr 350px;
