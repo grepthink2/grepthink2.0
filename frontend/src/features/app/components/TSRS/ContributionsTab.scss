@@ -1,0 +1,281 @@
+@use '@styles/index.scss' as *;
+
+// ── Layout: content row + footer full width ──────────────────────
+.contributions-tab {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.contributions-tab__content {
+  display: flex;
+  gap: $spacing-lg;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+// ── Shared section header ───────────────────────────────────────
+.contributions-tab__section-header {
+  margin-bottom: $spacing-md;
+}
+
+.contributions-tab__title {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.contributions-tab__subtitle {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+// ── Left panel (height flush with right) ────────────────────────
+.contributions-tab__left {
+  flex: 1;
+  min-width: 280px;
+  min-height: 0;
+  background: $background;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.contributions-tab__sliders {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  flex: 1;
+  min-height: 0;
+}
+
+.contributions-tab__member {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contributions-tab__member-name {
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: $text-primary;
+}
+
+.contributions-tab__you-label {
+  color: $primary-color;
+  font-weight: $font-weight-medium;
+}
+
+.contributions-tab__slider-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+// Custom range slider
+.contributions-tab__slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 5px;
+  border-radius: 10px;
+  background: $border-color;
+  outline: none;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--thumb-color, #{$primary-color});
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform $transition-fast;
+
+    &:hover {
+      transform: scale(1.15);
+    }
+  }
+
+  &::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: var(--thumb-color, #{$primary-color});
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.contributions-tab__input-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.contributions-tab__number-input {
+  width: 48px;
+  padding: 4px 6px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: $text-primary;
+  text-align: center;
+  outline: none;
+
+  &:focus {
+    border-color: $primary-color;
+  }
+
+  // hide number arrows
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  -moz-appearance: textfield;
+}
+
+.contributions-tab__percent {
+  font-size: $font-size-base;
+  color: $text-tertiary;
+}
+
+// ── Remaining / error indicators ───────────────────────────────
+.contributions-tab__remaining {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $text-tertiary;
+  padding: 4px 0;
+}
+
+.contributions-tab__error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $error-color;
+  padding: 4px 0;
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+// ── Footer (full width, button bottom right) ─────────────────────
+.contributions-tab__footer {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+// ── Right panel (height flush with left) ────────────────────────
+.contributions-tab__right {
+  flex: 1;
+  min-width: 280px;
+  min-height: 0;
+  background: $background;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.contributions-tab__chart-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.contributions-tab__legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-sm;
+}
+
+.contributions-tab__legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: 6px 8px;
+  border-radius: $border-radius-sm;
+  background: $white;
+}
+
+.contributions-tab__legend-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contributions-tab__legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.contributions-tab__legend-name {
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: $text-primary;
+}
+
+.contributions-tab__legend-pct {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  white-space: nowrap;
+}
+
+// ── Shared button styles (used across all TSRS tabs) ───────────
+.tsrs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 24px;
+  border-radius: $border-radius-sm;
+  border: none;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: background-color $transition-fast, opacity $transition-fast;
+
+  &--primary {
+    background-color: $primary-color;
+    color: $white;
+
+    &:hover:not(:disabled) {
+      background-color: $primary-hover;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+  }
+
+  &--secondary {
+    background-color: $background;
+    color: $text-secondary;
+
+    &:hover {
+      background-color: $border-color;
+    }
+  }
+}

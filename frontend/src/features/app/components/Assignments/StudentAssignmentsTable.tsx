@@ -5,6 +5,9 @@ export type StudentAssignmentStatus = 'not_started' | 'in_progress' | 'submitted
 
 export type StudentAssignmentAction = 'start' | 'edit_submission' | 'closed';
 
+/** Discriminator for which form component to render on the detail page. */
+export type AssignmentType = 'tsrs';
+
 export interface StudentAssignment {
   id: string;
   name: string;
@@ -13,6 +16,8 @@ export interface StudentAssignment {
   projectName: string;
   status: StudentAssignmentStatus;
   action: StudentAssignmentAction;
+  /** Type of assignment — determines which form component is shown. */
+  type: AssignmentType;
 }
 
 interface StudentAssignmentsTableProps {

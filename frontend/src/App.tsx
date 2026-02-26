@@ -19,6 +19,7 @@ import ProjectDetails from '@features/app/pages/ProjectDetails';
 import CreateProject from '@features/app/pages/CreateProject';
 import MyClasses from '@features/app/pages/MyClasses';
 import Assignments from '@features/app/pages/Assignments';
+import AssignmentDetail from '@features/app/pages/AssignmentDetail';
 import TestProjects from '@pages/TestProjects';
 
 function App() {
@@ -53,6 +54,7 @@ function App() {
             <Route path="browse-projects" element={<div>Browse Projects - Coming Soon</div>} />
             <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
             <Route path="assignments" element={<Assignments />} />
+            <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
             <Route path="settings" element={<div>Settings - Coming Soon</div>} />
             <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
           </Route>

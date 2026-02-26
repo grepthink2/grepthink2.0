@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useClass } from '@/lib/classContext';
 import StudentAssignmentsTable, {
   type StudentAssignment,
@@ -13,6 +14,7 @@ const mockStudentAssignments: StudentAssignment[] = [
     projectName: 'ShoeShopper',
     status: 'not_started',
     action: 'start',
+    type: 'tsrs',
   },
   {
     id: '2',
@@ -21,6 +23,7 @@ const mockStudentAssignments: StudentAssignment[] = [
     projectName: 'Chatcut',
     status: 'in_progress',
     action: 'edit_submission',
+    type: 'tsrs',
   },
   {
     id: '3',
@@ -29,11 +32,13 @@ const mockStudentAssignments: StudentAssignment[] = [
     projectName: 'TaskMaster',
     status: 'submitted',
     action: 'closed',
+    type: 'tsrs',
   },
 ];
 
 const Assignments: React.FC = () => {
   const { selectedClass } = useClass();
+  const navigate = useNavigate();
 
   if (!selectedClass) {
     return (
@@ -46,20 +51,24 @@ const Assignments: React.FC = () => {
     );
   }
 
+  const handleOpen = (assignment: StudentAssignment) => {
+    navigate(`/app/assignments/${assignment.id}`, {
+      state: {
+        assignmentName: assignment.name,
+        assignmentType: assignment.type,
+        dueDate: assignment.dueDate,
+        projectName: assignment.projectName,
+      },
+    });
+  };
+
   return (
     <div className="assignments">
       <div className="assignments__content">
         <StudentAssignmentsTable
           assignments={mockStudentAssignments}
-          onStart={(assignment: StudentAssignment) => {
-            // TODO: hook into assignment start / navigation flow
-            // For now, just log so instructors can see in dev tools.
-            console.log('Start assignment:', assignment);
-          }}
-          onEditSubmission={(assignment: StudentAssignment) => {
-            // TODO: hook into edit submission flow
-            console.log('Edit submission for assignment:', assignment);
-          }}
+          onStart={handleOpen}
+          onEditSubmission={handleOpen}
         />
       </div>
     </div>
@@ -67,4 +76,3 @@ const Assignments: React.FC = () => {
 };
 
 export default Assignments;
-
