@@ -14,6 +14,7 @@ export const studentOnlyPaths: string[] = [
   '/app/join-class',
   '/app/browse-projects',
   '/app/my-project',
+  '/app/assignments',
 ];
 
 /** Returns true if the given path is allowed for the given role. */

@@ -1,0 +1,67 @@
+@use '@styles/index.scss' as *;
+
+.assignment-detail {
+  padding: $spacing-lg;
+  min-height: 100%;
+  font-family: $primary-font;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  background-color: $white;
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    color: $text-secondary;
+    text-align: center;
+
+    h2 {
+      margin-bottom: $spacing-sm;
+      font-size: 1.25rem;
+      font-weight: $font-weight-semibold;
+    }
+
+    p {
+      font-size: $font-size-base;
+      color: $text-tertiary;
+    }
+  }
+}
+
+// ── Meta bar (due date + project) ───────────────────────────────
+.assignment-detail__meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.assignment-detail__due,
+.assignment-detail__project {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+}
+
+.assignment-detail__due {
+  background-color: rgba($accent-color, 0.08);
+  color: $accent-color;
+}
+
+.assignment-detail__project {
+  background-color: $background;
+  color: $text-secondary;
+}
+
+// ── Body ────────────────────────────────────────────────────────
+.assignment-detail__body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}

@@ -1,0 +1,56 @@
+@use '@styles/index.scss' as *;
+
+// ── Page shell ─────────────────────────────────────────────────
+.assignments {
+  padding: $spacing-lg;
+  min-height: 100%;
+  font-family: $primary-font;
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    color: $text-secondary;
+    text-align: center;
+
+    h2 {
+      margin-bottom: $spacing-sm;
+      font-size: 1.25rem;
+      font-weight: $font-weight-semibold;
+    }
+
+    p {
+      font-size: $font-size-base;
+      color: $text-tertiary;
+    }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  &__subtitle {
+    margin-top: $spacing-xs;
+    margin-bottom: 0;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+  }
+}
+

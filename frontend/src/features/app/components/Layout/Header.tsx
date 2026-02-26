@@ -28,6 +28,7 @@ const pageTitles: Record<string, string> = {
   '/app/create-project': 'Create Project',
   '/app/browse-projects': 'Browse Projects',
   '/app/my-project': 'My Project',
+  '/app/assignments': 'Assignments',
   '/app/settings': 'Settings',
   '/app/help-center': 'Help Center',
 };
@@ -42,6 +43,7 @@ const classRoutes = new Set([
   '/app/create-project',
   '/app/browse-projects',
   '/app/my-project',
+  '/app/assignments',
 ]);
 
 const Header: React.FC = () => {
@@ -73,14 +75,16 @@ const Header: React.FC = () => {
   const path = location.pathname;
   const isProjectDetailRoute = path.startsWith('/app/projects/') && path !== '/app/projects';
   const isCreateProjectRoute = path === '/app/create-project';
+  const isAssignmentDetailRoute = path.startsWith('/app/assignments/') && path !== '/app/assignments';
 
   const basePageName = pageTitles[path] || 'GrepThink';
   const isClassRouteBase = classRoutes.has(path);
-  const isClassRoute = (isClassRouteBase || isProjectDetailRoute) && !!selectedClass;
+  const isClassRoute = (isClassRouteBase || isProjectDetailRoute || isAssignmentDetailRoute) && !!selectedClass;
   const showInstructorClassMeta = isClassRoute && role === 'instructor';
 
   // Breadcrumb for class routes.
   // Projects detail: "{Class} > Projects > {Project Name}" if provided in location state.
+  // Assignments detail: "{Class} > Assignments > {Assignment Name}" if provided in location state.
   // Create project:
   //   - Instructor: "{Class} > Projects > Create Project"
   //   - Student: "{Class} > Create Project"
@@ -90,6 +94,10 @@ const Header: React.FC = () => {
     const state = location.state as { projectName?: string } | null;
     const projectName = state?.projectName;
     pageName = projectName ? `Projects > ${projectName}` : 'Projects';
+  } else if (isAssignmentDetailRoute) {
+    const state = location.state as { assignmentName?: string } | null;
+    const assignmentName = state?.assignmentName;
+    pageName = assignmentName ? `Assignments > ${assignmentName}` : 'Assignments';
   } else if (isCreateProjectRoute) {
     pageName = role === 'instructor' ? 'Projects > Create Project' : basePageName;
   }
@@ -98,11 +106,17 @@ const Header: React.FC = () => {
     isClassRoute && selectedClass ? `${selectedClass.name} > ${pageName}` : pageName;
 
   const hasProjectsPrefix = pageName.startsWith('Projects');
+  const hasAssignmentsPrefix = pageName.startsWith('Assignments');
+
   const projectsSeparatorIndex = hasProjectsPrefix ? pageName.indexOf('>') : -1;
+  const assignmentsSeparatorIndex = hasAssignmentsPrefix ? pageName.indexOf('>') : -1;
+
   const pageNameRest =
     hasProjectsPrefix && projectsSeparatorIndex !== -1
       ? pageName.slice(projectsSeparatorIndex + 1).trim()
-      : '';
+      : hasAssignmentsPrefix && assignmentsSeparatorIndex !== -1
+        ? pageName.slice(assignmentsSeparatorIndex + 1).trim()
+        : '';
 
   // Count unread notifications
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -167,6 +181,22 @@ const Header: React.FC = () => {
                     onClick={() => navigate('/app/projects')}
                   >
                     Projects
+                  </button>
+                  {pageNameRest && (
+                    <>
+                      <span className="app-header__breadcrumb-separator"> &gt; </span>
+                      <span className="app-header__breadcrumb-rest">{pageNameRest}</span>
+                    </>
+                  )}
+                </>
+              ) : hasAssignmentsPrefix ? (
+                <>
+                  <button
+                    type="button"
+                    className="app-header__breadcrumb-link"
+                    onClick={() => navigate('/app/assignments')}
+                  >
+                    Assignments
                   </button>
                   {pageNameRest && (
                     <>
