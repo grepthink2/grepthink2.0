@@ -1,7 +1,7 @@
 """
 Class management business logic
 """
-from datetime import datetime
+import datetime
 from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
@@ -9,38 +9,66 @@ from app.database.client import service_client, supabase
 from app.utils.generators import generate_course_code
 
 
-def create_class(name: str, description: Optional[str], term: str, user_id: str) -> dict:
+# Terms that run a full semester (8 TSR weeks); summer runs 3 weeks.
+_FULL_TERM_NAMES = {"fall", "winter", "spring"}
+_SUMMER_TSR_COUNT = 3
+_FULL_TSR_COUNT = 8
+
+
+def _generate_tsr_assignments(client, class_id: str, term: str, start_date: datetime.date) -> None:
     """
-    Create a new class with a unique course code.
+    Auto-create TSR assignments for a new class.
 
-    Description is optional. Year is derived from the creator's profile
-    (year or graduation_year) or current year as fallback.
+    Assignments open after the first 2 weeks of class (start_date + 14 days)
+    and are each one week long, one per sprint week.
 
-    Args:
-        name: Class name
-        description: Optional class description
-        user_id: ID of the instructor creating the class
+    Fall / Winter / Spring  →  8 TSR assignments (weeks 3–10)
+    Summer                  →  3 TSR assignments (weeks 3–5)
+    """
+    term_lower = (term or "").strip().lower()
+    count = _FULL_TSR_COUNT if term_lower in _FULL_TERM_NAMES else _SUMMER_TSR_COUNT
 
-    Returns:
-        Dictionary containing class data
+    first_open = start_date + datetime.timedelta(days=14)
 
-    Raises:
-        HTTPException: If course code generation fails or database error occurs
+    assignments = []
+    for week in range(1, count + 1):
+        open_date = first_open + datetime.timedelta(weeks=week - 1)
+        close_date = open_date + datetime.timedelta(days=6)
+        assignments.append({
+            "Title": f"TSR Week {week + 2}",
+            "open_date": open_date.isoformat(),
+            "close_date": close_date.isoformat(),
+            "status": "publish",
+            "class_id": class_id,
+            "assignment_type": "tsr",
+        })
+
+    try:
+        client.table('assignments').insert(assignments).execute()
+    except Exception as e:
+        # Log but don't block class creation
+        print(f"Warning: failed to auto-create TSR assignments for class {class_id}: {e}")
+
+
+def create_class(
+    name: str,
+    description: Optional[str],
+    term: str,
+    start_date: datetime.date,
+    user_id: str,
+) -> dict:
+    """
+    Create a new class with a unique course code and auto-generate TSR assignments.
+
+    After the class is created, TSR assignments are automatically generated
+    starting after the first 2 weeks of class:
+      - Fall / Winter / Spring  →  8 weekly TSR assignments
+      - Summer                  →  3 weekly TSR assignments
     """
     try:
         client = service_client if service_client else supabase
 
-        # Get year from creator's profile (year or graduation_year) or use current year
-        year = datetime.now().year
-        try:
-            profile = client.table('profiles').select('*').eq('id', user_id).execute()
-            if profile.data and len(profile.data) > 0:
-                row = profile.data[0]
-                raw = row.get('year') or row.get('graduation_year')
-                if raw is not None:
-                    year = int(raw)
-        except Exception:
-            pass
+        year = start_date.year
 
         # Generate unique course code
         course_code = None
@@ -54,19 +82,24 @@ def create_class(name: str, description: Optional[str], term: str, user_id: str)
         if not course_code:
             raise HTTPException(status_code=500, detail="Failed to generate unique course code")
 
-        # Create the class
-        class_data = {
+        class_data: dict = {
             "name": name,
             "created_by": user_id,
             "course_code": course_code,
             "year": year,
             "term": term,
+            "start_date": start_date.isoformat(),
         }
         if description is not None:
             class_data["description"] = description
 
         result = client.table('classes').insert(class_data).execute()
-        return result.data[0]
+        new_class = result.data[0]
+
+        # Auto-generate TSR assignments for this class
+        _generate_tsr_assignments(client, new_class['id'], term, start_date)
+
+        return new_class
     except HTTPException:
         raise
     except Exception as e:

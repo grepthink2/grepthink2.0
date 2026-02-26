@@ -40,6 +40,7 @@ def create_assignment(
     open_date: datetime.date,
     close_date: datetime.date,
     status: str,
+    assignment_type: Optional[str] = None,
 ) -> dict:
     """
     Create a new assignment for a class (instructor only).
@@ -62,6 +63,8 @@ def create_assignment(
             "status": status,
             "class_id": str(class_id),
         }
+        if assignment_type is not None:
+            assignment_data["assignment_type"] = assignment_type
 
         result = _client().table('assignments').insert(assignment_data).execute()
         if not result.data:
@@ -82,6 +85,7 @@ def update_assignment(
     open_date: Optional[datetime.date],
     close_date: Optional[datetime.date],
     status: Optional[str],
+    assignment_type: Optional[str] = None,
 ) -> dict:
     """
     Edit an existing assignment's title, dates, or status (instructor only).
@@ -115,6 +119,8 @@ def update_assignment(
             updates['close_date'] = close_date.isoformat()
         if status is not None:
             updates['status'] = status
+        if assignment_type is not None:
+            updates['assignment_type'] = assignment_type
 
         if not updates:
             return assignment

@@ -17,8 +17,9 @@ class CreateProjectRequest(BaseModel):
 
 
 class UpdateProjectRequest(BaseModel):
-    """Request model for updating a project (e.g. team_size)"""
-    team_size: int
+    """Request model for updating a project. All fields are optional."""
+    team_size: Optional[int] = None
+    description: Optional[str] = None
 
 
 class JoinProjectRequest(BaseModel):
@@ -31,16 +32,8 @@ class AcceptJoinRequestRequest(BaseModel):
     request_id: UUID
     user_id: UUID
 
-class CreateTSRRequest(BaseModel):
-    """Request model for submitting a TSR.
+class ManageProjectMemberRequest(BaseModel):
+    """Request model for adding a member to a project (instructor only)."""
+    user_id: UUID
+    role: Optional[str] = "member"
 
-    evaluator_id is derived from the auth token; project_id comes from the URL.
-    scrum_master_notes is optional.
-    week is a 1-based sprint/week number used to group TSRs over time.
-    """
-    evaluatee_id: UUID
-    week: int
-    percent_contribution: int
-    positive_feedback: str
-    constructive_feedback: str
-    scrum_master_notes: Optional[str] = None

@@ -9,6 +9,7 @@ from app.auth.url import router as auth_router
 from app.classes.url import router as classes_router
 from app.projects.url import router as projects_router
 from app.assignments.url import router as assignments_router
+from app.tsr.url import router as tsr_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -32,3 +33,4 @@ app.include_router(auth_router)
 app.include_router(classes_router)
 app.include_router(projects_router)
 app.include_router(assignments_router)
+app.include_router(tsr_router)
