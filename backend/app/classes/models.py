@@ -1,6 +1,7 @@
 """
 Class management request models
 """
+import datetime
 from typing import Optional
 from pydantic import BaseModel
 
@@ -9,6 +10,8 @@ class CreateClassRequest(BaseModel):
     """Request model for creating a new class"""
     name: str
     description: Optional[str] = None
+    term: str
+    start_date: datetime.date
 
 
 class InviteStudentRequest(BaseModel):

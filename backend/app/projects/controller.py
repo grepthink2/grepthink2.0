@@ -5,7 +5,19 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
-from app.projects.models import CreateTSRRequest
+
+
+def _increment_project_num_members(client, project_id: str, delta: int) -> None:
+    """Update projects.num_members by delta (+1 or -1)."""
+    proj = client.table('projects').select('num_members').eq('id', project_id).execute()
+    if not proj.data:
+        return
+    current = proj.data[0].get('num_members')
+    if current is None:
+        current = 0
+    new_val = max(0, int(current) + delta)
+    client.table('projects').update({'num_members': new_val}).eq('id', project_id).execute()
+
 
 def create_project(
     class_id: UUID,
@@ -43,12 +55,14 @@ def create_project(
             raise HTTPException(status_code=404, detail="Class not found")
 
         # Create the project (lists sent as JSON to DB for JSONB columns)
+        # num_members = 1 because creator is added as first member
         project_data = {
             "class_id": str(class_id),
             "name": name,
             "description": description,
             "created_by": user_id,
             "team_size": team_size,
+            "num_members": 1,
         }
         if looking_for_roles is not None:
             project_data["looking_for_roles"] = looking_for_roles
@@ -78,41 +92,61 @@ def create_project(
         raise HTTPException(status_code=500, detail=f"Failed to create project: {str(e)}")
 
 
-def update_project(project_id: UUID, user_id: str, team_size: int) -> dict:
+def update_project(
+    project_id: UUID,
+    user_id: str,
+    team_size: int | None = None,
+    description: str | None = None,
+) -> dict:
     """
-    Update a project (e.g. team_size). Caller must be project owner or admin.
+    Update a project's team_size and/or description.
 
-    Args:
-        project_id: Project unique identifier
-        user_id: ID of the user making the update
-        team_size: New team size
+    Who can edit:
+    - Project owner or admin (project members with elevated roles)
+    - Instructors who own the class the project belongs to
 
-    Returns:
-        Updated project dictionary
-
-    Raises:
-        HTTPException: If project not found, no permission, or database error
+    At least one of team_size or description must be provided.
     """
+    if team_size is None and description is None:
+        raise HTTPException(status_code=400, detail="Provide at least one field to update: team_size or description")
+
     try:
         client = service_client if service_client else supabase
 
-        # Verify the project exists
-        project_result = client.table('projects').select('id').eq('id', str(project_id)).execute()
-        if not project_result.data or len(project_result.data) == 0:
+        project_result = client.table('projects').select('id, class_id').eq('id', str(project_id)).execute()
+        if not project_result.data:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        # Verify the user is project owner or admin
-        membership = client.table('project_members').select('role').eq(
-            'project_id', str(project_id)
-        ).eq('user_id', user_id).execute()
-        if not membership.data or len(membership.data) == 0:
-            raise HTTPException(status_code=403, detail="Not a member of this project")
-        role = membership.data[0]['role']
-        if role not in ('owner', 'admin'):
-            raise HTTPException(status_code=403, detail="Only project owners and admins can update the project")
+        class_id = project_result.data[0].get('class_id')
 
-        result = client.table('projects').update({"team_size": team_size}).eq('id', str(project_id)).execute()
-        if not result.data or len(result.data) == 0:
+        # Check if the user is an instructor who owns the class
+        is_class_instructor = False
+        if class_id:
+            profile = client.table('profiles').select('role').eq('id', user_id).execute()
+            user_role = profile.data[0].get('role') if profile.data else None
+            if user_role == 'instructor':
+                class_check = client.table('classes').select('id').eq('id', str(class_id)).eq('created_by', user_id).execute()
+                is_class_instructor = bool(class_check.data)
+
+        if not is_class_instructor:
+            # Fall back to project membership check
+            membership = client.table('project_members').select('role').eq(
+                'project_id', str(project_id)
+            ).eq('user_id', user_id).execute()
+            if not membership.data:
+                raise HTTPException(status_code=403, detail="Not a member of this project")
+            member_role = membership.data[0]['role']
+            if member_role not in ('owner', 'product owner', 'admin'):
+                raise HTTPException(status_code=403, detail="Only project owners, admins, or class instructors can update the project")
+
+        updates: dict = {}
+        if team_size is not None:
+            updates['team_size'] = team_size
+        if description is not None:
+            updates['description'] = description
+
+        result = client.table('projects').update(updates).eq('id', str(project_id)).execute()
+        if not result.data:
             raise HTTPException(status_code=500, detail="Failed to update project")
         return result.data[0]
     except HTTPException:
@@ -122,28 +156,22 @@ def update_project(project_id: UUID, user_id: str, team_size: int) -> dict:
         raise HTTPException(status_code=500, detail=f"Failed to update project: {str(e)}")
 
 
-# Do we want to filter by class_id? potentially multiple functions for getting projects, depending on what view they are in??
+
 def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
     """
-    Get all projects for a user, optionally filtered by class
-    
-    Args:
-        user_id: User's unique identifier
-        class_id: Optional class ID to filter projects
-        
-    Returns:
-        List of project dictionaries
-        
-    Raises:
-        HTTPException: If database error occurs
+    Get all projects for a user, optionally filtered by class.
+
+    Returns id, name, and member_count for each project.
+
+    - With class_id: returns all projects in the class (instructor or enrolled student).
+    - Without class_id: returns only projects the user is a member of.
     """
     try:
         client = service_client if service_client else supabase
 
         if class_id:
-            # Class-scoped view: allow class instructor or enrolled students to view all class projects
             class_result = client.table('classes').select('id, created_by').eq('id', str(class_id)).execute()
-            if not class_result.data or len(class_result.data) == 0:
+            if not class_result.data:
                 raise HTTPException(status_code=404, detail="Class not found")
 
             class_row = class_result.data[0]
@@ -159,60 +187,45 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
                 raise HTTPException(status_code=403, detail="You do not have access to this class projects list")
 
             projects_result = client.table('projects').select(
-                'id, name, description, class_id, created_by, created_at, team_size, looking_for_roles, skills'
+                'id, name'
             ).eq('class_id', str(class_id)).order('created_at', desc=True).execute()
 
             projects = projects_result.data or []
-            if not projects:
-                return []
+        else:
+            memberships = client.table('project_members').select(
+                'project_id, projects ( id, name )'
+            ).eq('user_id', user_id).execute()
 
-            creator_ids = list({project['created_by'] for project in projects if project.get('created_by')})
-            creator_emails = {}
-            if creator_ids:
-                creators = client.table('profiles').select('id, email').in_('id', creator_ids).execute()
-                for creator in creators.data or []:
-                    creator_emails[creator['id']] = creator.get('email')
+            projects = []
+            for row in memberships.data or []:
+                project = row.get('projects')
+                if project:
+                    projects.append(project)
 
-            project_ids = [project['id'] for project in projects if project.get('id')]
-            user_membership_map = {}
-            if project_ids:
-                memberships = client.table('project_members').select('project_id, role').eq(
-                    'user_id', user_id
-                ).in_('project_id', project_ids).execute()
-                for membership in memberships.data or []:
-                    user_membership_map[membership['project_id']] = membership.get('role')
-
-            for project in projects:
-                project['creator_email'] = creator_emails.get(project.get('created_by'))
-                project['user_role'] = user_membership_map.get(project.get('id'))
-
-            return projects
-        
-        # Get projects where user is a member
-        query = client.table('project_members').select(
-            'project_id, role, projects ( id, name, description, class_id, created_by, created_at, team_size, looking_for_roles, skills )'
-        ).eq('user_id', user_id)
-        
-        memberships = query.execute()
-        
-        if not memberships.data:
+        if not projects:
             return []
-        
-        projects = []
-        for row in memberships.data:
-            project = row.get('projects')
-            if not project:
-                continue
-            
-            # Filter by class_id if provided
-            if class_id and project.get('class_id') != str(class_id):
-                continue
-            
-            # Add user's role to project data
-            project['user_role'] = row.get('role')
-            projects.append(project)
-        
-        return projects
+
+        # Fetch member counts for all projects in one query
+        project_ids = [p['id'] for p in projects]
+        members_result = client.table('project_members').select(
+            'project_id'
+        ).in_('project_id', project_ids).execute()
+
+        count_map: dict[str, int] = {}
+        for m in members_result.data or []:
+            pid = m['project_id']
+            count_map[pid] = count_map.get(pid, 0) + 1
+
+        return [
+            {
+                'id': p['id'],
+                'name': p.get('name'),
+                'member_count': count_map.get(p['id'], 0),
+            }
+            for p in projects
+        ]
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error fetching projects: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch projects: {str(e)}")
@@ -384,6 +397,9 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
         }
         
         client.table('project_members').insert(member_data).execute()
+
+        # Increment num_members on the project
+        _increment_project_num_members(client, join_request['project_id'], 1)
         
         return {
             "message": "Join request accepted successfully",
@@ -576,238 +592,3 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
     except Exception as e:
         print(f"Error fetching join requests: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch join requests: {str(e)}")
-
-def create_tsr(user_id: UUID, project_id: UUID, data: CreateTSRRequest) -> dict:
-    """
-    Create a new TSR for a project.
-
-    Validates that the submitting user (evaluator) is enrolled in the class
-    that the project belongs to, linking the TSR to the student's current class.
-
-    Returns:
-        Dictionary containing TSR data
-    Raises:
-        HTTPException: If user is not enrolled, project not found, or database error
-    """
-    try:
-        client = service_client if service_client else supabase
-
-        # Resolve the project to get its class_id
-        project_result = (
-            client.table('projects')
-            .select('id, class_id')
-            .eq('id', str(project_id))
-            .execute()
-        )
-        if not project_result.data:
-            raise HTTPException(status_code=404, detail="Project not found")
-
-        class_id = project_result.data[0].get('class_id')
-
-        # Verify the evaluator is enrolled in the class this project belongs to
-        enrollment = (
-            client.table('class_enrollments')
-            .select('id')
-            .eq('class_id', str(class_id))
-            .eq('user_id', str(user_id))
-            .execute()
-        )
-        if not enrollment.data:
-            raise HTTPException(
-                status_code=403,
-                detail="You must be enrolled in this project's class to submit a TSR",
-            )
-
-        tsr_data = {
-            "evaluator_id": str(user_id),
-            "evaluatee_id": str(data.evaluatee_id),
-            "project_id": str(project_id),
-            "week": data.week,
-            "percent_contribution": data.percent_contribution,
-            "positive_feedback": data.positive_feedback,
-            "constructive_feedback": data.constructive_feedback,
-            "scrum_master_notes": data.scrum_master_notes,
-        }
-
-        result = client.table('TSRs').insert(tsr_data).execute()
-
-        if not result.data or len(result.data) == 0:
-            raise HTTPException(status_code=500, detail="Failed to create TSR")
-        return result.data[0]
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error creating TSR: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create TSR: {str(e)}")
-
-def view_tsrs(user_id: UUID, project_id: UUID) -> dict:
-    """
-    Receive TSR for a specified project
-    Returns all TSRs if you are admin or scrum master
-    Otherwise returns only TSRs sent to you
-    Returns:
-        Dictionary containing TSR data
-    Raises:
-        HTTPException: If database error occurs
-    """
-    try:
-        client = service_client if service_client else supabase
-
-        # Fetch the your role in the project
-        membership = (client.table('project_members')
-            .select('role')
-            .eq('project_id', project_id)
-            .eq('user_id', user_id)
-            .execute()
-        )
-        
-        if not membership.data or len(membership.data) == 0:
-            raise HTTPException(status_code=403, detail="Not a member of this project")
-        
-        user_role = membership.data[0]['role']
-        tsr_result = []
-        if user_role in ["admin", "scrum master"]:
-            tsr_result = (client.table('TSRs')
-                .select('id, evaluator_id, evaluatee_id, week, percent_contribution, positive_feedback, constructive_feedback, scrum_master_notes')
-                .eq('project_id', str(project_id))
-                .execute()
-            )
-        else:
-            tsr_result = (client.table('TSRs')
-                .select('id, evaluator_id, evaluatee_id, week, percent_contribution, positive_feedback, constructive_feedback, scrum_master_notes')
-                .eq('project_id', str(project_id))
-                .eq('evaluator_id', str(user_id))
-                .execute()
-            )
-        
-        # fetch evaluator emails
-        evaluator_ids = [r['evaluator_id'] for r in (tsr_result.data or []) if r.get('evaluator_id')]
-        evaluator_map = {}
-        if evaluator_ids:
-            evaluators = client.table('profiles').select('id, email, role').in_('id', evaluator_ids).execute()
-            evaluator_map = {u['id']: u['email'] for u in evaluators.data} if evaluators.data else {}
-        
-        for tsr in tsr_result.data or []:
-            tsr['email'] = evaluator_map.get(tsr.get('evaluator_id'), "Email Not Found")
-        return tsr_result.data or []
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error getting TSRs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get TSRs: {str(e)}")
-
-TSR_FIELDS = 'id, evaluator_id, evaluatee_id, week, percent_contribution, positive_feedback, constructive_feedback, scrum_master_notes, created_at'
-
-
-def _enrich_tsrs(client, tsrs: list) -> list:
-    """Add evaluator_email and evaluatee_email to each TSR dict."""
-    all_ids = list({r['evaluator_id'] for r in tsrs if r.get('evaluator_id')} |
-                   {r['evaluatee_id'] for r in tsrs if r.get('evaluatee_id')})
-    if not all_ids:
-        return tsrs
-    profiles = client.table('profiles').select('id, email').in_('id', all_ids).execute()
-    email_map = {p['id']: p['email'] for p in (profiles.data or [])}
-    for tsr in tsrs:
-        tsr['evaluator_email'] = email_map.get(tsr.get('evaluator_id'))
-        tsr['evaluatee_email'] = email_map.get(tsr.get('evaluatee_id'))
-    return tsrs
-
-
-def _get_project_role(client, project_id: str, user_id: str) -> str:
-    """Return the user's role in a project, or raise 403 if not a member."""
-    membership = (
-        client.table('project_members')
-        .select('role')
-        .eq('project_id', project_id)
-        .eq('user_id', user_id)
-        .execute()
-    )
-    if not membership.data:
-        raise HTTPException(status_code=403, detail="Not a member of this project")
-    return membership.data[0]['role']
-
-
-def get_tsrs_submitted_by(
-    requester_id: str,
-    project_id: UUID,
-    target_user_id: str | None = None,
-    week: int | None = None,
-) -> list:
-    """
-    Return TSRs submitted (evaluator) by a user in a project.
-
-    - Any member can view their own submitted TSRs.
-    - Admin / scrum master can view any member's submitted TSRs via target_user_id.
-    - Optionally filter by week number.
-    """
-    try:
-        client = service_client if service_client else supabase
-
-        requester_role = _get_project_role(client, str(project_id), requester_id)
-
-        subject_id = target_user_id or requester_id
-        if subject_id != requester_id and requester_role not in ('admin', 'scrum master'):
-            raise HTTPException(
-                status_code=403,
-                detail="Only admins and scrum masters can view another member's submitted TSRs",
-            )
-
-        query = (
-            client.table('TSRs')
-            .select(TSR_FIELDS)
-            .eq('project_id', str(project_id))
-            .eq('evaluator_id', subject_id)
-        )
-        if week is not None:
-            query = query.eq('week', week)
-
-        result = query.order('week').order('created_at').execute()
-        return _enrich_tsrs(client, result.data or [])
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error fetching submitted TSRs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch submitted TSRs: {str(e)}")
-
-
-def get_tsrs_received_by(
-    requester_id: str,
-    project_id: UUID,
-    target_user_id: str | None = None,
-    week: int | None = None,
-) -> list:
-    """
-    Return TSRs received (evaluatee) by a user in a project.
-
-    - Any member can view their own received TSRs.
-    - Admin / scrum master can view any member's received TSRs via target_user_id.
-    - Optionally filter by week number.
-    """
-    try:
-        client = service_client if service_client else supabase
-
-        requester_role = _get_project_role(client, str(project_id), requester_id)
-
-        subject_id = target_user_id or requester_id
-        if subject_id != requester_id and requester_role not in ('admin', 'scrum master'):
-            raise HTTPException(
-                status_code=403,
-                detail="Only admins and scrum masters can view another member's received TSRs",
-            )
-
-        query = (
-            client.table('TSRs')
-            .select(TSR_FIELDS)
-            .eq('project_id', str(project_id))
-            .eq('evaluatee_id', subject_id)
-        )
-        if week is not None:
-            query = query.eq('week', week)
-
-        result = query.order('week').order('created_at').execute()
-        return _enrich_tsrs(client, result.data or [])
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error fetching received TSRs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch received TSRs: {str(e)}")

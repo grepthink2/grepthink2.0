@@ -16,7 +16,7 @@ def create_class(data: CreateClassRequest, payload: dict = Depends(verify_supaba
     role = get_user_role(user_id)
     if not is_instructor_role(role):
         raise HTTPException(status_code=403, detail="Only instructors can create classes")
-    result = controller.create_class(data.name, data.description, data.term, user_id)
+    result = controller.create_class(data.name, data.description, data.term, data.start_date, user_id)
     return {"message": "Class created successfully", "class": result}
 
 

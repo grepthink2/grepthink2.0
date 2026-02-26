@@ -5,7 +5,7 @@ from uuid import UUID
 from typing import Optional
 from fastapi import HTTPException, Depends, Query
 from app.dependencies import verify_supabase_token
-from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, CreateTSRRequest
+from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, ManageProjectMemberRequest
 from app.projects import controller
 
 
@@ -38,7 +38,12 @@ def get_project(project_id: UUID, payload: dict = Depends(verify_supabase_token)
 def update_project(project_id: UUID, data: UpdateProjectRequest, payload: dict = Depends(verify_supabase_token)):
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
-    project = controller.update_project(project_id, payload.get('sub'), data.team_size)
+    project = controller.update_project(
+        project_id,
+        payload.get('sub'),
+        team_size=data.team_size,
+        description=data.description,
+    )
     return {"message": "Project updated successfully", "project": project}
 
 
@@ -73,50 +78,26 @@ def get_join_requests(project_id: UUID, payload: dict = Depends(verify_supabase_
     requests = controller.get_pending_join_requests(project_id, payload.get('sub'))
     return {"requests": requests}
 
-def create_tsr(project_id:UUID, data: CreateTSRRequest, payload: dict = Depends(verify_supabase_token)):
+
+def add_project_member(project_id: UUID, data: ManageProjectMemberRequest, payload: dict = Depends(verify_supabase_token)):
+    """Add a user to a project, or update their role if already a member (instructor only)."""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
-    TSR = controller.create_tsr(payload.get('sub'), project_id, data)
-    return {"TSR": TSR}
-
-def view_tsrs(project_id: UUID, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    TSRS = controller.view_tsrs(payload.get('sub'), project_id)
-    return {"TSR": TSRS}
-
-
-def get_submitted_tsrs(
-    project_id: UUID,
-    user_id: Optional[UUID] = Query(None, description="Target user (admin/scrum master only; defaults to self)"),
-    week: Optional[int] = Query(None, description="Filter by week number"),
-    payload: dict = Depends(verify_supabase_token),
-):
-    """TSRs submitted (evaluator) by a user in a project, optionally filtered by week."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    tsrs = controller.get_tsrs_submitted_by(
-        requester_id=payload.get('sub'),
+    result = controller.instructor_add_member(
         project_id=project_id,
-        target_user_id=str(user_id) if user_id else None,
-        week=week,
+        requester_id=payload.get('sub'),
+        target_user_id=str(data.user_id),
+        role=data.role,
     )
-    return {"tsrs": tsrs}
+    return result
 
 
-def get_received_tsrs(
-    project_id: UUID,
-    user_id: Optional[UUID] = Query(None, description="Target user (admin/scrum master only; defaults to self)"),
-    week: Optional[int] = Query(None, description="Filter by week number"),
-    payload: dict = Depends(verify_supabase_token),
-):
-    """TSRs received (evaluatee) by a user in a project, optionally filtered by week."""
+def remove_project_member(project_id: UUID, user_id: UUID, payload: dict = Depends(verify_supabase_token)):
+    """Remove a user from a project (instructor only)."""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
-    tsrs = controller.get_tsrs_received_by(
-        requester_id=payload.get('sub'),
+    return controller.instructor_remove_member(
         project_id=project_id,
-        target_user_id=str(user_id) if user_id else None,
-        week=week,
+        requester_id=payload.get('sub'),
+        target_user_id=str(user_id),
     )
-    return {"tsrs": tsrs}

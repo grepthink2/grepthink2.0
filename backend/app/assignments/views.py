@@ -21,6 +21,7 @@ def create_assignment(
         open_date=data.open_date,
         close_date=data.close_date,
         status=data.status,
+        assignment_type=data.assignment_type,
     )
     return {"message": "Assignment created successfully", "assignment": assignment}
 
@@ -39,6 +40,7 @@ def update_assignment(
         open_date=data.open_date,
         close_date=data.close_date,
         status=data.status,
+        assignment_type=data.assignment_type,
     )
     return {"message": "Assignment updated successfully", "assignment": assignment}
 
