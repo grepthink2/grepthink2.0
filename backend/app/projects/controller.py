@@ -688,3 +688,47 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user:str, ro
     except Exception as e:
         print(f"Error adding member: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to add member: {str(e)}")
+
+def instructor_remove_member(project_id:UUID, requester_id:str, target_user:str):
+    """
+    Remove member from project (instructor only)
+    
+    Args:
+        project_id: Project unique identifier
+        requester_id: ID of instructor requesting this
+        target_user: ID of user to remove
+        
+    Returns:
+        Dict of successful request
+    Raises:
+        HTTPException: If no permission or database error occurs
+    """
+    try:
+        client = service_client if service_client else supabase
+        class_result = (
+            client.table('projects').select('class_id')
+            .eq('id', str(project_id))
+            .execute()
+        )
+        if not class_result.data:
+            return False
+        class_id = class_result.data[0]['class_id']
+        # check is user is teacher of the class
+        if not _is_instructor(requester_id, class_id):
+            raise HTTPException(status_code=403, detail="Not the instructor of this project")
+        # Remove user as project member
+        delete_result = (client.table('project_members').delete()
+            .eq('project_id', str(project_id)).eq('user_id', str(target_user))
+            .execute()
+        )
+        # Decrement num_members on the project
+        _increment_project_num_members(client, project_id, -1)
+        return {
+            "message": "Removed member successfully",
+            "user_id": target_user
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error removing member: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove member: {str(e)}")
