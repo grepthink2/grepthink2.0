@@ -666,28 +666,51 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user:str, ro
         if not _is_instructor(requester_id, class_id):
             raise HTTPException(status_code=403, detail="Not the instructor of this project")
         
-        # Add user as project member
-        member_data = {
-            "project_id": project_id,
-            "user_id": target_user,
-            "role": role
-        }
-        
-        client.table('project_members').insert(member_data).execute()
+        res = (client.table('project_members').select('user_id')
+            .eq('user_id', target_user)
+            .execute()
+        )
+        if len(res.data) > 0: # update role if already in project
+            response = (client.table("project_members")
+                .update({"role": role})
+                .eq("user_id", requester_id).eq("project_id", project_id)
+                .execute()
+            )
 
-        # Increment num_members on the project
-        _increment_project_num_members(client, project_id, 1)
-        
-        return {
-            "message": "Added member successfully",
-            "user_id": target_user,
-            "role": role
-        }
+            #only one scrum master or owner, set old one as member
+            if role in ["scrum master", "owner"]:
+                (client.table("project_members")
+                    .update({"role": "member"})
+                    .neq("user_id", requester_id).eq("project_id", project_id).eq("role", role)
+                    .execute()
+                )
+            return {
+                "message": "Changed roles successfully",
+                "member": requester_id,
+                "role": role
+            }
+        else: # otherwise add user as project member
+            member_data = {
+                "project_id": project_id,
+                "user_id": target_user,
+                "role": role
+            }
+            
+            client.table('project_members').insert(member_data).execute()
+
+            # Increment num_members on the project
+            _increment_project_num_members(client, project_id, 1)
+            
+            return {
+                "message": "Added member successfully",
+                "user_id": target_user,
+                "role": role
+            }
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error adding member: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to add member: {str(e)}")
+        print(f"Error update member: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update member: {str(e)}")
 
 def instructor_remove_member(project_id:UUID, requester_id:str, target_user:str):
     """
