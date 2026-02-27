@@ -18,6 +18,47 @@ def _increment_project_num_members(client, project_id: str, delta: int) -> None:
     new_val = max(0, int(current) + delta)
     client.table('projects').update({'num_members': new_val}).eq('id', project_id).execute()
 
+def _is_instructor(user_id, class_id):
+    try:
+        client = service_client if service_client else supabase
+        classes_result = (
+            client.table('classes').select('created_by')
+            .eq('created_by', str(user_id)).eq('id', str(class_id))
+            .execute()
+        )
+        return len(classes_result.data) > 0
+    except Exception as e:
+        print(f"Error checking if user is teacher: {e}")
+
+def _is_admin(user_id, project_id):
+    """Checks if user has admin privillges for a project"""
+    try:
+        client = service_client if service_client else supabase
+                
+        # check if you are the owner of the project
+        enrollment_result = (
+            client.table('project_members').select('user_id')
+            .eq('user_id', str(user_id)).eq('role', "owner")
+            .execute()
+        )
+        if enrollment_result.data:
+            return True
+        
+        #fetch class_id
+        class_result = (
+            client.table('projects').select('class_id')
+            .eq('id', str(project_id))
+            .execute()
+        )
+        if not class_result.data:
+            return False
+        
+        class_id = class_result.data[0]['class_id']
+        # check is user is teacher of the class
+        return _is_instructor(user_id, class_id)
+
+    except Exception as e:
+        print(f"Error checking if user is admin of project: {e}")
 
 def create_project(
     class_id: UUID,
@@ -592,3 +633,125 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
     except Exception as e:
         print(f"Error fetching join requests: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch join requests: {str(e)}")
+
+def instructor_add_member(project_id:UUID, requester_id:str, target_user:str, role = "member"):
+    """
+    Add member to project (instructor only)
+    
+    Args:
+        project_id: Project unique identifier
+        requester_id: ID of instructor requesting this
+        target_user: ID of user to add
+        role: role of newly added user
+        
+    Returns:
+        Dict of successful request
+        
+    Raises:
+        HTTPException: If no permission or database error occurs
+    """
+    try:
+        client = service_client if service_client else supabase
+        
+        class_result = (
+            client.table('projects').select('class_id')
+            .eq('id', str(project_id))
+            .execute()
+        )
+        if not class_result.data:
+            return False
+        
+        class_id = class_result.data[0]['class_id']
+        # check is user is teacher of the class
+        if not _is_instructor(requester_id, class_id):
+            raise HTTPException(status_code=403, detail="Not the instructor of this project")
+        
+        res = (client.table('project_members').select('user_id')
+            .eq('user_id', target_user)
+            .execute()
+        )
+        if len(res.data) > 0: # update role if already in project
+            response = (client.table("project_members")
+                .update({"role": role})
+                .eq("user_id", requester_id).eq("project_id", project_id)
+                .execute()
+            )
+
+            #only one scrum master or owner, set old one as member
+            if role in ["scrum master", "owner"]:
+                (client.table("project_members")
+                    .update({"role": "member"})
+                    .neq("user_id", requester_id).eq("project_id", project_id).eq("role", role)
+                    .execute()
+                )
+            return {
+                "message": "Changed roles successfully",
+                "member": requester_id,
+                "role": role
+            }
+        else: # otherwise add user as project member
+            member_data = {
+                "project_id": project_id,
+                "user_id": target_user,
+                "role": role
+            }
+            
+            client.table('project_members').insert(member_data).execute()
+
+            # Increment num_members on the project
+            _increment_project_num_members(client, project_id, 1)
+            
+            return {
+                "message": "Added member successfully",
+                "user_id": target_user,
+                "role": role
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error update member: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update member: {str(e)}")
+
+def instructor_remove_member(project_id:UUID, requester_id:str, target_user:str):
+    """
+    Remove member from project (instructor only)
+    
+    Args:
+        project_id: Project unique identifier
+        requester_id: ID of instructor requesting this
+        target_user: ID of user to remove
+        
+    Returns:
+        Dict of successful request
+    Raises:
+        HTTPException: If no permission or database error occurs
+    """
+    try:
+        client = service_client if service_client else supabase
+        class_result = (
+            client.table('projects').select('class_id')
+            .eq('id', str(project_id))
+            .execute()
+        )
+        if not class_result.data:
+            return False
+        class_id = class_result.data[0]['class_id']
+        # check is user is teacher of the class
+        if not _is_instructor(requester_id, class_id):
+            raise HTTPException(status_code=403, detail="Not the instructor of this project")
+        # Remove user as project member
+        delete_result = (client.table('project_members').delete()
+            .eq('project_id', str(project_id)).eq('user_id', str(target_user))
+            .execute()
+        )
+        # Decrement num_members on the project
+        _increment_project_num_members(client, project_id, -1)
+        return {
+            "message": "Removed member successfully",
+            "user_id": target_user
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error removing member: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove member: {str(e)}")
