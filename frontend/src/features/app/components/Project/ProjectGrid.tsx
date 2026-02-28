@@ -24,6 +24,7 @@ const ProjectGrid: React.FC<ProjectGridProps> = ({ projects }) => (
         key={project.id}
         className="project-grid__card"
         to={`/app/projects/${project.id}`}
+        state={{ projectName: project.name }}
       >
         <div className="project-grid__banner">
           <span className={`project-grid__tag project-grid__tag--${project.status}`}>

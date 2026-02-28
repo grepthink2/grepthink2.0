@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { ApiProject } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
@@ -9,6 +9,7 @@ const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const { selectedClass } = useClass();
   const location = useLocation();
+  const navigate = useNavigate();
   const [project, setProject] = useState<ApiProject | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +47,17 @@ const ProjectDetails: React.FC = () => {
       isMounted = false;
     };
   }, [projectId]);
+
+  // Sync project name into location state so the header breadcrumb shows it (students and direct/refresh nav)
+  useEffect(() => {
+    if (!project || !location.pathname) return;
+    const state = location.state as { projectName?: string } | null;
+    if (state?.projectName === project.name) return;
+    navigate(location.pathname, {
+      state: { ...state, projectName: project.name },
+      replace: true,
+    });
+  }, [project, location.pathname, location.state, navigate]);
 
   if (loading) {
     return (
