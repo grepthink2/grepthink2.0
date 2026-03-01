@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen } from 'lucide-react';
 import EmailIcon from '@assets/ic_outline-email.svg';
@@ -7,6 +7,7 @@ import LinkedInIcon from '@assets/mdi_linkedin.svg';
 import CodeIcon from '@assets/material-symbols_code-rounded.svg';
 import './ProjectView.scss';
 import { useAuth } from '@/lib/auth';
+import RequestModal from './RequestModal';
 
 export interface ProjectViewMember {
   id?: string;
@@ -38,6 +39,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
 }) => {
   const { role } = useAuth();
   const isInstructor = role === 'instructor';
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
 
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
@@ -143,7 +145,11 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 </button>
               </div>
             ) : (
-              <button className="project-view__request-button">
+              <button
+                type="button"
+                className="project-view__request-button"
+                onClick={() => setRequestModalOpen(true)}
+              >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="8.5" cy="7" r="4" />
@@ -241,6 +247,15 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           )}
         </div>
       </div>
+
+      <RequestModal
+        isOpen={requestModalOpen}
+        onClose={() => setRequestModalOpen(false)}
+        onSubmit={(message) => {
+          // TODO: wire to project request API when available
+          console.log('Project request submitted:', message || '(no message)');
+        }}
+      />
     </div>
   );
 };

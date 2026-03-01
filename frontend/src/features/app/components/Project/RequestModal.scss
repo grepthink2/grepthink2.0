@@ -1,0 +1,149 @@
+@use '@styles/index.scss' as *;
+
+.request-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.request-modal {
+  background: $white;
+  border-radius: 12px;
+  padding: $spacing-lg;
+  max-width: 500px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+  &__close {
+    position: absolute;
+    top: $spacing-md;
+    right: $spacing-md;
+    background: transparent;
+    border: none;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: $background;
+      color: $text-primary;
+    }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+    padding-top: $spacing-sm;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0;
+    font-family: $primary-font;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__label {
+    font-size: $font-size-base;
+    font-weight: $font-weight-normal;
+    color: $text-primary;
+    font-family: $primary-font;
+  }
+
+  &__textarea-wrap {
+    position: relative;
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: $spacing-md;
+    padding-bottom: $spacing-xl;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-base;
+    font-family: $primary-font;
+    color: $text-primary;
+    background: $white;
+    resize: vertical;
+    transition: border-color $transition-fast;
+
+    &::placeholder {
+      color: $text-tertiary;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+
+  &__char-count {
+    position: absolute;
+    bottom: $spacing-sm;
+    right: $spacing-sm;
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+    pointer-events: none;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-sm;
+    justify-content: flex-end;
+    margin-top: $spacing-xs;
+  }
+
+  &__button {
+    padding: 0.75rem 1.5rem;
+    border-radius: $border-radius-sm;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+    font-family: $primary-font;
+
+    &--cancel {
+      background: $white;
+      color: $text-secondary;
+      border: 1px solid $border-color;
+
+      &:hover {
+        background: $background;
+        color: $text-primary;
+      }
+    }
+
+    &--submit {
+      background: $primary-color;
+      color: white;
+      border: none;
+
+      &:hover {
+        background: $primary-hover;
+      }
+    }
+  }
+}
