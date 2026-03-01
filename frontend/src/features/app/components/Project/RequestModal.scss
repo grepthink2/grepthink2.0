@@ -59,6 +59,13 @@
     font-family: $primary-font;
   }
 
+  &__error {
+    font-size: $font-size-base;
+    color: $error-color;
+    margin: 0;
+    font-family: $primary-font;
+  }
+
   &__field {
     display: flex;
     flex-direction: column;

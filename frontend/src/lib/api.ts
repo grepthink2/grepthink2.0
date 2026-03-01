@@ -30,6 +30,8 @@ export interface ApiProject {
   team_size?: number;
   looking_for_roles?: string[];
   skills?: string[];
+  /** Current user's role on this project (owner, admin, member, etc.), when authenticated. */
+  user_role?: string | null;
 }
 
 export interface ApiProjectJoinRequest {

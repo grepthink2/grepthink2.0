@@ -117,6 +117,7 @@ const ProjectDetails: React.FC = () => {
   return (
     <div className="projects">
       <ProjectView
+        projectId={project.id}
         projectTitle={project.name}
         teamSize={teamSize}
         className={className}
@@ -124,6 +125,7 @@ const ProjectDetails: React.FC = () => {
         skills={skills}
         selectedRoles={selectedRoles}
         members={teamMembers}
+        userRoleOnProject={project.user_role}
       />
     </div>
   );

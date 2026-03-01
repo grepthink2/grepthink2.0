@@ -18,7 +18,11 @@ export interface ProjectViewMember {
   linkedInUrl?: string;
 }
 
+/** Roles that can manage the project (add/drop members, edit project). */
+const MANAGER_ROLES = ['owner', 'admin', 'product owner'] as const;
+
 interface ProjectViewProps {
+  projectId?: string;
   projectTitle: string;
   teamSize?: string;
   className?: string;
@@ -26,9 +30,12 @@ interface ProjectViewProps {
   skills: string[];
   selectedRoles: string[];
   members?: ProjectViewMember[];
+  /** Current user's role on this project (from API). Enables owner/admin to see management buttons. */
+  userRoleOnProject?: string | null;
 }
 
 const ProjectView: React.FC<ProjectViewProps> = ({
+  projectId,
   projectTitle,
   teamSize: teamSizeInput = '',
   className = 'CSE 115B',
@@ -36,9 +43,13 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   skills,
   selectedRoles,
   members = [],
+  userRoleOnProject,
 }) => {
   const { role } = useAuth();
   const isInstructor = role === 'instructor';
+  const canManageProject =
+    isInstructor ||
+    (userRoleOnProject != null && MANAGER_ROLES.includes(userRoleOnProject as (typeof MANAGER_ROLES)[number]));
   const [requestModalOpen, setRequestModalOpen] = useState(false);
 
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
@@ -121,7 +132,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
             </div>
           </div>
           <div className="project-view__header-right">
-            {isInstructor ? (
+            {canManageProject ? (
               <div className="project-view__instructor-actions">
                 <button className="project-view__request-button">
                   <svg
@@ -248,14 +259,16 @@ const ProjectView: React.FC<ProjectViewProps> = ({
         </div>
       </div>
 
-      <RequestModal
-        isOpen={requestModalOpen}
-        onClose={() => setRequestModalOpen(false)}
-        onSubmit={(message) => {
-          // TODO: wire to project request API when available
-          console.log('Project request submitted:', message || '(no message)');
-        }}
-      />
+      {projectId && (
+        <RequestModal
+          isOpen={requestModalOpen}
+          projectId={projectId}
+          onClose={() => setRequestModalOpen(false)}
+          onSuccess={() => {
+            // Optional: refetch project or show toast when backend supports it
+          }}
+        />
+      )}
     </div>
   );
 };
