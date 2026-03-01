@@ -30,6 +30,8 @@ export interface ApiProject {
   team_size?: number;
   looking_for_roles?: string[];
   skills?: string[];
+  /** Current user's role on this project (owner, admin, member, etc.), when authenticated. */
+  user_role?: string | null;
 }
 
 export interface ApiProjectJoinRequest {
@@ -229,6 +231,21 @@ export const api = {
     return apiRequest<{ message: string; project: ApiProject }>('/api/projects', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  },
+
+  /** Add a member to a project (instructor or authorized role). */
+  addProjectMember: async (projectId: string, data: { user_id: string; role?: string }) => {
+    return apiRequest<{ message: string }>(`/api/projects/${projectId}/members`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /** Remove a member from a project (instructor or authorized role). */
+  removeProjectMember: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string }>(`/api/projects/${projectId}/members/${userId}`, {
+      method: 'DELETE',
     });
   },
 };
