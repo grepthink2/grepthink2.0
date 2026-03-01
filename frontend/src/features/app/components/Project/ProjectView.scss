@@ -301,6 +301,18 @@
     gap: 0.5rem;
   }
 
+  &__link-icon-wrap {
+    display: inline-flex;
+    color: inherit;
+    text-decoration: none;
+
+    &--empty {
+      cursor: default;
+      pointer-events: none;
+      opacity: 0.4;
+    }
+  }
+
   &__link-icon {
     width: 18px;
     height: 18px;
@@ -308,8 +320,12 @@
     cursor: pointer;
     transition: opacity $transition-fast;
 
-    &:hover {
+    .project-view__link-icon-wrap:hover & {
       opacity: 1;
+    }
+
+    .project-view__link-icon-wrap--empty & {
+      cursor: default;
     }
   }
 

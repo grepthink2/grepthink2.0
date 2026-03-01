@@ -8,6 +8,15 @@ import CodeIcon from '@assets/material-symbols_code-rounded.svg';
 import './ProjectView.scss';
 import { useAuth } from '@/lib/auth';
 
+export interface ProjectViewMember {
+  id?: string;
+  displayName: string;
+  roleLabel: string;
+  email?: string;
+  githubUrl?: string;
+  linkedInUrl?: string;
+}
+
 interface ProjectViewProps {
   projectTitle: string;
   teamSize?: string;
@@ -15,9 +24,8 @@ interface ProjectViewProps {
   descriptionMarkdown: string;
   skills: string[];
   selectedRoles: string[];
+  members?: ProjectViewMember[];
 }
-
-const CURRENT_MEMBERS_PREVIEW = 1;
 
 const ProjectView: React.FC<ProjectViewProps> = ({
   projectTitle,
@@ -26,6 +34,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   descriptionMarkdown,
   skills,
   selectedRoles,
+  members = [],
 }) => {
   const { role } = useAuth();
   const isInstructor = role === 'instructor';
@@ -33,10 +42,11 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
   const hasValidTeamSize = !isNaN(totalMembers) && totalMembers >= 1;
+  const currentCount = members.length;
   const membersText = hasValidTeamSize
-    ? `${CURRENT_MEMBERS_PREVIEW}/${totalMembers} Members`
-    : `${CURRENT_MEMBERS_PREVIEW}/ Members`;
-  const spotsAvailable = hasValidTeamSize ? totalMembers - CURRENT_MEMBERS_PREVIEW : null;
+    ? `${currentCount}/${totalMembers} Members`
+    : `${currentCount} Members`;
+  const spotsAvailable = hasValidTeamSize ? totalMembers - currentCount : null;
   const spotsText = spotsAvailable !== null ? `${spotsAvailable} Spots Available` : 'Spots Available';
 
   const getRoleIcon = (roleId: string) => {
@@ -162,23 +172,53 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           <div className="project-view__section">
             <h3 className="project-view__section-title">Team Members</h3>
             <div className="project-view__team-list">
-              <div className="project-view__team-member">
-                <div className="project-view__member-avatar">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-                <div className="project-view__member-info">
-                  <div className="project-view__member-name">Cole Saulnier</div>
-                  <div className="project-view__member-role">Product Owner</div>
-                  <div className="project-view__member-links">
-                    <img src={EmailIcon} alt="Email" className="project-view__link-icon" />
-                    <img src={GithubIcon} alt="GitHub" className="project-view__link-icon" />
-                    <img src={LinkedInIcon} alt="LinkedIn" className="project-view__link-icon" />
+              {members.length === 0 ? (
+                <div className="project-view__team-member">
+                  <div className="project-view__member-avatar">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                  <div className="project-view__member-info">
+                    <div className="project-view__member-name">No members yet</div>
+                    <div className="project-view__member-role">—</div>
+                    <div className="project-view__member-links" />
                   </div>
                 </div>
-              </div>
+              ) : (
+                members.map((member, index) => (
+                  <div key={member.id ?? `member-${index}`} className="project-view__team-member">
+                    <div className="project-view__member-avatar">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+                    <div className="project-view__member-info">
+                      <div className="project-view__member-name">{member.displayName}</div>
+                      <div className="project-view__member-role">{member.roleLabel}</div>
+                      <div className="project-view__member-links">
+                        {member.email ? (
+                          <a href={`mailto:${member.email}`} className="project-view__link-icon-wrap" title={member.email} aria-label={`Email ${member.displayName}`}>
+                            <img src={EmailIcon} alt="" className="project-view__link-icon" />
+                          </a>
+                        ) : (
+                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
+                            <img src={EmailIcon} alt="" className="project-view__link-icon" />
+                          </span>
+                        )}
+                        <a href={member.githubUrl || '#'} className="project-view__link-icon-wrap" title="GitHub" aria-label={`${member.displayName} GitHub`} onClick={(e) => !member.githubUrl && e.preventDefault()}>
+                          <img src={GithubIcon} alt="" className="project-view__link-icon" />
+                        </a>
+                        <a href={member.linkedInUrl || '#'} className="project-view__link-icon-wrap" title="LinkedIn" aria-label={`${member.displayName} LinkedIn`} onClick={(e) => !member.linkedInUrl && e.preventDefault()}>
+                          <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

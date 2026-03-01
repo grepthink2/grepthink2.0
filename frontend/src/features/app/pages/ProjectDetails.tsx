@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
-import type { ApiProject } from '@/lib/api';
+import type { ApiProject, ApiProjectMember } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import ProjectView from '@features/app/components/Project/ProjectView';
 
@@ -11,6 +11,7 @@ const ProjectDetails: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [project, setProject] = useState<ApiProject | null>(null);
+  const [members, setMembers] = useState<ApiProjectMember[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,12 +24,16 @@ const ProjectDetails: React.FC = () => {
 
     let isMounted = true;
 
-    const fetchProject = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await api.getProject(projectId);
+        const [projectRes, membersRes] = await Promise.all([
+          api.getProject(projectId),
+          api.getProjectMembers(projectId).catch(() => ({ members: [] as ApiProjectMember[] })),
+        ]);
         if (!isMounted) return;
-        setProject(response.project);
+        setProject(projectRes.project);
+        setMembers(membersRes.members ?? []);
         setError(null);
       } catch (err) {
         if (isMounted) {
@@ -41,7 +46,7 @@ const ProjectDetails: React.FC = () => {
       }
     };
 
-    fetchProject();
+    fetchData();
 
     return () => {
       isMounted = false;
@@ -89,6 +94,26 @@ const ProjectDetails: React.FC = () => {
   const skills = project.skills ?? [];
   const selectedRoles = project.looking_for_roles ?? [];
 
+  const projectRoleLabel = (role: string) => {
+    switch (role) {
+      case 'owner':
+        return 'Product Owner';
+      case 'scrum_master':
+        return 'Scrum Master';
+      default:
+        return role;
+    }
+  };
+
+  const teamMembers = members.map((m) => ({
+    id: m.user_id,
+    displayName: 'Cole Saulnier',
+    roleLabel: projectRoleLabel(m.project_role),
+    email: m.email,
+    githubUrl: undefined as string | undefined,
+    linkedInUrl: undefined as string | undefined,
+  }));
+
   return (
     <div className="projects">
       <ProjectView
@@ -98,6 +123,7 @@ const ProjectDetails: React.FC = () => {
         descriptionMarkdown={descriptionMarkdown}
         skills={skills}
         selectedRoles={selectedRoles}
+        members={teamMembers}
       />
     </div>
   );
