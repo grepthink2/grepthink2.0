@@ -8,6 +8,8 @@ import CodeIcon from '@assets/material-symbols_code-rounded.svg';
 import './ProjectView.scss';
 import { useAuth } from '@/lib/auth';
 import RequestModal from './RequestModal';
+import MemberManagerModal from './MemberManagerModal';
+import type { ApiProject, ApiProjectMember } from '@/lib/api';
 
 export interface ProjectViewMember {
   id?: string;
@@ -32,6 +34,14 @@ interface ProjectViewProps {
   members?: ProjectViewMember[];
   /** Current user's role on this project (from API). Enables owner/admin to see management buttons. */
   userRoleOnProject?: string | null;
+  /** Required for Team Management modal (Add/Drop Members). */
+  classId?: string;
+  /** Full project from API (for team_size, etc.). Required when classId is set. */
+  project?: ApiProject | null;
+  /** Raw project members from API. Required when classId is set. */
+  projectMembers?: ApiProjectMember[];
+  /** Called after member/request changes so parent can refetch. */
+  onMembersChange?: () => void;
 }
 
 const ProjectView: React.FC<ProjectViewProps> = ({
@@ -44,6 +54,10 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   selectedRoles,
   members = [],
   userRoleOnProject,
+  classId,
+  project,
+  projectMembers = [],
+  onMembersChange,
 }) => {
   const { role } = useAuth();
   const isInstructor = role === 'instructor';
@@ -51,6 +65,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     isInstructor ||
     (userRoleOnProject != null && MANAGER_ROLES.includes(userRoleOnProject as (typeof MANAGER_ROLES)[number]));
   const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [memberManagerOpen, setMemberManagerOpen] = useState(false);
 
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
@@ -134,7 +149,12 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           <div className="project-view__header-right">
             {canManageProject ? (
               <div className="project-view__instructor-actions">
-                <button className="project-view__request-button">
+                <button
+                  type="button"
+                  className="project-view__request-button"
+                  onClick={() => projectId && project && classId && setMemberManagerOpen(true)}
+                  disabled={!projectId || !project || !classId}
+                >
                   <svg
                     width="20"
                     height="20"
@@ -155,6 +175,16 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                   Edit Project
                 </button>
               </div>
+            ) : userRoleOnProject != null && userRoleOnProject !== '' ? (
+              <span className="project-view__joined" aria-label="You are a member of this project">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Joined
+              </span>
             ) : (
               <button
                 type="button"
@@ -267,6 +297,17 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           onSuccess={() => {
             // Optional: refetch project or show toast when backend supports it
           }}
+        />
+      )}
+      {projectId && project && classId && (
+        <MemberManagerModal
+          isOpen={memberManagerOpen}
+          onClose={() => setMemberManagerOpen(false)}
+          projectId={projectId}
+          classId={classId}
+          project={project}
+          initialMembers={projectMembers}
+          onMembersChange={onMembersChange}
         />
       )}
     </div>

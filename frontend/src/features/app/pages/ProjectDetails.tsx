@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
@@ -64,6 +64,20 @@ const ProjectDetails: React.FC = () => {
     });
   }, [project, location.pathname, location.state, navigate]);
 
+  const refreshProjectAndMembers = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const [projectRes, membersRes] = await Promise.all([
+        api.getProject(projectId),
+        api.getProjectMembers(projectId).catch(() => ({ members: [] as ApiProjectMember[] })),
+      ]);
+      setProject(projectRes.project);
+      setMembers(membersRes.members ?? []);
+    } catch {
+      // keep current state
+    }
+  }, [projectId]);
+
   if (loading) {
     return (
       <div className="projects">
@@ -126,6 +140,10 @@ const ProjectDetails: React.FC = () => {
         selectedRoles={selectedRoles}
         members={teamMembers}
         userRoleOnProject={project.user_role}
+        classId={project.class_id}
+        project={project}
+        projectMembers={members}
+        onMembersChange={refreshProjectAndMembers}
       />
     </div>
   );
