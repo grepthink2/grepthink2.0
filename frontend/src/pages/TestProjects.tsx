@@ -58,6 +58,12 @@ const TestProjects: React.FC = () => {
   const [projects, setProjects] = useState<ApiProject[]>([]);
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
+  // Sponsor fields
+  const [sponsorName, setSponsorName] = useState('');
+  const [sponsorCompany, setSponsorCompany] = useState('');
+  const [sponsorEmail, setSponsorEmail] = useState('');
+  const [sponsorWebsite, setSponsorWebsite] = useState('');
+  const [sponsorDescription, setSponsorDescription] = useState('');
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -75,6 +81,8 @@ const TestProjects: React.FC = () => {
   const [tsrDraftsByProject, setTsrDraftsByProject] = useState<Record<string, TsrFormDraft>>({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [selectedProjectDetail, setSelectedProjectDetail] = useState<ApiProject | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const loadClasses = async () => {
     setLoadingClasses(true);
@@ -240,7 +248,7 @@ const TestProjects: React.FC = () => {
       const response = await api.getProjectTsrs(projectId);
       setProjectTsrsByProject((current) => ({
         ...current,
-        [projectId]: response.TSR || [],
+        [projectId]: response.tsrs || [],
       }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load TSRs');
@@ -280,15 +288,25 @@ const TestProjects: React.FC = () => {
 
     setSubmitting(true);
     try {
-      await api.createProject({
+      await api.testCreateProject({
         class_id: selectedClassId,
         name: projectName.trim(),
         description: projectDescription.trim() || undefined,
-        team_size: 1,
+        team_size: 4,
+        sponsor_name: sponsorName.trim() || undefined,
+        sponsor_company: sponsorCompany.trim() || undefined,
+        sponsor_email: sponsorEmail.trim() || undefined,
+        sponsor_website: sponsorWebsite.trim() || undefined,
+        sponsor_description: sponsorDescription.trim() || undefined,
       });
 
       setProjectName('');
       setProjectDescription('');
+      setSponsorName('');
+      setSponsorCompany('');
+      setSponsorEmail('');
+      setSponsorWebsite('');
+      setSponsorDescription('');
       setSuccess('Project created successfully');
       await loadProjects(selectedClassId);
     } catch (err) {
@@ -441,6 +459,19 @@ const TestProjects: React.FC = () => {
     return `${member.name} (${member.email})`;
   };
 
+  const handleViewSponsorDetails = async (projectId: string) => {
+    setLoadingDetail(true);
+    setSelectedProjectDetail(null);
+    try {
+      const res = await api.getProject(projectId);
+      setSelectedProjectDetail(res.project);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load project details');
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   return (
     <div className="test-projects-page">
       <header className="test-projects-page__hero">
@@ -466,8 +497,8 @@ const TestProjects: React.FC = () => {
             {classes.length === 0 ? (
               <option value="">No classes found</option>
             ) : (
-              classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
+              classes.map((cls, idx) => (
+                <option key={`${cls.id}-${idx}`} value={cls.id}>
                   {cls.name}
                 </option>
               ))
@@ -483,7 +514,7 @@ const TestProjects: React.FC = () => {
       </section>
 
       <form className="test-projects-page__card test-projects-page__form" onSubmit={handleCreateProject}>
-        <h2 className="test-projects-page__section-title">Create Project</h2>
+        <h2 className="test-projects-page__section-title">Create Project (Test — no role check)</h2>
         <input
           type="text"
           placeholder="Project name"
@@ -498,6 +529,44 @@ const TestProjects: React.FC = () => {
           disabled={submitting}
           rows={4}
         />
+
+        <h3 style={{ margin: '0.75rem 0 0.25rem', fontSize: '1rem' }}>Sponsor Information</h3>
+        <input
+          type="text"
+          placeholder="Sponsor Contact Name"
+          value={sponsorName}
+          onChange={(e) => setSponsorName(e.target.value)}
+          disabled={submitting}
+        />
+        <input
+          type="text"
+          placeholder="Company / Organization"
+          value={sponsorCompany}
+          onChange={(e) => setSponsorCompany(e.target.value)}
+          disabled={submitting}
+        />
+        <input
+          type="email"
+          placeholder="Sponsor Email"
+          value={sponsorEmail}
+          onChange={(e) => setSponsorEmail(e.target.value)}
+          disabled={submitting}
+        />
+        <input
+          type="url"
+          placeholder="Sponsor Website (https://...)"
+          value={sponsorWebsite}
+          onChange={(e) => setSponsorWebsite(e.target.value)}
+          disabled={submitting}
+        />
+        <textarea
+          placeholder="Brief description of the sponsor"
+          value={sponsorDescription}
+          onChange={(e) => setSponsorDescription(e.target.value)}
+          disabled={submitting}
+          rows={2}
+        />
+
         <button type="submit" disabled={submitting || !selectedClassId}>
           {submitting ? 'Creating...' : 'Create Project'}
         </button>
@@ -533,6 +602,14 @@ const TestProjects: React.FC = () => {
                     disabled={loadingJoinRequestsProjectId === project.id}
                   >
                     {loadingJoinRequestsProjectId === project.id ? 'Loading...' : 'View Join Requests'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleViewSponsorDetails(project.id)}
+                    disabled={loadingDetail}
+                    style={{ backgroundColor: '#4f46e5' }}
+                  >
+                    {loadingDetail && selectedProjectDetail === null ? 'Loading...' : 'View Full Details'}
                   </button>
                 </div>
 
@@ -613,8 +690,8 @@ const TestProjects: React.FC = () => {
                           <option value="">Select evaluatee</option>
                           {(projectTeamMembers[project.id] || [])
                             .filter((member) => member.id !== currentUserId)
-                            .map((member) => (
-                              <option key={member.id} value={member.id}>
+                            .map((member, idx) => (
+                              <option key={`${member.id}-${idx}`} value={member.id}>
                                 {member.name} ({member.email})
                               </option>
                             ))}
@@ -701,6 +778,40 @@ const TestProjects: React.FC = () => {
           </ul>
         )}
       </section>
+
+      {/* Full Project Detail Panel (including Sponsor info) */}
+      {selectedProjectDetail && (
+        <section className="test-projects-page__card" style={{ marginTop: '1.5rem' }}>
+          <h2 className="test-projects-page__section-title">
+            Project Details &mdash; {selectedProjectDetail.name}
+          </h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <tbody>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600, width: '180px' }}>ID</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.id}</td></tr>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Name</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.name}</td></tr>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Description</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.description || '—'}</td></tr>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Team Size</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.team_size ?? '—'}</td></tr>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Skills</td><td style={{ padding: '0.35rem 0.5rem' }}>{(selectedProjectDetail.skills ?? []).join(', ') || '—'}</td></tr>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Looking For</td><td style={{ padding: '0.35rem 0.5rem' }}>{(selectedProjectDetail.looking_for_roles ?? []).join(', ') || '—'}</td></tr>
+              <tr style={{ borderTop: '2px solid #333' }}>
+                <td colSpan={2} style={{ padding: '0.5rem', fontWeight: 700, fontSize: '1rem', color: '#a78bfa' }}>Sponsor Information</td>
+              </tr>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Sponsor Name</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_name || '—'}</td></tr>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Company</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_company || '—'}</td></tr>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Sponsor Email</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_email ? <a href={`mailto:${selectedProjectDetail.sponsor_email}`}>{selectedProjectDetail.sponsor_email}</a> : '—'}</td></tr>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Website</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_website ? <a href={selectedProjectDetail.sponsor_website} target="_blank" rel="noopener noreferrer">{selectedProjectDetail.sponsor_website}</a> : '—'}</td></tr>
+              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Description</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_description || '—'}</td></tr>
+            </tbody>
+          </table>
+          <button
+            type="button"
+            onClick={() => setSelectedProjectDetail(null)}
+            style={{ marginTop: '0.75rem' }}
+          >
+            Close
+          </button>
+        </section>
+      )}
     </div>
   );
 };

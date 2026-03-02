@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen } from 'lucide-react';
+import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Building2, Globe, Mail, User } from 'lucide-react';
 import EmailIcon from '@assets/ic_outline-email.svg';
 import GithubIcon from '@assets/line-md_github.svg';
 import LinkedInIcon from '@assets/mdi_linkedin.svg';
@@ -42,6 +42,12 @@ interface ProjectViewProps {
   projectMembers?: ApiProjectMember[];
   /** Called after member/request changes so parent can refetch. */
   onMembersChange?: () => void;
+  // Sponsor information
+  sponsorName?: string;
+  sponsorCompany?: string;
+  sponsorEmail?: string;
+  sponsorWebsite?: string;
+  sponsorDescription?: string;
 }
 
 const ProjectView: React.FC<ProjectViewProps> = ({
@@ -58,6 +64,11 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   project,
   projectMembers = [],
   onMembersChange,
+  sponsorName,
+  sponsorCompany,
+  sponsorEmail,
+  sponsorWebsite,
+  sponsorDescription,
 }) => {
   const { role } = useAuth();
   const isInstructor = role === 'instructor';
@@ -283,6 +294,48 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                     <span className="project-view__role-count">+1</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sponsor Information */}
+          {(sponsorName || sponsorCompany || sponsorEmail || sponsorWebsite || sponsorDescription) && (
+            <div className="project-view__section">
+              <h3 className="project-view__section-title">Sponsor Information</h3>
+              <div className="project-view__sponsor-card">
+                {sponsorCompany && (
+                  <div className="project-view__sponsor-row">
+                    <Building2 size={16} />
+                    <span className="project-view__sponsor-label">Company</span>
+                    <span className="project-view__sponsor-value">{sponsorCompany}</span>
+                  </div>
+                )}
+                {sponsorName && (
+                  <div className="project-view__sponsor-row">
+                    <User size={16} />
+                    <span className="project-view__sponsor-label">Contact</span>
+                    <span className="project-view__sponsor-value">{sponsorName}</span>
+                  </div>
+                )}
+                {sponsorEmail && (
+                  <div className="project-view__sponsor-row">
+                    <Mail size={16} />
+                    <span className="project-view__sponsor-label">Email</span>
+                    <a href={`mailto:${sponsorEmail}`} className="project-view__sponsor-link">{sponsorEmail}</a>
+                  </div>
+                )}
+                {sponsorWebsite && (
+                  <div className="project-view__sponsor-row">
+                    <Globe size={16} />
+                    <span className="project-view__sponsor-label">Website</span>
+                    <a href={sponsorWebsite} target="_blank" rel="noopener noreferrer" className="project-view__sponsor-link">{sponsorWebsite}</a>
+                  </div>
+                )}
+                {sponsorDescription && (
+                  <div className="project-view__sponsor-description">
+                    <p>{sponsorDescription}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

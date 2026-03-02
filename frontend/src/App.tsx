@@ -63,6 +63,7 @@ function App() {
 
         <Route path="/classes" element={<ClassManagement />} />
         <Route path="/test-projects" element={<TestProjects />} />
+        <Route path="/test-115b-projects" element={<TestProjects />} />
       </Routes>
     </Router>
   );
