@@ -86,7 +86,7 @@ def add_project_member(project_id: UUID, data: ManageProjectMemberRequest, paylo
     result = controller.instructor_add_member(
         project_id=project_id,
         requester_id=payload.get('sub'),
-        target_user_id=str(data.user_id),
+        target_user=str(data.user_id),
         role=data.role,
     )
     return result
@@ -99,5 +99,5 @@ def remove_project_member(project_id: UUID, user_id: UUID, payload: dict = Depen
     return controller.instructor_remove_member(
         project_id=project_id,
         requester_id=payload.get('sub'),
-        target_user_id=str(user_id),
+        target_user=str(user_id),
     )
