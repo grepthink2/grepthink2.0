@@ -21,23 +21,22 @@ export interface ApiStudent {
 
 export interface ApiProject {
   id: string;
-  class_id: string;
+  class_id?: string;
   name: string;
   description?: string;
-  created_by: string;
-  created_at: string;
+  created_by?: string;
+  created_at?: string;
   creator_email?: string;
   team_size?: number;
   looking_for_roles?: string[];
   skills?: string[];
-  /** Current user's role on this project (from API). */
-  user_role?: string | null;
-  // Sponsor information
-  sponsor_name?: string;
-  sponsor_company?: string;
-  sponsor_email?: string;
-  sponsor_website?: string;
-  sponsor_description?: string;
+  member_count?: number;
+}
+
+export interface ApiProjectListItem {
+  id: string;
+  name: string;
+  member_count?: number;
 }
 
 export interface ApiProjectJoinRequest {
@@ -189,7 +188,22 @@ export const api = {
       searchParams.set('class_id', classId);
     }
     const query = searchParams.toString();
-    return apiRequest<{ projects: ApiProject[] }>(`/api/projects${query ? `?${query}` : ''}`);
+    const listResponse = await apiRequest<{ projects: ApiProjectListItem[] }>(`/api/projects${query ? `?${query}` : ''}`);
+    
+    // Fetch full details for each project
+    const projectsWithDetails = await Promise.all(
+      listResponse.projects.map(async (project) => {
+        try {
+          const fullProject = await apiRequest<{ project: ApiProject }>(`/api/projects/${project.id}`);
+          return { ...fullProject.project, member_count: project.member_count };
+        } catch (err) {
+          // If full fetch fails, return the basic project data
+          return project as ApiProject;
+        }
+      })
+    );
+    
+    return { projects: projectsWithDetails };
   },
 
   requestJoinProject: async (projectId: string) => {
@@ -252,26 +266,35 @@ export const api = {
     });
   },
 
-  /** Test-only: create a project bypassing instructor check (POST /api/projects/test-create) */
-  testCreateProject: async (data: CreateProjectPayload) => {
-    return apiRequest<{ message: string; project: ApiProject }>('/api/projects/test-create', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+  /** Add a member to a project or update their role */
+  addProjectMember: async (projectId: string, userId: string, role: string = 'member') => {
+    return apiRequest<{ message: string; user_id: string; role: string }>(
+      `/api/projects/${projectId}/members`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId, role }),
+      }
+    );
   },
 
-  /** Add a member to a project (instructor or authorized role). */
-  addProjectMember: async (projectId: string, data: { user_id: string; role?: string }) => {
-    return apiRequest<{ message: string }>(`/api/projects/${projectId}/members`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /** Remove a member from a project (instructor or authorized role). */
+  /** Remove a member from a project */
   removeProjectMember: async (projectId: string, userId: string) => {
-    return apiRequest<{ message: string }>(`/api/projects/${projectId}/members/${userId}`, {
-      method: 'DELETE',
-    });
+    return apiRequest<{ message: string; user_id: string }>(
+      `/api/projects/${projectId}/members/${userId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  },
+
+  /** Update a member's role in a project */
+  updateProjectMemberRole: async (projectId: string, userId: string, role: string) => {
+    return apiRequest<{ message: string; user_id: string; role: string }>(
+      `/api/projects/${projectId}/members`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId, role }),
+      }
+    );
   },
 };

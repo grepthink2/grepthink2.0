@@ -144,24 +144,24 @@ def get_join_requests(project_id: UUID, payload: dict = Depends(verify_supabase_
 
 
 def add_project_member(project_id: UUID, data: ManageProjectMemberRequest, payload: dict = Depends(verify_supabase_token)):
-    """Add a user to a project, or update their role if already a member (instructor only)."""
+    """Add a user to a project, or update their role if already a member (instructor or product owner only)."""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
-    result = controller.instructor_add_member(
+    result = controller.admin_add_member(
         project_id=project_id,
         requester_id=payload.get('sub'),
-        target_user_id=str(data.user_id),
+        target_user=str(data.user_id),
         role=data.role,
     )
     return result
 
 
 def remove_project_member(project_id: UUID, user_id: UUID, payload: dict = Depends(verify_supabase_token)):
-    """Remove a user from a project (instructor only)."""
+    """Remove a user from a project (instructor or product owner only)."""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
-    return controller.instructor_remove_member(
+    return controller.admin_remove_member(
         project_id=project_id,
         requester_id=payload.get('sub'),
-        target_user_id=str(user_id),
+        target_user=str(user_id),
     )

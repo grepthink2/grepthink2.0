@@ -34,10 +34,11 @@ const createEmptyTsrDraft = (): TsrFormDraft => ({
 });
 
 const getProjectOwnerMember = (project: ApiProject): SimulatedTeamMember => {
-  const ownerEmail = project.creator_email || `${project.created_by}@example.com`;
+  const createdBy = project.created_by || 'unknown';
+  const ownerEmail = project.creator_email || `${createdBy}@example.com`;
   const ownerName = ownerEmail.split('@')[0] || 'project-owner';
   return {
-    id: project.created_by,
+    id: createdBy,
     name: ownerName,
     email: ownerEmail,
   };
@@ -85,8 +86,13 @@ const TestProjects: React.FC = () => {
   const [tsrDraftsByProject, setTsrDraftsByProject] = useState<Record<string, TsrFormDraft>>({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [selectedProjectDetail, setSelectedProjectDetail] = useState<ApiProject | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [managingMembersProjectId, setManagingMembersProjectId] = useState<string | null>(null);
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState('member');
+  const [addingMemberProjectId, setAddingMemberProjectId] = useState<string | null>(null);
+  const [removingMemberProjectId, setRemovingMemberProjectId] = useState<Record<string, string | null>>({});
+  const [editingMemberRole, setEditingMemberRole] = useState<Record<string, string | null>>({});
+  const [projectMemberRoles, setProjectMemberRoles] = useState<Record<string, Record<string, string>>>({});
 
   const loadClasses = async () => {
     setLoadingClasses(true);
@@ -216,9 +222,18 @@ const TestProjects: React.FC = () => {
 
     try {
       const response = await api.getProjectMembers(project.id);
-      const members = (response.members || [])
-        .filter((member) => member.user_id !== project.created_by)
-        .map(mapApiMemberToTeamMember);
+      const members = response.members.map(mapApiMemberToTeamMember);
+      
+      // Store member roles
+      const rolesMap: Record<string, string> = {};
+      response.members.forEach((member) => {
+        rolesMap[member.user_id] = member.project_role;
+      });
+      setProjectMemberRoles((current) => ({
+        ...current,
+        [project.id]: rolesMap,
+      }));
+
       setProjectTeamMembers((current) => ({
         ...current,
         [project.id]: members,
@@ -258,6 +273,91 @@ const TestProjects: React.FC = () => {
       setLoadingProjectTsrsByProject((current) => ({
         ...current,
         [projectId]: false,
+      }));
+    }
+  };
+
+  const handleAddProjectMember = async (projectId: string) => {
+    setError(null);
+    setSuccess(null);
+
+    if (!newMemberEmail.trim()) {
+      setError('Please enter a member email or ID');
+      return;
+    }
+
+    setAddingMemberProjectId(projectId);
+    try {
+      const response = await api.addProjectMember(projectId, newMemberEmail.trim(), newMemberRole);
+      setSuccess(response.message || 'Member added successfully');
+      setNewMemberEmail('');
+      setNewMemberRole('member');
+
+      const project = projects.find((p) => p.id === projectId);
+      if (project) {
+        await loadProjectMembers(project);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add member');
+    } finally {
+      setAddingMemberProjectId(null);
+    }
+  };
+
+  const handleRemoveProjectMember = async (projectId: string, memberId: string) => {
+    setError(null);
+    setSuccess(null);
+
+    if (!window.confirm('Are you sure you want to remove this member from the project?')) {
+      return;
+    }
+
+    setRemovingMemberProjectId((current) => ({
+      ...current,
+      [memberId]: projectId,
+    }));
+
+    try {
+      const response = await api.removeProjectMember(projectId, memberId);
+      setSuccess(response.message || 'Member removed successfully');
+
+      const project = projects.find((p) => p.id === projectId);
+      if (project) {
+        await loadProjectMembers(project);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove member');
+    } finally {
+      setRemovingMemberProjectId((current) => ({
+        ...current,
+        [memberId]: null,
+      }));
+    }
+  };
+
+  const handleUpdateMemberRole = async (projectId: string, memberId: string, newRole: string) => {
+    setError(null);
+    setSuccess(null);
+
+    setEditingMemberRole((current) => ({
+      ...current,
+      [memberId]: projectId,
+    }));
+
+    try {
+      const response = await api.updateProjectMemberRole(projectId, memberId, newRole);
+      setSuccess(response.message || 'Member role updated successfully');
+
+      const project = projects.find((p) => p.id === projectId);
+      if (project) {
+        await loadProjectMembers(project);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update member role');
+    } finally {
+      setEditingMemberRole((current) => ({
+        ...current,
+        [memberId]: null,
       }));
     }
   };
@@ -599,7 +699,7 @@ const TestProjects: React.FC = () => {
                   <div className="test-projects-page__project-name">{project.name}</div>
                   <span className="test-projects-page__pill">{isStudentFlow ? 'Student Project' : 'Instructor Project'}</span>
                 </div>
-                <div className="test-projects-page__project-meta">By {project.creator_email || project.created_by}</div>
+                <div className="test-projects-page__project-meta">By {project.creator_email || project.created_by || 'Unknown'}</div>
                 {project.description && <p>{project.description}</p>}
                 <div className="test-projects-page__actions">
                   <button
@@ -687,6 +787,74 @@ const TestProjects: React.FC = () => {
                         {member.name}
                       </span>
                     ))}
+                  </div>
+
+                  <div className="test-projects-page__member-management">
+                    <h4 className="test-projects-page__subheading">Manage Members</h4>
+                    
+                    <div className="test-projects-page__add-member-form">
+                      <input
+                        type="text"
+                        placeholder="Member email or ID"
+                        value={newMemberEmail}
+                        onChange={(e) => setNewMemberEmail(e.target.value)}
+                        disabled={addingMemberProjectId === project.id}
+                      />
+                      <select
+                        value={newMemberRole}
+                        onChange={(e) => setNewMemberRole(e.target.value)}
+                        disabled={addingMemberProjectId === project.id}
+                      >
+                        <option value="member">Member</option>
+                        <option value="scrum master">Scrum Master</option>
+                        <option value="product owner">Product Owner</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => void handleAddProjectMember(project.id)}
+                        disabled={addingMemberProjectId === project.id}
+                      >
+                        {addingMemberProjectId === project.id ? 'Adding...' : 'Add Member'}
+                      </button>
+                    </div>
+
+                    <div className="test-projects-page__members-list">
+                      {(projectTeamMembers[project.id] || []).length === 0 ? (
+                        <p>No members in this project.</p>
+                      ) : (
+                        <ul>
+                          {(projectTeamMembers[project.id] || []).map((member) => (
+                            <li key={member.id} className="test-projects-page__member-item">
+                              <div className="test-projects-page__member-info">
+                                <strong>{member.name}</strong>
+                                <span>{member.email}</span>
+                              </div>
+                              <div className="test-projects-page__member-actions">
+                                <select
+                                  value={projectMemberRoles[project.id]?.[member.id] || 'member'}
+                                  onChange={(e) => void handleUpdateMemberRole(project.id, member.id, e.target.value)}
+                                  disabled={editingMemberRole[member.id] === project.id}
+                                >
+                                  <option value="member">Member</option>
+                                  <option value="scrum master">Scrum Master</option>
+                                  <option value="product owner">Product Owner</option>
+                                  <option value="admin">Admin</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleRemoveProjectMember(project.id, member.id)}
+                                  disabled={removingMemberProjectId[member.id] === project.id}
+                                  className="test-projects-page__btn-danger"
+                                >
+                                  {removingMemberProjectId[member.id] === project.id ? 'Removing...' : 'Remove'}
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
 
                   <div className="test-projects-page__tsr-form">

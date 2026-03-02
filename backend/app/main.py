@@ -3,6 +3,7 @@ FastAPI application initialization and configuration
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from app.config import settings
 from app.health.url import router as health_router
 from app.auth.url import router as auth_router
@@ -26,6 +27,39 @@ app.add_middleware(
     allow_methods=settings.CORS_METHODS,
     allow_headers=settings.CORS_HEADERS,
 )
+
+# for setting Bearer token for testing backend endpoints
+def custom_openapi():
+    """
+    Custom OpenAPI schema with Bearer token security scheme for Swagger UI testing
+    """
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title="GrepThink 2.0 API",
+        version="2.0.0",
+        description="Backend API for GrepThink 2.0",
+        routes=app.routes,
+    )
+    
+    openapi_schema["components"] = openapi_schema.get("components", {})
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "Supabase JWT Bearer token. Obtain from /api/auth/login endpoint.",
+        }
+    }
+    
+    openapi_schema["security"] = [{"BearerAuth": []}]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
+
 
 # Include routers
 app.include_router(health_router)

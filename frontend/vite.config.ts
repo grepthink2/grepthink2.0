@@ -15,6 +15,7 @@ export default defineConfig({
       '@features': path.resolve(__dirname, './src/features'),
       '@pages': path.resolve(__dirname, './src/pages'),
       '@styles': path.resolve(__dirname, './src/styles'),
+      'react-day-picker/dist/style.css': 'react-day-picker/style.css',
     },
   },
   server: {
