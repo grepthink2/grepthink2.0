@@ -30,8 +30,14 @@ export interface ApiProject {
   team_size?: number;
   looking_for_roles?: string[];
   skills?: string[];
-  /** Current user's role on this project (owner, admin, member, etc.), when authenticated. */
+  /** Current user's role on this project (from API). */
   user_role?: string | null;
+  // Sponsor information
+  sponsor_name?: string;
+  sponsor_company?: string;
+  sponsor_email?: string;
+  sponsor_website?: string;
+  sponsor_description?: string;
 }
 
 export interface ApiProjectJoinRequest {
@@ -58,6 +64,12 @@ export interface CreateProjectPayload {
   team_size: number;
   looking_for_roles?: string[];
   skills?: string[];
+  // Sponsor information
+  sponsor_name?: string;
+  sponsor_company?: string;
+  sponsor_email?: string;
+  sponsor_website?: string;
+  sponsor_description?: string;
 }
 
 export interface CreateTsrPayload {
@@ -66,6 +78,8 @@ export interface CreateTsrPayload {
   positive_feedback: string;
   constructive_feedback: string;
   scrum_master_notes: string;
+  week?: number;
+  assignment_id?: string;
 }
 
 export interface ApiTSR {
@@ -194,14 +208,18 @@ export const api = {
   },
 
   createProjectTsr: async (projectId: string, data: CreateTsrPayload) => {
-    return apiRequest<{ TSR: ApiTSR }>(`/api/projects/${projectId}/create_tsr`, {
+    return apiRequest<{ tsr: ApiTSR }>(`/api/tsrs`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        ...data,
+        project_id: projectId,
+        week: data.week ?? 1,
+      }),
     });
   },
 
   getProjectTsrs: async (projectId: string) => {
-    return apiRequest<{ TSR: ApiTSR[] }>(`/api/projects/${projectId}/view_tsrs`);
+    return apiRequest<{ tsrs: ApiTSR[] }>(`/api/tsrs/${projectId}`);
   },
 
   acceptProjectJoinRequest: async (requestId: string) => {
@@ -229,6 +247,14 @@ export const api = {
   /** Create a project (full form: POST /api/projects) */
   createProject: async (data: CreateProjectPayload) => {
     return apiRequest<{ message: string; project: ApiProject }>('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /** Test-only: create a project bypassing instructor check (POST /api/projects/test-create) */
+  testCreateProject: async (data: CreateProjectPayload) => {
+    return apiRequest<{ message: string; project: ApiProject }>('/api/projects/test-create', {
       method: 'POST',
       body: JSON.stringify(data),
     });

@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '@styles/index.scss' as *;
 
 // ── Wrapper ────────────────────────────────────────────────────
@@ -34,7 +35,7 @@
   box-sizing: border-box;
   transition: border-color $transition-fast;
 
-  &:hover { border-color: darken(#DADADA, 12%); }
+  &:hover { border-color: color.adjust(#DADADA, $lightness: -12%); }
   &:focus { outline: none; border-color: $accent-color; }
   &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
 

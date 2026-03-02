@@ -144,6 +144,11 @@ const ProjectDetails: React.FC = () => {
         project={project}
         projectMembers={members}
         onMembersChange={refreshProjectAndMembers}
+        sponsorName={project.sponsor_name}
+        sponsorCompany={project.sponsor_company}
+        sponsorEmail={project.sponsor_email}
+        sponsorWebsite={project.sponsor_website}
+        sponsorDescription={project.sponsor_description}
       />
     </div>
   );

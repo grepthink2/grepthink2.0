@@ -68,9 +68,16 @@ def create_project(
     team_size: int,
     looking_for_roles: Optional[List[str]] = None,
     skills: Optional[List[str]] = None,
+    sponsor_name: Optional[str] = None,
+    sponsor_company: Optional[str] = None,
+    sponsor_email: Optional[str] = None,
+    sponsor_website: Optional[str] = None,
+    sponsor_description: Optional[str] = None,
 ) -> dict:
     """
-    Create a new project within a class
+    Create a new project within a class.
+
+    Only instructors (teachers) who own the class are allowed to create projects.
 
     Args:
         class_id: Class unique identifier
@@ -80,35 +87,62 @@ def create_project(
         team_size: Maximum team size
         looking_for_roles: Optional list of role names (stored as JSONB)
         skills: Optional list of skill names (stored as JSONB)
+        sponsor_name: Optional sponsor contact name
+        sponsor_company: Optional sponsor company/organization
+        sponsor_email: Optional sponsor email
+        sponsor_website: Optional sponsor website URL
+        sponsor_description: Optional description of the sponsor
 
     Returns:
         Dictionary containing project data
 
     Raises:
-        HTTPException: If class not found or database error occurs
+        HTTPException: If class not found, user not instructor, or database error occurs
     """
     try:
         client = service_client if service_client else supabase
 
         # Verify the class exists
-        class_result = client.table('classes').select('id').eq('id', str(class_id)).execute()
+        class_result = client.table('classes').select('id, created_by').eq('id', str(class_id)).execute()
         if not class_result.data or len(class_result.data) == 0:
             raise HTTPException(status_code=404, detail="Class not found")
 
+        # Enforce teacher-only project creation
+        class_row = class_result.data[0]
+        profile = client.table('profiles').select('role').eq('id', user_id).execute()
+        user_role = profile.data[0].get('role') if profile.data else None
+        if user_role != 'instructor' or class_row.get('created_by') != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Only the class instructor can create projects"
+            )
+
         # Create the project (lists sent as JSON to DB for JSONB columns)
-        # num_members = 1 because creator is added as first member
+        # num_members = 0 because instructors create/manage projects but are not team members
         project_data = {
             "class_id": str(class_id),
             "name": name,
             "description": description,
             "created_by": user_id,
             "team_size": team_size,
-            "num_members": 1,
+            "num_members": 0,
         }
         if looking_for_roles is not None:
             project_data["looking_for_roles"] = looking_for_roles
         if skills is not None:
             project_data["skills"] = skills
+
+        # Sponsor fields
+        if sponsor_name is not None:
+            project_data["sponsor_name"] = sponsor_name
+        if sponsor_company is not None:
+            project_data["sponsor_company"] = sponsor_company
+        if sponsor_email is not None:
+            project_data["sponsor_email"] = sponsor_email
+        if sponsor_website is not None:
+            project_data["sponsor_website"] = sponsor_website
+        if sponsor_description is not None:
+            project_data["sponsor_description"] = sponsor_description
 
         result = client.table('projects').insert(project_data).execute()
         
@@ -116,15 +150,7 @@ def create_project(
             raise HTTPException(status_code=500, detail="Failed to create project")
         
         project = result.data[0]
-        
-        # Automatically add creator as project member with 'owner' role
-        member_data = {
-            "project_id": project['id'],
-            "user_id": user_id,
-            "role": "owner"
-        }
-        client.table('project_members').insert(member_data).execute()
-        
+
         return project
     except HTTPException:
         raise
@@ -138,18 +164,27 @@ def update_project(
     user_id: str,
     team_size: int | None = None,
     description: str | None = None,
+    sponsor_name: str | None = None,
+    sponsor_company: str | None = None,
+    sponsor_email: str | None = None,
+    sponsor_website: str | None = None,
+    sponsor_description: str | None = None,
 ) -> dict:
     """
-    Update a project's team_size and/or description.
+    Update a project's fields (team_size, description, sponsor info).
 
     Who can edit:
     - Project owner or admin (project members with elevated roles)
     - Instructors who own the class the project belongs to
 
-    At least one of team_size or description must be provided.
+    At least one field must be provided.
     """
-    if team_size is None and description is None:
-        raise HTTPException(status_code=400, detail="Provide at least one field to update: team_size or description")
+    all_none = all(v is None for v in [
+        team_size, description, sponsor_name, sponsor_company,
+        sponsor_email, sponsor_website, sponsor_description,
+    ])
+    if all_none:
+        raise HTTPException(status_code=400, detail="Provide at least one field to update")
 
     try:
         client = service_client if service_client else supabase
@@ -185,6 +220,16 @@ def update_project(
             updates['team_size'] = team_size
         if description is not None:
             updates['description'] = description
+        if sponsor_name is not None:
+            updates['sponsor_name'] = sponsor_name
+        if sponsor_company is not None:
+            updates['sponsor_company'] = sponsor_company
+        if sponsor_email is not None:
+            updates['sponsor_email'] = sponsor_email
+        if sponsor_website is not None:
+            updates['sponsor_website'] = sponsor_website
+        if sponsor_description is not None:
+            updates['sponsor_description'] = sponsor_description
 
         result = client.table('projects').update(updates).eq('id', str(project_id)).execute()
         if not result.data:

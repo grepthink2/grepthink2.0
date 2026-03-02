@@ -7,6 +7,7 @@ export const instructorOnlyPaths: string[] = [
   '/app/roster',
   '/app/modules',
   '/app/ta-management',
+  '/app/create-project',
 ];
 
 /** Paths only students may access. Instructors are redirected to /app/home if they hit these. */

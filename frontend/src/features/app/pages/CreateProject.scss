@@ -876,3 +876,12 @@
     }
   }
 }
+
+// Sponsor fields within the create-project form
+.create-project {
+  &__sponsor-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
