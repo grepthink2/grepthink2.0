@@ -1,42 +1,91 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen } from 'lucide-react';
+import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Building2, Globe, Mail, User } from 'lucide-react';
 import EmailIcon from '@assets/ic_outline-email.svg';
 import GithubIcon from '@assets/line-md_github.svg';
 import LinkedInIcon from '@assets/mdi_linkedin.svg';
 import CodeIcon from '@assets/material-symbols_code-rounded.svg';
 import './ProjectView.scss';
 import { useAuth } from '@/lib/auth';
+import RequestModal from './RequestModal';
+import MemberManagerModal from './MemberManagerModal';
+import type { ApiProject, ApiProjectMember } from '@/lib/api';
+
+export interface ProjectViewMember {
+  id?: string;
+  displayName: string;
+  roleLabel: string;
+  email?: string;
+  githubUrl?: string;
+  linkedInUrl?: string;
+}
+
+/** Roles that can manage the project (add/drop members, edit project). */
+const MANAGER_ROLES = ['owner', 'admin', 'product owner'] as const;
 
 interface ProjectViewProps {
+  projectId?: string;
   projectTitle: string;
   teamSize?: string;
   className?: string;
   descriptionMarkdown: string;
   skills: string[];
   selectedRoles: string[];
+  members?: ProjectViewMember[];
+  /** Current user's role on this project (from API). Enables owner/admin to see management buttons. */
+  userRoleOnProject?: string | null;
+  /** Required for Team Management modal (Add/Drop Members). */
+  classId?: string;
+  /** Full project from API (for team_size, etc.). Required when classId is set. */
+  project?: ApiProject | null;
+  /** Raw project members from API. Required when classId is set. */
+  projectMembers?: ApiProjectMember[];
+  /** Called after member/request changes so parent can refetch. */
+  onMembersChange?: () => void;
+  // Sponsor information
+  sponsorName?: string;
+  sponsorCompany?: string;
+  sponsorEmail?: string;
+  sponsorWebsite?: string;
+  sponsorDescription?: string;
 }
 
-const CURRENT_MEMBERS_PREVIEW = 1;
-
 const ProjectView: React.FC<ProjectViewProps> = ({
+  projectId,
   projectTitle,
   teamSize: teamSizeInput = '',
   className = 'CSE 115B',
   descriptionMarkdown,
   skills,
   selectedRoles,
+  members = [],
+  userRoleOnProject,
+  classId,
+  project,
+  projectMembers = [],
+  onMembersChange,
+  sponsorName,
+  sponsorCompany,
+  sponsorEmail,
+  sponsorWebsite,
+  sponsorDescription,
 }) => {
   const { role } = useAuth();
   const isInstructor = role === 'instructor';
+  const canManageProject =
+    isInstructor ||
+    (userRoleOnProject != null && MANAGER_ROLES.includes(userRoleOnProject as (typeof MANAGER_ROLES)[number]));
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [memberManagerOpen, setMemberManagerOpen] = useState(false);
 
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
   const hasValidTeamSize = !isNaN(totalMembers) && totalMembers >= 1;
+  const currentCount = members.length;
   const membersText = hasValidTeamSize
-    ? `${CURRENT_MEMBERS_PREVIEW}/${totalMembers} Members`
-    : `${CURRENT_MEMBERS_PREVIEW}/ Members`;
-  const spotsAvailable = hasValidTeamSize ? totalMembers - CURRENT_MEMBERS_PREVIEW : null;
+    ? `${currentCount}/${totalMembers} Members`
+    : `${currentCount} Members`;
+  const spotsAvailable = hasValidTeamSize ? totalMembers - currentCount : null;
   const spotsText = spotsAvailable !== null ? `${spotsAvailable} Spots Available` : 'Spots Available';
 
   const getRoleIcon = (roleId: string) => {
@@ -109,9 +158,14 @@ const ProjectView: React.FC<ProjectViewProps> = ({
             </div>
           </div>
           <div className="project-view__header-right">
-            {isInstructor ? (
+            {canManageProject ? (
               <div className="project-view__instructor-actions">
-                <button className="project-view__request-button">
+                <button
+                  type="button"
+                  className="project-view__request-button"
+                  onClick={() => projectId && project && classId && setMemberManagerOpen(true)}
+                  disabled={!projectId || !project || !classId}
+                >
                   <svg
                     width="20"
                     height="20"
@@ -132,8 +186,22 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                   Edit Project
                 </button>
               </div>
+            ) : userRoleOnProject != null && userRoleOnProject !== '' ? (
+              <span className="project-view__joined" aria-label="You are a member of this project">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Joined
+              </span>
             ) : (
-              <button className="project-view__request-button">
+              <button
+                type="button"
+                className="project-view__request-button"
+                onClick={() => setRequestModalOpen(true)}
+              >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="8.5" cy="7" r="4" />
@@ -162,23 +230,53 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           <div className="project-view__section">
             <h3 className="project-view__section-title">Team Members</h3>
             <div className="project-view__team-list">
-              <div className="project-view__team-member">
-                <div className="project-view__member-avatar">
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </div>
-                <div className="project-view__member-info">
-                  <div className="project-view__member-name">Cole Saulnier</div>
-                  <div className="project-view__member-role">Product Owner</div>
-                  <div className="project-view__member-links">
-                    <img src={EmailIcon} alt="Email" className="project-view__link-icon" />
-                    <img src={GithubIcon} alt="GitHub" className="project-view__link-icon" />
-                    <img src={LinkedInIcon} alt="LinkedIn" className="project-view__link-icon" />
+              {members.length === 0 ? (
+                <div className="project-view__team-member">
+                  <div className="project-view__member-avatar">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </div>
+                  <div className="project-view__member-info">
+                    <div className="project-view__member-name">No members yet</div>
+                    <div className="project-view__member-role">—</div>
+                    <div className="project-view__member-links" />
                   </div>
                 </div>
-              </div>
+              ) : (
+                members.map((member, index) => (
+                  <div key={member.id ?? `member-${index}`} className="project-view__team-member">
+                    <div className="project-view__member-avatar">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+                    <div className="project-view__member-info">
+                      <div className="project-view__member-name">{member.displayName}</div>
+                      <div className="project-view__member-role">{member.roleLabel}</div>
+                      <div className="project-view__member-links">
+                        {member.email ? (
+                          <a href={`mailto:${member.email}`} className="project-view__link-icon-wrap" title={member.email} aria-label={`Email ${member.displayName}`}>
+                            <img src={EmailIcon} alt="" className="project-view__link-icon" />
+                          </a>
+                        ) : (
+                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
+                            <img src={EmailIcon} alt="" className="project-view__link-icon" />
+                          </span>
+                        )}
+                        <a href={member.githubUrl || '#'} className="project-view__link-icon-wrap" title="GitHub" aria-label={`${member.displayName} GitHub`} onClick={(e) => !member.githubUrl && e.preventDefault()}>
+                          <img src={GithubIcon} alt="" className="project-view__link-icon" />
+                        </a>
+                        <a href={member.linkedInUrl || '#'} className="project-view__link-icon-wrap" title="LinkedIn" aria-label={`${member.displayName} LinkedIn`} onClick={(e) => !member.linkedInUrl && e.preventDefault()}>
+                          <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -199,8 +297,72 @@ const ProjectView: React.FC<ProjectViewProps> = ({
               </div>
             </div>
           )}
+
+          {/* Sponsor Information */}
+          {(sponsorName || sponsorCompany || sponsorEmail || sponsorWebsite || sponsorDescription) && (
+            <div className="project-view__section">
+              <h3 className="project-view__section-title">Sponsor Information</h3>
+              <div className="project-view__sponsor-card">
+                {sponsorCompany && (
+                  <div className="project-view__sponsor-row">
+                    <Building2 size={16} />
+                    <span className="project-view__sponsor-label">Company</span>
+                    <span className="project-view__sponsor-value">{sponsorCompany}</span>
+                  </div>
+                )}
+                {sponsorName && (
+                  <div className="project-view__sponsor-row">
+                    <User size={16} />
+                    <span className="project-view__sponsor-label">Contact</span>
+                    <span className="project-view__sponsor-value">{sponsorName}</span>
+                  </div>
+                )}
+                {sponsorEmail && (
+                  <div className="project-view__sponsor-row">
+                    <Mail size={16} />
+                    <span className="project-view__sponsor-label">Email</span>
+                    <a href={`mailto:${sponsorEmail}`} className="project-view__sponsor-link">{sponsorEmail}</a>
+                  </div>
+                )}
+                {sponsorWebsite && (
+                  <div className="project-view__sponsor-row">
+                    <Globe size={16} />
+                    <span className="project-view__sponsor-label">Website</span>
+                    <a href={sponsorWebsite} target="_blank" rel="noopener noreferrer" className="project-view__sponsor-link">{sponsorWebsite}</a>
+                  </div>
+                )}
+                {sponsorDescription && (
+                  <div className="project-view__sponsor-description">
+                    <p>{sponsorDescription}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {projectId && (
+        <RequestModal
+          isOpen={requestModalOpen}
+          projectId={projectId}
+          onClose={() => setRequestModalOpen(false)}
+          onSuccess={() => {
+            // Optional: refetch project or show toast when backend supports it
+          }}
+        />
+      )}
+      {projectId && project && classId && (
+        <MemberManagerModal
+          isOpen={memberManagerOpen}
+          onClose={() => setMemberManagerOpen(false)}
+          projectId={projectId}
+          classId={classId}
+          project={project}
+          initialMembers={projectMembers}
+          onMembersChange={onMembersChange}
+        />
+      )}
     </div>
   );
 };

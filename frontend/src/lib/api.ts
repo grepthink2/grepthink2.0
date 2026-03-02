@@ -63,6 +63,12 @@ export interface CreateProjectPayload {
   team_size: number;
   looking_for_roles?: string[];
   skills?: string[];
+  // Sponsor information
+  sponsor_name?: string;
+  sponsor_company?: string;
+  sponsor_email?: string;
+  sponsor_website?: string;
+  sponsor_description?: string;
 }
 
 export interface CreateTsrPayload {
@@ -71,6 +77,8 @@ export interface CreateTsrPayload {
   positive_feedback: string;
   constructive_feedback: string;
   scrum_master_notes: string;
+  week?: number;
+  assignment_id?: string;
 }
 
 export interface ApiTSR {
@@ -214,14 +222,18 @@ export const api = {
   },
 
   createProjectTsr: async (projectId: string, data: CreateTsrPayload) => {
-    return apiRequest<{ TSR: ApiTSR }>(`/api/projects/${projectId}/create_tsr`, {
+    return apiRequest<{ tsr: ApiTSR }>(`/api/tsrs`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        ...data,
+        project_id: projectId,
+        week: data.week ?? 1,
+      }),
     });
   },
 
   getProjectTsrs: async (projectId: string) => {
-    return apiRequest<{ TSR: ApiTSR[] }>(`/api/projects/${projectId}/view_tsrs`);
+    return apiRequest<{ tsrs: ApiTSR[] }>(`/api/tsrs/${projectId}`);
   },
 
   acceptProjectJoinRequest: async (requestId: string) => {

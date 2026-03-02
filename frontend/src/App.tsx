@@ -20,6 +20,7 @@ import CreateProject from '@features/app/pages/CreateProject';
 import MyClasses from '@features/app/pages/MyClasses';
 import Assignments from '@features/app/pages/Assignments';
 import AssignmentDetail from '@features/app/pages/AssignmentDetail';
+import BrowseProjects from '@features/app/pages/BrowseProjects';
 import TestProjects from '@pages/TestProjects';
 
 function App() {
@@ -51,7 +52,7 @@ function App() {
             <Route path="modules" element={<Modules />} />
             <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
             <Route path="create-project" element={<CreateProject />} />
-            <Route path="browse-projects" element={<div>Browse Projects - Coming Soon</div>} />
+            <Route path="browse-projects" element={<BrowseProjects />} />
             <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
             <Route path="assignments" element={<Assignments />} />
             <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
@@ -61,7 +62,9 @@ function App() {
         </Route>
 
         <Route path="/classes" element={<ClassManagement />} />
-        <Route path="/test-projects" element={<TestProjects />} />
+        <Route path="/test-projects" element={<Navigate to="/test-115a-projects" replace />} />
+        <Route path="/test-115a-projects" element={<TestProjects />} />
+        <Route path="/test-115b-projects" element={<TestProjects />} />
       </Routes>
     </Router>
   );

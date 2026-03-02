@@ -14,12 +14,24 @@ class CreateProjectRequest(BaseModel):
     team_size: int
     looking_for_roles: Optional[List[str]] = None
     skills: Optional[List[str]] = None
+    # Sponsor information (teacher-created projects)
+    sponsor_name: Optional[str] = None
+    sponsor_company: Optional[str] = None
+    sponsor_email: Optional[str] = None
+    sponsor_website: Optional[str] = None
+    sponsor_description: Optional[str] = None
 
 
 class UpdateProjectRequest(BaseModel):
     """Request model for updating a project. All fields are optional."""
     team_size: Optional[int] = None
     description: Optional[str] = None
+    # Sponsor information
+    sponsor_name: Optional[str] = None
+    sponsor_company: Optional[str] = None
+    sponsor_email: Optional[str] = None
+    sponsor_website: Optional[str] = None
+    sponsor_description: Optional[str] = None
 
 
 class JoinProjectRequest(BaseModel):

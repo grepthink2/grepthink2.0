@@ -38,6 +38,7 @@ export const instructorSidebarConfig: SidebarSection[] = [
       { label: 'Messages', path: '/app/messages', iconSvg: MessagesIcon },
       { label: 'My Classes', path: '/app/my-classes', iconSvg: MyClassesIcon },
       { label: 'Create Class', path: '/app/create-class', icon: IoIosCreate },
+      { label: 'Create Project', path: '/app/create-project', icon: IoIosCreate },
     ],
   },
   {
@@ -72,7 +73,6 @@ export const studentSidebarConfig: SidebarSection[] = [
   {
     title: 'Class',
     items: [
-      { label: 'Create Project', path: '/app/create-project', icon: IoIosCreate },
       { label: 'Browse Projects', path: '/app/browse-projects', icon: TiThList },
       { label: 'My Project', path: '/app/my-project', icon: FaFolder },
       { label: 'Assignments', path: '/app/assignments', icon: MdAssignment},
