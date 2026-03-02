@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import {
   api,
@@ -53,6 +54,9 @@ const mapApiMemberToTeamMember = (member: ApiProjectMember): SimulatedTeamMember
 };
 
 const TestProjects: React.FC = () => {
+  const location = useLocation();
+  const isStudentFlow = location.pathname.includes('/test-115a-projects') || location.pathname.includes('/test-projects');
+
   const [classes, setClasses] = useState<ApiClass[]>([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [projects, setProjects] = useState<ApiProject[]>([]);
@@ -286,17 +290,22 @@ const TestProjects: React.FC = () => {
 
     setSubmitting(true);
     try {
-      await api.createProject({
+      const payload: Parameters<typeof api.testCreateProject>[0] = {
         class_id: selectedClassId,
         name: projectName.trim(),
         description: projectDescription.trim() || undefined,
         team_size: 4,
-        sponsor_name: sponsorName.trim() || undefined,
-        sponsor_company: sponsorCompany.trim() || undefined,
-        sponsor_email: sponsorEmail.trim() || undefined,
-        sponsor_website: sponsorWebsite.trim() || undefined,
-        sponsor_description: sponsorDescription.trim() || undefined,
-      });
+      };
+
+      if (!isStudentFlow) {
+        payload.sponsor_name = sponsorName.trim() || undefined;
+        payload.sponsor_company = sponsorCompany.trim() || undefined;
+        payload.sponsor_email = sponsorEmail.trim() || undefined;
+        payload.sponsor_website = sponsorWebsite.trim() || undefined;
+        payload.sponsor_description = sponsorDescription.trim() || undefined;
+      }
+
+      await api.testCreateProject(payload);
 
       setProjectName('');
       setProjectDescription('');
@@ -475,7 +484,7 @@ const TestProjects: React.FC = () => {
       <header className="test-projects-page__hero">
         <h1 className="test-projects-page__title">Project Lab</h1>
         <p className="test-projects-page__subtitle">
-          Create sponsor-backed projects as the class instructor and verify project display.
+          Create projects as a student and verify sponsor + TSR workflows.
         </p>
       </header>
 
@@ -512,7 +521,9 @@ const TestProjects: React.FC = () => {
       </section>
 
       <form className="test-projects-page__card test-projects-page__form" onSubmit={handleCreateProject}>
-        <h2 className="test-projects-page__section-title">Create Project (Teacher only)</h2>
+        <h2 className="test-projects-page__section-title">
+          {isStudentFlow ? 'Create Project (Student test flow)' : 'Create Project (Instructor test flow)'}
+        </h2>
         <input
           type="text"
           placeholder="Project name"
@@ -528,42 +539,46 @@ const TestProjects: React.FC = () => {
           rows={4}
         />
 
-        <h3 style={{ margin: '0.75rem 0 0.25rem', fontSize: '1rem' }}>Sponsor Information</h3>
-        <input
-          type="text"
-          placeholder="Sponsor Contact Name"
-          value={sponsorName}
-          onChange={(e) => setSponsorName(e.target.value)}
-          disabled={submitting}
-        />
-        <input
-          type="text"
-          placeholder="Company / Organization"
-          value={sponsorCompany}
-          onChange={(e) => setSponsorCompany(e.target.value)}
-          disabled={submitting}
-        />
-        <input
-          type="email"
-          placeholder="Sponsor Email"
-          value={sponsorEmail}
-          onChange={(e) => setSponsorEmail(e.target.value)}
-          disabled={submitting}
-        />
-        <input
-          type="url"
-          placeholder="Sponsor Website (https://...)"
-          value={sponsorWebsite}
-          onChange={(e) => setSponsorWebsite(e.target.value)}
-          disabled={submitting}
-        />
-        <textarea
-          placeholder="Brief description of the sponsor"
-          value={sponsorDescription}
-          onChange={(e) => setSponsorDescription(e.target.value)}
-          disabled={submitting}
-          rows={2}
-        />
+        {!isStudentFlow && (
+          <>
+            <h3 style={{ margin: '0.75rem 0 0.25rem', fontSize: '1rem' }}>Sponsor Information</h3>
+            <input
+              type="text"
+              placeholder="Sponsor Contact Name"
+              value={sponsorName}
+              onChange={(e) => setSponsorName(e.target.value)}
+              disabled={submitting}
+            />
+            <input
+              type="text"
+              placeholder="Company / Organization"
+              value={sponsorCompany}
+              onChange={(e) => setSponsorCompany(e.target.value)}
+              disabled={submitting}
+            />
+            <input
+              type="email"
+              placeholder="Sponsor Email"
+              value={sponsorEmail}
+              onChange={(e) => setSponsorEmail(e.target.value)}
+              disabled={submitting}
+            />
+            <input
+              type="url"
+              placeholder="Sponsor Website (https://...)"
+              value={sponsorWebsite}
+              onChange={(e) => setSponsorWebsite(e.target.value)}
+              disabled={submitting}
+            />
+            <textarea
+              placeholder="Brief description of the sponsor"
+              value={sponsorDescription}
+              onChange={(e) => setSponsorDescription(e.target.value)}
+              disabled={submitting}
+              rows={2}
+            />
+          </>
+        )}
 
         <button type="submit" disabled={submitting || !selectedClassId}>
           {submitting ? 'Creating...' : 'Create Project'}
@@ -582,7 +597,7 @@ const TestProjects: React.FC = () => {
               <li key={project.id}>
                 <div className="test-projects-page__project-header">
                   <div className="test-projects-page__project-name">{project.name}</div>
-                  <span className="test-projects-page__pill">Instructor Project</span>
+                  <span className="test-projects-page__pill">{isStudentFlow ? 'Student Project' : 'Instructor Project'}</span>
                 </div>
                 <div className="test-projects-page__project-meta">By {project.creator_email || project.created_by}</div>
                 {project.description && <p>{project.description}</p>}

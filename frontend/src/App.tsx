@@ -62,7 +62,8 @@ function App() {
         </Route>
 
         <Route path="/classes" element={<ClassManagement />} />
-        <Route path="/test-projects" element={<TestProjects />} />
+        <Route path="/test-projects" element={<Navigate to="/test-115a-projects" replace />} />
+        <Route path="/test-115a-projects" element={<TestProjects />} />
         <Route path="/test-115b-projects" element={<TestProjects />} />
       </Routes>
     </Router>
