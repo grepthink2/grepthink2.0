@@ -118,7 +118,7 @@ def create_project(
             )
 
         # Create the project (lists sent as JSON to DB for JSONB columns)
-        # num_members = 0 because the instructor is not auto-added as a member
+        # num_members = 0 because instructors create/manage projects but are not team members
         project_data = {
             "class_id": str(class_id),
             "name": name,
@@ -150,7 +150,7 @@ def create_project(
             raise HTTPException(status_code=500, detail="Failed to create project")
         
         project = result.data[0]
-        
+
         return project
     except HTTPException:
         raise

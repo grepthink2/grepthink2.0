@@ -18,5 +18,5 @@ router.post('/{project_id}/members')(views.add_project_member)
 router.delete('/{project_id}/members/{user_id}')(views.remove_project_member)
 router.get('/{project_id}/join-requests')(views.get_join_requests)
 
-# ---- Test-only route (bypasses instructor check) ----
+# ---- Test-only route (still enforces teacher-only create rules) ----
 router.post('/test-create')(views.test_create_project)

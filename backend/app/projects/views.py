@@ -10,48 +10,27 @@ from app.projects import controller
 
 
 def test_create_project(data: CreateProjectRequest, payload: dict = Depends(verify_supabase_token)):
-    """Test-only endpoint that creates a project without requiring instructor role.
-    Uses the service client to insert directly so any authenticated user can test."""
+    """Test endpoint for project creation with the same teacher-only checks as production create."""
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
     user_id = payload.get('sub')
 
     try:
-        from app.database.client import service_client, supabase as sb_client
-        client = service_client if service_client else sb_client
-
-        # Verify class exists
-        class_result = client.table('classes').select('id').eq('id', str(data.class_id)).execute()
-        if not class_result.data:
-            raise HTTPException(status_code=404, detail="Class not found")
-
-        project_data = {
-            "class_id": str(data.class_id),
-            "name": data.name,
-            "description": data.description,
-            "created_by": user_id,
-            "team_size": data.team_size,
-            "num_members": 0,
-        }
-        if data.looking_for_roles is not None:
-            project_data["looking_for_roles"] = data.looking_for_roles
-        if data.skills is not None:
-            project_data["skills"] = data.skills
-        if data.sponsor_name is not None:
-            project_data["sponsor_name"] = data.sponsor_name
-        if data.sponsor_company is not None:
-            project_data["sponsor_company"] = data.sponsor_company
-        if data.sponsor_email is not None:
-            project_data["sponsor_email"] = data.sponsor_email
-        if data.sponsor_website is not None:
-            project_data["sponsor_website"] = data.sponsor_website
-        if data.sponsor_description is not None:
-            project_data["sponsor_description"] = data.sponsor_description
-
-        result = client.table('projects').insert(project_data).execute()
-        if not result.data:
-            raise HTTPException(status_code=500, detail="Failed to create project")
-        return {"message": "Test project created (no role check)", "project": result.data[0]}
+        result = controller.create_project(
+            class_id=data.class_id,
+            name=data.name,
+            description=data.description,
+            user_id=user_id,
+            team_size=data.team_size,
+            looking_for_roles=data.looking_for_roles,
+            skills=data.skills,
+            sponsor_name=data.sponsor_name,
+            sponsor_company=data.sponsor_company,
+            sponsor_email=data.sponsor_email,
+            sponsor_website=data.sponsor_website,
+            sponsor_description=data.sponsor_description,
+        )
+        return {"message": "Test project created", "project": result}
     except HTTPException:
         raise
     except Exception as e:

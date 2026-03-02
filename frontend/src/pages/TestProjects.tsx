@@ -146,11 +146,7 @@ const TestProjects: React.FC = () => {
       const next: Record<string, SimulatedTeamMember[]> = {};
       projects.forEach((project) => {
         const existing = current[project.id];
-        if (existing && existing.length > 0) {
-          next[project.id] = existing;
-        } else {
-          next[project.id] = [getProjectOwnerMember(project)];
-        }
+        next[project.id] = existing && existing.length > 0 ? existing : [];
       });
       return next;
     });
@@ -216,10 +212,12 @@ const TestProjects: React.FC = () => {
 
     try {
       const response = await api.getProjectMembers(project.id);
-      const members = response.members.map(mapApiMemberToTeamMember);
+      const members = (response.members || [])
+        .filter((member) => member.user_id !== project.created_by)
+        .map(mapApiMemberToTeamMember);
       setProjectTeamMembers((current) => ({
         ...current,
-        [project.id]: members.length > 0 ? members : [getProjectOwnerMember(project)],
+        [project.id]: members,
       }));
     } catch (err) {
       setProjectMembersErrorByProject((current) => ({
@@ -228,7 +226,7 @@ const TestProjects: React.FC = () => {
       }));
       setProjectTeamMembers((current) => ({
         ...current,
-        [project.id]: [getProjectOwnerMember(project)],
+        [project.id]: [],
       }));
     } finally {
       setLoadingProjectMembersByProject((current) => ({
@@ -288,7 +286,7 @@ const TestProjects: React.FC = () => {
 
     setSubmitting(true);
     try {
-      await api.testCreateProject({
+      await api.createProject({
         class_id: selectedClassId,
         name: projectName.trim(),
         description: projectDescription.trim() || undefined,
@@ -477,7 +475,7 @@ const TestProjects: React.FC = () => {
       <header className="test-projects-page__hero">
         <h1 className="test-projects-page__title">Project Lab</h1>
         <p className="test-projects-page__subtitle">
-          Create a project as a student and verify it appears to the class.
+          Create sponsor-backed projects as the class instructor and verify project display.
         </p>
       </header>
 
@@ -514,7 +512,7 @@ const TestProjects: React.FC = () => {
       </section>
 
       <form className="test-projects-page__card test-projects-page__form" onSubmit={handleCreateProject}>
-        <h2 className="test-projects-page__section-title">Create Project (Test — no role check)</h2>
+        <h2 className="test-projects-page__section-title">Create Project (Teacher only)</h2>
         <input
           type="text"
           placeholder="Project name"
@@ -584,7 +582,7 @@ const TestProjects: React.FC = () => {
               <li key={project.id}>
                 <div className="test-projects-page__project-header">
                   <div className="test-projects-page__project-name">{project.name}</div>
-                  <span className="test-projects-page__pill">Student Project</span>
+                  <span className="test-projects-page__pill">Instructor Project</span>
                 </div>
                 <div className="test-projects-page__project-meta">By {project.creator_email || project.created_by}</div>
                 {project.description && <p>{project.description}</p>}
@@ -773,45 +771,44 @@ const TestProjects: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {selectedProjectDetail?.id === project.id && (
+                  <section className="test-projects-page__card" style={{ marginTop: '1rem' }}>
+                    <h2 className="test-projects-page__section-title">
+                      Project Details &mdash; {selectedProjectDetail.name}
+                    </h2>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                      <tbody>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600, width: '180px' }}>ID</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.id}</td></tr>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Name</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.name}</td></tr>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Description</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.description || '—'}</td></tr>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Team Size</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.team_size ?? '—'}</td></tr>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Skills</td><td style={{ padding: '0.35rem 0.5rem' }}>{(selectedProjectDetail.skills ?? []).join(', ') || '—'}</td></tr>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Looking For</td><td style={{ padding: '0.35rem 0.5rem' }}>{(selectedProjectDetail.looking_for_roles ?? []).join(', ') || '—'}</td></tr>
+                        <tr style={{ borderTop: '2px solid #333' }}>
+                          <td colSpan={2} style={{ padding: '0.5rem', fontWeight: 700, fontSize: '1rem', color: '#a78bfa' }}>Sponsor Information</td>
+                        </tr>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Sponsor Name</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_name || '—'}</td></tr>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Company</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_company || '—'}</td></tr>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Sponsor Email</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_email ? <a href={`mailto:${selectedProjectDetail.sponsor_email}`}>{selectedProjectDetail.sponsor_email}</a> : '—'}</td></tr>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Website</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_website ? <a href={selectedProjectDetail.sponsor_website} target="_blank" rel="noopener noreferrer">{selectedProjectDetail.sponsor_website}</a> : '—'}</td></tr>
+                        <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Description</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_description || '—'}</td></tr>
+                      </tbody>
+                    </table>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProjectDetail(null)}
+                      style={{ marginTop: '0.75rem' }}
+                    >
+                      Close
+                    </button>
+                  </section>
+                )}
               </li>
             ))}
           </ul>
         )}
       </section>
-
-      {/* Full Project Detail Panel (including Sponsor info) */}
-      {selectedProjectDetail && (
-        <section className="test-projects-page__card" style={{ marginTop: '1.5rem' }}>
-          <h2 className="test-projects-page__section-title">
-            Project Details &mdash; {selectedProjectDetail.name}
-          </h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-            <tbody>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600, width: '180px' }}>ID</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.id}</td></tr>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Name</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.name}</td></tr>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Description</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.description || '—'}</td></tr>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Team Size</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.team_size ?? '—'}</td></tr>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Skills</td><td style={{ padding: '0.35rem 0.5rem' }}>{(selectedProjectDetail.skills ?? []).join(', ') || '—'}</td></tr>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Looking For</td><td style={{ padding: '0.35rem 0.5rem' }}>{(selectedProjectDetail.looking_for_roles ?? []).join(', ') || '—'}</td></tr>
-              <tr style={{ borderTop: '2px solid #333' }}>
-                <td colSpan={2} style={{ padding: '0.5rem', fontWeight: 700, fontSize: '1rem', color: '#a78bfa' }}>Sponsor Information</td>
-              </tr>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Sponsor Name</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_name || '—'}</td></tr>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Company</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_company || '—'}</td></tr>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Sponsor Email</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_email ? <a href={`mailto:${selectedProjectDetail.sponsor_email}`}>{selectedProjectDetail.sponsor_email}</a> : '—'}</td></tr>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Website</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_website ? <a href={selectedProjectDetail.sponsor_website} target="_blank" rel="noopener noreferrer">{selectedProjectDetail.sponsor_website}</a> : '—'}</td></tr>
-              <tr><td style={{ padding: '0.35rem 0.5rem', fontWeight: 600 }}>Description</td><td style={{ padding: '0.35rem 0.5rem' }}>{selectedProjectDetail.sponsor_description || '—'}</td></tr>
-            </tbody>
-          </table>
-          <button
-            type="button"
-            onClick={() => setSelectedProjectDetail(null)}
-            style={{ marginTop: '0.75rem' }}
-          >
-            Close
-          </button>
-        </section>
-      )}
     </div>
   );
 };
