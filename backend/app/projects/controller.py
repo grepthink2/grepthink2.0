@@ -662,8 +662,8 @@ def admin_add_member(project_id:UUID, requester_id:str, target_user:str, role = 
             raise HTTPException(status_code=404, detail="Project not found")
         
         class_id = class_result.data[0]['class_id']
-        # check if user is teacher of the class
-        if not _is_instructor(requester_id, class_id):
+        # check if user is teacher or product owner of the class
+        if not _is_admin(requester_id, class_id):
             raise HTTPException(status_code=403, detail="Not the instructor or product owner of this project")
         
         # Check if user is already a member of this project
@@ -731,7 +731,11 @@ def admin_remove_member(project_id:UUID, requester_id:str, target_user:str):
     Raises:
         HTTPException: If no permission or database error occurs
     """
+    # block from removing self
+    if requester_id == target_user:
+        raise HTTPException(status_code=403, detail="Cannot remove self")
     try:
+        
         client = service_client if service_client else supabase
         class_result = (
             client.table('projects').select('class_id')
@@ -741,20 +745,23 @@ def admin_remove_member(project_id:UUID, requester_id:str, target_user:str):
         if not class_result.data:
             raise HTTPException(status_code=404, detail="Project not found")
         class_id = class_result.data[0]['class_id']
-        # check if user is teacher of the class
-        if not _is_instructor(requester_id, class_id):
+        # check if user is teacher or product owner of the class
+        if not _is_admin(requester_id, class_id):
             raise HTTPException(status_code=403, detail="Not the instructor or product owner of this project")
         # Remove user as project member
         delete_result = (client.table('project_members').delete()
             .eq('project_id', str(project_id)).eq('user_id', str(target_user))
             .execute()
         )
-        # Decrement num_members on the project
-        _increment_project_num_members(client, str(project_id), -1)
-        return {
-            "message": "Removed member successfully",
-            "user_id": target_user
-        }
+        if delete_result.data:
+            # Decrement num_members on the project
+            _increment_project_num_members(client, str(project_id), -1)
+            return {
+                "message": "Removed member successfully",
+                "user_id": target_user
+            }
+        else:
+            raise HTTPException(status_code=404, detail="User not found")
     except HTTPException:
         raise
     except Exception as e:
