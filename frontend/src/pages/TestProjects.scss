@@ -302,3 +302,112 @@
     grid-template-columns: 1fr;
   }
 }
+
+.test-projects-page__member-management {
+  margin-top: $spacing-md;
+  border-top: 1px solid $border-color;
+  padding-top: $spacing-md;
+  display: grid;
+  gap: $spacing-sm;
+}
+
+.test-projects-page__add-member-form {
+  display: grid;
+  grid-template-columns: 1fr 150px auto;
+  gap: $spacing-sm;
+  align-items: end;
+}
+
+.test-projects-page__members-list {
+  border-top: 1px solid $border-color;
+  padding-top: $spacing-sm;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: $spacing-sm;
+  }
+
+  li {
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $white;
+    padding: $spacing-sm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+  }
+
+  p {
+    margin: 0;
+    color: $text-secondary;
+  }
+}
+
+.test-projects-page__member-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.test-projects-page__member-info {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  flex: 1;
+  min-width: 0;
+
+  strong {
+    color: $text-primary;
+    word-break: break-word;
+  }
+
+  span {
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    word-break: break-word;
+  }
+}
+
+.test-projects-page__member-actions {
+  display: flex;
+  gap: $spacing-xs;
+  align-items: center;
+}
+
+.test-projects-page__btn-danger {
+  border-color: #d32f2f !important;
+  background: #d32f2f !important;
+  color: $white !important;
+
+  &:hover:not(:disabled) {
+    background: #c62828 !important;
+    border-color: #c62828 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .test-projects-page__add-member-form {
+    grid-template-columns: 1fr;
+  }
+
+  .test-projects-page__member-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .test-projects-page__member-actions {
+    width: 100%;
+    flex-direction: column;
+
+    select,
+    button {
+      width: 100%;
+    }
+  }
+}
