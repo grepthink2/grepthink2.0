@@ -295,6 +295,13 @@
       }
     }
 
+    &--added {
+      background: rgba($primary-color, 0.15);
+      color: $primary-hover;
+      cursor: default;
+      pointer-events: none;
+    }
+
     &--remove {
       background: $white;
       color: $text-secondary;

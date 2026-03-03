@@ -634,14 +634,14 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
         print(f"Error fetching join requests: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch join requests: {str(e)}")
 
-def instructor_add_member(project_id:UUID, requester_id:str, target_user:str, role = "member"):
+def instructor_add_member(project_id:UUID, requester_id:str, target_user_id:str, role = "member"):
     """
     Add member to project (instructor only)
     
     Args:
         project_id: Project unique identifier
         requester_id: ID of instructor requesting this
-        target_user: ID of user to add
+        target_user_id: ID of user to add
         role: role of newly added user
         
     Returns:
@@ -667,13 +667,13 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user:str, ro
             raise HTTPException(status_code=403, detail="Not the instructor of this project")
         
         res = (client.table('project_members').select('user_id')
-            .eq('user_id', target_user)
+            .eq('user_id', target_user_id)
             .execute()
         )
         if len(res.data) > 0: # update role if already in project
             response = (client.table("project_members")
                 .update({"role": role})
-                .eq("user_id", requester_id).eq("project_id", project_id)
+                .eq("user_id", requester_id).eq("project_id", str(project_id))
                 .execute()
             )
 
@@ -681,7 +681,7 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user:str, ro
             if role in ["scrum master", "owner"]:
                 (client.table("project_members")
                     .update({"role": "member"})
-                    .neq("user_id", requester_id).eq("project_id", project_id).eq("role", role)
+                    .neq("user_id", requester_id).eq("project_id", str(project_id)).eq("role", role)
                     .execute()
                 )
             return {
@@ -691,19 +691,19 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user:str, ro
             }
         else: # otherwise add user as project member
             member_data = {
-                "project_id": project_id,
-                "user_id": target_user,
+                "project_id": str(project_id),
+                "user_id": str(target_user_id),
                 "role": role
             }
             
             client.table('project_members').insert(member_data).execute()
 
             # Increment num_members on the project
-            _increment_project_num_members(client, project_id, 1)
+            _increment_project_num_members(client, str(project_id), 1)
             
             return {
                 "message": "Added member successfully",
-                "user_id": target_user,
+                "user_id": target_user_id,
                 "role": role
             }
     except HTTPException:
@@ -712,14 +712,14 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user:str, ro
         print(f"Error update member: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update member: {str(e)}")
 
-def instructor_remove_member(project_id:UUID, requester_id:str, target_user:str):
+def instructor_remove_member(project_id:UUID, requester_id:str, target_user_id:str):
     """
     Remove member from project (instructor only)
     
     Args:
         project_id: Project unique identifier
         requester_id: ID of instructor requesting this
-        target_user: ID of user to remove
+        target_user_id: ID of user to remove
         
     Returns:
         Dict of successful request
@@ -741,14 +741,14 @@ def instructor_remove_member(project_id:UUID, requester_id:str, target_user:str)
             raise HTTPException(status_code=403, detail="Not the instructor of this project")
         # Remove user as project member
         delete_result = (client.table('project_members').delete()
-            .eq('project_id', str(project_id)).eq('user_id', str(target_user))
+            .eq('project_id', str(project_id)).eq('user_id', str(target_user_id))
             .execute()
         )
         # Decrement num_members on the project
-        _increment_project_num_members(client, project_id, -1)
+        _increment_project_num_members(client, str(project_id), -1)
         return {
             "message": "Removed member successfully",
-            "user_id": target_user
+            "user_id": target_user_id
         }
     except HTTPException:
         raise
