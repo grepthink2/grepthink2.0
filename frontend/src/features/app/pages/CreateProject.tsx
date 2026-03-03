@@ -298,7 +298,7 @@ const CreateProject: React.FC = () => {
       });
 
       // Navigate to MyProjects on success
-      navigate('/my-projects');
+      navigate('/app/my-project');
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to create project. Please try again.');
     } finally {
