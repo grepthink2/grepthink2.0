@@ -1,83 +1,158 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users } from 'lucide-react';
+import { useClass, type Class } from '@/lib/classContext';
+import { api, type ApiProject } from '@/lib/api';
 import './MyProjects.scss';
 
-interface Project {
+interface ProjectWithClass {
   id: string;
   title: string;
   className: string;
+  courseCode?: string;
   teamSize: string;
   memberCount: number;
   spotsAvailable: number;
   status: 'active' | 'inactive';
 }
 
+interface GroupedProjects {
+  classId: string;
+  className: string;
+  courseCode?: string;
+  projects: ProjectWithClass[];
+}
+
 const MyProjects: React.FC = () => {
+  const { classes } = useClass();
+  const [projects, setProjects] = useState<ProjectWithClass[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
-  // Placeholder data
-  const projects: Project[] = [
-    {
-      id: '1',
-      title: 'AI Chatbot Assistant',
-      className: 'CSE 115B',
-      teamSize: '3/4',
-      memberCount: 3,
-      spotsAvailable: 1,
-      status: 'active',
-    },
-    {
-      id: '2',
-      title: 'E-commerce Platform',
-      className: 'CMPM 150',
-      teamSize: '2/4',
-      memberCount: 2,
-      spotsAvailable: 2,
-      status: 'active',
-    },
-    {
-      id: '3',
-      title: 'Campus Event Finder',
-      className: 'CSE 115B',
-      teamSize: '4/4',
-      memberCount: 4,
-      spotsAvailable: 0,
-      status: 'active',
-    },
-    {
-      id: '4',
-      title: 'Study Group Matcher',
-      className: 'CMPS 111',
-      teamSize: '3/3',
-      memberCount: 3,
-      spotsAvailable: 0,
-      status: 'active',
-    },
-    {
-      id: '5',
-      title: 'Fitness Tracker App',
-      className: 'CSE 115B',
-      teamSize: '2/3',
-      memberCount: 2,
-      spotsAvailable: 1,
-      status: 'inactive',
-    },
-    {
-      id: '6',
-      title: 'Recipe Sharing Platform',
-      className: 'CMPM 150',
-      teamSize: '1/4',
-      memberCount: 1,
-      spotsAvailable: 3,
-      status: 'inactive',
-    },
-  ];
+  // Fetch projects for all user's classes
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (classes.length === 0) {
+        setLoading(false);
+        return;
+      }
 
-  const filteredProjects = projects.filter((project) =>
-    showInactive ? project.status === 'inactive' : project.status === 'active'
-  );
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Fetch projects for each class
+        const projectPromises = classes.map(async (cls: Class) => {
+          try {
+            const response = await api.getClassProjects(cls.id);
+            return {
+              classId: cls.id,
+              className: cls.name,
+              courseCode: cls.course_code,
+              projects: response.projects || [],
+            };
+          } catch (err) {
+            console.error(`Failed to fetch projects for class ${cls.id}:`, err);
+            return {
+              classId: cls.id,
+              className: cls.name,
+              courseCode: cls.course_code,
+              projects: [],
+            };
+          }
+        });
+
+        const results = await Promise.all(projectPromises);
+
+        // Flatten and transform projects
+        const allProjects: ProjectWithClass[] = results.flatMap((result: { classId: string; className: string; courseCode?: string; projects: ApiProject[] }) =>
+          result.projects.map((project: ApiProject) => ({
+            id: project.id,
+            title: project.title,
+            className: result.className,
+            courseCode: result.courseCode,
+            teamSize: project.team_size ? `${project.team_size}` : 'TBD',
+            memberCount: 1, // This would come from project_members table when implemented
+            spotsAvailable: project.team_size ? Math.max(0, project.team_size - 1) : 0,
+            status: project.status,
+          }))
+        );
+
+        setProjects(allProjects);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load projects');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [classes]);
+
+  // Group projects by class
+  const groupedProjects: GroupedProjects[] = React.useMemo(() => {
+    const grouped: Record<string, GroupedProjects> = {};
+
+    projects.forEach((project) => {
+      // Find the class ID for this project
+      const classItem = classes.find((c: Class) => c.name === project.className);
+      const classId = classItem?.id || project.className;
+
+      if (!grouped[classId]) {
+        grouped[classId] = {
+          classId,
+          className: project.className,
+          courseCode: project.courseCode,
+          projects: [],
+        };
+      }
+      grouped[classId].projects.push(project);
+    });
+
+    return Object.values(grouped);
+  }, [projects, classes]);
+
+  // Filter projects by active/inactive status
+  const filteredGroupedProjects = groupedProjects.map((group) => ({
+    ...group,
+    projects: group.projects.filter((project) =>
+      showInactive ? project.status === 'inactive' : project.status === 'active'
+    ),
+  })).filter((group) => group.projects.length > 0);
 
   const sectionTitle = showInactive ? 'Inactive Projects' : 'Active Projects';
+
+  if (loading) {
+    return (
+      <div className="my-projects">
+        <div className="my-projects__empty">
+          <p>Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="my-projects">
+        <div className="my-projects__empty">
+          <p>Error loading projects: {error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (classes.length === 0) {
+    return (
+      <div className="my-projects">
+        <div className="my-projects__empty">
+          <p>You need to join a class first to see projects.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const hasProjects = filteredGroupedProjects.some((group) => group.projects.length > 0);
 
   return (
     <div className="my-projects">
@@ -105,43 +180,58 @@ const MyProjects: React.FC = () => {
       {/* Divider */}
       <div className="my-projects__divider"></div>
 
-      {/* Section Title */}
-      <h2 className="my-projects__section-title">{sectionTitle}</h2>
+      {/* Projects Grouped by Class */}
+      {!hasProjects ? (
+        <h2 className="my-projects__section-title">{sectionTitle}</h2>
+      ) : null}
 
-      {/* Projects Grid */}
-      <div className="my-projects__grid">
-        {filteredProjects.map((project) => (
-          <div key={project.id} className="project-card">
-            {/* Card Header - Dark Grey */}
-            <div className="project-card__header">
-              <h3 className="project-card__title">{project.title}</h3>
-              <p className="project-card__class-name">{project.className}</p>
-            </div>
-
-            {/* Card Body - Light Grey */}
-            <div className="project-card__body">
-              {/* Team Size */}
-              <div className="project-card__stat">
-                <Users size={14} />
-                <span>{project.teamSize} Members</span>
-              </div>
-
-              {/* Spots Available */}
-              {project.spotsAvailable > 0 && (
-                <div className="project-card__spots">
-                  {project.spotsAvailable} Spot{project.spotsAvailable !== 1 ? 's' : ''} Available
-                </div>
-              )}
-
-              {/* See All Button */}
-              <button className="project-card__see-all">See All</button>
-            </div>
+      {filteredGroupedProjects.map((group) => (
+        <div key={group.classId} className="my-projects__class-group">
+          {/* Class Header */}
+          <div className="my-projects__class-header">
+            <h2 className="my-projects__class-name">
+              {group.courseCode ? `${group.courseCode}: ` : ''}{group.className}
+            </h2>
           </div>
-        ))}
-      </div>
+
+          {/* Projects Grid */}
+          <div className="my-projects__grid">
+            {group.projects.map((project) => (
+              <div key={project.id} className="project-card">
+                {/* Card Header - Dark Grey */}
+                <div className="project-card__header">
+                  <h3 className="project-card__title">{project.title}</h3>
+                  <p className="project-card__class-name">
+                    {group.courseCode || group.className}
+                  </p>
+                </div>
+
+                {/* Card Body - Light Grey */}
+                <div className="project-card__body">
+                  {/* Team Size */}
+                  <div className="project-card__stat">
+                    <Users size={14} />
+                    <span>{project.teamSize} Members</span>
+                  </div>
+
+                  {/* Spots Available */}
+                  {project.spotsAvailable > 0 && (
+                    <div className="project-card__spots">
+                      {project.spotsAvailable} Spot{project.spotsAvailable !== 1 ? 's' : ''} Available
+                    </div>
+                  )}
+
+                  {/* See All Button */}
+                  <button className="project-card__see-all">See All</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
 
       {/* Empty State */}
-      {filteredProjects.length === 0 && (
+      {!hasProjects && (
         <div className="my-projects__empty">
           <p>No {showInactive ? 'inactive' : 'active'} projects available at the moment.</p>
         </div>

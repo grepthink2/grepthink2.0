@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { RotateCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import ProjectView from '../components/ProjectView';
 import ConfirmModal from '../components/ConfirmModal';
+import { useClass, type Class } from '@/lib/classContext';
+import { api } from '@/lib/api';
 import './CreateProject.scss';
 
 interface RoleTag {
@@ -136,6 +139,8 @@ function parseTemplateFromMarkdown(md: string): {
 }
 
 const CreateProject: React.FC = () => {
+  const navigate = useNavigate();
+  const { classes } = useClass();
   const [projectTitle, setProjectTitle] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [descriptionMode, setDescriptionMode] = useState<'template' | 'markdown'>('template');
@@ -151,6 +156,9 @@ const CreateProject: React.FC = () => {
   const [markdownContent, setMarkdownContent] = useState('');
   const [showClearDescriptionModal, setShowClearDescriptionModal] = useState(false);
   const [showSwitchToTemplateWarningModal, setShowSwitchToTemplateWarningModal] = useState(false);
+  const [selectedClassId, setSelectedClassId] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredSkills = PRESET_SKILLS.filter(
     (skill) =>
@@ -258,17 +266,44 @@ const CreateProject: React.FC = () => {
     performSwitchToTemplate();
   };
 
-  const handleCreateProject = () => {
-    console.log('Creating project:', {
-      projectTitle,
-      problemStatement,
-      projectGoals,
-      workingOn,
-      techStack,
-      teamSize,
-      skills,
-      selectedRoles,
-    });
+  const handleCreateProject = async () => {
+    // Validation
+    if (!selectedClassId) {
+      setErrorMessage('Please select a class for your project');
+      return;
+    }
+    if (!projectTitle.trim()) {
+      setErrorMessage('Please enter a project title');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage('');
+
+    try {
+      // Generate description from template fields or markdown
+      const description = descriptionMode === 'template'
+        ? generateTemplateMarkdown(problemStatement, projectGoals, workingOn, techStack)
+        : markdownContent;
+
+      // Parse team size to get the max number (e.g., "4" from "3/4" or just "4")
+      const teamSizeNum = parseInt(teamSize.trim()) || undefined;
+
+      await api.createProject(selectedClassId, {
+        title: projectTitle.trim(),
+        description,
+        team_size: teamSizeNum,
+        skills: skills.length > 0 ? skills : undefined,
+        looking_for: selectedRoles.length > 0 ? selectedRoles : undefined,
+      });
+
+      // Navigate to MyProjects on success
+      navigate('/my-projects');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to create project. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSaveDraft = () => {
@@ -432,6 +467,36 @@ const CreateProject: React.FC = () => {
 
         {/* Right Column - Team Info */}
         <div className="create-project__right-column">
+          {/* Class Selection */}
+          <div className="create-project__section">
+            <h3 className="create-project__section-title">Class</h3>
+            {classes.length === 0 ? (
+              <p className="create-project__no-classes">
+                You need to join a class first. Go to{' '}
+                <button
+                  className="create-project__link-button"
+                  onClick={() => navigate('/my-classes')}
+                >
+                  My Classes
+                </button>
+                {' '}to join a class.
+              </p>
+            ) : (
+              <select
+                className="create-project__input"
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
+              >
+                <option value="">Select a class...</option>
+                {classes.map((cls: Class) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.course_code ? `${cls.course_code}: ` : ''}{cls.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
           {/* Team Size */}
           <div className="create-project__section">
             <h3 className="create-project__section-title">Team Size</h3>
@@ -521,6 +586,20 @@ const CreateProject: React.FC = () => {
       </div>
       )}
 
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="create-project__error-message">
+          {errorMessage}
+          <button
+            className="create-project__error-close"
+            onClick={() => setErrorMessage('')}
+            aria-label="Close error message"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Footer Actions */}
       <div className="create-project__footer">
         <button
@@ -539,8 +618,9 @@ const CreateProject: React.FC = () => {
           <button
             className="create-project__button create-project__button--primary"
             onClick={handleCreateProject}
+            disabled={isSubmitting}
           >
-            Create Project
+            {isSubmitting ? 'Creating...' : 'Create Project'}
           </button>
         </div>
       </div>

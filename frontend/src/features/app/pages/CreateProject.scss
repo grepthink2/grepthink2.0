@@ -468,11 +468,16 @@
     transition: all $transition-fast;
     border: none;
 
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     &--primary {
       background: $primary-color;
       color: white;
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: $primary-hover;
       }
     }
@@ -495,6 +500,62 @@
         background: $background;
         color: $text-primary;
       }
+    }
+  }
+
+  // Class Selection
+  &__no-classes {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  &__link-button {
+    background: none;
+    border: none;
+    color: $primary-color;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    font-size: inherit;
+    font-family: inherit;
+
+    &:hover {
+      color: $primary-hover;
+    }
+  }
+
+  // Error Message
+  &__error-message {
+    position: relative;
+    padding: 0.75rem 2rem 0.75rem 0.75rem;
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: $border-radius-sm;
+    color: #d32f2f;
+    font-size: 0.875rem;
+  }
+
+  &__error-close {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #d32f2f;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      color: #b71c1c;
     }
   }
 }

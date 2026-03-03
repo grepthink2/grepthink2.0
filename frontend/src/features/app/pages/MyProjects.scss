@@ -77,6 +77,25 @@
     margin: 0 $spacing-lg $spacing-lg;
   }
 
+  &__class-group {
+    margin-bottom: $spacing-xxl;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__class-header {
+    padding: 0 $spacing-lg $spacing-md;
+  }
+
+  &__class-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: $text-secondary;
+    margin: 0;
+  }
+
   &__section-title {
     font-size: 1.125rem;
     font-weight: 600;
@@ -208,6 +227,10 @@
       padding: $spacing-md;
     }
 
+    &__class-header {
+      padding: 0 $spacing-md $spacing-sm;
+    }
+
     &__section-title {
       padding: 0 $spacing-md;
     }
@@ -225,6 +248,10 @@
 
     &__toggle-container {
       padding: $spacing-sm;
+    }
+
+    &__class-header {
+      padding: 0 $spacing-sm $spacing-xs;
     }
 
     &__section-title {
