@@ -66,7 +66,7 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
   initialMembers,
   onMembersChange,
 }) => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const currentUserId = user?.id ?? null;
   const [activeTab, setActiveTab] = useState<TabId>('current');
   const [members, setMembers] = useState<ApiProjectMember[]>(initialMembers);
@@ -80,6 +80,8 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [exitingRequestIds, setExitingRequestIds] = useState<Set<string>>(new Set());
+
+  const isInstructor = role === 'instructor';
 
   const teamSize = typeof project.team_size === 'number' && Number.isFinite(project.team_size)
     ? project.team_size
@@ -149,14 +151,15 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
   const filteredStudents = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return classStudents.filter((s) => {
-      if (memberIds.has(s.user_id)) return false;
+      const studentId = s.id ?? (s as { user_id?: string }).user_id;
+      if (!studentId) return false;
       if (!q) return true;
       const email = (s.email ?? '').toLowerCase();
       const role = (s.role ?? '').toLowerCase();
       const name = emailToDisplayName(s.email).toLowerCase();
       return name.includes(q) || email.includes(q) || role.includes(q);
     });
-  }, [classStudents, searchQuery, memberIds]);
+  }, [classStudents, searchQuery]);
 
   const handleRequestCardAnimationEnd = (requestId: string) => {
     setExitingRequestIds((prev) => {
@@ -401,19 +404,20 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                   {filteredStudents.length === 0 ? (
                     <li className="member-manager__empty">
                       {classStudents.length === 0
-                        ? 'No other students in this class.'
-                        : memberIds.size === classStudents.length
-                          ? 'Everyone in the class is already on the team.'
-                          : 'No matches for your search.'}
+                        ? 'No students in this class.'
+                        : 'No matches for your search.'}
                     </li>
                   ) : (
                     filteredStudents.map((s) => {
+                      const studentId = s.id ?? (s as { user_id?: string }).user_id ?? '';
                       const name = emailToDisplayName(s.email);
                       const initials = getInitials(name, s.email ?? '');
-                      const isInviting = invitingId === s.user_id;
-                      const canInvite = spotsRemaining > 0;
+                      const isAlreadyMember = memberIds.has(studentId);
+                      const isInviting = invitingId === studentId;
+                      const canInvite = spotsRemaining > 0 && !isAlreadyMember;
+                      const actionLabel = isInviting ? 'Adding...' : isInstructor ? 'Add' : 'Invite';
                       return (
-                        <li key={s.user_id} className="member-manager__card">
+                        <li key={studentId} className="member-manager__card">
                           <div className="member-manager__avatar member-manager__avatar--grey">
                             {initials}
                           </div>
@@ -426,16 +430,23 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                               </div>
                             )}
                           </div>
-                          <button
-                            type="button"
-                            className="member-manager__btn member-manager__btn--invite"
-                            onClick={() => handleInvite(s.user_id)}
-                            disabled={!canInvite || isInviting}
-                            aria-label={`Invite ${name}`}
-                          >
-                            <UserPlus size={16} />
-                            {isInviting ? 'Adding...' : 'Invite'}
-                          </button>
+                          {isAlreadyMember ? (
+                            <span className="member-manager__btn member-manager__btn--added" aria-label={`${name} is already on the team`}>
+                              <Check size={16} />
+                              Added
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="member-manager__btn member-manager__btn--invite"
+                              onClick={() => handleInvite(studentId)}
+                              disabled={!canInvite || isInviting}
+                              aria-label={`${actionLabel} ${name}`}
+                            >
+                              <UserPlus size={16} />
+                              {actionLabel}
+                            </button>
+                          )}
                         </li>
                       );
                     })
