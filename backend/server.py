@@ -13,8 +13,7 @@ from dotenv import load_dotenv
 import secrets
 import string
 from datetime import datetime, timezone
-from uuid import uuid4, UUID as UUIDType
-from typing import Literal
+from uuid import uuid4
 import logging
 
 env_path = Path(__file__).resolve().parent.parent / '.env'
@@ -153,21 +152,6 @@ class CreateProjectRequest(BaseModel):
     team_size: int | None = None
     skills: list[str] | None = None
     looking_for: list[str] | None = None
-
-class ProjectResponse(BaseModel):
-    id: str
-    title: str
-    description: str | None
-    class_id: str
-    created_by: str
-    team_size: int | None
-    skills: list[str]
-    looking_for: list[str]
-    status: Literal["active", "inactive"]
-    created_at: str
-
-class ProjectListResponse(BaseModel):
-    projects: list[ProjectResponse]
 
 @app.get('/health')
 def health_check():
@@ -557,193 +541,71 @@ def join_class(class_id: UUID, payload: dict = Depends(verify_supabase_token)):
 
 # ==================== PROJECT ENDPOINTS ====================
 
-def _verify_class_enrollment(user_id: str, class_id: str) -> bool:
-    """Verify that a user is enrolled in a specific class."""
-    try:
-        client = service_client if service_client else supabase
-        result = client.table('class_enrollments').select('id').eq('user_id', user_id).eq('class_id', class_id).execute()
-        return bool(result.data)
-    except Exception as e:
-        logger.error(f"Error verifying class enrollment: {e}")
-        return False
-
-def _validate_project_title(title: str) -> None:
-    """Validate project title meets requirements."""
-    if not title or not title.strip():
-        raise HTTPException(status_code=400, detail="Project title cannot be empty")
-    if len(title.strip()) > 255:
-        raise HTTPException(status_code=400, detail="Project title cannot exceed 255 characters")
-
-def _sanitize_skills(skills: list[str] | None) -> list[str]:
-    """Sanitize and deduplicate skills list."""
-    if not skills:
-        return []
-    seen = set()
-    return [s.strip() for s in skills if s.strip() and (s.strip() not in seen and not seen.add(s.strip()))]
-
-def _sanitize_looking_for(looking_for: list[str] | None) -> list[str]:
-    """Sanitize and deduplicate looking_for list."""
-    if not looking_for:
-        return []
-    seen = set()
-    return [lf.strip() for lf in looking_for if lf.strip() and (lf.strip() not in seen and not seen.add(lf.strip()))]
-
-@app.post(
-    '/api/classes/{class_id}/projects',
-    response_model=ProjectResponse,
-    status_code=201,
-    summary="Create a new project",
-    description="Creates a new project for the specified class. User must be enrolled in the class."
-)
-def create_project(
-    class_id: str,
-    data: CreateProjectRequest,
-    payload: dict = Depends(verify_supabase_token)
-) -> ProjectResponse:
-    """
-    Create a new project for a class.
-
-    Args:
-        class_id: The ID of the class to create the project in
-        data: Project creation data
-        payload: JWT payload containing authenticated user info
-
-    Returns:
-        The created project
-
-    Raises:
-        401: If not authenticated
-        400: If validation fails or user not enrolled in class
-        500: If server error occurs
-    """
-    if not payload:
+@app.post('/api/classes/{class_id}/projects')
+def create_project(class_id: str, data: CreateProjectRequest, payload: dict = Depends(verify_supabase_token)):
+    if not payload or not payload.get('sub'):
         raise HTTPException(status_code=401, detail="Authentication required")
 
     user_id = payload.get('sub')
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid user token")
-
-    # Validate title
-    _validate_project_title(data.title)
 
     # Verify user is enrolled in the class
-    if not _verify_class_enrollment(user_id, class_id):
-        logger.warning(f"User {user_id} attempted to create project in unenrolled class {class_id}")
+    client = service_client if service_client else supabase
+    enrollment = client.table('class_enrollments').select('id').eq('user_id', user_id).eq('class_id', class_id).execute()
+    if not enrollment.data:
         raise HTTPException(status_code=403, detail="You must be enrolled in this class to create a project")
 
-    try:
-        project_id = str(uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+    # Validate title
+    if not data.title or not data.title.strip():
+        raise HTTPException(status_code=400, detail="Project title cannot be empty")
 
-        project = {
-            "id": project_id,
-            "title": data.title.strip(),
-            "description": data.description.strip() if data.description else None,
-            "class_id": class_id,
-            "created_by": user_id,
-            "team_size": data.team_size,
-            "skills": _sanitize_skills(data.skills),
-            "looking_for": _sanitize_looking_for(data.looking_for),
-            "status": "active",
-            "created_at": now
-        }
+    project_id = str(uuid4())
+    project = {
+        "id": project_id,
+        "title": data.title.strip(),
+        "description": data.description.strip() if data.description else None,
+        "class_id": class_id,
+        "created_by": user_id,
+        "team_size": data.team_size,
+        "skills": data.skills or [],
+        "looking_for": data.looking_for or [],
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    _projects[project_id] = project
+    return {"project": project}
 
-        _projects[project_id] = project
-        logger.info(f"Created project {project_id} for class {class_id} by user {user_id}")
-
-        return ProjectResponse(**project)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error creating project: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to create project")
-
-@app.get(
-    '/api/classes/{class_id}/projects',
-    response_model=ProjectListResponse,
-    summary="Get projects for a class",
-    description="Retrieves all projects for a specific class."
-)
-def get_class_projects(
-    class_id: str,
-    payload: dict = Depends(verify_supabase_token)
-) -> ProjectListResponse:
-    """
-    Get all projects for a specific class.
-
-    Args:
-        class_id: The ID of the class
-        payload: JWT payload containing authenticated user info
-
-    Returns:
-        List of projects for the class
-    """
-    if not payload:
+@app.get('/api/classes/{class_id}/projects')
+def get_class_projects(class_id: str, payload: dict = Depends(verify_supabase_token)):
+    if not payload or not payload.get('sub'):
         raise HTTPException(status_code=401, detail="Authentication required")
 
     user_id = payload.get('sub')
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid user token")
 
-    # Verify enrollment before showing projects
-    if not _verify_class_enrollment(user_id, class_id):
-        logger.warning(f"User {user_id} attempted to access projects for unenrolled class {class_id}")
+    # Verify enrollment
+    client = service_client if service_client else supabase
+    enrollment = client.table('class_enrollments').select('id').eq('user_id', user_id).eq('class_id', class_id).execute()
+    if not enrollment.data:
         raise HTTPException(status_code=403, detail="You must be enrolled in this class to view projects")
 
-    try:
-        class_projects = [p for p in _projects.values() if p.get('class_id') == class_id]
-        return ProjectListResponse(projects=[ProjectResponse(**p) for p in class_projects])
-    except Exception as e:
-        logger.error(f"Error fetching class projects: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to fetch projects")
+    class_projects = [p for p in _projects.values() if p.get('class_id') == class_id]
+    return {"projects": class_projects}
 
-@app.get(
-    '/api/projects',
-    response_model=ProjectListResponse,
-    summary="Get user's projects",
-    description="Retrieves all projects across the user's enrolled classes."
-)
-def get_projects(
-    payload: dict = Depends(verify_supabase_token)
-) -> ProjectListResponse:
-    """
-    Get all projects for the current user across their enrolled classes.
-
-    Args:
-        payload: JWT payload containing authenticated user info
-
-    Returns:
-        List of projects from all enrolled classes
-    """
-    if not payload:
+@app.get('/api/projects')
+def get_projects(payload: dict = Depends(verify_supabase_token)):
+    if not payload or not payload.get('sub'):
         raise HTTPException(status_code=401, detail="Authentication required")
 
     user_id = payload.get('sub')
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid user token")
+    client = service_client if service_client else supabase
 
-    try:
-        client = service_client if service_client else supabase
+    # Get user's enrolled classes
+    enrollments = client.table('class_enrollments').select('class_id').eq('user_id', user_id).execute()
+    if not enrollments.data:
+        return {"projects": []}
 
-        # Get user's enrolled classes
-        enrollments = client.table('class_enrollments').select('class_id').eq('user_id', user_id).execute()
-
-        if not enrollments.data:
-            return ProjectListResponse(projects=[])
-
-        class_ids = {e['class_id'] for e in enrollments.data}
-
-        # Filter projects by enrolled classes
-        user_projects = [p for p in _projects.values() if p.get('class_id') in class_ids]
-
-        return ProjectListResponse(projects=[ProjectResponse(**p) for p in user_projects])
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching user projects: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to fetch projects")
+    class_ids = {e['class_id'] for e in enrollments.data}
+    user_projects = [p for p in _projects.values() if p.get('class_id') in class_ids]
+    return {"projects": user_projects}
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
