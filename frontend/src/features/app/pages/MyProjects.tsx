@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Users } from 'lucide-react';
-import './BrowseProjects.scss';
+import './MyProjects.scss';
 
 interface Project {
   id: string;
@@ -12,7 +12,7 @@ interface Project {
   status: 'active' | 'inactive';
 }
 
-const BrowseProjects: React.FC = () => {
+const MyProjects: React.FC = () => {
   const [showInactive, setShowInactive] = useState(false);
 
   // Placeholder data
@@ -80,36 +80,36 @@ const BrowseProjects: React.FC = () => {
   const sectionTitle = showInactive ? 'Inactive Projects' : 'Active Projects';
 
   return (
-    <div className="browse-projects">
+    <div className="my-projects">
       {/* Toggle Section */}
-      <div className="browse-projects__toggle-container">
+      <div className="my-projects__toggle-container">
         <span
-          className={`browse-projects__toggle-label ${!showInactive ? 'browse-projects__toggle-label--active' : ''}`}
+          className={`my-projects__toggle-label ${!showInactive ? 'my-projects__toggle-label--active' : ''}`}
         >
           Active
         </span>
         <button
-          className={`browse-projects__toggle ${showInactive ? 'inactive' : 'active'}`}
+          className={`my-projects__toggle ${showInactive ? 'inactive' : 'active'}`}
           onClick={() => setShowInactive(!showInactive)}
           aria-label="Toggle between active and inactive projects"
         >
-          <div className="browse-projects__toggle-slider"></div>
+          <div className="my-projects__toggle-slider"></div>
         </button>
         <span
-          className={`browse-projects__toggle-label ${showInactive ? 'browse-projects__toggle-label--active' : ''}`}
+          className={`my-projects__toggle-label ${showInactive ? 'my-projects__toggle-label--active' : ''}`}
         >
           Inactive
         </span>
       </div>
 
       {/* Divider */}
-      <div className="browse-projects__divider"></div>
+      <div className="my-projects__divider"></div>
 
       {/* Section Title */}
-      <h2 className="browse-projects__section-title">{sectionTitle}</h2>
+      <h2 className="my-projects__section-title">{sectionTitle}</h2>
 
       {/* Projects Grid */}
-      <div className="browse-projects__grid">
+      <div className="my-projects__grid">
         {filteredProjects.map((project) => (
           <div key={project.id} className="project-card">
             {/* Card Header - Dark Grey */}
@@ -142,7 +142,7 @@ const BrowseProjects: React.FC = () => {
 
       {/* Empty State */}
       {filteredProjects.length === 0 && (
-        <div className="browse-projects__empty">
+        <div className="my-projects__empty">
           <p>No {showInactive ? 'inactive' : 'active'} projects available at the moment.</p>
         </div>
       )}
@@ -150,4 +150,4 @@ const BrowseProjects: React.FC = () => {
   );
 };
 
-export default BrowseProjects;
+export default MyProjects;

@@ -1,6 +1,6 @@
 @use '@styles/index.scss' as *;
 
-.browse-projects {
+.my-projects {
   padding: 0 $spacing-md $spacing-lg;
   max-width: 1200px;
   margin: 0;
@@ -203,7 +203,7 @@
 
 // Responsive Design
 @media (max-width: 768px) {
-  .browse-projects {
+  .my-projects {
     &__toggle-container {
       padding: $spacing-md;
     }
@@ -220,7 +220,7 @@
 }
 
 @media (max-width: 480px) {
-  .browse-projects {
+  .my-projects {
     padding: 0 $spacing-sm $spacing-md;
 
     &__toggle-container {

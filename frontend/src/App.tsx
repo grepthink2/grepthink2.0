@@ -14,7 +14,7 @@ import Roster from '@features/app/pages/Roster'
 import Dashboard from '@features/app/pages/Dashboard';
 import CreateProject from '@features/app/pages/CreateProject';
 import MyClasses from './features/app/pages/MyClasses';
-import BrowseProjects from '@features/app/pages/BrowseProjects';
+import MyProjects from './features/app/pages/MyProjects';
 
 function App() {
   return (
@@ -43,8 +43,8 @@ function App() {
           <Route path="modules" element={<div>Modules - Coming Soon</div>} />
           <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
           <Route path="create-project" element={<CreateProject />} />
-          <Route path="browse-projects" element={<BrowseProjects />} />
-          <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
+          <Route path="browse-projects" element={<div>Browse Projects - Coming Soon</div>} />
+          <Route path="my-project" element={<MyProjects />} />
           <Route path="settings" element={<div>Settings - Coming Soon</div>} />
           <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
         </Route>
