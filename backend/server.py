@@ -539,8 +539,7 @@ def join_class(class_id: UUID, payload: dict = Depends(verify_supabase_token)):
         print(f"Error joining class: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to join: {str(e)}")
 
-# ==================== PROJECT ENDPOINTS ====================
-
+# for MyProjects.tsx
 @app.post('/api/classes/{class_id}/projects')
 def create_project(class_id: str, data: CreateProjectRequest, payload: dict = Depends(verify_supabase_token)):
     if not payload or not payload.get('sub'):
