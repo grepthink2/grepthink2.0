@@ -6,10 +6,11 @@
   margin: 0;
   font-family: $primary-font;
 
+  // Toggle Container - aligned to the right
   &__toggle-container {
     display: flex;
     align-items: center;
-    justify-content: end;
+    justify-content: flex-end;
     gap: $spacing-sm;
     padding: $spacing-md $spacing-lg;
   }
@@ -25,27 +26,29 @@
     }
   }
 
+  // Toggle Switch - matches Figma design (green background, white knob)
   &__toggle {
     position: relative;
-    width: 48px;
-    height: 24px;
+    width: 64px;
+    height: 28px;
     background-color: $border-color;
-    border-radius: 12px;
+    border-radius: 100px;
     border: none;
     cursor: pointer;
     transition: background-color $transition-medium;
+    padding: 2px;
+    display: flex;
+    align-items: center;
 
     &.active {
       background-color: $primary-color;
     }
 
     &.inactive {
-      background-color: $text-secondary;
+      background-color: $border-color;
     }
 
     &:hover {
-      background-color: darken($border-color, 10%);
-
       &.active {
         background-color: $primary-hover;
       }
@@ -53,30 +56,42 @@
   }
 
   &__toggle-slider {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     background-color: $white;
     border-radius: 50%;
     transition: transform $transition-medium;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 
     .active & {
-      transform: translateX(0);
+      transform: translateX(36px);
     }
 
     .inactive & {
-      transform: translateX(24px);
+      transform: translateX(0);
     }
   }
 
+  // Divider - matches Figma design (#e0e0e0 with border)
   &__divider {
     height: 1px;
-    background: $border-color;
+    background: #e0e0e0;
+    border: 1px solid rgba(0, 0, 0, 0.25);
     margin: 0 $spacing-lg $spacing-lg;
+    border-radius: 5px;
   }
 
+  // Section Title - matches Figma (SemiBold, 20px, #424242)
+  &__section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #424242;
+    margin: 0 0 $spacing-md;
+    padding: 0 $spacing-lg;
+    font-family: $primary-font;
+  }
+
+  // Class Group
   &__class-group {
     margin-bottom: $spacing-xxl;
 
@@ -85,29 +100,26 @@
     }
   }
 
+  // Class Header - matches Figma design
   &__class-header {
     padding: 0 $spacing-lg $spacing-md;
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
   }
 
   &__class-name {
-    font-size: 1.125rem;
+    font-size: 20px;
     font-weight: 600;
-    color: $text-secondary;
+    color: #424242;
     margin: 0;
+    font-family: $primary-font;
   }
 
-  &__section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: $text-secondary;
-    margin: 0 0 $spacing-md;
-    padding: 0 $spacing-lg;
-  }
-
+  // Grid for project cards
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, 249px);
-    justify-content: start;
+    grid-template-columns: repeat(auto-fill, minmax(355px, 1fr));
     gap: $spacing-lg;
     padding: 0 $spacing-lg;
   }
@@ -125,97 +137,145 @@
   }
 }
 
+// Project Card - matches Figma design exactly
 .project-card {
-  width: 249px;
-  min-height: 170px;
-  border-radius: $border-radius-md;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  width: 355px;
+  min-height: 201px;
+  border-radius: 1px;
+  box-shadow: 0 0 4px 0 rgba(0, 0, 0, 0.25);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: box-shadow $transition-fast;
+  cursor: pointer;
+  background-color: #d9dee5;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
-  // Dark Grey Header Section
+  // Dark header section - matches Figma (#d9dee5)
   &__header {
-    background-color: #4a4a4a; // Dark grey from screenshots
+    background-color: #d9dee5;
     padding: $spacing-sm $spacing-md;
     flex-shrink: 0;
-
-    .project-card__title {
-      font-size: 0.9375rem;
-      font-weight: 600;
-      color: $white;
-      margin: 0 0 2px 0;
-      line-height: 1.2;
-
-      // Truncate to 2 lines
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .project-card__class-name {
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.8);
-      font-weight: 500;
-      margin: 0;
-    }
+    min-height: 74px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
-  // Light Grey Body Section
+  &__title {
+    font-size: 29px;
+    font-weight: 400;
+    color: $text-dark;
+    margin: 0;
+    line-height: 1.2;
+    font-family: $primary-font;
+
+    // Truncate to 1 line
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__class-name {
+    font-size: 12px;
+    color: $text-secondary;
+    font-weight: 300;
+    margin: $spacing-xs 0 0 0;
+    font-family: $primary-font;
+  }
+
+  // Light grey body section - matches Figma (#e9eff5)
   &__body {
-    background-color: #e8e8e8; // Light grey from screenshots
+    background-color: #e9eff5;
     padding: $spacing-sm $spacing-md;
-    flex: 1;
+    min-height: 41px;
     display: flex;
     flex-direction: column;
     gap: $spacing-xs;
   }
 
   &__description {
-    font-size: 0.75rem;
+    font-size: 12px;
     color: $text-primary;
     line-height: 1.3;
     margin: 0;
+    font-weight: 200;
+    font-family: $primary-font;
+  }
+
+  // Stats section
+  &__stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
   }
 
   &__stat {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.75rem;
-    color: $text-secondary;
-    font-weight: 500;
+    font-size: 12px;
+    color: $text-primary;
+    font-weight: 300;
+    font-family: $primary-font;
   }
 
   &__spots {
-    font-size: 0.75rem;
+    font-size: 12px;
     color: $primary-color;
-    font-weight: 600;
+    font-weight: 400;
+    font-family: $primary-font;
   }
 
-  &__see-all {
-    margin-top: auto;
-    padding: 6px 12px;
+  // White bottom section - matches Figma
+  &__footer {
     background-color: $white;
-    border: 1px solid $border-color;
-    border-radius: $border-radius-sm;
-    font-size: 0.75rem;
-    font-weight: 500;
+    padding: $spacing-sm $spacing-md;
+    min-height: 41px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+
+  &__owner-label {
+    font-size: 12px;
     color: $text-primary;
+    font-weight: 300;
+    font-family: $primary-font;
+  }
+
+  &__owner-name {
+    font-size: 12px;
+    color: $text-primary;
+    font-weight: 400;
+    margin-left: $spacing-xs;
+  }
+
+  // See All button - matches Figma blue button
+  &__see-all {
+    padding: 4px 10px;
+    background-color: $accent-color;
+    border: none;
+    border-radius: 1000px;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $white;
     cursor: pointer;
-    transition: background-color $transition-fast, border-color $transition-fast;
-    font-family: inherit;
-    align-self: flex-start;
+    transition: background-color $transition-fast;
+    font-family: $primary-font;
+    height: 21px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
 
     &:hover {
-      background-color: darken($white, 5%);
-      border-color: darken($border-color, 10%);
+      background-color: darken($accent-color, 10%);
     }
   }
 }
@@ -236,9 +296,13 @@
     }
 
     &__grid {
-      grid-template-columns: repeat(auto-fill, minmax(249px, 1fr));
+      grid-template-columns: 1fr;
       padding: 0 $spacing-md;
     }
+  }
+
+  .project-card {
+    width: 100%;
   }
 }
 
@@ -260,7 +324,6 @@
 
     &__grid {
       padding: 0 $spacing-sm;
-      grid-template-columns: 1fr;
     }
   }
 
