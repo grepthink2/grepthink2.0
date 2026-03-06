@@ -371,14 +371,22 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
 
         if not has_access:
             raise HTTPException(status_code=403, detail='You do not have access to this class projects list')
-
-        projects_result = (
-            client.table('projects')
-            .select('id, name, team_size, sentiment')
-            .eq('class_id', str(class_id))
-            .order('created_at', desc=True)
-            .execute()
-        )
+        if role == 'instructor':
+            projects_result = (
+                client.table('projects')
+                .select('id, name, team_size, sentiment')
+                .eq('class_id', str(class_id))
+                .order('created_at', desc=True)
+                .execute()
+            )
+        else:
+            projects_result = (
+                client.table('projects')
+                .select('id, name, team_size')
+                .eq('class_id', str(class_id))
+                .order('created_at', desc=True)
+                .execute()
+            )
 
         projects = projects_result.data or []
         if not projects:
