@@ -1,0 +1,67 @@
+@use '@styles/index.scss' as *;
+
+// ── Page shell ─────────────────────────────────────────────────
+.projects {
+  padding: $spacing-lg;
+  min-height: 100%;
+  font-family: $primary-font;
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    color: $text-secondary;
+    text-align: center;
+
+    h2 {
+      margin-bottom: $spacing-sm;
+      font-size: 1.25rem;
+      font-weight: $font-weight-semibold;
+    }
+
+    p {
+      font-size: $font-size-base;
+      color: $text-tertiary;
+    }
+  }
+}
+
+// ── Two-column layout (mirrors Modules.scss) ───────────────────
+$projects-stats-width: 345px;
+
+.projects__layout {
+  display: flex;
+  gap: $spacing-lg;
+  align-items: flex-start;
+}
+
+.projects__main {
+  flex: 1;
+  min-width: 0;
+  max-width: calc(100% - #{$projects-stats-width} - #{$spacing-lg});
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.projects__stats {
+  width: $projects-stats-width;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+// ── Header actions ─────────────────────────────────────────────
+.projects__header {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.projects__header-actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+

@@ -6,6 +6,7 @@ import { TiThList } from "react-icons/ti";
 import { FaFolder, FaListUl } from "react-icons/fa6";
 import { TbSettingsFilled } from "react-icons/tb";
 import { IoHelpCircle } from "react-icons/io5";
+import { MdAssignment } from "react-icons/md";
 import type { IconType } from 'react-icons';
 
 // Custom SVG icons
@@ -37,6 +38,7 @@ export const instructorSidebarConfig: SidebarSection[] = [
       { label: 'Messages', path: '/app/messages', iconSvg: MessagesIcon },
       { label: 'My Classes', path: '/app/my-classes', iconSvg: MyClassesIcon },
       { label: 'Create Class', path: '/app/create-class', icon: IoIosCreate },
+      { label: 'Create Project', path: '/app/create-project', icon: IoIosCreate },
     ],
   },
   {
@@ -71,9 +73,9 @@ export const studentSidebarConfig: SidebarSection[] = [
   {
     title: 'Class',
     items: [
-      { label: 'Create Project', path: '/app/create-project', icon: IoIosCreate },
       { label: 'Browse Projects', path: '/app/browse-projects', icon: TiThList },
       { label: 'My Project', path: '/app/my-project', icon: FaFolder },
+      { label: 'Assignments', path: '/app/assignments', icon: MdAssignment},
     ],
   },
   {

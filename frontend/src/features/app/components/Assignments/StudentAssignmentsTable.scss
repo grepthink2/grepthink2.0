@@ -1,28 +1,21 @@
+@use 'sass:color';
 @use '@styles/index.scss' as *;
 
-$status-active-bg: #d4f5ee;
-$status-active-text: #018156;
-$status-draft-bg: #eeeeee;
-$status-draft-text: #616161;
-$status-closed-bg: #dce8f5;
-$status-closed-text: #2771ff;
-$bar-orange: #e6a817;
-
 // ── Floating header ───────────────────────────────────────────
-.assignment-list__header {
+.student-assignments__header {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
 }
 
-.assignment-list__title {
+.student-assignments__title {
   font-size: 1.1rem;
   font-weight: $font-weight-semibold;
   color: $text-primary;
   margin: 0;
 }
 
-.assignment-list__count-badge {
+.student-assignments__count-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -37,26 +30,26 @@ $bar-orange: #e6a817;
 }
 
 // ── Outer wrapper (header + card as a unit) ───────────────────
-.assignment-list {
+.student-assignments {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
 }
 
 // ── White card ────────────────────────────────────────────────
-.assignment-list__table-card {
+.student-assignments__table-card {
   background: $white;
   border-radius: $border-radius-md;
   overflow: hidden;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.08);
 }
 
-.assignment-list__table-wrapper {
+.student-assignments__table-wrapper {
   overflow-x: auto;
 }
 
 // ── Table ─────────────────────────────────────────────────────
-.assignment-list__table {
+.student-assignments__table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
@@ -92,48 +85,28 @@ $bar-orange: #e6a817;
   }
 }
 
-.assignment-list__td-title {
+.student-assignments__td-name {
   font-weight: $font-weight-medium;
   color: $text-primary;
 }
 
-.assignment-list__td-date {
+.student-assignments__td-date {
   color: $text-secondary;
   white-space: nowrap;
 }
 
-.assignment-list__td-submissions {
-  min-width: 140px;
-}
-
-// ── Submission progress ───────────────────────────────────────
-.submissions__label {
-  display: block;
-  font-size: 0.8125rem;
+.student-assignments__td-project {
   color: $text-primary;
-  margin-bottom: 6px;
-  font-weight: 500;
 }
 
-.submissions__pct {
-  color: $text-tertiary;
-}
+// ── Status badges (student-specific variants) ─────────────────
+$status-not-started-bg: #eeeeee;
+$status-not-started-text: #616161;
+$status-in-progress-bg: #dce8f5;
+$status-in-progress-text: #2771ff;
+$status-submitted-bg: #d4f5ee;
+$status-submitted-text: #018156;
 
-.submissions__bar {
-  height: 5px;
-  background-color: $background;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.submissions__bar-fill {
-  height: 100%;
-  background-color: $bar-orange;
-  border-radius: 10px;
-  transition: width $transition-medium;
-}
-
-// ── Status badges ─────────────────────────────────────────────
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -144,43 +117,67 @@ $bar-orange: #e6a817;
   font-weight: $font-weight-medium;
   white-space: nowrap;
 
-  &--active {
-    background-color: $status-active-bg;
-    color: $status-active-text;
+  &--not-started {
+    background-color: $status-not-started-bg;
+    color: $status-not-started-text;
   }
 
-  &--draft {
-    background-color: $status-draft-bg;
-    color: $status-draft-text;
+  &--in-progress {
+    background-color: $status-in-progress-bg;
+    color: $status-in-progress-text;
   }
 
-  &--closed {
-    background-color: $status-closed-bg;
-    color: $status-closed-text;
+  &--submitted {
+    background-color: $status-submitted-bg;
+    color: $status-submitted-text;
   }
 }
 
-// ── Edit button ───────────────────────────────────────────────
-.edit-btn {
+// ── Action buttons ────────────────────────────────────────────
+.student-assignments__action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
-  background: transparent;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: $border-radius-sm;
   border: none;
-  color: $status-active-text;
   font-family: $primary-font;
   font-size: 0.8125rem;
   font-weight: $font-weight-medium;
   cursor: pointer;
-  border-radius: $border-radius-sm;
-  transition: background-color $transition-fast;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast,
+    box-shadow $transition-fast;
 
-  &:hover {
-    background-color: rgba($accent-color, 0.08);
+  &--start {
+    background-color: $primary-color;
+    color: $white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+    &:hover {
+      background-color: color.adjust($primary-color, $lightness: -4%);
+    }
   }
 
-  &:focus {
-    outline: none;
+  &--edit_submission {
+    background-color: rgba($primary-color, 0.08);
+    color: $primary-color;
+
+    &:hover {
+      background-color: rgba($primary-color, 0.14);
+    }
+  }
+
+  &--closed {
+    background-color: #f3f3f3;
+    color: $text-tertiary;
+    cursor: default;
+  }
+
+  &:disabled {
+    cursor: default;
+    box-shadow: none;
   }
 }
+

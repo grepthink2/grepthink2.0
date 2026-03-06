@@ -1,0 +1,60 @@
+@use '@styles/index.scss' as *;
+
+.tsrs {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.tsrs__body {
+  // The inner tabs manage their own layout
+}
+
+// ── Success state ───────────────────────────────────────────────
+.tsrs__submitted {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  padding: $spacing-xxl $spacing-lg;
+  background: $background;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.tsrs__submitted-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: rgba($primary-color, 0.12);
+  color: $primary-color;
+  font-size: 2rem;
+  font-weight: $font-weight-semibold;
+}
+
+.tsrs__submitted-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.tsrs__submitted-sub {
+  margin: 0;
+  font-size: $font-size-base;
+  color: $text-secondary;
+  max-width: 400px;
+}
+
+.tsrs__submitted-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}

@@ -1,0 +1,419 @@
+@use '@styles/index.scss' as *;
+
+.member-manager-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.member-manager {
+  background: $white;
+  border-radius: $border-radius-md;
+  padding: $spacing-lg;
+  max-width: 560px;
+  width: 90%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  font-family: $primary-font;
+
+  &__close {
+    position: absolute;
+    top: $spacing-md;
+    right: $spacing-md;
+    background: transparent;
+    border: none;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: $background;
+      color: $text-primary;
+    }
+  }
+
+  &__header {
+    margin-bottom: $spacing-md;
+    padding-right: 2rem;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 $spacing-xs 0;
+  }
+
+  &__summary {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    margin: 0;
+  }
+
+  &__tabs {
+    display: flex;
+    gap: 0;
+    padding: 4px;
+    margin-bottom: $spacing-md;
+    background: $background;
+    border-radius: $border-radius-sm;
+  }
+
+  &__tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $text-secondary;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color $transition-fast, background $transition-fast;
+
+    &:hover:not(.member-manager__tab--active) {
+      color: $text-primary;
+    }
+
+    &--active {
+      color: $text-primary;
+      background: $white;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  &__error {
+    font-size: $font-size-base;
+    color: $error-color;
+    margin: 0 0 $spacing-sm 0;
+  }
+
+  &__section {
+    margin-bottom: $spacing-lg;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 $spacing-sm 0;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__card {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-md;
+    background: $white;
+    border-radius: $border-radius-sm;
+    border: 1px solid $border-color;
+
+    &--request {
+      .member-manager__card-actions {
+        display: flex;
+        gap: $spacing-sm;
+      }
+    }
+
+    &--member {
+      align-items: flex-start;
+
+      .member-manager__card-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: $spacing-sm;
+        flex-shrink: 0;
+      }
+
+      .member-manager__btn--remove {
+        opacity: 0;
+        transition: opacity $transition-fast;
+
+        &:disabled {
+          opacity: 1;
+        }
+      }
+
+      &:hover .member-manager__btn--remove {
+        opacity: 1;
+      }
+    }
+
+    &--exiting {
+      animation: member-manager-card-exit 0.35s ease-out forwards;
+      pointer-events: none;
+    }
+  }
+
+  &__card-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__card-actions {
+    flex-shrink: 0;
+  }
+
+  &__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: $primary-color;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    flex-shrink: 0;
+
+    &--grey {
+      background: $text-tertiary;
+    }
+  }
+
+  &__name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__email {
+    font-size: 0.8125rem;
+    color: $text-secondary;
+  }
+
+  &__skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.25rem;
+  }
+
+  &__skill-tag {
+    display: inline-flex;
+    padding: 0.2rem 0.5rem;
+    background: $button-secondary;
+    color: $text-secondary;
+    border-radius: $border-radius-sm;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  &__role-tag {
+    flex-shrink: 0;
+    padding: 0.25rem 0.625rem;
+    background: rgba($primary-color, 0.15);
+    color: $primary-hover;
+    border-radius: $border-radius-sm;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: $border-radius-sm;
+    border: none;
+    cursor: pointer;
+    transition: background-color $transition-fast, opacity $transition-fast;
+    font-family: inherit;
+
+    &--accept {
+      background: $primary-color;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: $primary-hover;
+      }
+    }
+
+    &--decline {
+      background: $white;
+      color: $text-secondary;
+      border: 1px solid $border-color;
+
+      &:hover:not(:disabled) {
+        background: $background;
+        color: $text-primary;
+      }
+    }
+
+    &--invite {
+      background: $primary-color;
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: $primary-hover;
+      }
+    }
+
+    &--added {
+      background: rgba($primary-color, 0.15);
+      color: $primary-hover;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    &--remove {
+      background: $white;
+      color: $text-secondary;
+      border: 1px solid $border-color;
+
+      &:hover:not(:disabled) {
+        background: rgba($error-color, 0.08);
+        color: $error-color;
+        border-color: rgba($error-color, 0.3);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+  }
+
+  &__search-wrap {
+    position: relative;
+    margin-bottom: $spacing-md;
+  }
+
+  &__search-icon {
+    position: absolute;
+    left: $spacing-md;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $text-tertiary;
+    pointer-events: none;
+  }
+
+  &__search {
+    width: 100%;
+    padding: 0.75rem $spacing-md 0.75rem 2.75rem;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-base;
+    font-family: inherit;
+    color: $text-primary;
+    background: $white;
+    transition: border-color $transition-fast;
+
+    &::placeholder {
+      color: $text-tertiary;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+
+  &__empty,
+  &__muted {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    padding: $spacing-md;
+    margin: 0;
+    text-align: center;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: $spacing-md;
+    margin-top: $spacing-md;
+    border-top: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__spots {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: $text-secondary;
+  }
+
+  &__spots-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $primary-color;
+  }
+
+  &__done {
+    padding: 0.75rem 1.5rem;
+    background: $text-primary;
+    color: white;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color $transition-fast;
+    font-family: inherit;
+
+    &:hover {
+      background: $text-secondary;
+    }
+  }
+}
+
+@keyframes member-manager-card-exit {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}

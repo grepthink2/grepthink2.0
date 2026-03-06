@@ -20,29 +20,82 @@ const pageTitles: Record<string, string> = {
   '/app/messages': 'Messages',
   '/app/my-classes': 'My Classes',
   '/app/join-class': 'Join Class',
-  '/app/dashboard': 'Dashboard',
-  '/app/projects': 'Projects',
-  '/app/roster': 'Roster',
-  '/app/modules': 'Modules',
-  '/app/ta-management': 'TA Management',
-  '/app/create-project': 'Create Project',
-  '/app/browse-projects': 'Browse Projects',
-  '/app/my-project': 'My Project',
   '/app/settings': 'Settings',
   '/app/help-center': 'Help Center',
 };
 
-// Routes that belong to a selected class (show breadcrumb + access code)
-const classRoutes = new Set([
-  '/app/dashboard',
-  '/app/projects',
-  '/app/roster',
-  '/app/modules',
-  '/app/ta-management',
-  '/app/create-project',
-  '/app/browse-projects',
-  '/app/my-project',
-]);
+interface BreadcrumbSegment {
+  label: string;
+  /** If provided, renders as a clickable button that navigates to this path. */
+  path?: string;
+}
+
+/**
+ * Returns an ordered array of breadcrumb segments for class-contextual routes,
+ * or null for routes that have no class breadcrumb (standalone pages like Home).
+ *
+ * Adding a new route: just add a case in the instructor or student block below.
+ */
+function buildBreadcrumbs(
+  pathname: string,
+  role: string | null,
+  className: string | undefined,
+  locationState: unknown,
+): BreadcrumbSegment[] | null {
+  if (!className) return null;
+
+  const state = locationState as { projectName?: string; assignmentName?: string } | null;
+
+  // Class root segment — instructor links to Dashboard, students have no dedicated class home
+  const classSegment: BreadcrumbSegment = {
+    label: className,
+    path: role === 'instructor' ? '/app/dashboard' : undefined,
+  };
+
+  // ── Shared detail routes (role determines the parent crumb) ──────────────
+  if (pathname.startsWith('/app/projects/') && pathname !== '/app/projects') {
+    const projectName = state?.projectName;
+    const parentLabel = role === 'instructor' ? 'Projects' : 'Browse Projects';
+    const parentPath = role === 'instructor' ? '/app/projects' : '/app/browse-projects';
+    return [
+      classSegment,
+      { label: parentLabel, path: parentPath },
+      { label: projectName ?? 'Project' },
+    ];
+  }
+
+  if (pathname.startsWith('/app/assignments/') && pathname !== '/app/assignments') {
+    const assignmentName = state?.assignmentName;
+    return [
+      classSegment,
+      { label: 'Assignments', path: '/app/assignments' },
+      { label: assignmentName ?? 'Assignment' },
+    ];
+  }
+
+  // ── Instructor routes ────────────────────────────────────────────────────
+  if (role === 'instructor') {
+    if (pathname === '/app/dashboard')     return [classSegment, { label: 'Dashboard' }];
+    if (pathname === '/app/projects')      return [classSegment, { label: 'Projects' }];
+    if (pathname === '/app/roster')        return [classSegment, { label: 'Roster' }];
+    if (pathname === '/app/modules')       return [classSegment, { label: 'Modules' }];
+    if (pathname === '/app/ta-management') return [classSegment, { label: 'TA Management' }];
+    if (pathname === '/app/assignments')   return [classSegment, { label: 'Assignments' }];
+    if (pathname === '/app/create-project') {
+      return [classSegment, { label: 'Projects', path: '/app/projects' }, { label: 'Create Project' }];
+    }
+  }
+
+  // ── Student routes ───────────────────────────────────────────────────────
+  if (role === 'student') {
+    if (pathname === '/app/browse-projects') return [classSegment, { label: 'Browse Projects' }];
+    if (pathname === '/app/my-project')      return [classSegment, { label: 'My Project' }];
+    if (pathname === '/app/assignments')     return [classSegment, { label: 'Assignments' }];
+    if (pathname === '/app/create-project')  return [classSegment, { label: 'Create Project' }];
+  }
+
+  return null;
+}
 
 const Header: React.FC = () => {
   const location = useLocation();
@@ -70,14 +123,12 @@ const Header: React.FC = () => {
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const pageName = pageTitles[location.pathname] || 'GrepThink';
-  const isClassRoute = classRoutes.has(location.pathname) && !!selectedClass;
-  const showInstructorClassMeta = isClassRoute && role === 'instructor';
+  const path = location.pathname;
 
-  // Breadcrumb title for class routes: "ClassName > PageName"
-  const pageTitle = isClassRoute && selectedClass
-    ? `${selectedClass.name} > ${pageName}`
-    : pageName;
+  const breadcrumbs = buildBreadcrumbs(path, role, selectedClass?.name, location.state);
+  const isClassRoute = breadcrumbs !== null;
+  const showInstructorClassMeta = isClassRoute && role === 'instructor';
+  const standaloneTitle = pageTitles[path] ?? 'GrepThink';
 
   // Count unread notifications
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -119,7 +170,28 @@ const Header: React.FC = () => {
     <header className={`app-header${isClassRoute ? ' app-header--class' : ''}`}>
       {/* Left: Page Title */}
       <div className="app-header__title-block">
-        <h1 className="app-header__page-title">{pageTitle}</h1>
+        <h1 className="app-header__page-title">
+          {breadcrumbs ? (
+            breadcrumbs.map((crumb, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span className="app-header__breadcrumb-separator"> &gt; </span>}
+                {crumb.path ? (
+                  <button
+                    type="button"
+                    className="app-header__breadcrumb-link"
+                    onClick={() => navigate(crumb.path!)}
+                  >
+                    {crumb.label}
+                  </button>
+                ) : (
+                  <span className="app-header__breadcrumb-rest">{crumb.label}</span>
+                )}
+              </React.Fragment>
+            ))
+          ) : (
+            standaloneTitle
+          )}
+        </h1>
         {showInstructorClassMeta && selectedClass && (
           <div className="app-header__class-meta">
             {selectedClass.description && (

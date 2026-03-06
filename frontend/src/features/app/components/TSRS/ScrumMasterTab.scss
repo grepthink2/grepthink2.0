@@ -1,0 +1,191 @@
+@use '@styles/index.scss' as *;
+
+.scrum-master-tab {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.scrum-master-tab__card {
+  background: $background;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.scrum-master-tab__card-header {
+  padding: $spacing-lg $spacing-lg $spacing-md;
+  border-bottom: 1px solid $border-color;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scrum-master-tab__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background-color: $primary-color;
+  color: $white;
+  border-radius: 20px;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  letter-spacing: 0.03em;
+  width: fit-content;
+}
+
+.scrum-master-tab__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.scrum-master-tab__subtitle {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+// ── Member block ────────────────────────────────────────────────
+.scrum-master-tab__members {
+  display: flex;
+  flex-direction: column;
+}
+
+.scrum-master-tab__member {
+  padding: $spacing-lg;
+
+  &--divider {
+    border-bottom: 1px solid $border-color;
+  }
+}
+
+.scrum-master-tab__member-info {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.scrum-master-tab__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba($primary-color, 0.12);
+  color: $primary-color;
+  flex-shrink: 0;
+}
+
+.scrum-master-tab__member-name {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.scrum-master-tab__you-label {
+  color: $primary-color;
+  font-weight: $font-weight-medium;
+}
+
+.scrum-master-tab__member-role {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+// ── Fields ──────────────────────────────────────────────────────
+.scrum-master-tab__fields {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.scrum-master-tab__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scrum-master-tab__label {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.scrum-master-tab__field-hint {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+.scrum-master-tab__textarea {
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  color: $text-primary;
+  resize: vertical;
+  outline: none;
+  transition: border-color $transition-fast;
+  box-sizing: border-box;
+  line-height: 1.5;
+
+  &::placeholder {
+    color: $text-tertiary;
+    font-weight: $font-weight-normal;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 2px rgba($primary-color, 0.08);
+  }
+
+  &--mono {
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+    font-size: $font-size-sm;
+  }
+
+  &--error {
+    border-color: $error-color;
+    background-color: rgba($error-color, 0.06);
+    animation: scrum-master-tab__shake 0.4s ease-in-out;
+
+    &:focus {
+      border-color: $error-color;
+      box-shadow: 0 0 0 2px rgba($error-color, 0.2);
+    }
+  }
+}
+
+@keyframes scrum-master-tab__shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+// ── Footer ──────────────────────────────────────────────────────
+.scrum-master-tab__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+}

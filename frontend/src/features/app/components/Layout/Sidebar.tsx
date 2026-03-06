@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TbLayoutSidebar } from "react-icons/tb";
 import { ChevronDown } from 'lucide-react';
-import { instructorSidebarConfig, studentSidebarConfig, type UserRole } from '../config/sidebar';
+import { instructorSidebarConfig, studentSidebarConfig, type UserRole } from '../../config/sidebar';
 import { useClass } from '@/lib/classContext';
 import logo from '@assets/grepthink l logo.svg?url';
 import './Sidebar.scss';
@@ -116,8 +116,22 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
             )}
             <ul className="section-items">
               {section.items.map((item) => {
-                const isActive = location.pathname === item.path;
-                
+                const isProjectsItem = item.path === '/app/projects';
+                let isActive = location.pathname === item.path;
+
+                // For instructors, keep "Projects" highlighted when viewing
+                // project details or create-project flows under the class.
+                if (role === 'instructor' && isProjectsItem) {
+                  const path = location.pathname;
+                  if (
+                    path === '/app/projects' ||
+                    path.startsWith('/app/projects/') ||
+                    path === '/app/create-project'
+                  ) {
+                    isActive = true;
+                  }
+                }
+
                 return (
                   <li key={item.path}>
                     <button

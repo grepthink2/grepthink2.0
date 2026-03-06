@@ -82,7 +82,7 @@
   align-items: center;
   justify-content: space-between;
   padding: $spacing-lg $spacing-xl;
-  background-color: #eeeeee;
+  background-color: $white;
   position: sticky;
   top: 0;
   z-index: 1;
@@ -124,7 +124,7 @@
 .create-class-modal__content {
   padding: $spacing-xl;
   padding-top: 0;
-  background-color: #eeeeee;
+  background-color: $white;
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
@@ -367,6 +367,8 @@
     cursor: not-allowed;
   }
 }
+
+// Date picker styles live in DatePickerField.scss (shared component)
 
 // Error Message
 .create-class-modal__error {

@@ -11,11 +11,16 @@ import ForgetPassword from '@features/auth/pages/ForgotPassword';
 import VerifyResetPassword from '@features/auth/pages/VerifyResetPassword';
 import ResetPassword from '@features/auth/pages/ResetPassword';
 import ClassManagement from '@features/classes/pages/ClassManagement';
+import Projects from '@features/app/pages/Projects';
 import Roster from '@features/app/pages/Roster';
 import Modules from '@features/app/pages/Modules';
 import Dashboard from '@features/app/pages/Dashboard';
+import ProjectDetails from '@features/app/pages/ProjectDetails';
 import CreateProject from '@features/app/pages/CreateProject';
-import MyClasses from './features/app/pages/MyClasses';
+import MyClasses from '@features/app/pages/MyClasses';
+import Assignments from '@features/app/pages/Assignments';
+import AssignmentDetail from '@features/app/pages/AssignmentDetail';
+import BrowseProjects from '@features/app/pages/BrowseProjects';
 import TestProjects from '@pages/TestProjects';
 
 function App() {
@@ -41,20 +46,25 @@ function App() {
             <Route path="my-classes" element={<MyClasses />} />
             <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="projects" element={<div>Projects - Coming Soon</div>} />
+            <Route path="projects" element={<Projects />} />
+            <Route path="projects/:projectId" element={<ProjectDetails />} />
             <Route path="roster" element={<Roster />} />
             <Route path="modules" element={<Modules />} />
             <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
             <Route path="create-project" element={<CreateProject />} />
-            <Route path="browse-projects" element={<div>Browse Projects - Coming Soon</div>} />
+            <Route path="browse-projects" element={<BrowseProjects />} />
             <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
+            <Route path="assignments" element={<Assignments />} />
+            <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
             <Route path="settings" element={<div>Settings - Coming Soon</div>} />
             <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
           </Route>
         </Route>
 
         <Route path="/classes" element={<ClassManagement />} />
-        <Route path="/test-projects" element={<TestProjects />} />
+        <Route path="/test-projects" element={<Navigate to="/test-115a-projects" replace />} />
+        <Route path="/test-115a-projects" element={<TestProjects />} />
+        <Route path="/test-115b-projects" element={<TestProjects />} />
       </Routes>
     </Router>
   );

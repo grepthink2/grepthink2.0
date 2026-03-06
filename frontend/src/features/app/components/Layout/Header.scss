@@ -31,6 +31,26 @@ $app-header-text: #424242;
     line-height: 1.2;
   }
 
+  .app-header__breadcrumb-link {
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .app-header__breadcrumb-separator,
+  .app-header__breadcrumb-rest {
+    font: inherit;
+    color: inherit;
+  }
+
   .app-header__right {
     display: flex;
     align-items: center;

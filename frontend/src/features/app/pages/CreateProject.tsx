@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RotateCw } from 'lucide-react';
-import ProjectView from '../components/ProjectView';
-import ConfirmModal from '../components/ConfirmModal';
+import ProjectView from '../components/Project/ProjectView';
+import ConfirmModal from '../components/Overlays/ConfirmModal';
 import { generateTemplateMarkdown, parseTemplateFromMarkdown } from '../utils/projectDescriptionTemplate';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
@@ -82,6 +82,13 @@ const CreateProject: React.FC = () => {
   const [classError, setClassError] = useState<string | null>(null);
   const [teamSizeError, setTeamSizeError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Sponsor fields
+  const [sponsorName, setSponsorName] = useState('');
+  const [sponsorCompany, setSponsorCompany] = useState('');
+  const [sponsorEmail, setSponsorEmail] = useState('');
+  const [sponsorWebsite, setSponsorWebsite] = useState('');
+  const [sponsorDescription, setSponsorDescription] = useState('');
 
   const navigate = useNavigate();
   const { selectedClass } = useClass();
@@ -230,6 +237,11 @@ const CreateProject: React.FC = () => {
         team_size: teamSizeNum,
         looking_for_roles: selectedRoles.length > 0 ? selectedRoles : undefined,
         skills: skills.length > 0 ? skills : undefined,
+        sponsor_name: sponsorName.trim() || undefined,
+        sponsor_company: sponsorCompany.trim() || undefined,
+        sponsor_email: sponsorEmail.trim() || undefined,
+        sponsor_website: sponsorWebsite.trim() || undefined,
+        sponsor_description: sponsorDescription.trim() || undefined,
       });
       navigate('/app/my-classes', { replace: true });
     } catch (err) {
@@ -323,6 +335,11 @@ const CreateProject: React.FC = () => {
           }
           skills={skills}
           selectedRoles={selectedRoles}
+          sponsorName={sponsorName}
+          sponsorCompany={sponsorCompany}
+          sponsorEmail={sponsorEmail}
+          sponsorWebsite={sponsorWebsite}
+          sponsorDescription={sponsorDescription}
         />
       ) : (
         <div className="create-project__content">
@@ -508,6 +525,48 @@ const CreateProject: React.FC = () => {
                   {role.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Sponsor Information */}
+          <div className="create-project__section">
+            <h3 className="create-project__section-title">Sponsor Information</h3>
+            <div className="create-project__sponsor-fields">
+              <input
+                type="text"
+                className="create-project__input"
+                placeholder="Sponsor Contact Name"
+                value={sponsorName}
+                onChange={(e) => setSponsorName(e.target.value)}
+              />
+              <input
+                type="text"
+                className="create-project__input"
+                placeholder="Company / Organization"
+                value={sponsorCompany}
+                onChange={(e) => setSponsorCompany(e.target.value)}
+              />
+              <input
+                type="email"
+                className="create-project__input"
+                placeholder="Sponsor Email"
+                value={sponsorEmail}
+                onChange={(e) => setSponsorEmail(e.target.value)}
+              />
+              <input
+                type="url"
+                className="create-project__input"
+                placeholder="Sponsor Website (https://...)"
+                value={sponsorWebsite}
+                onChange={(e) => setSponsorWebsite(e.target.value)}
+              />
+              <textarea
+                className="create-project__textarea"
+                placeholder="Brief description of the sponsor and their involvement…"
+                value={sponsorDescription}
+                onChange={(e) => setSponsorDescription(e.target.value)}
+                rows={3}
+              />
             </div>
           </div>
         </div>
