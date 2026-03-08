@@ -784,6 +784,14 @@ def instructor_remove_member(project_id:UUID, requester_id:str, target_user_id:s
         # check is user is teacher of the class
         if not _is_instructor(requester_id, class_id):
             raise HTTPException(status_code=403, detail="Not the instructor of this project")
+        # check requester is project owner (role in project_members)
+        membership = (
+            client.table('project_members').select('role')
+            .eq('project_id', str(project_id)).eq('user_id', str(requester_id))
+            .execute()
+        )
+        if not membership.data or membership.data[0].get('role') != 'owner':
+            raise HTTPException(status_code=403, detail="Not the owner of this project")
         # Remove user as project member
         delete_result = (client.table('project_members').delete()
             .eq('project_id', str(project_id)).eq('user_id', str(target_user_id))
@@ -800,3 +808,5 @@ def instructor_remove_member(project_id:UUID, requester_id:str, target_user_id:s
     except Exception as e:
         print(f"Error removing member: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to remove member: {str(e)}")
+
+
