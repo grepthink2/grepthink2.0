@@ -72,16 +72,21 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setError('Course name is required');
       return;
     }
+    if (!termStartDate.trim()) {
+      setError('First week of term is required');
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Create the class with name and description
       const description = `${selectedTerm} term`;
       await api.createClass({
         name: courseName,
         description,
+        term: selectedTerm,
+        start_date: termStartDate,
       });
 
       // Refresh the classes list
@@ -228,7 +233,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
               type="button"
               className="create-class-modal__submit-button"
               onClick={handleCreateClass}
-              disabled={isSubmitting || !courseName.trim()}
+              disabled={isSubmitting || !courseName.trim() || !termStartDate.trim()}
             >
               {isSubmitting ? 'Creating...' : 'Create Class'}
             </button>
