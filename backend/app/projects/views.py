@@ -5,7 +5,7 @@ from uuid import UUID
 from typing import Optional
 from fastapi import HTTPException, Depends, Query
 from app.dependencies import verify_supabase_token
-from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, ManageProjectMemberRequest
+from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, ManageProjectMemberRequest, AssignRoleRequest
 from app.projects import controller
 
 
@@ -164,4 +164,70 @@ def remove_project_member(project_id: UUID, user_id: UUID, payload: dict = Depen
         project_id=project_id,
         requester_id=payload.get('sub'),
         target_user_id=str(user_id),
+    )
+
+
+def assign_product_owner(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+    """Assign the product owner role to a project member (owner, product owner, admin, or instructor only)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return controller.assign_product_owner(
+        project_id=project_id,
+        requester_id=payload.get('sub'),
+        target_user_id=str(data.user_id),
+    )
+
+
+def assign_scrum_master(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+    """Assign the scrum master role to a project member (owner, product owner, admin, or instructor only)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return controller.assign_scrum_master(
+        project_id=project_id,
+        requester_id=payload.get('sub'),
+        target_user_id=str(data.user_id),
+    )
+
+
+def assign_admin(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+    """Assign the admin role to a project member (owner, product owner, admin, or instructor only)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return controller.assign_admin(
+        project_id=project_id,
+        requester_id=payload.get('sub'),
+        target_user_id=str(data.user_id),
+    )
+
+
+def remove_product_owner(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+    """Demote the product owner back to member (product owner, admin, or instructor only)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return controller.remove_product_owner(
+        project_id=project_id,
+        requester_id=payload.get('sub'),
+        target_user_id=str(data.user_id),
+    )
+
+
+def remove_scrum_master(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+    """Demote the scrum master back to member (product owner, admin, or instructor only)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return controller.remove_scrum_master(
+        project_id=project_id,
+        requester_id=payload.get('sub'),
+        target_user_id=str(data.user_id),
+    )
+
+
+def remove_admin(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+    """Demote an admin back to member (product owner, admin, or instructor only)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return controller.remove_admin(
+        project_id=project_id,
+        requester_id=payload.get('sub'),
+        target_user_id=str(data.user_id),
     )

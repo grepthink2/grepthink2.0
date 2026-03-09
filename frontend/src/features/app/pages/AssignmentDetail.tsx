@@ -13,14 +13,8 @@ interface AssignmentDetailState {
   assignmentType?: AssignmentType;
   dueDate?: string;
   projectName?: string;
+  projectId?: string;
 }
-
-// ── Mock assignment lookup (replace with API call when ready) ───
-const MOCK_ASSIGNMENTS: Record<string, { name: string; type: AssignmentType; dueDate: string; projectName: string }> = {
-  '1': { name: 'Team Status Report 1', type: 'tsrs', dueDate: 'Jan 12, 2026', projectName: 'ShoeShopper' },
-  '2': { name: 'Team Status Report 2', type: 'tsrs', dueDate: 'Jan 26, 2026', projectName: 'Chatcut' },
-  '3': { name: 'Team Status Report 3', type: 'tsrs', dueDate: 'Feb 9, 2026',  projectName: 'TaskMaster' },
-};
 
 const AssignmentDetail: React.FC = () => {
   const { assignmentId } = useParams<{ assignmentId: string }>();
@@ -29,14 +23,13 @@ const AssignmentDetail: React.FC = () => {
 
   if (!assignmentId) return <Navigate to="/app/assignments" replace />;
 
-  // Prefer data passed via navigation state, fall back to mock lookup
   const stateData = (location.state ?? {}) as AssignmentDetailState;
-  const mockData = MOCK_ASSIGNMENTS[assignmentId];
 
-  const assignmentName = stateData.assignmentName ?? mockData?.name ?? 'Assignment';
-  const assignmentType: AssignmentType = stateData.assignmentType ?? mockData?.type ?? 'tsrs';
-  const dueDate        = stateData.dueDate      ?? mockData?.dueDate      ?? '';
-  const projectName    = stateData.projectName  ?? mockData?.projectName  ?? '';
+  const assignmentName  = stateData.assignmentName  ?? 'Assignment';
+  const assignmentType: AssignmentType = stateData.assignmentType ?? 'tsrs';
+  const dueDate         = stateData.dueDate         ?? '';
+  const projectName     = stateData.projectName     ?? '';
+  const projectId       = stateData.projectId       ?? '';
 
   if (!selectedClass) {
     return (
@@ -54,15 +47,13 @@ const AssignmentDetail: React.FC = () => {
     name: assignmentName,
     dueDate,
     projectName,
+    projectId,
   };
 
   return (
     <div className="assignment-detail">
       <div className="assignment-detail__body">
         {assignmentType === 'tsrs' && <TSRS assignment={tsrsAssignment} />}
-
-        {/* When a new assignment type is added, add a new branch here:
-            {assignmentType === 'peer_review' && <PeerReview assignment={...} />} */}
       </div>
     </div>
   );
