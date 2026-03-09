@@ -100,6 +100,7 @@ def update_project(project_id: UUID, data: UpdateProjectRequest, payload: dict =
     project = controller.update_project(
         project_id,
         payload.get('sub'),
+        name=data.name,
         team_size=data.team_size,
         description=data.description,
         sponsor_name=data.sponsor_name,
@@ -194,17 +195,6 @@ def assign_admin(project_id: UUID, data: AssignRoleRequest, payload: dict = Depe
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
     return controller.assign_admin(
-        project_id=project_id,
-        requester_id=payload.get('sub'),
-        target_user_id=str(data.user_id),
-    )
-
-
-def remove_product_owner(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
-    """Demote the product owner back to member (product owner, admin, or instructor only)."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    return controller.remove_product_owner(
         project_id=project_id,
         requester_id=payload.get('sub'),
         target_user_id=str(data.user_id),

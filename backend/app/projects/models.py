@@ -24,6 +24,7 @@ class CreateProjectRequest(BaseModel):
 
 class UpdateProjectRequest(BaseModel):
     """Request model for updating a project. All fields are optional."""
+    name: Optional[str] = None
     team_size: Optional[int] = None
     description: Optional[str] = None
     # Sponsor information
