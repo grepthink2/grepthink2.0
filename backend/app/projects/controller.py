@@ -163,7 +163,18 @@ def create_project(
         if not result.data or len(result.data) == 0:
             raise HTTPException(status_code=500, detail="Failed to create project")
 
-        return result.data[0]
+        project = result.data[0]
+
+        # Students who create a project are automatically added as product owner
+        if not is_instructor:
+            client.table('project_members').insert({
+                "project_id": project['id'],
+                "user_id": user_id,
+                "role": "product owner",
+            }).execute()
+            _increment_project_num_members(client, project['id'], 1)
+
+        return project
     except HTTPException:
         raise
     except Exception as e:
