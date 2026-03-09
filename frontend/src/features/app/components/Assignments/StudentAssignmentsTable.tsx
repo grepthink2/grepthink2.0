@@ -18,6 +18,8 @@ export interface StudentAssignment {
   action: StudentAssignmentAction;
   /** Type of assignment — determines which form component is shown. */
   type: AssignmentType;
+  /** Project the student is submitting this assignment for. */
+  projectId?: string;
 }
 
 interface StudentAssignmentsTableProps {
@@ -78,7 +80,7 @@ const StudentAssignmentsTable: React.FC<StudentAssignmentsTableProps> = ({
             </thead>
             <tbody>
               {assignments.map((assignment) => (
-                <tr key={assignment.id}>
+                <tr key={`${assignment.id}-${assignment.projectId ?? ''}`}>
                   <td className="student-assignments__td-name">{assignment.name}</td>
                   <td className="student-assignments__td-date">{assignment.dueDate}</td>
                   <td className="student-assignments__td-project">{assignment.projectName}</td>
