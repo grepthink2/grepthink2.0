@@ -82,14 +82,20 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
     """
     Return TSR data for all submissions linked to a given assignment_id.
 
-    Each entry always includes tsr_id, evaluatee_name, percent_contribution,
-    and positive_feedback. constructive_feedback and scrum_master_notes are
-    only included when they are non-empty.
+    Each entry always includes tsr_id, evaluator_id, evaluator_name,
+    evaluatee_name, percent_contribution, and positive_feedback.
+    constructive_feedback and scrum_master_notes are only included when
+    they are non-empty.
+
+    Because every project member evaluates every other member independently,
+    multiple entries can exist for the same evaluatee (one per evaluator).
+    evaluator_id is included so callers can identify their own submission
+    when using the update endpoint.
     """
     tsr_result = (
         client.table('TSRs')
         .select(
-            'id, evaluatee_id, percent_contribution, '
+            'id, evaluator_id, evaluatee_id, percent_contribution, '
             'positive_feedback, constructive_feedback, scrum_master_notes'
         )
         .eq('assignment_id', assignment_id)
@@ -99,21 +105,27 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
     if not rows:
         return []
 
-    evaluatee_ids = list({r['evaluatee_id'] for r in rows if r.get('evaluatee_id')})
+    all_user_ids = list(
+        {r['evaluator_id'] for r in rows if r.get('evaluator_id')} |
+        {r['evaluatee_id'] for r in rows if r.get('evaluatee_id')}
+    )
     profiles = (
         client.table('profiles')
         .select('id, name, email')
-        .in_('id', evaluatee_ids)
+        .in_('id', all_user_ids)
         .execute()
     )
     profile_map = {p['id']: p for p in (profiles.data or [])}
 
     entries = []
     for row in rows:
-        profile = profile_map.get(row['evaluatee_id'], {})
+        evaluator_profile = profile_map.get(row['evaluator_id'], {})
+        evaluatee_profile = profile_map.get(row['evaluatee_id'], {})
         entry = {
             "tsr_id": row['id'],
-            "evaluatee_name": profile.get('name') or profile.get('email'),
+            "evaluator_id": row['evaluator_id'],
+            "evaluator_name": evaluator_profile.get('name') or evaluator_profile.get('email'),
+            "evaluatee_name": evaluatee_profile.get('name') or evaluatee_profile.get('email'),
             "percent_contribution": row['percent_contribution'],
             "positive_feedback": row['positive_feedback'],
         }
@@ -349,24 +361,29 @@ def update_tsr_entry(
         updated_rows = (
             client.table('TSRs')
             .select(
-                'id, evaluatee_id, percent_contribution, '
+                'id, evaluator_id, evaluatee_id, percent_contribution, '
                 'positive_feedback, constructive_feedback, scrum_master_notes'
             )
             .eq('id', str(tsr_id))
             .execute()
         )
         row = updated_rows.data[0]
-        profile_result = (
+        profile_ids = list({row['evaluator_id'], row['evaluatee_id']})
+        profiles_result = (
             client.table('profiles')
-            .select('name, email')
-            .eq('id', row['evaluatee_id'])
+            .select('id, name, email')
+            .in_('id', profile_ids)
             .execute()
         )
-        profile = profile_result.data[0] if profile_result.data else {}
+        profile_map = {p['id']: p for p in (profiles_result.data or [])}
+        evaluator_profile = profile_map.get(row['evaluator_id'], {})
+        evaluatee_profile = profile_map.get(row['evaluatee_id'], {})
 
         entry = {
             "tsr_id": row['id'],
-            "evaluatee_name": profile.get('name') or profile.get('email'),
+            "evaluator_id": row['evaluator_id'],
+            "evaluator_name": evaluator_profile.get('name') or evaluator_profile.get('email'),
+            "evaluatee_name": evaluatee_profile.get('name') or evaluatee_profile.get('email'),
             "percent_contribution": row['percent_contribution'],
             "positive_feedback": row['positive_feedback'],
         }
