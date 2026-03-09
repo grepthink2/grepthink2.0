@@ -24,3 +24,11 @@ class UpdateAssignmentRequest(BaseModel):
     close_date: Optional[datetime.date] = None
     status: Optional[Literal["draft", "publish"]] = None
     assignment_type: Optional[str] = None
+
+
+class UpdateTSREntryRequest(BaseModel):
+    """Request model for updating the editable fields of a TSR linked to an assignment."""
+    percent_contribution: Optional[int] = None
+    positive_feedback: Optional[str] = None
+    constructive_feedback: Optional[str] = None
+    scrum_master_notes: Optional[str] = None

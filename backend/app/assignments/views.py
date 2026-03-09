@@ -4,7 +4,11 @@ Assignment views — parameter handling and HTTP responses
 from uuid import UUID
 from fastapi import Depends, HTTPException, Query
 from app.dependencies import verify_supabase_token
-from app.assignments.models import CreateAssignmentRequest, UpdateAssignmentRequest
+from app.assignments.models import (
+    CreateAssignmentRequest,
+    UpdateAssignmentRequest,
+    UpdateTSREntryRequest,
+)
 from app.assignments import controller
 
 
@@ -43,6 +47,56 @@ def update_assignment(
         assignment_type=data.assignment_type,
     )
     return {"message": "Assignment updated successfully", "assignment": assignment}
+
+
+def update_tsr_entry(
+    assignment_id: UUID,
+    tsr_id: UUID,
+    data: UpdateTSREntryRequest,
+    payload: dict = Depends(verify_supabase_token),
+):
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    entry = controller.update_tsr_entry(
+        user_id=payload.get('sub'),
+        assignment_id=assignment_id,
+        tsr_id=tsr_id,
+        percent_contribution=data.percent_contribution,
+        positive_feedback=data.positive_feedback,
+        constructive_feedback=data.constructive_feedback,
+        scrum_master_notes=data.scrum_master_notes,
+    )
+    return {"message": "TSR updated successfully", "tsr": entry}
+
+
+def get_my_tsrs(
+    assignment_id: UUID,
+    payload: dict = Depends(verify_supabase_token),
+):
+    """Return all TSR submissions the authenticated user made for this assignment."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    entries = controller.get_my_tsr_entries(
+        user_id=payload.get('sub'),
+        assignment_id=assignment_id,
+    )
+    return {"tsrs": entries}
+
+
+def get_tsrs_about_user(
+    assignment_id: UUID,
+    evaluatee_id: UUID,
+    payload: dict = Depends(verify_supabase_token),
+):
+    """Return all TSR responses about a specific user for this assignment (instructor only)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    entries = controller.get_tsr_responses_about_user(
+        user_id=payload.get('sub'),
+        assignment_id=assignment_id,
+        evaluatee_id=evaluatee_id,
+    )
+    return {"tsrs": entries}
 
 
 def get_assignments(
