@@ -1,0 +1,480 @@
+@use '@styles/index.scss' as *;
+
+.edit-project-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.edit-project {
+  background: $white;
+  border-radius: $border-radius-md;
+  padding: $spacing-lg;
+  max-width: 580px;
+  width: 90%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  font-family: $primary-font;
+
+  // ── Close ──────────────────────────────────────────
+  &__close {
+    position: absolute;
+    top: $spacing-md;
+    right: $spacing-md;
+    background: transparent;
+    border: none;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color $transition-fast, color $transition-fast;
+
+    &:hover {
+      background-color: $background;
+      color: $text-primary;
+    }
+  }
+
+  // ── Header ─────────────────────────────────────────
+  &__header {
+    margin-bottom: $spacing-md;
+    padding-right: 2rem;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 $spacing-xs 0;
+  }
+
+  &__subtitle {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    margin: 0;
+  }
+
+  // ── Tabs ───────────────────────────────────────────
+  &__tabs {
+    display: flex;
+    gap: 0;
+    padding: 4px;
+    margin-bottom: $spacing-md;
+    background: $background;
+    border-radius: $border-radius-sm;
+    flex-shrink: 0;
+  }
+
+  &__tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: $text-secondary;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color $transition-fast, background $transition-fast;
+    font-family: inherit;
+
+    &:hover:not(.edit-project__tab--active) {
+      color: $text-primary;
+    }
+
+    &--active {
+      color: $text-primary;
+      background: $white;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  // ── Body ───────────────────────────────────────────
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  // ── Sections ───────────────────────────────────────
+  &__section {
+    margin-bottom: $spacing-lg;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 $spacing-sm 0;
+  }
+
+  &__section-hint {
+    font-size: 0.8125rem;
+    color: $text-secondary;
+    margin: 0 0 $spacing-md 0;
+  }
+
+  // ── Form controls ──────────────────────────────────
+  &__input {
+    width: 100%;
+    padding: 0.625rem $spacing-md;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-base;
+    font-family: inherit;
+    color: $text-primary;
+    background: $white;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: $text-tertiary;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.12);
+    }
+
+    &--error {
+      border-color: $error-color;
+
+      &:focus {
+        box-shadow: 0 0 0 3px rgba($error-color, 0.12);
+      }
+    }
+
+    &--short {
+      max-width: 160px;
+    }
+  }
+
+  &__textarea {
+    width: 100%;
+    padding: 0.625rem $spacing-md;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-base;
+    font-family: inherit;
+    color: $text-primary;
+    background: $white;
+    resize: vertical;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+    box-sizing: border-box;
+    line-height: 1.5;
+
+    &::placeholder {
+      color: $text-tertiary;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.12);
+    }
+  }
+
+  &__field-error {
+    font-size: 0.8125rem;
+    color: $error-color;
+    margin: $spacing-xs 0 0;
+  }
+
+  // ── Role rows (dropdowns) ──────────────────────────
+  &__role-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-sm 0;
+
+    & + & {
+      border-top: 1px solid $border-color;
+    }
+  }
+
+  &__role-label-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 150px;
+    flex-shrink: 0;
+  }
+
+  &__role-icon {
+    flex-shrink: 0;
+
+    &--owner {
+      color: #f59e0b;
+    }
+
+    &--scrum {
+      color: $primary-color;
+    }
+  }
+
+  &__role-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__select {
+    flex: 1;
+    padding: 0.5rem $spacing-md;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: 0.875rem;
+    font-family: inherit;
+    color: $text-primary;
+    background: $white;
+    cursor: pointer;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+
+  // ── Member list (admin section) ────────────────────
+  &__member-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__member-card {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    background: $white;
+    border-radius: $border-radius-sm;
+    border: 1px solid $border-color;
+    transition: border-color $transition-fast;
+
+    &:hover {
+      border-color: darken($border-color, 8%);
+    }
+  }
+
+  &__avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: $primary-color;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  &__member-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__member-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: $text-primary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__member-email {
+    font-size: 0.8125rem;
+    color: $text-secondary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__member-actions {
+    flex-shrink: 0;
+  }
+
+  // ── Role badge ─────────────────────────────────────
+  &__role-badge {
+    display: inline-flex;
+    padding: 0.25rem 0.625rem;
+    border-radius: $border-radius-sm;
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    &--owner {
+      background: rgba(#f59e0b, 0.12);
+      color: #b45309;
+    }
+  }
+
+  // ── Admin toggle button ────────────────────────────
+  &__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: $border-radius-sm;
+    border: 1px solid $border-color;
+    cursor: pointer;
+    background: $white;
+    color: $text-secondary;
+    transition: background-color $transition-fast, color $transition-fast, border-color $transition-fast;
+    font-family: inherit;
+    white-space: nowrap;
+
+    &:hover {
+      background: $background;
+      color: $text-primary;
+    }
+
+    // "Give Admin" state — plain outline button, no special treatment needed
+
+    // "Admin" (on) state
+    &--on {
+      background: rgba($primary-color, 0.1);
+      color: $primary-hover;
+      border-color: rgba($primary-color, 0.3);
+
+      // Default view: show Shield + "Admin", hide "Remove Admin"
+      .edit-project__toggle-default {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+      }
+
+      .edit-project__toggle-hover {
+        display: none;
+        align-items: center;
+        gap: 0.375rem;
+      }
+
+      // On hover: swap to XCircle + "Remove Admin" with red styling
+      &:hover {
+        background: rgba($error-color, 0.08);
+        color: $error-color;
+        border-color: rgba($error-color, 0.3);
+
+        .edit-project__toggle-default {
+          display: none;
+        }
+
+        .edit-project__toggle-hover {
+          display: inline-flex;
+        }
+      }
+    }
+  }
+
+  // ── Empty state ────────────────────────────────────
+  &__empty {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    padding: $spacing-md;
+    text-align: center;
+    margin: 0;
+  }
+
+  // ── Buttons ────────────────────────────────────────
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: $border-radius-sm;
+    border: none;
+    cursor: pointer;
+    transition: background-color $transition-fast, opacity $transition-fast;
+    font-family: inherit;
+
+    &--save {
+      background: $primary-color;
+      color: white;
+
+      &:hover {
+        background: $primary-hover;
+      }
+    }
+
+    &--secondary {
+      background: $white;
+      color: $text-secondary;
+      border: 1px solid $border-color;
+
+      &:hover {
+        background: $background;
+        color: $text-primary;
+      }
+    }
+
+    &--delete {
+      background: $white;
+      color: $error-color;
+      border: 1px solid rgba($error-color, 0.4);
+
+      &:hover {
+        background: rgba($error-color, 0.08);
+        border-color: $error-color;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  // ── Footer ─────────────────────────────────────────
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: $spacing-md;
+    margin-top: $spacing-md;
+    border-top: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__footer-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+}

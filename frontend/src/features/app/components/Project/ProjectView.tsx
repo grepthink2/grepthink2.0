@@ -9,6 +9,7 @@ import './ProjectView.scss';
 import { useAuth } from '@/lib/auth';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
+import EditProjectModal from '../EditProject/EditProjectModal';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
 
 export interface ProjectViewMember {
@@ -77,6 +78,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     (userRoleOnProject != null && MANAGER_ROLES.includes(userRoleOnProject as (typeof MANAGER_ROLES)[number]));
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [memberManagerOpen, setMemberManagerOpen] = useState(false);
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
 
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
@@ -181,9 +183,13 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                   </svg>
                   Add/Drop Members
                 </button>
-                <button className="project-view__request-button">
+                <button
+                  className="project-view__request-button"
+                  onClick={() => projectId && project && setEditProjectOpen(true)}
+                  disabled={!projectId || !project}
+                >
                   <SquarePen size={18} />
-                  Edit Project
+                  Edit Project/Roles
                 </button>
               </div>
             ) : userRoleOnProject != null && userRoleOnProject !== '' ? (
@@ -361,6 +367,14 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           project={project}
           initialMembers={projectMembers}
           onMembersChange={onMembersChange}
+        />
+      )}
+      {projectId && project && (
+        <EditProjectModal
+          isOpen={editProjectOpen}
+          onClose={() => setEditProjectOpen(false)}
+          project={project}
+          projectMembers={projectMembers}
         />
       )}
     </div>
