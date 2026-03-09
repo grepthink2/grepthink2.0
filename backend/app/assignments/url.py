@@ -8,4 +8,5 @@ router = APIRouter(prefix="/api/assignments", tags=["assignments"])
 
 router.post('')(views.create_assignment)
 router.patch('/{assignment_id}')(views.update_assignment)
+router.patch('/{assignment_id}/tsrs/{tsr_id}')(views.update_tsr_entry)
 router.get('')(views.get_assignments)
