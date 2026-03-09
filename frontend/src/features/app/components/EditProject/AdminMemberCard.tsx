@@ -6,6 +6,7 @@ import type { MemberOption } from './types';
 interface AdminMemberCardProps {
   member: MemberOption;
   isOwner: boolean;
+  isProductOwner: boolean;
   isAdmin: boolean;
   onToggleAdmin: (userId: string) => void;
 }
@@ -13,6 +14,7 @@ interface AdminMemberCardProps {
 const AdminMemberCard: React.FC<AdminMemberCardProps> = ({
   member,
   isOwner,
+  isProductOwner,
   isAdmin,
   onToggleAdmin,
 }) => {
@@ -29,6 +31,10 @@ const AdminMemberCard: React.FC<AdminMemberCardProps> = ({
         {isOwner ? (
           <span className="edit-project__role-badge edit-project__role-badge--owner">
             Owner
+          </span>
+        ) : isProductOwner ? (
+          <span className="edit-project__role-badge edit-project__role-badge--product-owner">
+            Product Owner
           </span>
         ) : (
           <button

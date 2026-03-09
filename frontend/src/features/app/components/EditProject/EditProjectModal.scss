@@ -203,6 +203,16 @@
     margin: $spacing-xs 0 0;
   }
 
+  &__api-error {
+    font-size: 0.875rem;
+    color: $error-color;
+    background: rgba($error-color, 0.06);
+    border: 1px solid rgba($error-color, 0.2);
+    border-radius: $border-radius-sm;
+    padding: $spacing-sm $spacing-md;
+    margin-bottom: $spacing-md;
+  }
+
   // ── Role rows (dropdowns) ──────────────────────────
   &__role-row {
     display: flex;
@@ -338,6 +348,11 @@
     &--owner {
       background: rgba(#f59e0b, 0.12);
       color: #b45309;
+    }
+
+    &--product-owner {
+      background: rgba($primary-color, 0.12);
+      color: $primary-hover;
     }
   }
 

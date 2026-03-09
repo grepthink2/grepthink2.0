@@ -311,6 +311,62 @@ export const api = {
     });
   },
 
+  /** Update a project's description and/or team size (PATCH /api/projects/:id). */
+  updateProject: async (projectId: string, data: { description?: string; team_size?: number }) => {
+    return apiRequest<{ message: string; project: ApiProject }>(`/api/projects/${projectId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /** Assign the 'product owner' Scrum role to a member (POST /api/projects/:id/assign-product-owner). */
+  assignProductOwner: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string }>(`/api/projects/${projectId}/assign-product-owner`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  },
+
+  /** Assign the 'scrum master' role to a member (POST /api/projects/:id/assign-scrum-master). */
+  assignScrumMaster: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string }>(`/api/projects/${projectId}/assign-scrum-master`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  },
+
+  /** Assign the 'admin' role to a member (POST /api/projects/:id/assign-admin). */
+  assignAdmin: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string }>(`/api/projects/${projectId}/assign-admin`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  },
+
+  /** Demote the product owner back to member (POST /api/projects/:id/remove-product-owner). */
+  removeProductOwner: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string }>(`/api/projects/${projectId}/remove-product-owner`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  },
+
+  /** Demote the scrum master back to member (POST /api/projects/:id/remove-scrum-master). */
+  removeScrumMaster: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string }>(`/api/projects/${projectId}/remove-scrum-master`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  },
+
+  /** Demote an admin back to member (POST /api/projects/:id/remove-admin). */
+  removeAdmin: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string }>(`/api/projects/${projectId}/remove-admin`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId }),
+    });
+  },
+
   /** Get all assignments for a class (GET /api/assignments?class_id=...) */
   getAssignments: async (classId: string) => {
     return apiRequest<{ assignments: ApiAssignment[] }>(`/api/assignments?class_id=${classId}`);

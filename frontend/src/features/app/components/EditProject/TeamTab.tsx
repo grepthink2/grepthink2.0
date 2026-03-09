@@ -5,6 +5,9 @@ import type { MemberOption } from './types';
 
 interface TeamTabProps {
   memberOptions: MemberOption[];
+  /** The project creator (role 'owner') — shown as a non-toggleable badge in Admin Access. */
+  projectOwnerId: string | null;
+  /** The Scrum 'product owner' role — controlled by the dropdown. */
   productOwnerId: string | null;
   onProductOwnerChange: (id: string | null) => void;
   scrumMasterId: string | null;
@@ -15,6 +18,7 @@ interface TeamTabProps {
 
 const TeamTab: React.FC<TeamTabProps> = ({
   memberOptions,
+  projectOwnerId,
   productOwnerId,
   onProductOwnerChange,
   scrumMasterId,
@@ -42,7 +46,6 @@ const TeamTab: React.FC<TeamTabProps> = ({
             onChange={(e) => onProductOwnerChange(e.target.value || null)}
             aria-label="Select Product Owner"
           >
-            <option value="">— Unassigned —</option>
             {memberOptions.map((m) => (
               <option key={m.userId} value={m.userId} disabled={m.userId === scrumMasterId}>
                 {m.displayName}
@@ -86,7 +89,8 @@ const TeamTab: React.FC<TeamTabProps> = ({
               <AdminMemberCard
                 key={m.userId}
                 member={m}
-                isOwner={m.userId === productOwnerId}
+                isOwner={m.userId === projectOwnerId}
+                isProductOwner={m.userId === productOwnerId}
                 isAdmin={adminIds.has(m.userId)}
                 onToggleAdmin={onToggleAdmin}
               />

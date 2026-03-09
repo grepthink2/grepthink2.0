@@ -375,6 +375,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           onClose={() => setEditProjectOpen(false)}
           project={project}
           projectMembers={projectMembers}
+          onProjectChange={onMembersChange}
         />
       )}
     </div>
