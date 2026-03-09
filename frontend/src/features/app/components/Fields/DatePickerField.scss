@@ -1,0 +1,193 @@
+@use 'sass:color';
+@use '@styles/index.scss' as *;
+
+// ── Wrapper ────────────────────────────────────────────────────
+.dpf {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+// Default label (callers may override via labelClassName prop)
+.dpf__label {
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  color: $text-secondary;
+}
+
+// ── Trigger button ─────────────────────────────────────────────
+.dpf__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-family: $primary-font;
+  color: $text-secondary;
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
+  transition: border-color $transition-fast;
+
+  &:hover { border-color: color.adjust(#DADADA, $lightness: -12%); }
+  &:focus { outline: none; border-color: $accent-color; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+
+  &--open   { border-color: $primary-color; }
+  &--filled { color: $text-primary; }
+}
+
+.dpf__trigger-text { flex: 1; }
+.dpf__trigger-icon { color: $text-tertiary; flex-shrink: 0; }
+
+// ── Popover ────────────────────────────────────────────────────
+.dpf__popover {
+  position: absolute;
+  right: 0;
+  z-index: $z-index-modal + 1;
+  background: $white;
+  border-radius: $border-radius-md;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 12px;
+
+  &--down { top: calc(10%);    animation: dpfPopoverInDown 0.15s ease-out; }
+  &--up   { bottom: calc(-10%); animation: dpfPopoverInUp   0.15s ease-out; }
+}
+
+@keyframes dpfPopoverInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes dpfPopoverInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ── react-day-picker overrides ─────────────────────────────────
+.dpf__popover {
+  .rdp-month_caption {
+    font-family: $primary-font;
+    font-size: 0.9rem;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    padding-bottom: $spacing-sm;
+  }
+
+  .rdp-nav button {
+    color: $text-secondary;
+    border-radius: $border-radius-sm;
+    padding: 4px;
+    &:hover { background-color: $background; color: $text-primary;}
+    &:focus { outline: none; }
+  }
+
+  .rdp-weekdays .rdp-weekday {
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    font-weight: $font-weight-semibold;
+    color: $text-tertiary;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .rdp-day {
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: 0.85rem;
+    color: $text-primary;
+    transition: background-color $transition-fast, color $transition-fast;
+
+    &:hover:not([disabled]) {
+      background-color: rgba($primary-color, 0.1);
+      color: $primary-color;
+    }
+  }
+
+  .rdp-selected .rdp-day_button {
+    background-color: $primary-color !important;
+    color: $white !important;
+    border-radius: $border-radius-sm;
+    border: none;
+  }
+
+  .rdp-today:not(.rdp-selected) .rdp-day_button {
+    font-weight: $font-weight-semibold;
+    color: $primary-color;
+    border: 1.5px solid $primary-color;
+    border-radius: $border-radius-sm;
+  }
+
+  .rdp-disabled { color: $border-color; pointer-events: none; }
+
+  .rdp-day_button {
+    &:focus { outline: none; }
+    &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+    &:hover {
+      border: none;
+      border-color: transparent;
+      outline: none;
+    }
+  }
+}
+
+// ── Time row (showTime=true) ───────────────────────────────────
+.dpf__time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px 4px;
+  border-top: 1px solid $border-color;
+  margin-top: 4px;
+}
+
+.dpf__time-icon  { color: $text-tertiary; flex-shrink: 0; }
+.dpf__time-label {
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  font-weight: $font-weight-medium;
+  color: $text-secondary;
+  flex-shrink: 0;
+}
+
+.dpf__time-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  color: $text-primary;
+  background: $white;
+  &:focus { outline: none; border-color: $primary-color; }
+}
+
+// ── Confirm footer (showTime=true) ─────────────────────────────
+.dpf__popover-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid $border-color;
+}
+
+.dpf__confirm-btn {
+  padding: 7px 20px;
+  background: $primary-color;
+  color: $white;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  cursor: pointer;
+
+  &:hover    { background-color: $primary-hover; }
+  &:focus    { outline: none; }
+  &:disabled { background-color: $disabled-bg; cursor: not-allowed; }
+}

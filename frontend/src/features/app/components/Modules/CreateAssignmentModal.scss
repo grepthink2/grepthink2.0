@@ -1,0 +1,222 @@
+@use '@styles/index.scss' as *;
+
+// ── Backdrop ───────────────────────────────────────────────────
+.create-assignment-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-index-modal;
+  padding: $spacing-lg;
+  animation: createAssignmentFadeIn 0.2s ease-out;
+
+  &.closing {
+    animation: createAssignmentFadeOut 0.2s ease-out;
+  }
+}
+
+@keyframes createAssignmentFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes createAssignmentFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+// ── Modal shell ────────────────────────────────────────────────
+.create-assignment-modal {
+  background-color: #eeeeee;
+  border-radius: $border-radius-md;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  animation: createAssignmentSlideIn 0.2s ease-out;
+
+  &.closing {
+    animation: createAssignmentSlideOut 0.2s ease-out;
+  }
+}
+
+@keyframes createAssignmentSlideIn {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes createAssignmentSlideOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-16px); }
+}
+
+// ── Header ─────────────────────────────────────────────────────
+.create-assignment-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg $spacing-xl;
+  background-color: #eeeeee;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.create-assignment-modal__title {
+  font-size: $font-size-header;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $text-primary;
+  margin: 0;
+}
+
+.create-assignment-modal__close-button {
+  background: none;
+  border: none;
+  color: $text-primary;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $border-radius-sm;
+
+  &:hover { background-color: rgba(0, 0, 0, 0.05); }
+  &:focus { outline: none; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+}
+
+// ── Content ────────────────────────────────────────────────────
+.create-assignment-modal__content {
+  padding: $spacing-xl;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.create-assignment-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.create-assignment-modal__label {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $text-primary;
+}
+
+.create-assignment-modal__sublabel {
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  color: $text-secondary;
+}
+
+// ── Template button ────────────────────────────────────────────
+.create-assignment-modal__template-buttons {
+  display: flex;
+  gap: $spacing-md;
+}
+
+.create-assignment-modal__template-button {
+  flex: 1;
+  min-width: 140px;
+  padding: 12px 16px;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  color: $text-primary;
+  cursor: default;
+
+  &.active {
+    background-color: $primary-color;
+    border-color: $primary-color;
+    color: $white;
+  }
+}
+
+// ── Details section ────────────────────────────────────────────
+.create-assignment-modal__details {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.create-assignment-modal__input-group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.create-assignment-modal__input {
+  width: 100%;
+  padding: 12px 16px;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-family: $primary-font;
+  color: $text-primary;
+  box-sizing: border-box;
+
+  &::placeholder { color: $text-secondary; }
+  &:focus { outline: none; border-color: $accent-color; }
+}
+
+// ── Actions ────────────────────────────────────────────────────
+.create-assignment-modal__actions {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+  justify-content: flex-end;
+}
+
+.create-assignment-modal__cancel-button {
+  padding: 14px 24px;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-family: $primary-font;
+  color: $text-primary;
+  cursor: pointer;
+
+  &:hover { background-color: $background; }
+  &:focus { outline: none; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+}
+
+.create-assignment-modal__submit-button {
+  padding: 14px 24px;
+  background-color: $primary-color;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $white;
+  cursor: pointer;
+
+  &:hover { background-color: $primary-hover; }
+  &:focus { outline: none; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  &:disabled { background-color: $disabled-bg; cursor: not-allowed; }
+}
+
+.create-assignment-modal__error {
+  padding: 12px;
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: $border-radius-sm;
+  color: #c33;
+  font-size: $font-size-sm;
+}
+
+// Date picker styles live in DatePickerField.scss (shared component)

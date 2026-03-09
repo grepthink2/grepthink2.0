@@ -1,0 +1,304 @@
+@use '@styles/index.scss' as *;
+
+.test-projects-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: $spacing-xl $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.test-projects-page__hero {
+  background: linear-gradient(135deg, $primary-color, $accent-color);
+  color: $white;
+  border-radius: $border-radius-lg;
+  padding: $spacing-xl;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.test-projects-page__title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.test-projects-page__subtitle {
+  margin: $spacing-sm 0 0;
+  font-size: $font-size-base;
+  opacity: 0.95;
+}
+
+.test-projects-page__card {
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  padding: $spacing-lg;
+}
+
+.test-projects-page__section-title {
+  margin: 0 0 $spacing-md;
+  font-size: 1.2rem;
+  color: $text-primary;
+}
+
+.test-projects-page__label {
+  display: block;
+  color: $text-secondary;
+  font-size: $font-size-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.test-projects-page__control-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: $spacing-sm;
+}
+
+.test-projects-page select,
+.test-projects-page input,
+.test-projects-page textarea {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  color: $white;
+  font-size: $font-size-base;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba(1, 129, 86, 0.15);
+  }
+}
+
+.test-projects-page button {
+  border: 1px solid $primary-color;
+  background: $primary-color;
+  color: $white;
+  border-radius: $border-radius-sm;
+  padding: 0.65rem 1rem;
+  font-size: $font-size-base;
+  font-weight: 600;
+  cursor: pointer;
+  transition: $transition-fast;
+
+  &:hover:not(:disabled) {
+    background: $primary-hover;
+    border-color: $primary-hover;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.test-projects-page__form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.test-projects-page__status {
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  border: 1px solid transparent;
+
+  &--error {
+    background: #ffebee;
+    color: #b71c1c;
+    border-color: #ffcdd2;
+  }
+
+  &--success {
+    background: #e8f5e9;
+    color: #1b5e20;
+    border-color: #c8e6c9;
+  }
+}
+
+.test-projects-page__list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: $spacing-md;
+}
+
+.test-projects-page__list li {
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  padding: $spacing-md;
+  background: $background;
+}
+
+.test-projects-page__project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-xs;
+}
+
+.test-projects-page__project-name {
+  font-weight: 700;
+  color: $text-primary;
+}
+
+.test-projects-page__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: $accent-color;
+  color: $white;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.test-projects-page__project-meta {
+  color: $text-secondary;
+  font-size: $font-size-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.test-projects-page__actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+}
+
+.test-projects-page__join-requests {
+  margin-top: $spacing-sm;
+  border-top: 1px solid $border-color;
+  padding-top: $spacing-sm;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: $spacing-sm;
+  }
+
+  li {
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $white;
+    padding: $spacing-sm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+}
+
+.test-projects-page__request-actions {
+  display: flex;
+  gap: $spacing-xs;
+}
+
+.test-projects-page__tsr {
+  margin-top: $spacing-md;
+  border-top: 1px solid $border-color;
+  padding-top: $spacing-md;
+  display: grid;
+  gap: $spacing-sm;
+}
+
+.test-projects-page__subheading {
+  margin: 0;
+  color: $text-primary;
+  font-size: $font-size-base;
+}
+
+.test-projects-page__hint {
+  margin: 0;
+  color: $text-secondary;
+  font-size: $font-size-sm;
+}
+
+.test-projects-page__team-builder {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: $spacing-sm;
+  align-items: end;
+}
+
+.test-projects-page__members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.test-projects-page__member-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(1, 129, 86, 0.12);
+  color: $primary-color;
+  font-size: $font-size-sm;
+  font-weight: 600;
+}
+
+.test-projects-page__tsr-form {
+  display: grid;
+  gap: $spacing-sm;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  padding: $spacing-sm;
+  background: $white;
+}
+
+.test-projects-page__tsr-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 180px;
+  gap: $spacing-sm;
+}
+
+.test-projects-page__tsr-history {
+  border-top: 1px solid $border-color;
+  padding-top: $spacing-sm;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: $spacing-sm;
+  }
+
+  li {
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $background;
+    padding: $spacing-sm;
+  }
+
+  p {
+    margin: $spacing-xs 0 0;
+  }
+}
+
+.test-projects-page__tsr-meta {
+  color: $text-primary;
+}
+
+@media (max-width: 840px) {
+  .test-projects-page__control-row {
+    grid-template-columns: 1fr;
+  }
+
+  .test-projects-page__team-builder,
+  .test-projects-page__tsr-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,80 @@
+@use '@styles/index.scss' as *;
+
+.tsrs-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $background;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  padding: 10px $spacing-lg;
+  gap: 0;
+}
+
+.tsrs-stepper__connector {
+  flex: 1;
+  max-width: 80px;
+  height: 1px;
+  background-color: $border-color;
+  margin: 0 $spacing-xs;
+  transition: background-color $transition-fast;
+
+  &--complete {
+    background-color: $primary-color;
+  }
+}
+
+.tsrs-stepper__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: $primary-font;
+
+  &--active {
+    .tsrs-stepper__label {
+      color: $primary-color;
+      font-weight: $font-weight-semibold;
+    }
+  }
+}
+
+.tsrs-stepper__icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: $white;
+  color: $text-tertiary;
+  transition: background-color $transition-fast, color $transition-fast;
+
+  &--active {
+    background-color: $primary-color;
+    color: $white;
+  }
+
+  &--completed {
+    background-color: $primary-color;
+    color: $white;
+  }
+}
+
+.tsrs-stepper__label {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  color: $text-tertiary;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  transition: color $transition-fast;
+}
+
+.tsrs-stepper__step--completed .tsrs-stepper__label {
+  color: $primary-color;
+  font-weight: $font-weight-semibold;
+}

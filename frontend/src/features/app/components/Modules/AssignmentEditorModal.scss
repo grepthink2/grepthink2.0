@@ -1,0 +1,300 @@
+@use '@styles/index.scss' as *;
+
+$panel-width: 420px;
+
+// ── Backdrop ───────────────────────────────────────────────────
+.aem-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.35);
+  z-index: $z-index-modal;
+  animation: aemBackdropIn 0.25s ease-out;
+
+  &--closing {
+    animation: aemBackdropOut 0.25s ease-out forwards;
+  }
+}
+
+@keyframes aemBackdropIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes aemBackdropOut { from { opacity: 1; } to { opacity: 0; } }
+
+// ── Panel ──────────────────────────────────────────────────────
+.aem {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: $panel-width;
+  background: $white;
+  z-index: $z-index-modal + 1;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -6px 0 32px rgba(0, 0, 0, 0.12);
+  animation: aemSlideIn 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &--closing {
+    animation: aemSlideOut 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+}
+
+@keyframes aemSlideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes aemSlideOut {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
+}
+
+// ── Header ─────────────────────────────────────────────────────
+.aem__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: $spacing-lg $spacing-lg $spacing-md;
+  border-bottom: 1px solid $border-color;
+  flex-shrink: 0;
+}
+
+.aem__header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aem__title {
+  font-size: $font-size-header;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $text-primary;
+  margin: 0;
+}
+
+.aem__subtitle {
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  color: $text-secondary;
+  margin: 0;
+
+  strong { font-weight: $font-weight-semibold; color: $text-primary; }
+}
+
+.aem__close-btn {
+  background: none;
+  border: none;
+  color: $text-tertiary;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: $border-radius-sm;
+  flex-shrink: 0;
+  margin-top: 2px;
+
+  &:hover { background-color: $background; color: $text-primary; }
+  &:focus { outline: none; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+}
+
+// ── Body ───────────────────────────────────────────────────────
+.aem__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+}
+
+.aem__section {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.aem__section-label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $text-tertiary;
+  letter-spacing: 0.06em;
+}
+
+.aem__sublabel {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  color: $text-secondary;
+}
+
+// ── Text input ─────────────────────────────────────────────────
+.aem__input {
+  width: 100%;
+  padding: 11px 14px;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-family: $primary-font;
+  color: $text-primary;
+  box-sizing: border-box;
+  transition: border-color $transition-fast;
+
+  &::placeholder { color: $text-secondary; }
+  &:focus { outline: none; border-color: $primary-color; }
+}
+
+// ── Status cards ───────────────────────────────────────────────
+.aem__status-card {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  width: 100%;
+  padding: 14px 16px;
+  background: $white;
+  border: 1.5px solid $border-color;
+  border-radius: $border-radius-md;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color $transition-fast, background-color $transition-fast;
+
+  &:hover { border-color: darken(#DADADA, 12%); }
+  &:focus { outline: none; }
+
+  &--selected {
+    border-color: $primary-color;
+    background-color: rgba($primary-color, 0.04);
+
+    .aem__status-radio {
+      border-color: $primary-color;
+    }
+    .aem__status-radio-dot {
+      background-color: $primary-color;
+      transform: scale(1);
+    }
+  }
+}
+
+.aem__status-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid $border-color;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color $transition-fast;
+}
+
+.aem__status-radio-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: transparent;
+  transform: scale(0);
+  transition: background-color $transition-fast, transform $transition-fast;
+}
+
+.aem__status-card-body {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  flex: 1;
+}
+
+.aem__status-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: $border-radius-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &--draft {
+    background-color: rgba(#616161, 0.12);
+    color: #616161;
+  }
+
+  &--published {
+    background-color: rgba($primary-color, 0.12);
+    color: $primary-color;
+  }
+}
+
+.aem__status-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.aem__status-card-title {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $text-primary;
+}
+
+.aem__status-card-desc {
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  color: $text-secondary;
+  line-height: 1.4;
+}
+
+// ── Error ──────────────────────────────────────────────────────
+.aem__error {
+  padding: 12px;
+  background-color: #fee;
+  border: 1px solid #fcc;
+  border-radius: $border-radius-sm;
+  color: #c33;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+}
+
+// ── Footer ─────────────────────────────────────────────────────
+.aem__footer {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid $border-color;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+.aem__cancel-btn {
+  padding: 10px 20px;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-family: $primary-font;
+  color: $text-primary;
+  cursor: pointer;
+
+  &:hover { background-color: $background; }
+  &:focus { outline: none; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.aem__save-btn {
+  padding: 10px 20px;
+  background: $primary-color;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $white;
+  cursor: pointer;
+
+  &:hover { background-color: $primary-hover; }
+  &:focus { outline: none; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  &:disabled { background-color: $disabled-bg; cursor: not-allowed; }
+}
+
+// Date picker styles live in DatePickerField.scss (shared component)

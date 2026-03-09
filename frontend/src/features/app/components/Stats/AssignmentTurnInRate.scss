@@ -1,0 +1,112 @@
+@use '@styles/index.scss' as *;
+
+$bar-green: #018156;
+$bar-orange: #e6a817;
+
+.turn-in-card {
+  background: #eeeeee;
+  border-radius: $border-radius-md;
+  padding: $spacing-lg;
+}
+
+.turn-in-card__heading {
+  font-size: 0.9rem;
+  font-weight: $font-weight-semibold;
+  color: $text-secondary;
+  margin: 0 0 $spacing-md;
+}
+
+.turn-in-card__percentage {
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: $text-primary;
+  text-align: center;
+  margin-bottom: $spacing-md;
+  line-height: 1;
+}
+
+.turn-in-card__items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.turn-in-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: $text-secondary;
+
+  &--spaced {
+    margin-top: 10px;
+  }
+}
+
+.turn-in-item__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.turn-in-item__icon {
+  flex-shrink: 0;
+
+  &--green {
+    color: $bar-green;
+  }
+
+  &--orange {
+    color: $bar-orange;
+  }
+}
+
+.turn-in-item__count {
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.turn-in-bar {
+  height: 6px;
+  background-color: #d4d4d4;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 4px;
+
+  &--green .turn-in-bar__fill {
+    background-color: $bar-green;
+  }
+
+  &--orange .turn-in-bar__fill {
+    background-color: $bar-orange;
+  }
+}
+
+.turn-in-bar__fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width $transition-medium;
+}
+
+.turn-in-card__divider {
+  height: 1px;
+  background-color: #cccccc;
+  margin: $spacing-md 0;
+}
+
+.turn-in-card__current {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: $text-secondary;
+
+    strong {
+      color: $text-primary;
+      font-weight: $font-weight-semibold;
+    }
+  }
+}

@@ -1,0 +1,291 @@
+@use '@styles/index.scss' as *;
+
+.sidebar {
+  background-color: #018156;
+  width: 256px;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 1000;
+  font-family: $primary-font; // Use Poppins from system
+
+  &.collapsed {
+    width: 64px;
+
+    .sidebar-logo {
+      display: none;
+    }
+
+    .sidebar-item span {
+      display: none;
+    }
+
+    .control-label {
+      display: none;
+    }
+  }
+}
+
+/* Header */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  padding-bottom: 0;
+
+  .sidebar.collapsed & {
+    justify-content: center;
+    padding: 0.875rem 0.5rem;
+  }
+}
+
+.sidebar-logo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+
+  img {
+    width: 180px;
+    height: auto;
+  }
+}
+
+.collapse-button {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Class Selector */
+.class-selector {
+  position: relative;
+  margin: 0.875rem 1rem;
+}
+
+.class-selector-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #eeeeee;
+  border-radius: 8px;
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: none;
+  color: #000000;
+
+  &:hover {
+    background-color: #e0e0e0;
+  }
+
+  .rotated {
+    transform: rotate(180deg);
+    transition: transform 0.2s;
+  }
+}
+
+.class-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-align: left;
+}
+
+.class-selector-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.class-selector-empty {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.class-selector-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  &.active {
+    background-color: #e8f5e9;
+  }
+
+  &:first-child {
+    border-radius: 8px 8px 0 0;
+  }
+
+  &:last-child {
+    border-radius: 0 0 8px 8px;
+  }
+}
+
+.class-item-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #000000;
+}
+
+.class-item-code {
+  font-size: 0.75rem;
+  color: #666666;
+}
+
+/* Navigation */
+.sidebar-nav {
+  flex: 1;
+  padding: 0.375rem 0;
+  padding-top: 0;
+
+  /* Only enable scrolling for instructor role */
+  .sidebar.instructor & {
+    overflow-y: auto;
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.sidebar-section {
+  margin-bottom: 0.25rem;
+
+  .sidebar.collapsed & {
+    margin-bottom: 1rem;
+  }
+}
+
+.section-title {
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.375rem 1rem;
+  margin: 0;
+}
+
+.section-items {
+  list-style: none;
+  padding: 0 1.2rem; // Add horizontal padding to the list
+  margin: 0;
+  overflow: visible; // Allow ::before pseudo-elements to extend beyond
+
+  .sidebar.collapsed & {
+    padding: 0 0.5rem; // Reduced padding for collapsed state
+  }
+
+  li {
+    overflow: visible; // Ensure list items don't clip the ::before element
+  }
+}
+
+.sidebar-item {
+  position: relative; // For the ::before pseudo-element
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  border-radius: 8px; // Rounded corners for the button
+  white-space: nowrap;
+  overflow: visible; // Allow ::before pseudo-element to extend beyond button bounds
+
+  span {
+    min-width: 0;
+  }
+
+  .icon-svg {
+    width: 18px;
+    height: 18px;
+    filter: brightness(0) invert(1); // Make SVG white
+  }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &.active {
+    background-color: #eeeeee;
+    color: #000000;
+    font-weight: 500;
+
+    .icon-svg {
+      filter: brightness(0); // Make SVG black for active state
+    }
+
+    // Left-hand half pill indicator
+    &::before {
+      content: '';
+      position: absolute;
+      left: -1.2rem; // Offset to align with sidebar edge (matches section-items padding)
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 95%; // Height of the half pill
+      background-color: #eeeeee; // Same as button background
+      border-radius: 0 8px 8px 0; // Rounded on the right side (facing the button)
+      z-index: 1;
+    }
+  }
+
+  .sidebar.collapsed & {
+    justify-content: center;
+    padding: 0.75rem;
+    width: 100%;
+
+    &.active::before {
+      display: none; // Hide indicator in collapsed state
+    }
+  }
+}
+

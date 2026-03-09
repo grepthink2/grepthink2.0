@@ -1,0 +1,3 @@
+"""
+Class management feature module
+"""

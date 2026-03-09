@@ -1,0 +1,19 @@
+@use '@styles/colors' as colors;
+@use '@styles/fonts' as fonts;
+
+.logout-button {
+  background-color: transparent;
+  color: colors.$text-primary;
+  border: 1px solid colors.$button-secondary;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: fonts.$primary-font;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: colors.$button-secondary;
+    color: colors.$white;
+  }
+}

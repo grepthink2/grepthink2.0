@@ -1,0 +1,181 @@
+@use '@styles/index.scss' as *;
+
+.my-classes {
+  padding: 0 $spacing-md $spacing-lg;
+  max-width: 1200px;
+  margin: 0;
+}
+
+.my-classes-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 $spacing-lg;
+  height: 64px;
+  align-items: center;
+}
+
+.my-classes-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  background-color: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-base;
+  font-weight: 500;
+  color: $text-primary;
+  cursor: pointer;
+  transition: $transition-fast;
+
+  &:hover:not(:disabled) {
+    background-color: $background;
+    border-color: $accent-color;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .spinning {
+    animation: spin 0.5s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.my-classes-error {
+  padding: $spacing-sm $spacing-md;
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: $border-radius-sm;
+  color: #c62828;
+  font-size: $font-size-base;
+  margin-bottom: $spacing-md;
+}
+
+.my-classes-success {
+  padding: $spacing-sm $spacing-md;
+  background-color: #d1fae5;
+  border: 1px solid #c4e7d3;
+  border-radius: $border-radius-sm;
+  color: #0d5a2f;
+  font-size: $font-size-base;
+  font-weight: 500;
+  margin-bottom: $spacing-md;
+}
+
+.my-classes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 320px));
+  justify-content: start;
+  gap: $spacing-lg;
+  padding: 0 $spacing-lg;
+}
+
+.my-classes-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: $spacing-xxl $spacing-lg;
+  color: $text-secondary;
+
+  p {
+    margin: $spacing-sm 0;
+  }
+}
+
+.my-classes-card {
+  background-color: $white;
+  border-radius: $border-radius-md;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.my-classes-card-hero {
+  position: relative;
+  background-color: #D9DEE5;
+  padding: $spacing-xxl $spacing-xl;
+  text-align: center;
+}
+
+.my-classes-card-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: $text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.my-classes-card-subtitle {
+  font-size: 1rem;
+  color: $text-secondary;
+  font-weight: 500;
+}
+
+.my-classes-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid #f0f0f0;
+
+  &--muted {
+    background-color: #E9EFF5;
+  }
+}
+
+.my-classes-card-row-left {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.my-classes-card-row-right {
+  display: flex;
+  align-items: center;
+}
+
+.my-classes-card-label {
+  font-size: 0.85rem;
+  color: $text-secondary;
+  font-weight: 500;
+}
+
+.my-classes-card-value {
+  font-size: 0.85rem;
+  color: $text-primary;
+  font-weight: 600;
+}
+
+.my-classes-card-pill {
+  background-color: $accent-color;
+  color: $white;
+  padding: 1px 4px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+
+  &--hero {
+    position: absolute;
+    top: $spacing-md;
+    left: $spacing-md;
+    margin-left: 0;
+  }
+}
+
+.my-classes-loading {
+  padding: $spacing-xxl;
+  text-align: center;
+  color: $text-secondary;
+  font-size: 1.1rem;
+}

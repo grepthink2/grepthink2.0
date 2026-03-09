@@ -7,11 +7,13 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabaseClient';
 import './ForgotPassword.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
+  
   // State to manage form input and UI states
   const [formData, setFormData] = React.useState({
     email: ''
@@ -36,13 +38,22 @@ const ForgotPassword: React.FC = () => {
     setError('');
 
     try {
-      // TODO: Implement Supabase password reset
-      console.log('Password reset requested for:', formData.email);
-      // Placeholder for future Supabase auth implementation
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        formData.email,
+        {
+          redirectTo: `${window.location.origin}/reset-password`,
+        }
+      );
+
+      if (resetError) {
+        throw resetError;
+      }
+
       setSuccess(true);
-    } catch (err) {
+      navigate('/verify-reset-password', { state: { email: formData.email } });
+    } catch (err: unknown) {
       console.error('Password reset error:', err);
-      setError('Failed to send password reset email. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to send password reset email. Please try again.');
     } finally {
       setIsLoading(false);
     }
