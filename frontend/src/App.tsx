@@ -15,7 +15,6 @@ import Dashboard from '@features/app/pages/Dashboard';
 import CreateProject from '@features/app/pages/CreateProject';
 import MyClasses from './features/app/pages/MyClasses';
 import MyProjects from './features/app/pages/MyProjects';
-import ProjectDetails from '@/features/app/pages/ProjectDetails';
 
 function App() {
   return (
@@ -46,7 +45,6 @@ function App() {
           <Route path="create-project" element={<CreateProject />} />
           <Route path="browse-projects" element={<div>Browse Projects - Coming Soon</div>} />
           <Route path="my-project" element={<MyProjects />} />
-          <Route path="courses/:courseId/projects/:projectId" element={<ProjectDetails />} />
           <Route path="settings" element={<div>Settings - Coming Soon</div>} />
           <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
         </Route>
