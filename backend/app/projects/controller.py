@@ -198,7 +198,7 @@ def update_project(
     Update a project's fields (team_size, description, sponsor info).
 
     Who can edit:
-    - Project owner or admin (project members with elevated roles)
+    - Product owner or admin (project members with elevated roles)
     - Instructors who own the class the project belongs to
 
     At least one field must be provided.
@@ -237,7 +237,7 @@ def update_project(
                 raise HTTPException(status_code=403, detail="Not a member of this project")
             member_role = membership.data[0]['role']
             if member_role not in ('owner', 'product owner', 'admin'):
-                raise HTTPException(status_code=403, detail="Only project owners, admins, or class instructors can update the project")
+                raise HTTPException(status_code=403, detail="Only product owners, admins, or class instructors can update the project")
 
         updates: dict = {}
         if team_size is not None:
@@ -451,7 +451,7 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
 
 def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
     """
-    Accept a project join request (project owner/admin only)
+    Accept a project join request (product owner/admin only)
     
     Args:
         request_id: Join request unique identifier
@@ -480,7 +480,7 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
         if join_request['request_status'] != 'pending':
             raise HTTPException(status_code=400, detail=f"Request already {join_request['request_status']}")
         
-        # Verify the reviewer is a project owner or admin
+        # Verify the reviewer is a product owner or admin
         membership = client.table('project_members').select('role').eq(
             'project_id', join_request['project_id']
         ).eq('user_id', reviewer_id).execute()
@@ -489,8 +489,8 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
             raise HTTPException(status_code=403, detail="Not a member of this project")
         
         reviewer_role = membership.data[0]['role']
-        if reviewer_role not in ['owner', 'admin']:
-            raise HTTPException(status_code=403, detail="Only project owners and admins can accept join requests")
+        if reviewer_role not in ['product owner', 'admin']:
+            raise HTTPException(status_code=403, detail="Only product owners and admins can accept join requests")
         
         # Update the request status
         update_data = {
@@ -526,7 +526,7 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
 
 def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
     """
-    Reject a project join request (project owner/admin only)
+    Reject a project join request (product owner/admin only)
     
     Args:
         request_id: Join request unique identifier
@@ -555,7 +555,7 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
         if join_request['request_status'] != 'pending':
             raise HTTPException(status_code=400, detail=f"Request already {join_request['request_status']}")
         
-        # Verify the reviewer is a project owner or admin
+        # Verify the reviewer is a product owner or admin
         membership = client.table('project_members').select('role').eq(
             'project_id', join_request['project_id']
         ).eq('user_id', reviewer_id).execute()
@@ -565,7 +565,7 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
         
         reviewer_role = membership.data[0]['role']
         if reviewer_role not in ['owner', 'admin']:
-            raise HTTPException(status_code=403, detail="Only project owners and admins can reject join requests")
+            raise HTTPException(status_code=403, detail="Only product owners and admins can reject join requests")
         
         # Update the request status
         update_data = {
@@ -659,7 +659,7 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
     try:
         client = service_client if service_client else supabase
         
-        # Verify the reviewer is a project owner or admin
+        # Verify the reviewer is a product owner or admin
         membership = client.table('project_members').select('role').eq(
             'project_id', str(project_id)
         ).eq('user_id', reviewer_id).execute()
@@ -669,7 +669,7 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
         
         reviewer_role = membership.data[0]['role']
         if reviewer_role not in ['owner', 'admin']:
-            raise HTTPException(status_code=403, detail="Only project owners and admins can view join requests")
+            raise HTTPException(status_code=403, detail="Only product owners and admins can view join requests")
         
         # Get pending requests
         requests = client.table('project_join_requests').select(
@@ -810,7 +810,7 @@ def instructor_remove_member(project_id:UUID, requester_id:str, target_user_id:s
         # check is user is teacher of the class
         if not _is_instructor(requester_id, class_id):
             raise HTTPException(status_code=403, detail="Not the instructor of this project")
-        # check requester is project owner (role in project_members)
+        # check requester is product owner (role in project_members)
         membership = (
             client.table('project_members').select('role')
             .eq('project_id', str(project_id)).eq('user_id', str(requester_id))
@@ -838,7 +838,7 @@ def instructor_remove_member(project_id:UUID, requester_id:str, target_user_id:s
 
 def _can_assign_roles(client, requester_id: str, project_id: str, class_id: str) -> bool:
     """
-    Returns True if the requester is a project owner, product owner, admin,
+    Returns True if the requester is a product owner, admin,
     or the class instructor.
     """
     membership = (
@@ -858,7 +858,7 @@ def _assign_exclusive_role(project_id: UUID, requester_id: str, target_user_id: 
     Assign an exclusive role (e.g. 'product owner' or 'scrum master') to a project member.
     Any existing member holding that role is demoted to 'member' first.
 
-    Permission: project owner, product owner, admin, or class instructor.
+    Permission: product owner, admin, or class instructor.
     """
     try:
         client = service_client if service_client else supabase
@@ -876,7 +876,7 @@ def _assign_exclusive_role(project_id: UUID, requester_id: str, target_user_id: 
         if not _can_assign_roles(client, requester_id, str(project_id), class_id):
             raise HTTPException(
                 status_code=403,
-                detail="Only a project owner, product owner, admin, or class instructor can assign this role"
+                detail="Only a product owner, admin, or class instructor can assign this role"
             )
 
         # Verify target is a member of the project
@@ -923,7 +923,7 @@ def assign_product_owner(project_id: UUID, requester_id: str, target_user_id: st
     Assign the 'product owner' role to a project member.
     The previous product owner (if any) is demoted to 'member'.
 
-    Permission: project owner, product owner, admin, or class instructor.
+    Permission: product owner, admin, or class instructor.
     """
     return _assign_exclusive_role(project_id, requester_id, target_user_id, 'product owner')
 
@@ -933,6 +933,139 @@ def assign_scrum_master(project_id: UUID, requester_id: str, target_user_id: str
     Assign the 'scrum master' role to a project member.
     The previous scrum master (if any) is demoted to 'member'.
 
-    Permission: project owner, product owner, admin, or class instructor.
+    Permission: product owner, admin, or class instructor.
     """
     return _assign_exclusive_role(project_id, requester_id, target_user_id, 'scrum master')
+
+
+def assign_admin(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
+    """
+    Assign the 'admin' role to a project member.
+    Multiple admins are allowed; no existing admin is demoted.
+
+    Permission: product owner, admin, or class instructor.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        project_result = (
+            client.table('projects').select('class_id')
+            .eq('id', str(project_id))
+            .execute()
+        )
+        if not project_result.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+        class_id = project_result.data[0]['class_id']
+
+        if not _can_assign_roles(client, requester_id, str(project_id), class_id):
+            raise HTTPException(
+                status_code=403,
+                detail="Only a product owner, admin, or class instructor can assign this role"
+            )
+
+        target_membership = (
+            client.table('project_members').select('role')
+            .eq('project_id', str(project_id)).eq('user_id', target_user_id)
+            .execute()
+        )
+        if not target_membership.data:
+            raise HTTPException(status_code=404, detail="Target user is not a member of this project")
+
+        client.table('project_members').update({'role': 'admin'}).eq(
+            'project_id', str(project_id)
+        ).eq('user_id', target_user_id).execute()
+
+        return {
+            "message": "Assigned 'admin' successfully",
+            "project_id": str(project_id),
+            "user_id": target_user_id,
+            "role": "admin",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error assigning role 'admin': {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to assign role: {str(e)}")
+
+
+def _remove_role(project_id: UUID, requester_id: str, target_user_id: str, role: str) -> dict:
+    """
+    Demote a project member who currently holds the given role back to 'member'.
+
+    Permission: product owner, admin, or class instructor.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        project_result = (
+            client.table('projects').select('class_id')
+            .eq('id', str(project_id))
+            .execute()
+        )
+        if not project_result.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+        class_id = project_result.data[0]['class_id']
+
+        if not _can_assign_roles(client, requester_id, str(project_id), class_id):
+            raise HTTPException(
+                status_code=403,
+                detail="Only a product owner, admin, or class instructor can remove this role"
+            )
+
+        target_membership = (
+            client.table('project_members').select('role')
+            .eq('project_id', str(project_id)).eq('user_id', target_user_id)
+            .execute()
+        )
+        if not target_membership.data:
+            raise HTTPException(status_code=404, detail="Target user is not a member of this project")
+
+        current_role = target_membership.data[0].get('role')
+        if current_role != role:
+            raise HTTPException(
+                status_code=400,
+                detail=f"User does not hold the '{role}' role"
+            )
+
+        client.table('project_members').update({'role': 'member'}).eq(
+            'project_id', str(project_id)
+        ).eq('user_id', target_user_id).execute()
+
+        return {
+            "message": f"Removed '{role}' role successfully",
+            "project_id": str(project_id),
+            "user_id": target_user_id,
+            "role": "member",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error removing role '{role}': {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove role: {str(e)}")
+
+
+def remove_product_owner(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
+    """
+    Demote the product owner of a project back to 'member'.
+
+    Permission: product owner, admin, or class instructor.
+    """
+    return _remove_role(project_id, requester_id, target_user_id, 'product owner')
+
+
+def remove_scrum_master(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
+    """
+    Demote the scrum master of a project back to 'member'.
+
+    Permission: product owner, admin, or class instructor.
+    """
+    return _remove_role(project_id, requester_id, target_user_id, 'scrum master')
+
+
+def remove_admin(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
+    """
+    Demote an admin of a project back to 'member'.
+
+    Permission: product owner, admin, or class instructor.
+    """
+    return _remove_role(project_id, requester_id, target_user_id, 'admin')
