@@ -140,7 +140,12 @@ export const api = {
   },
 
   // Classes
-  createClass: async (data: { name: string; description?: string }) => {
+  createClass: async (data: {
+    name: string;
+    description?: string;
+    term: string;
+    start_date: string;
+  }) => {
     return apiRequest('/api/classes', {
       method: 'POST',
       body: JSON.stringify(data),
