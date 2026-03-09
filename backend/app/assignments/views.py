@@ -4,7 +4,11 @@ Assignment views — parameter handling and HTTP responses
 from uuid import UUID
 from fastapi import Depends, HTTPException, Query
 from app.dependencies import verify_supabase_token
-from app.assignments.models import CreateAssignmentRequest, UpdateAssignmentRequest, UpdateTSREntryRequest
+from app.assignments.models import (
+    CreateAssignmentRequest,
+    UpdateAssignmentRequest,
+    UpdateTSREntryRequest,
+)
 from app.assignments import controller
 
 
@@ -63,6 +67,20 @@ def update_tsr_entry(
         scrum_master_notes=data.scrum_master_notes,
     )
     return {"message": "TSR updated successfully", "tsr": entry}
+
+
+def get_my_tsrs(
+    assignment_id: UUID,
+    payload: dict = Depends(verify_supabase_token),
+):
+    """Return all TSR submissions the authenticated user made for this assignment."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    entries = controller.get_my_tsr_entries(
+        user_id=payload.get('sub'),
+        assignment_id=assignment_id,
+    )
+    return {"tsrs": entries}
 
 
 def get_assignments(

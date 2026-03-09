@@ -398,3 +398,78 @@ def update_tsr_entry(
     except Exception as e:
         print(f"Error updating TSR entry: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update TSR: {str(e)}")
+
+
+def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
+    """
+    Return all TSR submissions the requesting user made for a given assignment.
+
+    Each entry is in the same shape as _fetch_tsr_entries (tsr_id,
+    evaluator_id, evaluator_name, evaluatee_name, percent_contribution,
+    positive_feedback, plus optional fields).
+    """
+    try:
+        client = _client()
+
+        assignment_result = (
+            client.table('assignments')
+            .select('id, assignment_type')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        if assignment_result.data[0].get('assignment_type') != 'tsr':
+            raise HTTPException(status_code=400, detail="Assignment is not a TSR-type assignment")
+
+        tsr_result = (
+            client.table('TSRs')
+            .select(
+                'id, evaluator_id, evaluatee_id, percent_contribution, '
+                'positive_feedback, constructive_feedback, scrum_master_notes'
+            )
+            .eq('assignment_id', str(assignment_id))
+            .eq('evaluator_id', user_id)
+            .execute()
+        )
+        rows = tsr_result.data or []
+        if not rows:
+            return []
+
+        all_user_ids = list(
+            {r['evaluator_id'] for r in rows if r.get('evaluator_id')} |
+            {r['evaluatee_id'] for r in rows if r.get('evaluatee_id')}
+        )
+        profiles = (
+            client.table('profiles')
+            .select('id, name, email')
+            .in_('id', all_user_ids)
+            .execute()
+        )
+        profile_map = {p['id']: p for p in (profiles.data or [])}
+
+        entries = []
+        for row in rows:
+            evaluator_profile = profile_map.get(row['evaluator_id'], {})
+            evaluatee_profile = profile_map.get(row['evaluatee_id'], {})
+            entry = {
+                "tsr_id": row['id'],
+                "evaluator_id": row['evaluator_id'],
+                "evaluator_name": evaluator_profile.get('name') or evaluator_profile.get('email'),
+                "evaluatee_name": evaluatee_profile.get('name') or evaluatee_profile.get('email'),
+                "percent_contribution": row['percent_contribution'],
+                "positive_feedback": row['positive_feedback'],
+            }
+            if row.get('constructive_feedback'):
+                entry["constructive_feedback"] = row['constructive_feedback']
+            if row.get('scrum_master_notes'):
+                entry["scrum_master_notes"] = row['scrum_master_notes']
+            entries.append(entry)
+        return entries
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching user TSR entries: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch TSR entries: {str(e)}")
+
+

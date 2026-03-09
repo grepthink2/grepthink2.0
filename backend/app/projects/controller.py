@@ -187,7 +187,6 @@ def update_project(
     user_id: str,
     team_size: int | None = None,
     name: str | None = None,
-    name: str | None = None,
     description: str | None = None,
     sponsor_name: str | None = None,
     sponsor_company: str | None = None,
