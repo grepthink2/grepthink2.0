@@ -144,6 +144,7 @@ const ProjectDetails: React.FC = () => {
         project={project}
         projectMembers={members}
         onMembersChange={refreshProjectAndMembers}
+        onDelete={() => navigate('/app/browse-projects')}
         sponsorName={project.sponsor_name}
         sponsorCompany={project.sponsor_company}
         sponsorEmail={project.sponsor_email}

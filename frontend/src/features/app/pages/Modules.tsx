@@ -19,7 +19,29 @@ const emptyTurnInRate: TurnInRateData = {
   dueDate: '—',
 };
 
-const emptyProjectHealth: ProjectHealthItem[] = [];
+const mockProjectHealth: ProjectHealthItem[] = [
+  {
+    id: '1',
+    name: 'ShoeShopper',
+    health: 'excellent',
+    description: 'Excellent collaboration and progress on schedule',
+    via: 'Team Status Report 1',
+  },
+  {
+    id: '2',
+    name: 'Chatcut',
+    health: 'warning',
+    description: 'Minor disagreements on tech stack decisions',
+    via: 'Team Status Report 1',
+  },
+  {
+    id: '3',
+    name: 'TaskMaster',
+    health: 'poor',
+    description: 'Significant delays and communication breakdowns',
+    via: 'Team Status Report 2',
+  },
+];
 
 function mapApiAssignment(a: ApiAssignment): Assignment {
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -129,7 +151,7 @@ const Modules: React.FC = () => {
         {/* ── Right ── */}
         <div className="modules__stats">
           <AssignmentTurnInRate data={emptyTurnInRate} />
-          <ProjectHealth projects={emptyProjectHealth} />
+          <ProjectHealth projects={mockProjectHealth} />
         </div>
       </div>
 
