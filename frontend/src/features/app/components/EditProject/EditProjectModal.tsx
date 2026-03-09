@@ -127,13 +127,18 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
     try {
       const projectId = project.id;
 
-      // 1. Update description / team size if changed
+      // 1. Update name / description / team size if any changed.
+      // Always send all three together so the backend's non-null guard is satisfied
+      // even when only the name is being updated.
+      const trimmedName = name.trim();
+      const nameChanged = trimmedName !== project.name;
       const descriptionChanged = description !== (project.description ?? '');
       const teamSizeChanged = teamSizeNum !== project.team_size;
-      if (descriptionChanged || teamSizeChanged) {
+      if (nameChanged || descriptionChanged || teamSizeChanged) {
         await api.updateProject(projectId, {
-          ...(descriptionChanged ? { description } : {}),
-          ...(teamSizeChanged ? { team_size: teamSizeNum } : {}),
+          name: trimmedName,
+          description,
+          team_size: teamSizeNum,
         });
       }
 
@@ -169,6 +174,20 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
       onClose();
     } catch (err) {
       setApiError(err instanceof Error ? err.message : 'Failed to save changes');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setApiError(null);
+    setSaving(true);
+    try {
+      await api.deleteProject(project.id);
+      onDelete?.();
+      onClose();
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Failed to delete project');
     } finally {
       setSaving(false);
     }
@@ -291,8 +310,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={() => {
-          onDelete?.();
-          onClose();
+          setShowDeleteConfirm(false);
+          handleDelete();
         }}
         title="Delete project?"
         message={`This will permanently delete "${project.name}" and remove all members. This action cannot be undone.`}

@@ -311,11 +311,18 @@ export const api = {
     });
   },
 
-  /** Update a project's description and/or team size (PATCH /api/projects/:id). */
-  updateProject: async (projectId: string, data: { description?: string; team_size?: number }) => {
+  /** Update a project's name, description, and/or team size (PATCH /api/projects/:id). */
+  updateProject: async (projectId: string, data: { name?: string; description?: string; team_size?: number }) => {
     return apiRequest<{ message: string; project: ApiProject }>(`/api/projects/${projectId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
+    });
+  },
+
+  /** Delete a project (DELETE /api/projects/:id). */
+  deleteProject: async (projectId: string) => {
+    return apiRequest<{ message: string }>(`/api/projects/${projectId}`, {
+      method: 'DELETE',
     });
   },
 

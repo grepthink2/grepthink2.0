@@ -43,6 +43,8 @@ interface ProjectViewProps {
   projectMembers?: ApiProjectMember[];
   /** Called after member/request changes so parent can refetch. */
   onMembersChange?: () => void;
+  /** Called after the project is successfully deleted so the parent can navigate away. */
+  onDelete?: () => void;
   // Sponsor information
   // sponsorName?: string;
   // sponsorCompany?: string;
@@ -65,6 +67,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   project,
   projectMembers = [],
   onMembersChange,
+  onDelete,
   // sponsorName,
   // sponsorCompany,
   // sponsorEmail,
@@ -376,6 +379,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           project={project}
           projectMembers={projectMembers}
           onProjectChange={onMembersChange}
+          onDelete={onDelete}
         />
       )}
     </div>
