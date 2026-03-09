@@ -34,11 +34,11 @@ const CreateProject: React.FC = () => {
   const [teamSizeError, setTeamSizeError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  const [sponsorName, setSponsorName] = useState('');
-  const [sponsorCompany, setSponsorCompany] = useState('');
-  const [sponsorEmail, setSponsorEmail] = useState('');
-  const [sponsorWebsite, setSponsorWebsite] = useState('');
-  const [sponsorDescription, setSponsorDescription] = useState('');
+  // const [sponsorName, setSponsorName] = useState('');
+  // const [sponsorCompany, setSponsorCompany] = useState('');
+  // const [sponsorEmail, setSponsorEmail] = useState('');
+  // const [sponsorWebsite, setSponsorWebsite] = useState('');
+  // const [sponsorDescription, setSponsorDescription] = useState('');
 
   const navigate = useNavigate();
   const { selectedClass } = useClass();
@@ -171,11 +171,11 @@ const CreateProject: React.FC = () => {
         team_size: teamSizeNum,
         looking_for_roles: selectedRoles.length > 0 ? selectedRoles : undefined,
         skills: skills.length > 0 ? skills : undefined,
-        sponsor_name: sponsorName.trim() || undefined,
-        sponsor_company: sponsorCompany.trim() || undefined,
-        sponsor_email: sponsorEmail.trim() || undefined,
-        sponsor_website: sponsorWebsite.trim() || undefined,
-        sponsor_description: sponsorDescription.trim() || undefined,
+        // sponsor_name: sponsorName.trim() || undefined,
+        // sponsor_company: sponsorCompany.trim() || undefined,
+        // sponsor_email: sponsorEmail.trim() || undefined,
+        // sponsor_website: sponsorWebsite.trim() || undefined,
+        // sponsor_description: sponsorDescription.trim() || undefined,
       });
       navigate('/app/my-classes', { replace: true });
     } catch (err) {
@@ -221,11 +221,11 @@ const CreateProject: React.FC = () => {
           }
           skills={skills}
           selectedRoles={selectedRoles}
-          sponsorName={sponsorName}
-          sponsorCompany={sponsorCompany}
-          sponsorEmail={sponsorEmail}
-          sponsorWebsite={sponsorWebsite}
-          sponsorDescription={sponsorDescription}
+          // sponsorName={sponsorName}
+          // sponsorCompany={sponsorCompany}
+          // sponsorEmail={sponsorEmail}
+          // sponsorWebsite={sponsorWebsite}
+          // sponsorDescription={sponsorDescription}
         />
       ) : (
         <div className="create-project__content">
@@ -260,16 +260,16 @@ const CreateProject: React.FC = () => {
             filteredSkills={filteredSkills}
             selectedRoles={selectedRoles}
             onToggleRole={toggleRole}
-            sponsorName={sponsorName}
-            onSponsorNameChange={setSponsorName}
-            sponsorCompany={sponsorCompany}
-            onSponsorCompanyChange={setSponsorCompany}
-            sponsorEmail={sponsorEmail}
-            onSponsorEmailChange={setSponsorEmail}
-            sponsorWebsite={sponsorWebsite}
-            onSponsorWebsiteChange={setSponsorWebsite}
-            sponsorDescription={sponsorDescription}
-            onSponsorDescriptionChange={setSponsorDescription}
+            // sponsorName={sponsorName}
+            // onSponsorNameChange={setSponsorName}
+            // sponsorCompany={sponsorCompany}
+            // onSponsorCompanyChange={setSponsorCompany}
+            // sponsorEmail={sponsorEmail}
+            // onSponsorEmailChange={setSponsorEmail}
+            // sponsorWebsite={sponsorWebsite}
+            // onSponsorWebsiteChange={setSponsorWebsite}
+            // sponsorDescription={sponsorDescription}
+            // onSponsorDescriptionChange={setSponsorDescription}
           />
         </div>
       )}

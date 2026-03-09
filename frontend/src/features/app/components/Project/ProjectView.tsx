@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Building2, Globe, Mail, User } from 'lucide-react';
+import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
 import EmailIcon from '@assets/ic_outline-email.svg';
 import GithubIcon from '@assets/line-md_github.svg';
 import LinkedInIcon from '@assets/mdi_linkedin.svg';
@@ -43,11 +43,11 @@ interface ProjectViewProps {
   /** Called after member/request changes so parent can refetch. */
   onMembersChange?: () => void;
   // Sponsor information
-  sponsorName?: string;
-  sponsorCompany?: string;
-  sponsorEmail?: string;
-  sponsorWebsite?: string;
-  sponsorDescription?: string;
+  // sponsorName?: string;
+  // sponsorCompany?: string;
+  // sponsorEmail?: string;
+  // sponsorWebsite?: string;
+  // sponsorDescription?: string;
 }
 
 const ProjectView: React.FC<ProjectViewProps> = ({
@@ -64,11 +64,11 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   project,
   projectMembers = [],
   onMembersChange,
-  sponsorName,
-  sponsorCompany,
-  sponsorEmail,
-  sponsorWebsite,
-  sponsorDescription,
+  // sponsorName,
+  // sponsorCompany,
+  // sponsorEmail,
+  // sponsorWebsite,
+  // sponsorDescription,
 }) => {
   const { role } = useAuth();
   const isInstructor = role === 'instructor';
@@ -299,7 +299,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           )}
 
           {/* Sponsor Information */}
-          {(sponsorName || sponsorCompany || sponsorEmail || sponsorWebsite || sponsorDescription) && (
+          {/* {(sponsorName || sponsorCompany || sponsorEmail || sponsorWebsite || sponsorDescription) && (
             <div className="project-view__section">
               <h3 className="project-view__section-title">Sponsor Information</h3>
               <div className="project-view__sponsor-card">
@@ -338,7 +338,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 )}
               </div>
             </div>
-          )}
+          )} */}
         </div>
       </div>
 
