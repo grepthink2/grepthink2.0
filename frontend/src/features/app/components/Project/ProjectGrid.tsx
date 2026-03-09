@@ -41,7 +41,7 @@ const ProjectGrid: React.FC<ProjectGridProps> = ({ projects }) => (
               <span>{project.member_count != null ? project.member_count : '~'}/{project.team_size} members</span>
             </div>
             <span className="project-grid__see-all">
-              See All <ArrowRight size={16} />
+              View <ArrowRight size={16} />
             </span>
           </div>
         </div>
