@@ -77,7 +77,8 @@ def create_project(
     """
     Create a new project within a class.
 
-    Only instructors (teachers) who own the class are allowed to create projects.
+    Instructors who own the class may create projects with full sponsor information.
+    Enrolled students may also create projects, but sponsor fields are excluded.
 
     Args:
         class_id: Class unique identifier
@@ -87,17 +88,17 @@ def create_project(
         team_size: Maximum team size
         looking_for_roles: Optional list of role names (stored as JSONB)
         skills: Optional list of skill names (stored as JSONB)
-        sponsor_name: Optional sponsor contact name
-        sponsor_company: Optional sponsor company/organization
-        sponsor_email: Optional sponsor email
-        sponsor_website: Optional sponsor website URL
-        sponsor_description: Optional description of the sponsor
+        sponsor_name: Optional sponsor contact name (instructor only)
+        sponsor_company: Optional sponsor company/organization (instructor only)
+        sponsor_email: Optional sponsor email (instructor only)
+        sponsor_website: Optional sponsor website URL (instructor only)
+        sponsor_description: Optional description of the sponsor (instructor only)
 
     Returns:
         Dictionary containing project data
 
     Raises:
-        HTTPException: If class not found, user not instructor, or database error occurs
+        HTTPException: If class not found, user lacks permission, or database error occurs
     """
     try:
         client = service_client if service_client else supabase
@@ -107,18 +108,30 @@ def create_project(
         if not class_result.data or len(class_result.data) == 0:
             raise HTTPException(status_code=404, detail="Class not found")
 
-        # Enforce teacher-only project creation
         class_row = class_result.data[0]
         profile = client.table('profiles').select('role').eq('id', user_id).execute()
         user_role = profile.data[0].get('role') if profile.data else None
-        if user_role != 'instructor' or class_row.get('created_by') != user_id:
-            raise HTTPException(
-                status_code=403,
-                detail="Only the class instructor can create projects"
-            )
 
-        # Create the project (lists sent as JSON to DB for JSONB columns)
-        # num_members = 0 because instructors create/manage projects but are not team members
+        is_instructor = user_role == 'instructor' and class_row.get('created_by') == user_id
+
+        if not is_instructor:
+            if user_role != 'student':
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only the class instructor or enrolled students can create projects"
+                )
+            # Verify the student is enrolled in the class
+            enrollment = (
+                client.table('class_enrollments').select('id')
+                .eq('class_id', str(class_id)).eq('user_id', user_id)
+                .execute()
+            )
+            if not enrollment.data:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You must be enrolled in the class to create a project"
+                )
+
         project_data = {
             "class_id": str(class_id),
             "name": name,
@@ -132,26 +145,25 @@ def create_project(
         if skills is not None:
             project_data["skills"] = skills
 
-        # Sponsor fields
-        if sponsor_name is not None:
-            project_data["sponsor_name"] = sponsor_name
-        if sponsor_company is not None:
-            project_data["sponsor_company"] = sponsor_company
-        if sponsor_email is not None:
-            project_data["sponsor_email"] = sponsor_email
-        if sponsor_website is not None:
-            project_data["sponsor_website"] = sponsor_website
-        if sponsor_description is not None:
-            project_data["sponsor_description"] = sponsor_description
+        # Sponsor fields are only applied for instructors
+        if is_instructor:
+            if sponsor_name is not None:
+                project_data["sponsor_name"] = sponsor_name
+            if sponsor_company is not None:
+                project_data["sponsor_company"] = sponsor_company
+            if sponsor_email is not None:
+                project_data["sponsor_email"] = sponsor_email
+            if sponsor_website is not None:
+                project_data["sponsor_website"] = sponsor_website
+            if sponsor_description is not None:
+                project_data["sponsor_description"] = sponsor_description
 
         result = client.table('projects').insert(project_data).execute()
-        
+
         if not result.data or len(result.data) == 0:
             raise HTTPException(status_code=500, detail="Failed to create project")
-        
-        project = result.data[0]
 
-        return project
+        return result.data[0]
     except HTTPException:
         raise
     except Exception as e:
