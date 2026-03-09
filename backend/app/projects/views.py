@@ -94,6 +94,13 @@ def get_project(project_id: UUID, payload: dict = Depends(verify_supabase_token)
     return {"project": project}
 
 
+def delete_project(project_id: UUID, payload: dict = Depends(verify_supabase_token)):
+    """Delete a project (product owner, admin, or class instructor only)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return controller.delete_project(project_id, payload.get('sub'))
+
+
 def update_project(project_id: UUID, data: UpdateProjectRequest, payload: dict = Depends(verify_supabase_token)):
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
