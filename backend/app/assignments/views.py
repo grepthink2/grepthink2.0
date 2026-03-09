@@ -83,6 +83,22 @@ def get_my_tsrs(
     return {"tsrs": entries}
 
 
+def get_tsrs_about_user(
+    assignment_id: UUID,
+    evaluatee_id: UUID,
+    payload: dict = Depends(verify_supabase_token),
+):
+    """Return all TSR responses about a specific user for this assignment (instructor only)."""
+    if not payload:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    entries = controller.get_tsr_responses_about_user(
+        user_id=payload.get('sub'),
+        assignment_id=assignment_id,
+        evaluatee_id=evaluatee_id,
+    )
+    return {"tsrs": entries}
+
+
 def get_assignments(
     class_id: UUID = Query(..., description="Class ID to fetch assignments for"),
     payload: dict = Depends(verify_supabase_token),
