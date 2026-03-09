@@ -5,6 +5,14 @@ import './TeamFeedbackTab.scss';
 
 type FieldKey = `${string}-contribution` | `${string}-improvement`;
 
+function formatMemberRole(role: string): string {
+  const normalized = role.trim().toLowerCase();
+  if (normalized === 'product owner') return 'Product Owner';
+  if (normalized === 'scrum master') return 'Scrum Master';
+  if (normalized === 'member') return 'Member';
+  return role;
+}
+
 export interface TeamFeedbackTabHandle {
   /** Returns true if all fields are valid (caller may navigate). If invalid, shows errors, scrolls to first, returns false. */
   validateForNavigation: () => boolean;
@@ -121,7 +129,7 @@ const TeamFeedbackTab = forwardRef<TeamFeedbackTabHandle, TeamFeedbackTabProps>(
                         <span className="team-feedback-tab__you-label"> (You)</span>
                       )}
                     </div>
-                    <div className="team-feedback-tab__member-role">{member.role}</div>
+                    <div className="team-feedback-tab__member-role">{formatMemberRole(member.role)}</div>
                   </div>
                 </div>
 
