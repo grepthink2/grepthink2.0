@@ -16,6 +16,8 @@ router.post('/reject-request')(views.reject_request)
 router.get('/{project_id}/members')(views.get_project_members)
 router.post('/{project_id}/members')(views.add_project_member)
 router.delete('/{project_id}/members/{user_id}')(views.remove_project_member)
+router.post('/{project_id}/assign-product-owner')(views.assign_product_owner)
+router.post('/{project_id}/assign-scrum-master')(views.assign_scrum_master)
 router.get('/{project_id}/join-requests')(views.get_join_requests)
 
 # ---- Test-only route (still enforces teacher-only create rules) ----

@@ -49,3 +49,8 @@ class ManageProjectMemberRequest(BaseModel):
     user_id: UUID
     role: Optional[str] = "member"
 
+
+class AssignRoleRequest(BaseModel):
+    """Request model for assigning product owner or scrum master to a project member."""
+    user_id: UUID
+
