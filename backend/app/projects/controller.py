@@ -1044,15 +1044,6 @@ def _remove_role(project_id: UUID, requester_id: str, target_user_id: str, role:
         raise HTTPException(status_code=500, detail=f"Failed to remove role: {str(e)}")
 
 
-def remove_product_owner(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
-    """
-    Demote the product owner of a project back to 'member'.
-
-    Permission: product owner, admin, or class instructor.
-    """
-    return _remove_role(project_id, requester_id, target_user_id, 'product owner')
-
-
 def remove_scrum_master(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
     """
     Demote the scrum master of a project back to 'member'.
