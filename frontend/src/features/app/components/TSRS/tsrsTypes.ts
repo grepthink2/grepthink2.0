@@ -11,6 +11,7 @@ export interface TsrsAssignment {
   name: string;
   dueDate: string;
   projectName: string;
+  projectId: string;
 }
 
 export type TsrsTab = 'contributions' | 'team_feedback' | 'scrum_master';

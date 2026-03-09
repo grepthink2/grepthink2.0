@@ -58,22 +58,30 @@ const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit }) 
             </thead>
             <tbody>
               {assignments.map((assignment) => {
-                const pct = Math.round((assignment.submitted / assignment.total) * 100);
+                const pct = assignment.total > 0
+                  ? Math.round((assignment.submitted / assignment.total) * 100)
+                  : 0;
                 return (
                   <tr key={assignment.id}>
                     <td className="assignment-list__td-title">{assignment.title}</td>
                     <td className="assignment-list__td-date">{assignment.dueDate}</td>
                     <td className="assignment-list__td-submissions">
-                      <span className="submissions__label">
-                        {assignment.submitted}/{assignment.total}{' '}
-                        <span className="submissions__pct">({pct}%)</span>
-                      </span>
-                      <div className="submissions__bar">
-                        <div
-                          className="submissions__bar-fill"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
+                      {assignment.total > 0 ? (
+                        <>
+                          <span className="submissions__label">
+                            {assignment.submitted}/{assignment.total}{' '}
+                            <span className="submissions__pct">({pct}%)</span>
+                          </span>
+                          <div className="submissions__bar">
+                            <div
+                              className="submissions__bar-fill"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <span className="submissions__label">—</span>
+                      )}
                     </td>
                     <td className="assignment-list__td-status">
                       <span className={`status-badge status-badge--${assignment.status}`}>

@@ -83,6 +83,7 @@ export interface CreateTsrPayload {
 }
 
 export interface ApiTSR {
+  id?: string;
   evaluator_id?: string;
   evaluatee_id?: string;
   percent_contribution: number;
@@ -90,6 +91,36 @@ export interface ApiTSR {
   constructive_feedback: string;
   scrum_master_notes?: string;
   email?: string;
+  assignment_id?: string;
+}
+
+export interface ApiAssignment {
+  id: string;
+  /** Backend uses capital T for this column */
+  Title: string;
+  open_date: string;
+  close_date: string;
+  status: 'draft' | 'publish';
+  class_id: string;
+  assignment_type?: string;
+  created_at?: string;
+}
+
+export interface CreateAssignmentPayload {
+  class_id: string;
+  title: string;
+  open_date: string;
+  close_date: string;
+  status?: 'draft' | 'publish';
+  assignment_type?: string;
+}
+
+export interface UpdateAssignmentPayload {
+  title?: string;
+  open_date?: string;
+  close_date?: string;
+  status?: 'draft' | 'publish';
+  assignment_type?: string;
 }
 
 /**
@@ -277,6 +308,27 @@ export const api = {
   removeProjectMember: async (projectId: string, userId: string) => {
     return apiRequest<{ message: string }>(`/api/projects/${projectId}/members/${userId}`, {
       method: 'DELETE',
+    });
+  },
+
+  /** Get all assignments for a class (GET /api/assignments?class_id=...) */
+  getAssignments: async (classId: string) => {
+    return apiRequest<{ assignments: ApiAssignment[] }>(`/api/assignments?class_id=${classId}`);
+  },
+
+  /** Create an assignment (instructor only — POST /api/assignments) */
+  createAssignment: async (data: CreateAssignmentPayload) => {
+    return apiRequest<{ message: string; assignment: ApiAssignment }>('/api/assignments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /** Edit an assignment (instructor only — PATCH /api/assignments/:id) */
+  updateAssignment: async (assignmentId: string, data: UpdateAssignmentPayload) => {
+    return apiRequest<{ message: string; assignment: ApiAssignment }>(`/api/assignments/${assignmentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     });
   },
 };
