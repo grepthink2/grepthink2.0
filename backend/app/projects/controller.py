@@ -187,6 +187,7 @@ def update_project(
     user_id: str,
     team_size: int | None = None,
     name: str | None = None,
+    name: str | None = None,
     description: str | None = None,
     sponsor_name: str | None = None,
     sponsor_company: str | None = None,
@@ -244,6 +245,8 @@ def update_project(
             updates['team_size'] = team_size
         if name is not None:
             updates['name'] = name
+        if name is not None:
+            updates['name'] = name
         if description is not None:
             updates['description'] = description
         if sponsor_name is not None:
@@ -267,6 +270,55 @@ def update_project(
         print(f"Error updating project: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update project: {str(e)}")
 
+
+def delete_project(project_id: UUID, user_id: str) -> dict:
+    """
+    Delete a project.
+
+    Who can delete:
+    - Product owner or admin (project members with elevated roles)
+    - The class instructor
+
+    Raises:
+        HTTPException: 404 if project not found, 403 if user lacks permission.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        project_result = (
+            client.table('projects').select('id, class_id')
+            .eq('id', str(project_id))
+            .execute()
+        )
+        if not project_result.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        class_id = project_result.data[0]['class_id']
+
+        is_instructor = _is_instructor(user_id, class_id)
+        if not is_instructor:
+            membership = (
+                client.table('project_members').select('role')
+                .eq('project_id', str(project_id)).eq('user_id', user_id)
+                .execute()
+            )
+            if not membership.data:
+                raise HTTPException(status_code=403, detail="Not a member of this project")
+            member_role = membership.data[0]['role']
+            if member_role not in ('product owner', 'admin'):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only product owners, admins, or the class instructor can delete this project"
+                )
+
+        client.table('projects').delete().eq('id', str(project_id)).execute()
+
+        return {"message": "Project deleted successfully", "project_id": str(project_id)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting project: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete project: {str(e)}")
 
 
 def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
