@@ -92,6 +92,7 @@ export interface ApiTSR {
   scrum_master_notes?: string;
   email?: string;
   assignment_id?: string;
+  created_at?: string;
 }
 
 export interface ApiAssignment {
