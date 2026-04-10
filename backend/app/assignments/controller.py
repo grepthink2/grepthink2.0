@@ -2,10 +2,13 @@
 Assignment business logic
 """
 import datetime
+import logging
 from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
+
+logger = logging.getLogger(__name__)
 
 
 def _client():
@@ -70,12 +73,19 @@ def create_assignment(
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to create assignment")
 
+        logger.info(
+            "Assignment created | assignment_id=%s class_id=%s title=%r type=%s created_by=%s",
+            result.data[0].get('id'), class_id, title, assignment_type, user_id,
+        )
         return result.data[0]
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error creating assignment: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create assignment: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error creating assignment | class_id=%s title=%r user_id=%s",
+            class_id, title, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to create assignment")
 
 
 def _fetch_tsr_entries(client, assignment_id: str) -> list:
@@ -208,12 +218,20 @@ def update_assignment(
         if effective_type == 'tsr':
             assignment['tsrs'] = _fetch_tsr_entries(client, str(assignment_id))
 
+        if updates:
+            logger.info(
+                "Assignment updated | assignment_id=%s user_id=%s fields=%s",
+                assignment_id, user_id, list(updates.keys()),
+            )
         return assignment
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error updating assignment: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update assignment: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error updating assignment | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to update assignment")
 
 
 def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
@@ -270,9 +288,12 @@ def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
         return result.data or []
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching assignments: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch assignments: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching assignments | class_id=%s user_id=%s",
+            class_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch assignments")
 
 
 def update_tsr_entry(
@@ -392,12 +413,19 @@ def update_tsr_entry(
         if row.get('scrum_master_notes'):
             entry["scrum_master_notes"] = row['scrum_master_notes']
 
+        logger.info(
+            "TSR entry updated | tsr_id=%s assignment_id=%s user_id=%s fields=%s",
+            tsr_id, assignment_id, user_id, list(updates.keys()),
+        )
         return entry
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error updating TSR entry: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update TSR: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error updating TSR entry | tsr_id=%s assignment_id=%s user_id=%s",
+            tsr_id, assignment_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to update TSR")
 
 
 def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
@@ -468,9 +496,12 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
         return entries
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching user TSR entries: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch TSR entries: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching user TSR entries | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch TSR entries")
 
 
 def get_tsr_responses_about_user(
@@ -550,8 +581,11 @@ def get_tsr_responses_about_user(
         return entries
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching TSR responses about user: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch TSR responses: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching TSR responses about user | assignment_id=%s evaluatee=%s requester=%s",
+            assignment_id, evaluatee_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch TSR responses")
 
 

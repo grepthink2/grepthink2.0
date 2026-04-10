@@ -1,9 +1,12 @@
 """
 Application configuration and environment variables
 """
+import logging
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Load .env from project root
 env_path = Path(__file__).resolve().parent.parent.parent / '.env'
@@ -38,7 +41,10 @@ class Settings:
         if not cls.SUPABASE_KEY:
             raise ValueError("SUPABASE_KEY must be set in .env file")
         if not cls.SUPABASE_JWT_SECRET:
-            print("WARNING: SUPABASE_JWT_SECRET not set in .env. JWT verification will fail.")
+            # WARN: HS256 JWTs won't verify without this. RS256 still works via JWKS.
+            logger.warning(
+                "SUPABASE_JWT_SECRET not set in .env — HS256 JWT verification will fail"
+            )
 
 
 # Validate settings on import

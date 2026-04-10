@@ -1,8 +1,16 @@
 """
 FastAPI application initialization and configuration
 """
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Configure logging *before* importing anything that creates module-level loggers
+# so child loggers inherit the configured handlers.
+from app.logging_config import configure_logging
+configure_logging()
+
 from app.config import settings
 from app.health.url import router as health_router
 from app.auth.url import router as auth_router
@@ -11,12 +19,16 @@ from app.projects.url import router as projects_router
 from app.assignments.url import router as assignments_router
 from app.tsr.url import router as tsr_router
 
+logger = logging.getLogger(__name__)
+
 # Initialize FastAPI app
 app = FastAPI(
     title="GrepThink 2.0 API",
     description="Backend API for GrepThink 2.0",
     version="2.0.0"
 )
+
+logger.info("FastAPI app initialized | title=%s version=%s", app.title, app.version)
 
 # Configure CORS middleware
 app.add_middleware(

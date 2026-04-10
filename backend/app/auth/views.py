@@ -1,11 +1,15 @@
 """
 Auth views — parameter handling and responses
 """
+import logging
+
 from fastapi import HTTPException, Request, Depends
 from app.dependencies import verify_supabase_token
 from app.auth.models import SignupRequest
 from app.auth.controller import get_user_role
 from app.database.client import service_client, get_authenticated_client
+
+logger = logging.getLogger(__name__)
 
 
 def test_auth(payload: dict = Depends(verify_supabase_token)):
@@ -38,38 +42,68 @@ def create_user(request: Request, data: SignupRequest, payload: dict = Depends(v
     user_type = data.userType
 
     if payload.get('sub') != user_id:
+        logger.warning(
+            "create_user: token/body user_id mismatch | token_sub=%s body_user_id=%s email=%s",
+            payload.get('sub'), user_id, email,
+        )
         raise HTTPException(status_code=403, detail="User ID mismatch between Token and Body")
 
-    print(f"Creating DB record for: {email} (ID: {user_id}), type: {user_type}")
+    logger.info(
+        "Creating profile record | user_id=%s email=%s role=%s", user_id, email, user_type
+    )
 
     try:
         user_data = {"id": user_id, "email": email, "role": user_type}
 
         if service_client:
             try:
-                print(f"Attempting to create user record using Service Role Client for {email}")
+                logger.debug(
+                    "create_user: upserting profile via service role client | email=%s", email
+                )
                 service_client.table('profiles').upsert(user_data, on_conflict="id").execute()
-                print(f"Created user record for {email} (via Service Role)")
+                logger.info(
+                    "Profile upserted via service role | user_id=%s email=%s", user_id, email
+                )
                 return {"message": "User record created successfully.", "email": email, "role": user_type}
-            except Exception as e:
-                print(f"Service Role insert failed: {e}")
+            except Exception:
+                # WARN: Service-role upsert failed — falling back to RLS path.
+                # If you see this frequently, your service key or network to Supabase is bad.
+                logger.warning(
+                    "create_user: service-role upsert failed, falling back to authenticated client | email=%s",
+                    email, exc_info=True,
+                )
 
-        token = request.headers.get("Authorization").split(" ")[1]
+        auth_header = request.headers.get("Authorization") or ""
+        parts = auth_header.split(" ")
+        if len(parts) != 2:
+            logger.warning("create_user: missing/malformed auth header on fallback path | email=%s", email)
+            raise HTTPException(status_code=401, detail="Missing authentication token")
+        token = parts[1]
         auth_client = get_authenticated_client(token)
 
         try:
-            print(f"Attempting to create user record using Authenticated Client for {email}")
+            logger.debug(
+                "create_user: upserting profile via authenticated client | email=%s", email
+            )
             auth_client.table('profiles').upsert(user_data, on_conflict="id").execute()
-            print(f"Created user record for {email} (via RLS)")
-        except Exception as e:
-            print(f"User record creation failed: {e}")
-            print("HINT: Ensure RLS policy allows INSERT for authenticated users.")
-            raise HTTPException(status_code=500, detail=f"Database Insert Failed: {str(e)}")
+            logger.info(
+                "Profile upserted via RLS client | user_id=%s email=%s", user_id, email
+            )
+        except Exception:
+            # WARN: This is almost always an RLS policy problem — profiles table
+            # likely doesn't allow INSERT for the authenticated role.
+            logger.exception(
+                "create_user: profile upsert via RLS client failed — check RLS policies on profiles | email=%s",
+                email,
+            )
+            raise HTTPException(status_code=500, detail="Database insert failed")
 
         return {"message": "User record created successfully.", "email": email, "role": user_type}
 
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception(
+            "Unexpected error in create_user | user_id=%s email=%s", user_id, email
+        )
+        raise HTTPException(status_code=500, detail="Failed to create user record")

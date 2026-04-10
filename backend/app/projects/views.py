@@ -1,6 +1,7 @@
 """
 Projects views — parameter handling and responses
 """
+import logging
 from uuid import UUID
 from typing import Optional
 from fastapi import HTTPException, Depends, Query
@@ -8,9 +9,21 @@ from app.dependencies import verify_supabase_token
 from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, ManageProjectMemberRequest, AssignRoleRequest
 from app.projects import controller
 
+logger = logging.getLogger(__name__)
+
 
 def test_create_project(data: CreateProjectRequest, payload: dict = Depends(verify_supabase_token)):
     """Test endpoint for project creation without teacher-only enforcement."""
+    # WARN: This endpoint bypasses ALL role checks. It's registered on the public
+    # router. Anyone with a valid JWT can create projects in any class.
+    # See CODE_REVIEW.md #7. Remove before production.
+    logger.warning(
+        "test_create_project called — this endpoint bypasses role checks | "
+        "user_id=%s class_id=%s name=%r",
+        payload.get('sub') if payload else None,
+        getattr(data, 'class_id', None),
+        getattr(data, 'name', None),
+    )
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
     user_id = payload.get('sub')
@@ -50,17 +63,22 @@ def test_create_project(data: CreateProjectRequest, payload: dict = Depends(veri
         result = client.table('projects').insert(project_data).execute()
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to create project")
+        logger.info(
+            "Test project created (no role check) | project_id=%s class_id=%s",
+            result.data[0].get('id'), data.class_id,
+        )
         return {"message": "Test project created (no role check)", "project": result.data[0]}
     except HTTPException:
         raise
     except Exception as e:
         err = str(e)
+        logger.exception("test_create_project failed | class_id=%s", data.class_id)
         if "sponsor_" in err and ("column" in err.lower() or "schema" in err.lower()):
             raise HTTPException(
                 status_code=500,
                 detail="Sponsor columns are missing in the projects table. Run the sponsor migration first."
             )
-        raise HTTPException(status_code=500, detail=f"Failed to create test project: {err}")
+        raise HTTPException(status_code=500, detail="Failed to create test project")
 
 
 
