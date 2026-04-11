@@ -14,10 +14,14 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({ onLogout, className = '' })
     const navigate = useNavigate();
 
     const handleLogout = async () => {
-        // Always sign out on the client
+        // signOut triggers SIGNED_OUT in onAuthStateChange, which clears
+        // the context session in this tab AND any other open tabs (via
+        // localStorage propagation). ProtectedRoute reacts automatically;
+        // we still navigate explicitly so the user lands on the landing
+        // page instead of a brief /login flash.
         await signOut();
         if (onLogout) onLogout();
-        navigate('/');
+        navigate('/', { replace: true });
     };
 
     if (!user) return null;

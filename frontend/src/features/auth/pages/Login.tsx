@@ -9,7 +9,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
-import { useAuth } from '@/lib/auth';
 import './Login.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import eyeIcon from '@assets/ph_eye.svg?url';
@@ -20,7 +19,6 @@ import arrowIcon from '@assets/Arrow.svg?url';
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signOut } = useAuth();
   const from = (location.state as { from?: string } | null)?.from ?? '/app';
   
   // State for password visibility toggle
@@ -72,13 +70,10 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Always sign out first to clear any existing sessions
-      // Pass an empty callback to prevent automatic navigation
-      await signOut();
-      
-      // Wait a bit for sign out to fully complete
-
-      // Now sign in with new credentials
+      // signInWithPassword replaces any existing session, so we don't
+      // need a pre-emptive signOut() here. (We used to call one to
+      // work around a broken cookieStorage adapter — see git log for
+      // Phase 1 of the auth refactor.)
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,

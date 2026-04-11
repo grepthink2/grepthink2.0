@@ -27,9 +27,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
+    // Supabase fires onAuthStateChange for every lifecycle transition:
+    //
+    //   INITIAL_SESSION  - first load, session restored from localStorage
+    //   SIGNED_IN        - successful sign-in
+    //   SIGNED_OUT       - explicit signOut() or token invalidated
+    //   TOKEN_REFRESHED  - silent refresh produced a new access token
+    //   USER_UPDATED     - email/password/metadata updated
+    //
+    // Because localStorage is shared across tabs, these events also
+    // propagate cross-tab: signing out in tab A triggers SIGNED_OUT in
+    // tab B on the next render tick, which in turn clears `session` and
+    // bumps ProtectedRoute to /login. We don't need a BroadcastChannel.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.debug('[auth] state change:', event, 'has session:', !!nextSession);
+      }
       setSession(nextSession ?? null);
       setLoading(false);
     });
@@ -74,14 +90,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut({ scope: 'global' });
       },
     };
-  }, [session, loading]);
-
-  useEffect(() => {
-    if (session && !loading) {
-      const userMetadata = session?.user?.user_metadata as { role?: unknown } | undefined;
-      console.log('[Auth] user_metadata.role (raw_user_meta_data.role):', userMetadata?.role, typeof userMetadata?.role);
-      console.log('[Auth] full user_metadata:', session?.user?.user_metadata);
-    }
   }, [session, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
