@@ -43,6 +43,23 @@ def create_user(
     data: SignupRequest,
     payload: dict = Depends(require_user_payload),
 ):
+    """
+    Provision the profiles row for a newly-authenticated user.
+
+    Two callers today:
+      - SignUp.tsx after an email/password signup.
+      - RoleSelection.tsx after a Google OAuth first-login chooses a role.
+
+    Security notes
+    --------------
+    - The JWT's ``sub`` must match ``userId`` in the body; otherwise a
+      caller could provision a profile for another user.
+    - This endpoint is INSERT-only. It used to ``upsert`` on conflict with
+      the user id, which meant an authenticated student could re-POST with
+      ``userType: 'instructor'`` and escalate. We now return 409 Conflict
+      when a profile already exists, so role is fixed at signup. Role
+      changes must go through an explicit admin path (not yet built).
+    """
     email = data.email
     user_id = data.userId
     user_type = data.userType
@@ -54,62 +71,67 @@ def create_user(
         )
         raise HTTPException(status_code=403, detail="User ID mismatch between Token and Body")
 
+    if user_type not in {"student", "instructor"}:
+        logger.warning(
+            "create_user: invalid user_type | user_id=%s email=%s user_type=%r",
+            user_id, email, user_type,
+        )
+        raise HTTPException(status_code=400, detail="userType must be 'student' or 'instructor'")
+
     logger.info(
         "Creating profile record | user_id=%s email=%s role=%s", user_id, email, user_type
     )
 
-    try:
-        user_data = {"id": user_id, "email": email, "role": user_type}
+    # Prefer the service-role client (bypasses RLS) so we can deterministically
+    # detect an existing row without depending on policy. Falls back to the
+    # caller's JWT-authenticated client if no service key is configured.
+    def _select_profile(client):
+        return client.table('profiles').select('id, role').eq('id', user_id).execute()
 
-        if service_client:
-            try:
-                logger.debug(
-                    "create_user: upserting profile via service role client | email=%s", email
-                )
-                service_client.table('profiles').upsert(user_data, on_conflict="id").execute()
-                logger.info(
-                    "Profile upserted via service role | user_id=%s email=%s", user_id, email
-                )
-                return {"message": "User record created successfully.", "email": email, "role": user_type}
-            except Exception:
-                # WARN: Service-role upsert failed — falling back to RLS path.
-                # If you see this frequently, your service key or network to Supabase is bad.
-                logger.warning(
-                    "create_user: service-role upsert failed, falling back to authenticated client | email=%s",
-                    email, exc_info=True,
-                )
+    def _insert_profile(client):
+        return client.table('profiles').insert(
+            {"id": user_id, "email": email, "role": user_type}
+        ).execute()
 
+    client = service_client
+    if client is None:
         auth_header = request.headers.get("Authorization") or ""
         parts = auth_header.split(" ")
         if len(parts) != 2:
-            logger.warning("create_user: missing/malformed auth header on fallback path | email=%s", email)
+            # This should never happen — require_user_payload already verified
+            # the header. Defensive check.
+            logger.warning("create_user: malformed auth header on RLS fallback | email=%s", email)
             raise HTTPException(status_code=401, detail="Missing authentication token")
-        token = parts[1]
-        auth_client = get_authenticated_client(token)
+        client = get_authenticated_client(parts[1])
 
-        try:
-            logger.debug(
-                "create_user: upserting profile via authenticated client | email=%s", email
-            )
-            auth_client.table('profiles').upsert(user_data, on_conflict="id").execute()
+    try:
+        existing = _select_profile(client)
+        if existing.data:
+            current_role = existing.data[0].get('role')
             logger.info(
-                "Profile upserted via RLS client | user_id=%s email=%s", user_id, email
+                "create_user: profile already exists | user_id=%s email=%s current_role=%s requested_role=%s",
+                user_id, email, current_role, user_type,
             )
-        except Exception:
-            # WARN: This is almost always an RLS policy problem — profiles table
-            # likely doesn't allow INSERT for the authenticated role.
-            logger.exception(
-                "create_user: profile upsert via RLS client failed — check RLS policies on profiles | email=%s",
-                email,
+            raise HTTPException(
+                status_code=409,
+                detail="Profile already exists for this user",
             )
-            raise HTTPException(status_code=500, detail="Database insert failed")
 
-        return {"message": "User record created successfully.", "email": email, "role": user_type}
-
+        _insert_profile(client)
+        logger.info("Profile created | user_id=%s email=%s role=%s", user_id, email, user_type)
+        return {
+            "message": "User record created successfully.",
+            "email": email,
+            "role": user_type,
+        }
     except HTTPException:
         raise
     except Exception:
+        # WARN: This is almost always an RLS policy problem if running on the
+        # authenticated client — profiles table likely doesn't allow INSERT
+        # for the authenticated role. On the service-role client it indicates
+        # a schema mismatch or network issue.
         logger.exception(
-            "Unexpected error in create_user | user_id=%s email=%s", user_id, email
+            "create_user: profile insert failed | user_id=%s email=%s", user_id, email,
         )
-        raise HTTPException(status_code=500, detail="Failed to create user record")
+        raise HTTPException(status_code=500, detail="Database insert failed")
