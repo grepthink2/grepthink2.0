@@ -10,6 +10,9 @@ export interface ApiClass {
   created_by: string;
   created_at: string;
   teacher_email?: string;
+  term?: string;
+  start_date?: string;
+  year?: number;
 }
 
 export interface ApiStudent {
