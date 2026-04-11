@@ -52,11 +52,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       role,
       getToken: async () => {
+        // Try the cached session first (cheap, no network).
         const { data } = await supabase.auth.getSession();
-        return data.session?.access_token ?? null;
+        if (data.session?.access_token) return data.session.access_token;
+
+        // No session in storage: could mean the access token expired
+        // between renders. Attempt one silent refresh before giving up
+        // — this closes the "user is truthy but token is null" race
+        // that Home.tsx used to surface as "Not authenticated".
+        const { data: refreshed, error } = await supabase.auth.refreshSession();
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.warn('[auth] refreshSession failed:', error.message);
+          return null;
+        }
+        return refreshed.session?.access_token ?? null;
       },
       signOut: async () => {
-        await supabase.auth.signOut();
+        // scope: 'global' invalidates the refresh token on Supabase's
+        // side so other devices/tabs also drop out of the session.
+        await supabase.auth.signOut({ scope: 'global' });
       },
     };
   }, [session, loading]);

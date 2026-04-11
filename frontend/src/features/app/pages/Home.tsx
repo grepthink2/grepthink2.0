@@ -6,36 +6,58 @@ import './Home.scss';
 
 const Home: React.FC = () => {
   const { user, isLoaded } = useUser();
-  const { getToken } = useAuth(); // Correct hook for getToken
+  const { getToken, signOut } = useAuth();
   const navigate = useNavigate();
   const [backendStatus, setBackendStatus] = React.useState<string>('Checking backend...');
 
   React.useEffect(() => {
+    let cancelled = false;
+
     const checkBackend = async () => {
-        try {
-            const token = await getToken();
+      try {
+        // getToken() now auto-refreshes a stale session internally,
+        // so a null return here means the session is genuinely gone.
+        const token = await getToken();
         if (!token) {
-          setBackendStatus('Not authenticated');
+          // Session is dead. Tear down and bounce to login. ProtectedRoute
+          // will also pick this up via onAuthStateChange, but calling
+          // signOut here guarantees storage is cleared.
+          await signOut();
           return;
         }
-            const res = await fetch('/api/test-auth', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const data = await res.json();
-            setBackendStatus(data.message || 'Backend Connected');
-        } catch (err: unknown) {
-          setBackendStatus(
-            'Backend unreachable: ' + (err instanceof Error ? err.message : 'Unknown error')
-          );
+
+        const res = await fetch('/api/test-auth', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (cancelled) return;
+
+        if (res.status === 401) {
+          // Backend rejected the token. Log out rather than show a
+          // misleading "connected" status.
+          await signOut();
+          return;
         }
-    }
-    
+
+        const data = await res.json();
+        if (!cancelled) {
+          setBackendStatus(data.message || 'Backend Connected');
+        }
+      } catch (err: unknown) {
+        if (cancelled) return;
+        setBackendStatus(
+          'Backend unreachable: ' + (err instanceof Error ? err.message : 'Unknown error')
+        );
+      }
+    };
+
     if (user) {
-        checkBackend();
+      checkBackend();
     }
-  }, [user, getToken]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, getToken, signOut]);
 
   if (!isLoaded) {
     return <div>Loading...</div>;
