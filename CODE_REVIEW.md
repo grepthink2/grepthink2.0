@@ -2,11 +2,18 @@
 
 Findings organized by severity. Each item includes file locations and a suggested fix.
 
+> **Status legend:**
+> ✅ = fixed on `pranay-kt` (see `AUTH.md` for the auth refactor that addressed #2, #3, #15, and the CORS/test-endpoint notes)
+> 🟡 = partially addressed / workaround in place
+> ⬜ = open
+
 ---
 
 ## Critical
 
-### 1. `print()` used for all error logging
+### 1. `print()` used for all error logging  ✅
+
+*(Addressed earlier in commit 46ce292 "Add structured logging backend-wide".)*
 
 Every backend controller uses `print(f"Error: {e}")` instead of Python's `logging` module. No log levels, no structured output, impossible to filter or aggregate in production.
 
@@ -16,37 +23,15 @@ Every backend controller uses `print(f"Error: {e}")` instead of Python's `loggin
 
 ---
 
-### 2. Wide-open CORS with credentials
+### 2. Wide-open CORS with credentials  ✅
 
-```python
-# backend/app/config.py:28-30
-CORS_ORIGINS: list = ["*"]
-CORS_CREDENTIALS: bool = True
-```
-
-`allow_origins=["*"]` combined with `allow_credentials=True` is rejected by browsers per the CORS spec. This means credentialed cross-origin requests silently fail. It's also a security misconfiguration.
-
-**Fix:** Set `CORS_ORIGINS` to explicit allowed origins (e.g., `["http://localhost:5173"]` for dev, the production domain for prod). Use an env var.
+*(Fixed in Auth Phase 4 — commit f950ed4. `CORS_ORIGINS` is now parsed from the env var and rejects `*` at load time. Default dev allowlist is `localhost:5173`/`127.0.0.1:5173`/`localhost:3000`. Tests in `backend/tests/test_auth_dependencies.py::TestCorsAllowlist`.)*
 
 ---
 
-### 3. Auth middleware returns `None` instead of raising 401
+### 3. Auth middleware returns `None` instead of raising 401  ✅
 
-```python
-# backend/app/dependencies.py:38-39
-if not auth_header:
-    return None
-```
-
-Every view function then repeats the same guard:
-```python
-if not payload:
-    raise HTTPException(status_code=401, detail="Authentication required")
-```
-
-This boilerplate appears in every single view function (~15 times).
-
-**Fix:** Make `verify_supabase_token` raise `HTTPException(401)` by default. For the rare endpoints that allow anonymous access, create a separate `optional_auth` dependency.
+*(Fixed in Auth Phase 2 — commit 4275c47. `verify_supabase_token` now raises 401 on missing/malformed headers. Two higher-level dependencies — `require_user` and `require_instructor` — replaced the `if not payload` boilerplate in all views. See `AUTH.md` §"Dependency layering".)*
 
 ---
 
@@ -81,14 +66,16 @@ No string length limits, no content validation, no rate limiting on any endpoint
 
 ---
 
-### 7. Test endpoint shipped in production
+### 7. Test endpoint shipped in production  🟡
+
+*(Partial — Auth Phase 2 tightened the endpoint to `require_user` so it still enforces authentication, and added a clear comment in `backend/app/projects/url.py` that it is slated for removal once the `TestProjects.tsx` pages are retired. The endpoint still bypasses instructor role checks; remove entirely once `/test-115a-projects` / `/test-115b-projects` are deleted.)*
 
 ```python
 # backend/app/projects/url.py registers:
 # POST /api/projects/test-create
 ```
 
-`test_create_project` in `backend/app/projects/views.py:12-63` bypasses all role checks. Anyone with a valid JWT can create projects in any class.
+`test_create_project` in `backend/app/projects/views.py` requires a valid JWT (since Auth Phase 2) but still bypasses the instructor role check. Anyone with a valid JWT can create projects in any class.
 
 **Fix:** Remove this endpoint entirely, or gate it behind a `DEBUG` / `TESTING` environment flag that is never set in production.
 
@@ -184,17 +171,9 @@ The "Save Draft" button in the UI calls this but does nothing.
 
 ---
 
-### 15. Debug `console.log` in production auth code
+### 15. Debug `console.log` in production auth code  ✅
 
-```typescript
-// frontend/src/lib/auth.tsx:67-68
-console.log('[Auth] user_metadata.role ...:', userMetadata?.role, ...);
-console.log('[Auth] full user_metadata:', session?.user?.user_metadata);
-```
-
-Logs auth metadata to the browser console on every auth state change.
-
-**Fix:** Remove these debug logs or gate behind a `process.env.NODE_ENV === 'development'` check.
+*(Fixed in Auth Phase 5 — commit bfaa6c5. The debug useEffect was removed; the new `onAuthStateChange` callback logs a redacted `state change` line only when `import.meta.env.DEV` is true.)*
 
 ---
 
@@ -300,3 +279,32 @@ envDir: path.resolve(__dirname, '..'),
 Loads `.env` from the parent directory. This breaks if the monorepo structure changes or if the frontend is deployed independently.
 
 **Fix:** Keep `.env` in the frontend directory or use a more robust path resolution.
+
+---
+
+## Fixed during the auth refactor but not originally listed
+
+### A1. `/api/create-user` privilege escalation  ✅
+
+*(Found and fixed in Auth Phase 3 — commit 42463c1.)*
+
+The original implementation used `upsert(on_conflict='id')`, so any already-authenticated student could re-POST to `/api/create-user` with `{ userType: 'instructor' }` and overwrite their own role. Their JWT still satisfied the token/body id match check, because they were targeting their own `sub`.
+
+**Fix shipped:**
+- Endpoint is now INSERT-only. A second POST returns `409 Conflict`.
+- Added server-side validation that `userType in {'student', 'instructor'}`.
+- Frontend `RoleSelection.tsx` checks `loginCheck()` on mount and redirects users who already have a role to `/app/home` so they never reach the role chooser a second time.
+
+Role changes are now a deliberate admin path (not yet implemented).
+
+### A2. Security headers middleware  ✅
+
+*(Added in Auth Phase 4 — commit f950ed4.)*
+
+`backend/app/middleware/security.py` now sets HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, and a minimal CSP on every response. Covered by `TestSecurityHeaders`.
+
+### A3. Automated test coverage  ✅
+
+*(Added in Auth Phase 6 — commit ebc280c.)*
+
+Before this phase the backend had zero tests. `backend/tests/test_auth_dependencies.py` now covers 17 cases across `require_user`, `require_instructor`, the CORS allowlist, and the security headers middleware. Run with `cd backend && pytest`.
