@@ -4,7 +4,7 @@ Auth views — parameter handling and responses
 import logging
 
 from fastapi import HTTPException, Request, Depends
-from app.dependencies import verify_supabase_token
+from app.dependencies import require_user, require_user_payload
 from app.auth.models import SignupRequest
 from app.auth.controller import get_user_role
 from app.database.client import service_client, get_authenticated_client
@@ -12,31 +12,37 @@ from app.database.client import service_client, get_authenticated_client
 logger = logging.getLogger(__name__)
 
 
-def test_auth(payload: dict = Depends(verify_supabase_token)):
-    if payload:
-        return {
-            "message": f"Backend connected & Authenticated. Hello {payload.get('sub')}",
-            "user_id": payload.get('sub')
-        }
-    return {"message": "Backend is reachable. No token provided."}
+def test_auth(user_id: str = Depends(require_user)):
+    """
+    Diagnostic endpoint: confirms the backend is reachable and the caller's
+    token was verified. Requires a valid bearer token — use ``GET /health``
+    for a no-auth liveness probe.
+    """
+    return {
+        "message": f"Backend connected & Authenticated. Hello {user_id}",
+        "user_id": user_id,
+    }
 
 
-def login_check(payload: dict = Depends(verify_supabase_token)):
-    if payload:
-        user_id = payload.get('sub')
-        role = get_user_role(user_id) if user_id else None
-        return {
-            "message": f"Backend connected & Authenticated. Hello {user_id}",
-            "user_id": user_id,
-            "role": role
-        }
-    return {"message": "User not authenticated."}
+def login_check(user_id: str = Depends(require_user)):
+    """
+    Returns the caller's id and profile role. Used by the frontend
+    ``/auth/callback`` route to decide whether to send a first-time user to
+    the role-selection page. ``role`` is ``None`` when no profile row exists.
+    """
+    role = get_user_role(user_id)
+    return {
+        "message": f"Backend connected & Authenticated. Hello {user_id}",
+        "user_id": user_id,
+        "role": role,
+    }
 
 
-def create_user(request: Request, data: SignupRequest, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Missing or invalid authentication token")
-
+def create_user(
+    request: Request,
+    data: SignupRequest,
+    payload: dict = Depends(require_user_payload),
+):
     email = data.email
     user_id = data.userId
     user_type = data.userType

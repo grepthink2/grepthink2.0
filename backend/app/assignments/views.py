@@ -2,8 +2,8 @@
 Assignment views — parameter handling and HTTP responses
 """
 from uuid import UUID
-from fastapi import Depends, HTTPException, Query
-from app.dependencies import verify_supabase_token
+from fastapi import Depends, Query
+from app.dependencies import require_user
 from app.assignments.models import (
     CreateAssignmentRequest,
     UpdateAssignmentRequest,
@@ -14,12 +14,10 @@ from app.assignments import controller
 
 def create_assignment(
     data: CreateAssignmentRequest,
-    payload: dict = Depends(verify_supabase_token),
+    user_id: str = Depends(require_user),
 ):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     assignment = controller.create_assignment(
-        user_id=payload.get('sub'),
+        user_id=user_id,
         class_id=data.class_id,
         title=data.title,
         open_date=data.open_date,
@@ -33,12 +31,10 @@ def create_assignment(
 def update_assignment(
     assignment_id: UUID,
     data: UpdateAssignmentRequest,
-    payload: dict = Depends(verify_supabase_token),
+    user_id: str = Depends(require_user),
 ):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     assignment = controller.update_assignment(
-        user_id=payload.get('sub'),
+        user_id=user_id,
         assignment_id=assignment_id,
         title=data.title,
         open_date=data.open_date,
@@ -53,12 +49,10 @@ def update_tsr_entry(
     assignment_id: UUID,
     tsr_id: UUID,
     data: UpdateTSREntryRequest,
-    payload: dict = Depends(verify_supabase_token),
+    user_id: str = Depends(require_user),
 ):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     entry = controller.update_tsr_entry(
-        user_id=payload.get('sub'),
+        user_id=user_id,
         assignment_id=assignment_id,
         tsr_id=tsr_id,
         percent_contribution=data.percent_contribution,
@@ -71,13 +65,11 @@ def update_tsr_entry(
 
 def get_my_tsrs(
     assignment_id: UUID,
-    payload: dict = Depends(verify_supabase_token),
+    user_id: str = Depends(require_user),
 ):
     """Return all TSR submissions the authenticated user made for this assignment."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     entries = controller.get_my_tsr_entries(
-        user_id=payload.get('sub'),
+        user_id=user_id,
         assignment_id=assignment_id,
     )
     return {"tsrs": entries}
@@ -86,13 +78,11 @@ def get_my_tsrs(
 def get_tsrs_about_user(
     assignment_id: UUID,
     evaluatee_id: UUID,
-    payload: dict = Depends(verify_supabase_token),
+    user_id: str = Depends(require_user),
 ):
     """Return all TSR responses about a specific user for this assignment (instructor only)."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     entries = controller.get_tsr_responses_about_user(
-        user_id=payload.get('sub'),
+        user_id=user_id,
         assignment_id=assignment_id,
         evaluatee_id=evaluatee_id,
     )
@@ -101,12 +91,10 @@ def get_tsrs_about_user(
 
 def get_assignments(
     class_id: UUID = Query(..., description="Class ID to fetch assignments for"),
-    payload: dict = Depends(verify_supabase_token),
+    user_id: str = Depends(require_user),
 ):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     assignments = controller.get_assignments_for_class(
-        user_id=payload.get('sub'),
+        user_id=user_id,
         class_id=class_id,
     )
     return {"assignments": assignments}
