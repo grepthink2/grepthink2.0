@@ -44,6 +44,7 @@ function App() {
             <Route path="home" element={<Home />} />
             <Route path="messages" element={<div>Messages - Coming Soon</div>} />
             <Route path="my-classes" element={<MyClasses />} />
+            <Route path="class-settings" element={<div>Class settings — Coming soon</div>} />
             <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="projects" element={<Projects />} />
