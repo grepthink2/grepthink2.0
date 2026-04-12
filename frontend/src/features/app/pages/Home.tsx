@@ -1,90 +1,56 @@
 import React from 'react';
 import { useUser, useAuth } from '@/lib/auth';
-import { useNavigate } from 'react-router-dom';
-import LogoutButton from '@features/auth/components/LogoutButton';
+import { useNavigate, Link } from 'react-router-dom';
+import { useClass } from '@/lib/classContext';
+import StudentHomeDashboard from '@features/app/components/Home/StudentHomeDashboard';
 import './Home.scss';
 
 const Home: React.FC = () => {
   const { user, isLoaded } = useUser();
-  const { getToken, signOut } = useAuth();
+  const { role } = useAuth();
   const navigate = useNavigate();
-  const [backendStatus, setBackendStatus] = React.useState<string>('Checking backend...');
-
-  React.useEffect(() => {
-    let cancelled = false;
-
-    const checkBackend = async () => {
-      try {
-        // getToken() now auto-refreshes a stale session internally,
-        // so a null return here means the session is genuinely gone.
-        const token = await getToken();
-        if (!token) {
-          // Session is dead. Tear down and bounce to login. ProtectedRoute
-          // will also pick this up via onAuthStateChange, but calling
-          // signOut here guarantees storage is cleared.
-          await signOut();
-          return;
-        }
-
-        const res = await fetch('/api/test-auth', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (cancelled) return;
-
-        if (res.status === 401) {
-          // Backend rejected the token. Log out rather than show a
-          // misleading "connected" status.
-          await signOut();
-          return;
-        }
-
-        const data = await res.json();
-        if (!cancelled) {
-          setBackendStatus(data.message || 'Backend Connected');
-        }
-      } catch (err: unknown) {
-        if (cancelled) return;
-        setBackendStatus(
-          'Backend unreachable: ' + (err instanceof Error ? err.message : 'Unknown error')
-        );
-      }
-    };
-
-    if (user) {
-      checkBackend();
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, getToken, signOut]);
+  const { selectedClass } = useClass();
 
   if (!isLoaded) {
-    return <div>Loading...</div>;
+    return <div className="home-page home-page--loading">Loading...</div>;
   }
 
   if (!user) {
     return (
-      <div className="home-page">
+      <div className="home-page home-page--guest">
         <h1>Welcome to GrepThink</h1>
         <p>Please log in or sign up to continue.</p>
-        <button onClick={() => navigate('/login')}>Login</button>
+        <button type="button" onClick={() => navigate('/login')}>
+          Login
+        </button>
       </div>
     );
   }
 
-  return (
-    <div className="home-page">
-      <h1>Welcome, {user.user_metadata?.full_name || user.email}!</h1>
-      <p>You have successfully logged in.</p>
-      
-      <div className="user-details">
-         <p><strong>User ID:</strong> {user.id}</p>
-        <p><strong>Email:</strong> {user.email}</p>
-         <p><strong>Backend Status:</strong> {backendStatus}</p>
-      </div>
+  if (role === 'student') {
+    return <StudentHomeDashboard />;
+  }
 
-      <LogoutButton />
+  const displayName = user.user_metadata?.full_name || user.email || 'there';
+
+  return (
+    <div className="home-page home-page--instructor">
+      <div className="home-page__welcome-card">
+        <h1 className="home-page__title">Welcome, {displayName}</h1>
+        <p className="home-page__lede">
+          Select a class in the sidebar to open the dashboard, or go to your classes.
+        </p>
+        <div className="home-page__actions">
+          {selectedClass && (
+            <Link className="home-page__link" to="/app/dashboard">
+              Open dashboard for {selectedClass.name}
+            </Link>
+          )}
+          <Link className="home-page__link home-page__link--secondary" to="/app/my-classes">
+            My Classes
+          </Link>
+        </div>
+      </div>
     </div>
   );
 };
