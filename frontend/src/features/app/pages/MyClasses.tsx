@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, type KeyboardEvent } from 'react';
 import { addDays, isAfter, parseISO, startOfDay } from 'date-fns';
-import { ArrowRight, Check, Copy, Pencil, PlusCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Check, Copy, GraduationCap, Pencil, PlusCircle } from 'lucide-react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import type { AppOutletContext } from '@/features/app/appOutletContext';
 import { useClass, type Class } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import CreateClassModal from '@features/app/components/Classes/CreateClassModal';
@@ -46,16 +47,17 @@ const MyClasses: React.FC = () => {
     const { classes, loading, successMessage, setSuccessMessage, setSelectedClass } = useClass();
     const { role } = useAuth();
     const navigate = useNavigate();
+    const { openJoinClassModal } = useOutletContext<AppOutletContext>();
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [courseFilter, setCourseFilter] = useState<CourseFilter>('all');
     const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
 
     const isInstructor = role === 'instructor';
 
-    const filteredClasses = useMemo(() => {
-        if (!isInstructor) return classes;
-        return classes.filter((c) => classMatchesFilter(c, courseFilter));
-    }, [classes, courseFilter, isInstructor]);
+    const filteredClasses = useMemo(
+        () => classes.filter((c) => classMatchesFilter(c, courseFilter)),
+        [classes, courseFilter],
+    );
 
     useEffect(() => {
         if (successMessage) {
@@ -106,24 +108,24 @@ const MyClasses: React.FC = () => {
                 </div>
             )}
 
-            {isInstructor && (
-                <div className="my-classes-toolbar">
-                    <div className="my-classes-toolbar__filters" role="tablist" aria-label="Filter courses">
-                        {(Object.keys(FILTER_LABELS) as CourseFilter[]).map((key) => (
-                            <button
-                                key={key}
-                                type="button"
-                                role="tab"
-                                aria-selected={courseFilter === key}
-                                className={`create-class-modal__term-button my-classes-toolbar__filter-btn${
-                                    courseFilter === key ? ' active' : ''
-                                }`}
-                                onClick={() => setCourseFilter(key)}
-                            >
-                                {FILTER_LABELS[key]}
-                            </button>
-                        ))}
-                    </div>
+            <div className="my-classes-toolbar">
+                <div className="my-classes-toolbar__filters" role="tablist" aria-label="Filter courses">
+                    {(Object.keys(FILTER_LABELS) as CourseFilter[]).map((key) => (
+                        <button
+                            key={key}
+                            type="button"
+                            role="tab"
+                            aria-selected={courseFilter === key}
+                            className={`create-class-modal__term-button my-classes-toolbar__filter-btn${
+                                courseFilter === key ? ' active' : ''
+                            }`}
+                            onClick={() => setCourseFilter(key)}
+                        >
+                            {FILTER_LABELS[key]}
+                        </button>
+                    ))}
+                </div>
+                {isInstructor ? (
                     <button
                         type="button"
                         className="add-assignment-btn projects__add-project-btn my-classes-toolbar__create-btn"
@@ -132,8 +134,17 @@ const MyClasses: React.FC = () => {
                         <PlusCircle size={16} aria-hidden />
                         Create Class
                     </button>
-                </div>
-            )}
+                ) : (
+                    <button
+                        type="button"
+                        className="add-assignment-btn projects__add-project-btn my-classes-toolbar__create-btn"
+                        onClick={() => openJoinClassModal()}
+                    >
+                        <GraduationCap size={16} aria-hidden />
+                        Join Class
+                    </button>
+                )}
+            </div>
 
             <div className="my-classes-list-scroll">
                 <div className="my-classes-list">
@@ -143,16 +154,20 @@ const MyClasses: React.FC = () => {
                             {isInstructor ? (
                                 <p>Use &quot;Create Class&quot; above or in the sidebar to add one.</p>
                             ) : (
-                                <p>Click &quot;Join Class&quot; in the sidebar to join with a course code.</p>
+                                <p>Use &quot;Join Class&quot; above or in the sidebar to join with a course code.</p>
                             )}
                         </div>
-                    ) : isInstructor && filteredClasses.length === 0 ? (
+                    ) : filteredClasses.length === 0 ? (
                         <div className="my-classes-empty">
                             <p>No {FILTER_LABELS[courseFilter].toLowerCase()} courses match this filter.</p>
-                            <p>Try another filter or create a new class.</p>
+                            {isInstructor ? (
+                                <p>Try another filter or create a new class.</p>
+                            ) : (
+                                <p>Try another filter or join a class.</p>
+                            )}
                         </div>
                     ) : (
-                        (isInstructor ? filteredClasses : classes).map((cls) =>
+                        filteredClasses.map((cls) =>
                             isInstructor ? (
                                 <div key={cls.id} className="my-classes-card my-classes-card--instructor">
                                 <div className="my-classes-card-hero my-classes-card-hero--instructor">
