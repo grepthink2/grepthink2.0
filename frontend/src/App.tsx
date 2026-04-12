@@ -22,6 +22,7 @@ import MyClasses from '@features/app/pages/MyClasses';
 import Assignments from '@features/app/pages/Assignments';
 import AssignmentDetail from '@features/app/pages/AssignmentDetail';
 import BrowseProjects from '@features/app/pages/BrowseProjects';
+import MyProject from '@features/app/pages/MyProject';
 import TestProjects from '@pages/TestProjects';
 
 function App() {
@@ -56,7 +57,7 @@ function App() {
             <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
             <Route path="create-project" element={<CreateProject />} />
             <Route path="browse-projects" element={<BrowseProjects />} />
-            <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
+            <Route path="my-project" element={<MyProject />} />
             <Route path="assignments" element={<Assignments />} />
             <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
             <Route path="settings" element={<div>Settings - Coming Soon</div>} />

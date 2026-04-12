@@ -60,6 +60,11 @@ $tag-closed-text: #2771ff;
     background-color: $tag-closed-bg;
     color: $tag-closed-text;
   }
+
+  &--member {
+    background-color: rgba($primary-color, 0.12);
+    color: $primary-color;
+  }
 }
 
 .project-grid__banner-icon {
