@@ -2,11 +2,14 @@
 Class management business logic
 """
 import datetime
+import logging
 from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
 from app.utils.generators import generate_course_code
+
+logger = logging.getLogger(__name__)
 
 
 # Terms that run a full semester (8 TSR weeks); summer runs 3 weeks.
@@ -45,9 +48,18 @@ def _generate_tsr_assignments(client, class_id: str, term: str, start_date: date
 
     try:
         client.table('assignments').insert(assignments).execute()
-    except Exception as e:
-        # Log but don't block class creation
-        print(f"Warning: failed to auto-create TSR assignments for class {class_id}: {e}")
+        logger.info(
+            "Auto-created %d TSR assignments for class %s (term=%r)",
+            len(assignments), class_id, term,
+        )
+    except Exception:
+        # WARN: If TSR auto-creation fails, the class still exists but has no
+        # TSR schedule. Tracked as a silent-failure risk.
+        logger.warning(
+            "Failed to auto-create TSR assignments for class %s (term=%r) — "
+            "class was created but TSR schedule is missing",
+            class_id, term, exc_info=True,
+        )
 
 
 def create_class(
@@ -96,15 +108,20 @@ def create_class(
         result = client.table('classes').insert(class_data).execute()
         new_class = result.data[0]
 
+        logger.info(
+            "Class created | class_id=%s name=%r course_code=%s term=%r created_by=%s",
+            new_class.get('id'), name, course_code, term, user_id,
+        )
+
         # Auto-generate TSR assignments for this class
         _generate_tsr_assignments(client, new_class['id'], term, start_date)
 
         return new_class
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error creating class: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create class: {str(e)}")
+    except Exception:
+        logger.exception("Error creating class | name=%r user_id=%s", name, user_id)
+        raise HTTPException(status_code=500, detail="Failed to create class")
 
 
 def get_classes_for_user(user_id: str, role: str) -> list:
@@ -159,9 +176,9 @@ def get_classes_for_user(user_id: str, role: str) -> list:
                 cls['instructor_email'] = instructor_emails.get(cls.get('created_by'))
 
             return classes
-    except Exception as e:
-        print(f"Error fetching classes: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch classes: {str(e)}")
+    except Exception:
+        logger.exception("Error fetching classes | user_id=%s role=%s", user_id, role)
+        raise HTTPException(status_code=500, detail="Failed to fetch classes")
 
 
 def get_class_by_id(class_id: UUID) -> dict:
@@ -187,9 +204,9 @@ def get_class_by_id(class_id: UUID) -> dict:
         return result.data[0]
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching class: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch class: {str(e)}")
+    except Exception:
+        logger.exception("Error fetching class | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch class")
 
 
 def join_class_by_code(course_code: str, user_id: str) -> dict:
@@ -220,6 +237,10 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
         # Check if already enrolled
         existing = client.table('class_enrollments').select('id').eq('class_id', class_row['id']).eq('user_id', user_id).execute()
         if existing.data and len(existing.data) > 0:
+            logger.debug(
+                "join_class_by_code: user already enrolled | user_id=%s class_id=%s",
+                user_id, class_row['id'],
+            )
             return {"message": "Already enrolled", "class": class_row}
 
         # Create enrollment
@@ -229,12 +250,18 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
         }
         client.table('class_enrollments').insert(enrollment_data).execute()
 
+        logger.info(
+            "Student joined class | user_id=%s class_id=%s course_code=%s",
+            user_id, class_row['id'], course_code,
+        )
         return {"message": "Joined class successfully", "class": class_row}
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error joining class: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to join class: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error joining class | course_code=%s user_id=%s", course_code, user_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to join class")
 
 
 def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: str) -> dict:
@@ -283,15 +310,21 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
         }
         client.table('class_enrollments').insert(enrollment_data).execute()
         
+        logger.info(
+            "Student invited to class | class_id=%s student_email=%s invited_by=%s",
+            class_id, student_email, instructor_id,
+        )
         return {
             "message": "Student invited successfully",
             "student_email": student_email
         }
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error inviting student: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to invite student: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error inviting student | class_id=%s email=%s", class_id, student_email
+        )
+        raise HTTPException(status_code=500, detail="Failed to invite student")
 
 
 def get_class_students(class_id: UUID) -> list:
@@ -327,9 +360,9 @@ def get_class_students(class_id: UUID) -> list:
         return students.data
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching students: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch students: {str(e)}")
+    except Exception:
+        logger.exception("Error fetching students | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch students")
 
 def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
     """
@@ -452,6 +485,8 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
         return results
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching projects: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch projects: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching class projects | class_id=%s user_id=%s", class_id, user_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch projects")

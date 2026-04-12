@@ -5,6 +5,7 @@ import AppView from '@/features/app/AppView';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
 import Login from '@features/auth/pages/Login';
+import AuthCallback from '@features/auth/pages/AuthCallback';
 import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
 import RoleSelection from '@features/auth/pages/RoleSelection';
 import ForgetPassword from '@features/auth/pages/ForgotPassword';
@@ -30,6 +31,7 @@ function App() {
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/studentsignup" element={<SignUpOrchestrator />} />
         <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
         <Route path="/select" element={<RoleSelection />} />

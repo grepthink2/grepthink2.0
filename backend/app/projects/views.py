@@ -1,19 +1,29 @@
 """
 Projects views — parameter handling and responses
 """
+import logging
 from uuid import UUID
 from typing import Optional
 from fastapi import HTTPException, Depends, Query
-from app.dependencies import verify_supabase_token
+from app.dependencies import require_user
 from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, ManageProjectMemberRequest, AssignRoleRequest
 from app.projects import controller
 
+logger = logging.getLogger(__name__)
 
-def test_create_project(data: CreateProjectRequest, payload: dict = Depends(verify_supabase_token)):
+
+def test_create_project(data: CreateProjectRequest, user_id: str = Depends(require_user)):
     """Test endpoint for project creation without teacher-only enforcement."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_id = payload.get('sub')
+    # WARN: This endpoint bypasses ALL role checks. It's registered on the public
+    # router. Anyone with a valid JWT can create projects in any class.
+    # See CODE_REVIEW.md #7. Remove before production.
+    logger.warning(
+        "test_create_project called — this endpoint bypasses role checks | "
+        "user_id=%s class_id=%s name=%r",
+        user_id,
+        getattr(data, 'class_id', None),
+        getattr(data, 'name', None),
+    )
 
     try:
         from app.database.client import service_client, supabase as sb_client
@@ -50,24 +60,26 @@ def test_create_project(data: CreateProjectRequest, payload: dict = Depends(veri
         result = client.table('projects').insert(project_data).execute()
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to create project")
+        logger.info(
+            "Test project created (no role check) | project_id=%s class_id=%s",
+            result.data[0].get('id'), data.class_id,
+        )
         return {"message": "Test project created (no role check)", "project": result.data[0]}
     except HTTPException:
         raise
     except Exception as e:
         err = str(e)
+        logger.exception("test_create_project failed | class_id=%s", data.class_id)
         if "sponsor_" in err and ("column" in err.lower() or "schema" in err.lower()):
             raise HTTPException(
                 status_code=500,
                 detail="Sponsor columns are missing in the projects table. Run the sponsor migration first."
             )
-        raise HTTPException(status_code=500, detail=f"Failed to create test project: {err}")
+        raise HTTPException(status_code=500, detail="Failed to create test project")
 
 
 
-def create_project(data: CreateProjectRequest, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_id = payload.get('sub')
+def create_project(data: CreateProjectRequest, user_id: str = Depends(require_user)):
     result = controller.create_project(
         data.class_id, data.name, data.description, user_id,
         data.team_size, data.looking_for_roles, data.skills,
@@ -80,33 +92,32 @@ def create_project(data: CreateProjectRequest, payload: dict = Depends(verify_su
     return {"message": "Project created successfully", "project": result}
 
 
-def get_projects(class_id: Optional[UUID] = Query(None, description="Filter projects by class ID"), payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    projects = controller.get_projects_for_user(payload.get('sub'), class_id)
+def get_projects(
+    class_id: Optional[UUID] = Query(None, description="Filter projects by class ID"),
+    user_id: str = Depends(require_user),
+):
+    projects = controller.get_projects_for_user(user_id, class_id)
     return {"projects": projects}
 
 
-def get_project(project_id: UUID, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    project = controller.get_project_by_id(project_id, payload.get('sub'))
+def get_project(project_id: UUID, user_id: str = Depends(require_user)):
+    project = controller.get_project_by_id(project_id, user_id)
     return {"project": project}
 
 
-def delete_project(project_id: UUID, payload: dict = Depends(verify_supabase_token)):
+def delete_project(project_id: UUID, user_id: str = Depends(require_user)):
     """Delete a project (product owner, admin, or class instructor only)."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    return controller.delete_project(project_id, payload.get('sub'))
+    return controller.delete_project(project_id, user_id)
 
 
-def update_project(project_id: UUID, data: UpdateProjectRequest, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
+def update_project(
+    project_id: UUID,
+    data: UpdateProjectRequest,
+    user_id: str = Depends(require_user),
+):
     project = controller.update_project(
         project_id,
-        payload.get('sub'),
+        user_id,
         name=data.name,
         team_size=data.team_size,
         description=data.description,
@@ -119,112 +130,116 @@ def update_project(project_id: UUID, data: UpdateProjectRequest, payload: dict =
     return {"message": "Project updated successfully", "project": project}
 
 
-def request_join(data: JoinProjectRequest, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    return controller.request_to_join_project(data.project_id, payload.get('sub'))
+def request_join(data: JoinProjectRequest, user_id: str = Depends(require_user)):
+    return controller.request_to_join_project(data.project_id, user_id)
 
 
-def accept_request(data: AcceptJoinRequestRequest, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    return controller.accept_join_request(data.request_id, payload.get('sub'))
+def accept_request(data: AcceptJoinRequestRequest, user_id: str = Depends(require_user)):
+    return controller.accept_join_request(data.request_id, user_id)
 
 
-def reject_request(data: AcceptJoinRequestRequest, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    return controller.reject_join_request(data.request_id, payload.get('sub'))
+def reject_request(data: AcceptJoinRequestRequest, user_id: str = Depends(require_user)):
+    return controller.reject_join_request(data.request_id, user_id)
 
 
-def get_project_members(project_id: UUID, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
+def get_project_members(project_id: UUID, user_id: str = Depends(require_user)):
     members = controller.get_project_members(project_id)
     return {"members": members}
 
 
-def get_join_requests(project_id: UUID, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    requests = controller.get_pending_join_requests(project_id, payload.get('sub'))
+def get_join_requests(project_id: UUID, user_id: str = Depends(require_user)):
+    requests = controller.get_pending_join_requests(project_id, user_id)
     return {"requests": requests}
 
 
-def add_project_member(project_id: UUID, data: ManageProjectMemberRequest, payload: dict = Depends(verify_supabase_token)):
+def add_project_member(
+    project_id: UUID,
+    data: ManageProjectMemberRequest,
+    user_id: str = Depends(require_user),
+):
     """Add a user to a project, or update their role if already a member (instructor only)."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     result = controller.instructor_add_member(
         project_id=project_id,
-        requester_id=payload.get('sub'),
+        requester_id=user_id,
         target_user_id=str(data.user_id),
         role=data.role,
     )
     return result
 
 
-def remove_project_member(project_id: UUID, user_id: UUID, payload: dict = Depends(verify_supabase_token)):
+def remove_project_member(
+    project_id: UUID,
+    user_id: UUID,
+    requester_id: str = Depends(require_user),
+):
     """Remove a user from a project (instructor only)."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     return controller.instructor_remove_member(
         project_id=project_id,
-        requester_id=payload.get('sub'),
+        requester_id=requester_id,
         target_user_id=str(user_id),
     )
 
 
-def assign_product_owner(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+def assign_product_owner(
+    project_id: UUID,
+    data: AssignRoleRequest,
+    user_id: str = Depends(require_user),
+):
     """Assign the product owner role to a project member (owner, product owner, admin, or instructor only)."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     return controller.assign_product_owner(
         project_id=project_id,
-        requester_id=payload.get('sub'),
+        requester_id=user_id,
         target_user_id=str(data.user_id),
     )
 
 
-def assign_scrum_master(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+def assign_scrum_master(
+    project_id: UUID,
+    data: AssignRoleRequest,
+    user_id: str = Depends(require_user),
+):
     """Assign the scrum master role to a project member (owner, product owner, admin, or instructor only)."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     return controller.assign_scrum_master(
         project_id=project_id,
-        requester_id=payload.get('sub'),
+        requester_id=user_id,
         target_user_id=str(data.user_id),
     )
 
 
-def assign_admin(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+def assign_admin(
+    project_id: UUID,
+    data: AssignRoleRequest,
+    user_id: str = Depends(require_user),
+):
     """Assign the admin role to a project member (owner, product owner, admin, or instructor only)."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     return controller.assign_admin(
         project_id=project_id,
-        requester_id=payload.get('sub'),
+        requester_id=user_id,
         target_user_id=str(data.user_id),
     )
 
 
-def remove_scrum_master(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+def remove_scrum_master(
+    project_id: UUID,
+    data: AssignRoleRequest,
+    user_id: str = Depends(require_user),
+):
     """Demote the scrum master back to member (product owner, admin, or instructor only)."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     return controller.remove_scrum_master(
         project_id=project_id,
-        requester_id=payload.get('sub'),
+        requester_id=user_id,
         target_user_id=str(data.user_id),
     )
 
 
-def remove_admin(project_id: UUID, data: AssignRoleRequest, payload: dict = Depends(verify_supabase_token)):
+def remove_admin(
+    project_id: UUID,
+    data: AssignRoleRequest,
+    user_id: str = Depends(require_user),
+):
     """Demote an admin back to member (product owner, admin, or instructor only)."""
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
     return controller.remove_admin(
         project_id=project_id,
-        requester_id=payload.get('sub'),
+        requester_id=user_id,
         target_user_id=str(data.user_id),
     )

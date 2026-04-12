@@ -1,15 +1,26 @@
 """
 FastAPI application initialization and configuration
 """
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Configure logging *before* importing anything that creates module-level loggers
+# so child loggers inherit the configured handlers.
+from app.logging_config import configure_logging
+configure_logging()
+
 from app.config import settings
+from app.middleware import SecurityHeadersMiddleware
 from app.health.url import router as health_router
 from app.auth.url import router as auth_router
 from app.classes.url import router as classes_router
 from app.projects.url import router as projects_router
 from app.assignments.url import router as assignments_router
 from app.tsr.url import router as tsr_router
+
+logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -18,7 +29,14 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Configure CORS middleware
+logger.info("FastAPI app initialized | title=%s version=%s", app.title, app.version)
+
+# Security headers run first so they apply even when CORS rejects a
+# preflight. Starlette runs middleware in reverse registration order,
+# so the LAST add_middleware call is the OUTERMOST middleware. We want
+# CORS to be outermost (it handles OPTIONS preflight), so register the
+# security headers first and CORS second.
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
