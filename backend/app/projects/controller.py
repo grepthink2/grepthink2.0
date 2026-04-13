@@ -434,11 +434,19 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
             pid = m['project_id']
             count_map[pid] = count_map.get(pid, 0) + 1
 
+        role_rows = client.table('project_members').select(
+            'project_id, role'
+        ).eq('user_id', user_id).in_('project_id', project_ids).execute()
+        role_map: dict[str, str] = {
+            r['project_id']: r['role'] for r in (role_rows.data or [])
+        }
+
         return [
             {
                 'id': p['id'],
                 'name': p.get('name'),
                 'member_count': count_map.get(p['id'], 0),
+                'user_role': role_map.get(p['id']),
             }
             for p in projects
         ]
@@ -603,7 +611,7 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
             raise HTTPException(status_code=403, detail="Not a member of this project")
         
         reviewer_role = membership.data[0]['role']
-        if reviewer_role not in ['product owner', 'admin']:
+        if reviewer_role not in ['owner', 'product owner', 'admin']:
             raise HTTPException(status_code=403, detail="Only product owners and admins can accept join requests")
         
         # WARN: The next 3 statements are NOT atomic (see CODE_REVIEW.md #10).
@@ -696,7 +704,7 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
             raise HTTPException(status_code=403, detail="Not a member of this project")
         
         reviewer_role = membership.data[0]['role']
-        if reviewer_role not in ['owner', 'admin']:
+        if reviewer_role not in ['owner', 'product owner', 'admin']:
             raise HTTPException(status_code=403, detail="Only product owners and admins can reject join requests")
         
         # Update the request status
@@ -807,7 +815,7 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
             raise HTTPException(status_code=403, detail="Not a member of this project")
         
         reviewer_role = membership.data[0]['role']
-        if reviewer_role not in ['owner', 'admin']:
+        if reviewer_role not in ['owner', 'product owner', 'admin']:
             raise HTTPException(status_code=403, detail="Only product owners and admins can view join requests")
         
         # Get pending requests

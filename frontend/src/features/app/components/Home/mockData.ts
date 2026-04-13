@@ -51,20 +51,10 @@ export const MOCK_SCHEDULE: MockScheduleItem[] = [
   },
 ];
 
-export const MOCK_JOIN_REQUESTS: MockJoinRequest[] = [
+/** Demo outgoing join requests (no list-my-requests API yet). */
+export const MOCK_OUTGOING_JOIN_REQUESTS: MockJoinRequest[] = [
   {
-    id: 'r1',
-    projectName: 'Grepthink 2.0',
-    avatarInitials: 'G2',
-    avatarBg: '#018156',
-    subtext: 'Cole Saulnier wants to join this project',
-    badges: [
-      { label: '5 Members', variant: 'neutral' },
-      { label: 'Faculty Led', variant: 'neutral' },
-    ],
-  },
-  {
-    id: 'r2',
+    id: 'out-r1',
     projectName: 'Anylog',
     avatarInitials: 'A',
     avatarBg: '#2771FF',
