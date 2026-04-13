@@ -118,7 +118,7 @@ $quick-purple-hover: #6a3382;
 }
 
 .student-home__deadlines-scroll {
-  max-height: min(42vh, 300px);
+  max-height: min(34vh, 240px);
   overflow-y: auto;
   overflow-x: auto;
   margin: 0 (-$spacing-lg);
@@ -165,6 +165,35 @@ $quick-purple-hover: #6a3382;
   font-size: $font-size-base;
   font-weight: $font-weight-semibold;
   color: $primary-color;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.student-home__team-project-select {
+  max-width: min(200px, 55vw);
+  padding: 4px 28px 4px 8px;
+  border: 1px solid rgba($primary-color, 0.35);
+  border-radius: $border-radius-sm;
+  background: rgba($primary-color, 0.06)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23018156' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 8px center;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $primary-color;
+  cursor: pointer;
+  appearance: none;
+  text-align: right;
+  text-align-last: right;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba($primary-color, 0.35);
+    outline-offset: 2px;
+  }
 }
 
 // —— Deadlines table ——
@@ -361,6 +390,17 @@ $quick-purple-hover: #6a3382;
 }
 
 // —— Requests ——
+.student-home__request-feedback {
+  margin: (-$spacing-sm) 0 $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: #8b1a1a;
+  background: rgba($error-color, 0.1);
+  border: 1px solid rgba($error-color, 0.25);
+}
+
 .student-home__requests-list {
   display: flex;
   flex-direction: column;
@@ -438,6 +478,10 @@ $quick-purple-hover: #6a3382;
 }
 
 .student-home__btn-accept {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 8px 18px;
   border: none;
   border-radius: $border-radius-sm;
@@ -449,8 +493,13 @@ $quick-purple-hover: #6a3382;
   cursor: pointer;
   transition: background-color $transition-fast;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: $primary-hover;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.85;
   }
 
   &:focus-visible {
@@ -460,6 +509,10 @@ $quick-purple-hover: #6a3382;
 }
 
 .student-home__btn-deny {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 8px 18px;
   border: none;
   border-radius: $border-radius-sm;
@@ -471,13 +524,29 @@ $quick-purple-hover: #6a3382;
   cursor: pointer;
   transition: opacity $transition-fast;
 
-  &:hover {
+  &:hover:not(:disabled) {
     opacity: 0.92;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.85;
   }
 
   &:focus-visible {
     outline: 3px solid rgba($error-color, 0.45);
     outline-offset: 2px;
+  }
+}
+
+.student-home__btn-spinner {
+  flex-shrink: 0;
+  animation: student-home-spin 0.65s linear infinite;
+}
+
+@keyframes student-home-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

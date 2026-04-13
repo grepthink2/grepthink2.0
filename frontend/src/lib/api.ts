@@ -35,6 +35,7 @@ export interface ApiProject {
   skills?: string[];
   /** Current user's role on this project (from API). */
   user_role?: string | null;
+  member_count?: number;
   // Sponsor information
   sponsor_name?: string;
   sponsor_company?: string;
