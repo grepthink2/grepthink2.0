@@ -1,10 +1,13 @@
 """
 TSR business logic
 """
+import logging
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
 from app.tsr.models import CreateTSRRequest
+
+logger = logging.getLogger(__name__)
 
 
 TSR_FIELDS = (
@@ -119,15 +122,24 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
         if data.assignment_id:
             tsr_data["assignment_id"] = str(data.assignment_id)
 
+        # WARN: Table name is 'TSRs' (mixed case) here but 'tsrs' elsewhere
+        # depending on the Postgres identifier quoting. See CODE_REVIEW.md #20.
         result = client.table('TSRs').insert(tsr_data).execute()
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to create TSR")
+        logger.info(
+            "TSR created | tsr_id=%s project_id=%s evaluator=%s evaluatee=%s week=%s",
+            result.data[0].get('id'), data.project_id, user_id, data.evaluatee_id, data.week,
+        )
         return result.data[0]
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error creating TSR: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create TSR: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error creating TSR | project_id=%s evaluator=%s evaluatee=%s",
+            data.project_id, user_id, data.evaluatee_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to create TSR")
 
 
 def view_tsrs(user_id: str, project_id: UUID) -> list:
@@ -163,9 +175,11 @@ def view_tsrs(user_id: str, project_id: UUID) -> list:
         return _enrich_tsrs(client, result.data or [])
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching TSRs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch TSRs: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching TSRs | project_id=%s user_id=%s", project_id, user_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch TSRs")
 
 
 def get_tsrs_submitted_by(
@@ -204,9 +218,12 @@ def get_tsrs_submitted_by(
         return _enrich_tsrs(client, result.data or [])
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching submitted TSRs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch submitted TSRs: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching submitted TSRs | project_id=%s requester=%s subject=%s week=%s",
+            project_id, requester_id, target_user_id or requester_id, week,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch submitted TSRs")
 
 
 def get_tsrs_received_by(
@@ -245,6 +262,9 @@ def get_tsrs_received_by(
         return _enrich_tsrs(client, result.data or [])
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching received TSRs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch received TSRs: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching received TSRs | project_id=%s requester=%s subject=%s week=%s",
+            project_id, requester_id, target_user_id or requester_id, week,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch received TSRs")

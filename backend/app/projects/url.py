@@ -24,5 +24,8 @@ router.post('/{project_id}/remove-scrum-master')(views.remove_scrum_master)
 router.post('/{project_id}/remove-admin')(views.remove_admin)
 router.get('/{project_id}/join-requests')(views.get_join_requests)
 
-# ---- Test-only route (still enforces teacher-only create rules) ----
+# ---- Test-only route: bypasses instructor role check, still requires auth ----
+# Used by TestProjects.tsx (/test-115a-projects, /test-115b-projects) to
+# populate demo data. See CODE_REVIEW.md #7 — slated for removal once the
+# test pages are retired.
 router.post('/test-create')(views.test_create_project)

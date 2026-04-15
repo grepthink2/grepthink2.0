@@ -1,0 +1,706 @@
+@use '@styles/index.scss' as *;
+
+// Quick actions: solid fills (same pattern as .add-assignment-btn)
+$quick-accent-hover: #1f5cd6;
+$quick-purple: #7d3c98;
+$quick-purple-hover: #6a3382;
+
+.student-home {
+  min-height: calc(100vh - 64px);
+  padding: $spacing-lg $spacing-lg $spacing-xxl;
+  background-color: $white;
+  font-family: $primary-font;
+  position: relative;
+}
+
+.student-home__toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: $spacing-sm;
+  margin: 0;
+  width: 100%;
+
+  @media (max-width: 380px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.student-home__toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: 12.5px $spacing-sm;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: $white;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  svg {
+    flex-shrink: 0;
+    color: inherit;
+  }
+
+  &:hover {
+    filter: none;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+    outline-offset: 2px;
+  }
+
+  &--join {
+    background-color: $accent-color;
+
+    &:hover {
+      background-color: $quick-accent-hover;
+    }
+  }
+
+  &--messages {
+    background-color: $quick-purple;
+
+    &:hover {
+      background-color: $quick-purple-hover;
+    }
+  }
+
+  &--browse {
+    background-color: $primary-color;
+
+    &:hover {
+      background-color: $primary-hover;
+    }
+  }
+}
+
+.student-home__grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: $spacing-lg;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.student-home__column {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  min-width: 0;
+}
+
+
+.student-home__card {
+  background: $white;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  padding: $spacing-lg;
+}
+
+.student-home__card--deadlines {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.student-home__deadlines-scroll {
+  max-height: min(34vh, 240px);
+  overflow-y: auto;
+  overflow-x: auto;
+  margin: 0 (-$spacing-lg);
+  padding: 0 $spacing-lg;
+  -webkit-overflow-scrolling: touch;
+}
+
+.student-home__card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+  gap: $spacing-md;
+}
+
+.student-home__card-title {
+  margin: 0;
+  font-size: $font-size-large;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.student-home__link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $primary-color;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba($primary-color, 0.35);
+    outline-offset: 2px;
+  }
+}
+
+.student-home__team-project {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $primary-color;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.student-home__team-project-select {
+  max-width: min(200px, 55vw);
+  padding: 4px 28px 4px 8px;
+  border: 1px solid rgba($primary-color, 0.35);
+  border-radius: $border-radius-sm;
+  background: rgba($primary-color, 0.06)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23018156' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 8px center;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $primary-color;
+  cursor: pointer;
+  appearance: none;
+  text-align: right;
+  text-align-last: right;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba($primary-color, 0.35);
+    outline-offset: 2px;
+  }
+}
+
+// —— Deadlines table ——
+// `border-collapse: separate` + `border-spacing: 0` so `position: sticky` on `thead th` works
+// (sticky headers are unreliable with `border-collapse: collapse`).
+.student-home__deadlines-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: $font-size-base;
+}
+
+.student-home__deadlines-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: $white;
+  background-clip: padding-box;
+  box-shadow: 0 1px 0 0 $border-color;
+}
+
+.student-home__deadlines-table th {
+  text-align: left;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $text-tertiary;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: $spacing-sm $spacing-md $spacing-md;
+  border-bottom: 1px solid $border-color;
+  vertical-align: bottom;
+}
+
+.student-home__deadlines-table td {
+  padding: $spacing-md $spacing-md $spacing-md 0;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba($border-color, 0.6);
+}
+
+.student-home__deadlines-empty {
+  padding: $spacing-lg $spacing-md;
+  text-align: center;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: $text-secondary;
+  border-bottom: none;
+}
+
+.student-home__deadline-row {
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background-color: rgba($text-tertiary, 0.06);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $accent-color;
+    outline-offset: -2px;
+  }
+
+  &--highlight {
+    background-color: rgba(39, 113, 255, 0.06);
+  }
+}
+
+.student-home__deadline-name {
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.student-home__deadline-course {
+  display: block;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-normal;
+  color: $text-tertiary;
+  margin-top: 2px;
+}
+
+.student-home__deadline-date {
+  color: $text-secondary;
+  font-weight: $font-weight-medium;
+}
+
+.student-home__chevron {
+  color: $text-tertiary;
+  text-align: right;
+  width: 28px;
+}
+
+// Status pills
+.student-home__pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+
+  &--due-soon {
+    background: rgba(255, 59, 48, 0.12);
+    color: #c62828;
+  }
+
+  &--not-started {
+    background: rgba(245, 166, 35, 0.18);
+    color: #b26a00;
+  }
+
+  &--in-progress {
+    background: rgba(39, 113, 255, 0.12);
+    color: #1e5bb8;
+  }
+
+  &--submitted {
+    background: rgba(1, 129, 86, 0.14);
+    color: $primary-hover;
+  }
+}
+
+// —— Schedule ——
+.student-home__schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.student-home__schedule-item {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: $spacing-md;
+  padding-bottom: $spacing-lg;
+  position: relative;
+
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 14px;
+    bottom: 0;
+    width: 2px;
+    background: $border-color;
+  }
+}
+
+.student-home__schedule-time {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $text-tertiary;
+  padding-top: 2px;
+}
+
+.student-home__schedule-body {
+  display: flex;
+  gap: $spacing-sm;
+  align-items: flex-start;
+}
+
+.student-home__schedule-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+
+  &--green {
+    background: $primary-color;
+  }
+
+  &--blue {
+    background: $accent-color;
+  }
+
+  &--orange {
+    background: #f5a623;
+  }
+}
+
+.student-home__schedule-title {
+  margin: 0 0 4px;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.student-home__schedule-sub {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+// —— Requests ——
+.student-home__request-feedback {
+  margin: (-$spacing-sm) 0 $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: #8b1a1a;
+  background: rgba($error-color, 0.1);
+  border: 1px solid rgba($error-color, 0.25);
+}
+
+.student-home__requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.student-home__request-card {
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  padding: $spacing-md;
+  background: rgba($white, 0.9);
+}
+
+.student-home__request-top {
+  display: flex;
+  gap: $spacing-md;
+  align-items: flex-start;
+}
+
+.student-home__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $white;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  flex-shrink: 0;
+}
+
+.student-home__request-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-home__request-title {
+  margin: 0 0 4px;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.student-home__request-sub {
+  margin: 0 0 $spacing-sm;
+  font-size: $font-size-sm;
+  color: $text-secondary;
+}
+
+.student-home__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.student-home__badge {
+  font-size: 11px;
+  font-weight: $font-weight-semibold;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba($text-tertiary, 0.12);
+  color: $text-secondary;
+
+  &--purple {
+    background: rgba(142, 68, 173, 0.14);
+    color: #7d3c98;
+  }
+}
+
+.student-home__request-actions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.student-home__btn-accept {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: $primary-color;
+  color: $white;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &:hover:not(:disabled) {
+    background: $primary-hover;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.85;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba($primary-color, 0.4);
+    outline-offset: 2px;
+  }
+}
+
+.student-home__btn-deny {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: $error-color;
+  color: $white;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: opacity $transition-fast;
+
+  &:hover:not(:disabled) {
+    opacity: 0.92;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.85;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba($error-color, 0.45);
+    outline-offset: 2px;
+  }
+}
+
+.student-home__btn-spinner {
+  flex-shrink: 0;
+  animation: student-home-spin 0.65s linear infinite;
+}
+
+@keyframes student-home-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.student-home__awaiting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: $spacing-md;
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+// —— Team ——
+.student-home__team-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.student-home__team-item {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-sm 0;
+  border-bottom: 1px solid rgba($border-color, 0.5);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.student-home__team-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.student-home__team-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+}
+
+.student-home__team-avatar--0 {
+  background: rgba(1, 129, 86, 0.2);
+}
+
+.student-home__team-avatar--1 {
+  background: rgba(39, 113, 255, 0.2);
+}
+
+.student-home__team-avatar--2 {
+  background: rgba(142, 68, 173, 0.2);
+}
+
+.student-home__team-avatar--3 {
+  background: rgba(245, 166, 35, 0.25);
+}
+
+.student-home__team-avatar--4 {
+  background: rgba(233, 30, 99, 0.18);
+}
+
+.student-home__status-dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid $white;
+
+  &--green {
+    background: #2ecc71;
+  }
+
+  &--orange {
+    background: #f5a623;
+  }
+
+  &--gray {
+    background: #9e9e9e;
+  }
+}
+
+.student-home__team-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-home__team-name {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.student-home__you {
+  color: $primary-color;
+  font-weight: $font-weight-semibold;
+  margin-left: 4px;
+}
+
+.student-home__team-role {
+  display: block;
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+  margin-top: 2px;
+}
+
+.student-home__empty {
+  margin: 0;
+  font-size: $font-size-base;
+  color: $text-secondary;
+  line-height: 1.5;
+}
+
+.student-home__loading {
+  color: $text-tertiary;
+  font-size: $font-size-base;
+}
+
+// Floating help
+.student-home__fab {
+  position: fixed;
+  right: $spacing-lg;
+  bottom: $spacing-lg;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: #212121;
+  color: $white;
+  font-size: 22px;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  z-index: $z-index-dropdown;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform $transition-fast, background-color $transition-fast;
+
+  &:hover {
+    background: #424242;
+    transform: scale(1.04);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba($accent-color, 0.5);
+    outline-offset: 3px;
+  }
+}

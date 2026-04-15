@@ -45,12 +45,13 @@ interface ProjectViewProps {
   onMembersChange?: () => void;
   /** Called after the project is successfully deleted so the parent can navigate away. */
   onDelete?: () => void;
-  // Sponsor information
-  // sponsorName?: string;
-  // sponsorCompany?: string;
-  // sponsorEmail?: string;
-  // sponsorWebsite?: string;
-  // sponsorDescription?: string;
+  // Sponsor information — typed so callers compile; rendering is gated
+  // behind the (still commented-out) sponsor section in the JSX below.
+  sponsorName?: string | null;
+  sponsorCompany?: string | null;
+  sponsorEmail?: string | null;
+  sponsorWebsite?: string | null;
+  sponsorDescription?: string | null;
 }
 
 const ProjectView: React.FC<ProjectViewProps> = ({

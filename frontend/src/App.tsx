@@ -5,6 +5,7 @@ import AppView from '@/features/app/AppView';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
 import Login from '@features/auth/pages/Login';
+import AuthCallback from '@features/auth/pages/AuthCallback';
 import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
 import RoleSelection from '@features/auth/pages/RoleSelection';
 import ForgetPassword from '@features/auth/pages/ForgotPassword';
@@ -21,6 +22,7 @@ import MyClasses from '@features/app/pages/MyClasses';
 import Assignments from '@features/app/pages/Assignments';
 import AssignmentDetail from '@features/app/pages/AssignmentDetail';
 import BrowseProjects from '@features/app/pages/BrowseProjects';
+import MyProject from '@features/app/pages/MyProject';
 import TestProjects from '@pages/TestProjects';
 
 function App() {
@@ -30,6 +32,7 @@ function App() {
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/studentsignup" element={<SignUpOrchestrator />} />
         <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
         <Route path="/select" element={<RoleSelection />} />
@@ -44,6 +47,7 @@ function App() {
             <Route path="home" element={<Home />} />
             <Route path="messages" element={<div>Messages - Coming Soon</div>} />
             <Route path="my-classes" element={<MyClasses />} />
+            <Route path="class-settings" element={<div>Class settings — Coming soon</div>} />
             <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="projects" element={<Projects />} />
@@ -53,7 +57,7 @@ function App() {
             <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
             <Route path="create-project" element={<CreateProject />} />
             <Route path="browse-projects" element={<BrowseProjects />} />
-            <Route path="my-project" element={<div>My Project - Coming Soon</div>} />
+            <Route path="my-project" element={<MyProject />} />
             <Route path="assignments" element={<Assignments />} />
             <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
             <Route path="settings" element={<div>Settings - Coming Soon</div>} />

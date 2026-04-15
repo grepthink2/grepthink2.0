@@ -10,6 +10,9 @@ export interface ApiClass {
   created_by: string;
   created_at: string;
   teacher_email?: string;
+  term?: string;
+  start_date?: string;
+  year?: number;
 }
 
 export interface ApiStudent {
@@ -32,6 +35,7 @@ export interface ApiProject {
   skills?: string[];
   /** Current user's role on this project (from API). */
   user_role?: string | null;
+  member_count?: number;
   // Sponsor information
   sponsor_name?: string;
   sponsor_company?: string;
@@ -92,6 +96,7 @@ export interface ApiTSR {
   scrum_master_notes?: string;
   email?: string;
   assignment_id?: string;
+  created_at?: string;
 }
 
 export interface ApiAssignment {
@@ -167,7 +172,19 @@ export async function apiRequest<T = unknown>(
 export const api = {
   // Auth
   loginCheck: async () => {
-    return apiRequest<{ message: string; user_id: string; role: string }>('/api/login-check');
+    return apiRequest<{ message: string; user_id: string; role: string | null }>('/api/login-check');
+  },
+
+  /**
+   * Create the profiles row for a newly-authenticated user.
+   * The backend verifies that the JWT's ``sub`` matches ``userId`` in the
+   * body, so the caller cannot provision a profile for someone else.
+   */
+  createUser: async (data: { userId: string; email: string; userType: 'student' | 'instructor' }) => {
+    return apiRequest<{ message: string; email: string; role: string }>('/api/create-user', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   // Classes

@@ -1,21 +1,34 @@
 """
 Project management business logic
 """
+import logging
 from typing import List, Optional
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
 
+logger = logging.getLogger(__name__)
+
 
 def _increment_project_num_members(client, project_id: str, delta: int) -> None:
     """Update projects.num_members by delta (+1 or -1)."""
+    # DEBUG: the num_members counter is maintained by hand (see CODE_REVIEW.md #12);
+    # if it drifts from the actual project_members count, this trace is where to look.
     proj = client.table('projects').select('num_members').eq('id', project_id).execute()
     if not proj.data:
+        logger.warning(
+            "_increment_project_num_members: project not found | project_id=%s delta=%d",
+            project_id, delta,
+        )
         return
     current = proj.data[0].get('num_members')
     if current is None:
         current = 0
     new_val = max(0, int(current) + delta)
+    logger.debug(
+        "num_members: %d -> %d (delta=%+d) | project_id=%s",
+        int(current), new_val, delta, project_id,
+    )
     client.table('projects').update({'num_members': new_val}).eq('id', project_id).execute()
 
 def _is_instructor(user_id, class_id):
@@ -26,24 +39,41 @@ def _is_instructor(user_id, class_id):
             .eq('created_by', str(user_id)).eq('id', str(class_id))
             .execute()
         )
-        return len(classes_result.data) > 0
-    except Exception as e:
-        print(f"Error checking if user is teacher: {e}")
+        result = len(classes_result.data) > 0
+        logger.debug(
+            "_is_instructor: user=%s class=%s -> %s", user_id, class_id, result
+        )
+        return result
+    except Exception:
+        logger.exception(
+            "_is_instructor failed | user_id=%s class_id=%s", user_id, class_id
+        )
+        # NOTE: returns None on error, which callers treat as falsy — OK for now
+        # but this inconsistency is tracked in CODE_REVIEW.md #17.
+        return None
 
 def _is_admin(user_id, project_id):
     """Checks if user has admin privillges for a project"""
     try:
         client = service_client if service_client else supabase
-                
-        # check if you are the owner of the project
+
+        # WARN: This check is NOT scoped to project_id — it matches any project
+        # where the user is an 'owner'. See CODE_REVIEW.md finding #9. Fix pending.
+        # The DEBUG log below will show you when this branch fires so you can spot
+        # incorrect admin grants at runtime.
         enrollment_result = (
             client.table('project_members').select('user_id')
             .eq('user_id', str(user_id)).eq('role', "owner")
             .execute()
         )
         if enrollment_result.data:
+            logger.warning(
+                "_is_admin: granting admin via owner role without project scope | "
+                "user=%s requested_project=%s — BUG: check not scoped to project_id",
+                user_id, project_id,
+            )
             return True
-        
+
         #fetch class_id
         class_result = (
             client.table('projects').select('class_id')
@@ -51,14 +81,23 @@ def _is_admin(user_id, project_id):
             .execute()
         )
         if not class_result.data:
+            logger.debug("_is_admin: project %s not found", project_id)
             return False
-        
+
         class_id = class_result.data[0]['class_id']
         # check is user is teacher of the class
-        return _is_instructor(user_id, class_id)
+        is_teacher = _is_instructor(user_id, class_id)
+        logger.debug(
+            "_is_admin: user=%s project=%s class=%s -> %s",
+            user_id, project_id, class_id, is_teacher,
+        )
+        return is_teacher
 
-    except Exception as e:
-        print(f"Error checking if user is admin of project: {e}")
+    except Exception:
+        logger.exception(
+            "_is_admin failed | user_id=%s project_id=%s", user_id, project_id
+        )
+        return None
 
 def create_project(
     class_id: UUID,
@@ -174,12 +213,16 @@ def create_project(
             }).execute()
             _increment_project_num_members(client, project['id'], 1)
 
+        logger.info(
+            "Project created | project_id=%s name=%r class_id=%s created_by=%s is_instructor=%s",
+            project.get('id'), name, class_id, user_id, is_instructor,
+        )
         return project
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error creating project: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create project: {str(e)}")
+    except Exception:
+        logger.exception("Error creating project | name=%r class_id=%s", name, class_id)
+        raise HTTPException(status_code=500, detail="Failed to create project")
 
 
 def update_project(
@@ -262,12 +305,18 @@ def update_project(
         result = client.table('projects').update(updates).eq('id', str(project_id)).execute()
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to update project")
+        logger.info(
+            "Project updated | project_id=%s updated_by=%s fields=%s",
+            project_id, user_id, list(updates.keys()),
+        )
         return result.data[0]
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error updating project: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update project: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error updating project | project_id=%s user_id=%s", project_id, user_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to update project")
 
 
 def delete_project(project_id: UUID, user_id: str) -> dict:
@@ -312,12 +361,18 @@ def delete_project(project_id: UUID, user_id: str) -> dict:
 
         client.table('projects').delete().eq('id', str(project_id)).execute()
 
+        logger.info(
+            "Project deleted | project_id=%s deleted_by=%s is_instructor=%s",
+            project_id, user_id, is_instructor,
+        )
         return {"message": "Project deleted successfully", "project_id": str(project_id)}
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error deleting project: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete project: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error deleting project | project_id=%s user_id=%s", project_id, user_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to delete project")
 
 
 def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
@@ -379,19 +434,29 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
             pid = m['project_id']
             count_map[pid] = count_map.get(pid, 0) + 1
 
+        role_rows = client.table('project_members').select(
+            'project_id, role'
+        ).eq('user_id', user_id).in_('project_id', project_ids).execute()
+        role_map: dict[str, str] = {
+            r['project_id']: r['role'] for r in (role_rows.data or [])
+        }
+
         return [
             {
                 'id': p['id'],
                 'name': p.get('name'),
                 'member_count': count_map.get(p['id'], 0),
+                'user_role': role_map.get(p['id']),
             }
             for p in projects
         ]
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching projects: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch projects: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching projects | user_id=%s class_id=%s", user_id, class_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch projects")
 
 
 def get_project_by_id(project_id: UUID, user_id: str = None) -> dict:
@@ -431,9 +496,9 @@ def get_project_by_id(project_id: UUID, user_id: str = None) -> dict:
         return project
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching project: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch project: {str(e)}")
+    except Exception:
+        logger.exception("Error fetching project | project_id=%s", project_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch project")
 
 
 
@@ -487,7 +552,11 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
         }
         
         result = client.table('project_join_requests').insert(request_data).execute()
-        
+
+        logger.info(
+            "Join request created | project_id=%s user_id=%s request_id=%s",
+            project_id, user_id, result.data[0].get('id') if result.data else None,
+        )
         return {
             "message": "Join request submitted successfully",
             "request": result.data[0],
@@ -495,9 +564,11 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
         }
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error creating join request: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create join request: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error creating join request | project_id=%s user_id=%s", project_id, user_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to create join request")
 
 
 def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
@@ -540,39 +611,57 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
             raise HTTPException(status_code=403, detail="Not a member of this project")
         
         reviewer_role = membership.data[0]['role']
-        if reviewer_role not in ['product owner', 'admin']:
+        if reviewer_role not in ['owner', 'product owner', 'admin']:
             raise HTTPException(status_code=403, detail="Only product owners and admins can accept join requests")
         
+        # WARN: The next 3 statements are NOT atomic (see CODE_REVIEW.md #10).
+        # If any one of them fails after the first succeeds we get an inconsistent
+        # state (approved request with no membership row, or member without
+        # num_members increment). Trace via these DEBUG logs to triage.
+        logger.debug(
+            "accept_join_request: begin multi-step commit | request_id=%s project_id=%s user_id=%s",
+            request_id, join_request['project_id'], join_request['user_id'],
+        )
+
         # Update the request status
         update_data = {
             "request_status": "approved",
             "reviewed_at": "now()",
             "reviewer_id": reviewer_id
         }
-        
+
         client.table('project_join_requests').update(update_data).eq('id', str(request_id)).execute()
-        
+        logger.debug("accept_join_request: request status updated | request_id=%s", request_id)
+
         # Add user as project member
         member_data = {
             "project_id": join_request['project_id'],
             "user_id": join_request['user_id'],
             "role": "member"
         }
-        
+
         client.table('project_members').insert(member_data).execute()
+        logger.debug("accept_join_request: member inserted | user_id=%s", join_request['user_id'])
 
         # Increment num_members on the project
         _increment_project_num_members(client, join_request['project_id'], 1)
-        
+
+        logger.info(
+            "Join request accepted | request_id=%s project_id=%s new_member=%s reviewer=%s",
+            request_id, join_request['project_id'], join_request['user_id'], reviewer_id,
+        )
         return {
             "message": "Join request accepted successfully",
             "user_id": join_request['user_id']
         }
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error accepting join request: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to accept join request: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error accepting join request | request_id=%s reviewer_id=%s",
+            request_id, reviewer_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to accept join request")
 
 
 def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
@@ -615,7 +704,7 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
             raise HTTPException(status_code=403, detail="Not a member of this project")
         
         reviewer_role = membership.data[0]['role']
-        if reviewer_role not in ['owner', 'admin']:
+        if reviewer_role not in ['owner', 'product owner', 'admin']:
             raise HTTPException(status_code=403, detail="Only product owners and admins can reject join requests")
         
         # Update the request status
@@ -626,16 +715,23 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
         }
         
         client.table('project_join_requests').update(update_data).eq('id', str(request_id)).execute()
-        
+
+        logger.info(
+            "Join request rejected | request_id=%s project_id=%s user_id=%s reviewer=%s",
+            request_id, join_request['project_id'], join_request['user_id'], reviewer_id,
+        )
         return {
             "message": "Join request rejected successfully",
             "user_id": join_request['user_id']
         }
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error rejecting join request: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to reject join request: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error rejecting join request | request_id=%s reviewer_id=%s",
+            request_id, reviewer_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to reject join request")
 
 
 def get_project_members(project_id: UUID) -> list:
@@ -688,9 +784,9 @@ def get_project_members(project_id: UUID) -> list:
         return result
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching project members: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch project members: {str(e)}")
+    except Exception:
+        logger.exception("Error fetching project members | project_id=%s", project_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch project members")
 
 
 def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
@@ -719,7 +815,7 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
             raise HTTPException(status_code=403, detail="Not a member of this project")
         
         reviewer_role = membership.data[0]['role']
-        if reviewer_role not in ['owner', 'admin']:
+        if reviewer_role not in ['owner', 'product owner', 'admin']:
             raise HTTPException(status_code=403, detail="Only product owners and admins can view join requests")
         
         # Get pending requests
@@ -752,47 +848,81 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
         return result
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching join requests: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch join requests: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching join requests | project_id=%s reviewer_id=%s",
+            project_id, reviewer_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch join requests")
 
 def instructor_add_member(project_id:UUID, requester_id:str, target_user_id:str, role = "member"):
     """
     Add member to project (instructor only)
-    
+
     Args:
         project_id: Project unique identifier
         requester_id: ID of instructor requesting this
         target_user_id: ID of user to add
         role: role of newly added user
-        
+
     Returns:
         Dict of successful request
-        
+
     Raises:
         HTTPException: If no permission or database error occurs
     """
+    logger.debug(
+        "instructor_add_member called | project_id=%s requester=%s target=%s role=%r",
+        project_id, requester_id, target_user_id, role,
+    )
     try:
         client = service_client if service_client else supabase
-        
+
         class_result = (
             client.table('projects').select('class_id')
             .eq('id', str(project_id))
             .execute()
         )
         if not class_result.data:
+            # NOTE: returning False here is a contract mismatch — the view layer
+            # expects a dict. Tracked in CODE_REVIEW.md #17.
+            logger.warning(
+                "instructor_add_member: project not found | project_id=%s", project_id
+            )
             return False
-        
+
         class_id = class_result.data[0]['class_id']
         # check is user is teacher of the class
         if not _is_instructor(requester_id, class_id):
+            logger.warning(
+                "instructor_add_member: forbidden (not class instructor) | "
+                "requester=%s class_id=%s project_id=%s",
+                requester_id, class_id, project_id,
+            )
             raise HTTPException(status_code=403, detail="Not the instructor of this project")
-        
+
+        # WARN: This membership check is NOT scoped to project_id — it returns true
+        # if the target user is a member of ANY project. See CODE_REVIEW.md #BUG-1.
+        # If you see the "update role" branch fire for a user who was never in this
+        # project, this is why.
         res = (client.table('project_members').select('user_id')
             .eq('user_id', target_user_id)
             .execute()
         )
+        logger.debug(
+            "instructor_add_member: pre-check membership rows=%d (NOT scoped to project — BUG)",
+            len(res.data) if res.data else 0,
+        )
+
         if len(res.data) > 0: # update role if already in project
+            # WARN: This update targets `requester_id` (the instructor), not
+            # `target_user_id`. The instructor's own role gets overwritten.
+            # See CODE_REVIEW.md #BUG-2 and the walkthrough in chat.
+            logger.warning(
+                "instructor_add_member: ROLE UPDATE path firing — BUG: updates "
+                "requester (%s) instead of target (%s) | project_id=%s new_role=%r",
+                requester_id, target_user_id, project_id, role,
+            )
             response = (client.table("project_members")
                 .update({"role": role})
                 .eq("user_id", requester_id).eq("project_id", str(project_id))
@@ -801,11 +931,22 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user_id:str,
 
             #only one scrum master or owner, set old one as member
             if role in ["scrum master", "owner"]:
+                # WARN: Same bug — this demotes everyone EXCEPT the requester,
+                # not everyone except the actual new holder of the role.
+                logger.warning(
+                    "instructor_add_member: demoting old %s holders (excluding requester, "
+                    "should exclude target) | project_id=%s",
+                    role, project_id,
+                )
                 (client.table("project_members")
                     .update({"role": "member"})
                     .neq("user_id", requester_id).eq("project_id", str(project_id)).eq("role", role)
                     .execute()
                 )
+            logger.info(
+                "Changed roles (BUG path) | project_id=%s affected_rows=%d role=%r",
+                project_id, len(response.data) if response.data else 0, role,
+            )
             return {
                 "message": "Changed roles successfully",
                 "member": requester_id,
@@ -817,12 +958,16 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user_id:str,
                 "user_id": str(target_user_id),
                 "role": role
             }
-            
+
             client.table('project_members').insert(member_data).execute()
 
             # Increment num_members on the project
             _increment_project_num_members(client, str(project_id), 1)
-            
+
+            logger.info(
+                "Member added | project_id=%s user_id=%s role=%r added_by=%s",
+                project_id, target_user_id, role, requester_id,
+            )
             return {
                 "message": "Added member successfully",
                 "user_id": target_user_id,
@@ -830,24 +975,31 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user_id:str,
             }
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error update member: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update member: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error in instructor_add_member | project_id=%s requester=%s target=%s role=%r",
+            project_id, requester_id, target_user_id, role,
+        )
+        raise HTTPException(status_code=500, detail="Failed to update member")
 
 def instructor_remove_member(project_id:UUID, requester_id:str, target_user_id:str):
     """
     Remove member from project (instructor only)
-    
+
     Args:
         project_id: Project unique identifier
         requester_id: ID of instructor requesting this
         target_user_id: ID of user to remove
-        
+
     Returns:
         Dict of successful request
     Raises:
         HTTPException: If no permission or database error occurs
     """
+    logger.debug(
+        "instructor_remove_member called | project_id=%s requester=%s target=%s",
+        project_id, requester_id, target_user_id,
+    )
     try:
         client = service_client if service_client else supabase
         class_result = (
@@ -856,18 +1008,33 @@ def instructor_remove_member(project_id:UUID, requester_id:str, target_user_id:s
             .execute()
         )
         if not class_result.data:
+            logger.warning(
+                "instructor_remove_member: project not found | project_id=%s", project_id
+            )
             return False
         class_id = class_result.data[0]['class_id']
         # check is user is teacher of the class
         if not _is_instructor(requester_id, class_id):
+            logger.warning(
+                "instructor_remove_member: forbidden (not class instructor) | "
+                "requester=%s class_id=%s",
+                requester_id, class_id,
+            )
             raise HTTPException(status_code=403, detail="Not the instructor of this project")
-        # check requester is product owner (role in project_members)
+        # WARN: This requires the instructor to ALSO hold the 'owner' project_member
+        # role, which is almost never true. Instructors who own the class can't
+        # remove members unless they're also project owners. See CODE_REVIEW.md #18.
         membership = (
             client.table('project_members').select('role')
             .eq('project_id', str(project_id)).eq('user_id', str(requester_id))
             .execute()
         )
         if not membership.data or membership.data[0].get('role') != 'owner':
+            logger.warning(
+                "instructor_remove_member: forbidden (class instructor lacks 'owner' "
+                "project_member row) | requester=%s project_id=%s has_row=%s",
+                requester_id, project_id, bool(membership.data),
+            )
             raise HTTPException(status_code=403, detail="Not the owner of this project")
         # Remove user as project member
         delete_result = (client.table('project_members').delete()
@@ -876,13 +1043,21 @@ def instructor_remove_member(project_id:UUID, requester_id:str, target_user_id:s
         )
         # Decrement num_members on the project
         _increment_project_num_members(client, str(project_id), -1)
+        logger.info(
+            "Member removed | project_id=%s user_id=%s removed_by=%s deleted_rows=%d",
+            project_id, target_user_id, requester_id,
+            len(delete_result.data) if delete_result.data else 0,
+        )
         return {
             "message": "Removed member successfully",
             "user_id": target_user_id
         }
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error removing member: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to remove member: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error removing member | project_id=%s requester=%s target=%s",
+            project_id, requester_id, target_user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to remove member")
 

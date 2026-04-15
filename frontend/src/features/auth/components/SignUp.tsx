@@ -57,7 +57,10 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/app`,
+          // AuthCallback exchanges the code and then routes first-time
+          // Google users to /select so they can pick student/instructor.
+          // See AuthCallback.tsx.
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 

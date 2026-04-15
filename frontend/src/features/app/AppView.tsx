@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import type { AppOutletContext } from '@/features/app/appOutletContext';
 import Sidebar from '@features/app/components/Layout/Sidebar';
 import Header from '@features/app/components/Layout/Header';
 import CreateClassModal from '@/features/app/components/Classes/CreateClassModal';
@@ -65,7 +66,11 @@ const AppView: React.FC = () => {
 
         <main className="app-main">
           <Header />
-          <Outlet />
+          <Outlet
+            context={
+              { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
+            }
+          />
         </main>
 
         {/* Create Class Modal */}

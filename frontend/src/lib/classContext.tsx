@@ -10,6 +10,10 @@ export interface Class {
   created_by: string;
   created_at: string;
   teacher_email?: string;
+  /** Present for instructor-owned classes from API (used for course lifecycle filters). */
+  term?: string;
+  start_date?: string;
+  year?: number;
 }
 
 interface ClassContextValue {

@@ -1,7 +1,10 @@
+import logging
 import os
 from pathlib import Path
 from supabase import create_client, Client
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Load .env from project root
 env_path = Path(__file__).resolve().parent.parent.parent.parent / '.env'
@@ -14,7 +17,7 @@ key: str = os.environ.get("SUPABASE_KEY") or os.environ.get("VITE_SUPABASE_KEY")
 if not url or not key:
     raise ValueError("Supabase URL and Key must be set in .env file")
 else:
-    print("Supabase URL and Key loaded successfully.")
+    logger.info("Supabase URL and Key loaded successfully | url=%s", url)
 
 # Default client (usually anon key)
 supabase: Client = create_client(url, key)
@@ -26,9 +29,18 @@ service_client: Client = None
 if service_key:
     try:
         service_client = create_client(url, service_key)
-        print("Supabase Service Role Client loaded.")
-    except Exception as e:
-        print(f"Failed to load Service Role Client: {e}")
+        logger.info("Supabase Service Role Client loaded")
+    except Exception:
+        logger.exception("Failed to load Service Role Client")
+else:
+    # WARN: without the service client every controller falls back to the anon client,
+    # which is subject to RLS policies. If you're seeing unexpected 401s from the DB,
+    # this is probably why.
+    logger.warning(
+        "SUPABASE_SERVICE_ROLE_KEY not set — falling back to anon client "
+        "(RLS policies will be enforced on all queries)"
+    )
+
 
 def get_authenticated_client(access_token: str) -> Client:
     """
@@ -38,12 +50,13 @@ def get_authenticated_client(access_token: str) -> Client:
         # Create a new client instance sharing the same URL and Key
         # We don't want to use the shared 'supabase' instance as that would mess up headers for everyone
         new_client = create_client(url, key)
-        
+
         # Manually inject the Authorization header into the Postgrest client
         new_client.postgrest.auth(access_token)
-        
+
+        logger.debug("Created authenticated Supabase client for request")
         return new_client
-    except Exception as e:
-        print(f"Error creating authenticated client: {e}")
+    except Exception:
+        logger.exception("Error creating authenticated client — falling back to default")
         # Fallback to default client if something goes wrong
         return supabase
