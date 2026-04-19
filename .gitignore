@@ -28,3 +28,4 @@ dist-ssr
 .claude/
 .env
 __pycache__/
+venv/
