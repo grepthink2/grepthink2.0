@@ -4,12 +4,17 @@ import { X } from 'lucide-react';
 import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
 import './CreateAssignmentModal.scss';
 
-const ASSIGNMENT_TEMPLATE = 'Team Status Report';
+type AssignmentTemplate = 'Team Status Report' | 'Project Interest Form';
+
+const ASSIGNMENT_TEMPLATES: AssignmentTemplate[] = [
+  'Team Status Report',
+  'Project Interest Form',
+];
 
 interface CreateAssignmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateAssignment?: (data: { name: string; openDate: string; dueDate: string }) => void | Promise<void>;
+  onCreateAssignment?: (data: { name: string; openDate: string; dueDate: string; template: AssignmentTemplate }) => void | Promise<void>;
 }
 
 const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
@@ -17,6 +22,7 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
   onClose,
   onCreateAssignment,
 }) => {
+  const [selectedTemplate, setSelectedTemplate] = useState<AssignmentTemplate>('Team Status Report');
   const [assignmentName, setAssignmentName] = useState('');
   const [openDate, setOpenDate] = useState('');
   const [dueDate, setDueDate]   = useState('');
@@ -54,7 +60,7 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      await onCreateAssignment?.({ name: assignmentName.trim(), openDate, dueDate });
+      await onCreateAssignment?.({ name: assignmentName.trim(), openDate, dueDate, template: selectedTemplate });
       setAssignmentName(''); setOpenDate(''); setDueDate('');
       handleClose();
     } catch (err) {
@@ -94,13 +100,16 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
           <div className="create-assignment-modal__field">
             <h3 className="create-assignment-modal__label">Select Template</h3>
             <div className="create-assignment-modal__template-buttons">
-              <button
-                type="button"
-                className="create-assignment-modal__template-button active"
-                disabled
-              >
-                {ASSIGNMENT_TEMPLATE}
-              </button>
+              {ASSIGNMENT_TEMPLATES.map((template) => (
+                <button
+                  key={template}
+                  type="button"
+                  className={`create-assignment-modal__template-button${selectedTemplate === template ? ' active' : ''}`}
+                  onClick={() => setSelectedTemplate(template)}
+                >
+                  {template}
+                </button>
+              ))}
             </div>
           </div>
 
