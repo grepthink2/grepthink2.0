@@ -1,0 +1,612 @@
+@use '@styles/index.scss' as *;
+
+// ── Shared button styles (mirrored from TSRS) ────────────────────────────────
+.tsrs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 28px;
+  border-radius: $border-radius-sm;
+  border: none;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: background-color $transition-fast, opacity $transition-fast;
+
+  &--primary {
+    background-color: $primary-color;
+    color: $white;
+
+    &:hover:not(:disabled) { background-color: $primary-hover; }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  &--secondary {
+    background-color: $background;
+    color: $text-secondary;
+
+    &:hover:not(:disabled) { background-color: $border-color; }
+  }
+}
+
+// ── Page wrapper ─────────────────────────────────────────────────────────────
+.interest-form {
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Single unified white container ───────────────────────────────────────────
+.if-shell {
+  background: $white;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  overflow: visible;
+}
+
+// ── Sections inside the shell ────────────────────────────────────────────────
+.if-section {
+  padding: $spacing-xl $spacing-xl $spacing-sm;
+
+  &:last-of-type {
+    padding-bottom: $spacing-xl;
+  }
+}
+
+.if-section__header {
+  margin-bottom: $spacing-lg;
+}
+
+.if-section__title {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: -0.01em;
+}
+
+.if-section__subtitle {
+  margin: 0;
+  font-size: $font-size-base;
+  color: $text-tertiary;
+  line-height: 1.5;
+}
+
+.if-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.if-required {
+  color: $error-color;
+  font-weight: $font-weight-semibold;
+}
+
+// ── Grid helpers ─────────────────────────────────────────────────────────────
+.if-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-lg;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ── Field wrapper ────────────────────────────────────────────────────────────
+.if-field {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.if-label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.if-label--optional {
+  font-weight: $font-weight-normal;
+  color: $text-tertiary;
+}
+
+// ── Text inputs ───────────────────────────────────────────────────────────────
+.if-input {
+  width: 100%;
+  padding: 9px 13px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  color: $text-primary;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &::placeholder { color: $text-tertiary; }
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+
+  &--with-icon { padding-left: 36px; }
+}
+
+.if-input-icon-wrap {
+  position: relative;
+
+  .if-input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $text-tertiary;
+    pointer-events: none;
+  }
+}
+
+// ── Textarea ─────────────────────────────────────────────────────────────────
+.if-textarea {
+  width: 100%;
+  padding: 9px 13px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  color: $text-primary;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+  line-height: 1.5;
+
+  &::placeholder { color: $text-tertiary; }
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+
+  &:disabled {
+    background-color: $background;
+    color: $text-tertiary;
+    cursor: not-allowed;
+  }
+
+  &--tall { min-height: 120px; }
+}
+
+// ── Dropdown trigger (shared) ────────────────────────────────────────────────
+.if-slot__trigger {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 9px 13px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  cursor: text;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+
+  &:hover:not(.if-slot__trigger--disabled) { border-color: darken(#DADADA, 15%); }
+
+  &--open {
+    border-color: $border-color;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: none;
+  }
+
+  &--disabled {
+    background: $background;
+    cursor: not-allowed;
+  }
+}
+
+.if-slot__search {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  color: $text-primary;
+  outline: none;
+
+  &::placeholder { color: $text-tertiary; }
+  &:disabled { cursor: not-allowed; color: $text-tertiary; }
+}
+
+.if-chevron {
+  color: $text-tertiary;
+  flex-shrink: 0;
+  transition: transform $transition-fast;
+
+  &--open { transform: rotate(180deg); }
+}
+
+// ── Dropdown list ────────────────────────────────────────────────────────────
+.if-dropdown-wrap { position: relative; }
+
+.if-dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: $white;
+  border: 1px solid $border-color;
+  border-top: none;
+  border-bottom-left-radius: $border-radius-sm;
+  border-bottom-right-radius: $border-radius-sm;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: $z-index-dropdown;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  &__empty {
+    padding: $spacing-md;
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+    text-align: center;
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    padding: 10px $spacing-md;
+    border: none;
+    border-top: 1px solid $border-color;
+    background: transparent;
+    cursor: pointer;
+    font-family: $primary-font;
+    text-align: left;
+    transition: background-color $transition-fast;
+
+    &:first-child { border-top: none; }
+    &:hover { background-color: rgba($primary-color, 0.05); }
+    &:focus { outline: none; }
+    &:focus-visible { outline: none; background-color: rgba($primary-color, 0.08); }
+  }
+
+  &__name {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+  }
+
+  &__sub {
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+    margin-top: 2px;
+  }
+}
+
+// ── Project slots ─────────────────────────────────────────────────────────────
+// The column runs:  [ rank-badge ] [ card ]
+// A single vertical line is drawn behind the rank column, centered on the
+// badges, spanning from the center of the first badge to the center of the
+// last. Rank badges sit above it (opaque background hides the line behind
+// each badge) so it visually "connects" them.
+
+$rank-col-width:    40px;
+$rank-badge-height: 26px;
+$rank-offset-top:   10px;       // aligns rank badge vertically with picker top-row
+
+.if-slots {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.if-slot {
+  display: grid;
+  grid-template-columns: $rank-col-width 1fr;
+  gap: $spacing-md;
+  align-items: start;
+  position: relative;
+  z-index: 1;
+
+  // Raise this slot above siblings while its dropdown is open so the
+  // list floats on top of subsequent slots instead of being clipped.
+  &:has(.if-dropdown-list) {
+    z-index: $z-index-dropdown;
+  }
+
+  // Connector — every slot except the last draws a segment that spans
+  // from its own rank badge center, through its card body and the gap
+  // below, to the next slot's rank badge center. This keeps the line
+  // continuous while naturally ending at the last (#5) badge.
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: calc(#{$rank-col-width} / 2);
+    top: calc(#{$rank-offset-top} + #{$rank-badge-height} / 2);
+    height: calc(100% + #{$spacing-md});
+    width: 1px;
+    background-color: $border-color;
+    z-index: 0;
+    pointer-events: none;
+  }
+}
+
+// Standalone rank badge (outside the card)
+.if-slot__rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $rank-col-width;
+  height: $rank-badge-height;
+  margin-top: $rank-offset-top;
+  border-radius: $border-radius-lg;
+  background-color: $background;
+  color: $text-tertiary;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  flex-shrink: 0;
+  user-select: none;
+  transition: background-color $transition-fast, color $transition-fast;
+  position: relative;
+  z-index: 2;
+
+  .if-slot--filled & {
+    background-color: $primary-color;
+    color: $white;
+  }
+}
+
+// Slot card — the bordered container with picker + reasoning
+.if-slot__card {
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  transition: border-color $transition-fast;
+  overflow: visible;
+  min-width: 0;
+
+  .if-slot--filled & {
+    border-color: $primary-color;
+  }
+}
+
+.if-slot__picker {
+  position: relative;
+
+  // Make the trigger borderless — the card handles the border
+  .if-slot__trigger {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+
+    &--open { border: none; box-shadow: none; }
+    &:hover { border: none; }
+  }
+
+  // Dropdown anchors to the card
+  .if-dropdown-list {
+    left: 0;
+    right: 0;
+    border-top: 1px solid $border-color;
+    border-radius: 0 0 $border-radius-sm $border-radius-sm;
+  }
+}
+
+// Filled picker — show selected project name
+.if-slot__selected {
+  display: flex;
+  align-items: center;
+  padding: 10px 13px;
+  gap: $spacing-sm;
+  min-height: 44px;
+}
+
+.if-slot__selected-name {
+  flex: 1;
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.if-slot__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: $text-tertiary;
+  border-radius: $border-radius-sm;
+  flex-shrink: 0;
+  transition: color $transition-fast, background-color $transition-fast;
+
+  &:hover {
+    color: $error-color;
+    background-color: rgba($error-color, 0.08);
+  }
+}
+
+// Reasoning row inside the card
+.if-slot__body {
+  border-top: 1px solid $border-color;
+  padding: $spacing-sm $spacing-md;
+
+  .if-slot--filled & {
+    border-top-color: rgba($primary-color, 0.3);
+  }
+}
+
+.if-slot__reasoning {
+  border: none;
+  border-radius: 0;
+  padding: 6px 0;
+  font-size: $font-size-base;
+  resize: none;
+  background: transparent;
+  box-shadow: none;
+
+  &:focus { box-shadow: none; }
+
+  &:disabled {
+    background: transparent;
+    color: $text-tertiary;
+  }
+}
+
+// ── Pills (student selectors) ────────────────────────────────────────────────
+.if-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.if-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px 5px 11px;
+  background-color: rgba($primary-color, 0.1);
+  color: $primary-color;
+  border-radius: $border-radius-lg;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+
+  &__remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 2px;
+    cursor: pointer;
+    color: $primary-color;
+    border-radius: 50%;
+    opacity: 0.65;
+    transition: opacity $transition-fast;
+
+    &:hover { opacity: 1; }
+  }
+}
+
+// ── Multi-select wrapper ─────────────────────────────────────────────────────
+.if-multiselect {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+// ── Yes / No toggle ──────────────────────────────────────────────────────────
+.if-toggle-group {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.if-toggle {
+  padding: 9px 30px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: $text-secondary;
+  cursor: pointer;
+  transition: background-color $transition-fast, border-color $transition-fast, color $transition-fast;
+
+  &:hover:not(.if-toggle--active) {
+    border-color: $primary-color;
+    color: $primary-color;
+  }
+
+  &--active {
+    background-color: $primary-color;
+    border-color: $primary-color;
+    color: $white;
+  }
+}
+
+// ── Footer ───────────────────────────────────────────────────────────────────
+.if-footer {
+  padding: $spacing-md $spacing-xl;
+  background: $white;
+  border-bottom-left-radius: $border-radius-md;
+  border-bottom-right-radius: $border-radius-md;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: $spacing-sm;
+}
+
+.if-footer__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.interest-form__error {
+  font-size: $font-size-sm;
+  color: $error-color;
+  font-weight: $font-weight-medium;
+  margin: 0;
+}
+
+// ── Submitted confirmation ───────────────────────────────────────────────────
+.interest-form__submitted {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  padding: $spacing-xxl $spacing-lg;
+  background: $white;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.interest-form__submitted-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: rgba($primary-color, 0.12);
+  color: $primary-color;
+  font-size: 2rem;
+  font-weight: $font-weight-semibold;
+}
+
+.interest-form__submitted-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.interest-form__submitted-sub {
+  margin: 0;
+  font-size: $font-size-base;
+  color: $text-secondary;
+  max-width: 440px;
+}
+
+.interest-form__submitted-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
