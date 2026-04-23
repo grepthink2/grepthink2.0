@@ -1,0 +1,17 @@
+@use '@styles/index.scss' as *;
+
+.assign-page {
+  padding: $spacing-lg;
+  font-family: $primary-font;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  min-height: 100%;
+}
+
+.assign-page__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: $spacing-lg;
+  align-items: flex-start;
+}

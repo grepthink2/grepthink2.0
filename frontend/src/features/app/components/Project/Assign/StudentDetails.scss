@@ -1,0 +1,115 @@
+@use '@styles/index.scss' as *;
+@use './assignTokens' as *;
+
+.student-details {
+  padding: $spacing-md $spacing-md $spacing-md 36px;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  border-top: 1px solid $assign-muted-border;
+}
+
+.student-details__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.student-details__label {
+  margin: 0;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.student-details__note-box {
+  border: 1px solid $assign-muted-border;
+  border-radius: $border-radius-sm;
+  padding: 10px $spacing-md;
+  background: $assign-surface-bg;
+  font-size: $font-size-sm;
+  color: $text-secondary;
+}
+
+.student-details__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: $font-size-sm;
+  color: $primary-color;
+  text-decoration: none;
+  font-weight: $font-weight-medium;
+  width: fit-content;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.student-details__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  width: fit-content;
+
+  &--yes {
+    background: $assign-green-soft-bg;
+    color: $assign-green-soft-text;
+  }
+
+  &--no {
+    background: $assign-red-soft-bg;
+    color: $assign-red-soft-text;
+  }
+}
+
+.student-details__prefs {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.pref-card {
+  border: 1px solid $assign-muted-border;
+  border-radius: $border-radius-sm;
+  padding: 12px $spacing-md;
+  background: $white;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  &__name {
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  &__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  &__star {
+    color: $assign-yellow-star;
+    fill: $assign-yellow-star;
+  }
+
+  &__reason {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+    font-style: italic;
+    line-height: 1.4;
+  }
+}

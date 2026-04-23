@@ -1,0 +1,39 @@
+@use '@styles/index.scss' as *;
+@use './assignTokens' as *;
+
+.view-toggle {
+  display: inline-flex;
+  background: $white;
+  border: 1px solid $assign-muted-border;
+  border-radius: $border-radius-sm;
+  overflow: hidden;
+}
+
+.view-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  color: $text-tertiary;
+  cursor: pointer;
+  transition: background-color $transition-fast, color $transition-fast;
+
+  &:hover {
+    color: $text-primary;
+  }
+
+  &--active {
+    background: $primary-color;
+    color: $white;
+
+    &:hover {
+      color: $white;
+    }
+  }
+
+  & + & {
+    border-left: 1px solid $assign-muted-border;
+  }
+}

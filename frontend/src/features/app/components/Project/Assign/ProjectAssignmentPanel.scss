@@ -1,0 +1,54 @@
+@use '@styles/index.scss' as *;
+@use './assignTokens' as *;
+
+.assignment-panel {
+  background: $assign-card-bg;
+  border: 1px solid $assign-card-border;
+  border-radius: $border-radius-md;
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  min-width: 0;
+}
+
+.assignment-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.assignment-panel__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.assignment-panel__slots {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: 2px;
+  border: 1.5px dashed transparent;
+  border-radius: $border-radius-sm;
+  transition: border-color $transition-fast, background-color $transition-fast;
+
+  &--drag-over {
+    border-color: $primary-color;
+    background: $assign-primary-soft-bg;
+  }
+}
+
+.assignment-panel__empty {
+  padding: $spacing-xl 0;
+  text-align: center;
+  color: $text-tertiary;
+  font-size: $font-size-base;
+}
+
+.assignment-panel__footer {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+  text-align: right;
+}

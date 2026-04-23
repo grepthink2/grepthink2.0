@@ -85,6 +85,10 @@ function buildBreadcrumbs(
     if (pathname === '/app/create-project') {
       return [classSegment, { label: 'Projects', path: '/app/projects' }, { label: 'Create Project' }];
     }
+    // Project subroutes
+    if (pathname === '/app/assign-projects') {
+      return [classSegment, { label: 'Projects', path: '/app/projects' }, { label: 'Assign Projects' }];
+    }
   }
 
   // ── Student routes ───────────────────────────────────────────────────────

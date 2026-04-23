@@ -1,0 +1,114 @@
+@use '@styles/index.scss' as *;
+@use './assignTokens' as *;
+
+.students-panel {
+  background: $assign-card-bg;
+  border: 1px solid $assign-card-border;
+  border-radius: $border-radius-md;
+  padding: $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  min-width: 0;
+}
+
+.students-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.students-panel__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.students-panel__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.students-panel__search-icon {
+  position: absolute;
+  left: $spacing-md;
+  color: $assign-subtle-text;
+  pointer-events: none;
+}
+
+.students-panel__search-input {
+  width: 100%;
+  padding: 10px $spacing-md 10px 40px;
+  border: 1px solid $assign-muted-border;
+  border-radius: $border-radius-sm;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  background: $assign-surface-bg;
+  color: $text-primary;
+  caret-color: $primary-color;
+
+  &::placeholder {
+    color: $assign-subtle-text;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    background: $white;
+    box-shadow: 0 0 0 3px rgba(1, 129, 86, 0.12);
+  }
+}
+
+.students-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  max-height: 560px;
+  overflow-y: auto;
+  padding: 2px;
+  border: 1.5px dashed transparent;
+  border-radius: $border-radius-sm;
+  transition: border-color $transition-fast, background-color $transition-fast;
+
+  &--drag-over {
+    border-color: $assign-red-soft-text;
+    background: $assign-red-soft-bg;
+  }
+}
+
+.students-panel__empty {
+  padding: $spacing-lg 0;
+  text-align: center;
+  color: $text-tertiary;
+  font-size: $font-size-base;
+}
+
+.students-panel__graph-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px $spacing-lg;
+  color: $text-tertiary;
+  gap: $spacing-sm;
+}
+
+.students-panel__graph-icon {
+  color: $assign-subtle-text;
+  margin-bottom: $spacing-sm;
+}
+
+.students-panel__graph-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.students-panel__graph-subtitle {
+  margin: 0;
+  font-size: $font-size-base;
+  color: $text-tertiary;
+}

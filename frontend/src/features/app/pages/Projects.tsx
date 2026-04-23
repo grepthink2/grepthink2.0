@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import type { ApiProject } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import AddProjectButton from '@features/app/components/Project/AddProjectButton';
+import AssignProjectsButton from '@features/app/components/Project/AssignProjectsButton';
 import ProjectList, {
   type UiProject,
   type ProjectSentiment,
@@ -141,6 +142,7 @@ const Projects: React.FC = () => {
           <div className="projects__header">
             <div className="projects__header-actions">
               <AddProjectButton />
+              <AssignProjectsButton />
             </div>
           </div>
 
