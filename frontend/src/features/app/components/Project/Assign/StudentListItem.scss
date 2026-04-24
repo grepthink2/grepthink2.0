@@ -28,11 +28,17 @@
     background: $assign-surface-bg;
   }
 
+  // Unassigned items are draggable — the whole card is a grab handle.
   &[draggable='true'] {
     cursor: grab;
 
     &:active {
       cursor: grabbing;
+    }
+
+    // The row button itself should not override the grab cursor.
+    .student-item__row {
+      cursor: inherit;
     }
   }
 }
@@ -53,6 +59,8 @@
   border: none;
   padding: 12px $spacing-md;
   font-family: $primary-font;
+  // Default pointer for non-draggable (assigned) items.
+  // Overridden to inherit (grab) when the parent is draggable.
   cursor: pointer;
   text-align: left;
   min-height: $assign-row-min-height;
@@ -88,6 +96,8 @@
   color: $text-tertiary;
   flex-shrink: 0;
   transition: transform $transition-fast;
+  // Restore pointer cursor just for the arrow area so it signals "expand".
+  cursor: pointer;
 
   &--open {
     transform: rotate(90deg);
