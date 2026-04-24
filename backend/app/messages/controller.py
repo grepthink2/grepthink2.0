@@ -59,3 +59,40 @@ def can_message(a_id: str, b_id: str) -> bool:
     if roles.get(a_id) == "instructor" and roles.get(b_id) == "instructor":
         return False
     return has_shared_class(a_id, b_id)
+
+
+def _canonical_pair(a_id: str, b_id: str) -> tuple[str, str]:
+    """Return (smaller, larger) so all (a, b) lookups hit one canonical row."""
+    return (a_id, b_id) if a_id < b_id else (b_id, a_id)
+
+
+def _get_or_create_conversation(a_id: str, b_id: str) -> str:
+    """Return the conversation id for the pair, creating it if absent."""
+    user_a, user_b = _canonical_pair(a_id, b_id)
+    existing = (
+        service_client.table("conversations")
+        .select("id")
+        .eq("user_a", user_a)
+        .eq("user_b", user_b)
+        .maybe_single()
+        .execute()
+    )
+    if existing.data:
+        return existing.data["id"]
+    created = (
+        service_client.table("conversations")
+        .insert({"user_a": user_a, "user_b": user_b})
+        .execute()
+    )
+    if not created.data:
+        # Lost a create race — refetch.
+        refetch = (
+            service_client.table("conversations")
+            .select("id")
+            .eq("user_a", user_a)
+            .eq("user_b", user_b)
+            .maybe_single()
+            .execute()
+        )
+        return refetch.data["id"]
+    return created.data[0]["id"]
