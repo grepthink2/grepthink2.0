@@ -1,12 +1,16 @@
 @use '@styles/index.scss' as *;
 
-/* Two-pane layout — fills the route's viewport area below the header. */
+/* Two-pane layout — fills the route's viewport area below the header.
+   Uses an explicit viewport-derived height (matches StudentHomeDashboard
+   pattern) so the inner thread scroll has a real height to work against.
+   `height: 100%` doesn't propagate without an unbroken chain of parent
+   heights, so use 100vh minus the ~64px header. */
 .messages-page {
   display: grid;
   grid-template-columns: 320px 1fr;
-  height: 100%;
-  min-height: 0;
+  height: calc(100vh - 64px);
   background: $background;
+  color: $text-primary; /* defeat the inherited :root white-on-dark text */
 
   &__list {
     border-right: 1px solid $border-color;

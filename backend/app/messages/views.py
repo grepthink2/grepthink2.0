@@ -28,9 +28,17 @@ def send_message(
     body: SendMessageRequest,
     user_id: str = Depends(require_user),
 ) -> SendMessageResponse:
-    result = controller.send_message(
-        sender_id=user_id, to_user_id=body.to_user_id, body=body.body,
-    )
+    try:
+        result = controller.send_message(
+            sender_id=user_id, to_user_id=body.to_user_id, body=body.body,
+        )
+    except Exception:
+        # Log the full traceback so a 500 in production isn't a black box.
+        logger.exception(
+            "send_message failed | sender=%s target=%s body_len=%s",
+            user_id, body.to_user_id, len(body.body),
+        )
+        raise
     return SendMessageResponse(**result)
 
 
