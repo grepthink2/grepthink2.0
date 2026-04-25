@@ -8,9 +8,13 @@ from __future__ import annotations
 
 import logging
 
+from fastapi import HTTPException
+
 from app.database.client import service_client
 
 logger = logging.getLogger(__name__)
+
+MAX_MESSAGE_CODEPOINTS = 1024
 
 
 def get_profile_roles(user_ids: list[str]) -> dict[str, str | None]:
@@ -96,3 +100,55 @@ def _get_or_create_conversation(a_id: str, b_id: str) -> str:
         )
         return refetch.data["id"]
     return created.data[0]["id"]
+
+
+def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
+    """Validate, persist, and mark sender as read-up-to-now.
+
+    Returns: {"conversation_id": "...", "message": {...row...}}.
+    Raises HTTPException(400|403) on validation/eligibility failures.
+    """
+    if to_user_id == sender_id:
+        raise HTTPException(status_code=400, detail="Cannot message yourself")
+
+    cleaned = body.strip()
+    if not cleaned:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    if len(body) > MAX_MESSAGE_CODEPOINTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Message exceeds {MAX_MESSAGE_CODEPOINTS} character limit",
+        )
+
+    if not can_message(sender_id, to_user_id):
+        logger.info(
+            "send_message: blocked | sender=%s target=%s reason=ineligible",
+            sender_id, to_user_id,
+        )
+        raise HTTPException(status_code=403, detail="Cannot message this user")
+
+    conversation_id = _get_or_create_conversation(sender_id, to_user_id)
+
+    inserted = (
+        service_client.table("messages")
+        .insert({
+            "conversation_id": conversation_id,
+            "sender_id": sender_id,
+            "body": body,
+        })
+        .execute()
+    )
+    message_row = inserted.data[0]
+
+    # Sender is implicitly "read" through their own latest send.
+    service_client.table("conversation_reads").upsert({
+        "conversation_id": conversation_id,
+        "user_id": sender_id,
+        "last_read_at": message_row["created_at"],
+    }, on_conflict="conversation_id,user_id").execute()
+
+    logger.info(
+        "send_message: inserted | sender=%s conv=%s msg=%s",
+        sender_id, conversation_id, message_row["id"],
+    )
+    return {"conversation_id": conversation_id, "message": message_row}
