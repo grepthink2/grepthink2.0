@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import { api, type ApiConversationSummary } from '@/lib/api';
+import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { useConversationMessages } from '../hooks/useConversationMessages';
 import { useConversations } from '../hooks/useConversations';
 import { MessageBubble } from './MessageBubble';
@@ -49,7 +50,10 @@ export const ConversationThread: React.FC<Props> = ({ conversation }) => {
       : null;
 
   const otherName =
-    conversation.other_user.name || conversation.other_user.email || 'Unknown';
+    conversation.other_user.name ||
+    (conversation.other_user.email
+      ? emailToDisplayName(conversation.other_user.email)
+      : 'Unknown');
 
   const handleSend = async (body: string) => {
     await api.sendMessage(conversation.other_user.id, body);

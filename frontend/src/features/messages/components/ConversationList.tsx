@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ApiConversationSummary } from '@/lib/api';
+import { emailToDisplayName } from '@features/app/utils/memberUtils';
 
 interface Props {
   conversations: ApiConversationSummary[];
@@ -28,7 +29,9 @@ export const ConversationList: React.FC<Props> = ({ conversations, loading }) =>
     <ul className="messages-list">
       {conversations.map(c => {
         const isActive = c.id === activeId;
-        const name = c.other_user.name || c.other_user.email || 'Unknown user';
+        const name =
+          c.other_user.name ||
+          (c.other_user.email ? emailToDisplayName(c.other_user.email) : 'Unknown user');
         const preview = c.last_message?.body ?? '';
         const time = c.last_message_at
           ? new Date(c.last_message_at).toLocaleDateString([], {
