@@ -1,8 +1,6 @@
 """HTTP handlers for the messages feature. Thin layer over controller.py."""
 from __future__ import annotations
 
-import logging
-
 from fastapi import Depends, Response, status
 
 from app.dependencies import require_user
@@ -13,8 +11,6 @@ from app.messages.models import (
     SendMessageRequest,
     SendMessageResponse,
 )
-
-logger = logging.getLogger(__name__)
 
 
 def list_conversations(
@@ -28,17 +24,9 @@ def send_message(
     body: SendMessageRequest,
     user_id: str = Depends(require_user),
 ) -> SendMessageResponse:
-    try:
-        result = controller.send_message(
-            sender_id=user_id, to_user_id=body.to_user_id, body=body.body,
-        )
-    except Exception:
-        # Log the full traceback so a 500 in production isn't a black box.
-        logger.exception(
-            "send_message failed | sender=%s target=%s body_len=%s",
-            user_id, body.to_user_id, len(body.body),
-        )
-        raise
+    result = controller.send_message(
+        sender_id=user_id, to_user_id=body.to_user_id, body=body.body,
+    )
     return SendMessageResponse(**result)
 
 

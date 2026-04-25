@@ -264,19 +264,6 @@ def list_inbox(*, caller_id: str) -> list[dict]:
     out: list[dict] = []
     for row in rows:
         other_id = row["user_b"] if row["user_a"] == caller_id else row["user_a"]
-        # Defensive: catch cases where caller_id matches neither participant
-        # (shouldn't happen given the .or_() filter, but if it does, we'd
-        # silently return user_a as "other" and confuse the UI).
-        if caller_id not in (row["user_a"], row["user_b"]):
-            logger.warning(
-                "list_inbox: caller not in pair | caller=%s row=%s",
-                caller_id, row,
-            )
-        if other_id == caller_id:
-            logger.warning(
-                "list_inbox: other_id == caller_id | row=%s caller=%s",
-                row, caller_id,
-            )
         other_user = profiles_by_id.get(other_id)
         if other_user is None:
             other_user = {"id": other_id, "email": None, "name": None}
