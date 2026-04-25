@@ -4,6 +4,7 @@ import { TbLayoutSidebar } from "react-icons/tb";
 import { ChevronDown } from 'lucide-react';
 import { instructorSidebarConfig, studentSidebarConfig, type UserRole } from '../../config/sidebar';
 import { useClass } from '@/lib/classContext';
+import { useUnreadTotal } from '@features/messages/hooks/useUnreadTotal';
 import logo from '@assets/grepthink l logo.svg?url';
 import './Sidebar.scss';
 
@@ -21,7 +22,17 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { classes, selectedClass, setSelectedClass } = useClass();
+  const unreadTotal = useUnreadTotal();
   const sidebarConfig = role === 'instructor' ? instructorSidebarConfig : studentSidebarConfig;
+
+  // Browser tab title prefix — `(N) GrepThink` when there are unread messages.
+  useEffect(() => {
+    if (unreadTotal > 0) {
+      document.title = `(${unreadTotal}) GrepThink`;
+    } else {
+      document.title = 'GrepThink';
+    }
+  }, [unreadTotal]);
 
   const handleNavigation = (path: string) => {
     // If it's the create class path, open the modal instead
@@ -145,6 +156,9 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
                         <img src={item.iconSvg} alt={item.label} className="icon-svg" />
                       ) : null}
                       {!isCollapsed && <span>{item.label}</span>}
+                      {item.path === '/app/messages' && unreadTotal > 0 && (
+                        <span className="sidebar-item__badge">{unreadTotal}</span>
+                      )}
                     </button>
                   </li>
                 );

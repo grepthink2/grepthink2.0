@@ -24,6 +24,8 @@ import AssignmentDetail from '@features/app/pages/AssignmentDetail';
 import BrowseProjects from '@features/app/pages/BrowseProjects';
 import MyProject from '@features/app/pages/MyProject';
 import TestProjects from '@pages/TestProjects';
+import Messages from '@features/messages/pages/Messages';
+import { ConversationsProvider } from '@features/messages/hooks/useConversations';
 
 function App() {
   return (
@@ -40,12 +42,17 @@ function App() {
         <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* App routes with persistent sidebar (protected: requires auth) */}
+        {/* App routes with persistent sidebar (protected: requires auth).
+            ConversationsProvider lives here so the unread badge in the
+            sidebar (and the tab title) update even when the user isn't
+            on /app/messages. */}
         <Route path="/app" element={<ProtectedRoute />}>
-          <Route element={<AppView />}>
+          <Route element={<ConversationsProvider><AppView /></ConversationsProvider>}>
             <Route index element={<Navigate to="/app/home" replace />} />
             <Route path="home" element={<Home />} />
-            <Route path="messages" element={<div>Messages - Coming Soon</div>} />
+            <Route path="messages" element={<Messages />} />
+            <Route path="messages/compose" element={<Messages />} />
+            <Route path="messages/:conversationId" element={<Messages />} />
             <Route path="my-classes" element={<MyClasses />} />
             <Route path="class-settings" element={<div>Class settings — Coming soon</div>} />
             <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />

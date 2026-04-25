@@ -250,6 +250,21 @@
     filter: brightness(0) invert(1); // Make SVG white
   }
 
+  // Unread message count badge — appears next to the Messages item.
+  // Polled every 15s via the ConversationsProvider.
+  &__badge {
+    margin-left: auto;
+    background: #ff3b30;
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1.4;
+  }
+
   &:hover {
     background-color: rgba(255, 255, 255, 0.1);
   }
