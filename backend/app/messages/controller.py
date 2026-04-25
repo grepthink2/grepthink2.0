@@ -152,3 +152,103 @@ def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
         sender_id, conversation_id, message_row["id"],
     )
     return {"conversation_id": conversation_id, "message": message_row}
+
+
+def list_inbox(*, caller_id: str) -> list[dict]:
+    """Return all conversations the caller participates in, hydrated with
+    other_user, last_message, unread_count, other_user_last_read_at, can_send.
+
+    Filters out conversations with no messages (last_message_at IS NULL).
+    Sorted by last_message_at DESC.
+    """
+    convs = (
+        service_client.table("conversations")
+        .select("id, user_a, user_b, last_message_at")
+        .or_(f"user_a.eq.{caller_id},user_b.eq.{caller_id}")
+        .not_.is_("last_message_at", "null")
+        .order("last_message_at", desc=True)
+        .execute()
+    )
+    rows = convs.data or []
+    if not rows:
+        return []
+
+    other_ids = [
+        (r["user_b"] if r["user_a"] == caller_id else r["user_a"])
+        for r in rows
+    ]
+    conv_ids = [r["id"] for r in rows]
+
+    profiles_res = (
+        service_client.table("profiles")
+        .select("id, email, name")
+        .in_("id", other_ids)
+        .execute()
+    )
+    profiles_by_id = {p["id"]: p for p in (profiles_res.data or [])}
+
+    reads_res = (
+        service_client.table("conversation_reads")
+        .select("conversation_id, user_id, last_read_at")
+        .in_("conversation_id", conv_ids)
+        .execute()
+    )
+    # reads_by_conv: {conv_id: {user_id: last_read_at}}
+    reads_by_conv: dict[str, dict[str, str]] = {}
+    for r in (reads_res.data or []):
+        reads_by_conv.setdefault(r["conversation_id"], {})[r["user_id"]] = r["last_read_at"]
+
+    out: list[dict] = []
+    for row in rows:
+        other_id = row["user_b"] if row["user_a"] == caller_id else row["user_a"]
+        other_user = profiles_by_id.get(other_id)
+        if other_user is None:
+            other_user = {"id": other_id, "email": None, "name": None}
+
+        # Latest message preview
+        last_msg_res = (
+            service_client.table("messages")
+            .select("id, sender_id, body, created_at")
+            .eq("conversation_id", row["id"])
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        last_message = (last_msg_res.data or [None])[0]
+
+        # Unread for caller: messages newer than caller's last_read, sent by other.
+        caller_last_read = reads_by_conv.get(row["id"], {}).get(caller_id)
+        unread_count = 0
+        if caller_last_read is None:
+            # Never marked read — every message from other counts as unread.
+            unread_res = (
+                service_client.table("messages")
+                .select("id", count="exact")
+                .eq("conversation_id", row["id"])
+                .neq("sender_id", caller_id)
+                .execute()
+            )
+            unread_count = unread_res.count or 0
+        else:
+            unread_res = (
+                service_client.table("messages")
+                .select("id", count="exact")
+                .eq("conversation_id", row["id"])
+                .gt("created_at", caller_last_read)
+                .neq("sender_id", caller_id)
+                .execute()
+            )
+            unread_count = unread_res.count or 0
+
+        other_last_read = reads_by_conv.get(row["id"], {}).get(other_id)
+
+        out.append({
+            "id": row["id"],
+            "other_user": other_user,
+            "last_message": last_message,
+            "unread_count": unread_count,
+            "other_user_last_read_at": other_last_read,
+            "can_send": can_message(caller_id, other_id),
+            "last_message_at": row["last_message_at"],
+        })
+    return out
