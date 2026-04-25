@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import './MemberManagerModal.scss';
 
 import { emailToDisplayName, getInitials } from '@/features/app/utils/memberUtils';
+import { MessageButton } from '@features/messages/components/MessageButton';
 
 function projectRoleLabel(role: string): string {
   switch (role) {
@@ -301,6 +302,9 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                               <XCircle size={16} />
                               {isDeclining ? 'Declining...' : 'Decline'}
                             </button>
+                            {req.user_id && (
+                              <MessageButton toUserId={req.user_id} toUserName={name} />
+                            )}
                           </div>
                         </li>
                       );

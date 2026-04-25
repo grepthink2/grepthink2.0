@@ -7,6 +7,7 @@ import LinkedInIcon from '@assets/mdi_linkedin.svg';
 import CodeIcon from '@assets/material-symbols_code-rounded.svg';
 import './ProjectView.scss';
 import { useAuth } from '@/lib/auth';
+import { MessageButton } from '@features/messages/components/MessageButton';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
 import EditProjectModal from '../EditProject/EditProjectModal';
@@ -75,7 +76,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   // sponsorWebsite,
   // sponsorDescription,
 }) => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isInstructor = role === 'instructor';
   const canManageProject =
     isInstructor ||
@@ -282,6 +283,9 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                         <a href={member.linkedInUrl || '#'} className="project-view__link-icon-wrap" title="LinkedIn" aria-label={`${member.displayName} LinkedIn`} onClick={(e) => !member.linkedInUrl && e.preventDefault()}>
                           <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
                         </a>
+                        {member.id && member.id !== user?.id && (
+                          <MessageButton toUserId={member.id} toUserName={member.displayName} />
+                        )}
                       </div>
                     </div>
                   </div>
