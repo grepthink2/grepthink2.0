@@ -154,6 +154,60 @@ def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
     return {"conversation_id": conversation_id, "message": message_row}
 
 
+def _conversation_or_403(conversation_id: str, caller_id: str) -> dict:
+    """Load conversation, ensuring caller is one of its two participants.
+
+    Raises 404 if the conversation doesn't exist, 403 if caller isn't a participant.
+    Honors Q4=A: read-only conversations stay readable by their participants.
+    """
+    res = (
+        service_client.table("conversations")
+        .select("id, user_a, user_b")
+        .eq("id", conversation_id)
+        .maybe_single()
+        .execute()
+    )
+    conv = res.data
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if caller_id not in (conv["user_a"], conv["user_b"]):
+        logger.warning(
+            "messages: participant check failed | caller=%s conv=%s",
+            caller_id, conversation_id,
+        )
+        raise HTTPException(status_code=403, detail="Not a participant")
+    return conv
+
+
+def list_messages(*, conversation_id: str, caller_id: str, limit: int = 50) -> list[dict]:
+    """Latest `limit` messages for a conversation, newest first.
+
+    Spec Q9=A: no scroll-up pagination in v1; we always return the latest
+    `limit` and the frontend re-fetches the same set every poll tick.
+    """
+    _conversation_or_403(conversation_id, caller_id)
+    res = (
+        service_client.table("messages")
+        .select("id, sender_id, body, created_at")
+        .eq("conversation_id", conversation_id)
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return res.data or []
+
+
+def mark_read(*, conversation_id: str, caller_id: str) -> None:
+    """Upsert caller's read marker to now()."""
+    _conversation_or_403(conversation_id, caller_id)
+    from datetime import datetime, timezone
+    service_client.table("conversation_reads").upsert({
+        "conversation_id": conversation_id,
+        "user_id": caller_id,
+        "last_read_at": datetime.now(timezone.utc).isoformat(),
+    }, on_conflict="conversation_id,user_id").execute()
+
+
 def list_inbox(*, caller_id: str) -> list[dict]:
     """Return all conversations the caller participates in, hydrated with
     other_user, last_message, unread_count, other_user_last_read_at, can_send.
