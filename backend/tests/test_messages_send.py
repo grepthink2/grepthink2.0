@@ -120,3 +120,23 @@ def test_get_or_create_inserts_when_absent(client):
         "00000000-0000-0000-0000-000000000002",
     )
     assert result == "new-conv"
+
+
+@patch("app.messages.controller.service_client")
+def test_get_or_create_handles_none_return_from_maybe_single(client):
+    """Regression: supabase-py 2.x returns None (not a response object) from
+    `.maybe_single().execute()` when no row matches. Earlier versions returned
+    a response with `data=None`. The controller must handle both."""
+    from app.messages.controller import _get_or_create_conversation
+
+    # maybe_single returns None when no row exists (supabase-py 2.x behavior)
+    select_chain = client.table.return_value.select.return_value.eq.return_value.eq.return_value.maybe_single
+    select_chain.return_value.execute.return_value = None
+    insert_chain = client.table.return_value.insert
+    insert_chain.return_value.execute.return_value = MagicMock(data=[{"id": "fresh"}])
+
+    result = _get_or_create_conversation(
+        "00000000-0000-0000-0000-000000000001",
+        "00000000-0000-0000-0000-000000000002",
+    )
+    assert result == "fresh"

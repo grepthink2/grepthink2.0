@@ -73,6 +73,9 @@ def _canonical_pair(a_id: str, b_id: str) -> tuple[str, str]:
 def _get_or_create_conversation(a_id: str, b_id: str) -> str:
     """Return the conversation id for the pair, creating it if absent."""
     user_a, user_b = _canonical_pair(a_id, b_id)
+    # NOTE: supabase-py 2.x returns *None* (not a response object) from
+    # `.maybe_single().execute()` when no row matches. Older versions
+    # returned a response with `data=None`. Always guard for `None`.
     existing = (
         service_client.table("conversations")
         .select("id")
@@ -81,7 +84,7 @@ def _get_or_create_conversation(a_id: str, b_id: str) -> str:
         .maybe_single()
         .execute()
     )
-    if existing.data:
+    if existing is not None and existing.data:
         return existing.data["id"]
     created = (
         service_client.table("conversations")
@@ -98,6 +101,11 @@ def _get_or_create_conversation(a_id: str, b_id: str) -> str:
             .maybe_single()
             .execute()
         )
+        if refetch is None or not refetch.data:
+            raise HTTPException(
+                status_code=500,
+                detail="Conversation insert returned no data and refetch failed",
+            )
         return refetch.data["id"]
     return created.data[0]["id"]
 
@@ -167,7 +175,8 @@ def _conversation_or_403(conversation_id: str, caller_id: str) -> dict:
         .maybe_single()
         .execute()
     )
-    conv = res.data
+    # supabase-py 2.x: None when the row doesn't exist.
+    conv = res.data if res is not None else None
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
     if caller_id not in (conv["user_a"], conv["user_b"]):
