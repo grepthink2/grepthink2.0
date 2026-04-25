@@ -45,7 +45,20 @@ if settings.SUPABASE_JWK_JSON:
 
 _jwks_client: PyJWKClient | None = None
 if settings.SUPABASE_URL:
-    _jwks_client = PyJWKClient(f"{settings.SUPABASE_URL}/auth/v1/keys")
+    # Supabase serves JWKS at the standard well-known path and requires
+    # the project's anon key as an `apikey` header. Without the header
+    # the endpoint returns 401, PyJWKClient silently falls back to the
+    # static JWK, and every request pays an extra failed HTTP roundtrip.
+    # The old `/auth/v1/keys` path 404s on current Supabase projects.
+    _jwks_headers: dict[str, str] = {}
+    if settings.SUPABASE_KEY:
+        _jwks_headers["apikey"] = settings.SUPABASE_KEY
+    _jwks_client = PyJWKClient(
+        f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json",
+        headers=_jwks_headers,
+        cache_jwk_set=True,
+        lifespan=300,
+    )
     logger.debug("Initialized PyJWKClient for %s", settings.SUPABASE_URL)
 
 
