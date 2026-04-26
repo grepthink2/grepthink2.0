@@ -89,6 +89,9 @@ function buildBreadcrumbs(
     if (pathname === '/app/assign-projects') {
       return [classSegment, { label: 'Projects', path: '/app/projects' }, { label: 'Assign Projects' }];
     }
+    if (pathname === '/app/staff-projects') {
+      return [classSegment, { label: 'Projects', path: '/app/projects' }, { label: 'Staffing' }];
+    }
   }
 
   // ── Student routes ───────────────────────────────────────────────────────

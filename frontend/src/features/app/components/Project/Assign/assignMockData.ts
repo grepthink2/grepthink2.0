@@ -1,4 +1,4 @@
-import type { AssignProject, Student } from './assignTypes';
+import type { AssignProject, Student, StaffingProject } from './assignTypes';
 
 export const MOCK_PROJECTS: AssignProject[] = [
   {
@@ -186,3 +186,14 @@ export const MOCK_STUDENTS: Student[] = [
 ];
 
 export const INITIAL_UNASSIGNED_COUNT = 10;
+
+export const MOCK_STAFFING_PROJECTS: StaffingProject[] = [
+  { id: 'p1',  name: 'Music Discovery Platform',   sponsor: 'SoundTech',          popularity: 4.2, seatsTaken: 0, totalSeats: 0, breadth: 4,  depth: 9  },
+  { id: 'p2',  name: 'Health Tracking App',         sponsor: 'HealthTech LLC',     popularity: 4.6, seatsTaken: 0, totalSeats: 0, breadth: 5,  depth: 12 },
+  { id: 'p3',  name: 'Recipe Sharing Platform',     sponsor: 'FoodByte',           popularity: 4.1, seatsTaken: 0, totalSeats: 0, breadth: 6,  depth: 14 },
+  { id: 'p4',  name: 'Course Scheduling Assistant', sponsor: 'University IT',      popularity: 3.5, seatsTaken: 0, totalSeats: 0, breadth: 7,  depth: 15 },
+  { id: 'p5',  name: 'E-Commerce Platform',         sponsor: 'Retail Solutions',   popularity: 4.8, seatsTaken: 0, totalSeats: 0, breadth: 8,  depth: 18 },
+  { id: 'p6',  name: 'Smart Campus Navigator',      sponsor: 'CampusLabs',         popularity: 4.0, seatsTaken: 0, totalSeats: 0, breadth: 9,  depth: 20 },
+  { id: 'p7',  name: 'Research Paper Recommender',  sponsor: 'Academia AI',        popularity: 3.8, seatsTaken: 0, totalSeats: 0, breadth: 10, depth: 21 },
+  { id: 'p8',  name: 'Volunteer Matching App',      sponsor: 'GiveBack Co',        popularity: 4.3, seatsTaken: 0, totalSeats: 0, breadth: 11, depth: 24 },
+];

@@ -44,3 +44,30 @@ export interface AssignSummary {
   projectsRemaining: number;
   projectsTotal: number;
 }
+
+/** Project augmented with interest metrics used in the Staffing step. */
+export interface StaffingProject extends AssignProject {
+  /** Number of students who expressed any interest in this project. */
+  breadth: number;
+  /** Sum of all interest ratings (1–5) for this project. */
+  depth: number;
+}
+
+/** `StaffingProject` with computed ranks (derived, never stored). */
+export interface RankedStaffingProject extends StaffingProject {
+  /** depth / breadth — average interest intensity. */
+  strength: number;
+  /** Rank by breadth (1 = most interested students). */
+  bRank: number;
+  /** Rank by depth (1 = highest cumulative interest). */
+  dRank: number;
+  /** Rank by strength (1 = highest average intensity). */
+  sRank: number;
+  /** bRank + dRank + sRank. */
+  sumRanks: number;
+  /** Rank by sumRanks (1 = overall most desirable). */
+  totalRank: number;
+}
+
+export type StaffingSortKey = 'name' | 'seats' | 'breadth' | 'depth' | 'strength' | 'bRank' | 'dRank' | 'sRank' | 'sumRanks' | 'totalRank';
+export type SortDir = 'asc' | 'desc';

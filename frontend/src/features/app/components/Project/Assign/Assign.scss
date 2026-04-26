@@ -9,6 +9,33 @@
   min-height: 100%;
 }
 
+.assign-page__header {
+  display: flex;
+  align-items: center;
+}
+
+.assign-page__back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: 6px $spacing-sm;
+  background: transparent;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-family: $primary-font;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $text-secondary;
+  cursor: pointer;
+  transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+
+  &:hover {
+    background: #f3f4f6;
+    border-color: darken(#DADADA, 10%);
+    color: $text-primary;
+  }
+}
+
 .assign-page__columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

@@ -6,7 +6,7 @@ const AssignProjectsButton: React.FC = () => (
   <ProjectActionButton
     icon={GitFork}
     label="Assign"
-    to="/app/assign-projects"
+    to="/app/staff-projects"
   />
 );
 

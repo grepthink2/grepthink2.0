@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import AssignSummaryBar from './AssignSummaryBar';
 import StudentsPanel from './StudentsPanel';
 import ProjectAssignmentPanel from './ProjectAssignmentPanel';
@@ -9,6 +11,7 @@ import './Assign.scss';
 type Assignments = Record<string, (string | null)[]>;
 
 const Assign: React.FC = () => {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<AssignProject[]>(MOCK_PROJECTS);
   const [assignments, setAssignments] = useState<Assignments>(() => {
     const initial: Assignments = {};
@@ -182,6 +185,16 @@ const Assign: React.FC = () => {
 
   return (
     <div className="assign-page">
+      <div className="assign-page__header">
+        <button
+          className="assign-page__back-btn"
+          onClick={() => navigate('/app/staff-projects')}
+        >
+          <ArrowLeft size={15} />
+          Back to Staffing
+        </button>
+      </div>
+
       <AssignSummaryBar
         summary={{
           studentsUnassigned,
