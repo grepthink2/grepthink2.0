@@ -18,6 +18,8 @@ import Modules from '@features/app/pages/Modules';
 import Dashboard from '@features/app/pages/Dashboard';
 import ProjectDetails from '@features/app/pages/ProjectDetails';
 import CreateProject from '@features/app/pages/CreateProject';
+import Assign from '@features/app/components/Project/Assign/Assign';
+import Staffing from '@features/app/components/Project/Assign/Staffing';
 import MyClasses from '@features/app/pages/MyClasses';
 import Assignments from '@features/app/pages/Assignments';
 import AssignmentDetail from '@features/app/pages/AssignmentDetail';
@@ -56,6 +58,8 @@ function App() {
             <Route path="modules" element={<Modules />} />
             <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
             <Route path="create-project" element={<CreateProject />} />
+            <Route path="assign-projects" element={<Assign />} />
+            <Route path="staff-projects" element={<Staffing />} />
             <Route path="browse-projects" element={<BrowseProjects />} />
             <Route path="my-project" element={<MyProject />} />
             <Route path="assignments" element={<Assignments />} />

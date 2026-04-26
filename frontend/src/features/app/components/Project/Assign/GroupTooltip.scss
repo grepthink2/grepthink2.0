@@ -1,0 +1,66 @@
+@use '@styles/index.scss' as *;
+@use './assignTokens' as *;
+
+.group-tooltip__trigger {
+  display: inline-flex;
+  align-items: center;
+}
+
+.group-tooltip {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 8px));
+  z-index: 1000;
+  min-width: 160px;
+  padding: 8px 12px;
+  background: $white;
+  border: 1px solid $assign-muted-border;
+  border-radius: $border-radius-sm;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: group-tooltip-in 0.1s ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background: $white;
+    border-right: 1px solid $assign-muted-border;
+    border-bottom: 1px solid $assign-muted-border;
+    transform: translate(-50%, -4px) rotate(45deg);
+  }
+}
+
+@keyframes group-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 4px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 8px));
+  }
+}
+
+.group-tooltip__title {
+  font-size: 10px;
+  font-weight: $font-weight-semibold;
+  color: $assign-muted-text;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.group-tooltip__member {
+  font-size: $font-size-sm;
+  color: $text-primary;
+  padding: 2px 0;
+
+  &--self {
+    font-weight: $font-weight-semibold;
+    color: $primary-color;
+  }
+}

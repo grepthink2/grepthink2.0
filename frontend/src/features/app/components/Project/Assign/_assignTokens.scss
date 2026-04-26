@@ -1,0 +1,18 @@
+@use '@styles/index.scss' as *;
+
+// Local tokens shared by components on the Assign page.
+$assign-card-bg: $white;
+$assign-card-border: #e5e7eb;
+$assign-surface-bg: #f7f8fa;
+$assign-muted-border: #e5e7eb;
+$assign-muted-text: #6b7280;
+$assign-subtle-text: #9ca3af;
+$assign-green-soft-bg: #ecfdf3;
+$assign-green-soft-text: #027a48;
+$assign-red-soft-bg: #fef3f2;
+$assign-red-soft-text: #b42318;
+$assign-yellow-star: #f5b400;
+$assign-primary-soft-bg: #e8f5ee;
+
+// Shared sizes
+$assign-row-min-height: 60px;

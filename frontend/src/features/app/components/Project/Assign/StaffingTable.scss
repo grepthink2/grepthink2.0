@@ -1,0 +1,166 @@
+@use '@styles/index.scss' as *;
+@use './assignTokens' as *;
+
+.staffing-table {
+  background: $assign-card-bg;
+  border: 1px solid $assign-card-border;
+  border-radius: $border-radius-md;
+  overflow: hidden;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+  }
+
+  // ── Header ──────────────────────────────────────────────────────
+  &__th {
+    padding: $spacing-sm $spacing-md;
+    background: $assign-surface-bg;
+    border-bottom: 1px solid $assign-card-border;
+    color: $assign-muted-text;
+    font-weight: $font-weight-semibold;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    user-select: none;
+
+    &--left   { text-align: left; }
+    &--center { text-align: center; }
+    &--right  { text-align: right; }
+
+    &--sortable {
+      cursor: pointer;
+      &:hover { background: darken(#f7f8fa, 3%); }
+    }
+
+    &--sorted {
+      color: $primary-color;
+    }
+  }
+
+  &__th-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__th-icon {
+    display: flex;
+    align-items: center;
+    opacity: 0.7;
+  }
+
+  &__sort-icon {
+    flex-shrink: 0;
+    &--idle   { color: $assign-subtle-text; }
+    &--active { color: $primary-color; }
+  }
+
+  // ── Rows ────────────────────────────────────────────────────────
+  &__row {
+    border-bottom: 1px solid $assign-muted-border;
+    transition: background $transition-fast;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: $assign-surface-bg; }
+  }
+
+  &__td {
+    padding: $spacing-md;
+    color: $text-primary;
+    vertical-align: middle;
+
+    &--name {
+      font-weight: $font-weight-semibold;
+      font-size: $font-size-base;
+      min-width: 180px;
+    }
+
+    &--seats { text-align: center; }
+    &--center { text-align: center; }
+    &--right  { text-align: right; }
+
+    &--metric {
+      font-variant-numeric: tabular-nums;
+      color: $text-primary;
+      font-size: $font-size-base;
+      font-weight: $font-weight-medium;
+    }
+  }
+
+  // ── Seat stepper ────────────────────────────────────────────────
+  &__stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__step-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-sm;
+    border: 1px solid $assign-card-border;
+    background: $white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    color: $text-secondary;
+    transition: background $transition-fast, border-color $transition-fast;
+
+    &:hover {
+      border-color: darken(#e5e7eb, 10%);
+      background: $assign-surface-bg;
+    }
+
+    &--plus {
+      background: $primary-color;
+      border-color: $primary-color;
+      color: $white;
+      font-weight: 700;
+
+      &:hover {
+        background: $primary-hover;
+        border-color: $primary-hover;
+      }
+    }
+  }
+
+  &__seat-count {
+    min-width: 28px;
+    text-align: center;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // ── Rank pills ──────────────────────────────────────────────────
+  &__rank-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    font-variant-numeric: tabular-nums;
+
+    &--muted {
+      background: $assign-surface-bg;
+      color: $text-primary;
+      font-size: $font-size-base;
+    }
+
+    &--total {
+      background: $primary-color;
+      color: $white;
+    }
+  }
+}
