@@ -128,6 +128,38 @@ export interface UpdateAssignmentPayload {
   assignment_type?: string;
 }
 
+// ----- Messages ------------------------------------------------------------
+
+export interface ApiMessageOtherUser {
+  id: string;
+  email: string | null;
+  name: string | null;
+}
+
+export interface ApiMessagePreview {
+  id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+}
+
+export interface ApiMessage {
+  id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+}
+
+export interface ApiConversationSummary {
+  id: string;
+  other_user: ApiMessageOtherUser;
+  last_message: ApiMessagePreview | null;
+  unread_count: number;
+  other_user_last_read_at: string | null;
+  can_send: boolean;
+  last_message_at: string | null;
+}
+
 /**
  * Make an authenticated API request to the backend
  */
@@ -162,6 +194,10 @@ export async function apiRequest<T = unknown>(
     throw new Error(errorData.detail || `Request failed with status ${response.status}`);
   }
 
+  // 204 No Content / empty body — return undefined cast to T.
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
+    return undefined as T;
+  }
   // Parse and return JSON
   return response.json();
 }
@@ -409,6 +445,33 @@ export const api = {
     return apiRequest<{ message: string; assignment: ApiAssignment }>(`/api/assignments/${assignmentId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
+    });
+  },
+
+  // ----- Messages ----------------------------------------------------------
+
+  /** Inbox: caller's conversations sorted by latest activity. */
+  getConversations: async () => {
+    return apiRequest<{ conversations: ApiConversationSummary[] }>('/api/messages/conversations');
+  },
+
+  /** Send a message — creates the conversation on first send to this user. */
+  sendMessage: async (toUserId: string, body: string) => {
+    return apiRequest<{ conversation_id: string; message: ApiMessage }>('/api/messages', {
+      method: 'POST',
+      body: JSON.stringify({ to_user_id: toUserId, body }),
+    });
+  },
+
+  /** Latest 50 messages in a conversation (newest first). */
+  getMessages: async (conversationId: string) => {
+    return apiRequest<{ messages: ApiMessage[] }>(`/api/messages/conversations/${conversationId}/messages`);
+  },
+
+  /** Mark conversation as read through now(). 204 on success. */
+  markConversationRead: async (conversationId: string) => {
+    return apiRequest<void>(`/api/messages/conversations/${conversationId}/read`, {
+      method: 'POST',
     });
   },
 };
