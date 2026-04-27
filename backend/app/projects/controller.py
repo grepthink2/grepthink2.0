@@ -73,53 +73,6 @@ def _is_instructor(user_id, class_id):
         # but this inconsistency is tracked in CODE_REVIEW.md #17.
         return None
 
-def _is_admin(user_id, project_id):
-    """Checks if user has admin privillges for a project"""
-    try:
-        client = service_client if service_client else supabase
-
-        # WARN: This check is NOT scoped to project_id — it matches any project
-        # where the user is an 'owner'. See CODE_REVIEW.md finding #9. Fix pending.
-        # The DEBUG log below will show you when this branch fires so you can spot
-        # incorrect admin grants at runtime.
-        enrollment_result = (
-            client.table('project_members').select('user_id')
-            .eq('user_id', str(user_id)).eq('role', "owner")
-            .execute()
-        )
-        if enrollment_result.data:
-            logger.warning(
-                "_is_admin: granting admin via owner role without project scope | "
-                "user=%s requested_project=%s — BUG: check not scoped to project_id",
-                user_id, project_id,
-            )
-            return True
-
-        #fetch class_id
-        class_result = (
-            client.table('projects').select('class_id')
-            .eq('id', str(project_id))
-            .execute()
-        )
-        if not class_result.data:
-            logger.debug("_is_admin: project %s not found", project_id)
-            return False
-
-        class_id = class_result.data[0]['class_id']
-        # check is user is teacher of the class
-        is_teacher = _is_instructor(user_id, class_id)
-        logger.debug(
-            "_is_admin: user=%s project=%s class=%s -> %s",
-            user_id, project_id, class_id, is_teacher,
-        )
-        return is_teacher
-
-    except Exception:
-        logger.exception(
-            "_is_admin failed | user_id=%s project_id=%s", user_id, project_id
-        )
-        return None
-
 def create_project(
     class_id: UUID,
     name: str,
