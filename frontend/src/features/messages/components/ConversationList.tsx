@@ -1,5 +1,5 @@
-import React from 'react';
-import { LuSearch } from 'react-icons/lu';
+import React, { useRef, useState } from 'react';
+import { LuSearch, LuX } from 'react-icons/lu';
 import type { ApiConversationSummary } from '@/lib/api';
 import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { formatRelativeTime } from '../utils/relativeTime';
@@ -32,18 +32,59 @@ export const ConversationList: React.FC<Props> = ({
   avatarSize = 51,
   showHeader = true,
 }) => {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = searchQuery
+    ? conversations.filter(c => {
+        const name =
+          c.other_user.name ||
+          (c.other_user.email ? emailToDisplayName(c.other_user.email) : '');
+        return name.toLowerCase().includes(searchQuery.toLowerCase());
+      })
+    : conversations;
+
   const renderHeader = () =>
     showHeader && (
       <div className="messages-list__header">
-        <span className="messages-list__title">All Messages</span>
+        {searchOpen ? (
+          <input
+            ref={searchInputRef}
+            className="messages-list__search-input"
+            type="text"
+            placeholder="Search conversations..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Escape') {
+                setSearchQuery('');
+                setSearchOpen(false);
+              }
+            }}
+            autoFocus
+          />
+        ) : (
+          <span className="messages-list__title">All Messages</span>
+        )}
         <button
           type="button"
           className="messages-list__search"
-          aria-label="Search (coming soon)"
-          tabIndex={-1}
-          onClick={(e) => e.preventDefault()}
+          aria-label={searchOpen ? 'Close search' : 'Search conversations'}
+          onClick={() => {
+            if (searchOpen) {
+              setSearchQuery('');
+              setSearchOpen(false);
+            } else {
+              setSearchOpen(true);
+            }
+          }}
         >
-          <LuSearch size={18} aria-hidden="true" />
+          {searchOpen ? (
+            <LuX size={18} aria-hidden="true" />
+          ) : (
+            <LuSearch size={18} aria-hidden="true" />
+          )}
         </button>
       </div>
     );
@@ -70,8 +111,11 @@ export const ConversationList: React.FC<Props> = ({
   return (
     <div className="messages-list">
       {renderHeader()}
+      {filtered.length === 0 && searchQuery ? (
+        <div className="messages-list__empty">No results for "{searchQuery}"</div>
+      ) : (
       <ul className="messages-list__items">
-        {conversations.map(c => {
+        {filtered.map(c => {
           const isActive = c.id === activeId;
           const name =
             c.other_user.name ||
@@ -118,6 +162,7 @@ export const ConversationList: React.FC<Props> = ({
           );
         })}
       </ul>
+      )}
     </div>
   );
 };

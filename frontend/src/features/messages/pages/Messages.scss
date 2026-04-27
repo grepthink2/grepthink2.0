@@ -71,12 +71,38 @@
     border: none;
     padding: $spacing-xs;
     color: $text-tertiary;
-    cursor: default;
-    border-radius: $border-radius-sm;
+    cursor: pointer;
+    border-radius: 50%;
     font-size: inherit;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
 
-    &:hover {
+    &:hover,
+    &:focus-visible {
+      background: $background;
       border-color: transparent;
+    }
+  }
+
+  &__search-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-lg;
+    padding: $spacing-xs $spacing-md;
+    font-family: inherit;
+    font-size: 0.9rem;
+    color: $text-primary;
+    background: $white;
+
+    &::placeholder {
+      color: $text-tertiary;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
     }
   }
 
