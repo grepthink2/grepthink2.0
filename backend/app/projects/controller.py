@@ -3,7 +3,7 @@ Project management business logic
 """
 from datetime import datetime, timezone
 import logging
-from typing import List, Optional
+from typing import Iterable, List, Optional
 from uuid import UUID
 
 import httpx
@@ -16,6 +16,42 @@ from app.database.client import (
     service_client,
     supabase,
 )
+
+
+# Project member roles. Keep in sync with the DB CHECK constraint on project_members.role.
+ROLE_OWNER = "owner"
+ROLE_PRODUCT_OWNER = "product owner"
+ROLE_ADMIN = "admin"
+ROLE_SCRUM_MASTER = "scrum master"
+ROLE_MEMBER = "member"
+
+# The "elevated" set used by most write actions on a project.
+ELEVATED_ROLES = (ROLE_OWNER, ROLE_PRODUCT_OWNER, ROLE_ADMIN)
+
+
+def _require_member_role(
+    client,
+    project_id: str,
+    user_id: str,
+    allowed_roles: Iterable[str],
+    *,
+    forbidden_detail: str,
+) -> str:
+    """Verify caller is a project member with one of `allowed_roles`. Returns the role.
+
+    Raises 403 if not a member or if the member's role isn't in the allowed set.
+    """
+    membership = (
+        client.table('project_members').select('role')
+        .eq('project_id', project_id).eq('user_id', user_id)
+        .execute()
+    )
+    if not membership.data:
+        raise HTTPException(status_code=403, detail="Not a member of this project")
+    role = membership.data[0]['role']
+    if role not in allowed_roles:
+        raise HTTPException(status_code=403, detail=forbidden_detail)
+    return role
 
 logger = logging.getLogger(__name__)
 
@@ -263,15 +299,10 @@ def update_project(
                 is_class_instructor = bool(class_check.data)
 
         if not is_class_instructor:
-            # Fall back to project membership check
-            membership = client.table('project_members').select('role').eq(
-                'project_id', str(project_id)
-            ).eq('user_id', user_id).execute()
-            if not membership.data:
-                raise HTTPException(status_code=403, detail="Not a member of this project")
-            member_role = membership.data[0]['role']
-            if member_role not in ('owner', 'product owner', 'admin'):
-                raise HTTPException(status_code=403, detail="Only product owners, admins, or class instructors can update the project")
+            _require_member_role(
+                client, str(project_id), user_id, ELEVATED_ROLES,
+                forbidden_detail="Only product owners, admins, or class instructors can update the project",
+            )
 
         updates: dict = {}
         if team_size is not None:
@@ -336,21 +367,12 @@ def delete_project(project_id: UUID, user_id: str) -> dict:
 
         class_id = project_result.data[0]['class_id']
 
-        is_instructor = _is_instructor(user_id, class_id)
-        if not is_instructor:
-            membership = (
-                client.table('project_members').select('role')
-                .eq('project_id', str(project_id)).eq('user_id', user_id)
-                .execute()
+        if not _is_instructor(user_id, class_id):
+            # Note: 'owner' is intentionally excluded from delete authority.
+            _require_member_role(
+                client, str(project_id), user_id, (ROLE_PRODUCT_OWNER, ROLE_ADMIN),
+                forbidden_detail="Only product owners, admins, or the class instructor can delete this project",
             )
-            if not membership.data:
-                raise HTTPException(status_code=403, detail="Not a member of this project")
-            member_role = membership.data[0]['role']
-            if member_role not in ('product owner', 'admin'):
-                raise HTTPException(
-                    status_code=403,
-                    detail="Only product owners, admins, or the class instructor can delete this project"
-                )
 
         client.table('projects').delete().eq('id', str(project_id)).execute()
 
