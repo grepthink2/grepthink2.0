@@ -1178,12 +1178,7 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user_id:str,
             .execute()
         )
         if not class_result.data:
-            # NOTE: returning False here is a contract mismatch — the view layer
-            # expects a dict. Tracked in CODE_REVIEW.md #17.
-            logger.warning(
-                "instructor_add_member: project not found | project_id=%s", project_id
-            )
-            return False
+            raise HTTPException(status_code=404, detail="Project not found")
 
         class_id = class_result.data[0]['class_id']
         # Allow class instructor OR project product owner / admin / owner
