@@ -52,8 +52,8 @@ export const MessageComposer: React.FC<Props> = ({ disabled, disabledReason, onS
         className="messages-composer__input"
         value={body}
         onChange={e => setBody(e.target.value)}
-        placeholder="Type a message…"
-        rows={3}
+        placeholder="Send a message..."
+        rows={1}
         disabled={pending}
         onKeyDown={e => {
           if (e.key === 'Enter' && !e.shiftKey) {

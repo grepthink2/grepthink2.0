@@ -69,10 +69,15 @@
     justify-content: center;
     background: transparent;
     border: none;
-    color: $text-tertiary;
-    cursor: default; /* visual only for now */
     padding: $spacing-xs;
+    color: $text-tertiary;
+    cursor: default;
     border-radius: $border-radius-sm;
+    font-size: inherit;
+
+    &:hover {
+      border-color: transparent;
+    }
   }
 
   &__empty {
@@ -191,17 +196,19 @@
     justify-content: center;
     background: transparent;
     border: none;
+    padding: 0;
     color: $text-tertiary;
     width: 28px;
     height: 28px;
     border-radius: 50%;
     cursor: pointer;
-    opacity: 0; /* hidden by default; parent reveals on hover/focus */
+    opacity: 0;
     transition: opacity $transition-fast, background $transition-fast;
 
     &:hover,
     &:focus-visible {
       background: rgba($text-primary, 0.08);
+      border-color: transparent;
       opacity: 1;
     }
   }
@@ -228,6 +235,7 @@
     width: 100%;
     background: transparent;
     border: none;
+    border-radius: 0;
     text-align: left;
     padding: $spacing-sm $spacing-md;
     font-size: 0.9rem;
@@ -238,6 +246,7 @@
     &:hover:not(:disabled),
     &:focus-visible:not(:disabled) {
       background: $background;
+      border-color: transparent;
     }
 
     &--danger {
@@ -383,14 +392,19 @@
 
   &__input {
     border: 1px solid $border-color;
-    border-radius: $border-radius-sm;
-    padding: $spacing-sm;
+    border-radius: $border-radius-lg;
+    padding: $spacing-sm $spacing-md;
     font-family: inherit;
     font-size: 0.95rem;
     color: $text-primary;
-    resize: vertical;
+    background: $white;
+    resize: none;
     min-height: 48px;
     transition: border-color $transition-fast;
+
+    &::placeholder {
+      color: $text-tertiary;
+    }
 
     &:focus {
       outline: none;
@@ -539,6 +553,7 @@
     justify-content: center;
     background: transparent;
     border: none;
+    padding: 0;
     color: $text-tertiary;
     width: 32px;
     height: 32px;
