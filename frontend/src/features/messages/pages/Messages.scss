@@ -1,5 +1,21 @@
 @use '@styles/index.scss' as *;
 
+/* Shared pill used for inbox-list and floating-widget unread counts. */
+%unread-pill {
+  background: $primary-color;
+  color: $white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px; /* fully rounded pill — reads as a circle for single digits */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Two-pane layout — fills the route's viewport area below the header. */
 .messages-page {
   display: grid;
@@ -194,18 +210,7 @@
   }
 
   &__unread {
-    background: $primary-color;
-    color: $white;
-    font-size: 0.7rem;
-    font-weight: 700;
-    line-height: 1;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: 9px; /* fully rounded pill (small enough to read as a circle for single digits) */
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    @extend %unread-pill;
     flex-shrink: 0;
   }
 }
@@ -594,18 +599,7 @@
   }
 
   &__unread {
-    background: $primary-color;
-    color: $white;
-    font-size: 0.7rem;
-    font-weight: 700;
-    line-height: 1;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: 9px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    @extend %unread-pill;
   }
 
   &__body {
