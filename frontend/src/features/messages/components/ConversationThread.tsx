@@ -6,13 +6,28 @@ import { useConversationMessages } from '../hooks/useConversationMessages';
 import { useConversations } from '../hooks/useConversations';
 import { MessageBubble } from './MessageBubble';
 import { MessageComposer } from './MessageComposer';
+import { InitialsAvatar } from './InitialsAvatar';
+import { ConversationMenu } from './ConversationMenu';
 
 interface Props {
   /** The conversation summary from the inbox cache. */
   conversation: ApiConversationSummary;
+  /** Called after the thread is deleted via the header menu. */
+  onDeleted?: () => void;
+  /** Override the avatar size used in the header. Default 51 (page);
+   *  widget passes 32. */
+  headerAvatarSize?: number;
+  /** When true, the thread's own header is hidden — used inside the
+   *  floating widget where the popover provides its own header. */
+  hideHeader?: boolean;
 }
 
-export const ConversationThread: React.FC<Props> = ({ conversation }) => {
+export const ConversationThread: React.FC<Props> = ({
+  conversation,
+  onDeleted,
+  headerAvatarSize = 51,
+  hideHeader = false,
+}) => {
   const { user } = useAuth();
   const { messages, loading, refetch } = useConversationMessages(conversation.id);
   const { refetch: refetchInbox } = useConversations();
@@ -63,9 +78,23 @@ export const ConversationThread: React.FC<Props> = ({ conversation }) => {
 
   return (
     <div className="messages-thread">
-      <header className="messages-thread__header">
-        <h2 className="messages-thread__title">{otherName}</h2>
-      </header>
+      {!hideHeader && (
+        <header className="messages-thread__header">
+          <div className="messages-thread__header-left">
+            <InitialsAvatar
+              email={conversation.other_user.email}
+              name={conversation.other_user.name}
+              size={headerAvatarSize}
+            />
+            <h2 className="messages-thread__title">{otherName}</h2>
+          </div>
+          <ConversationMenu
+            conversationId={conversation.id}
+            onDeleted={onDeleted}
+            alwaysVisible
+          />
+        </header>
+      )}
 
       <div className="messages-thread__scroll" ref={scrollRef}>
         {loading && messages.length === 0 ? (
