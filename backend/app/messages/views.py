@@ -44,3 +44,13 @@ def mark_conversation_read(
 ) -> Response:
     controller.mark_read(conversation_id=conversation_id, caller_id=user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def delete_conversation(
+    conversation_id: str,
+    user_id: str = Depends(require_user),
+) -> Response:
+    controller.delete_conversation_for_user(
+        conversation_id=conversation_id, caller_id=user_id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

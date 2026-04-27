@@ -120,3 +120,35 @@ def test_get_messages_403_for_non_participant(_lst, client, auth_header):
 def test_mark_read_returns_204(_mark, client, auth_header):
     res = client.post("/api/messages/conversations/c1/read", headers=auth_header)
     assert res.status_code == 204
+
+
+# ----- delete_conversation -------------------------------------------------
+
+@patch("app.messages.views.controller.delete_conversation_for_user", return_value=None)
+def test_delete_conversation_returns_204(_del, client, auth_header):
+    res = client.delete("/api/messages/conversations/c1", headers=auth_header)
+    assert res.status_code == 204
+    _del.assert_called_once()
+
+
+@patch("app.messages.views.controller.delete_conversation_for_user", return_value=None)
+def test_delete_conversation_is_idempotent(_del, client, auth_header):
+    """Repeated deletes should still return 204 (controller handles upsert)."""
+    for _ in range(3):
+        res = client.delete("/api/messages/conversations/c1", headers=auth_header)
+        assert res.status_code == 204
+    assert _del.call_count == 3
+
+
+@patch(
+    "app.messages.views.controller.delete_conversation_for_user",
+    side_effect=HTTPException(status_code=403, detail="Not a participant"),
+)
+def test_delete_conversation_403_for_non_participant(_del, client, auth_header):
+    res = client.delete("/api/messages/conversations/c1", headers=auth_header)
+    assert res.status_code == 403
+
+
+def test_delete_conversation_requires_auth(client):
+    res = client.delete("/api/messages/conversations/c1")
+    assert res.status_code == 401
