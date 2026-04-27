@@ -88,6 +88,30 @@ def create_assignment(
         raise HTTPException(status_code=500, detail="Failed to create assignment")
 
 
+def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
+    """Build the canonical TSR entry shape from a row + profile lookup map.
+
+    Always includes tsr_id, evaluator_id, evaluator_name, evaluatee_name,
+    percent_contribution, positive_feedback. constructive_feedback and
+    scrum_master_notes are included only when non-empty.
+    """
+    evaluator_profile = profile_map.get(row['evaluator_id'], {})
+    evaluatee_profile = profile_map.get(row['evaluatee_id'], {})
+    entry = {
+        "tsr_id": row['id'],
+        "evaluator_id": row['evaluator_id'],
+        "evaluator_name": evaluator_profile.get('name') or evaluator_profile.get('email'),
+        "evaluatee_name": evaluatee_profile.get('name') or evaluatee_profile.get('email'),
+        "percent_contribution": row['percent_contribution'],
+        "positive_feedback": row['positive_feedback'],
+    }
+    if row.get('constructive_feedback'):
+        entry["constructive_feedback"] = row['constructive_feedback']
+    if row.get('scrum_master_notes'):
+        entry["scrum_master_notes"] = row['scrum_master_notes']
+    return entry
+
+
 def _fetch_tsr_entries(client, assignment_id: str) -> list:
     """
     Return TSR data for all submissions linked to a given assignment_id.
@@ -127,23 +151,7 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
     )
     profile_map = {p['id']: p for p in (profiles.data or [])}
 
-    entries = []
-    for row in rows:
-        evaluator_profile = profile_map.get(row['evaluator_id'], {})
-        evaluatee_profile = profile_map.get(row['evaluatee_id'], {})
-        entry = {
-            "tsr_id": row['id'],
-            "evaluator_id": row['evaluator_id'],
-            "evaluator_name": evaluator_profile.get('name') or evaluator_profile.get('email'),
-            "evaluatee_name": evaluatee_profile.get('name') or evaluatee_profile.get('email'),
-            "percent_contribution": row['percent_contribution'],
-            "positive_feedback": row['positive_feedback'],
-        }
-        if row.get('constructive_feedback'):
-            entry["constructive_feedback"] = row['constructive_feedback']
-        if row.get('scrum_master_notes'):
-            entry["scrum_master_notes"] = row['scrum_master_notes']
-        entries.append(entry)
+    entries = [_serialize_tsr_entry(row, profile_map) for row in rows]
     return entries
 
 
@@ -397,21 +405,7 @@ def update_tsr_entry(
             .execute()
         )
         profile_map = {p['id']: p for p in (profiles_result.data or [])}
-        evaluator_profile = profile_map.get(row['evaluator_id'], {})
-        evaluatee_profile = profile_map.get(row['evaluatee_id'], {})
-
-        entry = {
-            "tsr_id": row['id'],
-            "evaluator_id": row['evaluator_id'],
-            "evaluator_name": evaluator_profile.get('name') or evaluator_profile.get('email'),
-            "evaluatee_name": evaluatee_profile.get('name') or evaluatee_profile.get('email'),
-            "percent_contribution": row['percent_contribution'],
-            "positive_feedback": row['positive_feedback'],
-        }
-        if row.get('constructive_feedback'):
-            entry["constructive_feedback"] = row['constructive_feedback']
-        if row.get('scrum_master_notes'):
-            entry["scrum_master_notes"] = row['scrum_master_notes']
+        entry = _serialize_tsr_entry(row, profile_map)
 
         logger.info(
             "TSR entry updated | tsr_id=%s assignment_id=%s user_id=%s fields=%s",
@@ -476,23 +470,7 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
         )
         profile_map = {p['id']: p for p in (profiles.data or [])}
 
-        entries = []
-        for row in rows:
-            evaluator_profile = profile_map.get(row['evaluator_id'], {})
-            evaluatee_profile = profile_map.get(row['evaluatee_id'], {})
-            entry = {
-                "tsr_id": row['id'],
-                "evaluator_id": row['evaluator_id'],
-                "evaluator_name": evaluator_profile.get('name') or evaluator_profile.get('email'),
-                "evaluatee_name": evaluatee_profile.get('name') or evaluatee_profile.get('email'),
-                "percent_contribution": row['percent_contribution'],
-                "positive_feedback": row['positive_feedback'],
-            }
-            if row.get('constructive_feedback'):
-                entry["constructive_feedback"] = row['constructive_feedback']
-            if row.get('scrum_master_notes'):
-                entry["scrum_master_notes"] = row['scrum_master_notes']
-            entries.append(entry)
+        entries = [_serialize_tsr_entry(row, profile_map) for row in rows]
         return entries
     except HTTPException:
         raise
@@ -561,23 +539,7 @@ def get_tsr_responses_about_user(
         )
         profile_map = {p['id']: p for p in (profiles.data or [])}
 
-        entries = []
-        for row in rows:
-            evaluator_profile = profile_map.get(row['evaluator_id'], {})
-            evaluatee_profile = profile_map.get(row['evaluatee_id'], {})
-            entry = {
-                "tsr_id": row['id'],
-                "evaluator_id": row['evaluator_id'],
-                "evaluator_name": evaluator_profile.get('name') or evaluator_profile.get('email'),
-                "evaluatee_name": evaluatee_profile.get('name') or evaluatee_profile.get('email'),
-                "percent_contribution": row['percent_contribution'],
-                "positive_feedback": row['positive_feedback'],
-            }
-            if row.get('constructive_feedback'):
-                entry["constructive_feedback"] = row['constructive_feedback']
-            if row.get('scrum_master_notes'):
-                entry["scrum_master_notes"] = row['scrum_master_notes']
-            entries.append(entry)
+        entries = [_serialize_tsr_entry(row, profile_map) for row in rows]
         return entries
     except HTTPException:
         raise
