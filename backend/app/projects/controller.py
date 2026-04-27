@@ -325,8 +325,6 @@ def update_project(
             updates['team_size'] = team_size
         if name is not None:
             updates['name'] = name
-        if name is not None:
-            updates['name'] = name
         if description is not None:
             updates['description'] = description
         if sponsor_name is not None:
