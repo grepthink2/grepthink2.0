@@ -1,0 +1,120 @@
+@use '@styles/index.scss' as *;
+@use './assignTokens' as *;
+
+.focused-project {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  padding: $spacing-md 0;
+  border-bottom: 1px solid $assign-muted-border;
+}
+
+.focused-project__main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.focused-project__title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.focused-project__name {
+  margin: 0;
+  font-size: $font-size-large;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.focused-project__sponsor {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+.focused-project__meta {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-xl;
+  flex-shrink: 0;
+}
+
+.focused-project__popularity,
+.focused-project__seats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.focused-project__popularity-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: $font-size-large;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.focused-project__popularity-label,
+.focused-project__seats-label {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+.focused-project__star {
+  color: $assign-yellow-star;
+  fill: $assign-yellow-star;
+}
+
+.focused-project__seats-value {
+  font-size: $font-size-large;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.focused-project__seat-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+}
+
+.focused-project__seat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid $assign-muted-border;
+  border-radius: $border-radius-sm;
+  background: $white;
+  color: $text-secondary;
+  font-family: $primary-font;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: background-color $transition-fast, color $transition-fast,
+    border-color $transition-fast;
+
+  &:hover:not(:disabled) {
+    background: $assign-surface-bg;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $primary-color;
+    border-color: $primary-color;
+    color: $white;
+
+    &:hover:not(:disabled) {
+      background: $primary-hover;
+      border-color: $primary-hover;
+    }
+  }
+}

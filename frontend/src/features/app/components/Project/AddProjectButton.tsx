@@ -1,30 +1,18 @@
 import React from 'react';
 import { PlusCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import './AddProjectButton.scss';
+import ProjectActionButton from './ProjectActionButton';
 
 interface AddProjectButtonProps {
   onClick?: () => void;
 }
 
-const AddProjectButton: React.FC<AddProjectButtonProps> = ({ onClick }) => {
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-      return;
-    }
-    navigate('/app/create-project');
-  };
-
-  return (
-    <button className="add-assignment-btn projects__add-project-btn" onClick={handleClick}>
-      <PlusCircle size={16} />
-      Add Project
-    </button>
-  );
-};
+const AddProjectButton: React.FC<AddProjectButtonProps> = ({ onClick }) => (
+  <ProjectActionButton
+    icon={PlusCircle}
+    label="Add Project"
+    to="/app/create-project"
+    onClick={onClick}
+  />
+);
 
 export default AddProjectButton;
-

@@ -6,7 +6,7 @@ export type StudentAssignmentStatus = 'not_started' | 'in_progress' | 'submitted
 export type StudentAssignmentAction = 'start' | 'edit_submission' | 'closed';
 
 /** Discriminator for which form component to render on the detail page. */
-export type AssignmentType = 'tsrs';
+export type AssignmentType = 'tsrs' | 'interest_form';
 
 export interface StudentAssignment {
   id: string;

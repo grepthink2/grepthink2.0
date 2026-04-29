@@ -3,10 +3,12 @@ import { useParams, useLocation, Navigate } from 'react-router-dom';
 import { useClass } from '@/lib/classContext';
 import TSRS from '@features/app/components/TSRS/TSRS';
 import type { TsrsAssignment } from '@features/app/components/TSRS/TSRS';
+import InterestForm from '@features/app/components/Interest/InterestForm';
+import type { InterestFormAssignment } from '@features/app/components/Interest/InterestForm';
 import './AssignmentDetail.scss';
 
 // Supported assignment types — extend here when new types are added.
-type AssignmentType = 'tsrs';
+type AssignmentType = 'tsrs' | 'interest_form';
 
 interface AssignmentDetailState {
   assignmentName?: string;
@@ -50,10 +52,20 @@ const AssignmentDetail: React.FC = () => {
     projectId,
   };
 
+  const interestAssignment: InterestFormAssignment = {
+    id: assignmentId,
+    name: assignmentName,
+    dueDate,
+    classId: selectedClass.id,
+  };
+
   return (
     <div className="assignment-detail">
       <div className="assignment-detail__body">
         {assignmentType === 'tsrs' && <TSRS assignment={tsrsAssignment} />}
+        {assignmentType === 'interest_form' && (
+          <InterestForm assignment={interestAssignment} />
+        )}
       </div>
     </div>
   );

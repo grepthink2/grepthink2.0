@@ -1,0 +1,308 @@
+@use '@styles/index.scss' as *;
+
+/* Two-pane layout — fills the route's viewport area below the header.
+   Uses an explicit viewport-derived height (matches StudentHomeDashboard
+   pattern) so the inner thread scroll has a real height to work against.
+   `height: 100%` doesn't propagate without an unbroken chain of parent
+   heights, so use 100vh minus the ~64px header. */
+.messages-page {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: calc(100vh - 64px);
+  background: $background;
+  color: $text-primary; /* defeat the inherited :root white-on-dark text */
+
+  &__list {
+    border-right: 1px solid $border-color;
+    background: $white;
+    overflow-y: auto;
+  }
+
+  &__thread {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: $white;
+  }
+}
+
+/* ---------- Inbox list ---------- */
+
+.messages-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  &--empty {
+    padding: $spacing-xl $spacing-md;
+    color: $text-tertiary;
+    font-size: 0.95rem;
+    text-align: center;
+  }
+
+  &__item {
+    padding: $spacing-md;
+    border-bottom: 1px solid $border-color;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $background;
+    }
+
+    &--active {
+      background: rgba($primary-color, 0.08);
+      border-left: 3px solid $primary-color;
+      padding-left: calc(#{$spacing-md} - 3px);
+    }
+  }
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacing-sm;
+
+    + .messages-list__row {
+      margin-top: $spacing-xs;
+    }
+  }
+
+  &__name {
+    font-weight: 600;
+    color: $text-primary;
+    font-size: 0.95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__time {
+    color: $text-tertiary;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  &__preview {
+    color: $text-tertiary;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  &__unread {
+    background: $primary-color;
+    color: $white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px $spacing-sm;
+    border-radius: $border-radius-sm;
+    flex-shrink: 0;
+    min-width: 22px;
+    text-align: center;
+  }
+}
+
+/* ---------- Thread (right pane) ---------- */
+
+.messages-thread {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
+  &--empty {
+    align-items: center;
+    justify-content: center;
+    color: $text-tertiary;
+    font-size: 0.95rem;
+    padding: $spacing-xl;
+    text-align: center;
+  }
+
+  &__header {
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $border-color;
+  }
+
+  &__title {
+    margin: 0;
+    color: $text-primary;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  &__subtitle {
+    margin: $spacing-xs 0 0 0;
+    color: $text-tertiary;
+    font-size: 0.85rem;
+  }
+
+  &__scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-md $spacing-lg;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    min-height: 0;
+  }
+
+  &__loading,
+  &__empty {
+    color: $text-tertiary;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: $spacing-lg;
+  }
+
+  &__seen {
+    align-self: flex-end;
+    color: $text-tertiary;
+    font-size: 0.75rem;
+    margin-top: $spacing-xs;
+  }
+}
+
+/* ---------- Bubbles ---------- */
+
+.messages-bubble {
+  max-width: 70%;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-md;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  word-wrap: break-word;
+
+  &--mine {
+    align-self: flex-end;
+    background: $primary-color;
+    color: $white;
+
+    .messages-bubble__time {
+      color: rgba($white, 0.85);
+    }
+  }
+
+  &--theirs {
+    align-self: flex-start;
+    background: $background;
+    color: $text-primary;
+
+    .messages-bubble__time {
+      color: $text-tertiary;
+    }
+  }
+
+  &__body {
+    white-space: pre-wrap;
+    line-height: 1.4;
+    font-size: 0.95rem;
+  }
+
+  &__time {
+    font-size: 0.7rem;
+    align-self: flex-end;
+  }
+}
+
+/* ---------- Composer ---------- */
+
+.messages-composer {
+  border-top: 1px solid $border-color;
+  padding: $spacing-md $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  background: $white;
+
+  &--disabled {
+    color: $text-tertiary;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: $spacing-md $spacing-lg;
+  }
+
+  &__input {
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    padding: $spacing-sm;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: $text-primary;
+    resize: vertical;
+    min-height: 48px;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    justify-content: flex-end;
+  }
+
+  &__counter {
+    margin-right: auto;
+    color: $text-tertiary;
+    font-size: 0.8rem;
+
+    &--over {
+      color: $error-color;
+      font-weight: 600;
+    }
+  }
+
+  &__error {
+    color: $error-color;
+    font-size: 0.85rem;
+  }
+
+  &__send {
+    background: $primary-color;
+    color: $white;
+    border: none;
+    padding: $spacing-sm $spacing-lg;
+    border-radius: $border-radius-sm;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover:not(:disabled) {
+      background: $primary-hover;
+    }
+
+    &:disabled {
+      background: $disabled-bg;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* ---------- MessageButton (used on project pages) ---------- */
+
+.message-btn {
+  background: $white;
+  color: $primary-color;
+  border: 1px solid $primary-color;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $border-radius-sm;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background $transition-fast, color $transition-fast;
+
+  &:hover {
+    background: $primary-color;
+    color: $white;
+  }
+}
