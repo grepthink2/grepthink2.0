@@ -1,6 +1,7 @@
 """
 Project management business logic
 """
+from datetime import datetime, timezone
 import logging
 from typing import List, Optional
 from uuid import UUID
@@ -501,6 +502,33 @@ def get_project_by_id(project_id: UUID, user_id: str = None) -> dict:
         raise HTTPException(status_code=500, detail="Failed to fetch project")
 
 
+def _assert_can_review_student_join_request(client, reviewer_id: str, project_id: str) -> None:
+    """
+    Permission to list / accept / reject **student-initiated** join requests
+    (``project_join_requests`` with ``invited_by`` unset).
+
+    Allowed: **class instructor** (``classes.created_by``) for the project's class, or
+    a **project member** with role ``owner``, ``product owner``, or ``admin``.
+    """
+    proj = client.table('projects').select('class_id').eq('id', str(project_id)).execute()
+    if not proj.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+    class_id = proj.data[0]['class_id']
+    if _is_instructor(reviewer_id, class_id):
+        return
+    mem = (
+        client.table('project_members')
+        .select('role')
+        .eq('project_id', str(project_id))
+        .eq('user_id', str(reviewer_id))
+        .execute()
+    )
+    if not mem.data or mem.data[0].get('role') not in ('owner', 'product owner', 'admin'):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the class instructor or project owners/admins can review join requests",
+        )
+
 
 def request_to_join_project(project_id: UUID, user_id: str) -> dict:
     """
@@ -534,21 +562,29 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
         if existing_member.data and len(existing_member.data) > 0:
             raise HTTPException(status_code=400, detail="Already a member of this project")
         
-        # Check if there's already a pending request
-        existing_request = client.table('project_join_requests').select('id, request_status').eq(
+        # Check if there's already a pending row (student request or team invite)
+        existing_request = client.table('project_join_requests').select(
+            'id, request_status, invited_by'
+        ).eq(
             'project_id', str(project_id)
         ).eq('user_id', user_id).eq('request_status', 'pending').execute()
-        
-        if existing_request.data and len(existing_request.data) > 0:
+
+        for row in existing_request.data or []:
+            if row.get('invited_by'):
+                raise HTTPException(
+                    status_code=400,
+                    detail="You have a pending invitation to this project. Accept or decline it first.",
+                )
             raise HTTPException(status_code=400, detail="Join request already pending")
-        
-        # Create the join request
+
+        # Create the join request (student-initiated; invited_by stays null)
         request_data = {
             "project_id": str(project_id),
             "user_id": user_id,
             "request_status": "pending",
             "reviewer_id": None,
             "reviewed_at": None,
+            "invited_by": None,
         }
         
         result = client.table('project_join_requests').insert(request_data).execute()
@@ -573,24 +609,18 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
 
 def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
     """
-    Accept a project join request (product owner/admin only)
-    
-    Args:
-        request_id: Join request unique identifier
-        reviewer_id: ID of the user accepting the request
-        
-    Returns:
-        Dictionary with success message
-        
-    Raises:
-        HTTPException: If request not found, no permission, or database error
+    Accept a pending project_join_requests row.
+
+    - **Student-initiated** (``invited_by`` null): **class instructor** or project
+      **owner** / **product owner** / **admin** may accept.
+    - **Team invite** (``invited_by`` set): only the invitee (``user_id`` on the row) may accept.
     """
     try:
         client = service_client if service_client else supabase
         
         # Get the join request
         request_result = client.table('project_join_requests').select(
-            'id, project_id, user_id, request_status'
+            'id, project_id, user_id, request_status, invited_by'
         ).eq('id', str(request_id)).execute()
         
         if not request_result.data or len(request_result.data) == 0:
@@ -601,33 +631,34 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
         # Check if request is still pending
         if join_request['request_status'] != 'pending':
             raise HTTPException(status_code=400, detail=f"Request already {join_request['request_status']}")
-        
-        # Verify the reviewer is a product owner or admin
-        membership = client.table('project_members').select('role').eq(
-            'project_id', join_request['project_id']
-        ).eq('user_id', reviewer_id).execute()
-        
-        if not membership.data or len(membership.data) == 0:
-            raise HTTPException(status_code=403, detail="Not a member of this project")
-        
-        reviewer_role = membership.data[0]['role']
-        if reviewer_role not in ['owner', 'product owner', 'admin']:
-            raise HTTPException(status_code=403, detail="Only product owners and admins can accept join requests")
+
+        invited_by = join_request.get('invited_by')
+
+        if invited_by:
+            if str(reviewer_id) != str(join_request['user_id']):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only the invited user can accept this invitation",
+                )
+        else:
+            _assert_can_review_student_join_request(
+                client, reviewer_id, join_request['project_id']
+            )
         
         # WARN: The next 3 statements are NOT atomic (see CODE_REVIEW.md #10).
         # If any one of them fails after the first succeeds we get an inconsistent
         # state (approved request with no membership row, or member without
         # num_members increment). Trace via these DEBUG logs to triage.
         logger.debug(
-            "accept_join_request: begin multi-step commit | request_id=%s project_id=%s user_id=%s",
-            request_id, join_request['project_id'], join_request['user_id'],
+            "accept_join_request: begin multi-step commit | request_id=%s project_id=%s user_id=%s invited_by=%s",
+            request_id, join_request['project_id'], join_request['user_id'], invited_by,
         )
 
         # Update the request status
         update_data = {
             "request_status": "approved",
-            "reviewed_at": "now()",
-            "reviewer_id": reviewer_id
+            "reviewed_at": datetime.now(timezone.utc).isoformat(),
+            "reviewer_id": reviewer_id,
         }
 
         client.table('project_join_requests').update(update_data).eq('id', str(request_id)).execute()
@@ -666,24 +697,17 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
 
 def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
     """
-    Reject a project join request (product owner/admin only)
-    
-    Args:
-        request_id: Join request unique identifier
-        reviewer_id: ID of the user rejecting the request
-        
-    Returns:
-        Dictionary with success message
-        
-    Raises:
-        HTTPException: If request not found, no permission, or database error
+    Reject a pending project_join_requests row.
+
+    - **Student-initiated**: **class instructor** or project **owner** / **product owner** / **admin**.
+    - **Team invite**: only the invitee may decline.
     """
     try:
         client = service_client if service_client else supabase
         
         # Get the join request
         request_result = client.table('project_join_requests').select(
-            'id, project_id, user_id, request_status'
+            'id, project_id, user_id, request_status, invited_by'
         ).eq('id', str(request_id)).execute()
         
         if not request_result.data or len(request_result.data) == 0:
@@ -694,23 +718,24 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
         # Check if request is still pending
         if join_request['request_status'] != 'pending':
             raise HTTPException(status_code=400, detail=f"Request already {join_request['request_status']}")
-        
-        # Verify the reviewer is a product owner or admin
-        membership = client.table('project_members').select('role').eq(
-            'project_id', join_request['project_id']
-        ).eq('user_id', reviewer_id).execute()
-        
-        if not membership.data or len(membership.data) == 0:
-            raise HTTPException(status_code=403, detail="Not a member of this project")
-        
-        reviewer_role = membership.data[0]['role']
-        if reviewer_role not in ['owner', 'product owner', 'admin']:
-            raise HTTPException(status_code=403, detail="Only product owners and admins can reject join requests")
+
+        invited_by = join_request.get('invited_by')
+
+        if invited_by:
+            if str(reviewer_id) != str(join_request['user_id']):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only the invited user can decline this invitation",
+                )
+        else:
+            _assert_can_review_student_join_request(
+                client, reviewer_id, join_request['project_id']
+            )
         
         # Update the request status
         update_data = {
             "request_status": "rejected",
-            "reviewed_at": "now()",
+            "reviewed_at": datetime.now(timezone.utc).isoformat(),
             "reviewer_id": reviewer_id
         }
         
@@ -732,6 +757,211 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
             request_id, reviewer_id,
         )
         raise HTTPException(status_code=500, detail="Failed to reject join request")
+
+
+# ---------------------------------------------------------------------------
+# Product owner / scrum master / admin role management
+# ---------------------------------------------------------------------------
+
+
+def _pm_client():
+    return service_client if service_client else supabase
+
+
+def _require_project_role_manager(client, requester_id: str, project_id: str) -> None:
+    """Allow class instructor or project member with product owner / admin / owner."""
+    proj = client.table('projects').select('class_id').eq('id', project_id).execute()
+    if not proj.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+    class_id = proj.data[0]['class_id']
+    if _is_instructor(requester_id, class_id):
+        return
+    mem = (
+        client.table('project_members')
+        .select('role')
+        .eq('project_id', project_id)
+        .eq('user_id', str(requester_id))
+        .execute()
+    )
+    if not mem.data:
+        raise HTTPException(status_code=403, detail="Not a member of this project")
+    role = mem.data[0].get('role')
+    if role in ('product owner', 'admin', 'owner'):
+        return
+    raise HTTPException(status_code=403, detail="Insufficient permissions to manage project roles")
+
+
+def _member_row(client, project_id: str, user_id: str):
+    return (
+        client.table('project_members')
+        .select('user_id, role')
+        .eq('project_id', project_id)
+        .eq('user_id', str(user_id))
+        .execute()
+    )
+
+
+def assign_product_owner(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
+    try:
+        client = _pm_client()
+        pid = str(project_id)
+        tid = str(target_user_id)
+        proj = client.table('projects').select('id').eq('id', pid).execute()
+        if not proj.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+        _require_project_role_manager(client, requester_id, pid)
+        targ = _member_row(client, pid, tid)
+        if not targ.data:
+            raise HTTPException(status_code=404, detail="User is not a member of this project")
+        rows = (
+            client.table('project_members')
+            .select('user_id')
+            .eq('project_id', pid)
+            .eq('role', 'product owner')
+            .execute()
+        ).data or []
+        for row in rows:
+            uid = row['user_id']
+            if uid != tid:
+                client.table('project_members').update({'role': 'member'}).eq('project_id', pid).eq('user_id', uid).execute()
+        client.table('project_members').update({'role': 'product owner'}).eq('project_id', pid).eq('user_id', tid).execute()
+        return {'role': 'product owner', 'user_id': tid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error assigning product owner: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to assign product owner: {str(e)}")
+
+
+def assign_scrum_master(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
+    try:
+        client = _pm_client()
+        pid = str(project_id)
+        tid = str(target_user_id)
+        proj = client.table('projects').select('id').eq('id', pid).execute()
+        if not proj.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+        _require_project_role_manager(client, requester_id, pid)
+        targ = _member_row(client, pid, tid)
+        if not targ.data:
+            raise HTTPException(status_code=404, detail="User is not a member of this project")
+        rows = (
+            client.table('project_members')
+            .select('user_id')
+            .eq('project_id', pid)
+            .eq('role', 'scrum master')
+            .execute()
+        ).data or []
+        for row in rows:
+            uid = row['user_id']
+            if uid != tid:
+                client.table('project_members').update({'role': 'member'}).eq('project_id', pid).eq('user_id', uid).execute()
+        client.table('project_members').update({'role': 'scrum master'}).eq('project_id', pid).eq('user_id', tid).execute()
+        return {'role': 'scrum master', 'user_id': tid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error assigning scrum master: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to assign scrum master: {str(e)}")
+
+
+def assign_admin(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
+    try:
+        client = _pm_client()
+        pid = str(project_id)
+        tid = str(target_user_id)
+        proj = client.table('projects').select('id').eq('id', pid).execute()
+        if not proj.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+        _require_project_role_manager(client, requester_id, pid)
+        targ = _member_row(client, pid, tid)
+        if not targ.data:
+            raise HTTPException(status_code=404, detail="User is not a member of this project")
+        client.table('project_members').update({'role': 'admin'}).eq('project_id', pid).eq('user_id', tid).execute()
+        return {'role': 'admin', 'user_id': tid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error assigning admin: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to assign admin: {str(e)}")
+
+
+def remove_product_owner(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
+    try:
+        client = _pm_client()
+        pid = str(project_id)
+        tid = str(target_user_id)
+        proj = client.table('projects').select('id').eq('id', pid).execute()
+        if not proj.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+        _require_project_role_manager(client, requester_id, pid)
+        targ = _member_row(client, pid, tid)
+        if not targ.data:
+            raise HTTPException(status_code=404, detail="User is not a member of this project")
+        if targ.data[0].get('role') != 'product owner':
+            raise HTTPException(
+                status_code=400,
+                detail="Target user is not the product owner; cannot remove product owner role this way",
+            )
+        client.table('project_members').update({'role': 'member'}).eq('project_id', pid).eq('user_id', tid).execute()
+        return {'role': 'member', 'user_id': tid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error removing product owner: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove product owner: {str(e)}")
+
+
+def remove_scrum_master(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
+    try:
+        client = _pm_client()
+        pid = str(project_id)
+        tid = str(target_user_id)
+        proj = client.table('projects').select('id').eq('id', pid).execute()
+        if not proj.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+        _require_project_role_manager(client, requester_id, pid)
+        targ = _member_row(client, pid, tid)
+        if not targ.data:
+            raise HTTPException(status_code=404, detail="User is not a member of this project")
+        if targ.data[0].get('role') != 'scrum master':
+            raise HTTPException(
+                status_code=400,
+                detail="Target user is not the scrum master; cannot remove scrum master role this way",
+            )
+        client.table('project_members').update({'role': 'member'}).eq('project_id', pid).eq('user_id', tid).execute()
+        return {'role': 'member', 'user_id': tid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error removing scrum master: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove scrum master: {str(e)}")
+
+
+def remove_admin(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
+    try:
+        client = _pm_client()
+        pid = str(project_id)
+        tid = str(target_user_id)
+        proj = client.table('projects').select('id').eq('id', pid).execute()
+        if not proj.data:
+            raise HTTPException(status_code=404, detail="Project not found")
+        _require_project_role_manager(client, requester_id, pid)
+        targ = _member_row(client, pid, tid)
+        if not targ.data:
+            raise HTTPException(status_code=404, detail="User is not a member of this project")
+        if targ.data[0].get('role') != 'admin':
+            raise HTTPException(
+                status_code=400,
+                detail="Target user is not an admin; cannot remove admin role this way",
+            )
+        client.table('project_members').update({'role': 'member'}).eq('project_id', pid).eq('user_id', tid).execute()
+        return {'role': 'member', 'user_id': tid}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error removing admin: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to remove admin: {str(e)}")
 
 
 def get_project_members(project_id: UUID) -> list:
@@ -789,52 +1019,112 @@ def get_project_members(project_id: UUID) -> list:
         raise HTTPException(status_code=500, detail="Failed to fetch project members")
 
 
-def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
+def get_pending_team_invites_for_user(user_id: str, class_id: UUID) -> list:
     """
-    Get all pending join requests for a project (owner/admin only)
-    
-    Args:
-        project_id: Project unique identifier
-        reviewer_id: ID of the user requesting the list
-        
-    Returns:
-        List of pending join requests
-        
-    Raises:
-        HTTPException: If no permission or database error occurs
+    Pending team invitations addressed to ``user_id`` within a class.
+
+    Each item matches the join-requests list shape (plus ``project_id`` / ``project_name``)
+    so the client can reuse the same UI. ``email`` / ``user_role`` refer to the **inviter**.
     """
     try:
         client = service_client if service_client else supabase
-        
-        # Verify the reviewer is a product owner or admin
-        membership = client.table('project_members').select('role').eq(
-            'project_id', str(project_id)
-        ).eq('user_id', reviewer_id).execute()
-        
-        if not membership.data or len(membership.data) == 0:
-            raise HTTPException(status_code=403, detail="Not a member of this project")
-        
-        reviewer_role = membership.data[0]['role']
-        if reviewer_role not in ['owner', 'product owner', 'admin']:
-            raise HTTPException(status_code=403, detail="Only product owners and admins can view join requests")
-        
-        # Get pending requests
-        requests = client.table('project_join_requests').select(
-            'id, user_id, created_at, request_status'
-        ).eq('project_id', str(project_id)).eq('request_status', 'pending').execute()
-        
-        if not requests.data or len(requests.data) == 0:
+
+        class_result = client.table('classes').select('id, created_by').eq('id', str(class_id)).execute()
+        if not class_result.data:
+            raise HTTPException(status_code=404, detail="Class not found")
+
+        class_row = class_result.data[0]
+        has_access = class_row.get('created_by') == user_id
+        if not has_access:
+            enrollment = (
+                client.table('class_enrollments').select('id')
+                .eq('class_id', str(class_id)).eq('user_id', user_id).execute()
+            )
+            has_access = bool(enrollment.data)
+
+        if not has_access:
+            raise HTTPException(status_code=403, detail="You do not have access to this class")
+
+        projects_res = (
+            client.table('projects').select('id, name').eq('class_id', str(class_id)).execute()
+        )
+        projects = projects_res.data or []
+        project_ids = [p['id'] for p in projects]
+        if not project_ids:
             return []
-        
-        # Fetch user details
-        user_ids = [r['user_id'] for r in requests.data]
+
+        project_name = {p['id']: p.get('name') for p in projects}
+
+        rows = (
+            client.table('project_join_requests').select(
+                'id, user_id, project_id, created_at, request_status, invited_by'
+            )
+            .eq('user_id', user_id)
+            .eq('request_status', 'pending')
+            .in_('project_id', project_ids)
+            .execute()
+        )
+        invites = [r for r in (rows.data or []) if r.get('invited_by')]
+        if not invites:
+            return []
+
+        inviter_ids = list({str(r['invited_by']) for r in invites})
+        users = client.table('profiles').select('id, email, role').in_('id', inviter_ids).execute()
+        user_map = {u['id']: u for u in (users.data or [])}
+
+        result = []
+        for row in invites:
+            inviter = user_map.get(row['invited_by'], {})
+            result.append({
+                "request_id": row['id'],
+                "user_id": row['user_id'],
+                "email": inviter.get('email'),
+                "user_role": inviter.get('role'),
+                "requested_at": row.get('created_at'),
+                "status": row['request_status'],
+                "project_id": str(row['project_id']),
+                "project_name": project_name.get(row['project_id']),
+            })
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching team invites | user_id=%s class_id=%s", user_id, class_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch pending invitations")
+
+
+def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
+    """
+    Pending **student-initiated** join requests for a project (``invited_by`` is null).
+
+    Caller must be the **class instructor** or a project **owner** / **product owner** / **admin**.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        _assert_can_review_student_join_request(client, reviewer_id, str(project_id))
+
+        # Pending student-initiated requests only (team invites omit invited_by)
+        requests = client.table('project_join_requests').select(
+            'id, user_id, created_at, request_status, invited_by'
+        ).eq('project_id', str(project_id)).eq('request_status', 'pending').execute()
+
+        student_requests = [r for r in (requests.data or []) if not r.get('invited_by')]
+
+        if not student_requests:
+            return []
+
+        # Fetch user details (requesters)
+        user_ids = [r['user_id'] for r in student_requests]
         users = client.table('profiles').select('id, email, role').in_('id', user_ids).execute()
         
         # Combine request and user data
         user_map = {u['id']: u for u in users.data} if users.data else {}
         
         result = []
-        for request in requests.data:
+        for request in student_requests:
             user_info = user_map.get(request['user_id'], {})
             result.append({
                 "request_id": request['id'],
@@ -857,11 +1147,16 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
 
 def instructor_add_member(project_id:UUID, requester_id:str, target_user_id:str, role = "member"):
     """
-    Add member to project (instructor only)
+    Add or promote a project member.
+
+    - **Class instructor**: always adds ``role`` immediately (used for staffing / roster).
+    - **Owner / product owner / admin** (not the class instructor): adding ``member``
+      creates a **pending team invitation**; the user must accept via the same
+      accept-request endpoint used for join requests.
 
     Args:
         project_id: Project unique identifier
-        requester_id: ID of instructor requesting this
+        requester_id: ID of user performing the add (instructor or elevated project role)
         target_user_id: ID of user to add
         role: role of newly added user
 
@@ -892,67 +1187,99 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user_id:str,
             return False
 
         class_id = class_result.data[0]['class_id']
-        # check is user is teacher of the class
-        if not _is_instructor(requester_id, class_id):
-            logger.warning(
-                "instructor_add_member: forbidden (not class instructor) | "
-                "requester=%s class_id=%s project_id=%s",
-                requester_id, class_id, project_id,
+        # Allow class instructor OR project product owner / admin / owner
+        is_instructor = _is_instructor(requester_id, class_id)
+        if not is_instructor:
+            membership = (
+                client.table('project_members').select('role')
+                .eq('project_id', str(project_id)).eq('user_id', str(requester_id))
+                .execute()
             )
-            raise HTTPException(status_code=403, detail="Not the instructor of this project")
+            if not membership.data or membership.data[0].get('role') not in ('product owner', 'admin', 'owner'):
+                logger.warning(
+                    "instructor_add_member: forbidden (not class instructor or elevated role) | "
+                    "requester=%s class_id=%s project_id=%s",
+                    requester_id, class_id, project_id,
+                )
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only instructors, product owners, and admins can add members",
+                )
 
-        # WARN: This membership check is NOT scoped to project_id — it returns true
-        # if the target user is a member of ANY project. See CODE_REVIEW.md #BUG-1.
-        # If you see the "update role" branch fire for a user who was never in this
-        # project, this is why.
         res = (client.table('project_members').select('user_id')
+            .eq('project_id', str(project_id))
             .eq('user_id', target_user_id)
             .execute()
         )
         logger.debug(
-            "instructor_add_member: pre-check membership rows=%d (NOT scoped to project — BUG)",
+            "instructor_add_member: pre-check membership rows=%d",
             len(res.data) if res.data else 0,
         )
 
         if len(res.data) > 0: # update role if already in project
-            # WARN: This update targets `requester_id` (the instructor), not
-            # `target_user_id`. The instructor's own role gets overwritten.
-            # See CODE_REVIEW.md #BUG-2 and the walkthrough in chat.
-            logger.warning(
-                "instructor_add_member: ROLE UPDATE path firing — BUG: updates "
-                "requester (%s) instead of target (%s) | project_id=%s new_role=%r",
-                requester_id, target_user_id, project_id, role,
-            )
             response = (client.table("project_members")
                 .update({"role": role})
-                .eq("user_id", requester_id).eq("project_id", str(project_id))
+                .eq("user_id", target_user_id).eq("project_id", str(project_id))
                 .execute()
             )
 
             #only one scrum master or owner, set old one as member
             if role in ["scrum master", "owner"]:
-                # WARN: Same bug — this demotes everyone EXCEPT the requester,
-                # not everyone except the actual new holder of the role.
-                logger.warning(
-                    "instructor_add_member: demoting old %s holders (excluding requester, "
-                    "should exclude target) | project_id=%s",
-                    role, project_id,
-                )
                 (client.table("project_members")
                     .update({"role": "member"})
-                    .neq("user_id", requester_id).eq("project_id", str(project_id)).eq("role", role)
+                    .neq("user_id", target_user_id).eq("project_id", str(project_id)).eq("role", role)
                     .execute()
                 )
             logger.info(
-                "Changed roles (BUG path) | project_id=%s affected_rows=%d role=%r",
+                "Changed roles | project_id=%s affected_rows=%d role=%r",
                 project_id, len(response.data) if response.data else 0, role,
             )
             return {
                 "message": "Changed roles successfully",
-                "member": requester_id,
+                "member": target_user_id,
                 "role": role
             }
-        else: # otherwise add user as project member
+        else: # not yet a member
+            if role == "member" and not is_instructor:
+                pending = (
+                    client.table('project_join_requests').select('id, invited_by')
+                    .eq('project_id', str(project_id))
+                    .eq('user_id', str(target_user_id))
+                    .eq('request_status', 'pending')
+                    .execute()
+                )
+                for pr in pending.data or []:
+                    if pr.get('invited_by'):
+                        raise HTTPException(
+                            status_code=400,
+                            detail="This user already has a pending invitation to this project",
+                        )
+                    raise HTTPException(
+                        status_code=400,
+                        detail="This user already has a pending join request for this project",
+                    )
+
+                invite_row = {
+                    "project_id": str(project_id),
+                    "user_id": str(target_user_id),
+                    "request_status": "pending",
+                    "reviewer_id": None,
+                    "reviewed_at": None,
+                    "invited_by": str(requester_id),
+                }
+                ins = client.table('project_join_requests').insert(invite_row).execute()
+
+                logger.info(
+                    "Team invite created | project_id=%s invitee=%s invited_by=%s",
+                    project_id, target_user_id, requester_id,
+                )
+                return {
+                    "message": "Invitation sent; user must accept before joining",
+                    "request": ins.data[0] if ins.data else None,
+                    "user_id": str(target_user_id),
+                    "role": role,
+                }
+
             member_data = {
                 "project_id": str(project_id),
                 "user_id": str(target_user_id),
@@ -1013,29 +1340,16 @@ def instructor_remove_member(project_id:UUID, requester_id:str, target_user_id:s
             )
             return False
         class_id = class_result.data[0]['class_id']
-        # check is user is teacher of the class
-        if not _is_instructor(requester_id, class_id):
-            logger.warning(
-                "instructor_remove_member: forbidden (not class instructor) | "
-                "requester=%s class_id=%s",
-                requester_id, class_id,
+        # Allow class instructor, or product owner/admin
+        is_instructor = _is_instructor(requester_id, class_id)
+        if not is_instructor:
+            membership = (
+                client.table('project_members').select('role')
+                .eq('project_id', str(project_id)).eq('user_id', str(requester_id))
+                .execute()
             )
-            raise HTTPException(status_code=403, detail="Not the instructor of this project")
-        # WARN: This requires the instructor to ALSO hold the 'owner' project_member
-        # role, which is almost never true. Instructors who own the class can't
-        # remove members unless they're also project owners. See CODE_REVIEW.md #18.
-        membership = (
-            client.table('project_members').select('role')
-            .eq('project_id', str(project_id)).eq('user_id', str(requester_id))
-            .execute()
-        )
-        if not membership.data or membership.data[0].get('role') != 'owner':
-            logger.warning(
-                "instructor_remove_member: forbidden (class instructor lacks 'owner' "
-                "project_member row) | requester=%s project_id=%s has_row=%s",
-                requester_id, project_id, bool(membership.data),
-            )
-            raise HTTPException(status_code=403, detail="Not the owner of this project")
+            if not membership.data or membership.data[0].get('role') not in ('product owner', 'admin', 'owner'):
+                raise HTTPException(status_code=403, detail="Not the instructor of this project")
         # Remove user as project member
         delete_result = (client.table('project_members').delete()
             .eq('project_id', str(project_id)).eq('user_id', str(target_user_id))

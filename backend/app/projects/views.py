@@ -100,6 +100,15 @@ def get_projects(
     return {"projects": projects}
 
 
+def get_pending_team_invites(
+    class_id: UUID = Query(..., description="Class scope for pending invitations to the current user"),
+    user_id: str = Depends(require_user),
+):
+    """Team invites where the current user is the invitee (awaiting accept/decline)."""
+    requests = controller.get_pending_team_invites_for_user(user_id, class_id)
+    return {"requests": requests}
+
+
 def get_project(project_id: UUID, user_id: str = Depends(require_user)):
     project = controller.get_project_by_id(project_id, user_id)
     return {"project": project}
@@ -148,6 +157,12 @@ def get_project_members(project_id: UUID, user_id: str = Depends(require_user)):
 
 
 def get_join_requests(project_id: UUID, user_id: str = Depends(require_user)):
+    """
+    List pending **student-initiated** join requests for a project.
+
+    Allowed callers: **class instructor** for the project’s class, or a project
+    member with role **owner**, **product owner**, or **admin**.
+    """
     requests = controller.get_pending_join_requests(project_id, user_id)
     return {"requests": requests}
 
@@ -157,7 +172,14 @@ def add_project_member(
     data: ManageProjectMemberRequest,
     user_id: str = Depends(require_user),
 ):
-    """Add a user to a project, or update their role if already a member (instructor only)."""
+    """
+    Add someone to a project or change their role if they are already a member.
+
+    - **Class instructor**: adds or updates the role **immediately**.
+    - **Owner / product owner / admin** (not the class instructor): adding role
+      **member** creates a **pending team invite**; the invitee accepts via
+      ``POST /api/projects/accept-request``.
+    """
     result = controller.instructor_add_member(
         project_id=project_id,
         requester_id=user_id,
