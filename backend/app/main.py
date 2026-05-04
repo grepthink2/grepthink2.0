@@ -1,27 +1,16 @@
 """
 FastAPI application initialization and configuration
 """
-import logging
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# Configure logging *before* importing anything that creates module-level loggers
-# so child loggers inherit the configured handlers.
-from app.logging_config import configure_logging
-configure_logging()
-
 from app.config import settings
-from app.middleware import SecurityHeadersMiddleware
 from app.health.url import router as health_router
 from app.auth.url import router as auth_router
 from app.classes.url import router as classes_router
 from app.projects.url import router as projects_router
 from app.assignments.url import router as assignments_router
 from app.tsr.url import router as tsr_router
-from app.messages.url import router as messages_router
-
-logger = logging.getLogger(__name__)
+from app.staffing.url import router as staffing_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -30,14 +19,7 @@ app = FastAPI(
     version="2.0.0"
 )
 
-logger.info("FastAPI app initialized | title=%s version=%s", app.title, app.version)
-
-# Security headers run first so they apply even when CORS rejects a
-# preflight. Starlette runs middleware in reverse registration order,
-# so the LAST add_middleware call is the OUTERMOST middleware. We want
-# CORS to be outermost (it handles OPTIONS preflight), so register the
-# security headers first and CORS second.
-app.add_middleware(SecurityHeadersMiddleware)
+# Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -53,4 +35,4 @@ app.include_router(classes_router)
 app.include_router(projects_router)
 app.include_router(assignments_router)
 app.include_router(tsr_router)
-app.include_router(messages_router)
+app.include_router(staffing_router)

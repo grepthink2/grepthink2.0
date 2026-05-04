@@ -62,11 +62,18 @@ backend/
 │   ├── auth/                 # Authentication
 │   ├── classes/              # Class management
 │   ├── projects/             # Project management (members, roles, join requests)
-│   ├── assignments/         # Assignments and TSR (Team Self-Review)
+│   ├── assignments/          # Assignments and TSR (Team Self-Review)
 │   ├── tsr/                  # TSR submission flow
-│   └── staffing/             # Project staffing (interest forms, assignments, auto-assign)
+│   ├── staffing/             # Project staffing (interest forms, assignments, auto-assign)
+│   └── messages/             # Direct messaging between users
 │
-├── tests/                    # Integration tests
+├── database/
+│   └── migrations/           # SQL DDL snippets for reference (not auto-applied)
+├── docs/
+│   └── DEVELOPER_GUIDE.md    # Full onboarding + §8 API reference
+├── tests/                    # Pytest tests (unit + integration)
+│   ├── conftest.py
+│   ├── memory_supabase.py
 │   ├── test_staffing.py
 │   ├── test_staffing_output.py
 │   ├── test_tsr_view_and_edit.py
@@ -99,6 +106,7 @@ To add a new feature, create a folder under `app/` with `url.py`, `views.py`, `c
 | `/api/assignments` | Assignments; TSR listing/editing under assignment scope (`class_id` query on list) |
 | `/api/tsrs` | Submit and list TSRs by project |
 | `/api/staffing` | Interest forms, instructor preference views, assign / unassign / auto-assign |
+| `/api/messages` | Direct messaging — inbox, send message, conversation messages, mark read |
 
 ## Testing
 
