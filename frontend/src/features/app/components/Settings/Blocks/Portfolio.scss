@@ -1,0 +1,119 @@
+@use '@styles/index.scss' as *;
+
+.portfolio-block {
+  padding-bottom: $spacing-xl;
+  border-bottom: 1px solid $border-color;
+
+  &__title {
+    margin: 0 0 $spacing-xs;
+    font-size: $font-size-large;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  &__subtitle {
+    margin: 0 0 $spacing-lg;
+    font-size: $font-size-base;
+    color: $text-tertiary;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $text-secondary;
+  }
+
+  &__input-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    overflow: hidden;
+    transition: border-color $transition-fast;
+
+    &:focus-within {
+      border-color: $primary-color;
+    }
+  }
+
+  &__prefix {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px $spacing-md;
+    background: $background;
+    font-size: $font-size-sm;
+    font-family: $primary-font;
+    color: $text-tertiary;
+    white-space: nowrap;
+    border-right: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__input {
+    flex: 1;
+    padding: 10px $spacing-md;
+    border: none;
+    outline: none;
+    font-size: $font-size-base;
+    font-family: $primary-font;
+    color: $text-primary;
+    background: $white;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+    margin-top: $spacing-md;
+  }
+
+  &__feedback {
+    margin: 0;
+    font-size: $font-size-sm;
+
+    &--success {
+      color: $primary-color;
+    }
+
+    &--error {
+      color: $error-color;
+    }
+  }
+
+  &__save {
+    padding: 10px $spacing-xl;
+    background: $primary-color;
+    color: $white;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-base;
+    font-family: $primary-font;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: background $transition-fast;
+    margin-left: auto;
+
+    &:hover:not(:disabled) {
+      background: $primary-hover;
+    }
+
+    &:disabled {
+      background: $disabled-bg;
+      cursor: not-allowed;
+    }
+  }
+}

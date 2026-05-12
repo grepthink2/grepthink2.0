@@ -5,6 +5,7 @@ import Sidebar from '@features/app/components/Layout/Sidebar';
 import Header from '@features/app/components/Layout/Header';
 import CreateClassModal from '@/features/app/components/Classes/CreateClassModal';
 import JoinClassModal from '@/features/app/components/Classes/JoinClassModal';
+import Settings from '@features/app/pages/Settings';
 import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/routePermissions';
@@ -14,6 +15,7 @@ const AppView: React.FC = () => {
   const { role, loading: authLoading } = useAuth();
   const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
   const [isJoinClassModalOpen, setIsJoinClassModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const location = useLocation();
 
   const handleOpenCreateClassModal = () => {
@@ -62,10 +64,11 @@ const AppView: React.FC = () => {
           role={role} 
           onOpenCreateClass={handleOpenCreateClassModal}
           onOpenJoinClass={handleOpenJoinClassModal}
+          onOpenSettings={() => setIsSettingsOpen(true)}
         />
 
         <main className="app-main">
-          <Header />
+          <Header onOpenSettings={() => setIsSettingsOpen(true)} />
           <Outlet
             context={
               { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
@@ -84,6 +87,9 @@ const AppView: React.FC = () => {
           isOpen={isJoinClassModalOpen} 
           onClose={handleCloseJoinClassModal} 
         />
+
+        {/* Settings Modal */}
+        <Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       </div>
     </ClassProvider>
   );
