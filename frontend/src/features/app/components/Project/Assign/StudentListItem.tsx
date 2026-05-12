@@ -6,11 +6,25 @@ import {
   Users,
   UserPlus,
   FolderOpen,
+  GraduationCap,
 } from 'lucide-react';
 import type { AssignProject, Student } from './assignTypes';
 import StudentDetails from './StudentDetails';
 import GroupTooltip from './GroupTooltip';
+import StatTooltip from './StatTooltip';
 import './StudentListItem.scss';
+
+function ordinalSuffix(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+}
+
+/** Converts a 1–5 interest score to a preference label (5 = 1st preference). */
+function interestToPreference(score: number): string {
+  const rank = 6 - Math.min(5, Math.max(1, score));
+  return `${ordinalSuffix(rank)} Preference`;
+}
 
 interface StudentListItemProps {
   student: Student;
@@ -100,14 +114,32 @@ const StudentListItem: React.FC<StudentListItemProps> = ({
                 </span>
               ) : (
                 <>
-                  <span className="student-item__stat student-item__stat--interest">
-                    <Heart size={14} className="student-item__stat-icon" />
-                    {student.interest.forFocusedProject}/5
-                  </span>
-                  <span className="student-item__stat student-item__stat--matches">
-                    <CheckCircle size={14} className="student-item__stat-icon" />
-                    {student.interest.availableMatches}
-                  </span>
+                  <StatTooltip
+                    label={interestToPreference(student.interest.forFocusedProject)}
+                  >
+                    <span className="student-item__stat student-item__stat--interest">
+                      <Heart size={14} className="student-item__stat-icon" />
+                      {student.interest.forFocusedProject}/5
+                    </span>
+                  </StatTooltip>
+                  <StatTooltip
+                    label={`${student.interest.availableMatches} project${student.interest.availableMatches === 1 ? '' : 's'} left student is interested in`}
+                  >
+                    <span className="student-item__stat student-item__stat--matches">
+                      <CheckCircle size={14} className="student-item__stat-icon" />
+                      {student.interest.availableMatches}
+                    </span>
+                  </StatTooltip>
+                  <StatTooltip
+                    label={student.takingCS115C ? 'Taking CSE 115C' : 'Not taking CSE 115C'}
+                  >
+                    <span
+                      className={`student-item__stat student-item__stat--cs115c student-item__stat--cs115c-${student.takingCS115C ? 'yes' : 'no'}`}
+                    >
+                      <GraduationCap size={14} className="student-item__stat-icon" />
+                      {student.takingCS115C ? 'Yes' : 'No'}
+                    </span>
+                  </StatTooltip>
                 </>
               )}
               {groupOthers.length > 0 && (
