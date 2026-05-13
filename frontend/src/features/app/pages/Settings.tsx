@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Camera, Linkedin, Github, UserPen } from 'lucide-react';
+import { X, Camera, Linkedin, Github, UserPen, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
+import { apiRequest, type ApiProfile } from '@/lib/api';
 import './Settings.scss';
 
 interface SettingsProps {
@@ -29,13 +30,23 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (!user || !isOpen) return;
-    const meta = (user.user_metadata ?? {}) as Record<string, string>;
-    setFirstName(meta.first_name || '');
-    setLastName(meta.last_name || '');
-    setAvatarUrl(meta.avatar_url || null);
-    setLinkedIn(meta.linkedin_username || '');
-    setGithub(meta.github_username || '');
-    setSaveStatus('idle');
+    apiRequest<ApiProfile>('/api/profiles/me')
+      .then((profile) => {
+        setFirstName(profile.first_name ?? '');
+        setLastName(profile.last_name ?? '');
+        setAvatarUrl(profile.image_url ?? null);
+        setLinkedIn(profile.linkedin ?? '');
+        setGithub(profile.github ?? '');
+      })
+      .catch(() => {
+        const meta = (user.user_metadata ?? {}) as Record<string, string>;
+        setFirstName(meta.first_name || '');
+        setLastName(meta.last_name || '');
+        setAvatarUrl(meta.image_url || null);
+        setLinkedIn(meta.linkedin || '');
+        setGithub(meta.github || '');
+      })
+      .finally(() => setSaveStatus('idle'));
   }, [user, isOpen]);
 
   useEffect(() => {
@@ -88,10 +99,10 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         const ext = pendingFile.name.split('.').pop() ?? 'jpg';
         const path = `${user.id}/avatar.${ext}`;
         const { error: uploadError } = await supabase.storage
-          .from('avatars')
+          .from('profile')
           .upload(path, pendingFile, { upsert: true, contentType: pendingFile.type });
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+        const { data: urlData } = supabase.storage.from('profile').getPublicUrl(path);
         resolvedAvatarUrl = urlData.publicUrl;
         setAvatarUrl(resolvedAvatarUrl);
         if (avatarPreview) URL.revokeObjectURL(avatarPreview);
@@ -102,17 +113,18 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
       const updateData: Record<string, string | null> = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
-        full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
-        avatar_url: resolvedAvatarUrl ?? null,
+        image_url: resolvedAvatarUrl ?? null,
       };
 
       if (role === 'student') {
-        updateData.linkedin_username = linkedIn.trim();
-        updateData.github_username = github.trim();
+        updateData.linkedin = linkedIn.trim();
+        updateData.github = github.trim();
       }
 
-      const { error } = await supabase.auth.updateUser({ data: updateData });
-      if (error) throw error;
+      await apiRequest('/api/profiles/me', {
+        method: 'PATCH',
+        body: JSON.stringify(updateData),
+      });
       setSaveStatus('success');
     } catch (err) {
       setSaveStatus('error');
@@ -280,10 +292,16 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
           {/* Sticky footer */}
           <div className="settings-modal__footer">
             {saveStatus === 'error' && (
-              <p className="settings-modal__feedback settings-modal__feedback--error">{errorMessage}</p>
+              <span className="settings-modal__feedback settings-modal__feedback--error">
+                <AlertCircle size={15} />
+                {errorMessage}
+              </span>
             )}
             {saveStatus === 'success' && (
-              <p className="settings-modal__feedback settings-modal__feedback--success">Changes saved.</p>
+              <span className="settings-modal__feedback settings-modal__feedback--success">
+                <CheckCircle size={15} />
+                Changes saved.
+              </span>
             )}
             <button
               type="button"

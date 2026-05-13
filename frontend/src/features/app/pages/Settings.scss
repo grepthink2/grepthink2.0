@@ -311,8 +311,13 @@
   }
 
   &__feedback {
-    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: $font-size-sm;
+    font-family: $primary-font;
+    font-weight: $font-weight-medium;
+    animation: settingsFeedbackIn 0.2s ease;
 
     &--success {
       color: $primary-color;
@@ -321,6 +326,11 @@
     &--error {
       color: $error-color;
     }
+  }
+
+  @keyframes settingsFeedbackIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   &__save {
