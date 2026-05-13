@@ -11,3 +11,13 @@ class ProfileUpdateRequest(BaseModel):
     linkedin: Optional[str] = None
     github: Optional[str] = None
     image_url: Optional[str] = None
+    edu_email: Optional[str] = None
+
+
+class SendEduVerificationRequest(BaseModel):
+    edu_email: str
+
+
+class VerifyEduEmailRequest(BaseModel):
+    edu_email: str
+    code: str
