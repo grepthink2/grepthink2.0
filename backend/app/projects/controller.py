@@ -995,7 +995,9 @@ def get_project_members(project_id: UUID) -> list:
         
         # Fetch user details
         user_ids = [m['user_id'] for m in members.data]
-        users = client.table('profiles').select('id, email, role').in_('id', user_ids).execute()
+        users = client.table('profiles').select(
+            'id, email, role, first_name, last_name, linkedin, github, image_url'
+        ).in_('id', user_ids).execute()
         
         # Combine member and user data
         user_map = {u['id']: u for u in users.data} if users.data else {}
@@ -1008,7 +1010,12 @@ def get_project_members(project_id: UUID) -> list:
                 "email": user_info.get('email'),
                 "user_role": user_info.get('role'),
                 "project_role": member['role'],
-                "joined_at": member['created_at']
+                "joined_at": member['created_at'],
+                "first_name": user_info.get('first_name'),
+                "last_name": user_info.get('last_name'),
+                "linkedin": user_info.get('linkedin'),
+                "github": user_info.get('github'),
+                "image_url": user_info.get('image_url'),
             })
         
         return result
