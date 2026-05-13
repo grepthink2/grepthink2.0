@@ -20,6 +20,7 @@ export interface ProjectViewMember {
   email?: string;
   githubUrl?: string;
   linkedInUrl?: string;
+  imageUrl?: string;
 }
 
 /** Roles that can manage the project (add/drop members, edit project). */
@@ -259,17 +260,25 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 members.map((member, index) => (
                   <div key={member.id ?? `member-${index}`} className="project-view__team-member">
                     <div className="project-view__member-avatar">
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
+                      {member.imageUrl ? (
+                        <img
+                          src={member.imageUrl}
+                          alt={member.displayName}
+                          className="project-view__member-avatar-img"
+                        />
+                      ) : (
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                      )}
                     </div>
                     <div className="project-view__member-info">
                       <div className="project-view__member-name">{member.displayName}</div>
                       <div className="project-view__member-role">{member.roleLabel}</div>
                       <div className="project-view__member-links">
                         {member.email ? (
-                          <a href={`mailto:${member.email}`} className="project-view__link-icon-wrap" title={member.email} aria-label={`Email ${member.displayName}`}>
+                          <a href={`mailto:${member.email}`} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title={member.email} aria-label={`Email ${member.displayName}`}>
                             <img src={EmailIcon} alt="" className="project-view__link-icon" />
                           </a>
                         ) : (
@@ -277,12 +286,24 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                             <img src={EmailIcon} alt="" className="project-view__link-icon" />
                           </span>
                         )}
-                        <a href={member.githubUrl || '#'} className="project-view__link-icon-wrap" title="GitHub" aria-label={`${member.displayName} GitHub`} onClick={(e) => !member.githubUrl && e.preventDefault()}>
-                          <img src={GithubIcon} alt="" className="project-view__link-icon" />
-                        </a>
-                        <a href={member.linkedInUrl || '#'} className="project-view__link-icon-wrap" title="LinkedIn" aria-label={`${member.displayName} LinkedIn`} onClick={(e) => !member.linkedInUrl && e.preventDefault()}>
-                          <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
-                        </a>
+                        {member.githubUrl ? (
+                          <a href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title="GitHub" aria-label={`${member.displayName} GitHub`}>
+                            <img src={GithubIcon} alt="" className="project-view__link-icon" />
+                          </a>
+                        ) : (
+                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
+                            <img src={GithubIcon} alt="" className="project-view__link-icon" />
+                          </span>
+                        )}
+                        {member.linkedInUrl ? (
+                          <a href={member.linkedInUrl} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title="LinkedIn" aria-label={`${member.displayName} LinkedIn`}>
+                            <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
+                          </a>
+                        ) : (
+                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
+                            <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
+                          </span>
+                        )}
                         {member.id && member.id !== user?.id && (
                           <MessageButton toUserId={member.id} toUserName={member.displayName} />
                         )}

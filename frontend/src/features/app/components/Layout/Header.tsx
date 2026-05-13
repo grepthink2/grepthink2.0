@@ -105,7 +105,11 @@ function buildBreadcrumbs(
   return null;
 }
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onOpenSettings: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, role } = useAuth();
@@ -171,7 +175,7 @@ const Header: React.FC = () => {
 
   const handleSettingsClick = () => {
     setShowProfileMenu(false);
-    navigate('/app/settings');
+    onOpenSettings();
   };
 
   return (
