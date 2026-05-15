@@ -94,6 +94,29 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
       return;
     }
 
+    // If signing up with a .edu email, check it isn't already claimed as
+    // another account's verified edu_email before creating the auth account.
+    if (formData.email.toLowerCase().endsWith('.edu')) {
+      try {
+        const checkRes = await fetch('/api/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email }),
+        });
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (!checkData.available) {
+            setError('This .edu email is already linked to another account.');
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch {
+        // Network error on the pre-check — let signup proceed; the backend
+        // create-user endpoint has a defensive check as a second layer.
+      }
+    }
+
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,

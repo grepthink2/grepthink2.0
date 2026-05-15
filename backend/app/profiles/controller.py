@@ -73,6 +73,22 @@ def send_edu_verification(user_id: str, edu_email: str) -> None:
     if not edu_email.lower().endswith('.edu'):
         raise HTTPException(status_code=400, detail="Must be a valid .edu email address")
 
+    # Check availability before issuing a code so the error surfaces at
+    # Save Changes time (inline), not after the user enters the code in the modal.
+    client = service_client or supabase
+    conflict = (
+        client.table('profiles')
+        .select('id')
+        .eq('edu_email', edu_email)
+        .neq('id', user_id)
+        .execute()
+    )
+    if conflict.data:
+        raise HTTPException(
+            status_code=409,
+            detail="This .edu email is already linked to another account.",
+        )
+
     code = str(secrets.randbelow(1_000_000)).zfill(6)
     expires_at = time.time() + _CODE_EXPIRY_SECONDS
     _pending_edu_codes[user_id] = (edu_email, code, expires_at)
@@ -124,11 +140,22 @@ def verify_edu_email(user_id: str, edu_email: str, code: str) -> dict:
     del _pending_edu_codes[user_id]
 
     client = service_client or supabase
-    result = (
-        client.table('profiles')
-        .update({'edu_email': edu_email})
-        .eq('id', user_id)
-        .execute()
-    )
+    try:
+        result = (
+            client.table('profiles')
+            .update({'edu_email': edu_email})
+            .eq('id', user_id)
+            .execute()
+        )
+    except Exception as e:
+        # Postgres unique constraint violation — another account claimed this
+        # edu_email between when the code was sent and when it was verified.
+        if '23505' in str(e):
+            raise HTTPException(
+                status_code=409,
+                detail="This .edu email is already linked to another account.",
+            )
+        raise HTTPException(status_code=500, detail="Database error during verification.")
+
     logger.info("edu_verification: verified and saved | user_id=%s email=%s", user_id, edu_email)
     return result.data[0] if result.data else {}

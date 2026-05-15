@@ -9,3 +9,8 @@ class SignupRequest(BaseModel):
     email: str
     userId: str
     userType: str = None
+
+
+class CheckEmailRequest(BaseModel):
+    """Request model for email availability check"""
+    email: str

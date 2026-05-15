@@ -127,9 +127,10 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         setPendingFile(null);
       }
 
-      const newEduEmail = eduEmail.trim();
-      const origEduEmail = originalEduEmailRef.current;
-      const eduEmailChanged = newEduEmail !== origEduEmail;
+      const primaryIsEdu = user?.email?.toLowerCase().endsWith('.edu') ?? false;
+      const newEduEmail = primaryIsEdu ? '' : eduEmail.trim();
+      const origEduEmail = primaryIsEdu ? '' : originalEduEmailRef.current;
+      const eduEmailChanged = !primaryIsEdu && newEduEmail !== origEduEmail;
 
       const updateData: Record<string, string | null> = {
         first_name: firstName.trim(),
@@ -294,17 +295,29 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* .edu Email */}
-            <div className="settings-modal__field">
-              <label className="settings-modal__label" htmlFor="sm-edu-email">.edu Email</label>
-              <input
-                id="sm-edu-email"
-                type="email"
-                className="settings-modal__input"
-                value={eduEmail}
-                onChange={(e) => { setEduEmail(e.target.value); setSaveStatus('idle'); }}
-                placeholder="you@university.edu"
-              />
-            </div>
+            {user?.email?.toLowerCase().endsWith('.edu') ? (
+              <div className="settings-modal__field">
+                <label className="settings-modal__label">.edu Email</label>
+                <input
+                  type="email"
+                  className="settings-modal__input settings-modal__input--readonly"
+                  value={user.email}
+                  readOnly
+                />
+              </div>
+            ) : (
+              <div className="settings-modal__field">
+                <label className="settings-modal__label" htmlFor="sm-edu-email">.edu Email</label>
+                <input
+                  id="sm-edu-email"
+                  type="email"
+                  className="settings-modal__input"
+                  value={eduEmail}
+                  onChange={(e) => { setEduEmail(e.target.value); setSaveStatus('idle'); }}
+                  placeholder="you@university.edu"
+                />
+              </div>
+            )}
 
             {/* Portfolio — students only, no subtitle */}
             {role === 'student' && (
