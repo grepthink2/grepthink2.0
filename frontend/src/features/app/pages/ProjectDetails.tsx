@@ -121,11 +121,12 @@ const ProjectDetails: React.FC = () => {
 
   const teamMembers = members.map((m) => ({
     id: m.user_id,
-    displayName: 'Cole Saulnier',
+    displayName: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.email || 'Unknown',
     roleLabel: projectRoleLabel(m.project_role),
     email: m.email,
-    githubUrl: undefined as string | undefined,
-    linkedInUrl: undefined as string | undefined,
+    githubUrl: m.github ? `https://github.com/${m.github}` : undefined,
+    linkedInUrl: m.linkedin ? `https://linkedin.com/in/${m.linkedin}` : undefined,
+    imageUrl: m.image_url ?? undefined,
   }));
 
   return (

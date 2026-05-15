@@ -28,7 +28,6 @@ import MyProject from '@features/app/pages/MyProject';
 import TestProjects from '@pages/TestProjects';
 import Messages from '@features/messages/pages/Messages';
 import { ConversationsProvider } from '@features/messages/hooks/useConversations';
-
 function App() {
   return (
     <Router>
@@ -71,7 +70,7 @@ function App() {
             <Route path="my-project" element={<MyProject />} />
             <Route path="assignments" element={<Assignments />} />
             <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
-            <Route path="settings" element={<div>Settings - Coming Soon</div>} />
+            <Route path="settings" element={<Navigate to="/app/home" replace />} />
             <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
           </Route>
         </Route>

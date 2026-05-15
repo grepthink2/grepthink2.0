@@ -159,6 +159,31 @@
     }
   }
 
+  &--cs115c {
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-weight: $font-weight-semibold;
+    cursor: default;
+
+    &-yes {
+      background: $assign-green-soft-bg;
+      color: $assign-green-soft-text;
+
+      .student-item__stat-icon {
+        color: $assign-green-soft-text;
+      }
+    }
+
+    &-no {
+      background: $assign-surface-bg;
+      color: $assign-muted-text;
+
+      .student-item__stat-icon {
+        color: $assign-muted-text;
+      }
+    }
+  }
+
   &--assigned {
     padding: 3px 8px;
     border-radius: 999px;

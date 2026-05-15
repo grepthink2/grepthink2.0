@@ -454,7 +454,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
         if member_user_ids:
             profiles_result = (
                 client.table('profiles')
-                .select('id, email')
+                .select('id, email, first_name, last_name')
                 .in_('id', member_user_ids)
                 .execute()
             )
@@ -472,13 +472,10 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
         def _name(profile: dict) -> str | None:
             if not profile:
                 return None
-            return profile.get('name') or profile.get('full_name') or profile.get('email')
-
-        # Only instructors get the ``sentiment`` field exposed; we pull it
-        # for everyone (single-column join) but strip it for students so
-        # the response shape is unchanged from the previous role-branched
-        # SELECT.
-        include_sentiment = role == 'instructor'
+            first = profile.get('first_name') or ''
+            last = profile.get('last_name') or ''
+            full = f"{first} {last}".strip()
+            return full or profile.get('email')
 
         results = []
         for project in projects:

@@ -12,9 +12,10 @@ interface SidebarProps {
   role: UserRole;
   onOpenCreateClass?: () => void;
   onOpenJoinClass?: () => void;
+  onOpenSettings?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinClass }) => {
+const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinClass, onOpenSettings }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showClassDropdown, setShowClassDropdown] = useState(false);
   const navigate = useNavigate();
@@ -35,11 +36,12 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   }, [unreadTotal]);
 
   const handleNavigation = (path: string) => {
-    // If it's the create class path, open the modal instead
     if (path === '/app/create-class' && onOpenCreateClass) {
       onOpenCreateClass();
     } else if (path === '/app/join-class' && onOpenJoinClass) {
       onOpenJoinClass();
+    } else if (path === '/app/settings' && onOpenSettings) {
+      onOpenSettings();
     } else {
       navigate(path);
     }

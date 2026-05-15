@@ -28,7 +28,7 @@ const StudentDetails: React.FC<StudentDetailsProps> = ({ student }) => {
       )}
 
       <section className="student-details__section">
-        <h4 className="student-details__label">Taking CS 115C</h4>
+        <h4 className="student-details__label">Taking CSE 115C</h4>
         <span
           className={`student-details__pill${
             student.takingCS115C

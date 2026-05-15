@@ -22,6 +22,17 @@ export interface ApiStudent {
   role: string;
 }
 
+export interface ApiProfile {
+  id: string;
+  email: string;
+  role: string;
+  first_name?: string;
+  last_name?: string;
+  linkedin?: string;
+  github?: string;
+  image_url?: string;
+}
+
 export interface ApiProject {
   id: string;
   class_id: string;
@@ -59,6 +70,11 @@ export interface ApiProjectMember {
   user_role?: string;
   project_role: string;
   joined_at: string;
+  first_name?: string;
+  last_name?: string;
+  linkedin?: string;
+  github?: string;
+  image_url?: string;
 }
 
 export interface CreateProjectPayload {
