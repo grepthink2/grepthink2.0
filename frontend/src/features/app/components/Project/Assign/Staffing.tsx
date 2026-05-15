@@ -1,79 +1,134 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { useClass } from '@/lib/classContext';
+import { api } from '@/lib/api';
+import type { ApiStaffingProjectRank } from '@/lib/api';
 import AssignSummaryBar from './AssignSummaryBar';
 import StaffingTable from './StaffingTable';
-import type { RankedStaffingProject, StaffingProject } from './assignTypes';
-import { MOCK_STAFFING_PROJECTS, MOCK_STUDENTS } from './assignMockData';
+import type { RankedStaffingProject } from './assignTypes';
 import './Staffing.scss';
 
 /**
- * Compute ranks for a set of StaffingProjects.
- * Rank 1 = best (highest breadth / depth / strength, lowest sumRanks).
+ * Adapt the backend's project-rank shape (which already carries breadth /
+ * depth / strength + ranks) to the frontend's RankedStaffingProject shape.
  */
-function rankProjects(projects: StaffingProject[]): RankedStaffingProject[] {
-  if (projects.length === 0) return [];
-
-  const withStrength = projects.map((p) => ({
-    ...p,
-    strength: p.breadth > 0 ? p.depth / p.breadth : 0,
-  }));
-
-  const rankDesc = (values: number[]): number[] => {
-    const indexed = values.map((v, i) => ({ v, i })).sort((a, b) => b.v - a.v);
-    const ranks = new Array<number>(values.length);
-    indexed.forEach(({ i }, rank) => { ranks[i] = rank + 1; });
-    return ranks;
+function toRankedStaffingProject(row: ApiStaffingProjectRank): RankedStaffingProject {
+  return {
+    id:         row.project_id,
+    name:       row.project_name ?? 'Untitled project',
+    sponsor:    '',
+    popularity: row.strength,
+    seatsTaken: row.num_staff,
+    totalSeats: row.team_size,
+    breadth:    row.breadth,
+    depth:      row.depth,
+    strength:   row.strength,
+    bRank:      row.breadth_rank,
+    dRank:      row.depth_rank,
+    sRank:      row.strength_rank,
+    sumRanks:   row.sum_of_ranks,
+    totalRank:  row.total_rank,
   };
-
-  const bRanks = rankDesc(withStrength.map((p) => p.breadth));
-  const dRanks = rankDesc(withStrength.map((p) => p.depth));
-  const sRanks = rankDesc(withStrength.map((p) => p.strength));
-
-  const withPartialRanks = withStrength.map((p, i) => ({
-    ...p,
-    bRank: bRanks[i],
-    dRank: dRanks[i],
-    sRank: sRanks[i],
-    sumRanks: bRanks[i] + dRanks[i] + sRanks[i],
-  }));
-
-  const totalRanks = rankDesc(withPartialRanks.map((p) => -p.sumRanks)); // lower sumRanks = better = rank 1
-
-  return withPartialRanks.map((p, i) => ({ ...p, totalRank: totalRanks[i] }));
 }
 
 const Staffing: React.FC = () => {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<StaffingProject[]>(MOCK_STAFFING_PROJECTS);
+  const { selectedClass } = useClass();
+  const classId = selectedClass?.id ?? null;
 
-  const rankedProjects = useMemo(() => rankProjects(projects), [projects]);
+  const [rankedProjects, setRankedProjects] = useState<RankedStaffingProject[]>([]);
+  const [unassignedCount, setUnassignedCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!classId) {
+      setRankedProjects([]);
+      setUnassignedCount(0);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const [rankRes, assignRes] = await Promise.all([
+        api.getStaffingProjectRank(classId),
+        api.getStaffingAssignments(classId),
+      ]);
+      setRankedProjects(rankRes.projects.map(toRankedStaffingProject));
+      setUnassignedCount(
+        assignRes.assignments.filter((a) => !a.assigned_project_id).length,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load staffing data');
+    } finally {
+      setLoading(false);
+    }
+  }, [classId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   const totalSeats = useMemo(
-    () => projects.reduce((sum, p) => sum + p.totalSeats, 0),
-    [projects],
+    () => rankedProjects.reduce((sum, p) => sum + p.totalSeats, 0),
+    [rankedProjects],
   );
 
   const projectsWithSeats = useMemo(
-    () => projects.filter((p) => p.totalSeats > 0).length,
-    [projects],
+    () =>
+      rankedProjects.filter((p) => p.totalSeats - p.seatsTaken > 0).length,
+    [rankedProjects],
   );
 
-  const handleAddSeat = (projectId: string) => {
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id === projectId ? { ...p, totalSeats: p.totalSeats + 1 } : p,
-      ),
+  // The PATCH /api/projects/:id endpoint already supports updating
+  // team_size; we use that to drive the seats stepper. team_size only
+  // affects ``totalSeats`` / availability — breadth/depth/strength are
+  // derived from interest_form rows and don't change here, so we update
+  // local state optimistically and skip the round-trip refresh. On error
+  // we re-fetch to reconcile.
+  const handleAddSeat = async (projectId: string) => {
+    const target = rankedProjects.find((p) => p.id === projectId);
+    if (!target) return;
+    const newTotal = target.totalSeats + 1;
+    setRankedProjects((prev) =>
+      prev.map((p) => (p.id === projectId ? { ...p, totalSeats: newTotal } : p)),
     );
+    try {
+      await api.updateProject(projectId, { team_size: newTotal });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add seat');
+      void refresh();
+    }
   };
 
-  const handleRemoveSeat = (projectId: string) => {
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id === projectId ? { ...p, totalSeats: Math.max(p.totalSeats - 1, 0) } : p,
-      ),
+  const handleRemoveSeat = async (projectId: string) => {
+    const target = rankedProjects.find((p) => p.id === projectId);
+    if (!target || target.totalSeats <= 0) return;
+    // Don't let the seat count drop below the number of currently
+    // staffed members — the backend would still accept it, but the UI
+    // would render a negative availability that's confusing.
+    if (target.totalSeats - 1 < target.seatsTaken) return;
+    const newTotal = Math.max(target.totalSeats - 1, 0);
+    setRankedProjects((prev) =>
+      prev.map((p) => (p.id === projectId ? { ...p, totalSeats: newTotal } : p)),
     );
+    try {
+      await api.updateProject(projectId, { team_size: newTotal });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove seat');
+      void refresh();
+    }
   };
+
+  if (!selectedClass) {
+    return (
+      <div className="staffing-page">
+        <p>Select a class from the sidebar to staff projects.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="staffing-page">
@@ -95,18 +150,24 @@ const Staffing: React.FC = () => {
 
       <AssignSummaryBar
         summary={{
-          studentsUnassigned: MOCK_STUDENTS.length,
+          studentsUnassigned: unassignedCount,
           availableSeats: totalSeats,
           projectsRemaining: projectsWithSeats,
-          projectsTotal: projects.length,
+          projectsTotal: rankedProjects.length,
         }}
       />
 
-      <StaffingTable
-        projects={rankedProjects}
-        onAddSeat={handleAddSeat}
-        onRemoveSeat={handleRemoveSeat}
-      />
+      {loading ? (
+        <p>Loading project rankings…</p>
+      ) : error ? (
+        <p className="staffing-page__error">{error}</p>
+      ) : (
+        <StaffingTable
+          projects={rankedProjects}
+          onAddSeat={handleAddSeat}
+          onRemoveSeat={handleRemoveSeat}
+        />
+      )}
     </div>
   );
 };

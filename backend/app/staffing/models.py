@@ -3,18 +3,15 @@ Staffing / Interest-Form request and response models.
 
 The staffing surface has three flavors of write:
 
-  * ``SubmitInterestRequest`` — a single per-(user, class, project) ranked
+  * SubmitInterestRequest — a single per-(user, class, project) ranked
     preference. Used by the partial-save endpoint and by the spreadsheet-
     style flow where students enter rows one at a time.
-  * ``SubmitInterestFormRequest`` — the full interest-form submission as a
+  * SubmitInterestFormRequest — the full interest-form submission as a
     single atomic upsert: general background fields, all ranked projects,
     and the work-with / don't-work-with peer lists.
-  * ``AssignUserRequest`` / ``UnassignUserRequest`` — instructor staffing
-    actions against ``project_members``.
+  * AssignUserRequest / UnassignUserRequest — instructor staffing
+    actions against project_members.
 
-Validation here is intentionally lightweight; the controller re-checks
-business rules (interest_value range, class enrollment, etc.) so a
-malformed payload always fails with a clear 4xx.
 """
 from typing import List, Literal, Optional
 from uuid import UUID

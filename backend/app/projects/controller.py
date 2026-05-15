@@ -5,10 +5,30 @@ from datetime import datetime, timezone
 import logging
 from typing import List, Optional
 from uuid import UUID
+
+import httpx
 from fastapi import HTTPException
-from app.database.client import service_client, supabase
+
+from app.auth.controller import get_user_role
+from app.database.client import (
+    query_pool,
+    retry_on_disconnect,
+    service_client,
+    supabase,
+)
 
 logger = logging.getLogger(__name__)
+
+
+# Transient Supabase HTTP/2 errors. We let these propagate from controllers
+# that are decorated with ``@retry_on_disconnect`` so the retry can fire;
+# everything else still maps to HTTPException(500).
+_TRANSIENT_HTTPX_ERRORS = (
+    httpx.RemoteProtocolError,
+    httpx.ReadError,
+    httpx.ConnectError,
+    httpx.ReadTimeout,
+)
 
 
 def _increment_project_num_members(client, project_id: str, delta: int) -> None:
@@ -142,15 +162,36 @@ def create_project(
     """
     try:
         client = service_client if service_client else supabase
+        cid = str(class_id)
 
-        # Verify the class exists
-        class_result = client.table('classes').select('id, created_by').eq('id', str(class_id)).execute()
+        # Fan out the two independent verifications. The enrollment lookup
+        # is only needed for non-instructors but it's a cheap select on an
+        # indexed pair (``class_id``, ``user_id``); pre-fetching it in
+        # parallel removes a sequential round-trip from the student create
+        # path without measurably hurting the instructor path.
+        class_future = query_pool.submit(
+            lambda: client.table('classes')
+            .select('id, created_by')
+            .eq('id', cid)
+            .execute()
+        )
+        enrollment_future = query_pool.submit(
+            lambda: client.table('class_enrollments')
+            .select('id')
+            .eq('class_id', cid)
+            .eq('user_id', user_id)
+            .execute()
+        )
+        # ``get_user_role`` is itself in-process cached, so this is usually
+        # a memory hit. Calling it directly (rather than via the executor)
+        # keeps the cache check off the worker thread.
+        user_role = get_user_role(user_id)
+
+        class_result = class_future.result()
         if not class_result.data or len(class_result.data) == 0:
             raise HTTPException(status_code=404, detail="Class not found")
 
         class_row = class_result.data[0]
-        profile = client.table('profiles').select('role').eq('id', user_id).execute()
-        user_role = profile.data[0].get('role') if profile.data else None
 
         is_instructor = user_role == 'instructor' and class_row.get('created_by') == user_id
 
@@ -160,12 +201,7 @@ def create_project(
                     status_code=403,
                     detail="Only the class instructor or enrolled students can create projects"
                 )
-            # Verify the student is enrolled in the class
-            enrollment = (
-                client.table('class_enrollments').select('id')
-                .eq('class_id', str(class_id)).eq('user_id', user_id)
-                .execute()
-            )
+            enrollment = enrollment_future.result()
             if not enrollment.data:
                 raise HTTPException(
                     status_code=403,
@@ -226,6 +262,7 @@ def create_project(
         raise HTTPException(status_code=500, detail="Failed to create project")
 
 
+@retry_on_disconnect()
 def update_project(
     project_id: UUID,
     user_id: str,
@@ -312,6 +349,10 @@ def update_project(
         )
         return result.data[0]
     except HTTPException:
+        raise
+    except _TRANSIENT_HTTPX_ERRORS:
+        # Bubble to @retry_on_disconnect; if the retry also fails the
+        # decorator re-raises and the framework returns 500.
         raise
     except Exception:
         logger.exception(

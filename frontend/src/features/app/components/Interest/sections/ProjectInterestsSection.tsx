@@ -1,9 +1,11 @@
 import React from 'react';
-import type { ProjectChoice, ProjectSlots } from '../interestTypes';
+import type { MockProject, ProjectChoice, ProjectSlots } from '../interestTypes';
 import RankedProjectSlot from '../RankedProjectSlot';
 
 interface ProjectInterestsSectionProps {
   slots: ProjectSlots;
+  /** Available class projects to pick from. */
+  projects: MockProject[];
   onSlotSelect: (index: number, choice: ProjectChoice) => void;
   onSlotClear: (index: number) => void;
   onSlotReasoning: (index: number, reasoning: string) => void;
@@ -19,6 +21,7 @@ const takenIdsExcluding = (slots: ProjectSlots, excludeIndex: number): Set<strin
 
 const ProjectInterestsSection: React.FC<ProjectInterestsSectionProps> = ({
   slots,
+  projects,
   onSlotSelect,
   onSlotClear,
   onSlotReasoning,
@@ -40,6 +43,7 @@ const ProjectInterestsSection: React.FC<ProjectInterestsSectionProps> = ({
           rank={i + 1}
           choice={slot}
           takenIds={takenIdsExcluding(slots, i)}
+          projects={projects}
           onSelect={(c) => onSlotSelect(i, c)}
           onClear={() => onSlotClear(i)}
           onReasoningChange={(r) => onSlotReasoning(i, r)}

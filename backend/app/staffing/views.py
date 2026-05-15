@@ -1,9 +1,6 @@
 """
 Staffing views — parameter handling and HTTP responses.
 
-Thin layer over ``app.staffing.controller``. The controller owns
-permission checks (instructor vs. student vs. enrolled) so these
-handlers are mostly param plumbing.
 """
 from uuid import UUID
 

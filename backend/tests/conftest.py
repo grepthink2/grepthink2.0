@@ -53,3 +53,26 @@ def valid_token() -> str:
 @pytest.fixture
 def auth_header(valid_token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {valid_token}"}
+
+
+# In-memory Supabase for controller-level tests (see tests/memory_supabase.py).
+_PATCH_MODULES = (
+    "app.database.client",
+    "app.classes.controller",
+    "app.projects.controller",
+    "app.staffing.controller",
+    "app.assignments.controller",
+    "app.tsr.controller",
+    "app.auth.controller",
+)
+
+
+@pytest.fixture
+def mem(monkeypatch: pytest.MonkeyPatch):
+    from tests.memory_supabase import MemorySupabase
+
+    db = MemorySupabase()
+    for mod in _PATCH_MODULES:
+        monkeypatch.setattr(f"{mod}.service_client", db, raising=False)
+        monkeypatch.setattr(f"{mod}.supabase", db, raising=False)
+    return db

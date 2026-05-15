@@ -2,7 +2,7 @@
 Staffing / Interest-Form business logic.
 
 This module is the canonical implementation of the workflow described in
-``backend/cse115b Project staffing.xlsx``:
+backend/cse115b Project staffing.xlsx:
 
     1. Students submit an interest form per class:
          * up to 5 ranked projects with a free-form reason for each
@@ -33,7 +33,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from app.database.client import service_client, supabase
+from app.database.client import query_pool, service_client, supabase
 from app.staffing.models import RankedProject
 
 logger = logging.getLogger(__name__)
@@ -169,15 +169,24 @@ def _list_class_interest_rows(client, class_id: UUID) -> list[dict]:
     return res.data or []
 
 
-def _project_members_for_class(client, class_id: UUID) -> list[dict]:
+def _project_members_for_class(
+    client,
+    class_id: UUID,
+    *,
+    projects: list[dict] | None = None,
+) -> list[dict]:
     """
     Return all project_members rows whose project belongs to the given class.
 
-    Done as two queries (projects → members) so the in-memory test client,
-    which doesn't support PostgREST embeds, behaves identically to
-    Supabase in production.
+    Pass ``projects`` from a prior ``_list_class_projects`` call to avoid a
+    second identical projects query (several instructor endpoints were
+    fetching the class project list twice per request).
+
+    Done as two queries (projects → members) unless ``projects`` is preset;
+    the in-memory test client does not rely on PostgREST embeds.
     """
-    projects = _list_class_projects(client, class_id)
+    if projects is None:
+        projects = _list_class_projects(client, class_id)
     if not projects:
         return []
     pids = [str(p["id"]) for p in projects]
@@ -575,9 +584,11 @@ def pref_by_student(user_id: str, class_id: UUID) -> list[dict]:
     _require_class_instructor(user_id, class_id)
     client = _client()
 
-    students = _list_class_students(client, class_id)
+    fut_students = query_pool.submit(lambda: _list_class_students(client, class_id))
+    fut_interest = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
+    students = fut_students.result()
+    interest_rows = fut_interest.result()
     student_lookup = {str(s["id"]): s for s in students}
-    interest_rows = _list_class_interest_rows(client, class_id)
     project_map = _project_lookup(
         client, [r["project_id"] for r in interest_rows]
     )
@@ -635,8 +646,10 @@ def pref_by_project(user_id: str, class_id: UUID) -> list[dict]:
     _require_class_instructor(user_id, class_id)
     client = _client()
 
-    projects = _list_class_projects(client, class_id)
-    interest_rows = _list_class_interest_rows(client, class_id)
+    fut_projects = query_pool.submit(lambda: _list_class_projects(client, class_id))
+    fut_interest = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
+    projects = fut_projects.result()
+    interest_rows = fut_interest.result()
     student_lookup = _name_lookup(
         client, [r["user_id"] for r in interest_rows]
     )
@@ -707,19 +720,25 @@ def project_rank(user_id: str, class_id: UUID) -> list[dict]:
     _require_class_instructor(user_id, class_id)
     client = _client()
 
-    projects = _list_class_projects(client, class_id)
-    interest_rows = _list_class_interest_rows(client, class_id)
-    members = _project_members_for_class(client, class_id)
+    fut_projects = query_pool.submit(lambda: _list_class_projects(client, class_id))
+    fut_interest = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
+    projects = fut_projects.result()
+    interest_rows = fut_interest.result()
+    members = _project_members_for_class(client, class_id, projects=projects)
 
     member_counts: dict[str, int] = {}
     for m in members:
         pid = str(m.get("project_id"))
         member_counts[pid] = member_counts.get(pid, 0) + 1
 
+    interest_by_project: dict[str, list[dict]] = {}
+    for r in interest_rows:
+        interest_by_project.setdefault(str(r.get("project_id")), []).append(r)
+
     summary: list[dict] = []
     for project in projects:
         pid = str(project["id"])
-        rows = [r for r in interest_rows if str(r.get("project_id")) == pid]
+        rows = interest_by_project.get(pid, [])
         breadth = len(rows)
         depth = sum(int(r.get("interest_value") or 0) for r in rows)
         strength = (depth / breadth) if breadth > 0 else 0.0
@@ -789,8 +808,11 @@ def get_assignments(user_id: str, class_id: UUID) -> list[dict]:
     _require_class_instructor(user_id, class_id)
     client = _client()
 
-    students = _list_class_students(client, class_id)
-    members = _project_members_for_class(client, class_id)
+    fut_students = query_pool.submit(lambda: _list_class_students(client, class_id))
+    fut_projects = query_pool.submit(lambda: _list_class_projects(client, class_id))
+    students = fut_students.result()
+    projects = fut_projects.result()
+    members = _project_members_for_class(client, class_id, projects=projects)
     project_lookup = _project_lookup(
         client, [m.get("project_id") for m in members]
     )
@@ -845,9 +867,11 @@ def get_project_availability(user_id: str, class_id: UUID) -> list[dict]:
     _require_class_instructor(user_id, class_id)
     client = _client()
 
-    projects = _list_class_projects(client, class_id)
-    interest_rows = _list_class_interest_rows(client, class_id)
-    members = _project_members_for_class(client, class_id)
+    fut_projects = query_pool.submit(lambda: _list_class_projects(client, class_id))
+    fut_interest = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
+    projects = fut_projects.result()
+    interest_rows = fut_interest.result()
+    members = _project_members_for_class(client, class_id, projects=projects)
 
     project_lookup = {str(p["id"]): p for p in projects}
     student_lookup = _name_lookup(
@@ -903,50 +927,65 @@ def get_class_students_with_interest(
     """
     _require_class_instructor(user_id, class_id)
     client = _client()
+    cid = str(class_id)
 
-    students = _list_class_students(client, class_id)
-    submissions = (
-        client.table("interest_submissions")
-        .select(
-            "user_id, taking_115c, previous_project_name, "
-            "previous_project_link, notes, submitted_at"
+    def _fetch_submissions():
+        return (
+            client.table("interest_submissions")
+            .select(
+                "user_id, taking_115c, previous_project_name, "
+                "previous_project_link, notes, submitted_at"
+            )
+            .eq("class_id", cid)
+            .execute()
         )
-        .eq("class_id", str(class_id))
-        .execute()
-    )
+
+    def _fetch_prefs():
+        return (
+            client.table("interest_team_preferences")
+            .select("user_id, peer_user_id, kind")
+            .eq("class_id", cid)
+            .execute()
+        )
+
+    fut_students = query_pool.submit(lambda: _list_class_students(client, class_id))
+    fut_sub = query_pool.submit(_fetch_submissions)
+    fut_int = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
+    fut_pref = query_pool.submit(_fetch_prefs)
+    fut_proj = query_pool.submit(lambda: _list_class_projects(client, class_id))
+
+    students = fut_students.result()
+    submissions = fut_sub.result()
+    interest_rows = fut_int.result()
+    prefs = fut_pref.result()
+    projects = fut_proj.result()
+
+    members = _project_members_for_class(client, class_id, projects=projects)
+
     submission_lookup = {
         str(s["user_id"]): s for s in (submissions.data or [])
     }
 
-    interest_rows = _list_class_interest_rows(client, class_id)
-    project_lookup = _project_lookup(
-        client, [r["project_id"] for r in interest_rows]
-    )
+    project_ids: set[str] = {str(r["project_id"]) for r in interest_rows}
     interest_by_user: dict[str, list[dict]] = {}
     for row in interest_rows:
         interest_by_user.setdefault(str(row["user_id"]), []).append(row)
 
-    prefs = (
-        client.table("interest_team_preferences")
-        .select("user_id, peer_user_id, kind")
-        .eq("class_id", str(class_id))
-        .execute()
-    )
     prefs_by_user: dict[str, list[dict]] = {}
     for row in (prefs.data or []):
         prefs_by_user.setdefault(str(row["user_id"]), []).append(row)
 
-    members = _project_members_for_class(client, class_id)
     member_lookup: dict[str, dict] = {}
     for m in members:
         member_lookup[str(m["user_id"])] = m
+        if m.get("project_id"):
+            project_ids.add(str(m["project_id"]))
 
-    member_project_lookup = _project_lookup(
-        client, [m.get("project_id") for m in members]
-    )
-    peer_lookup = _name_lookup(
-        client, [p["peer_user_id"] for rows in prefs_by_user.values() for p in rows]
-    )
+    peer_ids = [p["peer_user_id"] for rows in prefs_by_user.values() for p in rows]
+    fut_proj_lookup = query_pool.submit(lambda: _project_lookup(client, project_ids))
+    fut_peer = query_pool.submit(lambda: _name_lookup(client, peer_ids))
+    project_lookup = fut_proj_lookup.result()
+    peer_lookup = fut_peer.result()
 
     out: list[dict] = []
     for profile in students:
@@ -986,7 +1025,7 @@ def get_class_students_with_interest(
 
         member = member_lookup.get(uid)
         if member:
-            assigned_project = member_project_lookup.get(str(member["project_id"])) or {}
+            assigned_project = project_lookup.get(str(member["project_id"])) or {}
             assignment = {
                 "project_id": str(member["project_id"]),
                 "project_name": assigned_project.get("name"),
@@ -1176,18 +1215,23 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
     _require_class_instructor(user_id, class_id)
     client = _client()
 
-    students = _list_class_students(client, class_id)
+    fut_students = query_pool.submit(lambda: _list_class_students(client, class_id))
+    fut_projects = query_pool.submit(lambda: _list_class_projects(client, class_id))
+    fut_interest = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
+    students = fut_students.result()
+    projects = fut_projects.result()
+    all_interest_rows = fut_interest.result()
+
     student_ids = {str(s["id"]) for s in students}
     if not student_ids:
         return []
 
-    members = _project_members_for_class(client, class_id)
+    members = _project_members_for_class(client, class_id, projects=projects)
     assigned_ids = {str(m["user_id"]) for m in members}
     unassigned_ids = sorted(student_ids - assigned_ids)
     if not unassigned_ids:
         return []
 
-    projects = _list_class_projects(client, class_id)
     project_lookup = {str(p["id"]): p for p in projects}
     seats_left: dict[str, int] = {
         str(p["id"]): max(int(p.get("team_size") or 0) - 0, 0)
@@ -1200,7 +1244,7 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
             seats_left[pid] = max(seats_left[pid] - 1, 0)
 
     interest_rows = [
-        r for r in _list_class_interest_rows(client, class_id)
+        r for r in all_interest_rows
         if str(r["user_id"]) in unassigned_ids
     ]
     prefs_by_user: dict[str, list[dict]] = {}
