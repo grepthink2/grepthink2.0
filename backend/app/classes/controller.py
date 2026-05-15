@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
-from app.database.client import service_client, supabase
+from app.database.client import query_pool, service_client, supabase
 from app.utils.generators import generate_course_code
 
 logger = logging.getLogger(__name__)
@@ -376,58 +376,68 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
     - name, team_size, sentiment
     - product_owner_name, product_owner_email
     - scrum_master_name, scrum_master_email (None if no scrum master assigned)
+
+    Performance: this endpoint is hit by the My Projects, Browse Projects,
+    and My Project pages on every navigation. The independent reads
+    (class metadata, enrollment, projects list) are issued in parallel via
+    ``query_pool`` so the user only waits for the *slowest* of the three
+    network round-trips instead of their sum. ``sentiment`` is always
+    selected (it's a small column and the frontend ignores it for non-
+    instructors anyway), which removes a sequential dependency on knowing
+    the role before issuing the projects query.
     """
     try:
         client = service_client if service_client else supabase
+        cid = str(class_id)
 
-        class_result = (
-            client.table('classes')
+        # Stage 1: fan out the three independent reads.
+        class_future = query_pool.submit(
+            lambda: client.table('classes')
             .select('id, created_by')
-            .eq('id', str(class_id))
+            .eq('id', cid)
             .execute()
         )
+        enrollment_future = query_pool.submit(
+            lambda: client.table('class_enrollments')
+            .select('id')
+            .eq('class_id', cid)
+            .eq('user_id', user_id)
+            .execute()
+        )
+        projects_future = query_pool.submit(
+            lambda: client.table('projects')
+            .select('id, name, team_size, sentiment')
+            .eq('class_id', cid)
+            .order('created_at', desc=True)
+            .execute()
+        )
+
+        class_result = class_future.result()
         if not class_result.data:
             raise HTTPException(status_code=404, detail='Class not found')
 
         class_row = class_result.data[0]
-
-        has_access = role == 'instructor' and class_row.get('created_by') == user_id
+        has_access = (
+            role == 'instructor' and class_row.get('created_by') == user_id
+        )
         if not has_access:
-            enrollment_result = (
-                client.table('class_enrollments')
-                .select('id')
-                .eq('class_id', str(class_id))
-                .eq('user_id', user_id)
-                .execute()
-            )
+            enrollment_result = enrollment_future.result()
             has_access = bool(enrollment_result.data)
 
         if not has_access:
-            raise HTTPException(status_code=403, detail='You do not have access to this class projects list')
-        if role == 'instructor':
-            projects_result = (
-                client.table('projects')
-                .select('id, name, team_size, sentiment')
-                .eq('class_id', str(class_id))
-                .order('created_at', desc=True)
-                .execute()
-            )
-        else:
-            projects_result = (
-                client.table('projects')
-                .select('id, name, team_size')
-                .eq('class_id', str(class_id))
-                .order('created_at', desc=True)
-                .execute()
+            raise HTTPException(
+                status_code=403,
+                detail='You do not have access to this class projects list',
             )
 
-        projects = projects_result.data or []
+        projects = projects_future.result().data or []
         if not projects:
             return []
 
         project_ids = [p['id'] for p in projects]
 
-        # Fetch all product owner and scrum master memberships for these projects in one query
+        # Stage 2: members lookup. Profiles depend on the user ids returned
+        # here, so we can't fan it out alongside.
         memberships_result = (
             client.table('project_members')
             .select('project_id, user_id, role')
@@ -436,8 +446,10 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
             .execute()
         )
 
-        # Collect all user IDs we need to look up
-        member_user_ids = list({m['user_id'] for m in (memberships_result.data or []) if m.get('user_id')})
+        # Stage 3: profile hydration.
+        member_user_ids = list({
+            m['user_id'] for m in (memberships_result.data or []) if m.get('user_id')
+        })
         profile_map: dict[str, dict] = {}
         if member_user_ids:
             profiles_result = (
@@ -470,7 +482,6 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
             pid = project['id']
             members = project_member_map.get(pid, {})
 
-            # Product owner stored as 'product owner' or 'owner' depending on creation path
             owner_profile = members.get('product owner') or members.get('owner') or {}
             scrum_profile = members.get('scrum master') or {}
 
@@ -478,7 +489,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
                 'id': pid,
                 'name': project.get('name'),
                 'team_size': project.get('team_size'),
-                'sentiment': project.get('sentiment'),
+                'sentiment': project.get('sentiment') if include_sentiment else None,
                 'product_owner_name': _name(owner_profile),
                 'product_owner_email': owner_profile.get('email'),
                 'scrum_master_name': _name(scrum_profile) if scrum_profile else None,

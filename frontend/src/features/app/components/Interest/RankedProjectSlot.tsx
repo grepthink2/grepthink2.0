@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
-import { MOCK_PROJECTS, type ProjectChoice } from './interestTypes';
+import type { MockProject, ProjectChoice } from './interestTypes';
 import { useClickOutside } from './useClickOutside';
 
 interface RankedProjectSlotProps {
@@ -8,6 +8,8 @@ interface RankedProjectSlotProps {
   choice: ProjectChoice | null;
   /** Project ids already used by sibling slots (to prevent duplicates). */
   takenIds: Set<string>;
+  /** Available projects to pick from (the class roster of projects). */
+  projects: MockProject[];
   onSelect: (choice: ProjectChoice) => void;
   onClear: () => void;
   onReasoningChange: (reasoning: string) => void;
@@ -17,6 +19,7 @@ const RankedProjectSlot: React.FC<RankedProjectSlotProps> = ({
   rank,
   choice,
   takenIds,
+  projects,
   onSelect,
   onClear,
   onReasoningChange,
@@ -31,7 +34,7 @@ const RankedProjectSlot: React.FC<RankedProjectSlotProps> = ({
   }, []);
   useClickOutside(wrapperRef, handleOutside);
 
-  const available = MOCK_PROJECTS.filter(
+  const available = projects.filter(
     (p) => !takenIds.has(p.id) && p.name.toLowerCase().includes(query.toLowerCase()),
   );
 

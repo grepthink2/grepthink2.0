@@ -176,6 +176,110 @@ export interface ApiConversationSummary {
   last_message_at: string | null;
 }
 
+// ----- Staffing / Interest form -------------------------------------------
+
+export interface ApiStaffingPeer {
+  user_id: string;
+  name: string | null;
+  email: string | null;
+}
+
+export interface ApiStaffingRankedProject {
+  id?: string;
+  user_id?: string;
+  class_id?: string;
+  project_id: string;
+  project_name: string | null;
+  interest_value: number;
+  interest_reason: string | null;
+}
+
+export interface ApiStaffingSubmission {
+  user_id: string;
+  class_id: string;
+  taking_115c: boolean | null;
+  previous_project_name: string | null;
+  previous_project_link: string | null;
+  notes: string | null;
+  submitted_at: string | null;
+  ranked_projects: ApiStaffingRankedProject[];
+  work_with: ApiStaffingPeer[];
+  dont_work_with: ApiStaffingPeer[];
+}
+
+export interface SubmitInterestFormPayload {
+  taking_115c?: boolean | null;
+  previous_project_name?: string | null;
+  previous_project_link?: string | null;
+  notes?: string | null;
+  ranked_projects: Array<{
+    project_id: string;
+    interest_value: number;
+    interest_reason?: string | null;
+  }>;
+  work_with: string[];
+  dont_work_with: string[];
+  submitted?: boolean;
+}
+
+export interface ApiStaffingProjectRank {
+  project_id: string;
+  project_name: string | null;
+  breadth: number;
+  depth: number;
+  strength: number;
+  num_staff: number;
+  team_size: number;
+  availability: number;
+  breadth_rank: number;
+  depth_rank: number;
+  strength_rank: number;
+  sum_of_ranks: number;
+  total_rank: number;
+}
+
+export interface ApiStaffingAssignmentRow {
+  user_id: string;
+  user_name: string | null;
+  user_email: string | null;
+  assigned_project_id: string | null;
+  assigned_project_name: string | null;
+  role: string | null;
+}
+
+export interface ApiStaffingStudentAssignedProject {
+  project_id: string;
+  project_name: string | null;
+  role: string | null;
+}
+
+export interface ApiStaffingStudent {
+  user_id: string;
+  user_name: string | null;
+  user_email: string | null;
+  submitted_at: string | null;
+  taking_115c: boolean | null;
+  previous_project_name: string | null;
+  previous_project_link: string | null;
+  notes: string | null;
+  preferences: Array<{
+    project_id: string;
+    project_name: string | null;
+    interest_value: number;
+    interest_reason: string | null;
+  }>;
+  work_with: ApiStaffingPeer[];
+  dont_work_with: ApiStaffingPeer[];
+  assigned_project: ApiStaffingStudentAssignedProject | null;
+}
+
+export interface ApiStaffingPlacement {
+  user_id: string;
+  project_id: string;
+  project_name: string | null;
+  interest_value: number;
+}
+
 /**
  * Make an authenticated API request to the backend
  */
@@ -489,5 +593,88 @@ export const api = {
     return apiRequest<void>(`/api/messages/conversations/${conversationId}/read`, {
       method: 'POST',
     });
+  },
+
+  // ----- Staffing / Interest form ----------------------------------------
+
+  /** Current user's full interest-form payload for the class. */
+  getMyInterestSubmission: async (classId: string) => {
+    return apiRequest<{ submission: ApiStaffingSubmission }>(
+      `/api/staffing/${classId}/my-submission`,
+    );
+  },
+
+  /** Current user's ranked-project rows for the class (highest first). */
+  getMyInterests: async (classId: string) => {
+    return apiRequest<{ interests: ApiStaffingRankedProject[] }>(
+      `/api/staffing/${classId}/my-interests`,
+    );
+  },
+
+  /**
+   * Atomic full-form submit. Replaces the user's interest_form rows and
+   * team_preferences for the class and upserts the background fields.
+   */
+  submitInterestForm: async (classId: string, data: SubmitInterestFormPayload) => {
+    return apiRequest<{ message: string; submission: ApiStaffingSubmission }>(
+      `/api/staffing/${classId}/submission`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+    );
+  },
+
+  /** Per-project breadth/depth/strength + ranks (instructor). */
+  getStaffingProjectRank: async (classId: string) => {
+    return apiRequest<{ projects: ApiStaffingProjectRank[] }>(
+      `/api/staffing/${classId}/project-rank`,
+    );
+  },
+
+  /** Full per-student payload for the Assign UI (instructor). */
+  getStaffingStudents: async (classId: string) => {
+    return apiRequest<{ students: ApiStaffingStudent[] }>(
+      `/api/staffing/${classId}/students`,
+    );
+  },
+
+  /** All students + their current project assignment (instructor). */
+  getStaffingAssignments: async (classId: string) => {
+    return apiRequest<{ assignments: ApiStaffingAssignmentRow[] }>(
+      `/api/staffing/${classId}/assignments`,
+    );
+  },
+
+  /** Manually assign a student to a project (instructor). */
+  staffingAssign: async (classId: string, userId: string, projectId: string) => {
+    return apiRequest<{
+      message: string;
+      user_id: string;
+      project_id: string;
+      previous_project_ids?: string[];
+    }>(`/api/staffing/${classId}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, project_id: projectId }),
+    });
+  },
+
+  /** Remove a student from their project assignment in this class. */
+  staffingUnassign: async (classId: string, userId: string) => {
+    return apiRequest<{ message: string; user_id: string }>(
+      `/api/staffing/${classId}/unassign`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId }),
+      },
+    );
+  },
+
+  /** Greedy least-options-first auto-assign for unassigned students. */
+  staffingAutoAssign: async (classId: string) => {
+    return apiRequest<{ placements: ApiStaffingPlacement[] }>(
+      `/api/staffing/${classId}/auto-assign`,
+      { method: 'POST' },
+    );
   },
 };

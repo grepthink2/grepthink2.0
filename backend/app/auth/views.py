@@ -118,6 +118,10 @@ def create_user(
             )
 
         _insert_profile(client)
+        # Drop any cached "no role" entry from a prior login-check that
+        # raced this provisioning call.
+        from app.auth.controller import invalidate_user_role
+        invalidate_user_role(user_id)
         logger.info("Profile created | user_id=%s email=%s role=%s", user_id, email, user_type)
         return {
             "message": "User record created successfully.",

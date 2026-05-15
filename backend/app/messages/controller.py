@@ -217,12 +217,28 @@ def mark_read(*, conversation_id: str, caller_id: str) -> None:
     }, on_conflict="conversation_id,user_id").execute()
 
 
+# Soft cap on how many messages we pull when computing the inbox in bulk.
+# 5_000 covers every realistic class (≈50 conversations × ≈100 messages) and
+# keeps the JSON payload small. Conversations whose last message falls
+# outside this window are detected in code and patched up via a single
+# fallback query each (almost always 0).
+_INBOX_BULK_MESSAGE_LIMIT = 5_000
+
+
 def list_inbox(*, caller_id: str) -> list[dict]:
     """Return all conversations the caller participates in, hydrated with
     other_user, last_message, unread_count, other_user_last_read_at, can_send.
 
     Filters out conversations with no messages (last_message_at IS NULL).
     Sorted by last_message_at DESC.
+
+    Performance: this used to be O(N) per-conversation queries (last
+    message, unread count, plus 5 ``can_message`` queries each). It is now
+    O(1) bulk queries regardless of conversation count: one for the
+    conversations themselves, one for profiles+roles, one for read marks,
+    one for messages (which feeds both last-message-preview and unread
+    counts), and two for shared-class lookups across all peers. With ~10
+    conversations the difference is roughly 70 round-trips → 6.
     """
     convs = (
         service_client.table("conversations")
@@ -241,15 +257,24 @@ def list_inbox(*, caller_id: str) -> list[dict]:
         for r in rows
     ]
     conv_ids = [r["id"] for r in rows]
+    # Caller is included so we can look up the caller's role + classes in
+    # the same bulk queries we use for every peer.
+    all_user_ids = list({*other_ids, caller_id})
 
+    # ----- bulk read 1: profiles for everyone ----------------------------
+    # Only select columns that exist on every deployment. Some schemas have
+    # no ``profiles.name`` (display name is derived from email in the API).
     profiles_res = (
         service_client.table("profiles")
-        .select("id, email, name")
-        .in_("id", other_ids)
+        .select("id, email, role")
+        .in_("id", all_user_ids)
         .execute()
     )
-    profiles_by_id = {p["id"]: p for p in (profiles_res.data or [])}
+    profiles_by_id: dict[str, dict] = {
+        p["id"]: p for p in (profiles_res.data or [])
+    }
 
+    # ----- bulk read 2: read markers across all caller-relevant convs ---
     reads_res = (
         service_client.table("conversation_reads")
         .select("conversation_id, user_id, last_read_at")
@@ -261,57 +286,99 @@ def list_inbox(*, caller_id: str) -> list[dict]:
     for r in (reads_res.data or []):
         reads_by_conv.setdefault(r["conversation_id"], {})[r["user_id"]] = r["last_read_at"]
 
-    out: list[dict] = []
-    for row in rows:
-        other_id = row["user_b"] if row["user_a"] == caller_id else row["user_a"]
-        other_user = profiles_by_id.get(other_id)
-        if other_user is None:
-            other_user = {"id": other_id, "email": None, "name": None}
+    # ----- bulk read 3: messages for every conversation ----------------
+    # Used twice: (a) latest message preview per conversation,
+    # (b) per-conversation unread counts. Capped to keep the payload
+    # bounded — see _INBOX_BULK_MESSAGE_LIMIT.
+    msgs_res = (
+        service_client.table("messages")
+        .select("id, conversation_id, sender_id, body, created_at")
+        .in_("conversation_id", conv_ids)
+        .order("created_at", desc=True)
+        .limit(_INBOX_BULK_MESSAGE_LIMIT)
+        .execute()
+    )
+    last_msg_by_conv: dict[str, dict] = {}
+    unread_by_conv: dict[str, int] = {cid: 0 for cid in conv_ids}
+    for m in (msgs_res.data or []):
+        cid = m["conversation_id"]
+        # First time we hit a conversation in desc order = its latest msg.
+        if cid not in last_msg_by_conv:
+            last_msg_by_conv[cid] = {
+                "id": m["id"],
+                "sender_id": m["sender_id"],
+                "body": m["body"],
+                "created_at": m["created_at"],
+            }
+        if m["sender_id"] == caller_id:
+            continue
+        caller_last_read = reads_by_conv.get(cid, {}).get(caller_id)
+        if caller_last_read is None or m["created_at"] > caller_last_read:
+            unread_by_conv[cid] = unread_by_conv.get(cid, 0) + 1
 
-        # Latest message preview
-        last_msg_res = (
+    # Fallback: any conversation whose last message wasn't in the bulk
+    # window (extremely large histories). Each missing conv costs one
+    # tiny query; in practice this loop is empty.
+    missing_last = [cid for cid in conv_ids if cid not in last_msg_by_conv]
+    for cid in missing_last:
+        fallback = (
             service_client.table("messages")
             .select("id, sender_id, body, created_at")
-            .eq("conversation_id", row["id"])
+            .eq("conversation_id", cid)
             .order("created_at", desc=True)
             .limit(1)
             .execute()
         )
-        last_message = (last_msg_res.data or [None])[0]
+        if fallback.data:
+            last_msg_by_conv[cid] = fallback.data[0]
 
-        # Unread for caller: messages newer than caller's last_read, sent by other.
-        caller_last_read = reads_by_conv.get(row["id"], {}).get(caller_id)
-        unread_count = 0
-        if caller_last_read is None:
-            # Never marked read — every message from other counts as unread.
-            unread_res = (
-                service_client.table("messages")
-                .select("id", count="exact")
-                .eq("conversation_id", row["id"])
-                .neq("sender_id", caller_id)
-                .execute()
-            )
-            unread_count = unread_res.count or 0
-        else:
-            unread_res = (
-                service_client.table("messages")
-                .select("id", count="exact")
-                .eq("conversation_id", row["id"])
-                .gt("created_at", caller_last_read)
-                .neq("sender_id", caller_id)
-                .execute()
-            )
-            unread_count = unread_res.count or 0
+    # ----- bulk reads 4 & 5: shared-class lookup for can_send ---------
+    owned_res = (
+        service_client.table("classes")
+        .select("id, created_by")
+        .in_("created_by", all_user_ids)
+        .execute()
+    )
+    enrolled_res = (
+        service_client.table("class_enrollments")
+        .select("class_id, user_id")
+        .in_("user_id", all_user_ids)
+        .execute()
+    )
+    user_to_classes: dict[str, set[str]] = {uid: set() for uid in all_user_ids}
+    for r in (owned_res.data or []):
+        user_to_classes.setdefault(r["created_by"], set()).add(r["id"])
+    for r in (enrolled_res.data or []):
+        user_to_classes.setdefault(r["user_id"], set()).add(r["class_id"])
 
-        other_last_read = reads_by_conv.get(row["id"], {}).get(other_id)
+    caller_role = (profiles_by_id.get(caller_id) or {}).get("role")
+    caller_classes = user_to_classes.get(caller_id, set())
 
+    def _can_send_to(other_id: str) -> bool:
+        if other_id == caller_id:
+            return False
+        other_role = (profiles_by_id.get(other_id) or {}).get("role")
+        # Spec: no instructor↔instructor messaging.
+        if caller_role == "instructor" and other_role == "instructor":
+            return False
+        return bool(caller_classes & user_to_classes.get(other_id, set()))
+
+    out: list[dict] = []
+    for row in rows:
+        cid = row["id"]
+        other_id = row["user_b"] if row["user_a"] == caller_id else row["user_a"]
+        peer_profile = profiles_by_id.get(other_id) or {}
         out.append({
-            "id": row["id"],
-            "other_user": other_user,
-            "last_message": last_message,
-            "unread_count": unread_count,
-            "other_user_last_read_at": other_last_read,
-            "can_send": can_message(caller_id, other_id),
+            "id": cid,
+            "other_user": {
+                "id": other_id,
+                "email": peer_profile.get("email"),
+                "name": peer_profile.get("name") or peer_profile.get("email"),
+            },
+            "last_message": last_msg_by_conv.get(cid),
+            "unread_count": unread_by_conv.get(cid, 0),
+            "other_user_last_read_at": reads_by_conv.get(cid, {}).get(other_id),
+            "can_send": _can_send_to(other_id),
             "last_message_at": row["last_message_at"],
         })
     return out
