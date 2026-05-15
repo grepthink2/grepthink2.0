@@ -489,7 +489,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
                 'id': pid,
                 'name': project.get('name'),
                 'team_size': project.get('team_size'),
-                'sentiment': project.get('sentiment') if include_sentiment else None,
+                'sentiment': project.get('sentiment') if role == 'instructor' else None,
                 'product_owner_name': _name(owner_profile),
                 'product_owner_email': owner_profile.get('email'),
                 'scrum_master_name': _name(scrum_profile) if scrum_profile else None,
