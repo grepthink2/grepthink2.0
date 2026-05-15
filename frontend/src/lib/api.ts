@@ -31,6 +31,7 @@ export interface ApiProfile {
   linkedin?: string;
   github?: string;
   image_url?: string;
+  edu_email?: string;
 }
 
 export interface ApiProject {

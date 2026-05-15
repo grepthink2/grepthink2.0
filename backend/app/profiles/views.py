@@ -6,7 +6,7 @@ import logging
 from fastapi import Depends, HTTPException
 
 from app.dependencies import require_user
-from app.profiles.models import ProfileUpdateRequest
+from app.profiles.models import ProfileUpdateRequest, SendEduVerificationRequest, VerifyEduEmailRequest
 from app.profiles import controller
 
 logger = logging.getLogger(__name__)
@@ -41,3 +41,36 @@ def update_my_profile(
     except Exception:
         logger.exception("update_my_profile failed | user_id=%s", user_id)
         raise HTTPException(status_code=500, detail="Failed to update profile")
+
+
+def send_edu_verification(
+    data: SendEduVerificationRequest,
+    user_id: str = Depends(require_user),
+):
+    """
+    Send (print to terminal) a 6-digit verification code for a .edu email.
+    """
+    try:
+        controller.send_edu_verification(user_id, data.edu_email)
+        return {"message": "Verification code sent."}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("send_edu_verification failed | user_id=%s", user_id)
+        raise HTTPException(status_code=500, detail="Failed to send verification code")
+
+
+def verify_edu_email(
+    data: VerifyEduEmailRequest,
+    user_id: str = Depends(require_user),
+):
+    """
+    Verify a .edu email code and save the email to the profile.
+    """
+    try:
+        return controller.verify_edu_email(user_id, data.edu_email, data.code)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("verify_edu_email failed | user_id=%s", user_id)
+        raise HTTPException(status_code=500, detail="Failed to verify email")
