@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import HTTPException, Depends
 from app.dependencies import require_user, require_instructor
 from app.auth.controller import get_user_role
-from app.classes.models import CreateClassRequest, InviteStudentRequest, JoinClassRequest
+from app.classes.models import BulkInviteRequest, CreateClassRequest, InviteStudentRequest, JoinClassRequest
 from app.classes import controller
 
 
@@ -50,3 +50,30 @@ def get_class_projects(class_id: UUID, user_id: str = Depends(require_user)):
     role = get_user_role(user_id)
     projects = controller.get_class_projects(class_id, user_id, role)
     return {"projects": projects}
+
+
+def get_class_turn_in_stats(
+    class_id: UUID,
+    user_id: str = Depends(require_instructor),
+):
+    """TSR turn-in stats for the class's current assignment (instructor only)."""
+    turn_in = controller.get_class_turn_in_stats(class_id, user_id)
+    return {"turn_in": turn_in}
+
+
+def remove_student(
+    class_id: UUID,
+    student_id: str,
+    user_id: str = Depends(require_instructor),
+):
+    """Remove a student from a class (instructor only)."""
+    return controller.remove_student_from_class(class_id, student_id, user_id)
+
+
+def bulk_invite(
+    class_id: UUID,
+    data: BulkInviteRequest,
+    user_id: str = Depends(require_instructor),
+):
+    """Bulk-enroll students by email list (instructor only)."""
+    return controller.bulk_invite_students(class_id, data.emails, user_id)

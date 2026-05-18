@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { format, parseISO } from 'date-fns';
 import { api } from '@/lib/api';
-import type { ApiProject } from '@/lib/api';
+import type { ApiProject, ApiTurnInStats } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import AddProjectButton from '@features/app/components/Project/AddProjectButton';
 import AssignProjectsButton from '@features/app/components/Project/AssignProjectsButton';
@@ -14,76 +15,99 @@ import AssignmentTurnInRate, {
 } from '@features/app/components/Stats/AssignmentTurnInRate';
 import ProjectHealth, {
   type ProjectHealthItem,
+  type HealthStatus,
 } from '@features/app/components/Stats/ProjectHealth';
 import './Projects.scss';
 
-const mockTurnInRate: TurnInRateData = {
-  rate: 69,
-  teamsSubmitted: { count: 18, total: 26 },
-  partialSubmissions: { count: 5, total: 26 },
-  currentAssignment: 'Team Status Report 1',
-  dueDate: 'Jan 30, 2026',
+const UNASSIGNED = 'Unassigned';
+
+const emptyTurnInRate: TurnInRateData = {
+  rate: 0,
+  teamsSubmitted: { count: 0, total: 0 },
+  partialSubmissions: { count: 0, total: 0 },
+  currentAssignment: '—',
+  dueDate: '—',
 };
 
-const mockProjectHealth: ProjectHealthItem[] = [
-  {
-    id: '1',
-    name: 'ShoeShopper',
-    health: 'excellent',
-    description: 'Excellent collaboration and progress on schedule',
-    via: 'Team Status Report 1',
-  },
-  {
-    id: '2',
-    name: 'Chatcut',
-    health: 'warning',
-    description: 'Minor disagreements on tech stack decisions',
-    via: 'Team Status Report 1',
-  },
-  {
-    id: '3',
-    name: 'TaskMaster',
-    health: 'poor',
-    description: 'Significant delays and communication breakdowns',
-    via: 'Team Status Report 2',
-  },
-];
+const SENTIMENT_TO_HEALTH: Record<ProjectSentiment, HealthStatus> = {
+  positive: 'excellent',
+  neutral: 'warning',
+  negative: 'poor',
+};
 
-const MOCK_POS = [
-  { name: 'John D', email: 'johnd@ucsc.edu' },
-  { name: 'Jane D', email: 'janed@ucsc.edu' },
-];
+const HEALTH_DESCRIPTION: Record<ProjectSentiment, string> = {
+  positive: 'Team sentiment is positive',
+  neutral: 'Team sentiment is neutral',
+  negative: 'Team sentiment is negative',
+};
 
-const MOCK_SMS = [
-  { name: 'John B', email: 'johnb@ucsc.edu' },
-  { name: 'Jane B', email: 'janeb@ucsc.edu' },
-];
+function normalizeSentiment(raw: string | null | undefined): ProjectSentiment {
+  if (raw === 'positive' || raw === 'neutral' || raw === 'negative') {
+    return raw;
+  }
+  return 'neutral';
+}
 
-const MOCK_STUDENTS = [6, 5, 4, 6, 7];
-const MOCK_SENTIMENTS: ProjectSentiment[] = ['positive', 'negative', 'neutral', 'negative'];
-
-const buildUiProject = (project: ApiProject, index: number): UiProject => {
-  const po = MOCK_POS[index % MOCK_POS.length];
-  const sm = MOCK_SMS[index % MOCK_SMS.length];
-  const students = MOCK_STUDENTS[index % MOCK_STUDENTS.length];
-  const sentiment = MOCK_SENTIMENTS[index % MOCK_SENTIMENTS.length];
-
+function mapApiProjectToUi(project: ApiProject): UiProject {
   return {
     id: project.id,
     name: project.name,
-    students,
-    poName: po.name,
-    poEmail: po.email,
-    smName: sm.name,
-    smEmail: sm.email,
-    sentiment,
+    students: project.member_count ?? 0,
+    poName: project.product_owner_name?.trim() || UNASSIGNED,
+    poEmail: project.product_owner_email ?? '',
+    smName: project.scrum_master_name?.trim() || UNASSIGNED,
+    smEmail: project.scrum_master_email ?? '',
+    sentiment: normalizeSentiment(project.sentiment ?? undefined),
   };
-};
+}
+
+function mapTurnInStats(stats: ApiTurnInStats): TurnInRateData {
+  return {
+    rate: stats.rate,
+    teamsSubmitted: stats.teamsSubmitted,
+    partialSubmissions: stats.partialSubmissions,
+    currentAssignment: stats.currentAssignment ?? '—',
+    dueDate: stats.closeDate
+      ? format(parseISO(stats.closeDate), 'MMM d, yyyy')
+      : '—',
+  };
+}
+
+function buildProjectHealth(
+  apiProjects: ApiProject[],
+  via: string,
+): ProjectHealthItem[] {
+  const severityOrder: Record<ProjectSentiment, number> = {
+    negative: 0,
+    neutral: 1,
+    positive: 2,
+  };
+
+  return apiProjects
+    .filter((p) => p.sentiment)
+    .map((p) => {
+      const sentiment = normalizeSentiment(p.sentiment);
+      return {
+        order: severityOrder[sentiment],
+        item: {
+          id: p.id,
+          name: p.name,
+          health: SENTIMENT_TO_HEALTH[sentiment],
+          description: HEALTH_DESCRIPTION[sentiment],
+          via,
+        },
+      };
+    })
+    .sort((a, b) => a.order - b.order)
+    .map(({ item }) => item);
+}
 
 const Projects: React.FC = () => {
   const { selectedClass } = useClass();
   const navigate = useNavigate();
   const [projects, setProjects] = useState<UiProject[]>([]);
+  const [turnInRate, setTurnInRate] = useState<TurnInRateData>(emptyTurnInRate);
+  const [projectHealth, setProjectHealth] = useState<ProjectHealthItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,6 +115,8 @@ const Projects: React.FC = () => {
     if (!selectedClass) {
       setLoading(false);
       setProjects([]);
+      setTurnInRate(emptyTurnInRate);
+      setProjectHealth([]);
       setError(null);
       return;
     }
@@ -100,11 +126,29 @@ const Projects: React.FC = () => {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const response = await api.getClassProjects(selectedClass.id);
+        const [projectsResponse, statsResponse] = await Promise.all([
+          api.getClassProjects(selectedClass.id),
+          api.getClassTurnInStats(selectedClass.id).catch(() => null),
+        ]);
         if (!isMounted) return;
-        const uiProjects = response.projects.map(buildUiProject);
-        setProjects(uiProjects);
+
+        const apiProjects = projectsResponse.projects ?? [];
+        setProjects(apiProjects.map(mapApiProjectToUi));
         setError(null);
+
+        const stats = statsResponse?.turn_in;
+        if (stats) {
+          setTurnInRate(mapTurnInStats(stats));
+          setProjectHealth(
+            buildProjectHealth(
+              apiProjects,
+              stats.currentAssignment ?? '—',
+            ),
+          );
+        } else {
+          setTurnInRate(emptyTurnInRate);
+          setProjectHealth([]);
+        }
       } catch (err) {
         if (isMounted) {
           setError(err instanceof Error ? err.message : 'Failed to load projects');
@@ -137,7 +181,6 @@ const Projects: React.FC = () => {
   return (
     <div className="projects">
       <div className="projects__layout">
-        {/* Left: table and actions */}
         <div className="projects__main">
           <div className="projects__header">
             <div className="projects__header-actions">
@@ -158,10 +201,9 @@ const Projects: React.FC = () => {
           />
         </div>
 
-        {/* Right: stats column */}
         <div className="projects__stats">
-          <AssignmentTurnInRate data={mockTurnInRate} />
-          <ProjectHealth projects={mockProjectHealth} />
+          <AssignmentTurnInRate data={turnInRate} />
+          <ProjectHealth projects={projectHealth} />
         </div>
       </div>
     </div>
@@ -169,4 +211,3 @@ const Projects: React.FC = () => {
 };
 
 export default Projects;
-

@@ -22,3 +22,8 @@ class InviteStudentRequest(BaseModel):
 class JoinClassRequest(BaseModel):
     """Request model for joining a class with a course code"""
     course_code: str
+
+
+class BulkInviteRequest(BaseModel):
+    """Request model for bulk-enrolling students by email list"""
+    emails: list[str]

@@ -8,11 +8,11 @@ interface ApiProjectListItem {
   id: string;
   name: string;
   team_size?: number | string;
+  member_count?: number;
 }
 
 function toGridItem(raw: ApiProjectListItem, index: number): ProjectGridItem {
-  // Parse team_size as number, handle string values from API
-  let teamSize = 4; // default
+  let teamSize = 4;
   if (typeof raw.team_size === 'number' && !isNaN(raw.team_size)) {
     teamSize = raw.team_size;
   } else if (typeof raw.team_size === 'string') {
@@ -21,11 +21,12 @@ function toGridItem(raw: ApiProjectListItem, index: number): ProjectGridItem {
       teamSize = parsed;
     }
   }
-  
+
   return {
     id: raw.id,
     name: raw.name,
     team_size: teamSize,
+    member_count: typeof raw.member_count === 'number' ? raw.member_count : undefined,
     status: index % 2 === 0 ? 'open' : 'closed',
   };
 }
@@ -56,6 +57,7 @@ const BrowseProjects: React.FC = () => {
           id: p.id,
           name: p.name,
           team_size: p.team_size,
+          member_count: (p as ApiProjectListItem).member_count,
         }));
         setProjects(asListItems.map((p, i) => toGridItem(p, i)));
         setError(null);

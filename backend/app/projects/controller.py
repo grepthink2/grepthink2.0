@@ -361,6 +361,15 @@ def update_project(
         raise HTTPException(status_code=500, detail="Failed to update project")
 
 
+def _delete_project_dependencies(client, project_id: str) -> None:
+    """Remove rows that reference a project before deleting the project itself."""
+    pid = str(project_id)
+    client.table('interest_form').delete().eq('project_id', pid).execute()
+    client.table('TSRs').delete().eq('project_id', pid).execute()
+    client.table('project_join_requests').delete().eq('project_id', pid).execute()
+    client.table('project_members').delete().eq('project_id', pid).execute()
+
+
 def delete_project(project_id: UUID, user_id: str) -> dict:
     """
     Delete a project.
@@ -401,6 +410,7 @@ def delete_project(project_id: UUID, user_id: str) -> dict:
                     detail="Only product owners, admins, or the class instructor can delete this project"
                 )
 
+        _delete_project_dependencies(client, str(project_id))
         client.table('projects').delete().eq('id', str(project_id)).execute()
 
         logger.info(
@@ -571,38 +581,185 @@ def _assert_can_review_student_join_request(client, reviewer_id: str, project_id
         )
 
 
+def _notify_product_owners_of_departure(
+    client,
+    leaving_user_id: str,
+    old_project_id: str,
+    old_project_name: str,
+    new_project_name: str,
+) -> None:
+    """
+    Send a notification message from the leaving user to each product owner
+    of the project they just left. Failures are non-fatal and only logged.
+    """
+    po_rows = (
+        client.table('project_members')
+        .select('user_id')
+        .eq('project_id', old_project_id)
+        .eq('role', 'product owner')
+        .neq('user_id', leaving_user_id)
+        .execute()
+    )
+    po_ids = [r['user_id'] for r in (po_rows.data or [])]
+    if not po_ids:
+        logger.info(
+            "departure_notify: no product owner to notify | old_project=%s leaver=%s",
+            old_project_id, leaving_user_id,
+        )
+        return
+
+    profile_res = (
+        client.table('profiles')
+        .select('first_name, last_name, email')
+        .eq('id', leaving_user_id)
+        .maybe_single()
+        .execute()
+    )
+    up = profile_res.data if profile_res else None
+    if up:
+        user_name = f"{up.get('first_name') or ''} {up.get('last_name') or ''}".strip() or up.get('email', 'A student')
+    else:
+        user_name = 'A student'
+
+    body = (
+        f"{user_name} has left \"{old_project_name}\" and submitted a join request "
+        f"for \"{new_project_name}\"."
+    )
+
+    from app.messages.controller import send_message  # local import — avoids circular dep
+    for po_id in po_ids:
+        try:
+            send_message(sender_id=leaving_user_id, to_user_id=po_id, body=body)
+            logger.info(
+                "departure_notify: message sent | from=%s to=%s old_project=%s",
+                leaving_user_id, po_id, old_project_id,
+            )
+        except Exception:
+            logger.warning(
+                "departure_notify: failed to notify PO (non-fatal) | from=%s to=%s",
+                leaving_user_id, po_id,
+            )
+
+
+def _leave_current_project_in_class(
+    client,
+    user_id: str,
+    target_project_id: str,
+    class_id: str,
+    new_project_name: str,
+) -> None:
+    """
+    If the user is already a member of any project in *class_id* (other than
+    *target_project_id*), remove them from that project and notify its product
+    owner(s).  Only the first membership found is acted on — a student should
+    only ever be in one project per class.
+    """
+    # Fetch every project in this class except the one they're requesting to join.
+    sibling_res = (
+        client.table('projects')
+        .select('id, name')
+        .eq('class_id', str(class_id))
+        .neq('id', str(target_project_id))
+        .execute()
+    )
+    sibling_projects = sibling_res.data or []
+    if not sibling_projects:
+        return
+
+    sibling_ids = [p['id'] for p in sibling_projects]
+    sibling_name = {p['id']: p.get('name', 'Unknown project') for p in sibling_projects}
+
+    membership_res = (
+        client.table('project_members')
+        .select('project_id')
+        .eq('user_id', user_id)
+        .in_('project_id', sibling_ids)
+        .execute()
+    )
+    memberships = membership_res.data or []
+    if not memberships:
+        return
+
+    for m in memberships:
+        old_pid = m['project_id']
+        old_name = sibling_name.get(old_pid, 'Unknown project')
+
+        # Remove from old project
+        client.table('project_members').delete().eq(
+            'project_id', old_pid
+        ).eq('user_id', user_id).execute()
+        _increment_project_num_members(client, old_pid, -1)
+
+        logger.info(
+            "Auto-removed user from previous project | user=%s old_project=%s new_project=%s",
+            user_id, old_pid, target_project_id,
+        )
+
+        # Notify product owner(s) of the old project
+        _notify_product_owners_of_departure(
+            client,
+            leaving_user_id=user_id,
+            old_project_id=old_pid,
+            old_project_name=old_name,
+            new_project_name=new_project_name,
+        )
+
+
 def request_to_join_project(project_id: UUID, user_id: str) -> dict:
     """
-    Create a request to join a project
-    
+    Create a request to join a project.
+
+    Before creating the request the function checks whether the user is already
+    a member of any other project in the **same class**.  If so, they are
+    automatically removed from that project and the project's product owner(s)
+    receive a notification message.
+
     Args:
         project_id: Project unique identifier
         user_id: User's unique identifier
-        
+
     Returns:
         Dictionary with message and request data
-        
+
     Raises:
         HTTPException: If project not found, already a member, or pending request exists
     """
     try:
         client = service_client if service_client else supabase
-        
-        # Verify the project exists
-        project_result = client.table('projects').select('id, name').eq('id', str(project_id)).execute()
-        if not project_result.data or len(project_result.data) == 0:
+
+        # Verify the project exists; fetch class_id for the cross-project check below
+        project_result = (
+            client.table('projects')
+            .select('id, name, class_id')
+            .eq('id', str(project_id))
+            .execute()
+        )
+        if not project_result.data:
             raise HTTPException(status_code=404, detail="Project not found")
-        
+
         project = project_result.data[0]
-        
-        # Check if user is already a member
+        class_id = project.get('class_id')
+        new_project_name = project.get('name', 'the new project')
+
+        # Check if user is already a member of THIS project
         existing_member = client.table('project_members').select('id').eq(
             'project_id', str(project_id)
         ).eq('user_id', user_id).execute()
-        
-        if existing_member.data and len(existing_member.data) > 0:
+
+        if existing_member.data:
             raise HTTPException(status_code=400, detail="Already a member of this project")
-        
+
+        # Auto-leave any other project the user is in within the same class and
+        # notify that project's product owner(s).
+        if class_id:
+            _leave_current_project_in_class(
+                client,
+                user_id=user_id,
+                target_project_id=str(project_id),
+                class_id=str(class_id),
+                new_project_name=new_project_name,
+            )
+
         # Check if there's already a pending row (student request or team invite)
         existing_request = client.table('project_join_requests').select(
             'id, request_status, invited_by'
@@ -627,7 +784,7 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
             "reviewed_at": None,
             "invited_by": None,
         }
-        
+
         result = client.table('project_join_requests').insert(request_data).execute()
 
         logger.info(
@@ -637,7 +794,7 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
         return {
             "message": "Join request submitted successfully",
             "request": result.data[0],
-            "project": project
+            "project": project,
         }
     except HTTPException:
         raise
@@ -694,6 +851,25 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
             "accept_join_request: begin multi-step commit | request_id=%s project_id=%s user_id=%s invited_by=%s",
             request_id, join_request['project_id'], join_request['user_id'], invited_by,
         )
+
+        # Safety net: if the joining user is still in another project in the same
+        # class (e.g. they were added directly after submitting this request),
+        # auto-remove them and notify that project's product owner before we add
+        # them to the new project.
+        project_res = client.table('projects').select('class_id, name').eq(
+            'id', join_request['project_id']
+        ).maybe_single().execute()
+        if project_res and project_res.data:
+            class_id = project_res.data.get('class_id')
+            new_project_name = project_res.data.get('name', 'the new project')
+            if class_id:
+                _leave_current_project_in_class(
+                    client,
+                    user_id=join_request['user_id'],
+                    target_project_id=join_request['project_id'],
+                    class_id=str(class_id),
+                    new_project_name=new_project_name,
+                )
 
         # Update the request status
         update_data = {
