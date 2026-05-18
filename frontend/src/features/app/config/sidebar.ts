@@ -75,7 +75,8 @@ export const studentSidebarConfig: SidebarSection[] = [
       { label: 'Create Project', path: '/app/create-project', icon: IoIosCreate },
       { label: 'Browse Projects', path: '/app/browse-projects', icon: TiThList },
       { label: 'My Project', path: '/app/my-project', icon: FaFolder },
-      { label: 'Assignments', path: '/app/assignments', icon: MdAssignment},
+      { label: 'Assignments', path: '/app/assignments', icon: MdAssignment },
+      { label: 'Roster', path: '/app/roster', iconSvg: RosterIcon },
     ],
   },
   {

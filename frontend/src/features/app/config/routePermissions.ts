@@ -5,7 +5,6 @@ export const instructorOnlyPaths: string[] = [
   '/app/dashboard',
   '/app/projects',
   '/app/assign-projects',
-  '/app/roster',
   '/app/modules',
   '/app/ta-management',
   '/app/class-settings',

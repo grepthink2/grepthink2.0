@@ -1,49 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useClass } from '@/lib/classContext';
-import { api } from '@/lib/api';
-import { User, Mail, Shield } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
+import ControlBar from '@features/app/components/Roster/ControlBar';
+import RosterList from '@features/app/components/Roster/RosterList';
+import PieCharts from '@features/app/components/Roster/PieCharts';
+import {
+  MOCK_ROSTER,
+  applyFilter,
+  type FilterOption,
+} from '@features/app/components/Roster/rosterTypes';
 import './Roster.scss';
-
-interface Student {
-  id: string;
-  email: string;
-  role: string;
-}
 
 const Roster: React.FC = () => {
   const { selectedClass } = useClass();
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { role } = useAuth();
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<FilterOption>('all');
 
-  useEffect(() => {
-    if (selectedClass) {
-      fetchStudents();
-    } else {
-      setStudents([]);
-    }
-  }, [selectedClass]);
+  // TODO: replace with api.getClassStudents() once backend returns full UiStudent shape
+  const students = MOCK_ROSTER;
 
-  const fetchStudents = async () => {
-    if (!selectedClass) return;
+  const filtered = useMemo(() => {
+    const byFilter = applyFilter(students, filter);
+    if (!search.trim()) return byFilter;
+    const q = search.toLowerCase();
+    return byFilter.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q),
+    );
+  }, [students, filter, search]);
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await api.getClassStudents(selectedClass.id);
-      setStudents(response.students);
-    } catch (err) {
-      console.error('Failed to fetch students:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch students');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredStudents = students.filter((student) =>
-    student.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const notRegisteredCount = useMemo(
+    () => students.filter((s) => s.grepthinkStatus === 'not_registered').length,
+    [students],
   );
 
   if (!selectedClass) {
@@ -57,91 +45,38 @@ const Roster: React.FC = () => {
     );
   }
 
-  if (loading) {
+  if (role === 'student') {
     return (
       <div className="roster">
-        <div className="roster__loading">Loading students...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="roster">
-        <div className="roster__error">
-          <h2>Error</h2>
-          <p>{error}</p>
-          <button onClick={fetchStudents}>Retry</button>
-        </div>
+        <ControlBar
+          search={search}
+          onSearchChange={setSearch}
+          filter={filter}
+          onFilterChange={setFilter}
+        />
+        <RosterList students={filtered} loading={false} error={null} showActions={false} />
       </div>
     );
   }
 
   return (
     <div className="roster">
-      <div className="roster__header">
-        <div className="roster__header-left">
-          <h1>Class Roster</h1>
-          <p className="roster__class-name">{selectedClass.name}</p>
+      <ControlBar
+        search={search}
+        onSearchChange={setSearch}
+        filter={filter}
+        onFilterChange={setFilter}
+        notRegisteredCount={notRegisteredCount}
+        onInviteAll={() => console.warn('Invite all (not yet implemented)')}
+        onUploadRoster={() => console.warn('Upload roster (not yet implemented)')}
+      />
+      <div className="roster__layout">
+        <div className="roster__main">
+          <RosterList students={filtered} loading={false} error={null} showActions />
         </div>
-        <div className="roster__header-right">
-          <span className="roster__count">
-            {students.length} {students.length === 1 ? 'Student' : 'Students'}
-          </span>
+        <div className="roster__sidebar">
+          <PieCharts students={students} />
         </div>
-      </div>
-
-      <div className="roster__controls">
-        <div className="roster__search">
-          <input
-            type="text"
-            placeholder="Search by email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="roster__search-input"
-          />
-        </div>
-      </div>
-
-      <div className="roster__content">
-        {filteredStudents.length === 0 ? (
-          <div className="roster__empty-state">
-            {searchQuery ? (
-              <p>No students found matching "{searchQuery}"</p>
-            ) : (
-              <p>No students enrolled in this class yet.</p>
-            )}
-          </div>
-        ) : (
-          <div className="roster__table">
-            <div className="roster__table-header">
-              <div className="roster__table-cell roster__table-cell--icon"></div>
-              <div className="roster__table-cell roster__table-cell--email">Email</div>
-              <div className="roster__table-cell roster__table-cell--role">Role</div>
-            </div>
-            {filteredStudents.map((student) => (
-              <div key={student.id} className="roster__table-row">
-                <div className="roster__table-cell roster__table-cell--icon">
-                  <div className="roster__user-avatar">
-                    <User size={16} />
-                  </div>
-                </div>
-                <div className="roster__table-cell roster__table-cell--email">
-                  <div className="roster__user-email">
-                    <Mail size={14} />
-                    <span>{student.email}</span>
-                  </div>
-                </div>
-                <div className="roster__table-cell roster__table-cell--role">
-                  <div className="roster__role-badge">
-                    <Shield size={14} />
-                    <span>{student.role || 'Student'}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
