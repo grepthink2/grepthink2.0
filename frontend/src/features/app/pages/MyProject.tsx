@@ -9,6 +9,7 @@ interface ClassProjectRow {
   id: string;
   name: string;
   team_size?: number | string;
+  member_count?: number;
 }
 
 function toGridItem(raw: ClassProjectRow, index: number): ProjectGridItem {
@@ -26,6 +27,7 @@ function toGridItem(raw: ClassProjectRow, index: number): ProjectGridItem {
     id: raw.id,
     name: raw.name,
     team_size: teamSize,
+    member_count: typeof raw.member_count === 'number' ? raw.member_count : undefined,
     status: index % 2 === 0 ? 'open' : 'closed',
   };
 }
@@ -72,6 +74,7 @@ const MyProject: React.FC = () => {
             id: p.id,
             name: p.name,
             team_size: p.team_size,
+            member_count: (p as ClassProjectRow).member_count,
           }));
           setGridProjects(rows.map((p, i) => toGridItem(p, i)));
         } else {

@@ -70,6 +70,26 @@ class Settings:
     CORS_METHODS: list = ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"]
     CORS_HEADERS: list = ["Authorization", "Content-Type", "Accept"]
 
+    # SMTP / Email Configuration (required for .edu verification emails)
+    #
+    # Resend (recommended):
+    #   SMTP_HOST=smtp.resend.com
+    #   SMTP_PORT=587
+    #   SMTP_USER=resend                    # literal string — NOT your email
+    #   SMTP_PASSWORD=re_xxxxxxxx           # API key from resend.com/api-keys
+    #   SMTP_FROM=GrepThink <noreply@yourdomain.com>   # verified domain in Resend
+    #
+    # Gmail example:
+    #   SMTP_HOST=smtp.gmail.com
+    #   SMTP_USER=you@gmail.com
+    #   SMTP_PASSWORD=app-password
+    #   SMTP_FROM=GrepThink <you@gmail.com>
+    SMTP_HOST: str = os.environ.get("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.environ.get("SMTP_PORT", 587))
+    SMTP_USER: str = os.environ.get("SMTP_USER", "")
+    SMTP_PASSWORD: str = os.environ.get("SMTP_PASSWORD", "")
+    SMTP_FROM: str = os.environ.get("SMTP_FROM", "")
+
     @classmethod
     def validate(cls):
         """Validate required settings"""

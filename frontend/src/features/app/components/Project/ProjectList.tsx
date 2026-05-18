@@ -113,21 +113,29 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
                   <td>{project.students}</td>
                   <td className="projects-table__person-cell">
                     <div className="projects-table__person-name">{project.poName}</div>
-                    <a
-                      className="projects-table__person-email"
-                      href={`mailto:${project.poEmail}`}
-                    >
-                      {project.poEmail}
-                    </a>
+                    {project.poEmail ? (
+                      <a
+                        className="projects-table__person-email"
+                        href={`mailto:${project.poEmail}`}
+                      >
+                        {project.poEmail}
+                      </a>
+                    ) : (
+                      <span className="projects-table__person-email">—</span>
+                    )}
                   </td>
                   <td className="projects-table__person-cell">
                     <div className="projects-table__person-name">{project.smName}</div>
-                    <a
-                      className="projects-table__person-email"
-                      href={`mailto:${project.smEmail}`}
-                    >
-                      {project.smEmail}
-                    </a>
+                    {project.smEmail ? (
+                      <a
+                        className="projects-table__person-email"
+                        href={`mailto:${project.smEmail}`}
+                      >
+                        {project.smEmail}
+                      </a>
+                    ) : (
+                      <span className="projects-table__person-email">—</span>
+                    )}
                   </td>
                   <td>{renderSentiment(project.sentiment)}</td>
                   <td className="projects-table__arrow-cell">

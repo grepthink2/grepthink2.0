@@ -15,8 +15,10 @@ interface AssignmentTurnInRateProps {
 }
 
 const AssignmentTurnInRate: React.FC<AssignmentTurnInRateProps> = ({ data }) => {
-  const submittedPct = Math.round((data.teamsSubmitted.count / data.teamsSubmitted.total) * 100);
-  const partialPct = Math.round((data.partialSubmissions.count / data.partialSubmissions.total) * 100);
+  const teamTotal = Math.max(data.teamsSubmitted.total, 1);
+  const partialTotal = Math.max(data.partialSubmissions.total, 1);
+  const submittedPct = Math.round((data.teamsSubmitted.count / teamTotal) * 100);
+  const partialPct = Math.round((data.partialSubmissions.count / partialTotal) * 100);
 
   return (
     <div className="turn-in-card">

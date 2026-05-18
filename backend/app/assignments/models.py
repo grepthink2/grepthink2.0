@@ -1,7 +1,7 @@
 """
 Assignment request/response models
 """
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 from pydantic import BaseModel
 from uuid import UUID
 import datetime

@@ -7,6 +7,7 @@ import time
 from fastapi import HTTPException
 
 from app.database.client import service_client, supabase
+from app.utils.email import send_email
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,52 @@ def get_profile(user_id: str) -> dict:
     return result.data or {}
 
 
+def _user_has_class_access(client, user_id: str, class_id: str, created_by: str) -> bool:
+    """True if the user is the class instructor or enrolled as a student."""
+    if user_id == created_by:
+        return True
+    enrollment = (
+        client.table('class_enrollments')
+        .select('id')
+        .eq('class_id', class_id)
+        .eq('user_id', user_id)
+        .execute()
+    )
+    return bool(enrollment.data)
+
+
+def get_profile_for_class_member(viewer_id: str, target_user_id: str, class_id: str) -> dict:
+    """
+    Return a profile visible to another member of the same class.
+
+    Both viewer and target must belong to the class (instructor via created_by,
+    student via class_enrollments).
+    """
+    client = service_client or supabase
+    class_result = (
+        client.table('classes')
+        .select('id, created_by')
+        .eq('id', class_id)
+        .execute()
+    )
+    if not class_result.data:
+        raise HTTPException(status_code=404, detail='Class not found')
+
+    created_by = class_result.data[0]['created_by']
+    if not _user_has_class_access(client, viewer_id, class_id, created_by):
+        raise HTTPException(
+            status_code=403,
+            detail='You do not have access to this class',
+        )
+    if not _user_has_class_access(client, target_user_id, class_id, created_by):
+        raise HTTPException(status_code=404, detail='User is not in this class')
+
+    profile = get_profile(target_user_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail='Profile not found')
+    return profile
+
+
 def update_profile(user_id: str, data: dict) -> dict:
     """
     Update mutable profile fields for a user.
@@ -65,10 +112,8 @@ def update_profile(user_id: str, data: dict) -> dict:
 
 def send_edu_verification(user_id: str, edu_email: str) -> None:
     """
-    Generate a 6-digit verification code for an .edu email and store it
-    in memory. Prints the code to the terminal until email sending is implemented.
-
-    TO BE REMOVED when real email delivery is wired up.
+    Generate a 6-digit verification code and email it to the provided
+    .edu address. The code is stored in memory and expires after 10 minutes.
     """
     if not edu_email.lower().endswith('.edu'):
         raise HTTPException(status_code=400, detail="Must be a valid .edu email address")
@@ -93,16 +138,50 @@ def send_edu_verification(user_id: str, edu_email: str) -> None:
     expires_at = time.time() + _CODE_EXPIRY_SECONDS
     _pending_edu_codes[user_id] = (edu_email, code, expires_at)
 
-    # ── TO BE REMOVED WHEN EMAIL IS IMPLEMENTED ──────────────────────────────
-    print(f"\n{'='*60}")
-    print(f"[EDU VERIFICATION] user_id={user_id}")
-    print(f"                   email   ={edu_email}")
-    print(f"                   code    ={code}")
-    print(f"{'='*60}\n")
-    # ─────────────────────────────────────────────────────────────────────────
+    body_text = (
+        f"Your GrepThink .edu verification code is: {code}\n\n"
+        f"Enter this code on the settings page to confirm your university email address.\n"
+        f"This code expires in 10 minutes.\n\n"
+        f"If you did not request this, you can safely ignore this message."
+    )
+    body_html = f"""
+<html>
+  <body style="font-family:sans-serif;color:#1a1a1a;max-width:480px;margin:0 auto;padding:24px">
+    <h2 style="margin-bottom:8px">Verify your university email</h2>
+    <p>Enter the code below in GrepThink to confirm <strong>{edu_email}</strong>.</p>
+    <div style="font-size:2rem;font-weight:700;letter-spacing:0.25em;
+                background:#f4f4f5;border-radius:8px;padding:16px 24px;
+                display:inline-block;margin:16px 0">{code}</div>
+    <p style="color:#666;font-size:0.875rem">This code expires in 10 minutes.<br>
+    If you did not request this, you can safely ignore this email.</p>
+  </body>
+</html>
+"""
+
+    try:
+        send_email(
+            to=edu_email,
+            subject="GrepThink — verify your .edu email",
+            body_text=body_text,
+            body_html=body_html,
+        )
+    except RuntimeError:
+        # SMTP not configured (local dev without mail server).
+        # Log the code so developers can still test the flow.
+        logger.warning(
+            "edu_verification: SMTP not configured — code for %s is %s (dev only)",
+            edu_email, code,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Email delivery is not configured on this server. "
+                "Please contact your administrator."
+            ),
+        )
 
     logger.info(
-        "edu_verification: code generated | user_id=%s email=%s",
+        "edu_verification: code sent | user_id=%s email=%s",
         user_id, edu_email,
     )
 

@@ -329,40 +329,247 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
 
 def get_class_students(class_id: UUID) -> list:
     """
-    Get all students enrolled in a class
-    
-    Args:
-        class_id: Class unique identifier
-        
-    Returns:
-        List of student dictionaries
-        
-    Raises:
-        HTTPException: If class not found or database error occurs
+    Get all students enrolled in a class, enriched with their project affiliation.
+
+    Returns a list of dicts with: id, email, role, first_name, last_name,
+    project_id, project_name.
     """
     try:
         client = service_client if service_client else supabase
-        
-        # Verify the class exists
-        class_result = client.table('classes').select('*').eq('id', str(class_id)).execute()
-        if not class_result.data or len(class_result.data) == 0:
+
+        class_result = client.table('classes').select('id').eq('id', str(class_id)).execute()
+        if not class_result.data:
             raise HTTPException(status_code=404, detail="Class not found")
-        
-        # Get enrolled students
-        enrollments = client.table('class_enrollments').select('user_id').eq('class_id', str(class_id)).execute()
-        
-        if not enrollments.data or len(enrollments.data) == 0:
+
+        enrollments = (
+            client.table('class_enrollments')
+            .select('user_id')
+            .eq('class_id', str(class_id))
+            .execute()
+        )
+        if not enrollments.data:
             return []
-        
+
         user_ids = [e['user_id'] for e in enrollments.data]
-        students = client.table('profiles').select('id, email, role').in_('id', user_ids).execute()
-        
-        return students.data
+
+        profiles_res = (
+            client.table('profiles')
+            .select('id, email, role, first_name, last_name')
+            .in_('id', user_ids)
+            .execute()
+        )
+        profiles = profiles_res.data or []
+
+        # Fetch all projects in this class for the affiliation lookup.
+        projects_res = (
+            client.table('projects')
+            .select('id, name')
+            .eq('class_id', str(class_id))
+            .execute()
+        )
+        projects = projects_res.data or []
+        project_ids = [p['id'] for p in projects]
+        project_name_map = {p['id']: p['name'] for p in projects}
+
+        membership_map: dict[str, str] = {}
+        if project_ids and user_ids:
+            members_res = (
+                client.table('project_members')
+                .select('user_id, project_id')
+                .in_('user_id', user_ids)
+                .in_('project_id', project_ids)
+                .execute()
+            )
+            for m in (members_res.data or []):
+                membership_map[m['user_id']] = m['project_id']
+
+        result = []
+        for s in profiles:
+            pid = membership_map.get(s['id'])
+            result.append({
+                'id': s['id'],
+                'email': s.get('email'),
+                'role': s.get('role', 'student'),
+                'first_name': s.get('first_name'),
+                'last_name': s.get('last_name'),
+                'project_id': pid,
+                'project_name': project_name_map.get(pid) if pid else None,
+            })
+
+        logger.debug("get_class_students: class=%s count=%d", class_id, len(result))
+        return result
     except HTTPException:
         raise
     except Exception:
         logger.exception("Error fetching students | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to fetch students")
+
+
+def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: str) -> dict:
+    """
+    Remove a student's enrollment from a class (instructor only).
+
+    Cleans up all class-related state for the student:
+    - Removes from every project in the class (project_members) and
+      decrements each affected project's num_members counter.
+    - Cancels all pending project_join_requests for projects in this class.
+    - Removes the class_enrollments row.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        class_result = (
+            client.table('classes').select('id')
+            .eq('id', str(class_id)).eq('created_by', instructor_id)
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Class not found or you do not have permission",
+            )
+
+        projects_res = (
+            client.table('projects').select('id')
+            .eq('class_id', str(class_id))
+            .execute()
+        )
+        project_ids = [p['id'] for p in (projects_res.data or [])]
+
+        if project_ids:
+            # Find which projects the student is actually a member of so we
+            # can decrement their num_members counters accurately.
+            existing_memberships = (
+                client.table('project_members').select('project_id')
+                .eq('user_id', student_id)
+                .in_('project_id', project_ids)
+                .execute()
+            )
+            affected_project_ids = [
+                m['project_id'] for m in (existing_memberships.data or [])
+            ]
+
+            # Remove project memberships.
+            client.table('project_members').delete().eq(
+                'user_id', student_id
+            ).in_('project_id', project_ids).execute()
+
+            # Decrement num_members for each affected project.
+            for pid in affected_project_ids:
+                proj = (
+                    client.table('projects').select('num_members')
+                    .eq('id', pid).execute()
+                )
+                if proj.data:
+                    current = proj.data[0].get('num_members') or 0
+                    client.table('projects').update(
+                        {'num_members': max(0, int(current) - 1)}
+                    ).eq('id', pid).execute()
+
+            # Cancel all pending join requests for projects in this class.
+            client.table('project_join_requests').delete().eq(
+                'user_id', student_id
+            ).in_('project_id', project_ids).eq(
+                'request_status', 'pending'
+            ).execute()
+
+        # Remove class enrollment.
+        client.table('class_enrollments').delete().eq(
+            'class_id', str(class_id)
+        ).eq('user_id', student_id).execute()
+
+        logger.info(
+            "Student removed from class | class_id=%s student_id=%s removed_by=%s",
+            class_id, student_id, instructor_id,
+        )
+        return {"message": "Student removed successfully", "student_id": student_id}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error removing student | class_id=%s student_id=%s", class_id, student_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to remove student")
+
+
+def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) -> dict:
+    """
+    Enroll a batch of students by email address (instructor only).
+
+    For each email the possible statuses are:
+    - ``enrolled``       – new enrollment created.
+    - ``already_enrolled`` – student was already in the class.
+    - ``not_found``      – no profile exists with this email.
+    - ``not_a_student``  – profile exists but the role is not 'student'.
+    - ``error``          – unexpected DB error for this email.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        class_result = (
+            client.table('classes').select('id')
+            .eq('id', str(class_id)).eq('created_by', instructor_id)
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Class not found or you do not have permission",
+            )
+
+        # Normalise and deduplicate the submitted list.
+        clean_emails = list({e.strip().lower() for e in emails if e.strip()})
+
+        results = []
+        for email in clean_emails:
+            try:
+                profile_res = (
+                    client.table('profiles').select('id, role')
+                    .eq('email', email).execute()
+                )
+                if not profile_res.data:
+                    results.append({'email': email, 'status': 'not_found'})
+                    continue
+
+                profile = profile_res.data[0]
+                if profile.get('role') != 'student':
+                    results.append({'email': email, 'status': 'not_a_student'})
+                    continue
+
+                existing = (
+                    client.table('class_enrollments').select('id')
+                    .eq('class_id', str(class_id))
+                    .eq('user_id', profile['id'])
+                    .execute()
+                )
+                if existing.data:
+                    results.append({'email': email, 'status': 'already_enrolled'})
+                    continue
+
+                client.table('class_enrollments').insert({
+                    'class_id': str(class_id),
+                    'user_id': profile['id'],
+                }).execute()
+                results.append({'email': email, 'status': 'enrolled'})
+
+            except Exception as e:
+                logger.warning(
+                    "bulk_invite: error for email=%s class=%s err=%s",
+                    email, class_id, e,
+                )
+                results.append({'email': email, 'status': 'error'})
+
+        enrolled_count = sum(1 for r in results if r['status'] == 'enrolled')
+        logger.info(
+            "bulk_invite_students: class=%s enrolled=%d total=%d",
+            class_id, enrolled_count, len(results),
+        )
+        return {'results': results, 'enrolled_count': enrolled_count}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error in bulk_invite_students | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to bulk invite students")
 
 def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
     """
@@ -436,19 +643,29 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
 
         project_ids = [p['id'] for p in projects]
 
-        # Stage 2: members lookup. Profiles depend on the user ids returned
-        # here, so we can't fan it out alongside.
-        memberships_result = (
+        # Stage 2: fetch ALL project_members for these projects in one query.
+        # Used for both member_count and product-owner / scrum-master hydration.
+        all_memberships_result = (
             client.table('project_members')
             .select('project_id, user_id, role')
             .in_('project_id', project_ids)
-            .in_('role', ['product owner', 'owner', 'scrum master'])
             .execute()
         )
+        all_memberships = all_memberships_result.data or []
 
-        # Stage 3: profile hydration.
+        # Count all members per project.
+        member_count_map: dict[str, int] = {}
+        for m in all_memberships:
+            pid = m['project_id']
+            member_count_map[pid] = member_count_map.get(pid, 0) + 1
+
+        # Extract only owner/scrum-master user ids for profile hydration.
+        key_roles = {'product owner', 'owner', 'scrum master'}
+        key_memberships = [m for m in all_memberships if m.get('role') in key_roles]
+
+        # Stage 3: profile hydration for owners / scrum masters only.
         member_user_ids = list({
-            m['user_id'] for m in (memberships_result.data or []) if m.get('user_id')
+            m['user_id'] for m in key_memberships if m.get('user_id')
         })
         profile_map: dict[str, dict] = {}
         if member_user_ids:
@@ -463,7 +680,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
 
         # Build a lookup: project_id -> {role -> profile}
         project_member_map: dict[str, dict] = {}
-        for m in memberships_result.data or []:
+        for m in key_memberships:
             pid = m['project_id']
             if pid not in project_member_map:
                 project_member_map[pid] = {}
@@ -489,6 +706,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
                 'id': pid,
                 'name': project.get('name'),
                 'team_size': project.get('team_size'),
+                'member_count': member_count_map.get(pid, 0),
                 'sentiment': project.get('sentiment') if role == 'instructor' else None,
                 'product_owner_name': _name(owner_profile),
                 'product_owner_email': owner_profile.get('email'),
@@ -504,3 +722,150 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
             "Error fetching class projects | class_id=%s user_id=%s", class_id, user_id
         )
         raise HTTPException(status_code=500, detail="Failed to fetch projects")
+
+
+def get_class_turn_in_stats(class_id: UUID, user_id: str) -> dict:
+    """
+    Turn-in stats for the class's current TSR assignment (instructor only).
+
+    A team is fully submitted when every project member has at least one TSR
+    row for the assignment (one evaluator_id per member). Partial means some
+    but not all members have submitted.
+    """
+    try:
+        client = service_client if service_client else supabase
+        cid = str(class_id)
+        today = datetime.date.today()
+
+        class_check = (
+            client.table('classes')
+            .select('id')
+            .eq('id', cid)
+            .eq('created_by', user_id)
+            .execute()
+        )
+        if not class_check.data:
+            raise HTTPException(
+                status_code=403,
+                detail="Class not found or you do not have permission",
+            )
+
+        assignments_result = (
+            client.table('assignments')
+            .select('id, Title, open_date, close_date, status, assignment_type')
+            .eq('class_id', cid)
+            .eq('status', 'publish')
+            .order('close_date')
+            .execute()
+        )
+        tsr_assignments = [
+            a for a in (assignments_result.data or [])
+            if a.get('assignment_type') == 'tsr'
+        ]
+
+        current: dict | None = None
+        for assignment in tsr_assignments:
+            open_d = datetime.date.fromisoformat(assignment['open_date'])
+            close_d = datetime.date.fromisoformat(assignment['close_date'])
+            if open_d <= today <= close_d:
+                current = assignment
+                break
+
+        if not current and tsr_assignments:
+            open_future = [
+                a for a in tsr_assignments
+                if datetime.date.fromisoformat(a['close_date']) >= today
+            ]
+            if open_future:
+                current = min(
+                    open_future,
+                    key=lambda a: datetime.date.fromisoformat(a['close_date']),
+                )
+            else:
+                current = max(
+                    tsr_assignments,
+                    key=lambda a: datetime.date.fromisoformat(a['close_date']),
+                )
+
+        empty = {
+            'rate': 0,
+            'teamsSubmitted': {'count': 0, 'total': 0},
+            'partialSubmissions': {'count': 0, 'total': 0},
+            'currentAssignment': None,
+            'closeDate': None,
+        }
+        if not current:
+            return empty
+
+        assignment_id = current['id']
+
+        projects_result = (
+            client.table('projects')
+            .select('id')
+            .eq('class_id', cid)
+            .execute()
+        )
+        project_ids = [p['id'] for p in (projects_result.data or [])]
+        if not project_ids:
+            return {
+                **empty,
+                'currentAssignment': current.get('Title'),
+                'closeDate': current.get('close_date'),
+            }
+
+        memberships_result = (
+            client.table('project_members')
+            .select('project_id, user_id')
+            .in_('project_id', project_ids)
+            .execute()
+        )
+        team_sizes: dict[str, int] = {}
+        for row in memberships_result.data or []:
+            pid = row['project_id']
+            team_sizes[pid] = team_sizes.get(pid, 0) + 1
+
+        teams = {pid: size for pid, size in team_sizes.items() if size > 0}
+        total_teams = len(teams)
+
+        tsr_result = (
+            client.table('TSRs')
+            .select('project_id, evaluator_id')
+            .eq('assignment_id', assignment_id)
+            .in_('project_id', list(teams.keys()) if teams else project_ids)
+            .execute()
+        )
+        evaluators_by_project: dict[str, set[str]] = {}
+        for row in tsr_result.data or []:
+            pid = row.get('project_id')
+            eid = row.get('evaluator_id')
+            if not pid or not eid:
+                continue
+            evaluators_by_project.setdefault(pid, set()).add(eid)
+
+        full_count = 0
+        partial_count = 0
+        for pid, team_size in teams.items():
+            submitted = len(evaluators_by_project.get(pid, set()))
+            if submitted >= team_size:
+                full_count += 1
+            elif submitted > 0:
+                partial_count += 1
+
+        rate = round((full_count / total_teams) * 100) if total_teams else 0
+
+        return {
+            'rate': rate,
+            'teamsSubmitted': {'count': full_count, 'total': total_teams},
+            'partialSubmissions': {'count': partial_count, 'total': total_teams},
+            'currentAssignment': current.get('Title'),
+            'closeDate': current.get('close_date'),
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching turn-in stats | class_id=%s user_id=%s",
+            class_id,
+            user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch turn-in stats")
