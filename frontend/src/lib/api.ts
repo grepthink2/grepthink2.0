@@ -596,6 +596,15 @@ export const api = {
     });
   },
 
+  /** Hide a conversation from the caller's inbox (idempotent). 204 on success.
+   *  Other party's view is unaffected. Conversation reappears for caller if
+   *  the other party sends a new message after this delete. */
+  deleteConversation: async (conversationId: string) => {
+    return apiRequest<void>(`/api/messages/conversations/${conversationId}`, {
+      method: 'DELETE',
+    });
+  },
+
   // ----- Staffing / Interest form ----------------------------------------
 
   /** Current user's full interest-form payload for the class. */

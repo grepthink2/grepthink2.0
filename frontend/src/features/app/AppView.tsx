@@ -9,6 +9,7 @@ import Settings from '@features/app/pages/Settings';
 import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/routePermissions';
+import { MessageWidget } from '@features/messages/components/MessageWidget';
 import './AppView.scss';
 
 const AppView: React.FC = () => {
@@ -83,13 +84,16 @@ const AppView: React.FC = () => {
         />
 
         {/* Join Class Modal */}
-        <JoinClassModal 
-          isOpen={isJoinClassModalOpen} 
-          onClose={handleCloseJoinClassModal} 
+        <JoinClassModal
+          isOpen={isJoinClassModalOpen}
+          onClose={handleCloseJoinClassModal}
         />
 
         {/* Settings Modal */}
         <Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+        {/* Floating chat tab — auto-hides on /app/messages* and screens < 768px. */}
+        <MessageWidget />
       </div>
     </ClassProvider>
   );

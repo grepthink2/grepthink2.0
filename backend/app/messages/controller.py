@@ -225,6 +225,25 @@ def mark_read(*, conversation_id: str, caller_id: str) -> None:
 _INBOX_BULK_MESSAGE_LIMIT = 5_000
 
 
+def delete_conversation_for_user(*, conversation_id: str, caller_id: str) -> None:
+    """Hide the conversation from the caller's inbox (idempotent).
+
+    Other party is unaffected. The conversation reappears in caller's inbox
+    if the other party sends a new message after this delete.
+    """
+    _conversation_or_403(conversation_id, caller_id)
+    from datetime import datetime, timezone
+    service_client.table("conversation_deletes").upsert({
+        "conversation_id": conversation_id,
+        "user_id": caller_id,
+        "deleted_at": datetime.now(timezone.utc).isoformat(),
+    }, on_conflict="conversation_id,user_id").execute()
+    logger.info(
+        "delete_conversation: caller=%s conv=%s",
+        caller_id, conversation_id,
+    )
+
+
 def list_inbox(*, caller_id: str) -> list[dict]:
     """Return all conversations the caller participates in, hydrated with
     other_user, last_message, unread_count, other_user_last_read_at, can_send.
@@ -252,11 +271,34 @@ def list_inbox(*, caller_id: str) -> list[dict]:
     if not rows:
         return []
 
+    conv_ids = [r["id"] for r in rows]
+
+    # Per-user delete: a conversation is hidden from the caller iff
+    # they have a conversation_deletes row AND last_message_at hasn't
+    # advanced past their deleted_at. New activity reopens the conv.
+    deletes_res = (
+        service_client.table("conversation_deletes")
+        .select("conversation_id, deleted_at")
+        .eq("user_id", caller_id)
+        .in_("conversation_id", conv_ids)
+        .execute()
+    )
+    deleted_at_by_conv = {
+        d["conversation_id"]: d["deleted_at"] for d in (deletes_res.data or [])
+    }
+    rows = [
+        r for r in rows
+        if r["id"] not in deleted_at_by_conv
+        or (r["last_message_at"] and r["last_message_at"] > deleted_at_by_conv[r["id"]])
+    ]
+    if not rows:
+        return []
+    conv_ids = [r["id"] for r in rows]
+
     other_ids = [
         (r["user_b"] if r["user_a"] == caller_id else r["user_a"])
         for r in rows
     ]
-    conv_ids = [r["id"] for r in rows]
     # Caller is included so we can look up the caller's role + classes in
     # the same bulk queries we use for every peer.
     all_user_ids = list({*other_ids, caller_id})

@@ -3,7 +3,7 @@ Project management business logic
 """
 from datetime import datetime, timezone
 import logging
-from typing import List, Optional
+from typing import Iterable, List, Optional
 from uuid import UUID
 
 import httpx
@@ -16,6 +16,42 @@ from app.database.client import (
     service_client,
     supabase,
 )
+
+
+# Project member roles. Keep in sync with the DB CHECK constraint on project_members.role.
+ROLE_OWNER = "owner"
+ROLE_PRODUCT_OWNER = "product owner"
+ROLE_ADMIN = "admin"
+ROLE_SCRUM_MASTER = "scrum master"
+ROLE_MEMBER = "member"
+
+# The "elevated" set used by most write actions on a project.
+ELEVATED_ROLES = (ROLE_OWNER, ROLE_PRODUCT_OWNER, ROLE_ADMIN)
+
+
+def _require_member_role(
+    client,
+    project_id: str,
+    user_id: str,
+    allowed_roles: Iterable[str],
+    *,
+    forbidden_detail: str,
+) -> str:
+    """Verify caller is a project member with one of `allowed_roles`. Returns the role.
+
+    Raises 403 if not a member or if the member's role isn't in the allowed set.
+    """
+    membership = (
+        client.table('project_members').select('role')
+        .eq('project_id', project_id).eq('user_id', user_id)
+        .execute()
+    )
+    if not membership.data:
+        raise HTTPException(status_code=403, detail="Not a member of this project")
+    role = membership.data[0]['role']
+    if role not in allowed_roles:
+        raise HTTPException(status_code=403, detail=forbidden_detail)
+    return role
 
 logger = logging.getLogger(__name__)
 
@@ -71,53 +107,6 @@ def _is_instructor(user_id, class_id):
         )
         # NOTE: returns None on error, which callers treat as falsy — OK for now
         # but this inconsistency is tracked in CODE_REVIEW.md #17.
-        return None
-
-def _is_admin(user_id, project_id):
-    """Checks if user has admin privillges for a project"""
-    try:
-        client = service_client if service_client else supabase
-
-        # WARN: This check is NOT scoped to project_id — it matches any project
-        # where the user is an 'owner'. See CODE_REVIEW.md finding #9. Fix pending.
-        # The DEBUG log below will show you when this branch fires so you can spot
-        # incorrect admin grants at runtime.
-        enrollment_result = (
-            client.table('project_members').select('user_id')
-            .eq('user_id', str(user_id)).eq('role', "owner")
-            .execute()
-        )
-        if enrollment_result.data:
-            logger.warning(
-                "_is_admin: granting admin via owner role without project scope | "
-                "user=%s requested_project=%s — BUG: check not scoped to project_id",
-                user_id, project_id,
-            )
-            return True
-
-        #fetch class_id
-        class_result = (
-            client.table('projects').select('class_id')
-            .eq('id', str(project_id))
-            .execute()
-        )
-        if not class_result.data:
-            logger.debug("_is_admin: project %s not found", project_id)
-            return False
-
-        class_id = class_result.data[0]['class_id']
-        # check is user is teacher of the class
-        is_teacher = _is_instructor(user_id, class_id)
-        logger.debug(
-            "_is_admin: user=%s project=%s class=%s -> %s",
-            user_id, project_id, class_id, is_teacher,
-        )
-        return is_teacher
-
-    except Exception:
-        logger.exception(
-            "_is_admin failed | user_id=%s project_id=%s", user_id, project_id
-        )
         return None
 
 def create_project(
@@ -310,21 +299,14 @@ def update_project(
                 is_class_instructor = bool(class_check.data)
 
         if not is_class_instructor:
-            # Fall back to project membership check
-            membership = client.table('project_members').select('role').eq(
-                'project_id', str(project_id)
-            ).eq('user_id', user_id).execute()
-            if not membership.data:
-                raise HTTPException(status_code=403, detail="Not a member of this project")
-            member_role = membership.data[0]['role']
-            if member_role not in ('owner', 'product owner', 'admin'):
-                raise HTTPException(status_code=403, detail="Only product owners, admins, or class instructors can update the project")
+            _require_member_role(
+                client, str(project_id), user_id, ELEVATED_ROLES,
+                forbidden_detail="Only product owners, admins, or class instructors can update the project",
+            )
 
         updates: dict = {}
         if team_size is not None:
             updates['team_size'] = team_size
-        if name is not None:
-            updates['name'] = name
         if name is not None:
             updates['name'] = name
         if description is not None:
@@ -394,21 +376,12 @@ def delete_project(project_id: UUID, user_id: str) -> dict:
 
         class_id = project_result.data[0]['class_id']
 
-        is_instructor = _is_instructor(user_id, class_id)
-        if not is_instructor:
-            membership = (
-                client.table('project_members').select('role')
-                .eq('project_id', str(project_id)).eq('user_id', user_id)
-                .execute()
+        if not _is_instructor(user_id, class_id):
+            # Note: 'owner' is intentionally excluded from delete authority.
+            _require_member_role(
+                client, str(project_id), user_id, (ROLE_PRODUCT_OWNER, ROLE_ADMIN),
+                forbidden_detail="Only product owners, admins, or the class instructor can delete this project",
             )
-            if not membership.data:
-                raise HTTPException(status_code=403, detail="Not a member of this project")
-            member_role = membership.data[0]['role']
-            if member_role not in ('product owner', 'admin'):
-                raise HTTPException(
-                    status_code=403,
-                    detail="Only product owners, admins, or the class instructor can delete this project"
-                )
 
         _delete_project_dependencies(client, str(project_id))
         client.table('projects').delete().eq('id', str(project_id)).execute()
@@ -1403,12 +1376,7 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user_id:str,
             .execute()
         )
         if not class_result.data:
-            # NOTE: returning False here is a contract mismatch — the view layer
-            # expects a dict. Tracked in CODE_REVIEW.md #17.
-            logger.warning(
-                "instructor_add_member: project not found | project_id=%s", project_id
-            )
-            return False
+            raise HTTPException(status_code=404, detail="Project not found")
 
         class_id = class_result.data[0]['class_id']
         # Allow class instructor OR project product owner / admin / owner
