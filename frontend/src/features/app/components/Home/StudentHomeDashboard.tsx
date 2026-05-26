@@ -47,6 +47,7 @@ interface TeamMemberRow {
   roleLabel: string;
   presence: 'green' | 'orange' | 'gray' | 'none';
   avatarClassIndex: number;
+  avatarUrl?: string;
 }
 
 function courseLabelFromClass(selected: {
@@ -84,7 +85,16 @@ function formatDueLabel(closeDate: string): string {
   return format(parseLocalAssignmentDate(closeDate), 'MMM d, yyyy');
 }
 
-function initialsFromEmail(email: string | undefined): string {
+function initialsFromName(
+  firstName: string | undefined,
+  lastName: string | undefined,
+  email: string | undefined,
+): string {
+  if (firstName || lastName) {
+    const f = firstName?.trim()[0] ?? '';
+    const l = lastName?.trim()[0] ?? '';
+    return (f + l).toUpperCase() || '?';
+  }
   if (!email) return '?';
   const local = email.split('@')[0] ?? '';
   const tokens = local.split(/[._-]+/).filter(Boolean);
@@ -94,7 +104,21 @@ function initialsFromEmail(email: string | undefined): string {
   return local.slice(0, 2).toUpperCase() || '?';
 }
 
+function initialsFromEmail(email: string | undefined): string {
+  return initialsFromName(undefined, undefined, email);
+}
+
 function displayNameFromEmail(email: string | undefined): string {
+  return displayNameFromParts(undefined, undefined, email);
+}
+
+function displayNameFromParts(
+  firstName: string | undefined,
+  lastName: string | undefined,
+  email: string | undefined,
+): string {
+  const parts = [firstName?.trim(), lastName?.trim()].filter(Boolean);
+  if (parts.length > 0) return parts.join(' ');
   if (!email) return 'Member';
   const local = email.split('@')[0] ?? 'Member';
   return local
@@ -463,11 +487,12 @@ const StudentHomeDashboard: React.FC = () => {
 
         const rows: TeamMemberRow[] = members.map((m, i) => ({
           userId: m.user_id,
-          initials: initialsFromEmail(m.email),
-          displayName: displayNameFromEmail(m.email),
+          initials: initialsFromName(m.first_name, m.last_name, m.email),
+          displayName: displayNameFromParts(m.first_name, m.last_name, m.email),
           roleLabel: m.project_role || 'Member',
           presence: presenceCycle[i % presenceCycle.length],
           avatarClassIndex: i % 5,
+          avatarUrl: m.image_url,
         }));
 
         setTeamMembers(rows);
@@ -855,11 +880,19 @@ const StudentHomeDashboard: React.FC = () => {
                   return (
                     <li key={m.userId} className="student-home__team-item">
                       <div className="student-home__team-avatar-wrap">
-                        <div
-                          className={`student-home__team-avatar student-home__team-avatar--${m.avatarClassIndex}`}
-                        >
-                          {m.initials}
-                        </div>
+                        {m.avatarUrl ? (
+                          <img
+                            src={m.avatarUrl}
+                            alt={m.displayName}
+                            className="student-home__team-avatar student-home__team-avatar--photo"
+                          />
+                        ) : (
+                          <div
+                            className={`student-home__team-avatar student-home__team-avatar--${m.avatarClassIndex}`}
+                          >
+                            {m.initials}
+                          </div>
+                        )}
                         {m.presence !== 'none' && (
                           <span
                             className={`student-home__status-dot student-home__status-dot--${m.presence}`}
@@ -882,14 +915,6 @@ const StudentHomeDashboard: React.FC = () => {
         </div>
       </div>
 
-      <button
-        type="button"
-        className="student-home__fab"
-        aria-label="Help center"
-        onClick={() => navigate('/app/help-center')}
-      >
-        ?
-      </button>
     </div>
   );
 };
