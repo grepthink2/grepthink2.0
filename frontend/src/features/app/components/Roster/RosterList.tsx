@@ -8,6 +8,8 @@ interface RosterListProps {
   loading: boolean;
   error: string | null;
   showActions?: boolean;
+  onInvite?: (student: UiStudent) => void;
+  onRemove?: (student: UiStudent) => void;
 }
 
 const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
@@ -27,17 +29,9 @@ const RosterList: React.FC<RosterListProps> = ({
   loading,
   error,
   showActions = false,
+  onInvite,
+  onRemove,
 }) => {
-  const handleRemove = (student: UiStudent) => {
-    // TODO: wire to DELETE /api/classes/{id}/members/{user_id}
-    console.warn('Remove student (not yet implemented):', student.id);
-  };
-
-  const handleInvite = (student: UiStudent) => {
-    // TODO: wire to POST /api/classes/{id}/invite
-    console.warn('Invite student (not yet implemented):', student.email);
-  };
-
   if (loading) {
     return (
       <div className="roster-list">
@@ -82,7 +76,9 @@ const RosterList: React.FC<RosterListProps> = ({
               No students match the current filter.
             </div>
           ) : (
-            <table className="roster-list__table">
+            <table
+              className={`roster-list__table${showActions ? '' : ' roster-list__table--no-actions'}`}
+            >
               <thead>
                 <tr>
                   <th>Name</th>
@@ -95,7 +91,7 @@ const RosterList: React.FC<RosterListProps> = ({
               </thead>
               <tbody>
                 {students.map((student) => (
-                  <tr key={student.id}>
+                  <tr key={`${student.id}-${student.email}`}>
                     <td className="roster-list__td-name">{student.name}</td>
                     <td className="roster-list__td-email">
                       <a
@@ -137,7 +133,8 @@ const RosterList: React.FC<RosterListProps> = ({
                         {student.grepthinkStatus === 'registered' ? (
                           <button
                             className="roster-list__action-btn roster-list__action-btn--remove"
-                            onClick={() => handleRemove(student)}
+                            onClick={() => onRemove?.(student)}
+                            type="button"
                           >
                             <UserMinus size={13} />
                             Remove
@@ -145,7 +142,8 @@ const RosterList: React.FC<RosterListProps> = ({
                         ) : (
                           <button
                             className="roster-list__action-btn roster-list__action-btn--invite"
-                            onClick={() => handleInvite(student)}
+                            onClick={() => onInvite?.(student)}
+                            type="button"
                           >
                             <Mail size={13} />
                             Invite

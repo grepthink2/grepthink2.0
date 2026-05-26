@@ -1,3 +1,5 @@
+import type { ApiRosterStudent } from '@/lib/api';
+
 export type ClassStatus = 'enrolled' | 'waitlisted' | 'dropped' | 'not_on_roster';
 export type GrepthinkStatus = 'registered' | 'not_registered';
 
@@ -29,6 +31,24 @@ export const FILTER_LABELS: Record<FilterOption, string> = {
   not_on_roster: 'Not On Roster',
 };
 
+export function mapApiRosterStudent(student: ApiRosterStudent): UiStudent {
+  return {
+    id: student.id,
+    name: student.name,
+    email: student.email,
+    classStatus: student.class_status,
+    grepthinkStatus: student.grepthink_status,
+    projects: student.projects,
+  };
+}
+
+/** Not on GrepThink yet and not dropped from the official roster. */
+export function isBulkInviteCandidate(student: UiStudent): boolean {
+  return (
+    student.grepthinkStatus === 'not_registered' && student.classStatus !== 'dropped'
+  );
+}
+
 export function applyFilter(students: UiStudent[], filter: FilterOption): UiStudent[] {
   switch (filter) {
     case 'all':
@@ -55,102 +75,3 @@ export function applyFilter(students: UiStudent[], filter: FilterOption): UiStud
       return students.filter((s) => s.classStatus === 'not_on_roster');
   }
 }
-
-export const MOCK_ROSTER: UiStudent[] = [
-  {
-    id: '1',
-    name: 'Alice Chen',
-    email: 'achen@ucsc.edu',
-    classStatus: 'enrolled',
-    grepthinkStatus: 'registered',
-    projects: ['ShoeShopper'],
-  },
-  {
-    id: '2',
-    name: 'Bob Martinez',
-    email: 'bmartinez@ucsc.edu',
-    classStatus: 'enrolled',
-    grepthinkStatus: 'not_registered',
-    projects: [],
-  },
-  {
-    id: '3',
-    name: 'Carol Kim',
-    email: 'ckim@ucsc.edu',
-    classStatus: 'waitlisted',
-    grepthinkStatus: 'registered',
-    projects: ['Chatcut'],
-  },
-  {
-    id: '4',
-    name: 'David Lee',
-    email: 'dlee@ucsc.edu',
-    classStatus: 'waitlisted',
-    grepthinkStatus: 'not_registered',
-    projects: [],
-  },
-  {
-    id: '5',
-    name: 'Emma Torres',
-    email: 'etorres@ucsc.edu',
-    classStatus: 'enrolled',
-    grepthinkStatus: 'registered',
-    projects: ['TaskMaster', 'ShoeShopper'],
-  },
-  {
-    id: '6',
-    name: 'Frank Nguyen',
-    email: 'fnguyen@ucsc.edu',
-    classStatus: 'dropped',
-    grepthinkStatus: 'registered',
-    projects: ['TaskMaster'],
-  },
-  {
-    id: '7',
-    name: 'Grace Park',
-    email: 'gpark@ucsc.edu',
-    classStatus: 'dropped',
-    grepthinkStatus: 'not_registered',
-    projects: [],
-  },
-  {
-    id: '8',
-    name: 'Henry Brown',
-    email: 'hbrown@ucsc.edu',
-    classStatus: 'not_on_roster',
-    grepthinkStatus: 'registered',
-    projects: ['ShoeShopper'],
-  },
-  {
-    id: '9',
-    name: 'Isabella White',
-    email: 'iwhite@ucsc.edu',
-    classStatus: 'enrolled',
-    grepthinkStatus: 'registered',
-    projects: ['Chatcut'],
-  },
-  {
-    id: '10',
-    name: 'James Wilson',
-    email: 'jwilson@ucsc.edu',
-    classStatus: 'enrolled',
-    grepthinkStatus: 'not_registered',
-    projects: [],
-  },
-  {
-    id: '11',
-    name: 'Katie Zhang',
-    email: 'kzhang@ucsc.edu',
-    classStatus: 'enrolled',
-    grepthinkStatus: 'registered',
-    projects: ['TaskMaster'],
-  },
-  {
-    id: '12',
-    name: 'Liam Johnson',
-    email: 'ljohnson@ucsc.edu',
-    classStatus: 'waitlisted',
-    grepthinkStatus: 'registered',
-    projects: [],
-  },
-];

@@ -56,7 +56,7 @@ $gt-not-reg-text:     #6b7280;
   }
 
   &__table-wrapper {
-    overflow-x: auto;
+    overflow-x: hidden;
   }
 
   &__empty-state {
@@ -69,9 +69,9 @@ $gt-not-reg-text:     #6b7280;
   // ── Table ───────────────────────────────────────────────────
   &__table {
     width: 100%;
-    min-width: 680px; // triggers horizontal scroll only on narrow viewports
+    table-layout: auto;
     border-collapse: collapse;
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
 
     thead tr {
       background-color: $background;
@@ -79,15 +79,15 @@ $gt-not-reg-text:     #6b7280;
 
     th {
       text-align: left;
-      padding: 10px $spacing-md;
+      padding: 8px 8px;
       color: $text-tertiary;
       font-weight: $font-weight-medium;
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
       white-space: nowrap;
     }
 
     td {
-      padding: 14px $spacing-md;
+      padding: 10px 8px;
       color: $text-primary;
       border-bottom: 1px solid $border-color;
       vertical-align: middle;
@@ -103,30 +103,69 @@ $gt-not-reg-text:     #6b7280;
       background-color: #fafafa;
     }
 
-    // Prevent any single column from blowing out the layout
-    th:nth-child(1), td:nth-child(1) { min-width: 110px; } // Name
-    th:nth-child(2), td:nth-child(2) { min-width: 160px; } // Email
-    th:nth-child(3), td:nth-child(3) { min-width: 100px; white-space: nowrap; } // Class Status
-    th:nth-child(4), td:nth-child(4) { min-width: 120px; white-space: nowrap; } // GrepThink Status
-    th:nth-child(5), td:nth-child(5) { width: 100%;      } // Projects (absorbs remaining space)
-    th:nth-child(6), td:nth-child(6) { min-width: 80px; white-space: nowrap; } // Actions
+    // Name + email absorb all remaining horizontal space
+    th:nth-child(1), td:nth-child(1) {
+      padding-left: $spacing-md;
+      padding-right: 6px;
+      width: 28%;
+      min-width: 0;
+    }
+
+    th:nth-child(2), td:nth-child(2) {
+      padding-left: 6px;
+      padding-right: 6px;
+      width: 32%;
+      min-width: 0;
+    }
+
+    // Shrink status, projects, and actions to content width
+    th:nth-child(3), td:nth-child(3),
+    th:nth-child(4), td:nth-child(4),
+    th:nth-child(5), td:nth-child(5),
+    th:nth-child(6), td:nth-child(6) {
+      width: 1%;
+      white-space: nowrap;
+      padding-left: 6px;
+      padding-right: 6px;
+    }
+
+    th:nth-child(6), td:nth-child(6) {
+      padding-right: $spacing-md;
+    }
+
+    &--no-actions {
+      th:nth-child(1), td:nth-child(1) {
+        width: 30%;
+        padding-left: $spacing-md;
+      }
+
+      th:nth-child(2), td:nth-child(2) {
+        width: 38%;
+      }
+
+      th:nth-child(3), td:nth-child(3),
+      th:nth-child(4), td:nth-child(4),
+      th:nth-child(5), td:nth-child(5) {
+        width: 1%;
+        white-space: nowrap;
+      }
+    }
   }
 
   &__td-name {
     font-weight: $font-weight-semibold;
     white-space: nowrap;
-    text-overflow: ellipsis;
   }
 
   &__td-email {
     white-space: nowrap;
-    text-overflow: ellipsis;
   }
 
   &__email-link {
     color: $accent-color;
     text-decoration: none;
     font-size: $font-size-sm;
+    white-space: nowrap;
 
     &:hover {
       text-decoration: underline;
@@ -138,9 +177,9 @@ $gt-not-reg-text:     #6b7280;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 4px 12px;
+    padding: 3px 8px;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     font-weight: $font-weight-medium;
     white-space: nowrap;
 
@@ -157,20 +196,24 @@ $gt-not-reg-text:     #6b7280;
   &__projects-wrap {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 3px;
     align-items: center;
+    min-width: 0;
   }
 
   &__project-tag {
     display: inline-flex;
     align-items: center;
-    padding: 3px 10px;
+    padding: 2px 6px;
     background-color: rgba($accent-color, 0.1);
     color: $accent-color;
     border-radius: $border-radius-sm;
-    font-size: $font-size-sm;
+    font-size: 0.72rem;
     font-weight: $font-weight-medium;
     white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__no-projects {
@@ -185,16 +228,17 @@ $gt-not-reg-text:     #6b7280;
   &__action-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
+    gap: 4px;
+    padding: 4px 8px;
     border: none;
     border-radius: $border-radius-sm;
     font-family: $primary-font;
-    font-size: 0.8125rem;
+    font-size: 0.72rem;
     font-weight: $font-weight-medium;
     cursor: pointer;
     transition: background-color $transition-fast;
     white-space: nowrap;
+    max-width: 100%;
 
     &--remove {
       background: transparent;

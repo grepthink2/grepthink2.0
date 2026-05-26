@@ -82,7 +82,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
 
     try {
       const description = `${selectedTerm} term`;
-      await api.createClass({
+      const result = await api.createClass({
         name: courseName,
         description,
         term: selectedTerm,
@@ -92,9 +92,8 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       // Refresh the classes list
       await refreshClasses();
 
-      // TODO: Handle CSV file upload if provided
-      if (csvFile) {
-        console.log('CSV upload not yet implemented:', csvFile);
+      if (csvFile && result.class?.id) {
+        await api.uploadClassRoster(result.class.id, csvFile);
       }
 
       // TODO: Handle instructor-only setting
