@@ -128,6 +128,14 @@ export interface ApiAssignment {
   created_at?: string;
 }
 
+export interface ApiTurnInStats {
+  rate: number;
+  teamsSubmitted: { count: number; total: number };
+  partialSubmissions: { count: number; total: number };
+  currentAssignment?: string | null;
+  closeDate?: string | null;
+}
+
 export interface CreateAssignmentPayload {
   class_id: string;
   title: string;
@@ -387,6 +395,10 @@ export const api = {
 
   getClassProjects: async (classId: string) => {
     return apiRequest<{ projects: ApiProject[] }>(`/api/classes/${classId}/projects`);
+  },
+
+  getClassTurnInStats: async (classId: string) => {
+    return apiRequest<{ turn_in: ApiTurnInStats }>(`/api/classes/${classId}/turn-in-stats`);
   },
 
   getProject: async (projectId: string) => {
