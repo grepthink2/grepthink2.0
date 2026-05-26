@@ -1,7 +1,9 @@
 """
 Class management business logic
 """
+import csv
 import datetime
+import io
 import logging
 from typing import Optional
 from uuid import UUID
@@ -11,11 +13,176 @@ from app.utils.generators import generate_course_code
 
 logger = logging.getLogger(__name__)
 
+_ROSTER_INSERT_BATCH = 200
+
 
 # Terms that run a full semester (8 TSR weeks); summer runs 3 weeks.
 _FULL_TERM_NAMES = {"fall", "winter", "spring"}
 _SUMMER_TSR_COUNT = 3
 _FULL_TSR_COUNT = 8
+
+
+def normalize_roster_status(raw: str) -> str:
+    """Map a UCSC roster Status cell to our classStatus enum value."""
+    key = raw.strip().lower()
+    if key in ('enrolled', 'e'):
+        return 'enrolled'
+    if key in ('waitlisted', 'wait list', 'waitlist', 'waiting'):
+        return 'waitlisted'
+    if key in ('dropped', 'drop'):
+        return 'dropped'
+    raise ValueError(f"Unknown roster status: {raw!r}")
+
+
+def _roster_entry_name(entry: dict | None) -> str | None:
+    """Build a display name from roster entry first/last name columns."""
+    if not entry:
+        return None
+    first = (entry.get('first_name') or '').strip()
+    last = (entry.get('last_name') or '').strip()
+    full = f"{first} {last}".strip()
+    return full or None
+
+
+def _resolve_roster_display_name(
+    profile: dict | None,
+    roster_entry: dict | None,
+    email: str,
+) -> str:
+    """
+    Display name for a roster row.
+
+    Prefer the matched profile name; if empty, use the roster CSV name;
+    otherwise derive from email.
+    """
+    if profile:
+        first = (profile.get('first_name') or '').strip()
+        last = (profile.get('last_name') or '').strip()
+        full = f"{first} {last}".strip()
+        if full:
+            return full
+
+    roster_name = _roster_entry_name(roster_entry)
+    if roster_name:
+        return roster_name
+
+    local = email.split('@')[0]
+    if not local:
+        return email
+    return local.replace('.', ' ').replace('_', ' ').title()
+
+
+def _find_student_profile_by_email(client, email: str) -> dict | None:
+    """Look up a student profile by UCSC edu_email first, then primary email."""
+    normalized = email.strip().lower()
+    edu_match = (
+        client.table('profiles')
+        .select('id, role, email, edu_email, first_name, last_name')
+        .eq('edu_email', normalized)
+        .execute()
+    )
+    if edu_match.data:
+        return edu_match.data[0]
+
+    email_match = (
+        client.table('profiles')
+        .select('id, role, email, edu_email, first_name, last_name')
+        .eq('email', normalized)
+        .execute()
+    )
+    if email_match.data:
+        return email_match.data[0]
+    return None
+
+
+def _build_profile_email_map(profiles: list[dict]) -> dict[str, dict]:
+    """Map lowercase roster email → profile row (edu_email takes precedence)."""
+    email_map: dict[str, dict] = {}
+    for profile in profiles:
+        primary = (profile.get('email') or '').strip().lower()
+        edu = (profile.get('edu_email') or '').strip().lower()
+        if edu:
+            email_map[edu] = profile
+        if primary and primary not in email_map:
+            email_map[primary] = profile
+    return email_map
+
+
+def _verify_roster_access(client, class_id: str, user_id: str, role: str) -> dict:
+    """Ensure the user may view roster data for this class."""
+    class_result = (
+        client.table('classes')
+        .select('id, created_by')
+        .eq('id', class_id)
+        .execute()
+    )
+    if not class_result.data:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    class_row = class_result.data[0]
+    if role == 'instructor' and class_row.get('created_by') == user_id:
+        return class_row
+
+    enrollment = (
+        client.table('class_enrollments')
+        .select('id')
+        .eq('class_id', class_id)
+        .eq('user_id', user_id)
+        .execute()
+    )
+    if enrollment.data:
+        return class_row
+
+    raise HTTPException(status_code=403, detail="You do not have access to this class roster")
+
+
+def _parse_roster_csv(csv_text: str) -> list[dict]:
+    """Parse UCSC roster CSV; returns deduped rows (last row wins per email)."""
+    if csv_text.startswith('\ufeff'):
+        csv_text = csv_text[1:]
+
+    reader = csv.DictReader(io.StringIO(csv_text))
+    if not reader.fieldnames:
+        raise HTTPException(status_code=400, detail="CSV has no header row")
+
+    field_map = {h.strip().lower(): h for h in reader.fieldnames if h}
+    email_col = field_map.get('email address') or field_map.get('email')
+    status_col = field_map.get('status')
+    first_name_col = field_map.get('first name')
+    last_name_col = field_map.get('last name')
+    if not email_col or not status_col:
+        raise HTTPException(
+            status_code=400,
+            detail="CSV must include 'Email Address' and 'Status' columns",
+        )
+
+    deduped: dict[str, dict] = {}
+    for row_num, row in enumerate(reader, start=2):
+        email_raw = (row.get(email_col) or '').strip()
+        status_raw = (row.get(status_col) or '').strip()
+        if not email_raw:
+            continue
+        email = email_raw.lower()
+        try:
+            status = normalize_roster_status(status_raw)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Row {row_num}: {exc}",
+            ) from exc
+        first_name = (row.get(first_name_col) or '').strip() if first_name_col else ''
+        last_name = (row.get(last_name_col) or '').strip() if last_name_col else ''
+        deduped[email] = {
+            'email': email,
+            'status': status,
+            'first_name': first_name,
+            'last_name': last_name,
+        }
+
+    if not deduped:
+        raise HTTPException(status_code=400, detail="CSV contains no student rows")
+
+    return list(deduped.values())
 
 
 def _generate_tsr_assignments(client, class_id: str, term: str, start_date: datetime.date) -> None:
@@ -287,12 +454,10 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
         if not class_result.data or len(class_result.data) == 0:
             raise HTTPException(status_code=404, detail="Class not found or you don't have permission")
         
-        # Find the student by email
-        student_result = client.table('profiles').select('id, role').eq('email', student_email).execute()
-        if not student_result.data or len(student_result.data) == 0:
+        # Find the student by email (edu_email or primary email)
+        student = _find_student_profile_by_email(client, student_email)
+        if not student:
             raise HTTPException(status_code=404, detail="Student not found")
-        
-        student = student_result.data[0]
         
         # Verify the user is actually a student
         if student['role'] != 'student':
@@ -403,6 +568,225 @@ def get_class_students(class_id: UUID) -> list:
     except Exception:
         logger.exception("Error fetching students | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to fetch students")
+
+
+def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
+    """
+    Return the merged class roster for the UI.
+
+    Combines uploaded roster_entries with enrolled GrepThink students who are
+    not on the official roster (classStatus = not_on_roster).
+    """
+    try:
+        client = service_client if service_client else supabase
+        cid = str(class_id)
+
+        _verify_roster_access(client, cid, user_id, role)
+
+        roster_res = (
+            client.table('roster_entries')
+            .select('id, email, status, matched_profile_id, uploaded_at, first_name, last_name')
+            .eq('course_id', cid)
+            .execute()
+        )
+        roster_rows = roster_res.data or []
+        roster_emails = {(r.get('email') or '').strip().lower() for r in roster_rows}
+
+        enrollments_res = (
+            client.table('class_enrollments')
+            .select('user_id')
+            .eq('class_id', cid)
+            .execute()
+        )
+        enrolled_ids = [e['user_id'] for e in (enrollments_res.data or [])]
+
+        profiles: list[dict] = []
+        if enrolled_ids:
+            profiles_res = (
+                client.table('profiles')
+                .select('id, email, edu_email, first_name, last_name, role')
+                .in_('id', enrolled_ids)
+                .execute()
+            )
+            profiles = profiles_res.data or []
+
+        profile_by_id = {p['id']: p for p in profiles}
+        profile_by_email = _build_profile_email_map(profiles)
+        enrolled_id_set = set(enrolled_ids)
+
+        projects_res = (
+            client.table('projects')
+            .select('id, name')
+            .eq('class_id', cid)
+            .execute()
+        )
+        projects = projects_res.data or []
+        project_ids = [p['id'] for p in projects]
+        project_name_map = {p['id']: p['name'] for p in projects}
+
+        projects_by_user: dict[str, list[str]] = {}
+        if project_ids and enrolled_ids:
+            members_res = (
+                client.table('project_members')
+                .select('user_id, project_id')
+                .in_('user_id', enrolled_ids)
+                .in_('project_id', project_ids)
+                .execute()
+            )
+            for m in (members_res.data or []):
+                uid = m['user_id']
+                pname = project_name_map.get(m['project_id'])
+                if pname:
+                    projects_by_user.setdefault(uid, []).append(pname)
+
+        students: list[dict] = []
+
+        for entry in roster_rows:
+            email = (entry.get('email') or '').strip().lower()
+            profile = profile_by_email.get(email)
+            if not profile and entry.get('matched_profile_id'):
+                profile = profile_by_id.get(entry['matched_profile_id'])
+
+            profile_id = profile['id'] if profile else None
+            is_registered = bool(profile_id and profile_id in enrolled_id_set)
+
+            students.append({
+                'id': profile_id or entry['id'],
+                'name': _resolve_roster_display_name(profile, entry, email),
+                'email': email,
+                'class_status': entry.get('status') or 'enrolled',
+                'grepthink_status': 'registered' if is_registered else 'not_registered',
+                'projects': projects_by_user.get(profile_id, []) if profile_id else [],
+            })
+
+        for profile in profiles:
+            edu = (profile.get('edu_email') or '').strip().lower()
+            primary = (profile.get('email') or '').strip().lower()
+            roster_email = edu or primary
+            if not roster_email:
+                continue
+            if roster_email in roster_emails or primary in roster_emails or edu in roster_emails:
+                continue
+
+            uid = profile['id']
+            students.append({
+                'id': uid,
+                'name': _resolve_roster_display_name(profile, None, roster_email),
+                'email': roster_email,
+                'class_status': 'not_on_roster',
+                'grepthink_status': 'registered',
+                'projects': projects_by_user.get(uid, []),
+            })
+
+        uploaded_at = None
+        if roster_rows:
+            timestamps = [r.get('uploaded_at') for r in roster_rows if r.get('uploaded_at')]
+            if timestamps:
+                uploaded_at = max(timestamps)
+
+        students.sort(key=lambda s: (s['name'].lower(), s['email']))
+
+        logger.debug("get_class_roster: class=%s count=%d", class_id, len(students))
+        return {'students': students, 'uploaded_at': uploaded_at}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error fetching roster | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch roster")
+
+
+def upload_class_roster(class_id: UUID, csv_text: str, instructor_id: str) -> dict:
+    """
+    Replace all roster_entries for a class from a UCSC roster CSV.
+
+    Deletes existing rows for course_id, then bulk-inserts parsed entries.
+    """
+    try:
+        client = service_client if service_client else supabase
+        cid = str(class_id)
+
+        class_result = (
+            client.table('classes')
+            .select('id')
+            .eq('id', cid)
+            .eq('created_by', instructor_id)
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Class not found or you do not have permission",
+            )
+
+        parsed_rows = _parse_roster_csv(csv_text)
+        emails = [r['email'] for r in parsed_rows]
+
+        profile_map: dict[str, str] = {}
+        for i in range(0, len(emails), _ROSTER_INSERT_BATCH):
+            batch = emails[i:i + _ROSTER_INSERT_BATCH]
+            profiles_res = (
+                client.table('profiles')
+                .select('id, email, edu_email')
+                .in_('edu_email', batch)
+                .execute()
+            )
+            for p in (profiles_res.data or []):
+                edu = (p.get('edu_email') or '').strip().lower()
+                if edu:
+                    profile_map[edu] = p['id']
+
+            remaining = [e for e in batch if e not in profile_map]
+            if remaining:
+                email_res = (
+                    client.table('profiles')
+                    .select('id, email, edu_email')
+                    .in_('email', remaining)
+                    .execute()
+                )
+                for p in (email_res.data or []):
+                    primary = (p.get('email') or '').strip().lower()
+                    if primary and primary not in profile_map:
+                        profile_map[primary] = p['id']
+
+        client.table('roster_entries').delete().eq('course_id', cid).execute()
+
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        insert_rows = []
+        matched_count = 0
+        for row in parsed_rows:
+            email = row['email']
+            matched_id = profile_map.get(email)
+            if matched_id:
+                matched_count += 1
+            insert_rows.append({
+                'course_id': cid,
+                'email': email,
+                'status': row['status'],
+                'first_name': row.get('first_name') or None,
+                'last_name': row.get('last_name') or None,
+                'matched_profile_id': matched_id,
+                'uploaded_at': now,
+            })
+
+        for i in range(0, len(insert_rows), _ROSTER_INSERT_BATCH):
+            client.table('roster_entries').insert(
+                insert_rows[i:i + _ROSTER_INSERT_BATCH]
+            ).execute()
+
+        logger.info(
+            "Roster uploaded | class_id=%s rows=%d matched=%d uploaded_by=%s",
+            class_id, len(insert_rows), matched_count, instructor_id,
+        )
+        return {
+            'message': 'Roster uploaded successfully',
+            'inserted_count': len(insert_rows),
+            'matched_count': matched_count,
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error uploading roster | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to upload roster")
 
 
 def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: str) -> dict:
@@ -523,15 +907,11 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
         results = []
         for email in clean_emails:
             try:
-                profile_res = (
-                    client.table('profiles').select('id, role')
-                    .eq('email', email).execute()
-                )
-                if not profile_res.data:
+                profile = _find_student_profile_by_email(client, email)
+                if not profile:
                     results.append({'email': email, 'status': 'not_found'})
                     continue
 
-                profile = profile_res.data[0]
                 if profile.get('role') != 'student':
                     results.append({'email': email, 'status': 'not_a_student'})
                     continue

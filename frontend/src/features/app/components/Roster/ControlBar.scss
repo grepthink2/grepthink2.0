@@ -177,4 +177,8 @@
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
   }
+
+  &__file-input {
+    display: none;
+  }
 }

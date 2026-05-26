@@ -44,3 +44,12 @@
   flex: 3;
   flex-shrink: 0;
 }
+
+.roster__action-error {
+  margin-bottom: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-sm;
+  background: rgba($error-color, 0.08);
+  color: $error-color;
+  font-size: $font-size-sm;
+}

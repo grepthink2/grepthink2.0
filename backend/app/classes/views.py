@@ -2,7 +2,7 @@
 Classes views — parameter handling and responses
 """
 from uuid import UUID
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, UploadFile, File
 from app.dependencies import require_user, require_instructor
 from app.auth.controller import get_user_role
 from app.classes.models import BulkInviteRequest, CreateClassRequest, InviteStudentRequest, JoinClassRequest
@@ -43,6 +43,26 @@ def invite_student(
 def get_class_students(class_id: UUID, user_id: str = Depends(require_user)):
     students = controller.get_class_students(class_id)
     return {"students": students}
+
+
+def get_class_roster(class_id: UUID, user_id: str = Depends(require_user)):
+    """Merged official roster + GrepThink enrollment status."""
+    role = get_user_role(user_id)
+    return controller.get_class_roster(class_id, user_id, role)
+
+
+async def upload_class_roster(
+    class_id: UUID,
+    file: UploadFile = File(...),
+    user_id: str = Depends(require_instructor),
+):
+    """Replace the class roster from a UCSC CSV export (instructor only)."""
+    raw = await file.read()
+    try:
+        csv_text = raw.decode('utf-8-sig')
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=400, detail="CSV must be UTF-8 encoded") from exc
+    return controller.upload_class_roster(class_id, csv_text, user_id)
 
 
 def get_class_projects(class_id: UUID, user_id: str = Depends(require_user)):

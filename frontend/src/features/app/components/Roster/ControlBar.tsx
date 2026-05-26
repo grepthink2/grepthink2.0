@@ -13,7 +13,7 @@ interface ControlBarProps {
   /** Instructor-only — omit for student view */
   notRegisteredCount?: number;
   onInviteAll?: () => void;
-  onUploadRoster?: () => void;
+  onRosterFileSelected?: (file: File) => void;
 }
 
 const ControlBar: React.FC<ControlBarProps> = ({
@@ -23,10 +23,11 @@ const ControlBar: React.FC<ControlBarProps> = ({
   onFilterChange,
   notRegisteredCount,
   onInviteAll,
-  onUploadRoster,
+  onRosterFileSelected,
 }) => {
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const closeFilter = useCallback(() => setFilterOpen(false), []);
   useClickOutside(filterRef, closeFilter);
@@ -34,6 +35,18 @@ const ControlBar: React.FC<ControlBarProps> = ({
   const handleSelect = (key: FilterOption) => {
     onFilterChange(key);
     setFilterOpen(false);
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onRosterFileSelected) {
+      onRosterFileSelected(file);
+    }
+    e.target.value = '';
   };
 
   return (
@@ -96,14 +109,24 @@ const ControlBar: React.FC<ControlBarProps> = ({
         </button>
       )}
 
-      {onUploadRoster && (
-        <button
-          className="roster-control-bar__btn roster-control-bar__btn--upload"
-          onClick={onUploadRoster}
-        >
-          <Upload size={14} />
-          Upload Roster
-        </button>
+      {onRosterFileSelected && (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="roster-control-bar__file-input"
+            onChange={handleFileChange}
+          />
+          <button
+            className="roster-control-bar__btn roster-control-bar__btn--upload"
+            onClick={handleUploadClick}
+            type="button"
+          >
+            <Upload size={14} />
+            Upload Roster
+          </button>
+        </>
       )}
     </div>
   );

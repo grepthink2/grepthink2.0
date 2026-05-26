@@ -26,6 +26,26 @@ export interface ApiStudent {
   project_name?: string | null;
 }
 
+export interface ApiRosterStudent {
+  id: string;
+  name: string;
+  email: string;
+  class_status: 'enrolled' | 'waitlisted' | 'dropped' | 'not_on_roster';
+  grepthink_status: 'registered' | 'not_registered';
+  projects: string[];
+}
+
+export interface ApiRosterUploadResult {
+  message: string;
+  inserted_count: number;
+  matched_count: number;
+}
+
+export interface ApiBulkInviteResult {
+  results: { email: string; status: string }[];
+  enrolled_count: number;
+}
+
 export interface ApiProfile {
   id: string;
   email: string;
@@ -337,6 +357,36 @@ export async function apiRequest<T = unknown>(
 }
 
 /**
+ * Upload a file via multipart/form-data (no JSON Content-Type).
+ */
+export async function apiUpload<T = unknown>(
+  endpoint: string,
+  formData: FormData,
+): Promise<T> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
+  if (!token) {
+    throw new Error('No authentication token available');
+  }
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: 'Upload failed' }));
+    throw new Error(errorData.detail || `Upload failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
  * API client for backend endpoints
  */
 export const api = {
@@ -364,7 +414,7 @@ export const api = {
     term: string;
     start_date: string;
   }) => {
-    return apiRequest('/api/classes', {
+    return apiRequest<{ message: string; class: ApiClass }>('/api/classes', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -388,6 +438,45 @@ export const api = {
 
   getClassStudents: async (classId: string) => {
     return apiRequest<{ students: ApiStudent[] }>(`/api/classes/${classId}/students`);
+  },
+
+  getClassRoster: async (classId: string) => {
+    return apiRequest<{ students: ApiRosterStudent[]; uploaded_at: string | null }>(
+      `/api/classes/${classId}/roster`,
+    );
+  },
+
+  uploadClassRoster: async (classId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiUpload<ApiRosterUploadResult>(`/api/classes/${classId}/roster`, formData);
+  },
+
+  inviteStudent: async (classId: string, studentEmail: string) => {
+    return apiRequest<{ message: string; student_email: string }>(
+      `/api/classes/${classId}/invite`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ student_email: studentEmail }),
+      },
+    );
+  },
+
+  removeStudentFromClass: async (classId: string, studentId: string) => {
+    return apiRequest<{ message: string; student_id: string }>(
+      `/api/classes/${classId}/students/${studentId}`,
+      { method: 'DELETE' },
+    );
+  },
+
+  bulkInviteStudents: async (classId: string, emails: string[]) => {
+    return apiRequest<ApiBulkInviteResult>(
+      `/api/classes/${classId}/students/bulk-invite`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ emails }),
+      },
+    );
   },
 
   // Projects
