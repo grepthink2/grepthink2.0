@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, parseISO } from 'date-fns';
 import { api } from '@/lib/api';
-import type { ApiProject, ApiTurnInStats } from '@/lib/api';
+import type { ApiProject, ApiStudent } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import AddProjectButton from '@features/app/components/Project/AddProjectButton';
 import AssignProjectsButton from '@features/app/components/Project/AssignProjectsButton';
@@ -10,9 +9,7 @@ import ProjectList, {
   type UiProject,
   type ProjectSentiment,
 } from '@features/app/components/Project/ProjectList';
-import AssignmentTurnInRate, {
-  type TurnInRateData,
-} from '@features/app/components/Stats/AssignmentTurnInRate';
+import ProjectMembershipChart from '@features/app/components/Stats/ProjectMembershipChart';
 import ProjectHealth, {
   type ProjectHealthItem,
   type HealthStatus,
@@ -20,14 +17,6 @@ import ProjectHealth, {
 import './Projects.scss';
 
 const UNASSIGNED = 'Unassigned';
-
-const emptyTurnInRate: TurnInRateData = {
-  rate: 0,
-  teamsSubmitted: { count: 0, total: 0 },
-  partialSubmissions: { count: 0, total: 0 },
-  currentAssignment: '—',
-  dueDate: '—',
-};
 
 const SENTIMENT_TO_HEALTH: Record<ProjectSentiment, HealthStatus> = {
   positive: 'excellent',
@@ -61,22 +50,7 @@ function mapApiProjectToUi(project: ApiProject): UiProject {
   };
 }
 
-function mapTurnInStats(stats: ApiTurnInStats): TurnInRateData {
-  return {
-    rate: stats.rate,
-    teamsSubmitted: stats.teamsSubmitted,
-    partialSubmissions: stats.partialSubmissions,
-    currentAssignment: stats.currentAssignment ?? '—',
-    dueDate: stats.closeDate
-      ? format(parseISO(stats.closeDate), 'MMM d, yyyy')
-      : '—',
-  };
-}
-
-function buildProjectHealth(
-  apiProjects: ApiProject[],
-  via: string,
-): ProjectHealthItem[] {
+function buildProjectHealth(apiProjects: ApiProject[]): ProjectHealthItem[] {
   const severityOrder: Record<ProjectSentiment, number> = {
     negative: 0,
     neutral: 1,
@@ -94,7 +68,7 @@ function buildProjectHealth(
           name: p.name,
           health: SENTIMENT_TO_HEALTH[sentiment],
           description: HEALTH_DESCRIPTION[sentiment],
-          via,
+          via: 'Team Sentiment',
         },
       };
     })
@@ -102,53 +76,61 @@ function buildProjectHealth(
     .map(({ item }) => item);
 }
 
+function countProjectMembership(students: ApiStudent[]) {
+  const enrolledStudents = students.filter((s) => s.role !== 'instructor');
+  const inProject = enrolledStudents.filter((s) => s.project_id).length;
+  return {
+    inProject,
+    notInProject: enrolledStudents.length - inProject,
+  };
+}
+
 const Projects: React.FC = () => {
   const { selectedClass } = useClass();
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<UiProject[]>([]);
-  const [turnInRate, setTurnInRate] = useState<TurnInRateData>(emptyTurnInRate);
-  const [projectHealth, setProjectHealth] = useState<ProjectHealthItem[]>([]);
+  const [apiProjects, setApiProjects] = useState<ApiProject[]>([]);
+  const [classStudents, setClassStudents] = useState<ApiStudent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const projects = useMemo(
+    () => apiProjects.map(mapApiProjectToUi),
+    [apiProjects],
+  );
+
+  const projectHealth = useMemo(
+    () => buildProjectHealth(apiProjects),
+    [apiProjects],
+  );
+
+  const membershipStats = useMemo(
+    () => countProjectMembership(classStudents),
+    [classStudents],
+  );
 
   useEffect(() => {
     if (!selectedClass) {
       setLoading(false);
-      setProjects([]);
-      setTurnInRate(emptyTurnInRate);
-      setProjectHealth([]);
+      setApiProjects([]);
+      setClassStudents([]);
       setError(null);
       return;
     }
 
     let isMounted = true;
 
-    const fetchProjects = async () => {
+    const fetchProjectsPageData = async () => {
       try {
         setLoading(true);
-        const [projectsResponse, statsResponse] = await Promise.all([
+        const [projectsResponse, studentsResponse] = await Promise.all([
           api.getClassProjects(selectedClass.id),
-          api.getClassTurnInStats(selectedClass.id).catch(() => null),
+          api.getClassStudents(selectedClass.id),
         ]);
         if (!isMounted) return;
 
-        const apiProjects = projectsResponse.projects ?? [];
-        setProjects(apiProjects.map(mapApiProjectToUi));
+        setApiProjects(projectsResponse.projects ?? []);
+        setClassStudents(studentsResponse.students ?? []);
         setError(null);
-
-        const stats = statsResponse?.turn_in;
-        if (stats) {
-          setTurnInRate(mapTurnInStats(stats));
-          setProjectHealth(
-            buildProjectHealth(
-              apiProjects,
-              stats.currentAssignment ?? '—',
-            ),
-          );
-        } else {
-          setTurnInRate(emptyTurnInRate);
-          setProjectHealth([]);
-        }
       } catch (err) {
         if (isMounted) {
           setError(err instanceof Error ? err.message : 'Failed to load projects');
@@ -160,7 +142,7 @@ const Projects: React.FC = () => {
       }
     };
 
-    fetchProjects();
+    fetchProjectsPageData();
 
     return () => {
       isMounted = false;
@@ -202,7 +184,10 @@ const Projects: React.FC = () => {
         </div>
 
         <div className="projects__stats">
-          <AssignmentTurnInRate data={turnInRate} />
+          <ProjectMembershipChart
+            inProject={membershipStats.inProject}
+            notInProject={membershipStats.notInProject}
+          />
           <ProjectHealth projects={projectHealth} />
         </div>
       </div>

@@ -5,19 +5,12 @@ import { api } from '@/lib/api';
 import type { ApiAssignment } from '@/lib/api';
 import AddAssignmentButton from '@features/app/components/Modules/AddAssignmentButton';
 import AssignmentList, { type Assignment, type AssignmentStatus } from '@features/app/components/Modules/AssignmentList';
-import AssignmentTurnInRate, { type TurnInRateData } from '@/features/app/components/Stats/AssignmentTurnInRate';
+import AssignmentTurnInRate from '@/features/app/components/Stats/AssignmentTurnInRate';
 import ProjectHealth, { type ProjectHealthItem } from '@/features/app/components/Stats/ProjectHealth';
 import CreateAssignmentModal from '@features/app/components/Modules/CreateAssignmentModal';
 import AssignmentEditorModal from '@features/app/components/Modules/AssignmentEditorModal';
+import { useClassTurnInStats } from '@features/app/hooks/useClassTurnInStats';
 import './Modules.scss';
-
-const emptyTurnInRate: TurnInRateData = {
-  rate: 0,
-  teamsSubmitted: { count: 0, total: 0 },
-  partialSubmissions: { count: 0, total: 0 },
-  currentAssignment: '—',
-  dueDate: '—',
-};
 
 const mockProjectHealth: ProjectHealthItem[] = [
   {
@@ -67,6 +60,7 @@ function mapApiAssignment(a: ApiAssignment): Assignment {
 
 const Modules: React.FC = () => {
   const { selectedClass } = useClass();
+  const { turnInRate, refetch: refetchTurnInStats } = useClassTurnInStats(selectedClass?.id);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +100,7 @@ const Modules: React.FC = () => {
       assignment_type: 'tsr',
     });
     await fetchAssignments();
+    await refetchTurnInStats();
   };
 
   const handleSaveAssignment = async (
@@ -119,6 +114,7 @@ const Modules: React.FC = () => {
       status: data.status === 'published' ? 'publish' : 'draft',
     });
     await fetchAssignments();
+    await refetchTurnInStats();
     setEditingAssignment(null);
   };
 
@@ -150,7 +146,7 @@ const Modules: React.FC = () => {
 
         {/* ── Right ── */}
         <div className="modules__stats">
-          <AssignmentTurnInRate data={emptyTurnInRate} />
+          <AssignmentTurnInRate data={turnInRate} />
           <ProjectHealth projects={mockProjectHealth} />
         </div>
       </div>
