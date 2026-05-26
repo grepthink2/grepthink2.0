@@ -413,6 +413,19 @@
     }
   }
 
+  &__message-icon-wrap {
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  &__message-icon {
+    display: block;
+    color: $primary-color;
+  }
+
   &__roles-list {
     display: flex;
     flex-direction: column;

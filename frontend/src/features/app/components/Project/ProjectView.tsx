@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
+import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
 import EmailIcon from '@assets/ic_outline-email.svg';
 import GithubIcon from '@assets/line-md_github.svg';
 import LinkedInIcon from '@assets/mdi_linkedin.svg';
@@ -338,7 +338,18 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                           </span>
                         )}
                         {member.id && member.id !== user?.id && (
-                          <MessageButton toUserId={member.id} toUserName={member.displayName} />
+                          <MessageButton
+                            toUserId={member.id}
+                            toUserName={member.displayName}
+                            className="project-view__link-icon-wrap project-view__message-icon-wrap"
+                          >
+                            <MessageCircleMore
+                              size={18}
+                              strokeWidth={2.75}
+                              className="project-view__message-icon"
+                              aria-hidden="true"
+                            />
+                          </MessageButton>
                         )}
                       </div>
                     </div>
