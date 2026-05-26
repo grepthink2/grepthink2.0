@@ -615,6 +615,11 @@ $quick-purple-hover: #6a3382;
   background: rgba(233, 30, 99, 0.18);
 }
 
+.student-home__team-avatar--photo {
+  object-fit: cover;
+  background: transparent;
+}
+
 .student-home__status-dot {
   position: absolute;
   right: 0;
