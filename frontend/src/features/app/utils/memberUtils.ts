@@ -19,3 +19,14 @@ export function getInitials(name: string, email: string): string {
   }
   return '?';
 }
+
+/** Prefer verified .edu email; fall back to primary account email. */
+export function getMemberCopyEmail(member: {
+  edu_email?: string | null;
+  email?: string | null;
+}): string | null {
+  const eduEmail = member.edu_email?.trim();
+  if (eduEmail) return eduEmail;
+  const email = member.email?.trim();
+  return email || null;
+}

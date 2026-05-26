@@ -18,8 +18,12 @@ export interface ApiClass {
 export interface ApiStudent {
   id: string;
   email: string;
-  user_id: string;
+  user_id?: string;
   role: string;
+  first_name?: string;
+  last_name?: string;
+  project_id?: string | null;
+  project_name?: string | null;
 }
 
 export interface ApiProfile {
@@ -76,6 +80,7 @@ export interface ApiProjectMember {
   linkedin?: string;
   github?: string;
   image_url?: string;
+  edu_email?: string | null;
 }
 
 export interface CreateProjectPayload {

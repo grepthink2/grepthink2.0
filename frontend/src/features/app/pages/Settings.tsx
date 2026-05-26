@@ -307,7 +307,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               </div>
             ) : (
               <div className="settings-modal__field">
-                <label className="settings-modal__label" htmlFor="sm-edu-email">.edu Email</label>
+                <label className="settings-modal__label" htmlFor="sm-edu-email">.edu Email (Roster Email)</label>
                 <input
                   id="sm-edu-email"
                   type="email"
