@@ -42,6 +42,13 @@ export function mapApiRosterStudent(student: ApiRosterStudent): UiStudent {
   };
 }
 
+/** Not on GrepThink yet and not dropped from the official roster. */
+export function isBulkInviteCandidate(student: UiStudent): boolean {
+  return (
+    student.grepthinkStatus === 'not_registered' && student.classStatus !== 'dropped'
+  );
+}
+
 export function applyFilter(students: UiStudent[], filter: FilterOption): UiStudent[] {
   switch (filter) {
     case 'all':

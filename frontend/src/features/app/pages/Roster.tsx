@@ -7,6 +7,7 @@ import RosterList from '@features/app/components/Roster/RosterList';
 import PieCharts from '@features/app/components/Roster/PieCharts';
 import {
   applyFilter,
+  isBulkInviteCandidate,
   mapApiRosterStudent,
   type FilterOption,
   type UiStudent,
@@ -55,7 +56,7 @@ const Roster: React.FC = () => {
   }, [students, filter, search]);
 
   const notRegisteredCount = useMemo(
-    () => students.filter((s) => s.grepthinkStatus === 'not_registered').length,
+    () => students.filter(isBulkInviteCandidate).length,
     [students],
   );
 
@@ -80,9 +81,7 @@ const Roster: React.FC = () => {
 
   const handleInviteAll = async () => {
     if (!selectedClass?.id) return;
-    const emails = students
-      .filter((s) => s.grepthinkStatus === 'not_registered')
-      .map((s) => s.email);
+    const emails = students.filter(isBulkInviteCandidate).map((s) => s.email);
     if (emails.length === 0) return;
 
     setActionError(null);
