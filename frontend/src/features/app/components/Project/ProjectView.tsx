@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
+import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
 import EmailIcon from '@assets/ic_outline-email.svg';
 import GithubIcon from '@assets/line-md_github.svg';
 import LinkedInIcon from '@assets/mdi_linkedin.svg';
@@ -12,6 +12,7 @@ import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
 import EditProjectModal from '../EditProject/EditProjectModal';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
+import { getMemberCopyEmail } from '@/features/app/utils/memberUtils';
 
 export interface ProjectViewMember {
   id?: string;
@@ -85,6 +86,22 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [memberManagerOpen, setMemberManagerOpen] = useState(false);
   const [editProjectOpen, setEditProjectOpen] = useState(false);
+  const [emailsCopied, setEmailsCopied] = useState(false);
+
+  const handleCopyAllEmails = async () => {
+    const emails = projectMembers
+      .map(getMemberCopyEmail)
+      .filter((email): email is string => Boolean(email));
+    if (emails.length === 0) return;
+
+    try {
+      await navigator.clipboard.writeText(emails.join(', '));
+      setEmailsCopied(true);
+      setTimeout(() => setEmailsCopied(false), 2000);
+    } catch {
+      // clipboard unavailable
+    }
+  };
 
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
@@ -240,7 +257,23 @@ const ProjectView: React.FC<ProjectViewProps> = ({
         <div className="project-view__right-column">
           {/* Team Members */}
           <div className="project-view__section">
-            <h3 className="project-view__section-title">Team Members</h3>
+            <div className="project-view__section-header">
+              <h3 className="project-view__section-title">Team Members</h3>
+              {projectMembers.length > 0 && (
+                <button
+                  type="button"
+                  className={`project-view__copy-emails-btn${
+                    emailsCopied ? ' project-view__copy-emails-btn--copied' : ''
+                  }`}
+                  onClick={() => void handleCopyAllEmails()}
+                  aria-label="Copy all team member emails"
+                  title="Copy all team member emails"
+                >
+                  {emailsCopied ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{emailsCopied ? 'Copied' : 'Copy All Emails'}</span>
+                </button>
+              )}
+            </div>
             <div className="project-view__team-list">
               {members.length === 0 ? (
                 <div className="project-view__team-member">

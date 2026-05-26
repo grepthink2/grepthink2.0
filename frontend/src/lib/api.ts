@@ -80,6 +80,7 @@ export interface ApiProjectMember {
   linkedin?: string;
   github?: string;
   image_url?: string;
+  edu_email?: string | null;
 }
 
 export interface CreateProjectPayload {
