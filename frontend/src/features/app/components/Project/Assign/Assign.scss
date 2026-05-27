@@ -12,6 +12,8 @@
 .assign-page__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
 }
 
 .assign-page__back-btn {
@@ -34,6 +36,52 @@
     border-color: darken(#DADADA, 10%);
     color: $text-primary;
   }
+}
+
+.assign-page__save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  background: $primary-color;
+  color: $white;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-family: $primary-font;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background $transition-fast, opacity $transition-fast;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: $primary-hover;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.assign-page__error {
+  color: #b91c1c;
+  margin: 0;
+  font-size: $font-size-sm;
+}
+
+.assign-page__save-message {
+  color: $primary-color;
+  margin: 0;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+}
+
+.assign-page__draft-hint {
+  color: $text-tertiary;
+  margin: 0;
+  font-size: $font-size-sm;
 }
 
 .assign-page__columns {

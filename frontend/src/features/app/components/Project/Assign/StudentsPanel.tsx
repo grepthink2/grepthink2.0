@@ -4,7 +4,17 @@ import type { AssignProject, Student, StudentViewMode } from './assignTypes';
 import StudentListItem from './StudentListItem';
 import ViewToggle from './ViewToggle';
 import { useGlobalDragEnd } from './useGlobalDragEnd';
+import { buildWorkWithGroups } from './workWithGroups';
 import './StudentsPanel.scss';
+
+function matchesSearch(student: Student, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    student.name.toLowerCase().includes(q) ||
+    student.email.toLowerCase().includes(q)
+  );
+}
 
 interface StudentsPanelProps {
   students: Student[];
@@ -41,30 +51,25 @@ const StudentsPanel: React.FC<StudentsPanelProps> = ({
     return map;
   }, [students]);
 
-  // Every student that is listed as a teammate of any leader — they always
-  // render nested under their leader, never at the top level, regardless of
-  // assignment state. This preserves group indentation when anyone in the
-  // group is placed on a project.
-  const teammatesOfAnyLeader = useMemo(() => {
-    const set = new Set<string>();
-    students.forEach((leader) => {
-      leader.teammateIds?.forEach((id) => set.add(id));
-    });
-    return set;
-  }, [students]);
+  const { leaderIds, nestedByLeaderId } = useMemo(
+    () => buildWorkWithGroups(students),
+    [students],
+  );
 
   const visibleStudents = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const searching = q.length > 0;
+    const searching = query.trim().length > 0;
     return students
-      .filter((s) => !teammatesOfAnyLeader.has(s.id))
-      .filter((s) => {
+      .filter((s) => leaderIds.has(s.id))
+      .filter((leader) => {
         if (!searching) return true;
-        return (
-          s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
-        );
+        if (matchesSearch(leader, query)) return true;
+        const nestedIds = nestedByLeaderId.get(leader.id) ?? [];
+        return nestedIds.some((id) => {
+          const nested = studentsById.get(id);
+          return nested ? matchesSearch(nested, query) : false;
+        });
       });
-  }, [students, teammatesOfAnyLeader, query]);
+  }, [students, leaderIds, nestedByLeaderId, studentsById, query]);
 
   const handleDragStart = (e: React.DragEvent, studentId: string) => {
     e.dataTransfer.setData('text/plain', studentId);
@@ -122,12 +127,16 @@ const StudentsPanel: React.FC<StudentsPanelProps> = ({
               const isAssigned = assignedStudentIds.has(student.id);
               const assignedProject = studentProjectMap.get(student.id) ?? null;
               const groupMembers = groupByStudentId.get(student.id) ?? [];
-              // Always render every teammate nested under the leader, whether
-              // they or the leader are assigned — preserves group indentation.
-              const teammates =
-                student.teammateIds
-                  ?.map((id) => studentsById.get(id))
-                  .filter((t): t is Student => Boolean(t)) ?? [];
+              const nestedIds = nestedByLeaderId.get(student.id) ?? [];
+              const searching = query.trim().length > 0;
+              const teammates = nestedIds
+                .map((id) => studentsById.get(id))
+                .filter((t): t is Student => {
+                  if (!t) return false;
+                  if (!searching) return true;
+                  if (matchesSearch(student, query)) return true;
+                  return matchesSearch(t, query);
+                });
               return (
                 <StudentListItem
                   key={student.id}

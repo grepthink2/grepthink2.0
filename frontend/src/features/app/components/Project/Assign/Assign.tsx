@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import type {
@@ -12,6 +12,7 @@ import AssignSummaryBar from './AssignSummaryBar';
 import StudentsPanel from './StudentsPanel';
 import ProjectAssignmentPanel from './ProjectAssignmentPanel';
 import type { AssignProject, ProjectPreference, Student } from './assignTypes';
+import { buildWorkWithGroups, compareStudentDisplayName } from './workWithGroups';
 import './Assign.scss';
 
 type Assignments = Record<string, (string | null)[]>;
@@ -60,6 +61,31 @@ function buildAssignments(
   });
 
   return result;
+}
+
+function cloneAssignmentRows(
+  rows: ApiStaffingAssignmentRow[],
+): ApiStaffingAssignmentRow[] {
+  return rows.map((r) => ({ ...r }));
+}
+
+function assignmentMap(
+  rows: ApiStaffingAssignmentRow[],
+): Map<string, string | null> {
+  return new Map(
+    rows.map((r) => [r.user_id, r.assigned_project_id ?? null]),
+  );
+}
+
+function assignmentMapsEqual(
+  a: Map<string, string | null>,
+  b: Map<string, string | null>,
+): boolean {
+  if (a.size !== b.size) return false;
+  for (const [userId, projectId] of a) {
+    if (b.get(userId) !== projectId) return false;
+  }
+  return true;
 }
 
 /** Convert the backend's project-rank rows into the AssignProject shape. */
@@ -132,7 +158,12 @@ const Assign: React.FC = () => {
   const [assignmentRows, setAssignmentRows] = useState<ApiStaffingAssignmentRow[]>([]);
   const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [savedAssignmentRows, setSavedAssignmentRows] = useState<
+    ApiStaffingAssignmentRow[]
+  >([]);
 
   const refresh = useCallback(async (showSpinner = false) => {
     if (!classId) {
@@ -154,6 +185,8 @@ const Assign: React.FC = () => {
       setProjects(nextProjects);
       setStudentRows(studentRes.students);
       setAssignmentRows(assignRes.assignments);
+      setSavedAssignmentRows(cloneAssignmentRows(assignRes.assignments));
+      setSaveMessage(null);
       // Preserve the focused project across refreshes when possible.
       setFocusedProjectId((curr) => {
         if (curr && nextProjects.some((p) => p.id === curr)) return curr;
@@ -170,15 +203,16 @@ const Assign: React.FC = () => {
     void refresh(true);
   }, [refresh]);
 
-  // Local optimistic mutators ─────────────────────────────────────
-  // After a successful assign/unassign/seat change we update the
-  // in-memory state immediately so the UI feels instant. The backend
-  // is called in the background; if it fails we surface the error and
-  // re-fetch to reconcile. ``num_staff`` (a.k.a. ``seatsTaken``) is the
-  // only project metric that depends on assignments — breadth/depth/
-  // strength are derived from interest_form rows, which don't change
-  // on assign — so we don't need a server roundtrip to keep them
-  // accurate.
+  const hasUnsavedAssignments = useMemo(
+    () =>
+      !assignmentMapsEqual(
+        assignmentMap(assignmentRows),
+        assignmentMap(savedAssignmentRows),
+      ),
+    [assignmentRows, savedAssignmentRows],
+  );
+
+  // Local draft mutators — placements persist when the instructor clicks Save.
   const applyAssignmentChange = useCallback(
     (
       targetUserId: string,
@@ -242,20 +276,19 @@ const Assign: React.FC = () => {
     return set;
   }, [assignmentRows]);
 
-  // student id → all group members (including the student themselves).
-  // Built from each leader's `teammateIds` list.
+  // student id → full work-with cluster (alphabetically first member is leader).
   const groupByStudentId = useMemo(() => {
+    const { leaderIds, nestedByLeaderId } = buildWorkWithGroups(students);
     const map = new Map<string, Student[]>();
-    students.forEach((leader) => {
-      if (!leader.teammateIds?.length) return;
-      const group: Student[] = [
-        leader,
-        ...leader.teammateIds
-          .map((id) => students.find((s) => s.id === id))
-          .filter((s): s is Student => Boolean(s)),
-      ];
+    for (const leaderId of leaderIds) {
+      const nestedIds = nestedByLeaderId.get(leaderId) ?? [];
+      const group = [leaderId, ...nestedIds]
+        .map((id) => students.find((s) => s.id === id))
+        .filter((s): s is Student => Boolean(s))
+        .sort(compareStudentDisplayName);
+      if (group.length < 2) continue;
       group.forEach((member) => map.set(member.id, group));
-    });
+    }
     return map;
   }, [students]);
 
@@ -318,63 +351,76 @@ const Assign: React.FC = () => {
     }
   };
 
-  // ── Drag & drop / quick-add (optimistic) ───────────────────────
-  // The backend's POST /assign already removes the student from any
-  // existing project for this class, so the slotIndex is presentation-
-  // only. We update local state first for instant feedback, then fire
-  // the request; on failure we re-fetch to reconcile.
-  const handleAssign = async (
+  // ── Drag & drop / quick-add (local draft until Save) ───────────
+  const handleAssign = (
     projectId: string,
     _slotIndex: number,
     studentId: string,
   ) => {
-    if (!classId) return;
     const targetSlots = assignments[projectId] ?? [];
-    if (targetSlots.includes(studentId)) return; // already there
+    if (targetSlots.includes(studentId)) return;
     const targetProject = projectsById.get(projectId);
+    setSaveMessage(null);
     applyAssignmentChange(
       studentId,
       projectId,
       targetProject?.name ?? null,
     );
-    try {
-      await api.staffingAssign(classId, studentId, projectId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assign student');
-      void refresh();
-    }
   };
 
-  const handleUnassign = async (projectId: string, slotIndex: number) => {
-    if (!classId) return;
+  const handleUnassign = (projectId: string, slotIndex: number) => {
     const studentId = assignments[projectId]?.[slotIndex];
     if (!studentId) return;
+    setSaveMessage(null);
     applyAssignmentChange(studentId, null, null);
-    try {
-      await api.staffingUnassign(classId, studentId);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to unassign student');
-      void refresh();
-    }
   };
 
-  const handleAssignToFirstEmpty = async (studentId: string) => {
+  const handleAssignToFirstEmpty = (studentId: string) => {
     if (!focusedProject) return;
     const slots = assignments[focusedProject.id] ?? [];
     if (slots.includes(studentId)) return;
     if (slots.findIndex((s) => s === null) === -1) return;
-    await handleAssign(focusedProject.id, 0, studentId);
+    handleAssign(focusedProject.id, 0, studentId);
   };
 
-  const handleReturnStudent = async (studentId: string) => {
-    if (!classId) return;
+  const handleReturnStudent = (studentId: string) => {
     if (!assignedStudentIds.has(studentId)) return;
+    setSaveMessage(null);
     applyAssignmentChange(studentId, null, null);
+  };
+
+  const handleSaveAssignments = async () => {
+    if (!classId) return;
+    setSaving(true);
+    setError(null);
+    setSaveMessage(null);
+    const current = assignmentMap(assignmentRows);
+    const saved = assignmentMap(savedAssignmentRows);
+    const dirty = !assignmentMapsEqual(current, saved);
     try {
-      await api.staffingUnassign(classId, studentId);
+      for (const [userId, projectId] of current) {
+        const previous = saved.get(userId) ?? null;
+        if (projectId === previous) continue;
+        if (projectId) {
+          await api.staffingAssign(classId, userId, projectId);
+        } else if (previous) {
+          await api.staffingUnassign(classId, userId);
+        }
+      }
+      setSavedAssignmentRows(cloneAssignmentRows(assignmentRows));
+      setSaveMessage(
+        dirty
+          ? 'Assignments saved and applied.'
+          : 'Assignments are already up to date with the server.',
+      );
+      await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to unassign student');
-      void refresh();
+      setError(
+        err instanceof Error ? err.message : 'Failed to save assignments',
+      );
+      await refresh(false);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -390,15 +436,34 @@ const Assign: React.FC = () => {
     <div className="assign-page">
       <div className="assign-page__header">
         <button
+          type="button"
           className="assign-page__back-btn"
           onClick={() => navigate('/app/staff-projects')}
         >
           <ArrowLeft size={15} />
           Back to Staffing
         </button>
+        <button
+          type="button"
+          className="assign-page__save-btn"
+          onClick={() => void handleSaveAssignments()}
+          disabled={saving || loading}
+          title="Apply all project placements to the class"
+        >
+          <Save size={16} />
+          {saving ? 'Saving…' : 'Save assignments'}
+        </button>
       </div>
 
       {error && <p className="assign-page__error">{error}</p>}
+      {saveMessage && !error && (
+        <p className="assign-page__save-message">{saveMessage}</p>
+      )}
+      {hasUnsavedAssignments && !saving && !error && (
+        <p className="assign-page__draft-hint">
+          You have unsaved placements. Click Save assignments to apply them.
+        </p>
+      )}
 
       <AssignSummaryBar
         summary={{
