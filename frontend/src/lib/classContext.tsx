@@ -1,6 +1,36 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { api } from './api';
+
+const SELECTED_CLASS_STORAGE_KEY = 'grepthink-selected-class-id';
+
+function getStoredSelectedClassId(): string | null {
+  try {
+    return localStorage.getItem(SELECTED_CLASS_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function persistSelectedClassId(classId: string | null): void {
+  try {
+    if (classId) {
+      localStorage.setItem(SELECTED_CLASS_STORAGE_KEY, classId);
+    } else {
+      localStorage.removeItem(SELECTED_CLASS_STORAGE_KEY);
+    }
+  } catch {
+    // Storage full or unavailable — silently ignore.
+  }
+}
+
+function resolveSelectedClass(classes: Class[], preferredId: string | null): Class | null {
+  if (preferredId) {
+    const match = classes.find((c) => c.id === preferredId);
+    if (match) return match;
+  }
+  return classes.length > 0 ? classes[0] : null;
+}
 
 export interface Class {
   id: string;
@@ -32,39 +62,36 @@ const ClassContext = createContext<ClassContextValue | undefined>(undefined);
 
 export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [classes, setClasses] = useState<Class[]>([]);
-  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [selectedClass, setSelectedClassState] = useState<Class | null>(null);
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const refreshClasses = async (showLoading = true) => {
+  const setSelectedClass = useCallback((classItem: Class | null) => {
+    setSelectedClassState(classItem);
+    persistSelectedClassId(classItem?.id ?? null);
+  }, []);
+
+  const refreshClasses = useCallback(async (showLoading = true) => {
     try {
       if (showLoading) setLoading(true);
       const response = await api.getClasses();
       setClasses(response.classes);
-      
-      // If we have a selected class, update it with fresh data
-      if (selectedClass) {
-        const updatedClass = response.classes.find((c: Class) => c.id === selectedClass.id);
-        if (updatedClass) {
-          setSelectedClass(updatedClass);
-        } else {
-          // Selected class no longer exists
-          setSelectedClass(null);
-        }
-      } else if (response.classes.length > 0) {
-        // Auto-select first class if none selected
-        setSelectedClass(response.classes[0]);
-      }
+
+      const resolved = resolveSelectedClass(
+        response.classes,
+        getStoredSelectedClassId(),
+      );
+      setSelectedClass(resolved);
     } catch (error) {
       console.error('Failed to fetch classes:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [setSelectedClass]);
 
   useEffect(() => {
-    refreshClasses();
-  }, []);
+    void refreshClasses();
+  }, [refreshClasses]);
 
   return (
     <ClassContext.Provider
