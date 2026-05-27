@@ -60,16 +60,28 @@ const Assignments: React.FC = () => {
         }
 
         if (myClassProjects.length === 0) {
-          // Not in any project — show assignments without a project pairing (read-only)
-          const result: StudentAssignment[] = assignments.map((a) => ({
-            id: a.id,
-            name: a.Title,
-            dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
-            projectName: '—',
-            status: 'not_started' as StudentAssignmentStatus,
-            action: 'closed' as StudentAssignmentAction,
-            type: 'tsrs' as const,
-          }));
+          // Not in any project:
+          // - TSR assignments remain closed (requires a project).
+          // - Interest form assignments can still be started.
+          const result: StudentAssignment[] = assignments.map((a) => {
+            const isInterestForm = a.assignment_type === 'interest_form';
+            const isPast = a.close_date < today;
+            return {
+              id: a.id,
+              name: a.Title,
+              dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
+              projectName: '—',
+              status: 'not_started' as StudentAssignmentStatus,
+              action: (
+                isPast
+                  ? 'closed'
+                  : isInterestForm
+                    ? 'start'
+                    : 'closed'
+              ) as StudentAssignmentAction,
+              type: isInterestForm ? 'interest_form' : 'tsrs',
+            };
+          });
           setRows(result);
           return;
         }
@@ -94,6 +106,21 @@ const Assignments: React.FC = () => {
         // 6. Build rows: one per (assignment × my-project) pair
         const result: StudentAssignment[] = [];
         for (const a of assignments) {
+          // Interest form is class-level, not per-project.
+          if (a.assignment_type === 'interest_form') {
+            const isPast = a.close_date < today;
+            result.push({
+              id: a.id,
+              name: a.Title,
+              dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
+              projectName: '—',
+              status: 'not_started',
+              action: isPast ? 'closed' : 'start',
+              type: 'interest_form',
+            });
+            continue;
+          }
+
           for (const p of myClassProjects) {
             const submittedAssignmentIds = tsrsByProject[p.id] ?? [];
             const isSubmitted = submittedAssignmentIds.includes(a.id);

@@ -14,7 +14,7 @@ class CreateAssignmentRequest(BaseModel):
     open_date: datetime.date
     close_date: datetime.date
     status: Literal["draft", "publish"] = "draft"
-    assignment_type: Optional[str] = None
+    assignment_type: Optional[Literal["tsr", "interest_form"]] = None
 
 
 class UpdateAssignmentRequest(BaseModel):
@@ -23,7 +23,7 @@ class UpdateAssignmentRequest(BaseModel):
     open_date: Optional[datetime.date] = None
     close_date: Optional[datetime.date] = None
     status: Optional[Literal["draft", "publish"]] = None
-    assignment_type: Optional[str] = None
+    assignment_type: Optional[Literal["tsr", "interest_form"]] = None
 
 
 class UpdateTSREntryRequest(BaseModel):

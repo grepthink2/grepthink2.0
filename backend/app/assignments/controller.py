@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from app.database.client import service_client, supabase
 
 logger = logging.getLogger(__name__)
+ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form"}
 
 
 def _client():
@@ -67,7 +68,13 @@ def create_assignment(
             "class_id": str(class_id),
         }
         if assignment_type is not None:
-            assignment_data["assignment_type"] = assignment_type
+            normalized_type = assignment_type.strip().lower()
+            if normalized_type not in ALLOWED_ASSIGNMENT_TYPES:
+                raise HTTPException(
+                    status_code=400,
+                    detail="assignment_type must be one of: tsr, interest_form",
+                )
+            assignment_data["assignment_type"] = normalized_type
 
         result = _client().table('assignments').insert(assignment_data).execute()
         if not result.data:
@@ -200,7 +207,13 @@ def update_assignment(
         if status is not None:
             updates['status'] = status
         if assignment_type is not None:
-            updates['assignment_type'] = assignment_type
+            normalized_type = assignment_type.strip().lower()
+            if normalized_type not in ALLOWED_ASSIGNMENT_TYPES:
+                raise HTTPException(
+                    status_code=400,
+                    detail="assignment_type must be one of: tsr, interest_form",
+                )
+            updates['assignment_type'] = normalized_type
 
         if updates:
             effective_open = open_date or (
@@ -222,7 +235,9 @@ def update_assignment(
                 raise HTTPException(status_code=500, detail="Failed to update assignment")
             assignment = result.data[0]
 
-        effective_type = assignment_type or assignment.get('assignment_type')
+        effective_type = (
+            assignment_type.strip().lower() if assignment_type else assignment.get('assignment_type')
+        )
         if effective_type == 'tsr':
             assignment['tsrs'] = _fetch_tsr_entries(client, str(assignment_id))
 
@@ -435,14 +450,18 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
 
         assignment_result = (
             client.table('assignments')
-            .select('id, assignment_type')
+            .select('id, assignment_type, status')
             .eq('id', str(assignment_id))
             .execute()
         )
         if not assignment_result.data:
             raise HTTPException(status_code=404, detail="Assignment not found")
-        if assignment_result.data[0].get('assignment_type') != 'tsr':
-            raise HTTPException(status_code=400, detail="Assignment is not a TSR-type assignment")
+        assignment_type = assignment_result.data[0].get('assignment_type')
+        if assignment_type == 'interest_form':
+            # Interest forms do not write TSR rows; keep response shape stable.
+            return []
+        if assignment_type != 'tsr' or assignment_result.data[0].get('status') != 'publish':
+            raise HTTPException(status_code=400, detail="Assignment is not a published TSR assignment")
 
         tsr_result = (
             client.table('TSRs')
