@@ -3,34 +3,8 @@ import { Link, Navigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import ProjectGrid, { type ProjectGridItem } from '@features/app/components/Project/ProjectGrid';
+import { toProjectGridItem } from '@features/app/components/Project/projectGridHelpers';
 import './BrowseProjects.scss';
-
-interface ClassProjectRow {
-  id: string;
-  name: string;
-  team_size?: number | string;
-  member_count?: number;
-}
-
-function toGridItem(raw: ClassProjectRow, index: number): ProjectGridItem {
-  let teamSize = 4;
-  if (typeof raw.team_size === 'number' && !Number.isNaN(raw.team_size)) {
-    teamSize = raw.team_size;
-  } else if (typeof raw.team_size === 'string') {
-    const parsed = parseInt(raw.team_size, 10);
-    if (!Number.isNaN(parsed)) {
-      teamSize = parsed;
-    }
-  }
-
-  return {
-    id: raw.id,
-    name: raw.name,
-    team_size: teamSize,
-    member_count: typeof raw.member_count === 'number' ? raw.member_count : undefined,
-    status: index % 2 === 0 ? 'open' : 'closed',
-  };
-}
 
 const MyProject: React.FC = () => {
   const { selectedClass } = useClass();
@@ -70,13 +44,16 @@ const MyProject: React.FC = () => {
           setGridProjects([]);
         } else if (mineInClass.length > 1) {
           setSingleRedirectId(null);
-          const rows: ClassProjectRow[] = mineInClass.map((p) => ({
-            id: p.id,
-            name: p.name,
-            team_size: p.team_size,
-            member_count: (p as ClassProjectRow).member_count,
-          }));
-          setGridProjects(rows.map((p, i) => toGridItem(p, i)));
+          setGridProjects(
+            mineInClass.map((p) =>
+              toProjectGridItem({
+                id: p.id,
+                name: p.name,
+                team_size: p.team_size,
+                member_count: p.member_count,
+              }),
+            ),
+          );
         } else {
           setSingleRedirectId(null);
           setGridProjects([]);
