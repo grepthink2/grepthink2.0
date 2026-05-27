@@ -148,7 +148,7 @@ def _list_class_students(client, class_id: UUID) -> list[dict]:
         return []
     profiles = (
         client.table("profiles")
-        .select("id, email, name, role")
+        .select("id, email, first_name, last_name, role")
         .in_("id", student_ids)
         .execute()
     )
@@ -213,7 +213,10 @@ def _profile_display_name(profile: Optional[dict]) -> Optional[str]:
     """Pick the most human-friendly display label for a profile row."""
     if not profile:
         return None
-    return profile.get("name") or profile.get("email")
+    first = (profile.get("first_name") or "").strip()
+    last = (profile.get("last_name") or "").strip()
+    full = f"{first} {last}".strip()
+    return full or profile.get("name") or profile.get("email")
 
 
 def _name_lookup(client, user_ids: Iterable[str]) -> dict[str, dict]:
@@ -221,7 +224,12 @@ def _name_lookup(client, user_ids: Iterable[str]) -> dict[str, dict]:
     ids = list({str(u) for u in user_ids if u})
     if not ids:
         return {}
-    res = client.table("profiles").select("id, email, name").in_("id", ids).execute()
+    res = (
+        client.table("profiles")
+        .select("id, email, first_name, last_name")
+        .in_("id", ids)
+        .execute()
+    )
     return {str(p["id"]): p for p in (res.data or [])}
 
 
@@ -550,7 +558,7 @@ def get_my_submission(user_id: str, class_id: UUID) -> dict:
         peer = peer_lookup.get(str(row["peer_user_id"])) or {}
         return {
             "user_id": str(row["peer_user_id"]),
-            "name": peer.get("name"),
+            "name": _profile_display_name(peer),
             "email": peer.get("email"),
         }
 
@@ -1014,7 +1022,7 @@ def get_class_students_with_interest(
             peer = peer_lookup.get(str(row["peer_user_id"])) or {}
             return {
                 "user_id": str(row["peer_user_id"]),
-                "name": peer.get("name"),
+                "name": _profile_display_name(peer),
                 "email": peer.get("email"),
             }
 
