@@ -89,15 +89,19 @@ const Modules: React.FC = () => {
     name: string;
     openDate: string;
     dueDate: string;
+    template: 'Team Status Report' | 'Project Interest Form';
+    status: 'draft' | 'published';
   }) => {
     if (!selectedClass) return;
+    const assignment_type =
+      data.template === 'Project Interest Form' ? 'interest_form' : 'tsr';
     await api.createAssignment({
       class_id: selectedClass.id,
       title: data.name,
       open_date: data.openDate.split(' ')[0],
       close_date: data.dueDate.split(' ')[0],
-      status: 'draft',
-      assignment_type: 'tsr',
+      status: data.status === 'published' ? 'publish' : 'draft',
+      assignment_type,
     });
     await fetchAssignments();
     await refetchTurnInStats();
