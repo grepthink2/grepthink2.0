@@ -7,6 +7,7 @@ from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
+from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
 ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form"}
@@ -107,15 +108,15 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
     entry = {
         "tsr_id": row['id'],
         "evaluator_id": row['evaluator_id'],
-        "evaluator_name": evaluator_profile.get('name') or evaluator_profile.get('email'),
-        "evaluatee_name": evaluatee_profile.get('name') or evaluatee_profile.get('email'),
+        "evaluatee_id": row['evaluatee_id'],
+        "project_id": row.get('project_id'),
+        "evaluator_name": profile_display_name(evaluator_profile),
+        "evaluatee_name": profile_display_name(evaluatee_profile),
         "percent_contribution": row['percent_contribution'],
         "positive_feedback": row['positive_feedback'],
+        "constructive_feedback": row.get('constructive_feedback') or '',
+        "scrum_master_notes": row.get('scrum_master_notes') or '',
     }
-    if row.get('constructive_feedback'):
-        entry["constructive_feedback"] = row['constructive_feedback']
-    if row.get('scrum_master_notes'):
-        entry["scrum_master_notes"] = row['scrum_master_notes']
     return entry
 
 
@@ -152,7 +153,7 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
     )
     profiles = (
         client.table('profiles')
-        .select('id, name, email')
+        .select(PROFILE_SELECT)
         .in_('id', all_user_ids)
         .execute()
     )
@@ -415,7 +416,7 @@ def update_tsr_entry(
         profile_ids = list({row['evaluator_id'], row['evaluatee_id']})
         profiles_result = (
             client.table('profiles')
-            .select('id, name, email')
+            .select(PROFILE_SELECT)
             .in_('id', profile_ids)
             .execute()
         )
@@ -466,7 +467,7 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
         tsr_result = (
             client.table('TSRs')
             .select(
-                'id, evaluator_id, evaluatee_id, percent_contribution, '
+                'id, evaluator_id, evaluatee_id, project_id, percent_contribution, '
                 'positive_feedback, constructive_feedback, scrum_master_notes'
             )
             .eq('assignment_id', str(assignment_id))
@@ -483,7 +484,7 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
         )
         profiles = (
             client.table('profiles')
-            .select('id, name, email')
+            .select(PROFILE_SELECT)
             .in_('id', all_user_ids)
             .execute()
         )
@@ -552,7 +553,7 @@ def get_tsr_responses_about_user(
         )
         profiles = (
             client.table('profiles')
-            .select('id, name, email')
+            .select(PROFILE_SELECT)
             .in_('id', all_user_ids)
             .execute()
         )

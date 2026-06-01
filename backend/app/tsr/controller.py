@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
 from app.tsr.models import CreateTSRRequest
+from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
 
@@ -29,15 +30,15 @@ def _enrich_tsrs(client, tsrs: list) -> list:
     )
     if not all_ids:
         return tsrs
-    profiles = client.table('profiles').select('id, email, name').in_('id', all_ids).execute()
+    profiles = client.table('profiles').select(PROFILE_SELECT).in_('id', all_ids).execute()
     profile_map = {p['id']: p for p in (profiles.data or [])}
     for tsr in tsrs:
         ev_profile = profile_map.get(tsr.get('evaluator_id'), {})
         ee_profile = profile_map.get(tsr.get('evaluatee_id'), {})
         tsr['evaluator_email'] = ev_profile.get('email')
-        tsr['evaluator_name'] = ev_profile.get('name') or ev_profile.get('email')
+        tsr['evaluator_name'] = profile_display_name(ev_profile)
         tsr['evaluatee_email'] = ee_profile.get('email')
-        tsr['evaluatee_name'] = ee_profile.get('name') or ee_profile.get('email')
+        tsr['evaluatee_name'] = profile_display_name(ee_profile)
     return tsrs
 
 

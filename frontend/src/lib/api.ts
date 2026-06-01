@@ -141,6 +141,27 @@ export interface ApiTSR {
   created_at?: string;
 }
 
+/** TSR row returned by GET/PATCH /api/assignments/:id/tsrs */
+export interface ApiAssignmentTsrEntry {
+  tsr_id: string;
+  evaluator_id: string;
+  evaluatee_id: string;
+  project_id?: string;
+  evaluator_name?: string;
+  evaluatee_name?: string;
+  percent_contribution: number;
+  positive_feedback: string;
+  constructive_feedback?: string;
+  scrum_master_notes?: string;
+}
+
+export interface UpdateAssignmentTsrPayload {
+  percent_contribution?: number;
+  positive_feedback?: string;
+  constructive_feedback?: string;
+  scrum_master_notes?: string;
+}
+
 export interface ApiAssignment {
   id: string;
   /** Backend uses capital T for this column */
@@ -673,6 +694,26 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  },
+
+  /** Student's TSR submissions for an assignment (GET /api/assignments/:id/tsrs) */
+  getMyAssignmentTsrs: async (assignmentId: string) => {
+    return apiRequest<{ tsrs: ApiAssignmentTsrEntry[] }>(`/api/assignments/${assignmentId}/tsrs`);
+  },
+
+  /** Update one TSR row linked to an assignment (PATCH /api/assignments/:id/tsrs/:tsrId) */
+  updateAssignmentTsr: async (
+    assignmentId: string,
+    tsrId: string,
+    data: UpdateAssignmentTsrPayload,
+  ) => {
+    return apiRequest<{ message: string; tsr: ApiAssignmentTsrEntry }>(
+      `/api/assignments/${assignmentId}/tsrs/${tsrId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      },
+    );
   },
 
   // ----- Messages ----------------------------------------------------------

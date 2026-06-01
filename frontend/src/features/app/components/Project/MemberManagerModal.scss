@@ -150,7 +150,20 @@
     &--request {
       .member-manager__card-actions {
         display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: $spacing-xs;
+      }
+
+      .member-manager__request-decision {
+        display: flex;
         gap: $spacing-sm;
+      }
+
+      .member-manager__request-message {
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
       }
     }
 
@@ -283,6 +296,17 @@
       &:hover:not(:disabled) {
         background: $background;
         color: $text-primary;
+      }
+    }
+
+    &--message {
+      background: $white;
+      color: $primary-color;
+      border: 1px solid $primary-color;
+
+      &:hover:not(:disabled) {
+        background: $primary-color;
+        color: $white;
       }
     }
 
