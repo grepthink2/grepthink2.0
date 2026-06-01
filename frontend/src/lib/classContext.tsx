@@ -50,8 +50,9 @@ interface ClassContextValue {
   classes: Class[];
   selectedClass: Class | null;
   setSelectedClass: (classItem: Class | null) => void;
-  // Accept showLoading param to avoid blocking UI when refreshing after join
-  refreshClasses: (showLoading?: boolean) => Promise<void>;
+  // Accept showLoading param to avoid blocking UI when refreshing after join.
+  // Pass selectClassId to force the sidebar selection (e.g. after creating a class).
+  refreshClasses: (showLoading?: boolean, selectClassId?: string | null) => Promise<void>;
   loading: boolean;
   // Success message state for cross-component notifications (e.g., after joining class)
   successMessage: string | null;
@@ -71,16 +72,17 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     persistSelectedClassId(classItem?.id ?? null);
   }, []);
 
-  const refreshClasses = useCallback(async (showLoading = true) => {
+  const refreshClasses = useCallback(async (showLoading = true, selectClassId?: string | null) => {
     try {
       if (showLoading) setLoading(true);
       const response = await api.getClasses();
       setClasses(response.classes);
 
-      const resolved = resolveSelectedClass(
-        response.classes,
-        getStoredSelectedClassId(),
-      );
+      const preferredId =
+        selectClassId !== undefined
+          ? selectClassId
+          : getStoredSelectedClassId();
+      const resolved = resolveSelectedClass(response.classes, preferredId);
       setSelectedClass(resolved);
     } catch (error) {
       console.error('Failed to fetch classes:', error);

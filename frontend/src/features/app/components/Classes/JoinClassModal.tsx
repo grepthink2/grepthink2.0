@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
@@ -16,6 +17,7 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
   const [success, setSuccess] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   // Use setSuccessMessage to display mint green "Successfully enrolled" popup on MyClasses page
+  const navigate = useNavigate();
   const { refreshClasses, setSuccessMessage } = useClass();
 
   // Reset state when modal opens
@@ -89,28 +91,25 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
 
     try {
       const response = await api.joinClass(courseCode);
-
-      // Check if already enrolled
-      if (response.message?.toLowerCase().includes('already enrolled')) {
-        setError('You are already enrolled in this class');
-        return;
+      const joinedClassId = response.class?.id;
+      if (!joinedClassId) {
+        throw new Error('Joined class but no class id was returned');
       }
 
-      // Get class name from response
       const className = response.class?.name || 'class';
+      const alreadyEnrolled = response.message
+        ?.toLowerCase()
+        .includes('already enrolled');
 
-      // Set success message for MyClasses page
-      setSuccessMessage(`Successfully enrolled in ${className}`);
+      setSuccessMessage(
+        alreadyEnrolled
+          ? `Already enrolled in ${className}`
+          : `Successfully enrolled in ${className}`,
+      );
 
-      setSuccess(true);
-
-      // Refresh the classes list without loading state
-      await refreshClasses(false);
-
-      // Close modal after a brief success message
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+      await refreshClasses(false, joinedClassId);
+      onClose();
+      navigate('/app/browse-projects');
     } catch (err) {
       console.error('Failed to join class:', err);
       setError(err instanceof Error ? err.message : 'Failed to join class');
