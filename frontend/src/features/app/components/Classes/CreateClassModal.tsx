@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Upload, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
@@ -22,6 +23,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const navigate = useNavigate();
   const { refreshClasses } = useClass();
   const terms: Term[] = ['Fall', 'Winter', 'Spring', 'Summer'];
 
@@ -89,11 +91,16 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         start_date: termStartDate,
       });
 
-      // Refresh the classes list
-      await refreshClasses();
+      const createdId = result.class?.id;
+      if (!createdId) {
+        throw new Error('Class was created but no class id was returned');
+      }
 
-      if (csvFile && result.class?.id) {
-        await api.uploadClassRoster(result.class.id, csvFile);
+      // Refresh roster and select the new class in the sidebar
+      await refreshClasses(false, createdId);
+
+      if (csvFile) {
+        await api.uploadClassRoster(createdId, csvFile);
       }
 
       // TODO: Handle instructor-only setting
@@ -108,6 +115,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setCsvFile(null);
       setInstructorOnly(false);
       handleClose();
+      navigate('/app/dashboard');
     } catch (err) {
       console.error('Failed to create class:', err);
       setError(err instanceof Error ? err.message : 'Failed to create class');
