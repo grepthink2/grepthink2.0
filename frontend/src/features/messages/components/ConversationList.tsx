@@ -5,6 +5,7 @@ import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { formatRelativeTime } from '../utils/relativeTime';
 import { InitialsAvatar } from './InitialsAvatar';
 import { ConversationMenu } from './ConversationMenu';
+import { NewConversationSearch } from './NewConversationSearch';
 
 interface Props {
   conversations: ApiConversationSummary[];
@@ -86,6 +87,7 @@ export const ConversationList: React.FC<Props> = ({
             <LuSearch size={18} aria-hidden="true" />
           )}
         </button>
+        {!searchOpen && <NewConversationSearch />}
       </div>
     );
 

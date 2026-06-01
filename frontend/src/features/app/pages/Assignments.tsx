@@ -10,17 +10,6 @@ import StudentAssignmentsTable, {
 } from '../components/Assignments/StudentAssignmentsTable';
 import './Assignments.scss';
 
-// TODO: remove once the backend supports interest_form assignments
-const HARDCODED_INTEREST_FORM: StudentAssignment = {
-  id: 'interest-form-preview',
-  name: 'Project Interest Form',
-  dueDate: 'May 15, 2026',
-  projectName: '—',
-  status: 'not_started',
-  action: 'start',
-  type: 'interest_form',
-};
-
 const Assignments: React.FC = () => {
   const { selectedClass } = useClass();
   const navigate = useNavigate();
@@ -217,7 +206,7 @@ const Assignments: React.FC = () => {
     <div className="assignments">
       <div className="assignments__content">
         <StudentAssignmentsTable
-          assignments={[HARDCODED_INTEREST_FORM, ...rows]}
+          assignments={rows}
           onStart={handleOpen}
           onEditSubmission={handleOpen}
         />
