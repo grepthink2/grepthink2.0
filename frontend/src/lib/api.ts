@@ -30,6 +30,11 @@ export interface ApiRosterStudent {
   id: string;
   name: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
+  roster_email?: string;
+  grepthink_email?: string;
+  project?: string;
   class_status: 'enrolled' | 'waitlisted' | 'dropped' | 'not_on_roster';
   grepthink_status: 'registered' | 'not_registered';
   projects: string[];
