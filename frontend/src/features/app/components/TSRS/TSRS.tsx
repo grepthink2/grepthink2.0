@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
-import type { ApiTSR } from '@/lib/api';
+import type { ApiAssignmentTsrEntry } from '@/lib/api';
 import { useUser } from '@/lib/auth';
 import TsrsStepper from './TsrsStepper';
 import ContributionsTab from './ContributionsTab';
@@ -26,17 +26,13 @@ function parseWeekFromName(name: string): number {
   return match ? parseInt(match[1], 10) : 1;
 }
 
-/**
- * From a list of TSRs for this assignment, build a map of
- * evaluatee_id → the most recently submitted TSR.
- */
-function buildLatestByEvaluatee(tsrs: ApiTSR[]): Record<string, ApiTSR> {
-  const map: Record<string, ApiTSR> = {};
-  for (const tsr of tsrs) {
-    const eid = tsr.evaluatee_id;
-    if (!eid) continue;
-    if (!map[eid] || (tsr.created_at ?? '') > (map[eid].created_at ?? '')) {
-      map[eid] = tsr;
+function entriesByEvaluatee(
+  entries: ApiAssignmentTsrEntry[],
+): Record<string, ApiAssignmentTsrEntry> {
+  const map: Record<string, ApiAssignmentTsrEntry> = {};
+  for (const entry of entries) {
+    if (entry.evaluatee_id) {
+      map[entry.evaluatee_id] = entry;
     }
   }
   return map;
@@ -56,7 +52,8 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
   const [membersError, setMembersError] = useState<string | null>(null);
 
   // ── Prior-submission loading (for edit pre-fill) ─────────
-  const [priorTsrs, setPriorTsrs] = useState<ApiTSR[]>([]);
+  const [priorEntries, setPriorEntries] = useState<ApiAssignmentTsrEntry[]>([]);
+  const [tsrIdByMemberId, setTsrIdByMemberId] = useState<Record<string, string>>({});
   const [tsrsLoading, setTsrsLoading] = useState(true);
 
   // ── Form initialisation ──────────────────────────────────
@@ -76,7 +73,6 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
 
     let cancelled = false;
 
-    // Fetch project members
     setMembersLoading(true);
     setMembersError(null);
     api.getProjectMembers(assignment.projectId)
@@ -100,16 +96,27 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
         if (!cancelled) setMembersLoading(false);
       });
 
-    // Fetch this student's prior TSRs for the project, filter to this assignment
     setTsrsLoading(true);
-    api.getProjectTsrs(assignment.projectId)
+    api.getMyAssignmentTsrs(assignment.id)
       .then(({ tsrs }) => {
         if (cancelled) return;
-        const relevant = tsrs.filter((t) => t.assignment_id === assignment.id);
-        setPriorTsrs(relevant);
+        const forProject = tsrs.filter(
+          (t) => !t.project_id || t.project_id === assignment.projectId,
+        );
+        setPriorEntries(forProject);
+        const ids: Record<string, string> = {};
+        for (const t of forProject) {
+          if (t.evaluatee_id && t.tsr_id) {
+            ids[t.evaluatee_id] = t.tsr_id;
+          }
+        }
+        setTsrIdByMemberId(ids);
       })
       .catch(() => {
-        if (!cancelled) setPriorTsrs([]);
+        if (!cancelled) {
+          setPriorEntries([]);
+          setTsrIdByMemberId({});
+        }
       })
       .finally(() => {
         if (!cancelled) setTsrsLoading(false);
@@ -132,19 +139,17 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
   const [contributionsError, setContributionsError] = useState<string | null>(null);
   const teamFeedbackTabRef = useRef<TeamFeedbackTabHandle>(null);
 
-  // Once both members and prior TSRs are loaded, initialise the form.
-  // If prior TSRs exist for this assignment, pre-fill from the latest ones.
   useEffect(() => {
     if (membersInitialized || membersLoading || tsrsLoading || members.length === 0) return;
 
-    const latestByEvaluatee = buildLatestByEvaluatee(priorTsrs);
-    const hasPrior = Object.keys(latestByEvaluatee).length > 0;
+    const byEvaluatee = entriesByEvaluatee(priorEntries);
+    const hasPrior = Object.keys(byEvaluatee).length > 0;
 
     setContributions(
       Object.fromEntries(
         members.map((m) => [
           m.id,
-          latestByEvaluatee[m.id]?.percent_contribution ?? Math.floor(100 / members.length),
+          byEvaluatee[m.id]?.percent_contribution ?? Math.floor(100 / members.length),
         ]),
       ),
     );
@@ -154,8 +159,8 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
         members.map((m) => [
           m.id,
           {
-            contribution: latestByEvaluatee[m.id]?.positive_feedback ?? '',
-            improvement:  latestByEvaluatee[m.id]?.constructive_feedback ?? '',
+            contribution: byEvaluatee[m.id]?.positive_feedback ?? '',
+            improvement: byEvaluatee[m.id]?.constructive_feedback ?? '',
           },
         ]),
       ),
@@ -166,9 +171,9 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
         members.map((m) => [
           m.id,
           {
-            tickets:    '',
+            tickets: '',
             assessment: '',
-            notes:      latestByEvaluatee[m.id]?.scrum_master_notes ?? '',
+            notes: byEvaluatee[m.id]?.scrum_master_notes ?? '',
           },
         ]),
       ),
@@ -176,7 +181,7 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
 
     setMembersInitialized(true);
     if (hasPrior) setIsEditMode(true);
-  }, [members, membersLoading, tsrsLoading, membersInitialized, priorTsrs]);
+  }, [members, membersLoading, tsrsLoading, membersInitialized, priorEntries]);
 
   const currentUser   = members.find((m) => m.isCurrentUser);
   const isScrumMaster = currentUser?.isScrumMaster ?? false;
@@ -229,6 +234,13 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
     setActiveTab(target);
   };
 
+  const memberPayload = (member: TeamMember) => ({
+    percent_contribution: contributions[member.id] ?? 0,
+    positive_feedback: feedback[member.id]?.contribution ?? '',
+    constructive_feedback: feedback[member.id]?.improvement ?? '',
+    scrum_master_notes: isScrumMaster ? (scrumData[member.id]?.notes ?? '') : '',
+  });
+
   const handleSubmit = async () => {
     if (isScrumMaster && !completedSteps.has('team_feedback')) {
       setActiveTab('team_feedback');
@@ -241,21 +253,36 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
 
     try {
       const week = parseWeekFromName(assignment.name);
+      const updatedIds: Record<string, string> = { ...tsrIdByMemberId };
+
       await Promise.all(
-        members.map((member) =>
-          api.createProjectTsr(assignment.projectId, {
-            evaluatee_id:           member.id,
-            percent_contribution:   contributions[member.id] ?? 0,
-            positive_feedback:      feedback[member.id]?.contribution ?? '',
-            constructive_feedback:  feedback[member.id]?.improvement  ?? '',
-            scrum_master_notes:     isScrumMaster ? (scrumData[member.id]?.notes ?? '') : '',
-            assignment_id:          assignment.id,
+        members.map(async (member) => {
+          const payload = memberPayload(member);
+          const existingId = tsrIdByMemberId[member.id];
+
+          if (existingId) {
+            const { tsr } = await api.updateAssignmentTsr(
+              assignment.id,
+              existingId,
+              payload,
+            );
+            if (tsr.tsr_id) updatedIds[member.id] = tsr.tsr_id;
+            return;
+          }
+
+          const { tsr } = await api.createProjectTsr(assignment.projectId, {
+            evaluatee_id: member.id,
+            ...payload,
+            assignment_id: assignment.id,
             week,
-          }),
-        ),
+          });
+          if (tsr.id) updatedIds[member.id] = tsr.id;
+        }),
       );
+
+      setTsrIdByMemberId(updatedIds);
+      setIsEditMode(true);
       setSubmitted(true);
-      setIsEditMode(false);
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'Failed to submit. Please try again.');
     } finally {
@@ -270,7 +297,6 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
     }
   }, [activeTab, pendingTeamFeedbackValidationOnSubmit]);
 
-  // ── Loading / error states ───────────────────────────────────
   if (isLoading) {
     return (
       <div className="tsrs tsrs--loading">
@@ -306,7 +332,6 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
     );
   }
 
-  // ── Submitted confirmation ───────────────────────────────────
   if (submitted) {
     return (
       <div className="tsrs__submitted">
@@ -321,7 +346,7 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
             className="tsrs-btn tsrs-btn--secondary"
             onClick={() => setSubmitted(false)}
           >
-            Edit submission
+            Edit
           </button>
           <button
             type="button"
@@ -335,12 +360,11 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
     );
   }
 
-  // ── Form ─────────────────────────────────────────────────────
   return (
     <div className="tsrs">
       {isEditMode && (
         <div className="tsrs__edit-banner">
-          You are editing your previous submission. Changes will create a new submission.
+          You are editing your previous submission. Save to update your answers.
         </div>
       )}
 
@@ -412,7 +436,7 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
 
       {isSubmitting && (
         <div className="tsrs__submitting-overlay">
-          <p>{isEditMode ? 'Resubmitting…' : 'Submitting…'}</p>
+          <p>{isEditMode ? 'Saving changes…' : 'Submitting…'}</p>
         </div>
       )}
     </div>

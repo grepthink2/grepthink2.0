@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
@@ -52,13 +53,16 @@ function mapApiAssignment(a: ApiAssignment): Assignment {
     dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
     openDate: `${a.open_date} 00:00`,
     dueDatetime: `${a.close_date} 23:59`,
-    submitted: 0,
-    total: 0,
+    submitted: a.teams_submitted ?? 0,
+    total: a.teams_total ?? 0,
     status,
+    assignmentType: a.assignment_type,
+    hasTsrResponses: a.has_tsr_responses ?? false,
   };
 }
 
 const Modules: React.FC = () => {
+  const navigate = useNavigate();
   const { selectedClass } = useClass();
   const { turnInRate, refetch: refetchTurnInStats } = useClassTurnInStats(selectedClass?.id);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -89,15 +93,19 @@ const Modules: React.FC = () => {
     name: string;
     openDate: string;
     dueDate: string;
+    template: 'Team Status Report' | 'Project Interest Form';
+    status: 'draft' | 'published';
   }) => {
     if (!selectedClass) return;
+    const assignment_type =
+      data.template === 'Project Interest Form' ? 'interest_form' : 'tsr';
     await api.createAssignment({
       class_id: selectedClass.id,
       title: data.name,
       open_date: data.openDate.split(' ')[0],
       close_date: data.dueDate.split(' ')[0],
-      status: 'draft',
-      assignment_type: 'tsr',
+      status: data.status === 'published' ? 'publish' : 'draft',
+      assignment_type,
     });
     await fetchAssignments();
     await refetchTurnInStats();
@@ -140,7 +148,18 @@ const Modules: React.FC = () => {
           ) : error ? (
             <p className="modules__error">{error}</p>
           ) : (
-            <AssignmentList assignments={assignments} onEdit={setEditingAssignment} />
+            <AssignmentList
+              assignments={assignments}
+              onEdit={setEditingAssignment}
+              onViewTsr={(assignment) => {
+                if (assignment.assignmentType === 'interest_form' || !assignment.hasTsrResponses) {
+                  return;
+                }
+                navigate(`/app/modules/tsr/${assignment.id}`, {
+                  state: { assignmentName: assignment.title },
+                });
+              }}
+            />
           )}
         </div>
 

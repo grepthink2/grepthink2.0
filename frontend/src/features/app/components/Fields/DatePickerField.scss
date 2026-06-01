@@ -46,18 +46,23 @@
 .dpf__trigger-text { flex: 1; }
 .dpf__trigger-icon { color: $text-tertiary; flex-shrink: 0; }
 
-// ── Popover ────────────────────────────────────────────────────
+// ── Popover (portaled + fixed; positioned in TS) ───────────────
 .dpf__popover {
-  position: absolute;
-  right: 0;
-  z-index: $z-index-modal + 1;
+  width: max-content;
+  max-width: calc(100vw - 24px);
   background: $white;
   border-radius: $border-radius-md;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 12px;
+  box-sizing: border-box;
+  max-height: calc(100vh - 16px);
+  overflow-x: hidden;
+  overflow-y: auto;
 
-  &--down { top: calc(10%);    animation: dpfPopoverInDown 0.15s ease-out; }
-  &--up   { bottom: calc(-10%); animation: dpfPopoverInUp   0.15s ease-out; }
+  &--portal {
+    &--down { animation: dpfPopoverInDown 0.15s ease-out; }
+    &--up   { animation: dpfPopoverInUp   0.15s ease-out; }
+  }
 }
 
 @keyframes dpfPopoverInDown {
@@ -71,6 +76,22 @@
 
 // ── react-day-picker overrides ─────────────────────────────────
 .dpf__popover {
+  .rdp-root {
+    width: auto;
+    --rdp-day-width: 2.25rem;
+    --rdp-day-height: 2.25rem;
+    --rdp-day_button-width: 2.25rem;
+    --rdp-day_button-height: 2.25rem;
+  }
+
+  .rdp-month {
+    width: auto;
+  }
+
+  .rdp-month_grid {
+    width: auto;
+  }
+
   .rdp-month_caption {
     font-family: $primary-font;
     font-size: 0.9rem;
@@ -144,6 +165,8 @@
   padding: 10px 4px 4px;
   border-top: 1px solid $border-color;
   margin-top: 4px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .dpf__time-icon  { color: $text-tertiary; flex-shrink: 0; }

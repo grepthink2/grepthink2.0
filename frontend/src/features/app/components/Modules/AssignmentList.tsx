@@ -16,11 +16,15 @@ export interface Assignment {
   submitted: number;
   total: number;
   status: AssignmentStatus;
+  assignmentType?: string;
+  /** True when at least one TSR response exists (instructor Modules list). */
+  hasTsrResponses?: boolean;
 }
 
 interface AssignmentListProps {
   assignments: Assignment[];
   onEdit?: (assignment: Assignment) => void;
+  onViewTsr?: (assignment: Assignment) => void;
 }
 
 const statusLabel: Record<AssignmentStatus, string> = {
@@ -29,7 +33,7 @@ const statusLabel: Record<AssignmentStatus, string> = {
   closed: 'Closed',
 };
 
-const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit }) => {
+const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit, onViewTsr }) => {
   const [_editingId, setEditingId] = useState<string | null>(null);
 
   const handleEdit = (assignment: Assignment) => {
@@ -61,9 +65,34 @@ const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit }) 
                 const pct = assignment.total > 0
                   ? Math.round((assignment.submitted / assignment.total) * 100)
                   : 0;
+                const isTsr = assignment.assignmentType !== 'interest_form';
+                const canViewTsr =
+                  isTsr && onViewTsr && Boolean(assignment.hasTsrResponses);
+                const handleTitleClick = () => {
+                  if (canViewTsr) onViewTsr(assignment);
+                };
                 return (
-                  <tr key={assignment.id}>
-                    <td className="assignment-list__td-title">{assignment.title}</td>
+                  <tr
+                    key={assignment.id}
+                    className={canViewTsr ? 'assignment-list__row--clickable' : ''}
+                    onClick={canViewTsr ? handleTitleClick : undefined}
+                  >
+                    <td className="assignment-list__td-title">
+                      {canViewTsr ? (
+                        <button
+                          type="button"
+                          className="assignment-list__title-link"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewTsr(assignment);
+                          }}
+                        >
+                          {assignment.title}
+                        </button>
+                      ) : (
+                        assignment.title
+                      )}
+                    </td>
                     <td className="assignment-list__td-date">{assignment.dueDate}</td>
                     <td className="assignment-list__td-submissions">
                       {assignment.total > 0 ? (
@@ -91,7 +120,10 @@ const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit }) 
                     <td className="assignment-list__td-actions">
                       <button
                         className="edit-btn"
-                        onClick={() => handleEdit(assignment)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(assignment);
+                        }}
                       >
                         <SquarePen size={13} />
                         Edit
