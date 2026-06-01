@@ -44,6 +44,28 @@ def _roster_entry_name(entry: dict | None) -> str | None:
     return full or None
 
 
+def _resolve_roster_export_names(
+    profile: dict | None,
+    roster_entry: dict | None,
+) -> tuple[str, str]:
+    """First/last for CSV export: roster CSV names, then profile, then empty."""
+    if roster_entry:
+        first = (roster_entry.get('first_name') or '').strip()
+        last = (roster_entry.get('last_name') or '').strip()
+        if first or last:
+            return first, last
+    if profile:
+        first = (profile.get('first_name') or '').strip()
+        last = (profile.get('last_name') or '').strip()
+        if first or last:
+            return first, last
+    return '', ''
+
+
+def _format_project_export(project_names: list[str]) -> str:
+    return ', '.join(project_names) if project_names else ''
+
+
 def _resolve_roster_display_name(
     profile: dict | None,
     roster_entry: dict | None,
@@ -649,14 +671,22 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
 
             profile_id = profile['id'] if profile else None
             is_registered = bool(profile_id and profile_id in enrolled_id_set)
+            project_names = projects_by_user.get(profile_id, []) if profile_id else []
+            first_name, last_name = _resolve_roster_export_names(profile, entry)
+            grepthink_email = (profile.get('email') or '').strip() if profile and is_registered else ''
 
             students.append({
                 'id': profile_id or entry['id'],
                 'name': _resolve_roster_display_name(profile, entry, email),
                 'email': email,
+                'first_name': first_name,
+                'last_name': last_name,
+                'roster_email': email,
+                'grepthink_email': grepthink_email,
+                'project': _format_project_export(project_names),
                 'class_status': entry.get('status') or 'enrolled',
                 'grepthink_status': 'registered' if is_registered else 'not_registered',
-                'projects': projects_by_user.get(profile_id, []) if profile_id else [],
+                'projects': project_names,
             })
 
         for profile in profiles:
@@ -669,13 +699,20 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
                 continue
 
             uid = profile['id']
+            project_names = projects_by_user.get(uid, [])
+            first_name, last_name = _resolve_roster_export_names(profile, None)
             students.append({
                 'id': uid,
                 'name': _resolve_roster_display_name(profile, None, roster_email),
                 'email': roster_email,
+                'first_name': first_name,
+                'last_name': last_name,
+                'roster_email': '',
+                'grepthink_email': (profile.get('email') or '').strip(),
+                'project': _format_project_export(project_names),
                 'class_status': 'not_on_roster',
                 'grepthink_status': 'registered',
-                'projects': projects_by_user.get(uid, []),
+                'projects': project_names,
             })
 
         uploaded_at = None

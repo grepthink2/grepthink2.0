@@ -1,38 +1,23 @@
 import React, { useState, useEffect, useMemo, type KeyboardEvent } from 'react';
-import { addDays, isAfter, parseISO, startOfDay } from 'date-fns';
 import { ArrowRight, Check, Copy, GraduationCap, Pencil, PlusCircle } from 'lucide-react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import { useClass, type Class } from '@/lib/classContext';
+import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useAuth } from '@/lib/auth';
 import CreateClassModal from '@features/app/components/Classes/CreateClassModal';
+import ClassSettingsModal from '@features/app/components/Classes/ClassSettingsModal';
 import './MyClasses.scss';
 
 type CourseFilter = 'all' | 'active' | 'completed';
 
-const FULL_TERM_NAMES = new Set(['fall', 'winter', 'spring']);
-
-/** Last day of auto-generated TSR cycle — aligns with backend class controller. */
-function getEstimatedCourseEnd(classItem: Class): Date | null {
-    const raw = classItem.start_date;
-    if (!raw) return null;
-    const day = raw.slice(0, 10);
-    const start = startOfDay(parseISO(day));
-    const termLower = (classItem.term ?? '').trim().toLowerCase();
-    const tsrCount = FULL_TERM_NAMES.has(termLower) ? 8 : 3;
-    const firstTsrOpen = addDays(start, 14);
-    return addDays(firstTsrOpen, (tsrCount - 1) * 7 + 6);
-}
-
-function isClassCompleted(classItem: Class): boolean {
-    const end = getEstimatedCourseEnd(classItem);
-    if (!end) return false;
-    return isAfter(startOfDay(new Date()), end);
-}
-
-function classMatchesFilter(classItem: Class, filter: CourseFilter): boolean {
+function classMatchesFilter(
+    classItem: Class,
+    filter: CourseFilter,
+    getClassStatus: (classItem: Class) => ClassLifecycleStatus,
+): boolean {
     if (filter === 'all') return true;
-    const completed = isClassCompleted(classItem);
+    const completed = getClassStatus(classItem) === 'completed';
     if (filter === 'completed') return completed;
     return !completed;
 }
@@ -43,20 +28,36 @@ const FILTER_LABELS: Record<CourseFilter, string> = {
     completed: 'Completed',
 };
 
+function ClassStatusTag({ status }: { status: ClassLifecycleStatus }) {
+    return (
+        <span className={`my-classes-card-status-tag my-classes-card-status-tag--${status}`}>
+            {status === 'completed' ? 'Completed' : 'Active'}
+        </span>
+    );
+}
+
 const MyClasses: React.FC = () => {
-    const { classes, loading, successMessage, setSuccessMessage, setSelectedClass } = useClass();
+    const {
+        visibleClasses,
+        loading,
+        successMessage,
+        setSuccessMessage,
+        setSelectedClass,
+        getClassStatus,
+    } = useClass();
     const { role } = useAuth();
     const navigate = useNavigate();
     const { openJoinClassModal } = useOutletContext<AppOutletContext>();
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [courseFilter, setCourseFilter] = useState<CourseFilter>('all');
     const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
+    const [settingsClass, setSettingsClass] = useState<Class | null>(null);
 
     const isInstructor = role === 'instructor';
 
     const filteredClasses = useMemo(
-        () => classes.filter((c) => classMatchesFilter(c, courseFilter)),
-        [classes, courseFilter],
+        () => visibleClasses.filter((c) => classMatchesFilter(c, courseFilter, getClassStatus)),
+        [visibleClasses, courseFilter, getClassStatus],
     );
 
     useEffect(() => {
@@ -92,8 +93,8 @@ const MyClasses: React.FC = () => {
         }
     };
 
-    const handleEditClick = () => {
-        navigate('/app/class-settings');
+    const handleOpenSettings = (cls: Class) => {
+        setSettingsClass(cls);
     };
 
     if (loading) {
@@ -148,7 +149,7 @@ const MyClasses: React.FC = () => {
 
             <div className="my-classes-list-scroll">
                 <div className="my-classes-list">
-                    {classes.length === 0 ? (
+                    {visibleClasses.length === 0 ? (
                         <div className="my-classes-empty">
                             <p>You are not in any classes yet.</p>
                             {isInstructor ? (
@@ -212,7 +213,7 @@ const MyClasses: React.FC = () => {
                                         className="my-classes-card-hero-edit"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleEditClick();
+                                            handleOpenSettings(cls);
                                         }}
                                         aria-label="Class settings"
                                     >
@@ -230,6 +231,7 @@ const MyClasses: React.FC = () => {
                                         {cls.description && (
                                             <div className="my-classes-card-subtitle">{cls.description}</div>
                                         )}
+                                        <ClassStatusTag status={getClassStatus(cls)} />
                                         <div className="my-classes-card-row">
                                             <span className="my-classes-card-row-spacer" aria-hidden />
                                             <span className="my-classes-select-cta">
@@ -255,6 +257,7 @@ const MyClasses: React.FC = () => {
                                         {cls.description && (
                                             <div className="my-classes-card-subtitle">{cls.description}</div>
                                         )}
+                                        <ClassStatusTag status={getClassStatus(cls)} />
                                         <div className="my-classes-card-row">
                                             <div className="my-classes-card-enrollment">~ ENROLLED</div>
                                             <span className="my-classes-select-cta">
@@ -270,7 +273,14 @@ const MyClasses: React.FC = () => {
             </div>
 
             {isInstructor && (
-                <CreateClassModal isOpen={isCreateClassOpen} onClose={() => setIsCreateClassOpen(false)} />
+                <>
+                    <CreateClassModal isOpen={isCreateClassOpen} onClose={() => setIsCreateClassOpen(false)} />
+                    <ClassSettingsModal
+                        isOpen={settingsClass !== null}
+                        classItem={settingsClass}
+                        onClose={() => setSettingsClass(null)}
+                    />
+                </>
             )}
         </div>
     );
