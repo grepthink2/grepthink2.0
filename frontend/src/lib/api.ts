@@ -172,6 +172,10 @@ export interface ApiAssignment {
   class_id: string;
   assignment_type?: string;
   created_at?: string;
+  /** Instructor list: any TSR row exists for this assignment */
+  has_tsr_responses?: boolean;
+  teams_submitted?: number;
+  teams_total?: number;
 }
 
 export interface ApiTurnInStats {
@@ -699,6 +703,15 @@ export const api = {
   /** Student's TSR submissions for an assignment (GET /api/assignments/:id/tsrs) */
   getMyAssignmentTsrs: async (assignmentId: string) => {
     return apiRequest<{ tsrs: ApiAssignmentTsrEntry[] }>(`/api/assignments/${assignmentId}/tsrs`);
+  },
+
+  /** Instructor: all TSR responses for an assignment (GET /api/assignments/:id/tsr-overview) */
+  getAssignmentTsrOverview: async (assignmentId: string) => {
+    return apiRequest<{
+      assignment: ApiAssignment;
+      projects: { id: string; name: string }[];
+      entries: ApiAssignmentTsrEntry[];
+    }>(`/api/assignments/${assignmentId}/tsr-overview`);
   },
 
   /** Update one TSR row linked to an assignment (PATCH /api/assignments/:id/tsrs/:tsrId) */

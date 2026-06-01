@@ -123,6 +123,41 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
         if data.assignment_id:
             tsr_data["assignment_id"] = str(data.assignment_id)
 
+        # Upsert: one row per evaluator + evaluatee + project (+ assignment or week).
+        existing_query = (
+            client.table('TSRs')
+            .select('id')
+            .eq('evaluator_id', user_id)
+            .eq('evaluatee_id', str(data.evaluatee_id))
+            .eq('project_id', str(data.project_id))
+        )
+        if data.assignment_id:
+            existing_query = existing_query.eq('assignment_id', str(data.assignment_id))
+        else:
+            existing_query = existing_query.eq('week', data.week)
+
+        existing_result = existing_query.limit(1).execute()
+        existing_id = existing_result.data[0]['id'] if existing_result.data else None
+
+        if existing_id:
+            update_fields = {
+                k: v for k, v in tsr_data.items()
+                if k not in ('evaluator_id', 'evaluatee_id', 'project_id', 'assignment_id')
+            }
+            result = (
+                client.table('TSRs')
+                .update(update_fields)
+                .eq('id', existing_id)
+                .execute()
+            )
+            if not result.data:
+                raise HTTPException(status_code=500, detail="Failed to update TSR")
+            logger.info(
+                "TSR updated | tsr_id=%s project_id=%s evaluator=%s evaluatee=%s",
+                existing_id, data.project_id, user_id, data.evaluatee_id,
+            )
+            return result.data[0]
+
         # WARN: Table name is 'TSRs' (mixed case) here but 'tsrs' elsewhere
         # depending on the Postgres identifier quoting. See CODE_REVIEW.md #20.
         result = client.table('TSRs').insert(tsr_data).execute()

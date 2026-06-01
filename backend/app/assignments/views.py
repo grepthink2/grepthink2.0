@@ -75,6 +75,18 @@ def get_my_tsrs(
     return {"tsrs": entries}
 
 
+def get_tsr_overview(
+    assignment_id: UUID,
+    user_id: str = Depends(require_user),
+):
+    """All TSR responses for an assignment, by project (instructor only)."""
+    overview = controller.get_instructor_tsr_overview(
+        user_id=user_id,
+        assignment_id=assignment_id,
+    )
+    return overview
+
+
 def get_tsrs_about_user(
     assignment_id: UUID,
     evaluatee_id: UUID,

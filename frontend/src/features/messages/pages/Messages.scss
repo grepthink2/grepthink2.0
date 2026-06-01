@@ -526,7 +526,7 @@
     display: inline-flex;
     align-items: center;
     gap: $spacing-sm;
-    height: 48px;
+    height: $message-widget-height;
     padding: 0 $spacing-md;
     border: none;
     border-radius: $border-radius-md $border-radius-md 0 0;

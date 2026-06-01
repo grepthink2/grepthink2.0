@@ -474,13 +474,17 @@
     }
   }
 
-  // Footer
+  // Footer — margin (not page padding) stays below buttons as skills/content grow
   &__footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding-top: 1.5rem;
     border-top: 1px solid $border-color;
+
+    @media (min-width: 768px) {
+      margin-bottom: $message-widget-clearance;
+    }
   }
 
   &__footer-right {

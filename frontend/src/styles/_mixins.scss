@@ -1,0 +1,13 @@
+@use './variables' as *;
+
+/**
+ * Layout mixins shared across feature stylesheets.
+ */
+
+/// Extra bottom space so page footers sit above the fixed Messages tab (hidden below 768px).
+/// @param {Number} $base — existing bottom padding to preserve (e.g. page gutter).
+@mixin bottom-clearance-for-message-widget($base: 0px) {
+  @media (min-width: 768px) {
+    padding-bottom: $base + $message-widget-clearance;
+  }
+}

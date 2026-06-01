@@ -253,51 +253,35 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
 
     try {
       const week = parseWeekFromName(assignment.name);
-      const hasExistingRows = Object.keys(tsrIdByMemberId).length > 0;
+      const updatedIds: Record<string, string> = { ...tsrIdByMemberId };
 
-      if (isEditMode && hasExistingRows) {
-        const updatedIds: Record<string, string> = { ...tsrIdByMemberId };
-        await Promise.all(
-          members.map(async (member) => {
-            const payload = memberPayload(member);
-            const existingId = tsrIdByMemberId[member.id];
-            if (existingId) {
-              const { tsr } = await api.updateAssignmentTsr(
-                assignment.id,
-                existingId,
-                payload,
-              );
-              if (tsr.tsr_id) updatedIds[member.id] = tsr.tsr_id;
-            } else {
-              const { tsr } = await api.createProjectTsr(assignment.projectId, {
-                evaluatee_id: member.id,
-                ...payload,
-                assignment_id: assignment.id,
-                week,
-              });
-              if (tsr.id) updatedIds[member.id] = tsr.id;
-            }
-          }),
-        );
-        setTsrIdByMemberId(updatedIds);
-        setIsEditMode(true);
-      } else {
-        const newIds: Record<string, string> = {};
-        await Promise.all(
-          members.map(async (member) => {
-            const { tsr } = await api.createProjectTsr(assignment.projectId, {
-              evaluatee_id: member.id,
-              ...memberPayload(member),
-              assignment_id: assignment.id,
-              week,
-            });
-            if (tsr.id) newIds[member.id] = tsr.id;
-          }),
-        );
-        setTsrIdByMemberId(newIds);
-        setIsEditMode(true);
-      }
+      await Promise.all(
+        members.map(async (member) => {
+          const payload = memberPayload(member);
+          const existingId = tsrIdByMemberId[member.id];
 
+          if (existingId) {
+            const { tsr } = await api.updateAssignmentTsr(
+              assignment.id,
+              existingId,
+              payload,
+            );
+            if (tsr.tsr_id) updatedIds[member.id] = tsr.tsr_id;
+            return;
+          }
+
+          const { tsr } = await api.createProjectTsr(assignment.projectId, {
+            evaluatee_id: member.id,
+            ...payload,
+            assignment_id: assignment.id,
+            week,
+          });
+          if (tsr.id) updatedIds[member.id] = tsr.id;
+        }),
+      );
+
+      setTsrIdByMemberId(updatedIds);
+      setIsEditMode(true);
       setSubmitted(true);
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'Failed to submit. Please try again.');

@@ -1,0 +1,287 @@
+@use '@styles/index.scss' as *;
+
+// ── Page shell ────────────────────────────────────────────────
+.tsr-view {
+  padding: $spacing-lg;
+  font-family: $primary-font;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  background: $white;
+  min-height: 100%;
+
+  &--loading,
+  &--error {
+    padding: $spacing-xl;
+    color: $text-secondary;
+  }
+  &--error p { color: $error-color; }
+
+  // ── Meta strip ──────────────────────────────────────────────
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+  }
+  &__meta-dot { color: $text-tertiary; }
+
+  &__empty {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+  }
+
+  // ── Controls row ────────────────────────────────────────────
+  &__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+    align-items: flex-end;
+    padding: $spacing-md $spacing-lg;
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: $border-radius-md;
+  }
+
+  &__control {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 200px;
+    flex: 1;
+
+    &--view {
+      min-width: 280px;
+      flex: 2;
+    }
+  }
+
+  &__control-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.6875rem;
+    font-weight: $font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+  }
+
+  // ── View toggle buttons ─────────────────────────────────────
+  &__mode-toggle {
+    display: flex;
+    gap: $spacing-xs;
+  }
+
+  &__mode-btn {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: $border-radius-sm;
+    background: $white;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color $transition-fast, background-color $transition-fast;
+
+    &:hover:not(:disabled) { border-color: #c0c4cb; }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    &--active {
+      border-color: $primary-color;
+      background: rgba($primary-color, 0.07);
+      color: $primary-hover;
+    }
+  }
+
+  // ── Results section ─────────────────────────────────────────
+  &__results {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__section-title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  &__table-card {
+    background: $white;
+    border: 1px solid #e5e7eb;
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+
+    thead tr { background: #f5f5f5; }
+
+    th {
+      text-align: left;
+      padding: 10px $spacing-md;
+      font-weight: $font-weight-medium;
+      color: #9ca3af;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: $spacing-md;
+      border-bottom: 1px solid #f0f0f0;
+      color: $text-primary;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafafa; }
+  }
+
+  &__td-name {
+    font-weight: $font-weight-semibold;
+    white-space: nowrap;
+  }
+
+  &__td-pct {
+    white-space: nowrap;
+    font-weight: $font-weight-medium;
+    color: $primary-hover;
+  }
+}
+
+// ── Searchable dropdown (inline, used by TSRView) ─────────────
+.tsrv-dd {
+  position: relative;
+
+  &--disabled { opacity: 0.5; pointer-events: none; }
+
+  &__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: 9px 12px;
+    background: $white;
+    border: 1px solid #e5e7eb;
+    border-radius: $border-radius-sm;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    color: $text-primary;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color $transition-fast;
+
+    &:hover { border-color: #c0c4cb; }
+    &:focus { outline: none; border-color: $primary-color; }
+
+    .tsrv-dd--open & {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    }
+  }
+
+  &__value { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  &__placeholder { color: #9ca3af; }
+  &__chevron {
+    flex-shrink: 0;
+    color: #9ca3af;
+    transition: transform $transition-fast;
+    .tsrv-dd--open & { transform: rotate(180deg); }
+  }
+
+  &__popover {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: $white;
+    border: 1px solid #e5e7eb;
+    border-radius: $border-radius-sm;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.1);
+    z-index: $z-index-dropdown;
+    overflow: hidden;
+  }
+
+  &__search-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: 8px 10px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  &__search-icon { color: #9ca3af; flex-shrink: 0; }
+
+  &__search {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    background: transparent;
+    color: $text-primary;
+
+    &::placeholder { color: #9ca3af; }
+  }
+
+  &__list {
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  &__empty {
+    padding: 10px $spacing-md;
+    font-size: $font-size-sm;
+    color: #9ca3af;
+    text-align: center;
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    padding: 8px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color $transition-fast;
+
+    &:hover,
+    &--highlighted { background: #f7f8fa; }
+
+    &--active {
+      background: rgba($primary-color, 0.06);
+      .tsrv-dd__item-name { color: $primary-hover; }
+    }
+  }
+
+  &__item-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+  }
+
+  &__item-sub {
+    font-size: 0.6875rem;
+    color: #9ca3af;
+    margin-top: 1px;
+  }
+}
