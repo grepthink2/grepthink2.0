@@ -13,6 +13,7 @@ export interface ApiClass {
   term?: string;
   start_date?: string;
   year?: number;
+  image_url?: string;
 }
 
 export interface ApiStudent {

@@ -10,6 +10,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import query_pool, service_client, supabase
 from app.utils.generators import generate_course_code
+from app.utils.class_banner import upload_class_banner
 
 logger = logging.getLogger(__name__)
 
@@ -296,14 +297,26 @@ def create_class(
 
         result = client.table('classes').insert(class_data).execute()
         new_class = result.data[0]
+        class_id = new_class['id']
+
+        image_url = upload_class_banner(client, str(class_id))
+        if image_url:
+            update_result = (
+                client.table('classes')
+                .update({'image_url': image_url})
+                .eq('id', class_id)
+                .execute()
+            )
+            if update_result.data:
+                new_class = update_result.data[0]
 
         logger.info(
             "Class created | class_id=%s name=%r course_code=%s term=%r created_by=%s",
-            new_class.get('id'), name, course_code, term, user_id,
+            class_id, name, course_code, term, user_id,
         )
 
         # Auto-generate TSR assignments for this class
-        _generate_tsr_assignments(client, new_class['id'], term, start_date)
+        _generate_tsr_assignments(client, class_id, term, start_date)
 
         return new_class
     except HTTPException:

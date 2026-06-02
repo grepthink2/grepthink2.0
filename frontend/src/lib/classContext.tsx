@@ -55,6 +55,7 @@ export interface Class {
   term?: string;
   start_date?: string;
   year?: number;
+  image_url?: string;
 }
 
 interface ClassContextValue {
