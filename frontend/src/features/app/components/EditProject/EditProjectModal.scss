@@ -279,6 +279,76 @@
     gap: $spacing-sm;
   }
 
+  &__logo-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  &__logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: $background;
+    border: 2px solid $border-color;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  &__logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &__logo-icon {
+    color: $text-secondary;
+  }
+
+  &__logo-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-xs;
+  }
+
+  &__logo-change,
+  &__logo-remove {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: $font-weight-medium;
+  }
+
+  &__logo-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: $primary-color;
+
+    &:hover {
+      color: $primary-hover;
+    }
+  }
+
+  &__logo-remove {
+    color: $text-secondary;
+
+    &:hover {
+      color: $text-primary;
+    }
+  }
+
+  &__logo-input {
+    display: none;
+  }
+
   &__member-card {
     display: flex;
     align-items: center;

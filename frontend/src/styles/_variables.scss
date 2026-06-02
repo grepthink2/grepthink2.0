@@ -29,3 +29,7 @@ $z-index-base: 1;
 $z-index-dropdown: 10;
 $z-index-modal: 100;
 $z-index-tooltip: 1000;
+
+// Floating message widget (see Messages.scss .message-widget--tab)
+$message-widget-height: 48px;
+$message-widget-clearance: $message-widget-height;

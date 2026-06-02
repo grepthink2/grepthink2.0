@@ -170,6 +170,117 @@
   &:focus { outline: none; border-color: $accent-color; }
 }
 
+// ── Status selector ────────────────────────────────────────────
+.create-assignment-modal__status-options {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.create-assignment-modal__status-card {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  width: 100%;
+  padding: 14px 16px;
+  background: $white;
+  border: 1.5px solid $border-color;
+  border-radius: $border-radius-md;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color $transition-fast, background-color $transition-fast;
+
+  &:hover {
+    border-color: darken(#dadada, 12%);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &--selected {
+    border-color: $primary-color;
+    background-color: rgba($primary-color, 0.04);
+
+    .create-assignment-modal__status-radio {
+      border-color: $primary-color;
+    }
+
+    .create-assignment-modal__status-radio-dot {
+      background-color: $primary-color;
+      transform: scale(1);
+    }
+  }
+}
+
+.create-assignment-modal__status-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid $border-color;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color $transition-fast;
+}
+
+.create-assignment-modal__status-radio-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: transparent;
+  transform: scale(0);
+  transition: background-color $transition-fast, transform $transition-fast;
+}
+
+.create-assignment-modal__status-card-body {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  flex: 1;
+}
+
+.create-assignment-modal__status-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: $border-radius-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &--draft {
+    background-color: rgba(#616161, 0.12);
+    color: #616161;
+  }
+
+  &--published {
+    background-color: rgba($primary-color, 0.12);
+    color: $primary-color;
+  }
+}
+
+.create-assignment-modal__status-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.create-assignment-modal__status-card-title {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  font-family: $primary-font;
+  color: $text-primary;
+}
+
+.create-assignment-modal__status-card-desc {
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  color: $text-secondary;
+  line-height: 1.4;
+}
+
 // ── Actions ────────────────────────────────────────────────────
 .create-assignment-modal__actions {
   display: flex;

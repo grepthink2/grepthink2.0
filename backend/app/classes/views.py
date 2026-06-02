@@ -5,7 +5,13 @@ from uuid import UUID
 from fastapi import HTTPException, Depends, UploadFile, File
 from app.dependencies import require_user, require_instructor
 from app.auth.controller import get_user_role
-from app.classes.models import BulkInviteRequest, CreateClassRequest, InviteStudentRequest, JoinClassRequest
+from app.classes.models import (
+    BulkInviteRequest,
+    CreateClassRequest,
+    InviteStudentRequest,
+    JoinClassRequest,
+    UpdateClassStatusRequest,
+)
 from app.classes import controller
 
 
@@ -23,6 +29,16 @@ def get_classes(user_id: str = Depends(require_user)):
 def get_class(class_id: UUID, user_id: str = Depends(require_user)):
     class_data = controller.get_class_by_id(class_id)
     return {"class": class_data}
+
+
+def update_class_status(
+    class_id: UUID,
+    data: UpdateClassStatusRequest,
+    user_id: str = Depends(require_instructor),
+):
+    """Set class lifecycle status to active or complete (instructor only)."""
+    updated = controller.update_class_status(class_id, data.status, user_id)
+    return {"message": "Class status updated", "class": updated}
 
 
 def join_class(data: JoinClassRequest, user_id: str = Depends(require_user)):

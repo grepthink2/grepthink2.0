@@ -313,6 +313,29 @@ $my-classes-app-header-height: 64px;
   margin: 0;
 }
 
+.my-classes-card-status-tag {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  margin-top: 2px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  line-height: 1.2;
+
+  &--active {
+    background-color: #d4f5ee;
+    color: #018156;
+  }
+
+  &--complete {
+    background-color: #dce8f5;
+    color: #2771ff;
+  }
+}
+
 // Match .project-grid__row + .project-grid__see-all (ProjectGrid.scss)
 .my-classes-card-row {
   display: flex;

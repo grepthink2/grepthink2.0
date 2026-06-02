@@ -1,9 +1,14 @@
 import React from 'react';
+import { format, parseISO } from 'date-fns';
 import './StudentAssignmentsTable.scss';
 
 export type StudentAssignmentStatus = 'not_started' | 'in_progress' | 'submitted';
 
-export type StudentAssignmentAction = 'start' | 'edit_submission' | 'closed';
+export type StudentAssignmentAction =
+  | 'start'
+  | 'edit_submission'
+  | 'closed'
+  | 'opens_later';
 
 /** Discriminator for which form component to render on the detail page. */
 export type AssignmentType = 'tsrs' | 'interest_form';
@@ -20,6 +25,8 @@ export interface StudentAssignment {
   type: AssignmentType;
   /** Project the student is submitting this assignment for. */
   projectId?: string;
+  /** When action is opens_later, used to render "Opens MMM d" on the button. */
+  openDateIso?: string;
 }
 
 interface StudentAssignmentsTableProps {
@@ -42,9 +49,21 @@ const statusClassName: Record<StudentAssignmentStatus, string> = {
 
 const actionLabel: Record<StudentAssignmentAction, string> = {
   start: 'Start',
-  edit_submission: 'Edit submission',
+  edit_submission: 'Edit',
   closed: 'Closed',
+  opens_later: 'Opens',
 };
+
+function formatActionText(assignment: StudentAssignment): string {
+  if (assignment.action === 'opens_later' && assignment.openDateIso) {
+    return `Opens ${format(parseISO(assignment.openDateIso), 'MMM d')}`;
+  }
+  return actionLabel[assignment.action];
+}
+
+function isActionDisabled(action: StudentAssignmentAction): boolean {
+  return action === 'closed' || action === 'opens_later';
+}
 
 const StudentAssignmentsTable: React.FC<StudentAssignmentsTableProps> = ({
   assignments,
@@ -96,9 +115,9 @@ const StudentAssignmentsTable: React.FC<StudentAssignmentsTableProps> = ({
                       type="button"
                       className={`student-assignments__action-btn student-assignments__action-btn--${assignment.action}`}
                       onClick={() => handleActionClick(assignment)}
-                      disabled={assignment.action === 'closed'}
+                      disabled={isActionDisabled(assignment.action)}
                     >
-                      {actionLabel[assignment.action]}
+                      {formatActionText(assignment)}
                     </button>
                   </td>
                 </tr>

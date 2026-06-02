@@ -282,28 +282,36 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                             )}
                           </div>
                           <div className="member-manager__card-actions">
-                            <button
-                              type="button"
-                              className="member-manager__btn member-manager__btn--accept"
-                              onClick={() => handleAccept(req.request_id)}
-                              disabled={isAccepting || isDeclining}
-                              aria-label={`Accept ${name}`}
-                            >
-                              <Check size={16} />
-                              {isAccepting ? 'Accepting...' : 'Accept'}
-                            </button>
-                            <button
-                              type="button"
-                              className="member-manager__btn member-manager__btn--decline"
-                              onClick={() => handleDecline(req.request_id)}
-                              disabled={isAccepting || isDeclining}
-                              aria-label={`Decline ${name}`}
-                            >
-                              <XCircle size={16} />
-                              {isDeclining ? 'Declining...' : 'Decline'}
-                            </button>
+                            <div className="member-manager__request-decision">
+                              <button
+                                type="button"
+                                className="member-manager__btn member-manager__btn--accept"
+                                onClick={() => handleAccept(req.request_id)}
+                                disabled={isAccepting || isDeclining}
+                                aria-label={`Accept ${name}`}
+                              >
+                                <Check size={16} />
+                                {isAccepting ? 'Accepting...' : 'Accept'}
+                              </button>
+                              <button
+                                type="button"
+                                className="member-manager__btn member-manager__btn--decline"
+                                onClick={() => handleDecline(req.request_id)}
+                                disabled={isAccepting || isDeclining}
+                                aria-label={`Decline ${name}`}
+                              >
+                                <XCircle size={16} />
+                                {isDeclining ? 'Declining...' : 'Decline'}
+                              </button>
+                            </div>
                             {req.user_id && (
-                              <MessageButton toUserId={req.user_id} toUserName={name} />
+                              <div className="member-manager__request-message">
+                                <MessageButton
+                                  toUserId={req.user_id}
+                                  toUserName={name}
+                                  className="member-manager__btn member-manager__btn--message"
+                                />
+                              </div>
                             )}
                           </div>
                         </li>

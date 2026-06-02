@@ -7,6 +7,7 @@ from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
+from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
 ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form"}
@@ -107,16 +108,29 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
     entry = {
         "tsr_id": row['id'],
         "evaluator_id": row['evaluator_id'],
-        "evaluator_name": evaluator_profile.get('name') or evaluator_profile.get('email'),
-        "evaluatee_name": evaluatee_profile.get('name') or evaluatee_profile.get('email'),
+        "evaluatee_id": row['evaluatee_id'],
+        "project_id": row.get('project_id'),
+        "evaluator_name": profile_display_name(evaluator_profile),
+        "evaluatee_name": profile_display_name(evaluatee_profile),
         "percent_contribution": row['percent_contribution'],
         "positive_feedback": row['positive_feedback'],
+        "constructive_feedback": row.get('constructive_feedback') or '',
+        "scrum_master_notes": row.get('scrum_master_notes') or '',
     }
-    if row.get('constructive_feedback'):
-        entry["constructive_feedback"] = row['constructive_feedback']
-    if row.get('scrum_master_notes'):
-        entry["scrum_master_notes"] = row['scrum_master_notes']
     return entry
+
+
+def _latest_tsr_rows(rows: list) -> list:
+    """Keep one row per (evaluator, evaluatee, project); prefer newest created_at."""
+    best: dict[tuple, dict] = {}
+    for row in rows:
+        key = (row.get('evaluator_id'), row.get('evaluatee_id'), row.get('project_id'))
+        if not key[0] or not key[1]:
+            continue
+        prev = best.get(key)
+        if not prev or (row.get('created_at') or '') >= (prev.get('created_at') or ''):
+            best[key] = row
+    return list(best.values())
 
 
 def _fetch_tsr_entries(client, assignment_id: str) -> list:
@@ -136,13 +150,13 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
     tsr_result = (
         client.table('TSRs')
         .select(
-            'id, evaluator_id, evaluatee_id, percent_contribution, '
-            'positive_feedback, constructive_feedback, scrum_master_notes'
+            'id, evaluator_id, evaluatee_id, project_id, percent_contribution, '
+            'positive_feedback, constructive_feedback, scrum_master_notes, created_at'
         )
         .eq('assignment_id', assignment_id)
         .execute()
     )
-    rows = tsr_result.data or []
+    rows = _latest_tsr_rows(tsr_result.data or [])
     if not rows:
         return []
 
@@ -152,7 +166,7 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
     )
     profiles = (
         client.table('profiles')
-        .select('id, name, email')
+        .select(PROFILE_SELECT)
         .in_('id', all_user_ids)
         .execute()
     )
@@ -257,6 +271,67 @@ def update_assignment(
         raise HTTPException(status_code=500, detail="Failed to update assignment")
 
 
+def _enrich_instructor_tsr_stats(client, class_id: str, assignments: list) -> list:
+    """Attach TSR response flags and team submission counts for instructor assignment lists."""
+    tsr_ids = [a['id'] for a in assignments if a.get('assignment_type') == 'tsr']
+    if not tsr_ids:
+        return assignments
+
+    projects_result = (
+        client.table('projects')
+        .select('id')
+        .eq('class_id', class_id)
+        .execute()
+    )
+    project_ids = [p['id'] for p in (projects_result.data or [])]
+
+    projects_with_members: set[str] = set()
+    if project_ids:
+        memberships = (
+            client.table('project_members')
+            .select('project_id')
+            .in_('project_id', project_ids)
+            .execute()
+        )
+        for row in memberships.data or []:
+            if row.get('project_id'):
+                projects_with_members.add(row['project_id'])
+
+    teams_total = len(projects_with_members)
+    evaluators_by_assignment_project: dict[str, dict[str, set[str]]] = {}
+    assignments_with_responses: set[str] = set()
+
+    if project_ids and tsr_ids:
+        tsr_result = (
+            client.table('TSRs')
+            .select('assignment_id, project_id, evaluator_id')
+            .in_('assignment_id', tsr_ids)
+            .in_('project_id', project_ids)
+            .execute()
+        )
+        for row in tsr_result.data or []:
+            aid = row.get('assignment_id')
+            pid = row.get('project_id')
+            eid = row.get('evaluator_id')
+            if aid:
+                assignments_with_responses.add(aid)
+            if aid and pid and eid:
+                evaluators_by_assignment_project.setdefault(aid, {}).setdefault(pid, set()).add(eid)
+
+    for assignment in assignments:
+        if assignment.get('assignment_type') != 'tsr':
+            continue
+        aid = assignment['id']
+        assignment['has_tsr_responses'] = aid in assignments_with_responses
+        assignment['teams_total'] = teams_total
+        by_project = evaluators_by_assignment_project.get(aid, {})
+        assignment['teams_submitted'] = sum(
+            1 for pid in projects_with_members if by_project.get(pid)
+        )
+
+    return assignments
+
+
 def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
     """
     Return all assignments that belong to a class.
@@ -288,6 +363,8 @@ def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
                 .order('created_at', desc=True)
                 .execute()
             )
+            assignments = result.data or []
+            return _enrich_instructor_tsr_stats(client, str(class_id), assignments)
         else:
             enrollment = (
                 client.table('class_enrollments')
@@ -415,7 +492,7 @@ def update_tsr_entry(
         profile_ids = list({row['evaluator_id'], row['evaluatee_id']})
         profiles_result = (
             client.table('profiles')
-            .select('id, name, email')
+            .select(PROFILE_SELECT)
             .in_('id', profile_ids)
             .execute()
         )
@@ -466,14 +543,14 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
         tsr_result = (
             client.table('TSRs')
             .select(
-                'id, evaluator_id, evaluatee_id, percent_contribution, '
-                'positive_feedback, constructive_feedback, scrum_master_notes'
+                'id, evaluator_id, evaluatee_id, project_id, percent_contribution, '
+                'positive_feedback, constructive_feedback, scrum_master_notes, created_at'
             )
             .eq('assignment_id', str(assignment_id))
             .eq('evaluator_id', user_id)
             .execute()
         )
-        rows = tsr_result.data or []
+        rows = _latest_tsr_rows(tsr_result.data or [])
         if not rows:
             return []
 
@@ -483,7 +560,7 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
         )
         profiles = (
             client.table('profiles')
-            .select('id, name, email')
+            .select(PROFILE_SELECT)
             .in_('id', all_user_ids)
             .execute()
         )
@@ -552,7 +629,7 @@ def get_tsr_responses_about_user(
         )
         profiles = (
             client.table('profiles')
-            .select('id, name, email')
+            .select(PROFILE_SELECT)
             .in_('id', all_user_ids)
             .execute()
         )
@@ -568,5 +645,56 @@ def get_tsr_responses_about_user(
             assignment_id, evaluatee_id, user_id,
         )
         raise HTTPException(status_code=500, detail="Failed to fetch TSR responses")
+
+
+def get_instructor_tsr_overview(user_id: str, assignment_id: UUID) -> dict:
+    """
+    Instructor overview of all TSR responses for an assignment, grouped by project.
+
+    Returns the assignment row, class projects, and every TSR entry linked to the
+    assignment (evaluator/evaluatee names, contributions, feedback).
+    """
+    try:
+        client = _client()
+
+        assignment_result = (
+            client.table('assignments')
+            .select('id, Title, open_date, close_date, status, class_id, assignment_type')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+
+        assignment = assignment_result.data[0]
+        if assignment.get('assignment_type') != 'tsr':
+            raise HTTPException(status_code=400, detail="Assignment is not a TSR-type assignment")
+
+        _require_class_instructor(user_id, assignment['class_id'])
+
+        projects_result = (
+            client.table('projects')
+            .select('id, name')
+            .eq('class_id', assignment['class_id'])
+            .order('name')
+            .execute()
+        )
+        projects = projects_result.data or []
+
+        entries = _fetch_tsr_entries(client, str(assignment_id))
+
+        return {
+            'assignment': assignment,
+            'projects': projects,
+            'entries': entries,
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching instructor TSR overview | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch TSR overview")
 
 

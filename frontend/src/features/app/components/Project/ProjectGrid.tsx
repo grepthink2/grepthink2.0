@@ -11,6 +11,7 @@ export interface ProjectGridItem {
   member_count?: number;
   team_size: number;
   status: 'open' | 'closed';
+  image_url?: string;
 }
 
 interface ProjectGridProps {
@@ -38,7 +39,15 @@ const ProjectGrid: React.FC<ProjectGridProps> = ({ projects, memberProjects = fa
           >
             {memberProjects ? 'Your team' : project.status === 'open' ? 'Open to join' : 'Closed'}
           </span>
-          <FolderKanban className="project-grid__banner-icon" size={36} strokeWidth={1.5} />
+          {project.image_url ? (
+            <img
+              src={project.image_url}
+              alt=""
+              className="project-grid__logo"
+            />
+          ) : (
+            <FolderKanban className="project-grid__banner-icon" size={36} strokeWidth={1.5} />
+          )}
         </div>
 
         <div className="project-grid__content">

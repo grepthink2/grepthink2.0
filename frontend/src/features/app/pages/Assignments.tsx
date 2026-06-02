@@ -2,13 +2,69 @@ import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useClass } from '@/lib/classContext';
-import { api } from '@/lib/api';
+import { api, type ApiAssignment } from '@/lib/api';
 import StudentAssignmentsTable, {
   type StudentAssignment,
-  type StudentAssignmentStatus,
   type StudentAssignmentAction,
+  type StudentAssignmentStatus,
+  type AssignmentType,
 } from '../components/Assignments/StudentAssignmentsTable';
 import './Assignments.scss';
+
+function resolveAssignmentState(
+  openDate: string,
+  closeDate: string,
+  today: string,
+  isSubmitted: boolean,
+  canStart: boolean,
+): { status: StudentAssignmentStatus; action: StudentAssignmentAction } {
+  const status: StudentAssignmentStatus = isSubmitted ? 'submitted' : 'not_started';
+
+  if (today < openDate) {
+    return { status, action: 'opens_later' };
+  }
+  if (closeDate < today) {
+    return { status, action: 'closed' };
+  }
+  if (!canStart) {
+    return { status, action: 'closed' };
+  }
+  if (isSubmitted) {
+    return { status: 'submitted', action: 'edit_submission' };
+  }
+  return { status: 'not_started', action: 'start' };
+}
+
+function toStudentRow(
+  a: ApiAssignment,
+  today: string,
+  opts: {
+    projectName: string;
+    projectId?: string;
+    type: AssignmentType;
+    isSubmitted: boolean;
+    canStart: boolean;
+  },
+): StudentAssignment {
+  const { status, action } = resolveAssignmentState(
+    a.open_date,
+    a.close_date,
+    today,
+    opts.isSubmitted,
+    opts.canStart,
+  );
+  return {
+    id: a.id,
+    name: a.Title,
+    dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
+    projectName: opts.projectName,
+    projectId: opts.projectId,
+    status,
+    action,
+    type: opts.type,
+    openDateIso: action === 'opens_later' ? a.open_date : undefined,
+  };
+}
 
 const Assignments: React.FC = () => {
   const { selectedClass } = useClass();
@@ -28,16 +84,10 @@ const Assignments: React.FC = () => {
       try {
         const today = format(new Date(), 'yyyy-MM-dd');
 
-        // 1. Fetch published assignments for this class
         const { assignments } = await api.getAssignments(selectedClass.id);
-
-        // 2. Fetch all projects the current user is a member of (across all classes)
         const { projects: myAllProjects } = await api.getProjects();
-
-        // 3. Fetch all projects in this class (enrollment-gated on backend)
         const { projects: classProjects } = await api.getProjects(selectedClass.id);
 
-        // 4. Intersect to find "my projects in this class"
         const myProjectIds = new Set(myAllProjects.map((p) => p.id));
         const myClassProjects = classProjects.filter((p) => myProjectIds.has(p.id));
 
@@ -49,96 +99,69 @@ const Assignments: React.FC = () => {
         }
 
         if (myClassProjects.length === 0) {
-          // Not in any project:
-          // - TSR assignments remain closed (requires a project).
-          // - Interest form assignments can still be started.
-          const result: StudentAssignment[] = assignments.map((a) => {
+          const result = assignments.map((a) => {
             const isInterestForm = a.assignment_type === 'interest_form';
-            const isPast = a.close_date < today;
-            return {
-              id: a.id,
-              name: a.Title,
-              dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
+            return toStudentRow(a, today, {
               projectName: '—',
-              status: 'not_started' as StudentAssignmentStatus,
-              action: (
-                isPast
-                  ? 'closed'
-                  : isInterestForm
-                    ? 'start'
-                    : 'closed'
-              ) as StudentAssignmentAction,
               type: isInterestForm ? 'interest_form' : 'tsrs',
-            };
+              isSubmitted: false,
+              canStart: isInterestForm,
+            });
           });
           setRows(result);
           return;
         }
 
-        // 5. Fetch existing TSRs for each of my projects in this class
-        const tsrsByProject: Record<string, string[]> = {};
+        const tsrAssignments = assignments.filter(
+          (a) => a.assignment_type !== 'interest_form',
+        );
+        const submittedByAssignmentProject: Record<string, Set<string>> = {};
         await Promise.all(
-          myClassProjects.map(async (p) => {
+          tsrAssignments.map(async (a) => {
             try {
-              const { tsrs } = await api.getProjectTsrs(p.id);
-              tsrsByProject[p.id] = tsrs
-                .map((t) => t.assignment_id)
-                .filter((id): id is string => Boolean(id));
+              const { tsrs } = await api.getMyAssignmentTsrs(a.id);
+              const byProject = new Set<string>();
+              const legacyNoProject = tsrs.length > 0 && tsrs.every((t) => !t.project_id);
+              for (const t of tsrs) {
+                if (t.project_id) byProject.add(t.project_id);
+              }
+              if (legacyNoProject) {
+                for (const p of myClassProjects) byProject.add(p.id);
+              }
+              submittedByAssignmentProject[a.id] = byProject;
             } catch {
-              tsrsByProject[p.id] = [];
+              submittedByAssignmentProject[a.id] = new Set();
             }
           }),
         );
 
         if (cancelled) return;
 
-        // 6. Build rows: one per (assignment × my-project) pair
         const result: StudentAssignment[] = [];
         for (const a of assignments) {
-          // Interest form is class-level, not per-project.
           if (a.assignment_type === 'interest_form') {
-            const isPast = a.close_date < today;
-            result.push({
-              id: a.id,
-              name: a.Title,
-              dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
-              projectName: '—',
-              status: 'not_started',
-              action: isPast ? 'closed' : 'start',
-              type: 'interest_form',
-            });
+            result.push(
+              toStudentRow(a, today, {
+                projectName: '—',
+                type: 'interest_form',
+                isSubmitted: false,
+                canStart: true,
+              }),
+            );
             continue;
           }
 
           for (const p of myClassProjects) {
-            const submittedAssignmentIds = tsrsByProject[p.id] ?? [];
-            const isSubmitted = submittedAssignmentIds.includes(a.id);
-            const isPast = a.close_date < today;
-
-            let status: StudentAssignmentStatus;
-            let action: StudentAssignmentAction;
-
-            if (isPast) {
-              status = isSubmitted ? 'submitted' : 'not_started';
-              action = 'closed';
-            } else if (isSubmitted) {
-              status = 'submitted';
-              action = 'edit_submission';
-            } else {
-              status = 'not_started';
-              action = 'start';
-            }
-
-            result.push({
-              id: a.id,
-              name: a.Title,
-              dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
-              projectName: p.name,
-              projectId: p.id,
-              status,
-              action,
-              type: 'tsrs',
-            });
+            const isSubmitted = submittedByAssignmentProject[a.id]?.has(p.id) ?? false;
+            result.push(
+              toStudentRow(a, today, {
+                projectName: p.name,
+                projectId: p.id,
+                type: 'tsrs',
+                isSubmitted,
+                canStart: true,
+              }),
+            );
           }
         }
 

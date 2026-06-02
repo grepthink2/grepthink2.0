@@ -22,7 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { classes, selectedClass, setSelectedClass } = useClass();
+  const { sidebarClasses, selectedClass, setSelectedClass } = useClass();
   const unreadTotal = useUnreadTotal();
   const sidebarConfig = role === 'instructor' ? instructorSidebarConfig : studentSidebarConfig;
 
@@ -51,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
     setIsCollapsed(!isCollapsed);
   };
 
-  const handleClassSelect = (classItem: (typeof classes)[number]) => {
+  const handleClassSelect = (classItem: (typeof sidebarClasses)[number]) => {
     setSelectedClass(classItem);
     setShowClassDropdown(false);
   };
@@ -97,10 +97,10 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
 
           {showClassDropdown && (
             <div className="class-selector-dropdown">
-              {classes.length === 0 ? (
-                <div className="class-selector-empty">No classes available</div>
+              {sidebarClasses.length === 0 ? (
+                <div className="class-selector-empty">No active classes</div>
               ) : (
-                classes.map((classItem) => (
+                sidebarClasses.map((classItem) => (
                   <button
                     key={classItem.id}
                     className={`class-selector-item ${selectedClass?.id === classItem.id ? 'active' : ''}`}

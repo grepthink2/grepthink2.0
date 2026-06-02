@@ -97,6 +97,35 @@ $bar-orange: #e6a817;
   color: $text-primary;
 }
 
+.assignment-list__row--clickable {
+  cursor: pointer;
+}
+
+.assignment-list__title-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: $font-weight-medium;
+  color: $primary-color;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: $primary-hover;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+  }
+}
+
 .assignment-list__td-date {
   color: $text-secondary;
   white-space: nowrap;

@@ -51,6 +51,7 @@ const MyProject: React.FC = () => {
                 name: p.name,
                 team_size: p.team_size,
                 member_count: p.member_count,
+                image_url: p.image_url,
               }),
             ),
           );

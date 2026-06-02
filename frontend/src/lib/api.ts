@@ -13,6 +13,8 @@ export interface ApiClass {
   term?: string;
   start_date?: string;
   year?: number;
+  image_url?: string;
+  status?: 'active' | 'complete';
 }
 
 export interface ApiStudent {
@@ -30,6 +32,11 @@ export interface ApiRosterStudent {
   id: string;
   name: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
+  roster_email?: string;
+  grepthink_email?: string;
+  project?: string;
   class_status: 'enrolled' | 'waitlisted' | 'dropped' | 'not_on_roster';
   grepthink_status: 'registered' | 'not_registered';
   projects: string[];
@@ -72,6 +79,7 @@ export interface ApiProject {
   /** Current user's role on this project (from API). */
   user_role?: string | null;
   member_count?: number;
+  image_url?: string;
   // Sponsor information
   sponsor_name?: string;
   sponsor_company?: string;
@@ -141,6 +149,27 @@ export interface ApiTSR {
   created_at?: string;
 }
 
+/** TSR row returned by GET/PATCH /api/assignments/:id/tsrs */
+export interface ApiAssignmentTsrEntry {
+  tsr_id: string;
+  evaluator_id: string;
+  evaluatee_id: string;
+  project_id?: string;
+  evaluator_name?: string;
+  evaluatee_name?: string;
+  percent_contribution: number;
+  positive_feedback: string;
+  constructive_feedback?: string;
+  scrum_master_notes?: string;
+}
+
+export interface UpdateAssignmentTsrPayload {
+  percent_contribution?: number;
+  positive_feedback?: string;
+  constructive_feedback?: string;
+  scrum_master_notes?: string;
+}
+
 export interface ApiAssignment {
   id: string;
   /** Backend uses capital T for this column */
@@ -151,6 +180,10 @@ export interface ApiAssignment {
   class_id: string;
   assignment_type?: string;
   created_at?: string;
+  /** Instructor list: any TSR row exists for this assignment */
+  has_tsr_responses?: boolean;
+  teams_submitted?: number;
+  teams_total?: number;
 }
 
 export interface ApiTurnInStats {
@@ -428,6 +461,13 @@ export const api = {
     return apiRequest<{ class: ApiClass }>(`/api/classes/${classId}`);
   },
 
+  updateClassStatus: async (classId: string, status: 'active' | 'complete') => {
+    return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
   // Student joins class by course code. Returns {message, class} with class details
   joinClass: async (courseCode: string) => {
     return apiRequest<{ message: string; class: ApiClass }>('/api/classes/join', {
@@ -592,7 +632,12 @@ export const api = {
   },
 
   /** Update a project's name, description, and/or team size (PATCH /api/projects/:id). */
-  updateProject: async (projectId: string, data: { name?: string; description?: string; team_size?: number }) => {
+  updateProject: async (projectId: string, data: {
+    name?: string;
+    description?: string;
+    team_size?: number;
+    image_url?: string | null;
+  }) => {
     return apiRequest<{ message: string; project: ApiProject }>(`/api/projects/${projectId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -673,6 +718,35 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  },
+
+  /** Student's TSR submissions for an assignment (GET /api/assignments/:id/tsrs) */
+  getMyAssignmentTsrs: async (assignmentId: string) => {
+    return apiRequest<{ tsrs: ApiAssignmentTsrEntry[] }>(`/api/assignments/${assignmentId}/tsrs`);
+  },
+
+  /** Instructor: all TSR responses for an assignment (GET /api/assignments/:id/tsr-overview) */
+  getAssignmentTsrOverview: async (assignmentId: string) => {
+    return apiRequest<{
+      assignment: ApiAssignment;
+      projects: { id: string; name: string }[];
+      entries: ApiAssignmentTsrEntry[];
+    }>(`/api/assignments/${assignmentId}/tsr-overview`);
+  },
+
+  /** Update one TSR row linked to an assignment (PATCH /api/assignments/:id/tsrs/:tsrId) */
+  updateAssignmentTsr: async (
+    assignmentId: string,
+    tsrId: string,
+    data: UpdateAssignmentTsrPayload,
+  ) => {
+    return apiRequest<{ message: string; tsr: ApiAssignmentTsrEntry }>(
+      `/api/assignments/${assignmentId}/tsrs/${tsrId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      },
+    );
   },
 
   // ----- Messages ----------------------------------------------------------

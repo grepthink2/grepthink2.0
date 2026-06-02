@@ -1,0 +1,147 @@
+@use '@styles/index.scss' as *;
+
+.pageWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.embeddedWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.container {
+  background-color: $background;
+  border-radius: $border-radius-lg;
+  padding: $spacing-xxl;
+  width: $container-width;
+  box-sizing: border-box;
+  margin: 0;
+  height: auto;
+}
+
+.header {
+  font-family: $primary-font;
+  font-size: 24px;
+  font-weight: 600;
+  color: $text-primary;
+  margin: 0;
+  text-align: left;
+}
+
+.subtext {
+  font-family: $primary-font;
+  color: $text-secondary;
+  font-size: 14px;
+  margin-top: 8px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.detailsForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nameRow {
+  display: flex;
+  gap: 16px;
+
+  .formGroup {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-family: $primary-font;
+    color: $text-primary;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  input {
+    padding: 12px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $white;
+    color: $text-primary;
+    font-family: $primary-font;
+    font-size: 14px;
+    transition: all $transition-medium;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: $accent-color;
+    }
+  }
+}
+
+.inputReadonly {
+  background: rgba($border-color, 0.35);
+  cursor: default;
+
+  &:focus {
+    border-color: $border-color;
+  }
+}
+
+.buttonRectangle {
+  background-color: $primary-color;
+  border-radius: $border-radius-sm;
+  padding: 12px;
+  margin-top: 8px;
+  text-align: center;
+  font-family: $primary-font;
+  font-size: 14px;
+  color: $white;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  transition: background-color $transition-medium;
+
+  &:hover {
+    background-color: $primary-hover;
+  }
+
+  &:disabled {
+    background-color: $disabled-bg;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+}
+
+.error {
+  font-family: $primary-font;
+  color: $error-color;
+  background-color: rgba($error-color, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+}

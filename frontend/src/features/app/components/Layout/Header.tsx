@@ -74,6 +74,15 @@ function buildBreadcrumbs(
     ];
   }
 
+  if (pathname.startsWith('/app/modules/tsr/')) {
+    const assignmentName = state?.assignmentName;
+    return [
+      classSegment,
+      { label: 'Modules', path: '/app/modules' },
+      { label: assignmentName ?? 'TSR Responses' },
+    ];
+  }
+
   // ── Instructor routes ────────────────────────────────────────────────────
   if (role === 'instructor') {
     if (pathname === '/app/dashboard')     return [classSegment, { label: 'Dashboard' }];

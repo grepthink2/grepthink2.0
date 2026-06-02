@@ -2,6 +2,7 @@
 
 .assignment-detail {
   padding: $spacing-lg;
+  @include bottom-clearance-for-message-widget($spacing-lg);
   min-height: 100%;
   font-family: $primary-font;
   display: flex;

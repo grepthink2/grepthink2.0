@@ -72,6 +72,16 @@ $tag-closed-text: #2771ff;
   flex-shrink: 0;
 }
 
+.project-grid__logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid $white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
 // ── Content ────────────────────────────────────────────────────
 .project-grid__content {
   padding: $spacing-md;

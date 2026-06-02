@@ -27,6 +27,7 @@ class UpdateProjectRequest(BaseModel):
     name: Optional[str] = None
     team_size: Optional[int] = None
     description: Optional[str] = None
+    image_url: Optional[str] = None
     # Sponsor information
     sponsor_name: Optional[str] = None
     sponsor_company: Optional[str] = None
