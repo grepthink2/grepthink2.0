@@ -7,9 +7,10 @@ import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useAuth } from '@/lib/auth';
 import CreateClassModal from '@features/app/components/Classes/CreateClassModal';
 import ClassSettingsModal from '@features/app/components/Classes/ClassSettingsModal';
+import { pickClassBannerPreset, presetToCssBackground } from '@/lib/classBannerGradients';
 import './MyClasses.scss';
 
-type CourseFilter = 'all' | 'active' | 'completed';
+type CourseFilter = 'all' | 'active' | 'complete';
 
 function classMatchesFilter(
     classItem: Class,
@@ -17,21 +18,32 @@ function classMatchesFilter(
     getClassStatus: (classItem: Class) => ClassLifecycleStatus,
 ): boolean {
     if (filter === 'all') return true;
-    const completed = getClassStatus(classItem) === 'completed';
-    if (filter === 'completed') return completed;
-    return !completed;
+    const isComplete = getClassStatus(classItem) === 'complete';
+    if (filter === 'complete') return isComplete;
+    return !isComplete;
 }
 
 const FILTER_LABELS: Record<CourseFilter, string> = {
     all: 'All',
     active: 'Active',
-    completed: 'Completed',
+    complete: 'Completed',
 };
+
+function classHeroStyle(cls: Class): React.CSSProperties {
+    if (cls.image_url) {
+        return {
+            backgroundImage: `url(${cls.image_url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+        };
+    }
+    return { background: presetToCssBackground(pickClassBannerPreset(cls.id)) };
+}
 
 function ClassStatusTag({ status }: { status: ClassLifecycleStatus }) {
     return (
         <span className={`my-classes-card-status-tag my-classes-card-status-tag--${status}`}>
-            {status === 'completed' ? 'Completed' : 'Active'}
+            {status === 'complete' ? 'Completed' : 'Active'}
         </span>
     );
 }
@@ -171,7 +183,10 @@ const MyClasses: React.FC = () => {
                         filteredClasses.map((cls) =>
                             isInstructor ? (
                                 <div key={cls.id} className="my-classes-card my-classes-card--instructor">
-                                <div className="my-classes-card-hero my-classes-card-hero--instructor">
+                                <div
+                                    className="my-classes-card-hero my-classes-card-hero--instructor"
+                                    style={classHeroStyle(cls)}
+                                >
                                     {cls.course_code ? (
                                         <button
                                             type="button"
@@ -251,7 +266,10 @@ const MyClasses: React.FC = () => {
                                     onClick={() => handleStudentCardActivate(cls)}
                                     onKeyDown={(e) => handleStudentCardKeyDown(e, cls)}
                                 >
-                                    <div className="my-classes-card-hero my-classes-card-hero--student" />
+                                    <div
+                                        className="my-classes-card-hero my-classes-card-hero--student"
+                                        style={classHeroStyle(cls)}
+                                    />
                                     <div className="my-classes-card-body my-classes-card-body--student">
                                         <div className="my-classes-card-title">{cls.name}</div>
                                         {cls.description && (

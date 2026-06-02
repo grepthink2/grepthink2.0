@@ -7,6 +7,7 @@
  */
 import React, { useMemo } from 'react';
 import { GradientBackground } from 'react-gradient-animation';
+import { AUTH_GRADIENT_PRESET } from '@/lib/classBannerGradients';
 import './GradientBackGroundWrapper.scss';
 
 const GradientBackgroundWrapper: React.FC = () => {
@@ -16,8 +17,8 @@ const GradientBackgroundWrapper: React.FC = () => {
       <div style={{ position: 'fixed', width: '105%', height: '120%', top: 0, left: 0, zIndex: -2 }}>
         <GradientBackground
           colors={{ 
-            particles: ['#0C6168', '0E0E0E', '#560C68'], // Define gradient colors for particles
-            background: '#0E0E0E' // Base background color
+            particles: [...AUTH_GRADIENT_PRESET.particles],
+            background: AUTH_GRADIENT_PRESET.background,
           }}
           blending="overlay"
           speed={{ x: { min: 0.5, max: 2 }, y: { min: 0.5, max: 2 } }} // Animation speed configuration

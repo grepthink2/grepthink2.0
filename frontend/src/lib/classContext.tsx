@@ -55,6 +55,9 @@ export interface Class {
   term?: string;
   start_date?: string;
   year?: number;
+  image_url?: string;
+  /** Lifecycle status from classes.status — active or complete. */
+  status?: ClassLifecycleStatus;
 }
 
 interface ClassContextValue {
@@ -73,7 +76,7 @@ interface ClassContextValue {
   successMessage: string | null;
   setSuccessMessage: (message: string | null) => void;
   getClassStatus: (classItem: Class) => ClassLifecycleStatus;
-  setClassLifecycleStatus: (classId: string, status: ClassLifecycleStatus) => void;
+  setClassLifecycleStatus: (classId: string, status: ClassLifecycleStatus) => Promise<void>;
   hideClassFromUI: (classId: string) => void;
 }
 
@@ -85,7 +88,7 @@ function filterVisibleClasses(all: Class[], preferences: ClassPreferenceMap): Cl
 
 function filterSidebarClasses(all: Class[], preferences: ClassPreferenceMap): Class[] {
   return filterVisibleClasses(all, preferences).filter(
-    (c) => getClassDisplayStatus(c, preferences) === 'active',
+    (c) => getClassDisplayStatus(c) === 'active',
   );
 }
 
@@ -145,13 +148,14 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
 
   const getClassStatus = useCallback(
-    (classItem: Class) => getClassDisplayStatus(classItem, preferences),
-    [preferences],
+    (classItem: Class) => getClassDisplayStatus(classItem),
+    [],
   );
 
-  const setClassLifecycleStatus = useCallback((classId: string, status: ClassLifecycleStatus) => {
-    const next = patchClassPreference(classId, { status });
-    setPreferences(next);
+  const setClassLifecycleStatus = useCallback(async (classId: string, status: ClassLifecycleStatus) => {
+    const { class: updated } = await api.updateClassStatus(classId, status);
+    setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...updated } : c)));
+    setSelectedClassState((prev) => (prev?.id === classId ? { ...prev, ...updated } : prev));
   }, []);
 
   const hideClassFromUI = useCallback(

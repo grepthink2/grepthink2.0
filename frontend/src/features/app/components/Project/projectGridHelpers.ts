@@ -5,6 +5,7 @@ export interface ProjectListRow {
   name: string;
   team_size?: number | string;
   member_count?: number;
+  image_url?: string;
 }
 
 export function parseTeamSize(team_size?: number | string, fallback = 4): number {
@@ -40,6 +41,7 @@ export function toProjectGridItem(raw: ProjectListRow): ProjectGridItem {
     name: raw.name,
     team_size,
     member_count,
+    image_url: raw.image_url,
     status: recruitmentStatus(member_count, team_size),
   };
 }

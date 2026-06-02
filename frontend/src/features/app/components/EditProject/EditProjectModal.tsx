@@ -5,6 +5,7 @@ import DetailsTab from './DetailsTab';
 import TeamTab from './TeamTab';
 import { emailToDisplayName } from '@/features/app/utils/memberUtils';
 import { api } from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
 import type { MemberOption } from './types';
 import './EditProjectModal.scss';
@@ -36,6 +37,12 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   const [description, setDescription] = useState(project.description ?? '');
   const [teamSize, setTeamSize] = useState(String(project.team_size ?? ''));
 
+  // ── Logo fields ───────────────────────────────────
+  const [logoUrl, setLogoUrl] = useState<string | null>(project.image_url ?? null);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoRemoved, setLogoRemoved] = useState(false);
+
   // ── Team role fields ──────────────────────────────
   // projectOwnerId: the person with role 'owner' (project creator) — read-only badge
   const [projectOwnerId, setProjectOwnerId] = useState<string | null>(null);
@@ -61,6 +68,11 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
     setName(project.name ?? '');
     setDescription(project.description ?? '');
     setTeamSize(String(project.team_size ?? ''));
+    setLogoUrl(project.image_url ?? null);
+    setPendingLogoFile(null);
+    if (logoPreview) URL.revokeObjectURL(logoPreview);
+    setLogoPreview(null);
+    setLogoRemoved(false);
     setNameError(null);
     setTeamSizeError(null);
     setApiError(null);
@@ -87,6 +99,12 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   }, [isOpen, project, projectMembers]);
 
   useEffect(() => {
+    return () => {
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
+    };
+  }, [logoPreview]);
+
+  useEffect(() => {
     if (!isOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -102,6 +120,26 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
       else next.add(userId);
       return next;
     });
+  };
+
+  const handleLogoFileChange = (file: File | null) => {
+    if (logoPreview) URL.revokeObjectURL(logoPreview);
+    if (file) {
+      setPendingLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+      setLogoRemoved(false);
+    } else {
+      setPendingLogoFile(null);
+      setLogoPreview(null);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    if (logoPreview) URL.revokeObjectURL(logoPreview);
+    setPendingLogoFile(null);
+    setLogoPreview(null);
+    setLogoUrl(null);
+    setLogoRemoved(true);
   };
 
   const handleSave = async () => {
@@ -126,20 +164,41 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
     setSaving(true);
     try {
       const projectId = project.id;
+      let resolvedLogoUrl: string | null = logoUrl;
 
-      // 1. Update name / description / team size if any changed.
-      // Always send all three together so the backend's non-null guard is satisfied
-      // even when only the name is being updated.
+      if (pendingLogoFile) {
+        const ext = pendingLogoFile.name.split('.').pop() ?? 'jpg';
+        const path = `${projectId}/logo.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('project')
+          .upload(path, pendingLogoFile, { upsert: true, contentType: pendingLogoFile.type });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from('project').getPublicUrl(path);
+        resolvedLogoUrl = urlData.publicUrl;
+      } else if (logoRemoved) {
+        resolvedLogoUrl = null;
+      }
+
       const trimmedName = name.trim();
       const nameChanged = trimmedName !== project.name;
       const descriptionChanged = description !== (project.description ?? '');
       const teamSizeChanged = teamSizeNum !== project.team_size;
-      if (nameChanged || descriptionChanged || teamSizeChanged) {
+      const logoChanged =
+        logoRemoved ||
+        pendingLogoFile !== null ||
+        resolvedLogoUrl !== (project.image_url ?? null);
+
+      if (nameChanged || descriptionChanged || teamSizeChanged || logoChanged) {
         await api.updateProject(projectId, {
           name: trimmedName,
           description,
           team_size: teamSizeNum,
+          ...(logoChanged ? { image_url: resolvedLogoUrl ?? '' } : {}),
         });
+        if (logoPreview) URL.revokeObjectURL(logoPreview);
+        setLogoPreview(null);
+        setPendingLogoFile(null);
+        setLogoRemoved(false);
       }
 
       // 2. Product Owner: assign new or remove if cleared
@@ -257,6 +316,10 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
                 teamSize={teamSize}
                 onTeamSizeChange={setTeamSize}
                 teamSizeError={teamSizeError}
+                logoPreview={logoPreview}
+                logoUrl={logoUrl}
+                onLogoFileChange={handleLogoFileChange}
+                onRemoveLogo={handleRemoveLogo}
               />
             )}
             {activeTab === 'team' && (

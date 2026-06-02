@@ -13,6 +13,8 @@ export interface ApiClass {
   term?: string;
   start_date?: string;
   year?: number;
+  image_url?: string;
+  status?: 'active' | 'complete';
 }
 
 export interface ApiStudent {
@@ -77,6 +79,7 @@ export interface ApiProject {
   /** Current user's role on this project (from API). */
   user_role?: string | null;
   member_count?: number;
+  image_url?: string;
   // Sponsor information
   sponsor_name?: string;
   sponsor_company?: string;
@@ -458,6 +461,13 @@ export const api = {
     return apiRequest<{ class: ApiClass }>(`/api/classes/${classId}`);
   },
 
+  updateClassStatus: async (classId: string, status: 'active' | 'complete') => {
+    return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
   // Student joins class by course code. Returns {message, class} with class details
   joinClass: async (courseCode: string) => {
     return apiRequest<{ message: string; class: ApiClass }>('/api/classes/join', {
@@ -622,7 +632,12 @@ export const api = {
   },
 
   /** Update a project's name, description, and/or team size (PATCH /api/projects/:id). */
-  updateProject: async (projectId: string, data: { name?: string; description?: string; team_size?: number }) => {
+  updateProject: async (projectId: string, data: {
+    name?: string;
+    description?: string;
+    team_size?: number;
+    image_url?: string | null;
+  }) => {
     return apiRequest<{ message: string; project: ApiProject }>(`/api/projects/${projectId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),

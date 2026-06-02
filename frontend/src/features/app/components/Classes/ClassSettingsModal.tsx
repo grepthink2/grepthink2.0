@@ -26,6 +26,8 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
   const [lifecycleStatus, setLifecycleStatus] = useState<ClassLifecycleStatus>('active');
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -39,6 +41,7 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
     if (isOpen && classItem) {
       setLifecycleStatus(getClassStatus(classItem));
       setExportError(null);
+      setStatusError(null);
     }
   }, [isOpen, classItem, getClassStatus]);
 
@@ -69,10 +72,20 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
     }
   };
 
-  const handleStatusChange = (status: ClassLifecycleStatus) => {
-    if (!classItem) return;
+  const handleStatusChange = async (status: ClassLifecycleStatus) => {
+    if (!classItem || isUpdatingStatus) return;
+    const previous = lifecycleStatus;
     setLifecycleStatus(status);
-    setClassLifecycleStatus(classItem.id, status);
+    setStatusError(null);
+    setIsUpdatingStatus(true);
+    try {
+      await setClassLifecycleStatus(classItem.id, status);
+    } catch (err) {
+      setLifecycleStatus(previous);
+      setStatusError(err instanceof Error ? err.message : 'Failed to update class status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const handleDeleteConfirm = () => {
@@ -149,21 +162,28 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                     lifecycleStatus === 'active' ? ' active' : ''
                   }`}
                   aria-pressed={lifecycleStatus === 'active'}
-                  onClick={() => handleStatusChange('active')}
+                  disabled={isUpdatingStatus}
+                  onClick={() => void handleStatusChange('active')}
                 >
                   Active
                 </button>
                 <button
                   type="button"
                   className={`class-settings-modal__status-pill${
-                    lifecycleStatus === 'completed' ? ' active' : ''
+                    lifecycleStatus === 'complete' ? ' active' : ''
                   }`}
-                  aria-pressed={lifecycleStatus === 'completed'}
-                  onClick={() => handleStatusChange('completed')}
+                  aria-pressed={lifecycleStatus === 'complete'}
+                  disabled={isUpdatingStatus}
+                  onClick={() => void handleStatusChange('complete')}
                 >
                   Completed
                 </button>
               </div>
+              {statusError && (
+                <p className="class-settings-modal__export-error" role="alert">
+                  {statusError}
+                </p>
+              )}
             </section>
 
             <section className="class-settings-modal__section">

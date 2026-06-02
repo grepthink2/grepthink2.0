@@ -10,6 +10,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import query_pool, service_client, supabase
 from app.utils.generators import generate_course_code
+from app.utils.class_banner import upload_class_banner
 
 logger = logging.getLogger(__name__)
 
@@ -290,20 +291,33 @@ def create_class(
             "year": year,
             "term": term,
             "start_date": start_date.isoformat(),
+            "status": "active",
         }
         if description is not None:
             class_data["description"] = description
 
         result = client.table('classes').insert(class_data).execute()
         new_class = result.data[0]
+        class_id = new_class['id']
+
+        image_url = upload_class_banner(client, str(class_id))
+        if image_url:
+            update_result = (
+                client.table('classes')
+                .update({'image_url': image_url})
+                .eq('id', class_id)
+                .execute()
+            )
+            if update_result.data:
+                new_class = update_result.data[0]
 
         logger.info(
             "Class created | class_id=%s name=%r course_code=%s term=%r created_by=%s",
-            new_class.get('id'), name, course_code, term, user_id,
+            class_id, name, course_code, term, user_id,
         )
 
         # Auto-generate TSR assignments for this class
-        _generate_tsr_assignments(client, new_class['id'], term, start_date)
+        _generate_tsr_assignments(client, class_id, term, start_date)
 
         return new_class
     except HTTPException:
@@ -337,7 +351,7 @@ def get_classes_for_user(user_id: str, role: str) -> list:
         else:
             # Students: fetch enrollments with joined class + instructor info
             enrollments = client.table('class_enrollments').select(
-                'class_id, classes ( id, name, description, created_by, created_at, course_code )'
+                'class_id, classes ( id, name, description, created_by, created_at, course_code, status, term, start_date, year, image_url )'
             ).eq('user_id', user_id).execute()
 
             if not enrollments.data:
@@ -368,6 +382,58 @@ def get_classes_for_user(user_id: str, role: str) -> list:
     except Exception:
         logger.exception("Error fetching classes | user_id=%s role=%s", user_id, role)
         raise HTTPException(status_code=500, detail="Failed to fetch classes")
+
+
+def update_class_status(class_id: UUID, status: str, instructor_id: str) -> dict:
+    """
+    Update a class lifecycle status. Only the class instructor may change status.
+    """
+    if status not in {'active', 'complete'}:
+        raise HTTPException(status_code=400, detail="Status must be 'active' or 'complete'")
+
+    try:
+        client = service_client if service_client else supabase
+        cid = str(class_id)
+
+        class_result = (
+            client.table('classes')
+            .select('id')
+            .eq('id', cid)
+            .eq('created_by', instructor_id)
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Class not found or you do not have permission",
+            )
+
+        update_result = (
+            client.table('classes')
+            .update({'status': status})
+            .eq('id', cid)
+            .execute()
+        )
+        if not update_result.data:
+            raise HTTPException(status_code=500, detail="Failed to update class status")
+
+        updated = update_result.data[0]
+        logger.info(
+            "Class status updated | class_id=%s status=%s updated_by=%s",
+            class_id,
+            status,
+            instructor_id,
+        )
+        return updated
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error updating class status | class_id=%s status=%s",
+            class_id,
+            status,
+        )
+        raise HTTPException(status_code=500, detail="Failed to update class status")
 
 
 def get_class_by_id(class_id: UUID) -> dict:
@@ -1030,7 +1096,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
         )
         projects_future = query_pool.submit(
             lambda: client.table('projects')
-            .select('id, name, team_size, sentiment')
+            .select('id, name, team_size, sentiment, image_url')
             .eq('class_id', cid)
             .order('created_at', desc=True)
             .execute()
@@ -1123,6 +1189,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
                 'id': pid,
                 'name': project.get('name'),
                 'team_size': project.get('team_size'),
+                'image_url': project.get('image_url'),
                 'member_count': member_count_map.get(pid, 0),
                 'sentiment': project.get('sentiment') if role == 'instructor' else None,
                 'product_owner_name': _name(owner_profile),

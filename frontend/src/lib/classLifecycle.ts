@@ -22,13 +22,11 @@ export function isClassCompletedByDate(classItem: Class): boolean {
   return isAfter(startOfDay(new Date()), end);
 }
 
-export function getClassDisplayStatus(
-  classItem: Class,
-  preferences: ClassPreferenceMap,
-): ClassLifecycleStatus {
-  const pref = preferences[classItem.id];
-  if (pref?.status) return pref.status;
-  return isClassCompletedByDate(classItem) ? 'completed' : 'active';
+export function getClassDisplayStatus(classItem: Class): ClassLifecycleStatus {
+  if (classItem.status === 'active' || classItem.status === 'complete') {
+    return classItem.status;
+  }
+  return isClassCompletedByDate(classItem) ? 'complete' : 'active';
 }
 
 export function isClassHidden(classId: string, preferences: ClassPreferenceMap): boolean {
