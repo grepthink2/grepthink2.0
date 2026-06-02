@@ -327,6 +327,28 @@ def create_class(
         raise HTTPException(status_code=500, detail="Failed to create class")
 
 
+def _enrollment_counts_by_class(client, class_ids: list) -> dict[str, int]:
+    """Count class_enrollments rows per class_id (empty list → empty dict)."""
+    if not class_ids:
+        return {}
+    enrollments = (
+        client.table('class_enrollments')
+        .select('class_id')
+        .in_('class_id', class_ids)
+        .execute()
+    )
+    counts: dict[str, int] = {}
+    for row in enrollments.data or []:
+        cid = row['class_id']
+        counts[cid] = counts.get(cid, 0) + 1
+    return counts
+
+
+def _attach_enrolled_counts(classes: list[dict], count_by_class: dict[str, int]) -> None:
+    for cls in classes:
+        cls['enrolled_count'] = count_by_class.get(cls['id'], 0)
+
+
 def get_classes_for_user(user_id: str, role: str) -> list:
     """
     Get all classes for a user based on their role
@@ -347,7 +369,12 @@ def get_classes_for_user(user_id: str, role: str) -> list:
         if role == "instructor":
             # Instructors see classes they created
             result = client.table('classes').select('*').eq('created_by', user_id).execute()
-            return result.data
+            classes = result.data or []
+            if not classes:
+                return []
+
+            _attach_enrolled_counts(classes, _enrollment_counts_by_class(client, [c['id'] for c in classes]))
+            return classes
         else:
             # Students: fetch enrollments with joined class + instructor info
             enrollments = client.table('class_enrollments').select(
@@ -378,6 +405,7 @@ def get_classes_for_user(user_id: str, role: str) -> list:
             for cls in classes:
                 cls['instructor_email'] = instructor_emails.get(cls.get('created_by'))
 
+            _attach_enrolled_counts(classes, _enrollment_counts_by_class(client, [c['id'] for c in classes]))
             return classes
     except Exception:
         logger.exception("Error fetching classes | user_id=%s role=%s", user_id, role)

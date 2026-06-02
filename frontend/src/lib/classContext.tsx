@@ -58,6 +58,8 @@ export interface Class {
   image_url?: string;
   /** Lifecycle status from classes.status — active or complete. */
   status?: ClassLifecycleStatus;
+  /** My Classes: number of students in class_enrollments. */
+  enrolled_count?: number;
 }
 
 interface ClassContextValue {

@@ -15,6 +15,8 @@ export interface ApiClass {
   year?: number;
   image_url?: string;
   status?: 'active' | 'complete';
+  /** My Classes: live enrollment count from class_enrollments. */
+  enrolled_count?: number;
 }
 
 export interface ApiStudent {

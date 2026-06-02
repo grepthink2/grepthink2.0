@@ -40,6 +40,11 @@ function classHeroStyle(cls: Class): React.CSSProperties {
     return { background: presetToCssBackground(pickClassBannerPreset(cls.id)) };
 }
 
+function formatEnrolledLabel(count: number | undefined): string {
+    if (count == null) return '— enrolled';
+    return `${count} enrolled`;
+}
+
 function ClassStatusTag({ status }: { status: ClassLifecycleStatus }) {
     return (
         <span className={`my-classes-card-status-tag my-classes-card-status-tag--${status}`}>
@@ -56,6 +61,7 @@ const MyClasses: React.FC = () => {
         setSuccessMessage,
         setSelectedClass,
         getClassStatus,
+        refreshClasses,
     } = useClass();
     const { role } = useAuth();
     const navigate = useNavigate();
@@ -80,6 +86,22 @@ const MyClasses: React.FC = () => {
             return () => clearTimeout(timer);
         }
     }, [successMessage, setSuccessMessage]);
+
+    // Keep enrollment counts fresh while this page is open.
+    useEffect(() => {
+        const refresh = () => {
+            void refreshClasses(false);
+        };
+        const interval = window.setInterval(refresh, 30_000);
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') refresh();
+        };
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            window.clearInterval(interval);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
+    }, [refreshClasses]);
 
     const handleCopyCode = (_e: React.MouseEvent, cls: Class) => {
         if (!cls.course_code) return;
@@ -248,7 +270,9 @@ const MyClasses: React.FC = () => {
                                         )}
                                         <ClassStatusTag status={getClassStatus(cls)} />
                                         <div className="my-classes-card-row">
-                                            <span className="my-classes-card-row-spacer" aria-hidden />
+                                            <div className="my-classes-card-enrollment">
+                                                {formatEnrolledLabel(cls.enrolled_count)}
+                                            </div>
                                             <span className="my-classes-select-cta">
                                                 Select <ArrowRight size={16} />
                                             </span>
@@ -277,7 +301,9 @@ const MyClasses: React.FC = () => {
                                         )}
                                         <ClassStatusTag status={getClassStatus(cls)} />
                                         <div className="my-classes-card-row">
-                                            <div className="my-classes-card-enrollment">~ ENROLLED</div>
+                                            <div className="my-classes-card-enrollment">
+                                                {formatEnrolledLabel(cls.enrolled_count)}
+                                            </div>
                                             <span className="my-classes-select-cta">
                                                 Select <ArrowRight size={16} />
                                             </span>
