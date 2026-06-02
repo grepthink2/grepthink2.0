@@ -258,6 +258,7 @@ def update_project(
     team_size: int | None = None,
     name: str | None = None,
     description: str | None = None,
+    image_url: str | None = None,
     sponsor_name: str | None = None,
     sponsor_company: str | None = None,
     sponsor_email: str | None = None,
@@ -274,7 +275,7 @@ def update_project(
     At least one field must be provided.
     """
     all_none = all(v is None for v in [
-        team_size, description, sponsor_name, sponsor_company,
+        team_size, name, description, image_url, sponsor_name, sponsor_company,
         sponsor_email, sponsor_website, sponsor_description,
     ])
     if all_none:
@@ -311,6 +312,8 @@ def update_project(
             updates['name'] = name
         if description is not None:
             updates['description'] = description
+        if image_url is not None:
+            updates['image_url'] = image_url or None
         if sponsor_name is not None:
             updates['sponsor_name'] = sponsor_name
         if sponsor_company is not None:
@@ -430,7 +433,7 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
                 raise HTTPException(status_code=403, detail="You do not have access to this class projects list")
 
             projects_result = client.table('projects').select(
-                'id, name'
+                'id, name, team_size, image_url'
             ).eq('class_id', str(class_id)).order('created_at', desc=True).execute()
 
             projects = projects_result.data or []
@@ -470,6 +473,8 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
             {
                 'id': p['id'],
                 'name': p.get('name'),
+                'team_size': p.get('team_size'),
+                'image_url': p.get('image_url'),
                 'member_count': count_map.get(p['id'], 0),
                 'user_role': role_map.get(p['id']),
             }

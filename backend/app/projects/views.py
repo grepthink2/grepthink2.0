@@ -130,6 +130,7 @@ def update_project(
         name=data.name,
         team_size=data.team_size,
         description=data.description,
+        image_url=data.image_url,
         sponsor_name=data.sponsor_name,
         sponsor_company=data.sponsor_company,
         sponsor_email=data.sponsor_email,

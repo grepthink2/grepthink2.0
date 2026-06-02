@@ -79,6 +79,7 @@ export interface ApiProject {
   /** Current user's role on this project (from API). */
   user_role?: string | null;
   member_count?: number;
+  image_url?: string;
   // Sponsor information
   sponsor_name?: string;
   sponsor_company?: string;
@@ -631,7 +632,12 @@ export const api = {
   },
 
   /** Update a project's name, description, and/or team size (PATCH /api/projects/:id). */
-  updateProject: async (projectId: string, data: { name?: string; description?: string; team_size?: number }) => {
+  updateProject: async (projectId: string, data: {
+    name?: string;
+    description?: string;
+    team_size?: number;
+    image_url?: string | null;
+  }) => {
     return apiRequest<{ message: string; project: ApiProject }>(`/api/projects/${projectId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),

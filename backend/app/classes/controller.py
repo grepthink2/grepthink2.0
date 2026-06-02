@@ -1096,7 +1096,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
         )
         projects_future = query_pool.submit(
             lambda: client.table('projects')
-            .select('id, name, team_size, sentiment')
+            .select('id, name, team_size, sentiment, image_url')
             .eq('class_id', cid)
             .order('created_at', desc=True)
             .execute()
@@ -1189,6 +1189,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
                 'id': pid,
                 'name': project.get('name'),
                 'team_size': project.get('team_size'),
+                'image_url': project.get('image_url'),
                 'member_count': member_count_map.get(pid, 0),
                 'sentiment': project.get('sentiment') if role == 'instructor' else None,
                 'product_owner_name': _name(owner_profile),
