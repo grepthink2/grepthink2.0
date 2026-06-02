@@ -4,7 +4,6 @@ import { X, Camera, Linkedin, Github, UserPen, CheckCircle, AlertCircle } from '
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 import { apiRequest, type ApiProfile } from '@/lib/api';
-import EduVerifyModal from '@features/app/components/Settings/EduVerifyModal';
 import './Settings.scss';
 
 interface SettingsProps {
@@ -25,11 +24,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const [linkedIn, setLinkedIn] = useState('');
   const [github, setGithub] = useState('');
 
-  const [eduEmail, setEduEmail] = useState('');
-  const originalEduEmailRef = useRef('');
-  const [eduVerifyOpen, setEduVerifyOpen] = useState(false);
-  const [pendingEduEmail, setPendingEduEmail] = useState('');
-
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -43,8 +37,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         setAvatarUrl(profile.image_url ?? null);
         setLinkedIn(profile.linkedin ?? '');
         setGithub(profile.github ?? '');
-        setEduEmail(profile.edu_email ?? '');
-        originalEduEmailRef.current = profile.edu_email ?? '';
       })
       .catch(() => {
         const meta = (user.user_metadata ?? {}) as Record<string, string>;
@@ -53,8 +45,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         setAvatarUrl(meta.image_url || null);
         setLinkedIn(meta.linkedin || '');
         setGithub(meta.github || '');
-        setEduEmail('');
-        originalEduEmailRef.current = '';
       })
       .finally(() => setSaveStatus('idle'));
   }, [user, isOpen]);
@@ -96,13 +86,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     setAvatarUrl(null);
   };
 
-  const handleEduVerified = useCallback(() => {
-    originalEduEmailRef.current = pendingEduEmail;
-    setEduEmail(pendingEduEmail);
-    setEduVerifyOpen(false);
-    setSaveStatus('success');
-  }, [pendingEduEmail]);
-
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
@@ -127,11 +110,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         setPendingFile(null);
       }
 
-      const primaryIsEdu = user?.email?.toLowerCase().endsWith('.edu') ?? false;
-      const newEduEmail = primaryIsEdu ? '' : eduEmail.trim();
-      const origEduEmail = primaryIsEdu ? '' : originalEduEmailRef.current;
-      const eduEmailChanged = !primaryIsEdu && newEduEmail !== origEduEmail;
-
       const updateData: Record<string, string | null> = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -143,34 +121,12 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         updateData.github = github.trim();
       }
 
-      // If edu_email was cleared, include null in the main PATCH
-      if (eduEmailChanged && !newEduEmail) {
-        updateData.edu_email = null;
-      }
-
       await apiRequest('/api/profiles/me', {
         method: 'PATCH',
         body: JSON.stringify(updateData),
       });
 
-      // If edu_email was set or changed, trigger verification flow
-      if (eduEmailChanged && newEduEmail) {
-        if (!newEduEmail.endsWith('.edu')) {
-          throw new Error('Must be a valid .edu email address');
-        }
-        await apiRequest('/api/profiles/send-edu-verification', {
-          method: 'POST',
-          body: JSON.stringify({ edu_email: newEduEmail }),
-        });
-        setPendingEduEmail(newEduEmail);
-        setEduVerifyOpen(true);
-        // Success shown after verification completes
-      } else {
-        if (eduEmailChanged && !newEduEmail) {
-          originalEduEmailRef.current = '';
-        }
-        setSaveStatus('success');
-      }
+      setSaveStatus('success');
     } catch (err) {
       setSaveStatus('error');
       setErrorMessage(err instanceof Error ? err.message : 'Failed to save changes.');
@@ -183,9 +139,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
 
   const displayAvatar = avatarPreview ?? avatarUrl;
 
-  return (
-    <>
-    {createPortal(
+  return createPortal(
     <div className="settings-modal__overlay" onClick={handleClose}>
       <div
         className="settings-modal"
@@ -294,31 +248,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               />
             </div>
 
-            {/* .edu Email */}
-            {user?.email?.toLowerCase().endsWith('.edu') ? (
-              <div className="settings-modal__field">
-                <label className="settings-modal__label">.edu Email</label>
-                <input
-                  type="email"
-                  className="settings-modal__input settings-modal__input--readonly"
-                  value={user.email}
-                  readOnly
-                />
-              </div>
-            ) : (
-              <div className="settings-modal__field">
-                <label className="settings-modal__label" htmlFor="sm-edu-email">.edu Email (Roster Email)</label>
-                <input
-                  id="sm-edu-email"
-                  type="email"
-                  className="settings-modal__input"
-                  value={eduEmail}
-                  onChange={(e) => { setEduEmail(e.target.value); setSaveStatus('idle'); }}
-                  placeholder="you@university.edu"
-                />
-              </div>
-            )}
-
             {/* Portfolio — students only, no subtitle */}
             {role === 'student' && (
               <>
@@ -388,14 +317,6 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
       </div>
     </div>,
     document.body,
-    )}
-    <EduVerifyModal
-      isOpen={eduVerifyOpen}
-      eduEmail={pendingEduEmail}
-      onVerified={handleEduVerified}
-      onClose={() => setEduVerifyOpen(false)}
-    />
-    </>
   );
 };
 

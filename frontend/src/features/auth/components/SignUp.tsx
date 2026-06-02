@@ -17,9 +17,11 @@ import arrowIcon from '@assets/Arrow.svg?url';
 
 interface SignUpProps {
   userType?: 'instructor' | 'student';
+  embedded?: boolean;
+  onAccountCreated?: (email: string) => void;
 }
 
-const SignUp: React.FC<SignUpProps> = ({ userType }) => {
+const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCreated }) => {
   const navigate = useNavigate();
   const { getToken } = useAuth();
   
@@ -167,7 +169,11 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
            console.error('Sync error:', syncError);
       }
 
-      navigate('/app');
+      if (onAccountCreated) {
+        onAccountCreated(formData.email);
+      } else {
+        navigate('/app');
+      }
     } catch (err: unknown) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to create account. Please try again.');
@@ -189,7 +195,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     : 'Create an Account';
 
   return (
-    <div className="pageWrapper">
+    <div className={embedded ? 'embeddedWrapper' : 'pageWrapper'}>
       <div className="container">
         {/* Header Section */}
         <h1 className="header">{headerText}</h1>
