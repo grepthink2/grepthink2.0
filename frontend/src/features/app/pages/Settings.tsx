@@ -23,6 +23,8 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
 
   const [linkedIn, setLinkedIn] = useState('');
   const [github, setGithub] = useState('');
+  const [eduEmail, setEduEmail] = useState('');
+  const originalEduEmailRef = useRef('');
 
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -37,6 +39,8 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         setAvatarUrl(profile.image_url ?? null);
         setLinkedIn(profile.linkedin ?? '');
         setGithub(profile.github ?? '');
+        setEduEmail(profile.edu_email ?? '');
+        originalEduEmailRef.current = profile.edu_email ?? '';
       })
       .catch(() => {
         const meta = (user.user_metadata ?? {}) as Record<string, string>;
@@ -45,6 +49,8 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         setAvatarUrl(meta.image_url || null);
         setLinkedIn(meta.linkedin || '');
         setGithub(meta.github || '');
+        setEduEmail('');
+        originalEduEmailRef.current = '';
       })
       .finally(() => setSaveStatus('idle'));
   }, [user, isOpen]);
@@ -110,6 +116,29 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         setPendingFile(null);
       }
 
+      const primaryIsEdu = user.email?.toLowerCase().endsWith('.edu') ?? false;
+      const isStudent = role === 'student';
+      const newEduEmail = isStudent && !primaryIsEdu ? eduEmail.trim() : '';
+      const origEduEmail = isStudent && !primaryIsEdu ? originalEduEmailRef.current : '';
+      const eduEmailChanged = isStudent && !primaryIsEdu && newEduEmail !== origEduEmail;
+
+      if (eduEmailChanged && newEduEmail) {
+        if (!newEduEmail.toLowerCase().endsWith('.edu')) {
+          throw new Error('Must be a valid .edu email address');
+        }
+        const checkRes = await fetch('/api/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: newEduEmail }),
+        });
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (!checkData.available) {
+            throw new Error('This .edu email is already linked to another account.');
+          }
+        }
+      }
+
       const updateData: Record<string, string | null> = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -121,10 +150,18 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         updateData.github = github.trim();
       }
 
+      if (eduEmailChanged) {
+        updateData.edu_email = newEduEmail || null;
+      }
+
       await apiRequest('/api/profiles/me', {
         method: 'PATCH',
         body: JSON.stringify(updateData),
       });
+
+      if (eduEmailChanged) {
+        originalEduEmailRef.current = newEduEmail;
+      }
 
       setSaveStatus('success');
     } catch (err) {
@@ -138,6 +175,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const displayAvatar = avatarPreview ?? avatarUrl;
+  const primaryIsEdu = user?.email?.toLowerCase().endsWith('.edu') ?? false;
 
   return createPortal(
     <div className="settings-modal__overlay" onClick={handleClose}>
@@ -247,6 +285,35 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
                 readOnly
               />
             </div>
+
+            {/* Roster .edu email — students only */}
+            {role === 'student' && (
+              primaryIsEdu ? (
+                <div className="settings-modal__field">
+                  <label className="settings-modal__label">.edu Email</label>
+                  <input
+                    type="email"
+                    className="settings-modal__input settings-modal__input--readonly"
+                    value={user?.email ?? ''}
+                    readOnly
+                  />
+                </div>
+              ) : (
+                <div className="settings-modal__field">
+                  <label className="settings-modal__label" htmlFor="sm-edu-email">
+                    .edu Email (Roster Email)
+                  </label>
+                  <input
+                    id="sm-edu-email"
+                    type="email"
+                    className="settings-modal__input"
+                    value={eduEmail}
+                    onChange={(e) => { setEduEmail(e.target.value); setSaveStatus('idle'); }}
+                    placeholder="you@university.edu"
+                  />
+                </div>
+              )
+            )}
 
             {/* Portfolio — students only, no subtitle */}
             {role === 'student' && (
