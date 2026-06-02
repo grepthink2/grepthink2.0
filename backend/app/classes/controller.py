@@ -291,6 +291,7 @@ def create_class(
             "year": year,
             "term": term,
             "start_date": start_date.isoformat(),
+            "status": "active",
         }
         if description is not None:
             class_data["description"] = description
@@ -350,7 +351,7 @@ def get_classes_for_user(user_id: str, role: str) -> list:
         else:
             # Students: fetch enrollments with joined class + instructor info
             enrollments = client.table('class_enrollments').select(
-                'class_id, classes ( id, name, description, created_by, created_at, course_code )'
+                'class_id, classes ( id, name, description, created_by, created_at, course_code, status, term, start_date, year, image_url )'
             ).eq('user_id', user_id).execute()
 
             if not enrollments.data:
@@ -381,6 +382,58 @@ def get_classes_for_user(user_id: str, role: str) -> list:
     except Exception:
         logger.exception("Error fetching classes | user_id=%s role=%s", user_id, role)
         raise HTTPException(status_code=500, detail="Failed to fetch classes")
+
+
+def update_class_status(class_id: UUID, status: str, instructor_id: str) -> dict:
+    """
+    Update a class lifecycle status. Only the class instructor may change status.
+    """
+    if status not in {'active', 'complete'}:
+        raise HTTPException(status_code=400, detail="Status must be 'active' or 'complete'")
+
+    try:
+        client = service_client if service_client else supabase
+        cid = str(class_id)
+
+        class_result = (
+            client.table('classes')
+            .select('id')
+            .eq('id', cid)
+            .eq('created_by', instructor_id)
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Class not found or you do not have permission",
+            )
+
+        update_result = (
+            client.table('classes')
+            .update({'status': status})
+            .eq('id', cid)
+            .execute()
+        )
+        if not update_result.data:
+            raise HTTPException(status_code=500, detail="Failed to update class status")
+
+        updated = update_result.data[0]
+        logger.info(
+            "Class status updated | class_id=%s status=%s updated_by=%s",
+            class_id,
+            status,
+            instructor_id,
+        )
+        return updated
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error updating class status | class_id=%s status=%s",
+            class_id,
+            status,
+        )
+        raise HTTPException(status_code=500, detail="Failed to update class status")
 
 
 def get_class_by_id(class_id: UUID) -> dict:

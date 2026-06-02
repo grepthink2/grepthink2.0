@@ -10,7 +10,7 @@ import ClassSettingsModal from '@features/app/components/Classes/ClassSettingsMo
 import { pickClassBannerPreset, presetToCssBackground } from '@/lib/classBannerGradients';
 import './MyClasses.scss';
 
-type CourseFilter = 'all' | 'active' | 'completed';
+type CourseFilter = 'all' | 'active' | 'complete';
 
 function classMatchesFilter(
     classItem: Class,
@@ -18,15 +18,15 @@ function classMatchesFilter(
     getClassStatus: (classItem: Class) => ClassLifecycleStatus,
 ): boolean {
     if (filter === 'all') return true;
-    const completed = getClassStatus(classItem) === 'completed';
-    if (filter === 'completed') return completed;
-    return !completed;
+    const isComplete = getClassStatus(classItem) === 'complete';
+    if (filter === 'complete') return isComplete;
+    return !isComplete;
 }
 
 const FILTER_LABELS: Record<CourseFilter, string> = {
     all: 'All',
     active: 'Active',
-    completed: 'Completed',
+    complete: 'Completed',
 };
 
 function classHeroStyle(cls: Class): React.CSSProperties {
@@ -43,7 +43,7 @@ function classHeroStyle(cls: Class): React.CSSProperties {
 function ClassStatusTag({ status }: { status: ClassLifecycleStatus }) {
     return (
         <span className={`my-classes-card-status-tag my-classes-card-status-tag--${status}`}>
-            {status === 'completed' ? 'Completed' : 'Active'}
+            {status === 'complete' ? 'Completed' : 'Active'}
         </span>
     );
 }

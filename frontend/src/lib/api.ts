@@ -14,6 +14,7 @@ export interface ApiClass {
   start_date?: string;
   year?: number;
   image_url?: string;
+  status?: 'active' | 'complete';
 }
 
 export interface ApiStudent {
@@ -457,6 +458,13 @@ export const api = {
 
   getClass: async (classId: string) => {
     return apiRequest<{ class: ApiClass }>(`/api/classes/${classId}`);
+  },
+
+  updateClassStatus: async (classId: string, status: 'active' | 'complete') => {
+    return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
   },
 
   // Student joins class by course code. Returns {message, class} with class details

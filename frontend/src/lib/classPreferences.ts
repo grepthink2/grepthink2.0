@@ -1,9 +1,9 @@
 const STORAGE_KEY = 'grepthink-class-preferences';
 
-export type ClassLifecycleStatus = 'active' | 'completed';
+/** Matches classes.status in the database. */
+export type ClassLifecycleStatus = 'active' | 'complete';
 
 export interface ClassPreference {
-  status?: ClassLifecycleStatus;
   hidden?: boolean;
 }
 
@@ -37,7 +37,7 @@ export function patchClassPreference(
   const current = next[classId] ?? {};
   const merged = { ...current, ...patch };
 
-  if (!merged.status && !merged.hidden) {
+  if (!merged.hidden) {
     delete next[classId];
   } else {
     next[classId] = merged;
