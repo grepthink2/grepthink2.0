@@ -4,6 +4,7 @@ import { TbLayoutSidebar } from "react-icons/tb";
 import { ChevronDown } from 'lucide-react';
 import { instructorSidebarConfig, studentSidebarConfig, type UserRole } from '../../config/sidebar';
 import { useClass } from '@/lib/classContext';
+import { useUnreadTotal } from '@features/messages/hooks/useUnreadTotal';
 import logo from '@assets/grepthink l logo.svg?url';
 import './Sidebar.scss';
 
@@ -11,24 +12,36 @@ interface SidebarProps {
   role: UserRole;
   onOpenCreateClass?: () => void;
   onOpenJoinClass?: () => void;
+  onOpenSettings?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinClass }) => {
+const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinClass, onOpenSettings }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showClassDropdown, setShowClassDropdown] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { classes, selectedClass, setSelectedClass } = useClass();
+  const { sidebarClasses, selectedClass, setSelectedClass } = useClass();
+  const unreadTotal = useUnreadTotal();
   const sidebarConfig = role === 'instructor' ? instructorSidebarConfig : studentSidebarConfig;
 
+  // Browser tab title prefix — `(N) GrepThink` when there are unread messages.
+  useEffect(() => {
+    if (unreadTotal > 0) {
+      document.title = `(${unreadTotal}) GrepThink`;
+    } else {
+      document.title = 'GrepThink';
+    }
+  }, [unreadTotal]);
+
   const handleNavigation = (path: string) => {
-    // If it's the create class path, open the modal instead
     if (path === '/app/create-class' && onOpenCreateClass) {
       onOpenCreateClass();
     } else if (path === '/app/join-class' && onOpenJoinClass) {
       onOpenJoinClass();
+    } else if (path === '/app/settings' && onOpenSettings) {
+      onOpenSettings();
     } else {
       navigate(path);
     }
@@ -38,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
     setIsCollapsed(!isCollapsed);
   };
 
-  const handleClassSelect = (classItem: (typeof classes)[number]) => {
+  const handleClassSelect = (classItem: (typeof sidebarClasses)[number]) => {
     setSelectedClass(classItem);
     setShowClassDropdown(false);
   };
@@ -84,10 +97,10 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
 
           {showClassDropdown && (
             <div className="class-selector-dropdown">
-              {classes.length === 0 ? (
-                <div className="class-selector-empty">No classes available</div>
+              {sidebarClasses.length === 0 ? (
+                <div className="class-selector-empty">No active classes</div>
               ) : (
-                classes.map((classItem) => (
+                sidebarClasses.map((classItem) => (
                   <button
                     key={classItem.id}
                     className={`class-selector-item ${selectedClass?.id === classItem.id ? 'active' : ''}`}
@@ -145,6 +158,9 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
                         <img src={item.iconSvg} alt={item.label} className="icon-svg" />
                       ) : null}
                       {!isCollapsed && <span>{item.label}</span>}
+                      {item.path === '/app/messages' && unreadTotal > 0 && (
+                        <span className="sidebar-item__badge">{unreadTotal}</span>
+                      )}
                     </button>
                   </li>
                 );

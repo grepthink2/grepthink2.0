@@ -164,7 +164,7 @@ const CreateProject: React.FC = () => {
 
     setSubmitting(true);
     try {
-      await api.createProject({
+      const { project } = await api.createProject({
         class_id: selectedClass.id,
         name,
         description: description || undefined,
@@ -177,7 +177,7 @@ const CreateProject: React.FC = () => {
         // sponsor_website: sponsorWebsite.trim() || undefined,
         // sponsor_description: sponsorDescription.trim() || undefined,
       });
-      navigate('/app/my-classes', { replace: true });
+      navigate(`/app/projects/${project.id}`, { replace: true });
     } catch (err) {
       setApiError(err instanceof Error ? err.message : 'Failed to create project');
     } finally {

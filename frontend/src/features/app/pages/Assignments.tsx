@@ -1,44 +1,185 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { format, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useClass } from '@/lib/classContext';
+import { api, type ApiAssignment } from '@/lib/api';
 import StudentAssignmentsTable, {
   type StudentAssignment,
+  type StudentAssignmentAction,
+  type StudentAssignmentStatus,
+  type AssignmentType,
 } from '../components/Assignments/StudentAssignmentsTable';
 import './Assignments.scss';
 
-const mockStudentAssignments: StudentAssignment[] = [
-  {
-    id: '1',
-    name: 'Team Status Report 1',
-    dueDate: 'Jan 12, 2026',
-    projectName: 'ShoeShopper',
-    status: 'not_started',
-    action: 'start',
-    type: 'tsrs',
+function resolveAssignmentState(
+  openDate: string,
+  closeDate: string,
+  today: string,
+  isSubmitted: boolean,
+  canStart: boolean,
+): { status: StudentAssignmentStatus; action: StudentAssignmentAction } {
+  const status: StudentAssignmentStatus = isSubmitted ? 'submitted' : 'not_started';
+
+  if (today < openDate) {
+    return { status, action: 'opens_later' };
+  }
+  if (closeDate < today) {
+    return { status, action: 'closed' };
+  }
+  if (!canStart) {
+    return { status, action: 'closed' };
+  }
+  if (isSubmitted) {
+    return { status: 'submitted', action: 'edit_submission' };
+  }
+  return { status: 'not_started', action: 'start' };
+}
+
+function toStudentRow(
+  a: ApiAssignment,
+  today: string,
+  opts: {
+    projectName: string;
+    projectId?: string;
+    type: AssignmentType;
+    isSubmitted: boolean;
+    canStart: boolean;
   },
-  {
-    id: '2',
-    name: 'Team Status Report 2',
-    dueDate: 'Jan 26, 2026',
-    projectName: 'Chatcut',
-    status: 'in_progress',
-    action: 'edit_submission',
-    type: 'tsrs',
-  },
-  {
-    id: '3',
-    name: 'Team Status Report 3',
-    dueDate: 'Feb 9, 2026',
-    projectName: 'TaskMaster',
-    status: 'submitted',
-    action: 'closed',
-    type: 'tsrs',
-  },
-];
+): StudentAssignment {
+  const { status, action } = resolveAssignmentState(
+    a.open_date,
+    a.close_date,
+    today,
+    opts.isSubmitted,
+    opts.canStart,
+  );
+  return {
+    id: a.id,
+    name: a.Title,
+    dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
+    projectName: opts.projectName,
+    projectId: opts.projectId,
+    status,
+    action,
+    type: opts.type,
+    openDateIso: action === 'opens_later' ? a.open_date : undefined,
+  };
+}
 
 const Assignments: React.FC = () => {
   const { selectedClass } = useClass();
   const navigate = useNavigate();
+  const [rows, setRows] = useState<StudentAssignment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedClass) return;
+
+    let cancelled = false;
+
+    const loadAssignments = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const today = format(new Date(), 'yyyy-MM-dd');
+
+        const { assignments } = await api.getAssignments(selectedClass.id);
+        const { projects: myAllProjects } = await api.getProjects();
+        const { projects: classProjects } = await api.getProjects(selectedClass.id);
+
+        const myProjectIds = new Set(myAllProjects.map((p) => p.id));
+        const myClassProjects = classProjects.filter((p) => myProjectIds.has(p.id));
+
+        if (cancelled) return;
+
+        if (assignments.length === 0) {
+          setRows([]);
+          return;
+        }
+
+        if (myClassProjects.length === 0) {
+          const result = assignments.map((a) => {
+            const isInterestForm = a.assignment_type === 'interest_form';
+            return toStudentRow(a, today, {
+              projectName: '—',
+              type: isInterestForm ? 'interest_form' : 'tsrs',
+              isSubmitted: false,
+              canStart: isInterestForm,
+            });
+          });
+          setRows(result);
+          return;
+        }
+
+        const tsrAssignments = assignments.filter(
+          (a) => a.assignment_type !== 'interest_form',
+        );
+        const submittedByAssignmentProject: Record<string, Set<string>> = {};
+        await Promise.all(
+          tsrAssignments.map(async (a) => {
+            try {
+              const { tsrs } = await api.getMyAssignmentTsrs(a.id);
+              const byProject = new Set<string>();
+              const legacyNoProject = tsrs.length > 0 && tsrs.every((t) => !t.project_id);
+              for (const t of tsrs) {
+                if (t.project_id) byProject.add(t.project_id);
+              }
+              if (legacyNoProject) {
+                for (const p of myClassProjects) byProject.add(p.id);
+              }
+              submittedByAssignmentProject[a.id] = byProject;
+            } catch {
+              submittedByAssignmentProject[a.id] = new Set();
+            }
+          }),
+        );
+
+        if (cancelled) return;
+
+        const result: StudentAssignment[] = [];
+        for (const a of assignments) {
+          if (a.assignment_type === 'interest_form') {
+            result.push(
+              toStudentRow(a, today, {
+                projectName: '—',
+                type: 'interest_form',
+                isSubmitted: false,
+                canStart: true,
+              }),
+            );
+            continue;
+          }
+
+          for (const p of myClassProjects) {
+            const isSubmitted = submittedByAssignmentProject[a.id]?.has(p.id) ?? false;
+            result.push(
+              toStudentRow(a, today, {
+                projectName: p.name,
+                projectId: p.id,
+                type: 'tsrs',
+                isSubmitted,
+                canStart: true,
+              }),
+            );
+          }
+        }
+
+        setRows(result);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : 'Failed to load assignments');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadAssignments();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClass?.id]);
 
   if (!selectedClass) {
     return (
@@ -58,15 +199,37 @@ const Assignments: React.FC = () => {
         assignmentType: assignment.type,
         dueDate: assignment.dueDate,
         projectName: assignment.projectName,
+        projectId: assignment.projectId,
       },
     });
   };
+
+  if (loading) {
+    return (
+      <div className="assignments">
+        <div className="assignments__empty">
+          <p>Loading assignments…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="assignments">
+        <div className="assignments__empty">
+          <h2>Error</h2>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="assignments">
       <div className="assignments__content">
         <StudentAssignmentsTable
-          assignments={mockStudentAssignments}
+          assignments={rows}
           onStart={handleOpen}
           onEditSubmission={handleOpen}
         />

@@ -60,10 +60,25 @@ $tag-closed-text: #2771ff;
     background-color: $tag-closed-bg;
     color: $tag-closed-text;
   }
+
+  &--member {
+    background-color: rgba($primary-color, 0.12);
+    color: $primary-color;
+  }
 }
 
 .project-grid__banner-icon {
   color: $text-tertiary;
+  flex-shrink: 0;
+}
+
+.project-grid__logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid $white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
 }
 

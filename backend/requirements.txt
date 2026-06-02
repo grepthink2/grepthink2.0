@@ -1,6 +1,12 @@
 supabase
 python-dotenv
 fastapi
+python-multipart
 uvicorn
+watchfiles  # Native-event reload backend; required for run.py reload_excludes to take effect
 pydantic
 PyJWT
+
+# Test-only
+pytest
+httpx

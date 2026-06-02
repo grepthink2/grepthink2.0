@@ -1,0 +1,58 @@
+@use '@styles/index.scss' as *;
+
+.staffing-page {
+  padding: $spacing-lg;
+  font-family: $primary-font;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  min-height: 100%;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-md;
+  }
+
+  &__title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__title {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  &__subtitle {
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+    margin: 0;
+  }
+
+  &__continue-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: $primary-color;
+    color: $white;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background $transition-fast;
+    flex-shrink: 0;
+
+    &:hover {
+      background: $primary-hover;
+    }
+  }
+}

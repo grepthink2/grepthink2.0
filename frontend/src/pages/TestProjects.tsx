@@ -33,16 +33,6 @@ const createEmptyTsrDraft = (): TsrFormDraft => ({
   scrumMasterNotes: '',
 });
 
-const getProjectOwnerMember = (project: ApiProject): SimulatedTeamMember => {
-  const ownerEmail = project.creator_email || `${project.created_by}@example.com`;
-  const ownerName = ownerEmail.split('@')[0] || 'project-owner';
-  return {
-    id: project.created_by,
-    name: ownerName,
-    email: ownerEmail,
-  };
-};
-
 const mapApiMemberToTeamMember = (member: ApiProjectMember): SimulatedTeamMember => {
   const email = member.email || `${member.user_id}@example.com`;
   const name = email.split('@')[0] || 'member';

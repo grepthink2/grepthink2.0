@@ -106,7 +106,6 @@ $status-in-progress-bg: #dce8f5;
 $status-in-progress-text: #2771ff;
 $status-submitted-bg: #d4f5ee;
 $status-submitted-text: #018156;
-
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -169,7 +168,8 @@ $status-submitted-text: #018156;
     }
   }
 
-  &--closed {
+  &--closed,
+  &--opens_later {
     background-color: #f3f3f3;
     color: $text-tertiary;
     cursor: default;

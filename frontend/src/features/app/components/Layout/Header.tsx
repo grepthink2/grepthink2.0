@@ -19,6 +19,7 @@ const pageTitles: Record<string, string> = {
   '/app/home': 'Home',
   '/app/messages': 'Messages',
   '/app/my-classes': 'My Classes',
+  '/app/class-settings': 'Class Settings',
   '/app/join-class': 'Join Class',
   '/app/settings': 'Settings',
   '/app/help-center': 'Help Center',
@@ -73,6 +74,15 @@ function buildBreadcrumbs(
     ];
   }
 
+  if (pathname.startsWith('/app/modules/tsr/')) {
+    const assignmentName = state?.assignmentName;
+    return [
+      classSegment,
+      { label: 'Modules', path: '/app/modules' },
+      { label: assignmentName ?? 'TSR Responses' },
+    ];
+  }
+
   // ── Instructor routes ────────────────────────────────────────────────────
   if (role === 'instructor') {
     if (pathname === '/app/dashboard')     return [classSegment, { label: 'Dashboard' }];
@@ -83,6 +93,13 @@ function buildBreadcrumbs(
     if (pathname === '/app/assignments')   return [classSegment, { label: 'Assignments' }];
     if (pathname === '/app/create-project') {
       return [classSegment, { label: 'Projects', path: '/app/projects' }, { label: 'Create Project' }];
+    }
+    // Project subroutes
+    if (pathname === '/app/assign-projects') {
+      return [classSegment, { label: 'Projects', path: '/app/projects' }, { label: 'Assign Projects' }];
+    }
+    if (pathname === '/app/staff-projects') {
+      return [classSegment, { label: 'Projects', path: '/app/projects' }, { label: 'Staffing' }];
     }
   }
 
@@ -97,7 +114,11 @@ function buildBreadcrumbs(
   return null;
 }
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onOpenSettings: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, role } = useAuth();
@@ -163,7 +184,7 @@ const Header: React.FC = () => {
 
   const handleSettingsClick = () => {
     setShowProfileMenu(false);
-    navigate('/app/settings');
+    onOpenSettings();
   };
 
   return (

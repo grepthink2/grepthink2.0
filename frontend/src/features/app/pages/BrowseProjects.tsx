@@ -2,33 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import ProjectGrid, { type ProjectGridItem } from '@features/app/components/Project/ProjectGrid';
+import { toProjectGridItem } from '@features/app/components/Project/projectGridHelpers';
 import './BrowseProjects.scss';
-
-interface ApiProjectListItem {
-  id: string;
-  name: string;
-  team_size?: number | string;
-}
-
-function toGridItem(raw: ApiProjectListItem, index: number): ProjectGridItem {
-  // Parse team_size as number, handle string values from API
-  let teamSize = 4; // default
-  if (typeof raw.team_size === 'number' && !isNaN(raw.team_size)) {
-    teamSize = raw.team_size;
-  } else if (typeof raw.team_size === 'string') {
-    const parsed = parseInt(raw.team_size, 10);
-    if (!isNaN(parsed)) {
-      teamSize = parsed;
-    }
-  }
-  
-  return {
-    id: raw.id,
-    name: raw.name,
-    team_size: teamSize,
-    status: index % 2 === 0 ? 'open' : 'closed',
-  };
-}
 
 const BrowseProjects: React.FC = () => {
   const { selectedClass } = useClass();
@@ -52,12 +27,17 @@ const BrowseProjects: React.FC = () => {
         const response = await api.getClassProjects(selectedClass.id);
         if (!isMounted) return;
         const list = response.projects ?? [];
-        const asListItems: ApiProjectListItem[] = list.map((p) => ({
-          id: p.id,
-          name: p.name,
-          team_size: p.team_size,
-        }));
-        setProjects(asListItems.map((p, i) => toGridItem(p, i)));
+        setProjects(
+          list.map((p) =>
+            toProjectGridItem({
+              id: p.id,
+              name: p.name,
+              team_size: p.team_size,
+              member_count: p.member_count,
+              image_url: p.image_url,
+            }),
+          ),
+        );
         setError(null);
       } catch (err) {
         if (!isMounted) return;

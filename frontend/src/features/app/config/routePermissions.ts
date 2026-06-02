@@ -4,9 +4,10 @@ import type { UserRole } from './sidebar';
 export const instructorOnlyPaths: string[] = [
   '/app/dashboard',
   '/app/projects',
-  '/app/roster',
+  '/app/assign-projects',
   '/app/modules',
   '/app/ta-management',
+  '/app/class-settings',
 ];
 
 /** Paths only students may access. Instructors are redirected to /app/home if they hit these. */

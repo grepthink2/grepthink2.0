@@ -1,50 +1,127 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useClass } from '@/lib/classContext';
+import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
-import { User, Mail, Shield } from 'lucide-react';
+import ControlBar from '@features/app/components/Roster/ControlBar';
+import RosterList from '@features/app/components/Roster/RosterList';
+import PieCharts from '@features/app/components/Roster/PieCharts';
+import {
+  applyFilter,
+  isBulkInviteCandidate,
+  mapApiRosterStudent,
+  type FilterOption,
+  type UiStudent,
+} from '@features/app/components/Roster/rosterTypes';
 import './Roster.scss';
-
-interface Student {
-  id: string;
-  email: string;
-  role: string;
-}
 
 const Roster: React.FC = () => {
   const { selectedClass } = useClass();
-  const [students, setStudents] = useState<Student[]>([]);
+  const { role } = useAuth();
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<FilterOption>('all');
+  const [students, setStudents] = useState<UiStudent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (selectedClass) {
-      fetchStudents();
-    } else {
-      setStudents([]);
-    }
-  }, [selectedClass]);
-
-  const fetchStudents = async () => {
-    if (!selectedClass) return;
-
+  const loadRoster = useCallback(async (classId: string) => {
     setLoading(true);
     setError(null);
-
     try {
-      const response = await api.getClassStudents(selectedClass.id);
-      setStudents(response.students);
+      const { students: rows } = await api.getClassRoster(classId);
+      setStudents(rows.map(mapApiRosterStudent));
     } catch (err) {
-      console.error('Failed to fetch students:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch students');
+      setStudents([]);
+      setError(err instanceof Error ? err.message : 'Failed to load roster');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedClass?.id) {
+      setStudents([]);
+      return;
+    }
+    void loadRoster(selectedClass.id);
+  }, [selectedClass?.id, loadRoster]);
+
+  const filtered = useMemo(() => {
+    const byFilter = applyFilter(students, filter);
+    if (!search.trim()) return byFilter;
+    const q = search.toLowerCase();
+    return byFilter.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q),
+    );
+  }, [students, filter, search]);
+
+  const notRegisteredCount = useMemo(
+    () => students.filter(isBulkInviteCandidate).length,
+    [students],
+  );
+
+  const handleUploadRoster = async (file: File) => {
+    if (!selectedClass?.id) return;
+    if (
+      !window.confirm(
+        'Uploading a new roster will replace the current one for this class. Continue?',
+      )
+    ) {
+      return;
+    }
+
+    setActionError(null);
+    try {
+      await api.uploadClassRoster(selectedClass.id, file);
+      await loadRoster(selectedClass.id);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to upload roster');
+    }
   };
 
-  const filteredStudents = students.filter((student) =>
-    student.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleInviteAll = async () => {
+    if (!selectedClass?.id) return;
+    const emails = students.filter(isBulkInviteCandidate).map((s) => s.email);
+    if (emails.length === 0) return;
+
+    setActionError(null);
+    try {
+      const result = await api.bulkInviteStudents(selectedClass.id, emails);
+      const notFound = result.results.filter((r) => r.status === 'not_found').length;
+      await loadRoster(selectedClass.id);
+      if (notFound > 0) {
+        setActionError(
+          `Invited ${result.enrolled_count} student(s). ${notFound} email(s) have no GrepThink account yet.`,
+        );
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to invite students');
+    }
+  };
+
+  const handleInvite = async (student: UiStudent) => {
+    if (!selectedClass?.id) return;
+    setActionError(null);
+    try {
+      await api.inviteStudent(selectedClass.id, student.email);
+      await loadRoster(selectedClass.id);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to invite student');
+    }
+  };
+
+  const handleRemove = async (student: UiStudent) => {
+    if (!selectedClass?.id) return;
+    if (!window.confirm(`Remove ${student.name} from this class?`)) return;
+
+    setActionError(null);
+    try {
+      await api.removeStudentFromClass(selectedClass.id, student.id);
+      await loadRoster(selectedClass.id);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to remove student');
+    }
+  };
 
   if (!selectedClass) {
     return (
@@ -57,91 +134,50 @@ const Roster: React.FC = () => {
     );
   }
 
-  if (loading) {
+  if (role === 'student') {
     return (
       <div className="roster">
-        <div className="roster__loading">Loading students...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="roster">
-        <div className="roster__error">
-          <h2>Error</h2>
-          <p>{error}</p>
-          <button onClick={fetchStudents}>Retry</button>
-        </div>
+        <ControlBar
+          search={search}
+          onSearchChange={setSearch}
+          filter={filter}
+          onFilterChange={setFilter}
+        />
+        <RosterList students={filtered} loading={loading} error={error} showActions={false} />
       </div>
     );
   }
 
   return (
     <div className="roster">
-      <div className="roster__header">
-        <div className="roster__header-left">
-          <h1>Class Roster</h1>
-          <p className="roster__class-name">{selectedClass.name}</p>
+      <ControlBar
+        search={search}
+        onSearchChange={setSearch}
+        filter={filter}
+        onFilterChange={setFilter}
+        notRegisteredCount={notRegisteredCount}
+        onInviteAll={handleInviteAll}
+        onRosterFileSelected={handleUploadRoster}
+      />
+      {actionError && (
+        <div className="roster__action-error" role="alert">
+          {actionError}
         </div>
-        <div className="roster__header-right">
-          <span className="roster__count">
-            {students.length} {students.length === 1 ? 'Student' : 'Students'}
-          </span>
-        </div>
-      </div>
-
-      <div className="roster__controls">
-        <div className="roster__search">
-          <input
-            type="text"
-            placeholder="Search by email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="roster__search-input"
+      )}
+      <div className="roster__layout">
+        <div className="roster__main">
+          <RosterList
+            students={filtered}
+            loading={loading}
+            error={error}
+            showActions
+            onInvite={handleInvite}
+            onRemove={handleRemove}
           />
         </div>
-      </div>
-
-      <div className="roster__content">
-        {filteredStudents.length === 0 ? (
-          <div className="roster__empty-state">
-            {searchQuery ? (
-              <p>No students found matching "{searchQuery}"</p>
-            ) : (
-              <p>No students enrolled in this class yet.</p>
-            )}
-          </div>
-        ) : (
-          <div className="roster__table">
-            <div className="roster__table-header">
-              <div className="roster__table-cell roster__table-cell--icon"></div>
-              <div className="roster__table-cell roster__table-cell--email">Email</div>
-              <div className="roster__table-cell roster__table-cell--role">Role</div>
-            </div>
-            {filteredStudents.map((student) => (
-              <div key={student.id} className="roster__table-row">
-                <div className="roster__table-cell roster__table-cell--icon">
-                  <div className="roster__user-avatar">
-                    <User size={16} />
-                  </div>
-                </div>
-                <div className="roster__table-cell roster__table-cell--email">
-                  <div className="roster__user-email">
-                    <Mail size={14} />
-                    <span>{student.email}</span>
-                  </div>
-                </div>
-                <div className="roster__table-cell roster__table-cell--role">
-                  <div className="roster__role-badge">
-                    <Shield size={14} />
-                    <span>{student.role || 'Student'}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="roster__sidebar">
+          <PieCharts students={students} />
+        </div>
       </div>
     </div>
   );

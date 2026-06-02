@@ -1,0 +1,286 @@
+@use '@styles/index.scss' as *;
+
+// ── Status badge color tokens ─────────────────────────────────
+$enrolled-bg:         #d4f5ee;
+$enrolled-text:       #018156;
+$waitlisted-bg:       #fef3c7;
+$waitlisted-text:     #d97706;
+$dropped-bg:          #fee2e2;
+$dropped-text:        #ef4444;
+$not-on-roster-bg:    #f3f4f6;
+$not-on-roster-text:  #6b7280;
+$gt-registered-bg:    #d4f5ee;
+$gt-registered-text:  #018156;
+$gt-not-reg-bg:       #f3f4f6;
+$gt-not-reg-text:     #6b7280;
+
+// ── Wrapper ───────────────────────────────────────────────────
+.roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__title {
+    font-size: 1.1rem;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    margin: 0;
+  }
+
+  &__count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 7px;
+    background-color: $primary-color;
+    color: $white;
+    border-radius: 13px;
+    font-size: 0.8rem;
+    font-weight: $font-weight-semibold;
+  }
+
+  // ── Card ────────────────────────────────────────────────────
+  &__table-card {
+    background: $white;
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.08);
+  }
+
+  &__table-wrapper {
+    overflow-x: hidden;
+  }
+
+  &__empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: $text-secondary;
+    font-size: $font-size-base;
+  }
+
+  // ── Table ───────────────────────────────────────────────────
+  &__table {
+    width: 100%;
+    table-layout: auto;
+    border-collapse: collapse;
+    font-size: $font-size-sm;
+
+    thead tr {
+      background-color: $background;
+    }
+
+    th {
+      text-align: left;
+      padding: 8px 8px;
+      color: $text-tertiary;
+      font-weight: $font-weight-medium;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 10px 8px;
+      color: $text-primary;
+      border-bottom: 1px solid $border-color;
+      vertical-align: middle;
+      background-color: $white;
+      font-weight: $font-weight-medium;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover td {
+      background-color: #fafafa;
+    }
+
+    // Name + email absorb all remaining horizontal space
+    th:nth-child(1), td:nth-child(1) {
+      padding-left: $spacing-md;
+      padding-right: 6px;
+      width: 28%;
+      min-width: 0;
+    }
+
+    th:nth-child(2), td:nth-child(2) {
+      padding-left: 6px;
+      padding-right: 6px;
+      width: 32%;
+      min-width: 0;
+    }
+
+    // Shrink status, projects, and actions to content width
+    th:nth-child(3), td:nth-child(3),
+    th:nth-child(4), td:nth-child(4),
+    th:nth-child(5), td:nth-child(5),
+    th:nth-child(6), td:nth-child(6) {
+      width: 1%;
+      white-space: nowrap;
+      padding-left: 6px;
+      padding-right: 6px;
+    }
+
+    th:nth-child(6), td:nth-child(6) {
+      padding-right: $spacing-md;
+    }
+
+    // Student view — full-width table, evenly distributed columns
+    &--no-actions {
+      table-layout: fixed;
+      font-size: $font-size-base;
+
+      th {
+        padding: 10px $spacing-md;
+        font-size: 0.8125rem;
+      }
+
+      td {
+        padding: 14px $spacing-md;
+      }
+
+      th:nth-child(1), td:nth-child(1) {
+        width: 16%;
+        padding-left: $spacing-md;
+        padding-right: $spacing-md;
+        min-width: 0;
+      }
+
+      th:nth-child(2), td:nth-child(2) {
+        width: 26%;
+        padding-left: $spacing-md;
+        padding-right: $spacing-md;
+      }
+
+      th:nth-child(3), td:nth-child(3) {
+        width: 14%;
+        white-space: nowrap;
+      }
+
+      th:nth-child(4), td:nth-child(4) {
+        width: 16%;
+        white-space: nowrap;
+      }
+
+      th:nth-child(5), td:nth-child(5) {
+        width: 28%;
+        padding-right: $spacing-md;
+      }
+    }
+  }
+
+  &__td-name {
+    font-weight: $font-weight-semibold;
+    white-space: nowrap;
+  }
+
+  &__td-email {
+    white-space: nowrap;
+  }
+
+  &__email-link {
+    color: $accent-color;
+    text-decoration: none;
+    font-size: $font-size-sm;
+    white-space: nowrap;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  // ── Status badges ────────────────────────────────────────────
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+
+    &--class-enrolled      { background: $enrolled-bg;      color: $enrolled-text; }
+    &--class-waitlisted    { background: $waitlisted-bg;    color: $waitlisted-text; }
+    &--class-dropped       { background: $dropped-bg;       color: $dropped-text; }
+    &--class-not_on_roster { background: $not-on-roster-bg; color: $not-on-roster-text; }
+
+    &--gt-registered     { background: $gt-registered-bg; color: $gt-registered-text; }
+    &--gt-not_registered { background: $gt-not-reg-bg;    color: $gt-not-reg-text; }
+  }
+
+  // ── Projects cell ────────────────────────────────────────────
+  &__projects-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  &__project-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    background-color: rgba($accent-color, 0.1);
+    color: $accent-color;
+    border-radius: $border-radius-sm;
+    font-size: 0.72rem;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__no-projects {
+    color: $text-tertiary;
+  }
+
+  // ── Action buttons ───────────────────────────────────────────
+  &__td-actions {
+    white-space: nowrap;
+  }
+
+  &__action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: 0.72rem;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: background-color $transition-fast;
+    white-space: nowrap;
+    max-width: 100%;
+
+    &--remove {
+      background: transparent;
+      color: $dropped-text;
+
+      &:hover {
+        background-color: $dropped-bg;
+      }
+    }
+
+    &--invite {
+      background: transparent;
+      color: $enrolled-text;
+
+      &:hover {
+        background-color: $enrolled-bg;
+      }
+    }
+  }
+}

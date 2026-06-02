@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
+import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
 import EmailIcon from '@assets/ic_outline-email.svg';
 import GithubIcon from '@assets/line-md_github.svg';
 import LinkedInIcon from '@assets/mdi_linkedin.svg';
 import CodeIcon from '@assets/material-symbols_code-rounded.svg';
 import './ProjectView.scss';
 import { useAuth } from '@/lib/auth';
+import { MessageButton } from '@features/messages/components/MessageButton';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
+import EditProjectModal from '../EditProject/EditProjectModal';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
+import { getMemberCopyEmail } from '@/features/app/utils/memberUtils';
 
 export interface ProjectViewMember {
   id?: string;
@@ -18,6 +21,7 @@ export interface ProjectViewMember {
   email?: string;
   githubUrl?: string;
   linkedInUrl?: string;
+  imageUrl?: string;
 }
 
 /** Roles that can manage the project (add/drop members, edit project). */
@@ -42,12 +46,15 @@ interface ProjectViewProps {
   projectMembers?: ApiProjectMember[];
   /** Called after member/request changes so parent can refetch. */
   onMembersChange?: () => void;
-  // Sponsor information
-  // sponsorName?: string;
-  // sponsorCompany?: string;
-  // sponsorEmail?: string;
-  // sponsorWebsite?: string;
-  // sponsorDescription?: string;
+  /** Called after the project is successfully deleted so the parent can navigate away. */
+  onDelete?: () => void;
+  // Sponsor information — typed so callers compile; rendering is gated
+  // behind the (still commented-out) sponsor section in the JSX below.
+  sponsorName?: string | null;
+  sponsorCompany?: string | null;
+  sponsorEmail?: string | null;
+  sponsorWebsite?: string | null;
+  sponsorDescription?: string | null;
 }
 
 const ProjectView: React.FC<ProjectViewProps> = ({
@@ -64,19 +71,37 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   project,
   projectMembers = [],
   onMembersChange,
+  onDelete,
   // sponsorName,
   // sponsorCompany,
   // sponsorEmail,
   // sponsorWebsite,
   // sponsorDescription,
 }) => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isInstructor = role === 'instructor';
   const canManageProject =
     isInstructor ||
     (userRoleOnProject != null && MANAGER_ROLES.includes(userRoleOnProject as (typeof MANAGER_ROLES)[number]));
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [memberManagerOpen, setMemberManagerOpen] = useState(false);
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
+  const [emailsCopied, setEmailsCopied] = useState(false);
+
+  const handleCopyAllEmails = async () => {
+    const emails = projectMembers
+      .map(getMemberCopyEmail)
+      .filter((email): email is string => Boolean(email));
+    if (emails.length === 0) return;
+
+    try {
+      await navigator.clipboard.writeText(emails.join(', '));
+      setEmailsCopied(true);
+      setTimeout(() => setEmailsCopied(false), 2000);
+    } catch {
+      // clipboard unavailable
+    }
+  };
 
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
@@ -181,9 +206,13 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                   </svg>
                   Add/Drop Members
                 </button>
-                <button className="project-view__request-button">
+                <button
+                  className="project-view__request-button"
+                  onClick={() => projectId && project && setEditProjectOpen(true)}
+                  disabled={!projectId || !project}
+                >
                   <SquarePen size={18} />
-                  Edit Project
+                  Edit Project/Roles
                 </button>
               </div>
             ) : userRoleOnProject != null && userRoleOnProject !== '' ? (
@@ -228,7 +257,23 @@ const ProjectView: React.FC<ProjectViewProps> = ({
         <div className="project-view__right-column">
           {/* Team Members */}
           <div className="project-view__section">
-            <h3 className="project-view__section-title">Team Members</h3>
+            <div className="project-view__section-header">
+              <h3 className="project-view__section-title">Team Members</h3>
+              {projectMembers.length > 0 && (
+                <button
+                  type="button"
+                  className={`project-view__copy-emails-btn${
+                    emailsCopied ? ' project-view__copy-emails-btn--copied' : ''
+                  }`}
+                  onClick={() => void handleCopyAllEmails()}
+                  aria-label="Copy all team member emails"
+                  title="Copy all team member emails"
+                >
+                  {emailsCopied ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{emailsCopied ? 'Copied' : 'Copy All Emails'}</span>
+                </button>
+              )}
+            </div>
             <div className="project-view__team-list">
               {members.length === 0 ? (
                 <div className="project-view__team-member">
@@ -248,17 +293,25 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 members.map((member, index) => (
                   <div key={member.id ?? `member-${index}`} className="project-view__team-member">
                     <div className="project-view__member-avatar">
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
+                      {member.imageUrl ? (
+                        <img
+                          src={member.imageUrl}
+                          alt={member.displayName}
+                          className="project-view__member-avatar-img"
+                        />
+                      ) : (
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
+                        </svg>
+                      )}
                     </div>
                     <div className="project-view__member-info">
                       <div className="project-view__member-name">{member.displayName}</div>
                       <div className="project-view__member-role">{member.roleLabel}</div>
                       <div className="project-view__member-links">
                         {member.email ? (
-                          <a href={`mailto:${member.email}`} className="project-view__link-icon-wrap" title={member.email} aria-label={`Email ${member.displayName}`}>
+                          <a href={`mailto:${member.email}`} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title={member.email} aria-label={`Email ${member.displayName}`}>
                             <img src={EmailIcon} alt="" className="project-view__link-icon" />
                           </a>
                         ) : (
@@ -266,12 +319,38 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                             <img src={EmailIcon} alt="" className="project-view__link-icon" />
                           </span>
                         )}
-                        <a href={member.githubUrl || '#'} className="project-view__link-icon-wrap" title="GitHub" aria-label={`${member.displayName} GitHub`} onClick={(e) => !member.githubUrl && e.preventDefault()}>
-                          <img src={GithubIcon} alt="" className="project-view__link-icon" />
-                        </a>
-                        <a href={member.linkedInUrl || '#'} className="project-view__link-icon-wrap" title="LinkedIn" aria-label={`${member.displayName} LinkedIn`} onClick={(e) => !member.linkedInUrl && e.preventDefault()}>
-                          <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
-                        </a>
+                        {member.githubUrl ? (
+                          <a href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title="GitHub" aria-label={`${member.displayName} GitHub`}>
+                            <img src={GithubIcon} alt="" className="project-view__link-icon" />
+                          </a>
+                        ) : (
+                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
+                            <img src={GithubIcon} alt="" className="project-view__link-icon" />
+                          </span>
+                        )}
+                        {member.linkedInUrl ? (
+                          <a href={member.linkedInUrl} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title="LinkedIn" aria-label={`${member.displayName} LinkedIn`}>
+                            <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
+                          </a>
+                        ) : (
+                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
+                            <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
+                          </span>
+                        )}
+                        {member.id && member.id !== user?.id && (
+                          <MessageButton
+                            toUserId={member.id}
+                            toUserName={member.displayName}
+                            className="project-view__link-icon-wrap project-view__message-icon-wrap"
+                          >
+                            <MessageCircleMore
+                              size={18}
+                              strokeWidth={2.75}
+                              className="project-view__message-icon"
+                              aria-hidden="true"
+                            />
+                          </MessageButton>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -361,6 +440,16 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           project={project}
           initialMembers={projectMembers}
           onMembersChange={onMembersChange}
+        />
+      )}
+      {projectId && project && (
+        <EditProjectModal
+          isOpen={editProjectOpen}
+          onClose={() => setEditProjectOpen(false)}
+          project={project}
+          projectMembers={projectMembers}
+          onProjectChange={onMembersChange}
+          onDelete={onDelete}
         />
       )}
     </div>

@@ -1,10 +1,14 @@
 """
 TSR business logic
 """
+import logging
 from uuid import UUID
 from fastapi import HTTPException
 from app.database.client import service_client, supabase
 from app.tsr.models import CreateTSRRequest
+from app.utils.profiles import PROFILE_SELECT, profile_display_name
+
+logger = logging.getLogger(__name__)
 
 
 TSR_FIELDS = (
@@ -26,15 +30,15 @@ def _enrich_tsrs(client, tsrs: list) -> list:
     )
     if not all_ids:
         return tsrs
-    profiles = client.table('profiles').select('id, email, name').in_('id', all_ids).execute()
+    profiles = client.table('profiles').select(PROFILE_SELECT).in_('id', all_ids).execute()
     profile_map = {p['id']: p for p in (profiles.data or [])}
     for tsr in tsrs:
         ev_profile = profile_map.get(tsr.get('evaluator_id'), {})
         ee_profile = profile_map.get(tsr.get('evaluatee_id'), {})
         tsr['evaluator_email'] = ev_profile.get('email')
-        tsr['evaluator_name'] = ev_profile.get('name') or ev_profile.get('email')
+        tsr['evaluator_name'] = profile_display_name(ev_profile)
         tsr['evaluatee_email'] = ee_profile.get('email')
-        tsr['evaluatee_name'] = ee_profile.get('name') or ee_profile.get('email')
+        tsr['evaluatee_name'] = profile_display_name(ee_profile)
     return tsrs
 
 
@@ -119,15 +123,59 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
         if data.assignment_id:
             tsr_data["assignment_id"] = str(data.assignment_id)
 
+        # Upsert: one row per evaluator + evaluatee + project (+ assignment or week).
+        existing_query = (
+            client.table('TSRs')
+            .select('id')
+            .eq('evaluator_id', user_id)
+            .eq('evaluatee_id', str(data.evaluatee_id))
+            .eq('project_id', str(data.project_id))
+        )
+        if data.assignment_id:
+            existing_query = existing_query.eq('assignment_id', str(data.assignment_id))
+        else:
+            existing_query = existing_query.eq('week', data.week)
+
+        existing_result = existing_query.limit(1).execute()
+        existing_id = existing_result.data[0]['id'] if existing_result.data else None
+
+        if existing_id:
+            update_fields = {
+                k: v for k, v in tsr_data.items()
+                if k not in ('evaluator_id', 'evaluatee_id', 'project_id', 'assignment_id')
+            }
+            result = (
+                client.table('TSRs')
+                .update(update_fields)
+                .eq('id', existing_id)
+                .execute()
+            )
+            if not result.data:
+                raise HTTPException(status_code=500, detail="Failed to update TSR")
+            logger.info(
+                "TSR updated | tsr_id=%s project_id=%s evaluator=%s evaluatee=%s",
+                existing_id, data.project_id, user_id, data.evaluatee_id,
+            )
+            return result.data[0]
+
+        # WARN: Table name is 'TSRs' (mixed case) here but 'tsrs' elsewhere
+        # depending on the Postgres identifier quoting. See CODE_REVIEW.md #20.
         result = client.table('TSRs').insert(tsr_data).execute()
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to create TSR")
+        logger.info(
+            "TSR created | tsr_id=%s project_id=%s evaluator=%s evaluatee=%s week=%s",
+            result.data[0].get('id'), data.project_id, user_id, data.evaluatee_id, data.week,
+        )
         return result.data[0]
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error creating TSR: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create TSR: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error creating TSR | project_id=%s evaluator=%s evaluatee=%s",
+            data.project_id, user_id, data.evaluatee_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to create TSR")
 
 
 def view_tsrs(user_id: str, project_id: UUID) -> list:
@@ -163,9 +211,11 @@ def view_tsrs(user_id: str, project_id: UUID) -> list:
         return _enrich_tsrs(client, result.data or [])
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching TSRs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch TSRs: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching TSRs | project_id=%s user_id=%s", project_id, user_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch TSRs")
 
 
 def get_tsrs_submitted_by(
@@ -204,9 +254,12 @@ def get_tsrs_submitted_by(
         return _enrich_tsrs(client, result.data or [])
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching submitted TSRs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch submitted TSRs: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching submitted TSRs | project_id=%s requester=%s subject=%s week=%s",
+            project_id, requester_id, target_user_id or requester_id, week,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch submitted TSRs")
 
 
 def get_tsrs_received_by(
@@ -245,6 +298,9 @@ def get_tsrs_received_by(
         return _enrich_tsrs(client, result.data or [])
     except HTTPException:
         raise
-    except Exception as e:
-        print(f"Error fetching received TSRs: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to fetch received TSRs: {str(e)}")
+    except Exception:
+        logger.exception(
+            "Error fetching received TSRs | project_id=%s requester=%s subject=%s week=%s",
+            project_id, requester_id, target_user_id or requester_id, week,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch received TSRs")

@@ -2,8 +2,10 @@
 Class management request models
 """
 import datetime
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel
+
+ClassStatus = Literal['active', 'complete']
 
 
 class CreateClassRequest(BaseModel):
@@ -22,3 +24,13 @@ class InviteStudentRequest(BaseModel):
 class JoinClassRequest(BaseModel):
     """Request model for joining a class with a course code"""
     course_code: str
+
+
+class UpdateClassStatusRequest(BaseModel):
+    """Request model for updating a class lifecycle status (instructor only)."""
+    status: ClassStatus
+
+
+class BulkInviteRequest(BaseModel):
+    """Request model for bulk-enrolling students by email list"""
+    emails: list[str]

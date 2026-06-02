@@ -1,0 +1,126 @@
+@use '@styles/index.scss' as *;
+@use './assignTokens' as *;
+
+.drop-slot {
+  display: flex;
+  align-items: stretch;
+  gap: $spacing-md;
+  min-height: $assign-row-min-height;
+}
+
+.drop-slot__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: $text-tertiary;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.drop-slot__placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 12px $spacing-md;
+  border: 1.5px dashed $assign-muted-border;
+  border-radius: $border-radius-sm;
+  color: $assign-subtle-text;
+  font-size: $font-size-sm;
+  min-height: $assign-row-min-height;
+  transition: border-color $transition-fast, background-color $transition-fast,
+    color $transition-fast;
+
+  &--drag-over {
+    border-color: $primary-color;
+    background: $assign-primary-soft-bg;
+    color: $primary-color;
+  }
+}
+
+.drop-slot__assigned {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 10px 12px;
+  border: 1px solid $assign-muted-border;
+  border-radius: $border-radius-sm;
+  background: $white;
+  min-height: $assign-row-min-height;
+  box-sizing: border-box;
+  cursor: grab;
+  transition: opacity $transition-fast, box-shadow $transition-fast;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &--dragging {
+    opacity: 0.4;
+  }
+}
+
+.drop-slot__grip {
+  color: $assign-subtle-text;
+  flex-shrink: 0;
+}
+
+.drop-slot__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.drop-slot__name {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.drop-slot__email {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+.drop-slot__group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: $assign-primary-soft-bg;
+  color: $primary-color;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  cursor: default;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.drop-slot__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: $text-tertiary;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: color $transition-fast;
+
+  &:hover {
+    color: $assign-red-soft-text;
+  }
+}

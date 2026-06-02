@@ -17,9 +17,11 @@ import arrowIcon from '@assets/Arrow.svg?url';
 
 interface SignUpProps {
   userType?: 'instructor' | 'student';
+  embedded?: boolean;
+  onAccountCreated?: (email: string) => void;
 }
 
-const SignUp: React.FC<SignUpProps> = ({ userType }) => {
+const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCreated }) => {
   const navigate = useNavigate();
   const { getToken } = useAuth();
   
@@ -57,7 +59,10 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/app`,
+          // AuthCallback exchanges the code and then routes first-time
+          // Google users to /select so they can pick student/instructor.
+          // See AuthCallback.tsx.
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -89,6 +94,29 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
       setError('Password must be at least 8 characters');
       setIsLoading(false);
       return;
+    }
+
+    // If signing up with a .edu email, check it isn't already claimed as
+    // another account's verified edu_email before creating the auth account.
+    if (formData.email.toLowerCase().endsWith('.edu')) {
+      try {
+        const checkRes = await fetch('/api/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email }),
+        });
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (!checkData.available) {
+            setError('This .edu email is already linked to another account.');
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch {
+        // Network error on the pre-check — let signup proceed; the backend
+        // create-user endpoint has a defensive check as a second layer.
+      }
     }
 
     try {
@@ -141,7 +169,11 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
            console.error('Sync error:', syncError);
       }
 
-      navigate('/app');
+      if (onAccountCreated) {
+        onAccountCreated(formData.email);
+      } else {
+        navigate('/app');
+      }
     } catch (err: unknown) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to create account. Please try again.');
@@ -163,7 +195,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType }) => {
     : 'Create an Account';
 
   return (
-    <div className="pageWrapper">
+    <div className={embedded ? 'embeddedWrapper' : 'pageWrapper'}>
       <div className="container">
         {/* Header Section */}
         <h1 className="header">{headerText}</h1>

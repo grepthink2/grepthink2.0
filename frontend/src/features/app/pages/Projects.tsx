@@ -1,108 +1,135 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
-import type { ApiProject } from '@/lib/api';
+import type { ApiProject, ApiStudent } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import AddProjectButton from '@features/app/components/Project/AddProjectButton';
+import AssignProjectsButton from '@features/app/components/Project/AssignProjectsButton';
 import ProjectList, {
   type UiProject,
   type ProjectSentiment,
 } from '@features/app/components/Project/ProjectList';
-import AssignmentTurnInRate, {
-  type TurnInRateData,
-} from '@features/app/components/Stats/AssignmentTurnInRate';
+import ProjectMembershipChart from '@features/app/components/Stats/ProjectMembershipChart';
 import ProjectHealth, {
   type ProjectHealthItem,
+  type HealthStatus,
 } from '@features/app/components/Stats/ProjectHealth';
 import './Projects.scss';
 
-const mockTurnInRate: TurnInRateData = {
-  rate: 69,
-  teamsSubmitted: { count: 18, total: 26 },
-  partialSubmissions: { count: 5, total: 26 },
-  currentAssignment: 'Team Status Report 1',
-  dueDate: 'Jan 30, 2026',
+const UNASSIGNED = 'Unassigned';
+
+const SENTIMENT_TO_HEALTH: Record<ProjectSentiment, HealthStatus> = {
+  positive: 'excellent',
+  neutral: 'warning',
+  negative: 'poor',
 };
 
-const mockProjectHealth: ProjectHealthItem[] = [
-  {
-    id: '1',
-    name: 'ShoeShopper',
-    health: 'excellent',
-    description: 'Excellent collaboration and progress on schedule',
-    via: 'Team Status Report 1',
-  },
-  {
-    id: '2',
-    name: 'Chatcut',
-    health: 'warning',
-    description: 'Minor disagreements on tech stack decisions',
-    via: 'Team Status Report 1',
-  },
-  {
-    id: '3',
-    name: 'TaskMaster',
-    health: 'poor',
-    description: 'Significant delays and communication breakdowns',
-    via: 'Team Status Report 2',
-  },
-];
+const HEALTH_DESCRIPTION: Record<ProjectSentiment, string> = {
+  positive: 'Team sentiment is positive',
+  neutral: 'Team sentiment is neutral',
+  negative: 'Team sentiment is negative',
+};
 
-const MOCK_POS = [
-  { name: 'John D', email: 'johnd@ucsc.edu' },
-  { name: 'Jane D', email: 'janed@ucsc.edu' },
-];
+function normalizeSentiment(raw: string | null | undefined): ProjectSentiment {
+  if (raw === 'positive' || raw === 'neutral' || raw === 'negative') {
+    return raw;
+  }
+  return 'neutral';
+}
 
-const MOCK_SMS = [
-  { name: 'John B', email: 'johnb@ucsc.edu' },
-  { name: 'Jane B', email: 'janeb@ucsc.edu' },
-];
-
-const MOCK_STUDENTS = [6, 5, 4, 6, 7];
-const MOCK_SENTIMENTS: ProjectSentiment[] = ['positive', 'negative', 'neutral', 'negative'];
-
-const buildUiProject = (project: ApiProject, index: number): UiProject => {
-  const po = MOCK_POS[index % MOCK_POS.length];
-  const sm = MOCK_SMS[index % MOCK_SMS.length];
-  const students = MOCK_STUDENTS[index % MOCK_STUDENTS.length];
-  const sentiment = MOCK_SENTIMENTS[index % MOCK_SENTIMENTS.length];
-
+function mapApiProjectToUi(project: ApiProject): UiProject {
   return {
     id: project.id,
     name: project.name,
-    students,
-    poName: po.name,
-    poEmail: po.email,
-    smName: sm.name,
-    smEmail: sm.email,
-    sentiment,
+    students: project.member_count ?? 0,
+    poName: project.product_owner_name?.trim() || UNASSIGNED,
+    poEmail: project.product_owner_email ?? '',
+    smName: project.scrum_master_name?.trim() || UNASSIGNED,
+    smEmail: project.scrum_master_email ?? '',
+    sentiment: normalizeSentiment(project.sentiment ?? undefined),
   };
-};
+}
+
+function buildProjectHealth(apiProjects: ApiProject[]): ProjectHealthItem[] {
+  const severityOrder: Record<ProjectSentiment, number> = {
+    negative: 0,
+    neutral: 1,
+    positive: 2,
+  };
+
+  return apiProjects
+    .filter((p) => p.sentiment)
+    .map((p) => {
+      const sentiment = normalizeSentiment(p.sentiment);
+      return {
+        order: severityOrder[sentiment],
+        item: {
+          id: p.id,
+          name: p.name,
+          health: SENTIMENT_TO_HEALTH[sentiment],
+          description: HEALTH_DESCRIPTION[sentiment],
+          via: 'Team Sentiment',
+        },
+      };
+    })
+    .sort((a, b) => a.order - b.order)
+    .map(({ item }) => item);
+}
+
+function countProjectMembership(students: ApiStudent[]) {
+  const enrolledStudents = students.filter((s) => s.role !== 'instructor');
+  const inProject = enrolledStudents.filter((s) => s.project_id).length;
+  return {
+    inProject,
+    notInProject: enrolledStudents.length - inProject,
+  };
+}
 
 const Projects: React.FC = () => {
   const { selectedClass } = useClass();
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<UiProject[]>([]);
+  const [apiProjects, setApiProjects] = useState<ApiProject[]>([]);
+  const [classStudents, setClassStudents] = useState<ApiStudent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const projects = useMemo(
+    () => apiProjects.map(mapApiProjectToUi),
+    [apiProjects],
+  );
+
+  const projectHealth = useMemo(
+    () => buildProjectHealth(apiProjects),
+    [apiProjects],
+  );
+
+  const membershipStats = useMemo(
+    () => countProjectMembership(classStudents),
+    [classStudents],
+  );
 
   useEffect(() => {
     if (!selectedClass) {
       setLoading(false);
-      setProjects([]);
+      setApiProjects([]);
+      setClassStudents([]);
       setError(null);
       return;
     }
 
     let isMounted = true;
 
-    const fetchProjects = async () => {
+    const fetchProjectsPageData = async () => {
       try {
         setLoading(true);
-        const response = await api.getClassProjects(selectedClass.id);
+        const [projectsResponse, studentsResponse] = await Promise.all([
+          api.getClassProjects(selectedClass.id),
+          api.getClassStudents(selectedClass.id),
+        ]);
         if (!isMounted) return;
-        const uiProjects = response.projects.map(buildUiProject);
-        setProjects(uiProjects);
+
+        setApiProjects(projectsResponse.projects ?? []);
+        setClassStudents(studentsResponse.students ?? []);
         setError(null);
       } catch (err) {
         if (isMounted) {
@@ -115,7 +142,7 @@ const Projects: React.FC = () => {
       }
     };
 
-    fetchProjects();
+    fetchProjectsPageData();
 
     return () => {
       isMounted = false;
@@ -136,11 +163,11 @@ const Projects: React.FC = () => {
   return (
     <div className="projects">
       <div className="projects__layout">
-        {/* Left: table and actions */}
         <div className="projects__main">
           <div className="projects__header">
             <div className="projects__header-actions">
               <AddProjectButton />
+              <AssignProjectsButton />
             </div>
           </div>
 
@@ -156,10 +183,12 @@ const Projects: React.FC = () => {
           />
         </div>
 
-        {/* Right: stats column */}
         <div className="projects__stats">
-          <AssignmentTurnInRate data={mockTurnInRate} />
-          <ProjectHealth projects={mockProjectHealth} />
+          <ProjectMembershipChart
+            inProject={membershipStats.inProject}
+            notInProject={membershipStats.notInProject}
+          />
+          <ProjectHealth projects={projectHealth} />
         </div>
       </div>
     </div>
@@ -167,4 +196,3 @@ const Projects: React.FC = () => {
 };
 
 export default Projects;
-

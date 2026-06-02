@@ -1,0 +1,184 @@
+@use '@styles/index.scss' as *;
+
+.roster-control-bar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+  flex-wrap: wrap;
+
+  &__search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    max-width: 320px;
+  }
+
+  &__search-icon {
+    position: absolute;
+    left: 10px;
+    color: $text-tertiary;
+    pointer-events: none;
+  }
+
+  &__search-input {
+    width: 100%;
+    padding: 8px 12px 8px 34px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    color: $text-primary;
+    background: $white;
+    outline: none;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      border-color: $primary-color;
+    }
+
+    &::placeholder {
+      color: $text-tertiary;
+    }
+  }
+
+  // ── Custom filter dropdown ───────────────────────────────────
+  &__filter-wrap {
+    position: relative;
+  }
+
+  &__filter-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    color: $text-primary;
+    background: $white;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color $transition-fast;
+    outline: none;
+
+    &:hover {
+      border-color: darken(#DADADA, 10%);
+    }
+
+    &--open {
+      border-color: $primary-color;
+    }
+  }
+
+  &__filter-chevron {
+    color: $text-tertiary;
+    transition: transform $transition-fast;
+    flex-shrink: 0;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__filter-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 220px;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.1);
+    z-index: $z-index-dropdown;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__filter-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    color: $text-primary;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background: $background;
+    }
+
+    &--active {
+      color: $primary-color;
+      font-weight: $font-weight-medium;
+    }
+  }
+
+  &__filter-check {
+    font-size: $font-size-sm;
+    color: $primary-color;
+    width: 14px;
+    flex-shrink: 0;
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid transparent;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: background-color $transition-fast;
+    white-space: nowrap;
+
+    &--invite {
+      background-color: $primary-color;
+      color: $white;
+
+      &:hover {
+        background-color: $primary-hover;
+      }
+    }
+
+    &--upload {
+      background-color: $white;
+      color: $text-secondary;
+      border-color: $border-color;
+
+      &:hover {
+        background-color: $background;
+      }
+    }
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    background-color: rgba($white, 0.25);
+    border-radius: 10px;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__file-input {
+    display: none;
+  }
+}

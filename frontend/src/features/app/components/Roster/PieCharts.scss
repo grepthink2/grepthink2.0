@@ -1,0 +1,113 @@
+@use '@styles/index.scss' as *;
+
+.pie-charts {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+
+  // ── Chart card ───────────────────────────────────────────────
+  &__card {
+    background: $white;
+    border-radius: $border-radius-md;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.08);
+    padding: $spacing-lg;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__card-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  &__chart-wrapper {
+    display: flex;
+    justify-content: center;
+  }
+
+  // ── Legend ───────────────────────────────────────────────────
+  &__legend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+    padding: 5px 8px;
+    border-radius: $border-radius-sm;
+    background: $background;
+  }
+
+  &__legend-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &__legend-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+  }
+
+  &__legend-count {
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    white-space: nowrap;
+  }
+
+  &__legend-pct {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-normal;
+    color: $text-tertiary;
+  }
+
+  // ── Hover tooltip ────────────────────────────────────────────
+  &__tooltip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    pointer-events: none;
+  }
+
+  &__tooltip-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &__tooltip-name {
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+  }
+
+  &__tooltip-value {
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    margin-left: auto;
+    padding-left: $spacing-sm;
+  }
+}

@@ -43,6 +43,17 @@
   text-align: left;
 }
 
+.error {
+  background-color: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: $border-radius-sm;
+  padding: 10px 12px;
+  margin-top: $spacing-md;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+}
+
 .button-rectangle {
   background-color: $button-secondary;
   border-radius: $border-radius-sm;

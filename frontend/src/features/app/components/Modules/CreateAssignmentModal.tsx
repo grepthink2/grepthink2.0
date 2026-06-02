@@ -1,15 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { parse, isValid } from 'date-fns';
-import { X } from 'lucide-react';
+import { X, FileText, Globe } from 'lucide-react';
 import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
 import './CreateAssignmentModal.scss';
 
-const ASSIGNMENT_TEMPLATE = 'Team Status Report';
+type AssignmentTemplate = 'Team Status Report' | 'Project Interest Form';
+export type CreateAssignmentStatus = 'draft' | 'published';
+
+const ASSIGNMENT_TEMPLATES: AssignmentTemplate[] = [
+  'Team Status Report',
+  'Project Interest Form',
+];
 
 interface CreateAssignmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateAssignment?: (data: { name: string; openDate: string; dueDate: string }) => void | Promise<void>;
+  onCreateAssignment?: (data: {
+    name: string;
+    openDate: string;
+    dueDate: string;
+    template: AssignmentTemplate;
+    status: CreateAssignmentStatus;
+  }) => void | Promise<void>;
 }
 
 const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
@@ -17,9 +29,11 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
   onClose,
   onCreateAssignment,
 }) => {
+  const [selectedTemplate, setSelectedTemplate] = useState<AssignmentTemplate>('Team Status Report');
   const [assignmentName, setAssignmentName] = useState('');
   const [openDate, setOpenDate] = useState('');
   const [dueDate, setDueDate]   = useState('');
+  const [status, setStatus] = useState<CreateAssignmentStatus>('draft');
   const [isClosing, setIsClosing]       = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +68,17 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      await onCreateAssignment?.({ name: assignmentName.trim(), openDate, dueDate });
-      setAssignmentName(''); setOpenDate(''); setDueDate('');
+      await onCreateAssignment?.({
+        name: assignmentName.trim(),
+        openDate,
+        dueDate,
+        template: selectedTemplate,
+        status,
+      });
+      setAssignmentName('');
+      setOpenDate('');
+      setDueDate('');
+      setStatus('draft');
       handleClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create assignment');
@@ -94,13 +117,16 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
           <div className="create-assignment-modal__field">
             <h3 className="create-assignment-modal__label">Select Template</h3>
             <div className="create-assignment-modal__template-buttons">
-              <button
-                type="button"
-                className="create-assignment-modal__template-button active"
-                disabled
-              >
-                {ASSIGNMENT_TEMPLATE}
-              </button>
+              {ASSIGNMENT_TEMPLATES.map((template) => (
+                <button
+                  key={template}
+                  type="button"
+                  className={`create-assignment-modal__template-button${selectedTemplate === template ? ' active' : ''}`}
+                  onClick={() => setSelectedTemplate(template)}
+                >
+                  {template}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -135,6 +161,53 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
                 disabledBefore={openDateObj && isValid(openDateObj) ? openDateObj : undefined}
                 labelClassName="create-assignment-modal__sublabel"
               />
+            </div>
+          </div>
+
+          <div className="create-assignment-modal__field">
+            <h3 className="create-assignment-modal__label">Status</h3>
+            <div className="create-assignment-modal__status-options">
+              <button
+                type="button"
+                className={`create-assignment-modal__status-card${status === 'draft' ? ' create-assignment-modal__status-card--selected' : ''}`}
+                onClick={() => setStatus('draft')}
+              >
+                <div className="create-assignment-modal__status-radio">
+                  <div className="create-assignment-modal__status-radio-dot" />
+                </div>
+                <div className="create-assignment-modal__status-card-body">
+                  <div className="create-assignment-modal__status-card-icon create-assignment-modal__status-card-icon--draft">
+                    <FileText size={16} />
+                  </div>
+                  <div className="create-assignment-modal__status-card-text">
+                    <span className="create-assignment-modal__status-card-title">Draft</span>
+                    <span className="create-assignment-modal__status-card-desc">
+                      Saved but not visible to students
+                    </span>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className={`create-assignment-modal__status-card${status === 'published' ? ' create-assignment-modal__status-card--selected' : ''}`}
+                onClick={() => setStatus('published')}
+              >
+                <div className="create-assignment-modal__status-radio">
+                  <div className="create-assignment-modal__status-radio-dot" />
+                </div>
+                <div className="create-assignment-modal__status-card-body">
+                  <div className="create-assignment-modal__status-card-icon create-assignment-modal__status-card-icon--published">
+                    <Globe size={16} />
+                  </div>
+                  <div className="create-assignment-modal__status-card-text">
+                    <span className="create-assignment-modal__status-card-title">Published</span>
+                    <span className="create-assignment-modal__status-card-desc">
+                      Live for students once the open date passes
+                    </span>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 

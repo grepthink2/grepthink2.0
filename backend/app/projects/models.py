@@ -24,8 +24,10 @@ class CreateProjectRequest(BaseModel):
 
 class UpdateProjectRequest(BaseModel):
     """Request model for updating a project. All fields are optional."""
+    name: Optional[str] = None
     team_size: Optional[int] = None
     description: Optional[str] = None
+    image_url: Optional[str] = None
     # Sponsor information
     sponsor_name: Optional[str] = None
     sponsor_company: Optional[str] = None
@@ -48,4 +50,9 @@ class ManageProjectMemberRequest(BaseModel):
     """Request model for adding a member to a project (instructor only)."""
     user_id: UUID
     role: Optional[str] = "member"
+
+
+class AssignRoleRequest(BaseModel):
+    """Request model for assigning product owner or scrum master to a project member."""
+    user_id: UUID
 

@@ -1,30 +1,55 @@
 /**
  * SignUpOrchestrator Component
- * 
- * This component orchestrates the signup flow by determining the user type
- * (instructor or student) based on the current route and passing it to the
- * SignUp component. It wraps the SignUp component with the gradient background.
+ *
+ * Orchestrates the email/password signup flow: credentials first, then a
+ * swipe transition to account details (name + roster .edu email).
  */
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import SignUp from '@features/auth/components/SignUp';
+import AccountDetails from '@features/auth/pages/AccountDetails';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import './SignUpOrchestrator.scss';
 
 const SignUpOrchestrator: React.FC = () => {
   const location = useLocation();
-  
-  // Determine user type based on the current route
-  const userType = location.pathname.includes('instructor') 
-    ? 'instructor' 
+  const [step, setStep] = React.useState<'signup' | 'details'>('signup');
+  const [signupEmail, setSignupEmail] = React.useState('');
+
+  const userType = location.pathname.includes('instructor')
+    ? 'instructor'
     : location.pathname.includes('student')
-    ? 'student'
-    : undefined;
+      ? 'student'
+      : undefined;
+
+  const handleAccountCreated = (email: string) => {
+    setSignupEmail(email);
+    setStep('details');
+  };
 
   return (
     <>
       <GradientBackgroundWrapper />
-      <SignUp userType={userType} />
+      <div className="signupOrchestrator">
+        <div
+          className={`signupOrchestrator__track${
+            step === 'details' ? ' signupOrchestrator__track--details' : ''
+          }`}
+        >
+          <div className="signupOrchestrator__panel">
+            <SignUp
+              userType={userType}
+              embedded
+              onAccountCreated={handleAccountCreated}
+            />
+          </div>
+          <div className="signupOrchestrator__panel">
+            {step === 'details' && (
+              <AccountDetails email={signupEmail} userType={userType} embedded />
+            )}
+          </div>
+        </div>
+      </div>
     </>
   );
 };
