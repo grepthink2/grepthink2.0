@@ -10,6 +10,8 @@ import './TSRView.scss';
 
 export type TsrViewMode = 'about' | 'from';
 
+const ALL_MEMBERS_ID = '';
+
 export interface TsrViewMember {
   id: string;
   name: string;
@@ -154,7 +156,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
             {results.length === 0 ? (
               <li className="tsrv-dd__empty">No results</li>
             ) : results.map((o, idx) => (
-              <li key={o.id}>
+              <li key={o.id || '__all__'}>
                 <button
                   type="button"
                   data-idx={idx}
@@ -250,9 +252,7 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
         }
         roster.sort((a, b) => a.name.localeCompare(b.name));
         setMembers(roster);
-        setFocalMemberId((prev) =>
-          prev && roster.some((m) => m.id === prev) ? prev : roster[0]?.id ?? '',
-        );
+        setFocalMemberId(ALL_MEMBERS_ID);
       } catch {
         if (!cancelled) setMembers([]);
       } finally {
@@ -267,10 +267,19 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
     [entries, selectedProjectId],
   );
 
-  const focalMember = members.find((m) => m.id === focalMemberId);
+  const isOverview = focalMemberId === ALL_MEMBERS_ID;
+  const focalMember = isOverview ? undefined : members.find((m) => m.id === focalMemberId);
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
   const visibleRows = useMemo(() => {
-    if (!focalMemberId) return [];
+    if (isOverview) {
+      return [...projectEntries].sort((a, b) => {
+        const byFrom = (a.evaluator_name ?? '').localeCompare(b.evaluator_name ?? '');
+        return byFrom !== 0
+          ? byFrom
+          : (a.evaluatee_name ?? '').localeCompare(b.evaluatee_name ?? '');
+      });
+    }
     const filtered =
       viewMode === 'about'
         ? projectEntries.filter((e) => e.evaluatee_id === focalMemberId)
@@ -280,7 +289,7 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
       const nameB = viewMode === 'about' ? (b.evaluator_name ?? '') : (b.evaluatee_name ?? '');
       return nameA.localeCompare(nameB);
     });
-  }, [projectEntries, focalMemberId, viewMode]);
+  }, [projectEntries, focalMemberId, viewMode, isOverview]);
 
   const submissionCountByProject = useMemo(() => {
     const byProject: Record<string, Set<string>> = {};
@@ -307,7 +316,10 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
   );
 
   const memberOptions = useMemo(
-    () => members.map((m) => ({ id: m.id, name: m.name })),
+    () => [
+      { id: ALL_MEMBERS_ID, name: 'All members' },
+      ...members.map((m) => ({ id: m.id, name: m.name })),
+    ],
     [members],
   );
 
@@ -342,40 +354,42 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
                 options={memberOptions}
                 value={focalMemberId}
                 onChange={setFocalMemberId}
-                placeholder="Select a member…"
-                disabled={membersLoading || members.length === 0}
+                placeholder="All members"
+                disabled={membersLoading || !selectedProjectId}
               />
             </div>
 
-            <div className="tsr-view__control tsr-view__control--view">
-              <label className="tsr-view__control-label">View</label>
-              <div className="tsr-view__mode-toggle">
-                <button
-                  type="button"
-                  className={`tsr-view__mode-btn${viewMode === 'about' ? ' tsr-view__mode-btn--active' : ''}`}
-                  onClick={() => setViewMode('about')}
-                  disabled={!focalMember}
-                >
-                  About {focalMember ? focalName : 'member'}
-                </button>
-                <button
-                  type="button"
-                  className={`tsr-view__mode-btn${viewMode === 'from' ? ' tsr-view__mode-btn--active' : ''}`}
-                  onClick={() => setViewMode('from')}
-                  disabled={!focalMember}
-                >
-                  From {focalMember ? focalName : 'member'}
-                </button>
+            {!isOverview && (
+              <div className="tsr-view__control tsr-view__control--view">
+                <label className="tsr-view__control-label">View</label>
+                <div className="tsr-view__mode-toggle">
+                  <button
+                    type="button"
+                    className={`tsr-view__mode-btn${viewMode === 'about' ? ' tsr-view__mode-btn--active' : ''}`}
+                    onClick={() => setViewMode('about')}
+                  >
+                    About {focalName}
+                  </button>
+                  <button
+                    type="button"
+                    className={`tsr-view__mode-btn${viewMode === 'from' ? ' tsr-view__mode-btn--active' : ''}`}
+                    onClick={() => setViewMode('from')}
+                  >
+                    From {focalName}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Results */}
           <section className="tsr-view__results">
             <h2 className="tsr-view__section-title">
-              {viewMode === 'about'
-                ? `What teammates said about ${focalName}`
-                : `What ${focalName} said about teammates`}
+              {isOverview
+                ? `All responses for ${selectedProject?.name ?? 'this team'} (${visibleRows.length} ${visibleRows.length === 1 ? 'response' : 'responses'})`
+                : viewMode === 'about'
+                  ? `What teammates said about ${focalName}`
+                  : `What ${focalName} said about teammates`}
             </h2>
 
             {visibleRows.length === 0 ? (
@@ -386,10 +400,17 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
               </p>
             ) : (
               <div className="tsr-view__table-card">
-                <table className="tsr-view__table">
+                <table className={`tsr-view__table${isOverview ? ' tsr-view__table--overview' : ''}`}>
                   <thead>
                     <tr>
-                      <th>{viewMode === 'about' ? 'From' : 'About'}</th>
+                      {isOverview ? (
+                        <>
+                          <th>From</th>
+                          <th>About</th>
+                        </>
+                      ) : (
+                        <th>{viewMode === 'about' ? 'From' : 'About'}</th>
+                      )}
                       <th>Contribution</th>
                       <th>Positive feedback</th>
                       <th>Constructive feedback</th>
@@ -398,9 +419,16 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
                   <tbody>
                     {visibleRows.map((row) => (
                       <tr key={row.tsr_id}>
-                        <td className="tsr-view__td-name">
-                          {viewMode === 'about' ? row.evaluator_name : row.evaluatee_name}
-                        </td>
+                        {isOverview ? (
+                          <>
+                            <td className="tsr-view__td-name">{row.evaluator_name}</td>
+                            <td className="tsr-view__td-name">{row.evaluatee_name}</td>
+                          </>
+                        ) : (
+                          <td className="tsr-view__td-name">
+                            {viewMode === 'about' ? row.evaluator_name : row.evaluatee_name}
+                          </td>
+                        )}
                         <td className="tsr-view__td-pct">{row.percent_contribution}%</td>
                         <td>{row.positive_feedback || '—'}</td>
                         <td>{row.constructive_feedback || '—'}</td>
