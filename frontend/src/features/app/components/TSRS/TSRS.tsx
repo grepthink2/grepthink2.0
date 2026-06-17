@@ -171,8 +171,8 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
         members.map((m) => [
           m.id,
           {
-            tickets: '',
-            assessment: '',
+            tickets: byEvaluatee[m.id]?.scrum_master_tickets ?? '',
+            assessment: byEvaluatee[m.id]?.scrum_master_assessment ?? '',
             notes: byEvaluatee[m.id]?.scrum_master_notes ?? '',
           },
         ]),
@@ -238,7 +238,13 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
     percent_contribution: contributions[member.id] ?? 0,
     positive_feedback: feedback[member.id]?.contribution ?? '',
     constructive_feedback: feedback[member.id]?.improvement ?? '',
-    scrum_master_notes: isScrumMaster ? (scrumData[member.id]?.notes ?? '') : '',
+    ...(isScrumMaster
+      ? {
+          scrum_master_tickets: scrumData[member.id]?.tickets ?? '',
+          scrum_master_assessment: scrumData[member.id]?.assessment ?? '',
+          scrum_master_notes: scrumData[member.id]?.notes ?? '',
+        }
+      : {}),
   });
 
   const handleSubmit = async () => {

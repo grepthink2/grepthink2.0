@@ -100,8 +100,8 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
     """Build the canonical TSR entry shape from a row + profile lookup map.
 
     Always includes tsr_id, evaluator_id, evaluator_name, evaluatee_name,
-    percent_contribution, positive_feedback. constructive_feedback and
-    scrum_master_notes are included only when non-empty.
+    percent_contribution, positive_feedback, constructive_feedback, and
+    Scrum Master fields.
     """
     evaluator_profile = profile_map.get(row['evaluator_id'], {})
     evaluatee_profile = profile_map.get(row['evaluatee_id'], {})
@@ -115,6 +115,8 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
         "percent_contribution": row['percent_contribution'],
         "positive_feedback": row['positive_feedback'],
         "constructive_feedback": row.get('constructive_feedback') or '',
+        "scrum_master_tickets": row.get('scrum_master_tickets') or '',
+        "scrum_master_assessment": row.get('scrum_master_assessment') or '',
         "scrum_master_notes": row.get('scrum_master_notes') or '',
     }
     return entry
@@ -139,8 +141,7 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
 
     Each entry always includes tsr_id, evaluator_id, evaluator_name,
     evaluatee_name, percent_contribution, and positive_feedback.
-    constructive_feedback and scrum_master_notes are only included when
-    they are non-empty.
+    constructive_feedback and Scrum Master fields are always included.
 
     Because every project member evaluates every other member independently,
     multiple entries can exist for the same evaluatee (one per evaluator).
@@ -151,7 +152,8 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
         client.table('TSRs')
         .select(
             'id, evaluator_id, evaluatee_id, project_id, percent_contribution, '
-            'positive_feedback, constructive_feedback, scrum_master_notes, created_at'
+            'positive_feedback, constructive_feedback, scrum_master_tickets, '
+            'scrum_master_assessment, scrum_master_notes, created_at'
         )
         .eq('assignment_id', assignment_id)
         .execute()
@@ -192,7 +194,7 @@ def update_assignment(
     Returns the updated assignment row. If the assignment type is 'tsr', a
     'tsrs' key is also included containing all linked TSR submissions with
     evaluatee_name, percent_contribution, constructive_feedback, and positive_feedback (always present)
-    plus scrum_master_notes when non-empty.
+    plus Scrum Master fields.
     """
     _require_instructor(user_id)
 
@@ -403,6 +405,8 @@ def update_tsr_entry(
     percent_contribution: Optional[int] = None,
     positive_feedback: Optional[str] = None,
     constructive_feedback: Optional[str] = None,
+    scrum_master_tickets: Optional[str] = None,
+    scrum_master_assessment: Optional[str] = None,
     scrum_master_notes: Optional[str] = None,
 ) -> dict:
     """
@@ -470,6 +474,10 @@ def update_tsr_entry(
             updates['positive_feedback'] = positive_feedback
         if constructive_feedback is not None:
             updates['constructive_feedback'] = constructive_feedback
+        if scrum_master_tickets is not None:
+            updates['scrum_master_tickets'] = scrum_master_tickets
+        if scrum_master_assessment is not None:
+            updates['scrum_master_assessment'] = scrum_master_assessment
         if scrum_master_notes is not None:
             updates['scrum_master_notes'] = scrum_master_notes
 
@@ -483,7 +491,8 @@ def update_tsr_entry(
             client.table('TSRs')
             .select(
                 'id, evaluator_id, evaluatee_id, percent_contribution, '
-                'positive_feedback, constructive_feedback, scrum_master_notes'
+                'positive_feedback, constructive_feedback, scrum_master_tickets, '
+                'scrum_master_assessment, scrum_master_notes'
             )
             .eq('id', str(tsr_id))
             .execute()
@@ -520,7 +529,7 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
 
     Each entry is in the same shape as _fetch_tsr_entries (tsr_id,
     evaluator_id, evaluator_name, evaluatee_name, percent_contribution,
-    positive_feedback, plus optional fields).
+    positive_feedback, plus Scrum Master fields).
     """
     try:
         client = _client()
@@ -544,7 +553,8 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
             client.table('TSRs')
             .select(
                 'id, evaluator_id, evaluatee_id, project_id, percent_contribution, '
-                'positive_feedback, constructive_feedback, scrum_master_notes, created_at'
+                'positive_feedback, constructive_feedback, scrum_master_tickets, '
+                'scrum_master_assessment, scrum_master_notes, created_at'
             )
             .eq('assignment_id', str(assignment_id))
             .eq('evaluator_id', user_id)
@@ -590,7 +600,7 @@ def get_tsr_responses_about_user(
 
     Each entry is in the same shape as _fetch_tsr_entries (tsr_id, evaluator_id,
     evaluator_name, evaluatee_name, percent_contribution, positive_feedback,
-    plus optional constructive_feedback and scrum_master_notes).
+    plus optional constructive_feedback and Scrum Master fields).
     """
     try:
         client = _client()
@@ -613,7 +623,8 @@ def get_tsr_responses_about_user(
             client.table('TSRs')
             .select(
                 'id, evaluator_id, evaluatee_id, percent_contribution, '
-                'positive_feedback, constructive_feedback, scrum_master_notes'
+                'positive_feedback, constructive_feedback, scrum_master_tickets, '
+                'scrum_master_assessment, scrum_master_notes'
             )
             .eq('assignment_id', str(assignment_id))
             .eq('evaluatee_id', str(evaluatee_id))
