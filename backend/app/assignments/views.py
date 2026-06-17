@@ -58,6 +58,8 @@ def update_tsr_entry(
         percent_contribution=data.percent_contribution,
         positive_feedback=data.positive_feedback,
         constructive_feedback=data.constructive_feedback,
+        scrum_master_tickets=data.scrum_master_tickets,
+        scrum_master_assessment=data.scrum_master_assessment,
         scrum_master_notes=data.scrum_master_notes,
     )
     return {"message": "TSR updated successfully", "tsr": entry}

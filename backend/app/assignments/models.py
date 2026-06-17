@@ -31,4 +31,6 @@ class UpdateTSREntryRequest(BaseModel):
     percent_contribution: Optional[int] = None
     positive_feedback: Optional[str] = None
     constructive_feedback: Optional[str] = None
+    scrum_master_tickets: Optional[str] = None
+    scrum_master_assessment: Optional[str] = None
     scrum_master_notes: Optional[str] = None

@@ -133,7 +133,9 @@ export interface CreateTsrPayload {
   percent_contribution: number;
   positive_feedback: string;
   constructive_feedback: string;
-  scrum_master_notes: string;
+  scrum_master_tickets?: string;
+  scrum_master_assessment?: string;
+  scrum_master_notes?: string;
   week?: number;
   assignment_id?: string;
 }
@@ -145,6 +147,8 @@ export interface ApiTSR {
   percent_contribution: number;
   positive_feedback: string;
   constructive_feedback: string;
+  scrum_master_tickets?: string;
+  scrum_master_assessment?: string;
   scrum_master_notes?: string;
   email?: string;
   assignment_id?: string;
@@ -162,6 +166,8 @@ export interface ApiAssignmentTsrEntry {
   percent_contribution: number;
   positive_feedback: string;
   constructive_feedback?: string;
+  scrum_master_tickets?: string;
+  scrum_master_assessment?: string;
   scrum_master_notes?: string;
 }
 
@@ -169,6 +175,8 @@ export interface UpdateAssignmentTsrPayload {
   percent_contribution?: number;
   positive_feedback?: string;
   constructive_feedback?: string;
+  scrum_master_tickets?: string;
+  scrum_master_assessment?: string;
   scrum_master_notes?: string;
 }
 
