@@ -2,13 +2,12 @@
 @use '@styles/index.scss' as *;
 
 .dashboard {
-  padding: 2rem;
+  padding: $spacing-lg $spacing-lg $spacing-xxl;
   max-width: 1400px;
   margin: 0 auto;
+  font-family: $primary-font;
 
-  &__empty,
-  &__loading,
-  &__error {
+  &__empty {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -26,146 +25,261 @@
       color: $text-secondary;
       font-size: 1rem;
     }
+  }
 
-    button {
-      margin-top: 1rem;
-      padding: 0.75rem 1.5rem;
-      background-color: $primary-color;
-      color: white;
-      border: none;
-      border-radius: $border-radius-sm;
-      cursor: pointer;
-      font-size: 1rem;
+  &__inline-error {
+    background: rgba($error-color, 0.1);
+    color: #b3261e;
+    border-radius: $border-radius-sm;
+    padding: $spacing-sm $spacing-md;
+    margin-bottom: $spacing-lg;
+    font-size: $font-size-base;
+  }
 
-      &:hover {
-        background-color: $primary-hover;
-      }
+  // ── Metric row ──
+  &__metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+
+    @media (max-width: 1000px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @media (max-width: 520px) {
+      grid-template-columns: 1fr;
     }
   }
 
-  &__header {
-    margin-bottom: 2rem;
-
-    h1 {
-      font-size: 2rem;
-      color: $text-primary;
-      margin-bottom: 0.5rem;
-    }
-  }
-
-  &__header-info {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  &__course-code {
-    color: $text-secondary;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  &__description {
-    color: $text-secondary;
-    font-size: 0.875rem;
-  }
-
+  // ── Main content split ──
   &__content {
     display: grid;
-    gap: 2rem;
-  }
+    grid-template-columns: 2fr 1fr;
+    gap: $spacing-lg;
+    align-items: start;
 
-  &__stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-
-  &__recent {
-    h2 {
-      font-size: 1.25rem;
-      color: $text-primary;
-      margin-bottom: 1rem;
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
     }
   }
-}
 
-.stat-card {
-  background: white;
-  border: 1px solid $border-color;
-  border-radius: $border-radius-md;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  &__aside {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+    min-width: 0;
+  }
 
-  h3 {
-    font-size: 1rem;
+  // ── Cards ──
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    padding: $spacing-lg;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.08);
+  }
+
+  &__card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+
+  &__card-title {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-large;
+    font-weight: $font-weight-semibold;
+    color: $text-dark;
+
+    svg {
+      color: $primary-color;
+      flex-shrink: 0;
+    }
+  }
+
+  &__card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $primary-color;
+    padding: 4px 6px;
+    border-radius: $border-radius-sm;
+    transition: background-color $transition-fast, color $transition-fast;
+
+    &:hover {
+      background: rgba($primary-color, 0.1);
+      color: $primary-hover;
+    }
+  }
+
+  &__card-empty {
+    color: $text-tertiary;
+    font-size: $font-size-base;
+    margin: 0;
+    padding: $spacing-sm 0;
+  }
+
+  &__health-scroll {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 0 (-$spacing-sm);
+    padding: 0 $spacing-sm;
+  }
+
+  // ── Assignments ──
+  &__assignment-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__assignment-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+    padding: $spacing-md 0;
+    border-bottom: 1px solid $border-color;
+
+    &:first-child {
+      padding-top: 0;
+    }
+
+    &:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+  }
+
+  &__assignment-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__assignment-title {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
     color: $text-primary;
-    margin-bottom: 1rem;
-    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  &__content {
+  &__assignment-due {
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+  }
+
+  &__assignment-end {
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    align-items: center;
+    gap: $spacing-md;
+    flex-shrink: 0;
   }
 
-  &__actions {
+  &__assignment-count {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $text-tertiary;
+  }
+
+  &__pill {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    white-space: nowrap;
+
+    &--draft {
+      background: rgba($text-tertiary, 0.12);
+      color: $text-secondary;
+    }
+
+    &--active {
+      background: rgba(39, 113, 255, 0.12);
+      color: #1e5bb8;
+    }
+
+    &--closed {
+      background: rgba(1, 129, 86, 0.14);
+      color: $primary-hover;
+    }
+  }
+
+  // ── TSR summary ──
+  &__tsr {
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    align-items: baseline;
+    gap: $spacing-sm;
   }
-}
 
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid $border-color;
-
-  &:last-child {
-    border-bottom: none;
+  &__tsr-num {
+    font-size: 2.25rem;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    line-height: 1;
   }
-}
 
-.stat-label {
-  color: $text-secondary;
-  font-size: 0.875rem;
-}
-
-.stat-value {
-  color: $text-primary;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.action-button {
-  padding: 0.75rem 1rem;
-  background-color: $background;
-  border: 1px solid $border-color;
-  border-radius: $border-radius-sm;
-  color: $text-primary;
-  cursor: pointer;
-  font-size: 0.875rem;
-  text-align: left;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: color.adjust($background, $lightness: -3%);
-    border-color: color.adjust($border-color, $lightness: -10%);
+  &__tsr-total {
+    font-size: 1.25rem;
+    color: $text-tertiary;
   }
-}
 
-.activity-list {
-  background: white;
-  border: 1px solid $border-color;
-  border-radius: $border-radius-md;
-  padding: 1.5rem;
-}
+  &__tsr-label {
+    font-size: $font-size-base;
+    color: $text-tertiary;
+  }
 
-.activity-empty {
-  color: $text-secondary;
-  text-align: center;
-  padding: 2rem 0;
+  &__progress {
+    height: 8px;
+    border-radius: 999px;
+    background: $background;
+    overflow: hidden;
+  }
+
+  &__progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: $primary-color;
+    transition: width $transition-medium;
+  }
+
+  &__tsr-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+  }
+
+  &__tsr-current {
+    font-weight: $font-weight-medium;
+    color: $text-secondary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__tsr-due {
+    color: $text-tertiary;
+    flex-shrink: 0;
+  }
 }

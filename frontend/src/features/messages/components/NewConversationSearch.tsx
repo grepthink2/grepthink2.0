@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LuPencilLine, LuSearch, LuX } from 'react-icons/lu';
 import { api } from '@/lib/api';
-import type { ApiClass, ApiStudent } from '@/lib/api';
+import type { ApiClass } from '@/lib/api';
 import { useUser } from '@/lib/auth';
 import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { InitialsAvatar } from './InitialsAvatar';
