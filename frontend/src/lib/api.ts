@@ -82,6 +82,13 @@ export interface ApiProject {
   user_role?: string | null;
   member_count?: number;
   image_url?: string;
+  /** Assigned product owner / scrum master (from API). */
+  product_owner_name?: string | null;
+  product_owner_email?: string | null;
+  scrum_master_name?: string | null;
+  scrum_master_email?: string | null;
+  /** Aggregated team sentiment from TSRs: 'positive' | 'neutral' | 'negative'. */
+  sentiment?: 'positive' | 'neutral' | 'negative' | null;
   // Sponsor information
   sponsor_name?: string;
   sponsor_company?: string;

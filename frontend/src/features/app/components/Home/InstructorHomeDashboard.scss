@@ -1,0 +1,347 @@
+@use '@styles/index.scss' as *;
+
+.instructor-home {
+  min-height: calc(100vh - 64px);
+  padding: $spacing-lg $spacing-lg $spacing-xxl;
+  background-color: $white;
+  font-family: $primary-font;
+}
+
+.instructor-home__grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: $spacing-lg;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.instructor-home__column {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+  min-width: 0;
+}
+
+.instructor-home__card {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.08);
+  padding: $spacing-lg;
+}
+
+.instructor-home__card-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.instructor-home__card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-size-large;
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+  margin: 0;
+
+  svg {
+    color: $primary-color;
+    flex-shrink: 0;
+  }
+}
+
+.instructor-home__count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba($error-color, 0.14);
+  color: #b3261e;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+}
+
+.instructor-home__muted {
+  color: $text-tertiary;
+  font-size: $font-size-base;
+  margin: 0;
+}
+
+// ── Needs attention ──
+.instructor-home__all-clear {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  padding: $spacing-xl 0;
+  text-align: center;
+}
+
+.instructor-home__all-clear-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: $spacing-xs;
+  border-radius: 50%;
+  background: rgba($primary-color, 0.12);
+  color: $primary-color;
+}
+
+.instructor-home__all-clear-title {
+  margin: 0;
+  font-size: $font-size-large;
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+}
+
+.instructor-home__all-clear-sub {
+  margin: 0;
+  font-size: $font-size-base;
+  color: $text-tertiary;
+}
+
+.instructor-home__alert-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// Native list-row pattern: thin separators, subtle hover — no fills or bars.
+.instructor-home__alert {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  border-bottom: 1px solid $border-color;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.instructor-home__alert-main {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: $border-radius-sm;
+  padding: $spacing-md $spacing-sm;
+  cursor: pointer;
+  font-family: $primary-font;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background-color: rgba($text-tertiary, 0.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $accent-color;
+    outline-offset: -2px;
+  }
+}
+
+.instructor-home__alert-icon {
+  flex-shrink: 0;
+
+  .instructor-home__alert--roster_missing & {
+    color: #d08700;
+  }
+
+  .instructor-home__alert--unmatched & {
+    color: $error-color;
+  }
+}
+
+.instructor-home__alert-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.instructor-home__alert-class {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.instructor-home__alert-msg {
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+.instructor-home__alert-chevron {
+  color: $text-tertiary;
+  flex-shrink: 0;
+}
+
+// Always-visible ghost dismiss control. Padding reset overrides the global
+// `button { padding: 0.6em 1.2em }` which would otherwise collapse the icon.
+.instructor-home__alert-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  color: $text-tertiary;
+  cursor: pointer;
+  transition: background-color $transition-fast, color $transition-fast,
+    border-color $transition-fast;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: rgba($error-color, 0.1);
+    border-color: rgba($error-color, 0.35);
+    color: $error-color;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $accent-color;
+    outline-offset: 1px;
+  }
+}
+
+// ── Recent activity (placeholder) ──
+.instructor-home__activity-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-xl 0;
+  text-align: center;
+  color: $text-tertiary;
+
+  svg {
+    color: $border-color;
+  }
+
+  p {
+    margin: 0;
+    font-size: $font-size-base;
+  }
+}
+
+// ── Create class button ──
+.instructor-home__create-btn {
+  justify-content: center;
+  align-self: stretch;
+  width: 100%;
+}
+
+// ── Class list ──
+.instructor-home__class-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.instructor-home__class-list li {
+  border-bottom: 1px solid $border-color;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.instructor-home__class-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: $border-radius-sm;
+  padding: $spacing-md $spacing-sm;
+  cursor: pointer;
+  font-family: $primary-font;
+  transition: background-color $transition-fast;
+
+  &:hover {
+    background-color: rgba($text-tertiary, 0.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $primary-color;
+    outline-offset: -2px;
+  }
+}
+
+.instructor-home__class-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.instructor-home__class-name {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.instructor-home__class-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+.instructor-home__status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  flex-shrink: 0;
+
+  &--active {
+    background-color: #d4f5ee;
+    color: #018156;
+  }
+
+  &--complete {
+    background-color: #dce8f5;
+    color: #2771ff;
+  }
+}
+
+.instructor-home__class-arrow {
+  color: $text-tertiary;
+  flex-shrink: 0;
+}
