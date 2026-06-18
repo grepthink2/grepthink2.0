@@ -159,6 +159,15 @@ def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
         "send_message: inserted | sender=%s conv=%s msg=%s",
         sender_id, conversation_id, message_row["id"],
     )
+
+    from app.notifications.controller import notify_new_message
+    notify_new_message(
+        recipient_id=to_user_id,
+        sender_id=sender_id,
+        conversation_id=conversation_id,
+        body=body,
+    )
+
     return {"conversation_id": conversation_id, "message": message_row}
 
 
@@ -215,6 +224,9 @@ def mark_read(*, conversation_id: str, caller_id: str) -> None:
         "user_id": caller_id,
         "last_read_at": datetime.now(timezone.utc).isoformat(),
     }, on_conflict="conversation_id,user_id").execute()
+
+    from app.notifications.controller import dismiss_message_notifications
+    dismiss_message_notifications(caller_id, conversation_id)
 
 
 # Soft cap on how many messages we pull when computing the inbox in bulk.
@@ -308,7 +320,7 @@ def list_inbox(*, caller_id: str) -> list[dict]:
     # no ``profiles.name`` (display name is derived from email in the API).
     profiles_res = (
         service_client.table("profiles")
-        .select("id, email, role")
+        .select("id, email, role, first_name, last_name, image_url")
         .in_("id", all_user_ids)
         .execute()
     )
@@ -410,12 +422,18 @@ def list_inbox(*, caller_id: str) -> list[dict]:
         cid = row["id"]
         other_id = row["user_b"] if row["user_a"] == caller_id else row["user_a"]
         peer_profile = profiles_by_id.get(other_id) or {}
+        first = (peer_profile.get("first_name") or "").strip()
+        last = (peer_profile.get("last_name") or "").strip()
+        display_name = f"{first} {last}".strip() or None
         out.append({
             "id": cid,
             "other_user": {
                 "id": other_id,
                 "email": peer_profile.get("email"),
-                "name": peer_profile.get("name") or peer_profile.get("email"),
+                "name": display_name,
+                "first_name": peer_profile.get("first_name"),
+                "last_name": peer_profile.get("last_name"),
+                "image_url": peer_profile.get("image_url"),
             },
             "last_message": last_msg_by_conv.get(cid),
             "unread_count": unread_by_conv.get(cid, 0),
