@@ -92,6 +92,12 @@ def create_user(
         row = {"id": user_id, "email": email, "role": user_type}
         if email.lower().endswith('.edu'):
             row["edu_email"] = email
+        if data.firstName:
+            row["first_name"] = data.firstName.strip()
+        if data.lastName:
+            row["last_name"] = data.lastName.strip()
+        if data.avatarUrl:
+            row["image_url"] = data.avatarUrl
         return client.table('profiles').insert(row).execute()
 
     client = service_client
@@ -166,6 +172,8 @@ def create_user(
         # raced this provisioning call.
         from app.auth.controller import invalidate_user_role
         invalidate_user_role(user_id)
+        from app.notifications.controller import ensure_profile_completion_notification
+        ensure_profile_completion_notification(user_id)
         logger.info("Profile created | user_id=%s email=%s role=%s", user_id, email, user_type)
         return {
             "message": "User record created successfully.",

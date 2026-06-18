@@ -64,8 +64,10 @@ export const ConversationThread: React.FC<Props> = ({
       ? new Date(conversation.other_user_last_read_at)
       : null;
 
+  const otherFirst = conversation.other_user.first_name?.trim() ?? '';
+  const otherLast = conversation.other_user.last_name?.trim() ?? '';
   const otherName =
-    conversation.other_user.name ||
+    `${otherFirst} ${otherLast}`.trim() ||
     (conversation.other_user.email
       ? emailToDisplayName(conversation.other_user.email)
       : 'Unknown');
@@ -83,7 +85,8 @@ export const ConversationThread: React.FC<Props> = ({
           <div className="messages-thread__header-left">
             <InitialsAvatar
               email={conversation.other_user.email}
-              name={conversation.other_user.name}
+              name={otherName}
+              imageUrl={conversation.other_user.image_url}
               size={headerAvatarSize}
             />
             <h2 className="messages-thread__title">{otherName}</h2>

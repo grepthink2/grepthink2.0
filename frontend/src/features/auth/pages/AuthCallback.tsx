@@ -1,16 +1,19 @@
 /**
  * OAuth callback handler for the PKCE flow.
  *
- * Supabase's Google sign-in redirects here with a `?code=...` query
- * parameter. We exchange that code for a session, then route the user:
+ * With detectSessionInUrl enabled (the default), the Supabase SDK
+ * automatically detects the ?code= parameter on this page and exchanges
+ * it for a session — using the PKCE verifier it stored in localStorage
+ * when signInWithOAuth was called. We listen for the resulting SIGNED_IN
+ * event and then route the user:
  *
  *   - to /select (role selection) if this is their first login and no
  *     profile row exists yet.
  *   - to /app/home if they already have a profile.
  *   - back to /login with an error message on any failure.
  *
- * Profile existence is checked via `api.loginCheck()` so the decision
- * is authoritative (backend RLS-independent).
+ * We also check getSession() immediately on mount in case the SDK already
+ * finished the exchange synchronously (e.g. the user refreshed the page).
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -30,37 +33,37 @@ const AuthCallback: React.FC = () => {
       navigate('/login?error=' + encodeURIComponent(reason), { replace: true });
     };
 
-    const run = async () => {
-      // Surface explicit OAuth errors from the provider first.
-      const url = new URL(window.location.href);
-      const oauthError =
-        url.searchParams.get('error_description') || url.searchParams.get('error');
-      if (oauthError) {
-        redirectToLogin(oauthError);
-        return;
-      }
+    // Surface explicit OAuth errors forwarded in the URL.
+    const url = new URL(window.location.href);
+    const oauthError =
+      url.searchParams.get('error_description') || url.searchParams.get('error');
+    if (oauthError) {
+      redirectToLogin(oauthError);
+      return;
+    }
 
-      // Exchange the ?code=... for a session. Supabase reads the URL
-      // itself and pairs it with the PKCE verifier kept in localStorage.
-      const { data: exchangeData, error: exchangeError } =
-        await supabase.auth.exchangeCodeForSession(window.location.href);
+    // 'source' is set by whichever page initiated the OAuth flow:
+    //   source=signup  → new users are allowed and routed to /select
+    //   source=login   → new users are rejected with a friendly error
+    const source = url.searchParams.get('source');
 
-      if (exchangeError || !exchangeData.session) {
-        // eslint-disable-next-line no-console
-        console.error('[AuthCallback] code exchange failed:', exchangeError);
-        redirectToLogin(exchangeError?.message ?? 'Session exchange failed');
-        return;
-      }
-
-      // Ask the backend whether a profile row already exists.
-      // api.loginCheck() returns { user_id, role } where role is null
-      // when no profiles row is present for this user.
+    const routeUser = async (_accessToken: string) => {
+      if (cancelled) return;
       try {
         const me = await api.loginCheck();
         if (cancelled) return;
 
         if (!me.role) {
-          navigate('/select', { replace: true });
+          // No profile row → this is a brand-new Google account.
+          if (source === 'login') {
+            // Reject: they must sign up first and choose a role.
+            redirectToLogin(
+              'No account found for this Google address. Please sign up first and choose a role.',
+            );
+          } else {
+            // signup flow (or unknown source) → let them pick a role.
+            navigate('/select', { replace: true });
+          }
           return;
         }
 
@@ -68,16 +71,44 @@ const AuthCallback: React.FC = () => {
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error('[AuthCallback] loginCheck failed:', err);
-        // Signed in but can't reach the backend — send them to the app
+        // Signed in but backend unreachable — send them to the app
         // anyway; Home.tsx will surface the backend status.
-        navigate('/app/home', { replace: true });
+        if (!cancelled) navigate('/app/home', { replace: true });
       }
     };
 
-    run();
+    // Listen for the SIGNED_IN event the SDK fires after it auto-exchanges
+    // the ?code= parameter on this page.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (cancelled) return;
+        if (event === 'SIGNED_IN' && session) {
+          subscription.unsubscribe();
+          routeUser(session.access_token);
+        }
+      },
+    );
+
+    // Fallback: if the SDK already exchanged the code synchronously before
+    // our listener registered (or the user refreshed), pick up the session
+    // from getSession() directly.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled || !session) return;
+      subscription.unsubscribe();
+      routeUser(session.access_token);
+    });
+
+    // Safety net: redirect to login if nothing resolves within 15 s.
+    const timeout = setTimeout(() => {
+      if (!cancelled) {
+        redirectToLogin('Sign-in timed out. Please try again.');
+      }
+    }, 15000);
 
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
+      clearTimeout(timeout);
     };
   }, [navigate]);
 

@@ -37,11 +37,11 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    // The PKCE code exchange is handled explicitly in /auth/callback so
-    // we can show a loading state and route the user based on whether
-    // a profile exists. Disable the SDK's opportunistic URL scan so it
-    // doesn't try to handle the same ?code=... parameter twice.
-    detectSessionInUrl: false,
+    // detectSessionInUrl defaults to true — the SDK will detect the
+    // ?code= in the URL on /auth/callback and exchange it automatically,
+    // keeping the PKCE verifier lookup on the same origin where it was
+    // stored. AuthCallback.tsx listens for the resulting SIGNED_IN event
+    // rather than calling exchangeCodeForSession manually.
     flowType: 'pkce',
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
