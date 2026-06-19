@@ -107,32 +107,7 @@ def update_profile(user_id: str, data: dict) -> dict:
         .eq('id', user_id)
         .execute()
     )
-    updated = result.data[0] if result.data else {}
-    full_profile = get_profile(user_id) if updated else {}
-
-    from app.notifications.controller import (
-        dismiss_profile_completion_notification,
-        ensure_profile_completion_notification,
-    )
-    if full_profile and not _profile_incomplete(full_profile):
-        dismiss_profile_completion_notification(user_id)
-    else:
-        ensure_profile_completion_notification(user_id)
-
-    return full_profile or updated
-
-
-def _profile_incomplete(profile: dict) -> bool:
-    first = (profile.get('first_name') or '').strip()
-    last = (profile.get('last_name') or '').strip()
-    if not first or not last:
-        return True
-    role = profile.get('role')
-    email = (profile.get('email') or '').strip().lower()
-    edu_email = (profile.get('edu_email') or '').strip()
-    if role == 'student' and not email.endswith('.edu') and not edu_email:
-        return True
-    return False
+    return result.data[0] if result.data else {}
 
 
 def send_edu_verification(user_id: str, edu_email: str) -> None:

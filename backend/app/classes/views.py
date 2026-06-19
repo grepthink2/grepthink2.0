@@ -16,10 +16,7 @@ from app.classes import controller
 
 
 def create_class(data: CreateClassRequest, user_id: str = Depends(require_instructor)):
-    result = controller.create_class(
-        data.name, data.description, data.term, data.start_date, user_id,
-        tsr_count=data.tsr_count,
-    )
+    result = controller.create_class(data.name, data.description, data.term, data.start_date, user_id)
     return {"message": "Class created successfully", "class": result}
 
 

@@ -4,24 +4,15 @@ import { useAuth } from '@/lib/auth';
 import { Search, User, ChevronDown, Settings, LogOut, Copy, Check } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
 import { useClass } from '@/lib/classContext';
-import { useNotifications } from '@features/notifications/hooks/useNotifications';
-import { formatRelativeTime } from '@features/messages/utils/relativeTime';
 import './Header.scss';
 
-function notificationPath(notification: {
-  type: string;
-  entity_type: string | null;
-  entity_id: string | null;
-}): string | null {
-  if (notification.type === 'complete_profile') return null;
-  if (notification.type === 'upload_roster') return '/app/roster';
-  if (notification.entity_type === 'conversation' && notification.entity_id) {
-    return `/app/messages/${notification.entity_id}`;
-  }
-  if (notification.entity_type === 'project' && notification.entity_id) {
-    return `/app/projects/${notification.entity_id}`;
-  }
-  return null;
+interface Notification {
+  id: string;
+  type: 'message' | 'alert' | 'info';
+  title: string;
+  content: string;
+  time: string;
+  read: boolean;
 }
 
 const pageTitles: Record<string, string> = {
@@ -131,19 +122,24 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, role } = useAuth();
-  const { selectedClass, classes, setSelectedClass } = useClass();
+  const { selectedClass } = useClass();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-
-  const {
-    notifications,
-    unreadCount,
-    loading: notificationsLoading,
-    markRead,
-  } = useNotifications();
+  
+  // Mock notification data
+  const [notifications] = useState<Notification[]>([
+    {
+      id: '1',
+      type: 'message',
+      title: 'New Message',
+      content: 'You have a new message from your instructor',
+      time: '5 minutes ago',
+      read: false,
+    }
+  ]);
 
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -155,31 +151,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const showInstructorClassMeta = isClassRoute && role === 'instructor';
   const standaloneTitle = pageTitles[path] ?? 'GrepThink';
 
-  const handleNotificationClick = async (notification: typeof notifications[number]) => {
-    if (!notification.read_at) {
-      try {
-        await markRead(notification.id);
-      } catch {
-        // Non-fatal — navigation still proceeds.
-      }
-    }
-    setShowNotifications(false);
+  // Count unread notifications
+  const unreadCount = notifications.filter(n => !n.read).length;
 
-    if (notification.type === 'complete_profile') {
-      onOpenSettings();
-      return;
-    }
-
-    if (notification.type === 'upload_roster' && notification.entity_id) {
-      const cls = classes.find(c => c.id === notification.entity_id);
-      if (cls) setSelectedClass(cls);
-    }
-
-    const path = notificationPath(notification);
-    if (path) navigate(path);
-  };
-
-  // Close dropdowns when clicking outside
   const handleCopyCode = () => {
     if (selectedClass?.course_code) {
       navigator.clipboard.writeText(selectedClass.course_code);
@@ -188,6 +162,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     }
   };
 
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
@@ -297,24 +272,18 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
                 <h3>Notifications</h3>
               </div>
               <div className="app-header__dropdown-content">
-                {notificationsLoading && notifications.length === 0 ? (
-                  <div className="app-header__empty-state">Loading…</div>
-                ) : notifications.length === 0 ? (
+                {notifications.length === 0 ? (
                   <div className="app-header__empty-state">No notifications</div>
                 ) : (
                   notifications.map((notification) => (
-                    <button
+                    <div
                       key={notification.id}
-                      type="button"
-                      className={`app-header__notification-item ${!notification.read_at ? 'unread' : ''}`}
-                      onClick={() => handleNotificationClick(notification)}
+                      className={`app-header__notification-item ${!notification.read ? 'unread' : ''}`}
                     >
                       <div className="app-header__notification-title">{notification.title}</div>
-                      <div className="app-header__notification-content">{notification.body}</div>
-                      <div className="app-header__notification-time">
-                        {formatRelativeTime(notification.created_at)}
-                      </div>
-                    </button>
+                      <div className="app-header__notification-content">{notification.content}</div>
+                      <div className="app-header__notification-time">{notification.time}</div>
+                    </div>
                   ))
                 )}
               </div>

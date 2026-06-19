@@ -9,9 +9,6 @@ class SignupRequest(BaseModel):
     email: str
     userId: str
     userType: str = None
-    firstName: str = None
-    lastName: str = None
-    avatarUrl: str = None
 
 
 class CheckEmailRequest(BaseModel):

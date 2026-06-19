@@ -14,7 +14,6 @@ class CreateClassRequest(BaseModel):
     description: Optional[str] = None
     term: str
     start_date: datetime.date
-    tsr_count: Optional[int] = None
 
 
 class InviteStudentRequest(BaseModel):
