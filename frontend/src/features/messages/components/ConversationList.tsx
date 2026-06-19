@@ -39,8 +39,11 @@ export const ConversationList: React.FC<Props> = ({
 
   const filtered = searchQuery
     ? conversations.filter(c => {
+        const first = c.other_user.first_name?.trim() ?? '';
+        const last = c.other_user.last_name?.trim() ?? '';
+        const fullName = `${first} ${last}`.trim();
         const name =
-          c.other_user.name ||
+          fullName ||
           (c.other_user.email ? emailToDisplayName(c.other_user.email) : '');
         return name.toLowerCase().includes(searchQuery.toLowerCase());
       })
@@ -119,8 +122,11 @@ export const ConversationList: React.FC<Props> = ({
       <ul className="messages-list__items">
         {filtered.map(c => {
           const isActive = c.id === activeId;
+          const first = c.other_user.first_name?.trim() ?? '';
+          const last = c.other_user.last_name?.trim() ?? '';
+          const fullName = `${first} ${last}`.trim();
           const name =
-            c.other_user.name ||
+            fullName ||
             (c.other_user.email ? emailToDisplayName(c.other_user.email) : 'Unknown user');
           const preview = c.last_message?.body ?? '';
           const time = formatRelativeTime(c.last_message_at);
@@ -142,7 +148,8 @@ export const ConversationList: React.FC<Props> = ({
             >
               <InitialsAvatar
                 email={c.other_user.email}
-                name={c.other_user.name}
+                name={name}
+                imageUrl={c.other_user.image_url}
                 size={avatarSize}
               />
               <div className="messages-list__body">

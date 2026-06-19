@@ -234,6 +234,9 @@ export interface ApiMessageOtherUser {
   id: string;
   email: string | null;
   name: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  image_url?: string | null;
 }
 
 export interface ApiMessagePreview {
@@ -258,6 +261,17 @@ export interface ApiConversationSummary {
   other_user_last_read_at: string | null;
   can_send: boolean;
   last_message_at: string | null;
+}
+
+export interface ApiNotification {
+  id: string;
+  type: 'join_request' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster';
+  title: string;
+  body: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  read_at: string | null;
+  created_at: string;
 }
 
 // ----- Staffing / Interest form -------------------------------------------
@@ -450,7 +464,14 @@ export const api = {
    * The backend verifies that the JWT's ``sub`` matches ``userId`` in the
    * body, so the caller cannot provision a profile for someone else.
    */
-  createUser: async (data: { userId: string; email: string; userType: 'student' | 'instructor' }) => {
+  createUser: async (data: {
+    userId: string;
+    email: string;
+    userType: 'student' | 'instructor';
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
+  }) => {
     return apiRequest<{ message: string; email: string; role: string }>('/api/create-user', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -463,6 +484,7 @@ export const api = {
     description?: string;
     term: string;
     start_date: string;
+    tsr_count?: number;
   }) => {
     return apiRequest<{ message: string; class: ApiClass }>('/api/classes', {
       method: 'POST',
@@ -799,6 +821,26 @@ export const api = {
   deleteConversation: async (conversationId: string) => {
     return apiRequest<void>(`/api/messages/conversations/${conversationId}`, {
       method: 'DELETE',
+    });
+  },
+
+  // ----- Notifications -----------------------------------------------------
+
+  getNotifications: async () => {
+    return apiRequest<{ notifications: ApiNotification[]; unread_count: number }>(
+      '/api/notifications',
+    );
+  },
+
+  markNotificationRead: async (notificationId: string) => {
+    return apiRequest<void>(`/api/notifications/${notificationId}/read`, {
+      method: 'POST',
+    });
+  },
+
+  markAllNotificationsRead: async () => {
+    return apiRequest<void>('/api/notifications/read-all', {
+      method: 'POST',
     });
   },
 

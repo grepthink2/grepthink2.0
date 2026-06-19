@@ -352,6 +352,11 @@ $app-header-text: #424242;
   }
 
   .app-header__notification-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: none;
     padding: $spacing-md;
     border-bottom: 1px solid $border-color;
     cursor: pointer;
