@@ -1373,6 +1373,93 @@ def get_pending_team_invites_for_user(user_id: str, class_id: UUID) -> list:
         raise HTTPException(status_code=500, detail="Failed to fetch pending invitations")
 
 
+def get_my_pending_join_requests_for_user(user_id: str, class_id: UUID) -> list:
+    """
+    Pending **student-initiated** join requests submitted by ``user_id`` within a class.
+
+    Each item includes project metadata so the client can show outgoing request cards.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        class_result = (
+            client.table('classes')
+            .select('id, created_by, name, term, year')
+            .eq('id', str(class_id))
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(status_code=404, detail="Class not found")
+
+        class_row = class_result.data[0]
+        has_access = class_row.get('created_by') == user_id
+        if not has_access:
+            enrollment = (
+                client.table('class_enrollments').select('id')
+                .eq('class_id', str(class_id)).eq('user_id', user_id).execute()
+            )
+            has_access = bool(enrollment.data)
+
+        if not has_access:
+            raise HTTPException(status_code=403, detail="You do not have access to this class")
+
+        course_label_parts = [
+            str(class_row['year']) if class_row.get('year') else '',
+            class_row.get('term'),
+            class_row.get('name'),
+        ]
+        course_label = ' '.join(p for p in course_label_parts if p).strip()
+
+        projects_res = (
+            client.table('projects')
+            .select('id, name, num_members, sponsor_company')
+            .eq('class_id', str(class_id))
+            .execute()
+        )
+        projects = projects_res.data or []
+        project_ids = [p['id'] for p in projects]
+        if not project_ids:
+            return []
+
+        project_map = {p['id']: p for p in projects}
+
+        rows = (
+            client.table('project_join_requests').select(
+                'id, user_id, project_id, created_at, request_status, invited_by'
+            )
+            .eq('user_id', user_id)
+            .eq('request_status', 'pending')
+            .in_('project_id', project_ids)
+            .execute()
+        )
+        outgoing = [r for r in (rows.data or []) if not r.get('invited_by')]
+        if not outgoing:
+            return []
+
+        result = []
+        for row in outgoing:
+            project = project_map.get(row['project_id'], {})
+            result.append({
+                "request_id": row['id'],
+                "user_id": row['user_id'],
+                "requested_at": row.get('created_at'),
+                "status": row['request_status'],
+                "project_id": str(row['project_id']),
+                "project_name": project.get('name'),
+                "member_count": project.get('num_members') or 0,
+                "sponsor_company": project.get('sponsor_company'),
+                "course_label": course_label or None,
+            })
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching outgoing join requests | user_id=%s class_id=%s", user_id, class_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch outgoing join requests")
+
+
 def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
     """
     Pending **student-initiated** join requests for a project (``invited_by`` is null).

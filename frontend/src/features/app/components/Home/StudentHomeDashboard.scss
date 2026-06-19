@@ -171,7 +171,8 @@ $quick-purple-hover: #6a3382;
 
 .student-home__team-project-select {
   max-width: min(200px, 55vw);
-  padding: 4px 28px 4px 8px;
+  min-width: 0;
+  padding: 4px 28px 4px 10px;
   border: 1px solid rgba($primary-color, 0.35);
   border-radius: $border-radius-sm;
   background: rgba($primary-color, 0.06)
@@ -183,8 +184,9 @@ $quick-purple-hover: #6a3382;
   color: $primary-color;
   cursor: pointer;
   appearance: none;
-  text-align: right;
-  text-align-last: right;
+  text-align: left;
+  text-align-last: left;
+  flex-shrink: 1;
 
   &:focus {
     outline: none;
@@ -387,6 +389,38 @@ $quick-purple-hover: #6a3382;
   margin: 0;
   font-size: $font-size-sm;
   color: $text-tertiary;
+}
+
+.student-home__schedule-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  padding: $spacing-xl $spacing-lg;
+  text-align: center;
+}
+
+.student-home__schedule-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba($primary-color, 0.1);
+  color: $primary-color;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  margin-bottom: $spacing-xs;
+}
+
+.student-home__schedule-empty-title {
+  margin: 0;
+  max-width: 14rem;
+  font-size: $font-size-base;
+  font-weight: $font-weight-normal;
+  line-height: 1.5;
+  color: $text-primary;
 }
 
 // —— Requests ——

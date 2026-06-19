@@ -104,6 +104,11 @@ export interface ApiProjectJoinRequest {
   user_role?: string;
   requested_at?: string;
   status: string;
+  project_id?: string;
+  project_name?: string;
+  member_count?: number;
+  sponsor_company?: string;
+  course_label?: string;
 }
 
 export interface ApiProjectMember {
@@ -596,6 +601,18 @@ export const api = {
 
   getProjectJoinRequests: async (projectId: string) => {
     return apiRequest<{ requests: ApiProjectJoinRequest[] }>(`/api/projects/${projectId}/join-requests`);
+  },
+
+  getPendingTeamInvites: async (classId: string) => {
+    return apiRequest<{ requests: ApiProjectJoinRequest[] }>(
+      `/api/projects/pending-invites?class_id=${encodeURIComponent(classId)}`,
+    );
+  },
+
+  getMyJoinRequests: async (classId: string) => {
+    return apiRequest<{ requests: ApiProjectJoinRequest[] }>(
+      `/api/projects/my-join-requests?class_id=${encodeURIComponent(classId)}`,
+    );
   },
 
   getProjectMembers: async (projectId: string) => {

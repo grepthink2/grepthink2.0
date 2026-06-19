@@ -27,29 +27,29 @@ export interface MockJoinRequest {
   awaitingMeta?: string;
 }
 
-export const MOCK_SCHEDULE: MockScheduleItem[] = [
-  {
-    id: 's1',
-    timeLabel: '10:00 AM',
-    title: 'Team standup',
-    subtitle: 'CSE 115B - Zoom',
-    accent: 'green',
-  },
-  {
-    id: 's2',
-    timeLabel: '1:30 PM',
-    title: 'CSE 115B lecture',
-    subtitle: 'Engineering 2, Room 192',
-    accent: 'blue',
-  },
-  {
-    id: 's3',
-    timeLabel: '4:00 PM',
-    title: 'Project office hours',
-    subtitle: 'Jack Baskin 105',
-    accent: 'orange',
-  },
-];
+// export const MOCK_SCHEDULE: MockScheduleItem[] = [
+//   {
+//     id: 's1',
+//     timeLabel: '10:00 AM',
+//     title: 'Team standup',
+//     subtitle: 'CSE 115B - Zoom',
+//     accent: 'green',
+//   },
+//   {
+//     id: 's2',
+//     timeLabel: '1:30 PM',
+//     title: 'CSE 115B lecture',
+//     subtitle: 'Engineering 2, Room 192',
+//     accent: 'blue',
+//   },
+//   {
+//     id: 's3',
+//     timeLabel: '4:00 PM',
+//     title: 'Project office hours',
+//     subtitle: 'Jack Baskin 105',
+//     accent: 'orange',
+//   },
+// ];
 
 /** Demo outgoing join requests (no list-my-requests API yet). */
 export const MOCK_OUTGOING_JOIN_REQUESTS: MockJoinRequest[] = [
