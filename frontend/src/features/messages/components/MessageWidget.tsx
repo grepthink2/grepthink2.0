@@ -38,13 +38,10 @@ export const MessageWidget: React.FC = () => {
     : null;
 
   const otherName = selected
-    ? (() => {
-        const first = selected.other_user.first_name?.trim() ?? '';
-        const last = selected.other_user.last_name?.trim() ?? '';
-        const full = `${first} ${last}`.trim();
-        return full ||
-          (selected.other_user.email ? emailToDisplayName(selected.other_user.email) : 'Unknown');
-      })()
+    ? selected.other_user.name ||
+      (selected.other_user.email
+        ? emailToDisplayName(selected.other_user.email)
+        : 'Unknown')
     : '';
 
   const renderUnreadBadge = () =>
@@ -84,8 +81,7 @@ export const MessageWidget: React.FC = () => {
             </button>
             <InitialsAvatar
               email={selected.other_user.email}
-              name={otherName}
-              imageUrl={selected.other_user.image_url}
+              name={selected.other_user.name}
               size={32}
             />
             <span className="message-widget__title">{otherName}</span>

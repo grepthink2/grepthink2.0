@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ProjectView from '../components/Project/ProjectView';
 import ConfirmModal from '../components/Overlays/ConfirmModal';
 import ProjectHeader from '../components/CreateProject/ProjectHeader';
@@ -9,7 +9,6 @@ import ProjectFooter from '../components/CreateProject/ProjectFooter';
 import { PRESET_SKILLS } from '../components/CreateProject/constants';
 import { generateTemplateMarkdown, parseTemplateFromMarkdown } from '../utils/projectDescriptionTemplate';
 import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
 import { useClass } from '@/lib/classContext';
 import './CreateProject.scss';
 
@@ -34,8 +33,6 @@ const CreateProject: React.FC = () => {
   const [classError, setClassError] = useState<string | null>(null);
   const [teamSizeError, setTeamSizeError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [existingProject, setExistingProject] = useState<{ id: string; name: string } | null>(null);
-  const [membershipLoading, setMembershipLoading] = useState(false);
 
   // const [sponsorName, setSponsorName] = useState('');
   // const [sponsorCompany, setSponsorCompany] = useState('');
@@ -45,44 +42,6 @@ const CreateProject: React.FC = () => {
 
   const navigate = useNavigate();
   const { selectedClass } = useClass();
-  const { role } = useAuth();
-
-  useEffect(() => {
-    if (!selectedClass || role !== 'student') {
-      setExistingProject(null);
-      return;
-    }
-
-    let isMounted = true;
-
-    const checkMembership = async () => {
-      setMembershipLoading(true);
-      try {
-        const [{ projects: myMemberships }, { projects: classProjects }] = await Promise.all([
-          api.getProjects(),
-          api.getClassProjects(selectedClass.id),
-        ]);
-        if (!isMounted) return;
-
-        const myIds = new Set(myMemberships.map((p) => p.id));
-        const mineInClass = classProjects.filter((p) => myIds.has(p.id));
-        setExistingProject(
-          mineInClass.length > 0
-            ? { id: mineInClass[0].id, name: mineInClass[0].name }
-            : null,
-        );
-      } catch {
-        if (isMounted) setExistingProject(null);
-      } finally {
-        if (isMounted) setMembershipLoading(false);
-      }
-    };
-
-    void checkMembership();
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedClass, role]);
 
   const filteredSkills = PRESET_SKILLS.filter(
     (skill) =>
@@ -182,10 +141,6 @@ const CreateProject: React.FC = () => {
     setTeamSizeError(null);
     setApiError(null);
 
-    if (existingProject) {
-      return;
-    }
-
     const name = projectTitle.trim();
     if (!name) {
       setTitleError('Project title is required');
@@ -239,13 +194,6 @@ const CreateProject: React.FC = () => {
       {classError && (
         <div className="create-project__banner-error" role="alert">
           {classError}
-        </div>
-      )}
-      {existingProject && (
-        <div className="create-project__banner-warning" role="alert">
-          You are already a member of <strong>{existingProject.name}</strong>.{' '}
-          <Link to={`/app/projects/${existingProject.id}`}>Go to your project</Link>{' '}
-          and leave the team before creating a new one.
         </div>
       )}
       {apiError && (
@@ -328,7 +276,7 @@ const CreateProject: React.FC = () => {
 
       <ProjectFooter
         submitting={submitting}
-        isDisabled={submitting || !selectedClass || membershipLoading || !!existingProject}
+        isDisabled={submitting || !selectedClass}
         onSaveDraft={handleSaveDraft}
         onCreateProject={handleCreateProject}
       />

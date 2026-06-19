@@ -29,7 +29,6 @@ import MyProject from '@features/app/pages/MyProject';
 import TestProjects from '@pages/TestProjects';
 import Messages from '@features/messages/pages/Messages';
 import { ConversationsProvider } from '@features/messages/hooks/useConversations';
-import { NotificationsProvider } from '@features/notifications/hooks/useNotifications';
 function App() {
   return (
     <Router>
@@ -50,13 +49,7 @@ function App() {
             sidebar (and the tab title) update even when the user isn't
             on /app/messages. */}
         <Route path="/app" element={<ProtectedRoute />}>
-          <Route element={
-            <ConversationsProvider>
-              <NotificationsProvider>
-                <AppView />
-              </NotificationsProvider>
-            </ConversationsProvider>
-          }>
+          <Route element={<ConversationsProvider><AppView /></ConversationsProvider>}>
             <Route index element={<Navigate to="/app/home" replace />} />
             <Route path="home" element={<Home />} />
             <Route path="messages" element={<Messages />} />

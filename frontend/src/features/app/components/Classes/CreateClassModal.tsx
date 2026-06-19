@@ -13,15 +13,10 @@ interface CreateClassModalProps {
   onClose: () => void;
 }
 
-const DEFAULT_TSR_COUNT: Record<Term, number> = {
-  Fall: 5, Winter: 5, Spring: 5, Summer: 3,
-};
-
 const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) => {
   const [courseName, setCourseName] = useState('');
   const [selectedTerm, setSelectedTerm] = useState<Term>('Fall');
   const [termStartDate, setTermStartDate] = useState('');
-  const [tsrCount, setTsrCount] = useState(DEFAULT_TSR_COUNT['Fall']);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [instructorOnly, setInstructorOnly] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -31,11 +26,6 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const navigate = useNavigate();
   const { refreshClasses } = useClass();
   const terms: Term[] = ['Fall', 'Winter', 'Spring', 'Summer'];
-
-  const handleTermChange = (term: Term) => {
-    setSelectedTerm(term);
-    setTsrCount(DEFAULT_TSR_COUNT[term]);
-  };
 
   const handleClose = () => {
     setIsClosing(true);
@@ -99,7 +89,6 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         description,
         term: selectedTerm,
         start_date: termStartDate,
-        tsr_count: tsrCount,
       });
 
       const createdId = result.class?.id;
@@ -123,7 +112,6 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setCourseName('');
       setSelectedTerm('Fall');
       setTermStartDate('');
-      setTsrCount(DEFAULT_TSR_COUNT['Fall']);
       setCsvFile(null);
       setInstructorOnly(false);
       handleClose();
@@ -182,7 +170,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
                   className={`create-class-modal__term-button ${
                     selectedTerm === term ? 'active' : ''
                   }`}
-                  onClick={() => handleTermChange(term)}
+                  onClick={() => setSelectedTerm(term)}
                 >
                   {term}
                 </button>
@@ -197,27 +185,6 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
             onChange={setTermStartDate}
             labelClassName="create-class-modal__label"
           />
-
-          {/* TSR Count */}
-          <div className="create-class-modal__field">
-            <label className="create-class-modal__label">
-              Number of TSR Assignments
-            </label>
-            <p className="create-class-modal__description">
-              How many weekly TSR assignments to auto-generate for this class.
-            </p>
-            <input
-              type="number"
-              className="create-class-modal__input create-class-modal__input--narrow"
-              min={1}
-              max={20}
-              value={tsrCount}
-              onChange={(e) => {
-                const val = Math.max(1, Math.min(20, Number(e.target.value) || 1));
-                setTsrCount(val);
-              }}
-            />
-          </div>
 
           {/* Upload Roster */}
           <div className="create-class-modal__field">

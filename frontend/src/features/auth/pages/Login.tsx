@@ -20,13 +20,6 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? '/app';
-
-  // Surface errors forwarded in the URL (e.g. from AuthCallback when a new
-  // Google user tries to sign in without having signed up first).
-  const urlError = React.useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    return params.get('error') ?? '';
-  }, [location.search]);
   
   // State for password visibility toggle
   const [showPassword, setShowPassword] = React.useState(false);
@@ -46,9 +39,7 @@ const Login: React.FC = () => {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          // source=login tells AuthCallback to reject new users instead
-          // of routing them to the role-selection page.
-          redirectTo: `${window.location.origin}/auth/callback?source=login`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -117,7 +108,7 @@ const Login: React.FC = () => {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="loginForm">
             {/* Error Message Display */}
-            {(urlError || error) && <div className="error">{urlError || error}</div>}
+            {error && <div className="error">{error}</div>}
 
             {/* Email Input Field */}
             <div className="formGroup">
