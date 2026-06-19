@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.scss';
-import LandingPage from '@pages/LandingPage';
+import LandingPage from '@features/landing/LandingPage';
+import ContactPage from '@features/landing/ContactPage';
 import AppView from '@/features/app/AppView';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
@@ -35,6 +36,7 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/studentsignup" element={<SignUpOrchestrator />} />
