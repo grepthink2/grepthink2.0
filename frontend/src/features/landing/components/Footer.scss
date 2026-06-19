@@ -1,0 +1,109 @@
+@use '@styles/index.scss' as *;
+
+$footer-dark: #0c1f18;
+
+.landing-footer {
+  background: $footer-dark;
+  color: rgba(255, 255, 255, 0.78);
+
+  &__inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: clamp(56px, 8vw, 88px) $spacing-lg $spacing-xl;
+    display: flex;
+    justify-content: space-between;
+    gap: $spacing-xl;
+    flex-wrap: wrap;
+  }
+
+  &__brand {
+    max-width: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  &__logo {
+    height: 56px;
+    width: auto;
+    display: block;
+    margin-bottom: $spacing-md;
+    // Offset the mascot's left padding so the wordmark visually aligns
+    // with the tagline below it.
+    margin-left: -6px;
+  }
+
+  &__tagline {
+    font-family: $primary-font;
+    font-size: $font-size-large;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+    padding-left: 2px;
+  }
+
+  &__links {
+    display: flex;
+    gap: clamp($spacing-xl, 6vw, 72px);
+    flex-wrap: wrap;
+  }
+
+  &__col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    a {
+      font-family: $primary-font;
+      font-size: $font-size-base;
+      color: rgba(255, 255, 255, 0.72);
+      text-decoration: none;
+      transition: color $transition-fast;
+
+      &:hover {
+        color: $white;
+      }
+
+      &:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.6);
+        outline-offset: 3px;
+        border-radius: 3px;
+      }
+    }
+  }
+
+  &__col-title {
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 4px;
+  }
+
+  &__bar {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: $spacing-md $spacing-lg;
+    text-align: center;
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-footer__inner {
+    flex-direction: column;
+    gap: $spacing-xl;
+  }
+
+  .landing-footer__links {
+    gap: $spacing-xl;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-footer__col a {
+    transition: none;
+  }
+}

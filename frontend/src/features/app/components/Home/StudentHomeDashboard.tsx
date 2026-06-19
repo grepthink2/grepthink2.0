@@ -27,7 +27,7 @@ import {
 } from './mockData';
 import './StudentHomeDashboard.scss';
 
-type DeadlineDisplayStatus = 'due_soon' | 'not_started' | 'in_progress';
+type DeadlineDisplayStatus = 'due_soon' | 'not_started' | 'in_progress' | 'completed';
 
 interface DeadlineRow {
   id: string;
@@ -133,10 +133,14 @@ function computeDeadlineStatus(params: {
   allPairsSubmitted: boolean;
   anySubmitted: boolean;
 }): DeadlineDisplayStatus | null {
-  if (params.allPairsSubmitted) return null;
-
   const today = startOfDay(new Date());
   const closeDay = startOfDay(parseLocalAssignmentDate(params.assignment.close_date));
+
+  if (params.allPairsSubmitted) {
+    if (closeDay >= today) return 'completed';
+    return null;
+  }
+
   const openDay = startOfDay(parseLocalAssignmentDate(params.assignment.open_date));
   const daysToClose = differenceInCalendarDays(closeDay, today);
 
@@ -230,12 +234,14 @@ const statusLabel: Record<DeadlineDisplayStatus, string> = {
   due_soon: 'Due Soon',
   not_started: 'Not Started',
   in_progress: 'In Progress',
+  completed: 'Completed',
 };
 
 const statusPillClass: Record<DeadlineDisplayStatus, string> = {
   due_soon: 'student-home__pill--due-soon',
   not_started: 'student-home__pill--not-started',
   in_progress: 'student-home__pill--in-progress',
+  completed: 'student-home__pill--submitted',
 };
 
 const JOIN_REVIEW_ROLES = new Set(['owner', 'product owner', 'admin']);
