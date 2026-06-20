@@ -1,0 +1,294 @@
+@use '@styles/index.scss' as *;
+
+.requests-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  padding: $spacing-md;
+}
+
+.requests-modal {
+  background: $white;
+  border-radius: $border-radius-md;
+  width: min(640px, 100%);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  font-family: $primary-font;
+
+  &__close {
+    position: absolute;
+    top: $spacing-md;
+    right: $spacing-md;
+    background: transparent;
+    border: none;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color $transition-fast;
+
+    &:hover:not(:disabled) {
+      background-color: $background;
+      color: $text-primary;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &__header {
+    padding: $spacing-lg $spacing-lg $spacing-md;
+    padding-right: 3rem;
+    border-bottom: 1px solid rgba($border-color, 0.6);
+  }
+
+  &__title {
+    margin: 0 0 $spacing-xs;
+    font-size: 1.35rem;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    line-height: 1.45;
+  }
+
+  &__tabs {
+    display: flex;
+    gap: 0;
+    padding: 4px;
+    margin: $spacing-md $spacing-lg 0;
+    background: $background;
+    border-radius: $border-radius-sm;
+  }
+
+  &__tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: $text-secondary;
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: background-color $transition-fast, color $transition-fast;
+
+    &--active {
+      background: $white;
+      color: $text-primary;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  &__tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba($primary-color, 0.12);
+    color: $primary-color;
+    font-size: 11px;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__error {
+    margin: $spacing-md $spacing-lg 0;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-sm;
+    background: rgba($error-color, 0.1);
+    border: 1px solid rgba($error-color, 0.25);
+    color: $error-color;
+    font-size: $font-size-sm;
+  }
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-md $spacing-lg $spacing-lg;
+  }
+
+  &__loading,
+  &__empty {
+    margin: $spacing-lg 0;
+    text-align: center;
+    color: $text-secondary;
+    font-size: $font-size-sm;
+  }
+
+  &__loading {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  &__spinner,
+  &__btn-spinner {
+    animation: requests-modal-spin 0.65s linear infinite;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__card {
+    display: flex;
+    gap: $spacing-md;
+    align-items: flex-start;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    padding: $spacing-md;
+    background: rgba($white, 0.95);
+  }
+
+  &__avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $white;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    flex-shrink: 0;
+  }
+
+  &__card-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__card-title {
+    margin: 0 0 4px;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  &__card-sub {
+    margin: 0 0 $spacing-sm;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+  }
+
+  &__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+  }
+
+  &__badge {
+    font-size: 11px;
+    font-weight: $font-weight-semibold;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba($text-tertiary, 0.12);
+    color: $text-secondary;
+
+    &--purple {
+      background: rgba(142, 68, 173, 0.14);
+      color: #7d3c98;
+    }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: $spacing-md;
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-sm;
+    margin-top: $spacing-md;
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: background-color $transition-fast, opacity $transition-fast;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.85;
+    }
+
+    &--accept {
+      background: $primary-color;
+      color: $white;
+
+      &:hover:not(:disabled) {
+        background: $primary-hover;
+      }
+
+      &:focus-visible {
+        outline: 3px solid rgba($primary-color, 0.4);
+        outline-offset: 2px;
+      }
+    }
+
+    &--decline {
+      background: $error-color;
+      color: $white;
+
+      &:hover:not(:disabled) {
+        opacity: 0.92;
+      }
+
+      &:focus-visible {
+        outline: 3px solid rgba($error-color, 0.45);
+        outline-offset: 2px;
+      }
+    }
+  }
+}
+
+@keyframes requests-modal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

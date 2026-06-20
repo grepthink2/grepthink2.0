@@ -78,10 +78,14 @@ const RoleSelection: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      const meta = user.user_metadata ?? {};
       await api.createUser({
         userId: user.id,
         email: user.email,
         userType: role,
+        firstName: meta.given_name || meta.first_name || undefined,
+        lastName: meta.family_name || meta.last_name || undefined,
+        avatarUrl: meta.avatar_url || meta.picture || undefined,
       });
       navigate('/app/home', { replace: true });
     } catch (err) {

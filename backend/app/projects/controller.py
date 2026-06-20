@@ -197,6 +197,16 @@ def create_project(
                     detail="You must be enrolled in the class to create a project"
                 )
 
+            existing_project = _get_student_project_in_class(client, user_id, cid)
+            if existing_project:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        f'You are already a member of "{existing_project["name"]}". '
+                        "Leave your current project before creating a new one."
+                    ),
+                )
+
         project_data = {
             "class_id": str(class_id),
             "name": name,
@@ -238,6 +248,16 @@ def create_project(
                 "role": "product owner",
             }).execute()
             _increment_project_num_members(client, project['id'], 1)
+
+            instructor_id = class_row.get('created_by')
+            if instructor_id and instructor_id != user_id:
+                from app.notifications.controller import notify_project_created_by_student
+                notify_project_created_by_student(
+                    instructor_id=instructor_id,
+                    student_id=user_id,
+                    project_id=project['id'],
+                    project_name=name,
+                )
 
         logger.info(
             "Project created | project_id=%s name=%r class_id=%s created_by=%s is_instructor=%s",
@@ -619,6 +639,49 @@ def _notify_product_owners_of_departure(
             )
 
 
+def _get_student_project_in_class(
+    client,
+    user_id: str,
+    class_id: str,
+    *,
+    exclude_project_id: str | None = None,
+) -> dict | None:
+    """
+    Return ``{id, name}`` if *user_id* is already a member of any project in
+    *class_id*, optionally ignoring *exclude_project_id*.  Students should only
+    ever belong to one project per class.
+    """
+    query = (
+        client.table('projects')
+        .select('id, name')
+        .eq('class_id', str(class_id))
+    )
+    if exclude_project_id:
+        query = query.neq('id', str(exclude_project_id))
+    projects_res = query.execute()
+    class_projects = projects_res.data or []
+    if not class_projects:
+        return None
+
+    project_ids = [p['id'] for p in class_projects]
+    name_by_id = {p['id']: p.get('name', 'your current project') for p in class_projects}
+
+    membership_res = (
+        client.table('project_members')
+        .select('project_id')
+        .eq('user_id', user_id)
+        .in_('project_id', project_ids)
+        .limit(1)
+        .execute()
+    )
+    memberships = membership_res.data or []
+    if not memberships:
+        return None
+
+    pid = memberships[0]['project_id']
+    return {'id': pid, 'name': name_by_id.get(pid, 'your current project')}
+
+
 def _leave_current_project_in_class(
     client,
     user_id: str,
@@ -765,9 +828,21 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
 
         result = client.table('project_join_requests').insert(request_data).execute()
 
+        request_row = result.data[0] if result.data else {}
+        request_id = request_row.get('id')
+
+        if request_id:
+            from app.notifications.controller import notify_join_request
+            notify_join_request(
+                project_id=str(project_id),
+                project_name=new_project_name,
+                request_id=str(request_id),
+                requester_id=user_id,
+            )
+
         logger.info(
             "Join request created | project_id=%s user_id=%s request_id=%s",
-            project_id, user_id, result.data[0].get('id') if result.data else None,
+            project_id, user_id, request_id,
         )
         return {
             "message": "Join request submitted successfully",
@@ -1296,6 +1371,93 @@ def get_pending_team_invites_for_user(user_id: str, class_id: UUID) -> list:
             "Error fetching team invites | user_id=%s class_id=%s", user_id, class_id
         )
         raise HTTPException(status_code=500, detail="Failed to fetch pending invitations")
+
+
+def get_my_pending_join_requests_for_user(user_id: str, class_id: UUID) -> list:
+    """
+    Pending **student-initiated** join requests submitted by ``user_id`` within a class.
+
+    Each item includes project metadata so the client can show outgoing request cards.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        class_result = (
+            client.table('classes')
+            .select('id, created_by, name, term, year')
+            .eq('id', str(class_id))
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(status_code=404, detail="Class not found")
+
+        class_row = class_result.data[0]
+        has_access = class_row.get('created_by') == user_id
+        if not has_access:
+            enrollment = (
+                client.table('class_enrollments').select('id')
+                .eq('class_id', str(class_id)).eq('user_id', user_id).execute()
+            )
+            has_access = bool(enrollment.data)
+
+        if not has_access:
+            raise HTTPException(status_code=403, detail="You do not have access to this class")
+
+        course_label_parts = [
+            str(class_row['year']) if class_row.get('year') else '',
+            class_row.get('term'),
+            class_row.get('name'),
+        ]
+        course_label = ' '.join(p for p in course_label_parts if p).strip()
+
+        projects_res = (
+            client.table('projects')
+            .select('id, name, num_members, sponsor_company')
+            .eq('class_id', str(class_id))
+            .execute()
+        )
+        projects = projects_res.data or []
+        project_ids = [p['id'] for p in projects]
+        if not project_ids:
+            return []
+
+        project_map = {p['id']: p for p in projects}
+
+        rows = (
+            client.table('project_join_requests').select(
+                'id, user_id, project_id, created_at, request_status, invited_by'
+            )
+            .eq('user_id', user_id)
+            .eq('request_status', 'pending')
+            .in_('project_id', project_ids)
+            .execute()
+        )
+        outgoing = [r for r in (rows.data or []) if not r.get('invited_by')]
+        if not outgoing:
+            return []
+
+        result = []
+        for row in outgoing:
+            project = project_map.get(row['project_id'], {})
+            result.append({
+                "request_id": row['id'],
+                "user_id": row['user_id'],
+                "requested_at": row.get('created_at'),
+                "status": row['request_status'],
+                "project_id": str(row['project_id']),
+                "project_name": project.get('name'),
+                "member_count": project.get('num_members') or 0,
+                "sponsor_company": project.get('sponsor_company'),
+                "course_label": course_label or None,
+            })
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching outgoing join requests | user_id=%s class_id=%s", user_id, class_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch outgoing join requests")
 
 
 def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:

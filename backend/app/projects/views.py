@@ -109,6 +109,15 @@ def get_pending_team_invites(
     return {"requests": requests}
 
 
+def get_my_join_requests(
+    class_id: UUID = Query(..., description="Class scope for the current user's pending join requests"),
+    user_id: str = Depends(require_user),
+):
+    """Student-initiated join requests submitted by the current user (awaiting team response)."""
+    requests = controller.get_my_pending_join_requests_for_user(user_id, class_id)
+    return {"requests": requests}
+
+
 def get_project(project_id: UUID, user_id: str = Depends(require_user)):
     project = controller.get_project_by_id(project_id, user_id)
     return {"project": project}
