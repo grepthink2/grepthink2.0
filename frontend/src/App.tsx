@@ -1,5 +1,12 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import './App.scss';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 import LandingPage from '@features/landing/LandingPage';
 import ContactPage from '@features/landing/ContactPage';
 import AppView from '@/features/app/AppView';
@@ -34,6 +41,7 @@ import { NotificationsProvider } from '@features/notifications/hooks/useNotifica
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
