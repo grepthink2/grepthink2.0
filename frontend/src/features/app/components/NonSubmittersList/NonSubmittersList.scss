@@ -1,0 +1,116 @@
+@use '@styles/index.scss' as *;
+
+.ns-list {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  font-family: $primary-font;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px $spacing-md;
+    background: $background;
+    border-bottom: 1px solid $border-color;
+    cursor: pointer;
+    user-select: none;
+    gap: $spacing-sm;
+
+    &:hover {
+      background: #e8e8e8;
+    }
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-secondary;
+  }
+
+  &__badge {
+    font-size: 0.6875rem;
+    font-weight: $font-weight-semibold;
+    background: #fef3c7;
+    color: #92400e;
+    padding: 1px 7px;
+    border-radius: 9999px;
+  }
+
+  &__chevron {
+    transition: transform $transition-fast;
+    color: $text-tertiary;
+    flex-shrink: 0;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__body {
+    padding: $spacing-sm $spacing-md;
+  }
+
+  &__search-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: 7px 10px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    margin-bottom: $spacing-xs;
+    background: $white;
+  }
+
+  &__search-icon {
+    color: $text-tertiary;
+    flex-shrink: 0;
+  }
+
+  &__search {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    width: 100%;
+    color: $text-primary;
+
+    &::placeholder {
+      color: $text-tertiary;
+    }
+  }
+
+  &__names {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  &__name-item {
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    padding: 9px 2px;
+    border-bottom: 1px solid #f0f0f0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__empty {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    text-align: center;
+    padding: $spacing-sm 0;
+  }
+}

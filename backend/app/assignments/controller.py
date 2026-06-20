@@ -728,10 +728,63 @@ def get_instructor_tsr_overview(user_id: str, assignment_id: UUID) -> dict:
 
         entries = _fetch_tsr_entries(client, str(assignment_id))
 
+        project_ids = [p['id'] for p in projects]
+        non_submitters_by_project: dict[str, list[dict]] = {}
+
+        if project_ids:
+            memberships_result = (
+                client.table('project_members')
+                .select('project_id, user_id')
+                .in_('project_id', project_ids)
+                .execute()
+            )
+            # Build set of evaluators per project from entries
+            evaluators_by_project: dict[str, set[str]] = {}
+            for e in entries:
+                if e.get('project_id') and e.get('evaluator_id'):
+                    evaluators_by_project.setdefault(e['project_id'], set()).add(e['evaluator_id'])
+
+            # Group members by project
+            members_by_project: dict[str, list[str]] = {}
+            for row in memberships_result.data or []:
+                pid = row.get('project_id')
+                uid = row.get('user_id')
+                if pid and uid:
+                    members_by_project.setdefault(pid, []).append(uid)
+
+            # Collect all non-submitter IDs across projects for a single profile fetch
+            all_ns_ids: set[str] = set()
+            for pid, member_ids in members_by_project.items():
+                submitted = evaluators_by_project.get(pid, set())
+                for uid in member_ids:
+                    if uid not in submitted:
+                        all_ns_ids.add(uid)
+
+            ns_profile_map: dict = {}
+            if all_ns_ids:
+                ns_profiles = (
+                    client.table('profiles')
+                    .select(PROFILE_SELECT)
+                    .in_('id', list(all_ns_ids))
+                    .execute()
+                )
+                ns_profile_map = {p['id']: p for p in (ns_profiles.data or [])}
+
+            for pid, member_ids in members_by_project.items():
+                submitted = evaluators_by_project.get(pid, set())
+                ns_list = [
+                    {'id': uid, 'name': profile_display_name(ns_profile_map.get(uid, {}))}
+                    for uid in member_ids
+                    if uid not in submitted
+                ]
+                ns_list.sort(key=lambda x: x['name'])
+                non_submitters_by_project[pid] = ns_list
+
         return {
             'assignment': assignment,
             'projects': projects,
             'entries': entries,
+            'non_submitters_by_project': non_submitters_by_project,
         }
     except HTTPException:
         raise
@@ -904,6 +957,28 @@ def get_feedback_overview(user_id: str, assignment_id: UUID) -> dict:
             )
             profile_map = {p['id']: p for p in (profiles.data or [])}
 
+        submitted_ids = {s['student_id'] for s in submissions if s.get('student_id')}
+        non_submitter_ids = [
+            row['user_id'] for row in (enrolled_result.data or [])
+            if row.get('user_id') and row['user_id'] not in submitted_ids
+        ]
+
+        non_submitter_profiles: dict = {}
+        if non_submitter_ids:
+            ns_profiles = (
+                client.table('profiles')
+                .select(PROFILE_SELECT)
+                .in_('id', non_submitter_ids)
+                .execute()
+            )
+            non_submitter_profiles = {p['id']: p for p in (ns_profiles.data or [])}
+
+        non_submitters = [
+            {'id': uid, 'name': profile_display_name(non_submitter_profiles.get(uid, {}))}
+            for uid in non_submitter_ids
+        ]
+        non_submitters.sort(key=lambda x: x['name'])
+
         enriched = [
             {
                 'id': s['id'],
@@ -925,6 +1000,7 @@ def get_feedback_overview(user_id: str, assignment_id: UUID) -> dict:
             'submissions': enriched,
             'submitted_count': len(submissions),
             'total_count': total_count,
+            'non_submitters': non_submitters,
         }
     except HTTPException:
         raise

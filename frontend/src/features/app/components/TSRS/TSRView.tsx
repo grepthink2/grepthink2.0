@@ -7,6 +7,7 @@ import React, {
 import { ChevronDown, Search, Shield, Users } from 'lucide-react';
 import { api, type ApiAssignmentTsrEntry } from '@/lib/api';
 import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
+import NonSubmittersList from '@features/app/components/NonSubmittersList/NonSubmittersList';
 import './TSRView.scss';
 
 export type TsrViewMode = 'about' | 'from';
@@ -251,6 +252,7 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
   const [membersLoading, setMembersLoading] = useState(false);
   const [focalMemberId, setFocalMemberId] = useState('');
   const [viewMode, setViewMode] = useState<TsrViewMode>('about');
+  const [nonSubmittersByProject, setNonSubmittersByProject] = useState<Record<string, { id: string; name: string }[]>>({});
 
   // ── Load overview ────────────────────────────────────────────
   useEffect(() => {
@@ -263,6 +265,7 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
         if (cancelled) return;
         setProjects(overview.projects ?? []);
         setEntries(overview.entries ?? []);
+        setNonSubmittersByProject(overview.non_submitters_by_project ?? {});
 
         const withEntries = new Set(
           (overview.entries ?? [])
@@ -375,6 +378,11 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
     );
   }, [entries]);
 
+  const currentNonSubmitters = useMemo(
+    () => nonSubmittersByProject[selectedProjectId] ?? [],
+    [nonSubmittersByProject, selectedProjectId],
+  );
+
   const projectOptions = useMemo(
     () =>
       projects.map((p) => ({
@@ -468,6 +476,13 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
               </div>
             )}
           </div>
+
+          {selectedProjectId && (
+            <NonSubmittersList
+              nonSubmitters={currentNonSubmitters}
+              label="Missing Submissions"
+            />
+          )}
 
           {/* Results */}
           <section className="tsr-view__results">
