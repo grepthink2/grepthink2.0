@@ -1,0 +1,13 @@
+@use '@styles/index.scss' as *;
+
+.landing {
+  min-height: 100vh;
+  background: $background;
+  font-family: $primary-font;
+  color: $text-primary;
+  overflow-x: clip;
+
+  main {
+    display: block;
+  }
+}

@@ -26,12 +26,14 @@ export const MessageComposer: React.FC<Props> = ({ disabled, disabledReason, onS
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSend) return;
+    const captured = body;
+    setBody('');
     setPending(true);
     setError(null);
     try {
-      await onSend(body);
-      setBody('');
+      await onSend(captured);
     } catch (err) {
+      setBody(captured);
       setError((err as Error).message || 'Couldn\'t send. Try again.');
     } finally {
       setPending(false);

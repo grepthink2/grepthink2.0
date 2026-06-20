@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FolderKanban, ArrowRight } from 'lucide-react';
 import octiconPeopleIcon from '@/assets/octicon_people-16.svg?url';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './ProjectGrid.scss';
 
 export interface ProjectGridItem {
@@ -63,6 +64,25 @@ const ProjectGrid: React.FC<ProjectGridProps> = ({ projects, memberProjects = fa
           </div>
         </div>
       </Link>
+    ))}
+  </div>
+);
+
+/** Placeholder grid shown while projects load — mirrors the card layout. */
+export const ProjectGridSkeleton: React.FC<{ count?: number }> = ({ count = 6 }) => (
+  <div className="project-grid" aria-busy="true">
+    {Array.from({ length: count }).map((_, i) => (
+      <div key={i} className="project-grid__card">
+        <div className="project-grid__banner">
+          <Skeleton circle height={64} />
+        </div>
+        <div className="project-grid__content">
+          <Skeleton width="70%" height={16} />
+          <div className="project-grid__row">
+            <Skeleton width="50%" height={13} />
+          </div>
+        </div>
+      </div>
     ))}
   </div>
 );

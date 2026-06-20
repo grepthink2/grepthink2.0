@@ -8,6 +8,7 @@ from app.assignments.models import (
     CreateAssignmentRequest,
     UpdateAssignmentRequest,
     UpdateTSREntryRequest,
+    SubmitFeedbackRequest,
 )
 from app.assignments import controller
 
@@ -45,6 +46,14 @@ def update_assignment(
     return {"message": "Assignment updated successfully", "assignment": assignment}
 
 
+def delete_assignment(
+    assignment_id: UUID,
+    user_id: str = Depends(require_user),
+):
+    controller.delete_assignment(user_id=user_id, assignment_id=assignment_id)
+    return {"message": "Assignment deleted successfully"}
+
+
 def update_tsr_entry(
     assignment_id: UUID,
     tsr_id: UUID,
@@ -58,6 +67,8 @@ def update_tsr_entry(
         percent_contribution=data.percent_contribution,
         positive_feedback=data.positive_feedback,
         constructive_feedback=data.constructive_feedback,
+        scrum_master_tickets=data.scrum_master_tickets,
+        scrum_master_assessment=data.scrum_master_assessment,
         scrum_master_notes=data.scrum_master_notes,
     )
     return {"message": "TSR updated successfully", "tsr": entry}
@@ -110,3 +121,43 @@ def get_assignments(
         class_id=class_id,
     )
     return {"assignments": assignments}
+
+
+def submit_feedback(
+    assignment_id: UUID,
+    data: SubmitFeedbackRequest,
+    user_id: str = Depends(require_user),
+):
+    submission = controller.submit_feedback(
+        user_id=user_id,
+        assignment_id=assignment_id,
+        q1_liked=data.q1_liked,
+        q2_frustrating=data.q2_frustrating,
+        q3_missing_feature=data.q3_missing_feature,
+        q4_bugs=data.q4_bugs,
+        q5_suggestions=data.q5_suggestions,
+    )
+    return {"message": "Feedback submitted successfully", "submission": submission}
+
+
+def get_my_feedback(
+    assignment_id: UUID,
+    user_id: str = Depends(require_user),
+):
+    """Return the authenticated student's feedback submission (null if not yet submitted)."""
+    submission = controller.get_my_feedback(
+        user_id=user_id,
+        assignment_id=assignment_id,
+    )
+    return {"submission": submission}
+
+
+def get_feedback_overview(
+    assignment_id: UUID,
+    user_id: str = Depends(require_user),
+):
+    """All feedback submissions for an assignment (instructor only)."""
+    return controller.get_feedback_overview(
+        user_id=user_id,
+        assignment_id=assignment_id,
+    )

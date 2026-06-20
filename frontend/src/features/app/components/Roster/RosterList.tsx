@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserMinus, Mail } from 'lucide-react';
 import type { UiStudent, ClassStatus, GrepthinkStatus } from './rosterTypes';
+import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import './RosterList.scss';
 
 interface RosterListProps {
@@ -33,17 +34,16 @@ const RosterList: React.FC<RosterListProps> = ({
   onRemove,
 }) => {
   if (loading) {
+    const headers = ['Name', 'Email', 'Class Status', 'GrepThink Status', 'Projects'];
+    if (showActions) headers.push('Actions');
     return (
-      <div className="roster-list">
-        <div className="roster-list__header">
-          <h2 className="roster-list__title">Student Count</h2>
-        </div>
-        <div className="roster-list__table-card">
-          <div className="roster-list__table-wrapper">
-            <div className="roster-list__empty-state">Loading students...</div>
-          </div>
-        </div>
-      </div>
+      <TableSkeleton
+        block="roster-list"
+        title="Student Count"
+        headers={headers}
+        rows={10}
+        cellWidths={['70%', '85%', '90px', '90px', '50%', '70px']}
+      />
     );
   }
 

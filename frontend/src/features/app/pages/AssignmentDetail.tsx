@@ -5,10 +5,12 @@ import TSRS from '@features/app/components/TSRS/TSRS';
 import type { TsrsAssignment } from '@features/app/components/TSRS/TSRS';
 import InterestForm from '@features/app/components/Interest/InterestForm';
 import type { InterestFormAssignment } from '@features/app/components/Interest/InterestForm';
+import FeedbackForm from '@features/app/components/Feedback/FeedbackForm';
+import type { FeedbackFormAssignment } from '@features/app/components/Feedback/FeedbackForm';
 import './AssignmentDetail.scss';
 
 // Supported assignment types — extend here when new types are added.
-type AssignmentType = 'tsrs' | 'interest_form';
+type AssignmentType = 'tsrs' | 'interest_form' | 'feedback';
 
 interface AssignmentDetailState {
   assignmentName?: string;
@@ -16,6 +18,7 @@ interface AssignmentDetailState {
   dueDate?: string;
   projectName?: string;
   projectId?: string;
+  isSubmitted?: boolean;
 }
 
 const AssignmentDetail: React.FC = () => {
@@ -32,6 +35,7 @@ const AssignmentDetail: React.FC = () => {
   const dueDate         = stateData.dueDate         ?? '';
   const projectName     = stateData.projectName     ?? '';
   const projectId       = stateData.projectId       ?? '';
+  const isSubmitted     = stateData.isSubmitted     ?? false;
 
   if (!selectedClass) {
     return (
@@ -59,12 +63,22 @@ const AssignmentDetail: React.FC = () => {
     classId: selectedClass.id,
   };
 
+  const feedbackAssignment: FeedbackFormAssignment = {
+    id: assignmentId,
+    name: assignmentName,
+    dueDate,
+    classId: selectedClass.id,
+  };
+
   return (
     <div className="assignment-detail">
       <div className="assignment-detail__body">
         {assignmentType === 'tsrs' && <TSRS assignment={tsrsAssignment} />}
         {assignmentType === 'interest_form' && (
           <InterestForm assignment={interestAssignment} />
+        )}
+        {assignmentType === 'feedback' && (
+          <FeedbackForm assignment={feedbackAssignment} isSubmitted={isSubmitted} />
         )}
       </div>
     </div>

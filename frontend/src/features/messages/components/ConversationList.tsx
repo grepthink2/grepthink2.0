@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { LuSearch, LuX } from 'react-icons/lu';
 import type { ApiConversationSummary } from '@/lib/api';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { formatRelativeTime } from '../utils/relativeTime';
 import { InitialsAvatar } from './InitialsAvatar';
@@ -39,8 +40,11 @@ export const ConversationList: React.FC<Props> = ({
 
   const filtered = searchQuery
     ? conversations.filter(c => {
+        const first = c.other_user.first_name?.trim() ?? '';
+        const last = c.other_user.last_name?.trim() ?? '';
+        const fullName = `${first} ${last}`.trim();
         const name =
-          c.other_user.name ||
+          fullName ||
           (c.other_user.email ? emailToDisplayName(c.other_user.email) : '');
         return name.toLowerCase().includes(searchQuery.toLowerCase());
       })
@@ -95,7 +99,22 @@ export const ConversationList: React.FC<Props> = ({
     return (
       <div className="messages-list">
         {renderHeader()}
-        <div className="messages-list__empty">Loading…</div>
+        <ul className="messages-list__items" aria-busy="true">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <li key={i} className="messages-list__item" style={{ cursor: 'default' }}>
+              <Skeleton circle height={avatarSize} />
+              <div className="messages-list__body">
+                <div className="messages-list__row">
+                  <Skeleton width="40%" height={13} />
+                  <Skeleton width={32} height={11} />
+                </div>
+                <div className="messages-list__row">
+                  <Skeleton width="70%" height={12} />
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     );
   }
@@ -119,8 +138,11 @@ export const ConversationList: React.FC<Props> = ({
       <ul className="messages-list__items">
         {filtered.map(c => {
           const isActive = c.id === activeId;
+          const first = c.other_user.first_name?.trim() ?? '';
+          const last = c.other_user.last_name?.trim() ?? '';
+          const fullName = `${first} ${last}`.trim();
           const name =
-            c.other_user.name ||
+            fullName ||
             (c.other_user.email ? emailToDisplayName(c.other_user.email) : 'Unknown user');
           const preview = c.last_message?.body ?? '';
           const time = formatRelativeTime(c.last_message_at);
@@ -142,7 +164,8 @@ export const ConversationList: React.FC<Props> = ({
             >
               <InitialsAvatar
                 email={c.other_user.email}
-                name={c.other_user.name}
+                name={name}
+                imageUrl={c.other_user.image_url}
                 size={avatarSize}
               />
               <div className="messages-list__body">
@@ -159,7 +182,7 @@ export const ConversationList: React.FC<Props> = ({
                   )}
                 </div>
               </div>
-              <ConversationMenu conversationId={c.id} />
+              <ConversationMenu conversationId={c.id} unread_count={c.unread_count} />
             </li>
           );
         })}

@@ -1,0 +1,491 @@
+@use '@styles/index.scss' as *;
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  // Clear the fixed header, then breathe.
+  padding: clamp(140px, 18vh, 220px) $spacing-lg clamp(80px, 12vh, 140px);
+  text-align: center;
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(1, 129, 86, 0.08), transparent 70%),
+    $background;
+
+  // Halftone dot grid, masked to fade out behind the headline so it only
+  // reads around the edges and the floating cards.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: radial-gradient(
+      circle,
+      rgba(33, 43, 54, 0.18) 1.4px,
+      transparent 1.6px
+    );
+    background-size: 24px 24px;
+    // Gentle fade only behind the headline core; dots stay clearly visible
+    // across the rest of the hero.
+    -webkit-mask-image: radial-gradient(
+      90% 70% at 50% 42%,
+      transparent 18%,
+      #000 62%
+    );
+    mask-image: radial-gradient(90% 70% at 50% 42%, transparent 18%, #000 62%);
+  }
+
+  &__content {
+    position: relative;
+    z-index: 2;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  &__eyebrow {
+    display: inline-block;
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: $primary-color;
+    background: rgba(1, 129, 86, 0.1);
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__title {
+    font-family: $primary-font;
+    font-size: clamp(2.75rem, 6vw, 4.75rem);
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    color: $text-dark;
+    margin: 0 0 $spacing-lg;
+  }
+
+  &__title-accent {
+    background: linear-gradient(135deg, #018156, #02a06b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  &__subtitle {
+    font-family: $primary-font;
+    font-size: clamp($font-size-large, 2.2vw, 20px);
+    font-weight: $font-weight-normal;
+    line-height: 1.6;
+    color: $text-tertiary;
+    max-width: 560px;
+    margin: 0 auto $spacing-xl;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-lg;
+    flex-wrap: wrap;
+  }
+
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    font-family: $primary-font;
+    font-size: $font-size-large;
+    font-weight: $font-weight-semibold;
+    text-decoration: none;
+    color: $white;
+    background: $primary-color;
+    padding: 14px 34px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(1, 129, 86, 0.28);
+    transition: transform $transition-fast, box-shadow $transition-fast,
+      background $transition-fast;
+
+    &:hover {
+      transform: translateY(-2px);
+      background: $primary-hover;
+      color: $white;
+      box-shadow: 0 12px 30px rgba(1, 129, 86, 0.34);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &:focus-visible {
+      outline: 3px solid rgba(1, 129, 86, 0.5);
+      outline-offset: 3px;
+    }
+  }
+
+  &__signin {
+    font-family: $primary-font;
+    font-size: $font-size-large;
+    font-weight: $font-weight-medium;
+    text-decoration: none;
+    color: $text-secondary;
+    transition: color $transition-fast;
+
+    span {
+      display: inline-block;
+      transition: transform $transition-fast;
+    }
+
+    &:hover {
+      color: $primary-color;
+
+      span {
+        transform: translateX(4px);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(1, 129, 86, 0.5);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+  }
+
+  // --- Floating signature cards ---------------------------------------------
+  &__cards {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+}
+
+.float-card {
+  position: absolute;
+  background: $white;
+  border-radius: 22px;
+  // Soft, diffuse shadow — the clean, low-contrast lift from the reference.
+  box-shadow:
+    0 2px 6px rgba(33, 43, 54, 0.04),
+    0 24px 48px -12px rgba(33, 43, 54, 0.14);
+  padding: 20px;
+  text-align: left;
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: $spacing-sm;
+    margin-bottom: 16px;
+  }
+
+  &__title {
+    font-family: $primary-font;
+    font-size: 14px;
+    font-weight: $font-weight-semibold;
+    color: $text-dark;
+    letter-spacing: -0.01em;
+  }
+
+  &__meta {
+    font-family: $primary-font;
+    font-size: 11px;
+    font-weight: $font-weight-medium;
+    color: #9aa0a6;
+  }
+
+  // --- Team card (upper-left) ---
+  &--team {
+    top: 22%;
+    left: 3%;
+    width: 248px;
+    transform: rotate(-3deg); // fallback (reduced motion)
+    animation: float-team 7s ease-in-out infinite;
+  }
+
+  &__avatars {
+    display: flex;
+    margin-bottom: 14px;
+  }
+
+  &__avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: $white;
+    font-size: 12px;
+    font-weight: $font-weight-semibold;
+    box-shadow: 0 0 0 3px $white;
+    margin-left: -10px;
+
+    &:first-child {
+      margin-left: 0;
+    }
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  &__chip {
+    font-size: 11px;
+    font-weight: $font-weight-medium;
+    color: $text-secondary;
+    background: #f3f4f6;
+    padding: 4px 11px;
+    border-radius: 999px;
+  }
+
+  // --- Milestones card (lower-left) ---
+  &--tasks {
+    bottom: 18%;
+    left: 5%;
+    width: 252px;
+    transform: rotate(3deg); // fallback (reduced motion)
+    animation: float-tasks 9s ease-in-out infinite;
+  }
+
+  &__bars {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  &__bar-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-family: $primary-font;
+
+    span {
+      font-size: 12.5px;
+      font-weight: $font-weight-medium;
+      color: $text-dark;
+    }
+
+    strong {
+      font-size: 12px;
+      font-weight: $font-weight-semibold;
+      color: $primary-color;
+    }
+  }
+
+  &__bar-track {
+    height: 7px;
+    border-radius: 999px;
+    background: #eef0f2;
+    overflow: hidden;
+  }
+
+  &__bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: $primary-color;
+  }
+
+  // --- TSR card (upper-right) ---
+  &--tsr {
+    top: 30%;
+    right: 4%;
+    width: 184px;
+    text-align: center;
+    transform: rotate(4deg); // fallback (reduced motion)
+    animation: float-tsr 8s ease-in-out infinite;
+
+    .float-card__title {
+      display: block;
+      text-align: left;
+      margin-bottom: 8px;
+    }
+  }
+
+  &__ring {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    margin: 4px auto 10px;
+  }
+
+  &__ring-track {
+    fill: none;
+    stroke: #eef0f2;
+    stroke-width: 9;
+  }
+
+  &__ring-value {
+    fill: none;
+    stroke: $primary-color;
+    stroke-width: 9;
+    stroke-linecap: round;
+  }
+
+  &__ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-family: $primary-font;
+    color: $text-dark;
+
+    strong {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    span {
+      font-size: 10px;
+      color: $text-tertiary;
+    }
+  }
+
+  &__caption {
+    font-size: 11.5px;
+    color: $text-tertiary;
+  }
+
+  // --- Roster card (lower-right) ---
+  &--roster {
+    bottom: 7%;
+    right: 6%;
+    width: 256px;
+    transform: rotate(-3deg); // fallback (reduced motion)
+    animation: float-roster 9.5s ease-in-out infinite;
+  }
+
+  &__rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  &__row-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &__row-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.35;
+    flex: 1;
+
+    strong {
+      font-size: 13px;
+      font-weight: $font-weight-medium;
+      color: $text-dark;
+    }
+
+    em {
+      font-size: 11px;
+      font-style: normal;
+      color: $text-tertiary;
+    }
+  }
+
+  &__row-badge {
+    flex-shrink: 0;
+    font-family: $primary-font;
+    font-size: 10px;
+    font-weight: $font-weight-semibold;
+    color: $primary-color;
+    background: rgba(1, 129, 86, 0.1);
+    padding: 3px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.01em;
+  }
+}
+
+// Per-card keyframes bake in the static tilt so rotation persists while floating.
+@keyframes float-team {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(-3deg);
+  }
+}
+
+@keyframes float-tasks {
+  0%,
+  100% {
+    transform: translateY(0) rotate(3deg);
+  }
+  50% {
+    transform: translateY(-9px) rotate(3deg);
+  }
+}
+
+@keyframes float-tsr {
+  0%,
+  100% {
+    transform: translateY(0) rotate(4deg);
+  }
+  50% {
+    transform: translateY(10px) rotate(4deg);
+  }
+}
+
+@keyframes float-roster {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(-3deg);
+  }
+}
+
+// On medium screens drop the two lower cards (they'd crowd the CTA) and keep
+// the balanced top-left / top-right pair.
+@media (max-width: 1080px) {
+  .float-card--tasks,
+  .float-card--roster {
+    display: none;
+  }
+  .float-card--team {
+    top: 22%;
+    left: 3%;
+  }
+  .float-card--tsr {
+    top: 30%;
+    right: 3%;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero__cards {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float-card {
+    animation: none;
+  }
+  .hero__cta,
+  .hero__signin span {
+    transition: none;
+  }
+}

@@ -1,6 +1,14 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import './App.scss';
-import LandingPage from '@pages/LandingPage';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+import LandingPage from '@features/landing/LandingPage';
+import ContactPage from '@features/landing/ContactPage';
 import AppView from '@/features/app/AppView';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
@@ -16,6 +24,7 @@ import Projects from '@features/app/pages/Projects';
 import Roster from '@features/app/pages/Roster';
 import Modules from '@features/app/pages/Modules';
 import TSRViewPage from '@features/app/pages/TSRViewPage';
+import FeedbackViewPage from '@features/app/pages/FeedbackViewPage';
 import Dashboard from '@features/app/pages/Dashboard';
 import ProjectDetails from '@features/app/pages/ProjectDetails';
 import CreateProject from '@features/app/pages/CreateProject';
@@ -29,12 +38,15 @@ import MyProject from '@features/app/pages/MyProject';
 import TestProjects from '@pages/TestProjects';
 import Messages from '@features/messages/pages/Messages';
 import { ConversationsProvider } from '@features/messages/hooks/useConversations';
+import { NotificationsProvider } from '@features/notifications/hooks/useNotifications';
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/studentsignup" element={<SignUpOrchestrator />} />
@@ -49,7 +61,13 @@ function App() {
             sidebar (and the tab title) update even when the user isn't
             on /app/messages. */}
         <Route path="/app" element={<ProtectedRoute />}>
-          <Route element={<ConversationsProvider><AppView /></ConversationsProvider>}>
+          <Route element={
+            <ConversationsProvider>
+              <NotificationsProvider>
+                <AppView />
+              </NotificationsProvider>
+            </ConversationsProvider>
+          }>
             <Route index element={<Navigate to="/app/home" replace />} />
             <Route path="home" element={<Home />} />
             <Route path="messages" element={<Messages />} />
@@ -64,6 +82,7 @@ function App() {
             <Route path="roster" element={<Roster />} />
             <Route path="modules" element={<Modules />} />
             <Route path="modules/tsr/:assignmentId" element={<TSRViewPage />} />
+            <Route path="modules/feedback/:assignmentId" element={<FeedbackViewPage />} />
             <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
             <Route path="create-project" element={<CreateProject />} />
             <Route path="assign-projects" element={<Assign />} />

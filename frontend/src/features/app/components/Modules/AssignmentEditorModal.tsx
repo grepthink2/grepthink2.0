@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { parse, isValid } from 'date-fns';
-import { X, FileText, Globe } from 'lucide-react';
+import { X, FileText, Globe, Trash2 } from 'lucide-react';
 import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
 import { type Assignment, type AssignmentStatus } from './AssignmentList';
 import './AssignmentEditorModal.scss';
@@ -15,6 +15,7 @@ interface AssignmentEditorModalProps {
     id: string,
     data: { name: string; openDate: string; dueDate: string; status: EditorStatus },
   ) => void | Promise<void>;
+  onDelete?: (id: string) => void | Promise<void>;
 }
 
 const toEditorStatus = (s: AssignmentStatus): EditorStatus =>
@@ -25,6 +26,7 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
   assignment,
   onClose,
   onSave,
+  onDelete,
 }) => {
   const isOpen = assignment !== null;
 
@@ -32,19 +34,38 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
   const [openDate,     setOpenDate]     = useState('');
   const [dueDate,      setDueDate]      = useState('');
   const [status,       setStatus]       = useState<EditorStatus>('published');
-  const [isClosing,    setIsClosing]    = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error,        setError]        = useState<string | null>(null);
+  const [isClosing,      setIsClosing]      = useState(false);
+  const [isSubmitting,   setIsSubmitting]   = useState(false);
+  const [isDeleting,     setIsDeleting]     = useState(false);
+  const [confirmDelete,  setConfirmDelete]  = useState(false);
+  const [error,          setError]          = useState<string | null>(null);
+
+  // Snapshot of original values — used to detect dirty state
+  const [origName,     setOrigName]     = useState('');
+  const [origOpenDate, setOrigOpenDate] = useState('');
+  const [origDueDate,  setOrigDueDate]  = useState('');
+  const [origStatus,   setOrigStatus]   = useState<EditorStatus>('published');
 
   useEffect(() => {
     if (assignment) {
-      setName(assignment.title);
-      setOpenDate(assignment.openDate ?? '');
-      setDueDate(assignment.dueDatetime ?? '');
-      setStatus(toEditorStatus(assignment.status));
+      const n  = assignment.title;
+      const od = assignment.openDate ?? '';
+      const dd = assignment.dueDatetime ?? '';
+      const st = toEditorStatus(assignment.status);
+      setName(n);  setOrigName(n);
+      setOpenDate(od); setOrigOpenDate(od);
+      setDueDate(dd);  setOrigDueDate(dd);
+      setStatus(st);   setOrigStatus(st);
       setError(null);
+      setConfirmDelete(false);
     }
   }, [assignment?.id]);
+
+  const isDirty =
+    name.trim() !== origName.trim() ||
+    openDate    !== origOpenDate    ||
+    dueDate     !== origDueDate     ||
+    status      !== origStatus;
 
   const handleClose = () => {
     setIsClosing(true);
@@ -81,6 +102,18 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
       setError(err instanceof Error ? err.message : 'Failed to save assignment');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setError(null);
+    setIsDeleting(true);
+    try {
+      await onDelete?.(assignment!.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete assignment');
+      setIsDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -196,22 +229,58 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
 
         {/* Footer */}
         <div className="aem__footer">
-          <button
-            type="button"
-            className="aem__cancel-btn"
-            onClick={handleClose}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="aem__save-btn"
-            onClick={handleSave}
-            disabled={isSubmitting || !name.trim() || !openDate || !dueDate}
-          >
-            {isSubmitting ? 'Saving…' : 'Save Assignment'}
-          </button>
+          {onDelete && (
+            <div className="aem__footer-delete">
+              {confirmDelete ? (
+                <>
+                  <button
+                    type="button"
+                    className="aem__delete-confirm-btn"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? 'Deleting…' : 'Yes, delete'}
+                  </button>
+                  <button
+                    type="button"
+                    className="aem__delete-cancel-btn"
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="aem__delete-btn"
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={isSubmitting}
+                >
+                  <Trash2 size={15} />
+                  Delete
+                </button>
+              )}
+            </div>
+          )}
+          <div className="aem__footer-actions">
+            <button
+              type="button"
+              className="aem__cancel-btn"
+              onClick={handleClose}
+              disabled={isSubmitting || isDeleting}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="aem__save-btn"
+              onClick={handleSave}
+              disabled={isSubmitting || isDeleting || !isDirty || !name.trim() || !openDate || !dueDate}
+            >
+              {isSubmitting ? 'Saving…' : 'Save Assignment'}
+            </button>
+          </div>
         </div>
       </div>
     </>

@@ -1,18 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { Search, User, ChevronDown, Settings, LogOut, Copy, Check } from 'lucide-react';
+import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
 import { useClass } from '@/lib/classContext';
+import { useNotifications } from '@features/notifications/hooks/useNotifications';
+import { formatRelativeTime } from '@features/messages/utils/relativeTime';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './Header.scss';
 
-interface Notification {
-  id: string;
-  type: 'message' | 'alert' | 'info';
-  title: string;
-  content: string;
-  time: string;
-  read: boolean;
+function notificationPath(notification: {
+  type: string;
+  entity_type: string | null;
+  entity_id: string | null;
+}): string | null {
+  if (notification.type === 'complete_profile') return null;
+  if (notification.type === 'upload_roster') return '/app/roster';
+  if (notification.entity_type === 'conversation' && notification.entity_id) {
+    return `/app/messages/${notification.entity_id}`;
+  }
+  if (notification.entity_type === 'project' && notification.entity_id) {
+    return `/app/projects/${notification.entity_id}`;
+  }
+  return null;
 }
 
 const pageTitles: Record<string, string> = {
@@ -83,6 +93,15 @@ function buildBreadcrumbs(
     ];
   }
 
+  if (pathname.startsWith('/app/modules/feedback/')) {
+    const assignmentName = state?.assignmentName;
+    return [
+      classSegment,
+      { label: 'Modules', path: '/app/modules' },
+      { label: assignmentName ?? 'Feedback Responses' },
+    ];
+  }
+
   // ── Instructor routes ────────────────────────────────────────────────────
   if (role === 'instructor') {
     if (pathname === '/app/dashboard')     return [classSegment, { label: 'Dashboard' }];
@@ -122,24 +141,20 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, role } = useAuth();
-  const { selectedClass } = useClass();
+  const { selectedClass, classes, setSelectedClass } = useClass();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  
-  // Mock notification data
-  const [notifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'message',
-      title: 'New Message',
-      content: 'You have a new message from your instructor',
-      time: '5 minutes ago',
-      read: false,
-    }
-  ]);
+
+  const {
+    notifications,
+    unreadCount,
+    loading: notificationsLoading,
+    markRead,
+    markAllRead,
+  } = useNotifications();
 
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -151,9 +166,36 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
   const showInstructorClassMeta = isClassRoute && role === 'instructor';
   const standaloneTitle = pageTitles[path] ?? 'GrepThink';
 
-  // Count unread notifications
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const handleNotificationClick = async (notification: typeof notifications[number]) => {
+    if (!notification.read_at) {
+      try {
+        await markRead(notification.id);
+      } catch {
+        // Non-fatal — navigation still proceeds.
+      }
+    }
+    setShowNotifications(false);
 
+    if (notification.type === 'complete_profile') {
+      onOpenSettings();
+      return;
+    }
+
+    if (notification.type === 'join_request') {
+      navigate('/app/home', { state: { openRequests: true } });
+      return;
+    }
+
+    if (notification.type === 'upload_roster' && notification.entity_id) {
+      const cls = classes.find(c => c.id === notification.entity_id);
+      if (cls) setSelectedClass(cls);
+    }
+
+    const path = notificationPath(notification);
+    if (path) navigate(path);
+  };
+
+  // Close dropdowns when clicking outside
   const handleCopyCode = () => {
     if (selectedClass?.course_code) {
       navigator.clipboard.writeText(selectedClass.course_code);
@@ -162,7 +204,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     }
   };
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
@@ -270,19 +311,65 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
             <div className="app-header__dropdown app-header__notifications-dropdown">
               <div className="app-header__dropdown-header">
                 <h3>Notifications</h3>
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    className="app-header__mark-all-read"
+                    onClick={() => void markAllRead()}
+                  >
+                    Mark all read
+                  </button>
+                )}
               </div>
               <div className="app-header__dropdown-content">
-                {notifications.length === 0 ? (
+                {notificationsLoading && notifications.length === 0 ? (
+                  <div aria-busy="true">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="app-header__notification-item">
+                        <div className="app-header__notification-body">
+                          <div className="app-header__notification-title">
+                            <Skeleton width="60%" height={13} />
+                          </div>
+                          <div className="app-header__notification-content">
+                            <Skeleton width="85%" height={12} />
+                          </div>
+                          <div className="app-header__notification-time">
+                            <Skeleton width={48} height={10} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : notifications.filter(n => !n.read_at).length === 0 ? (
                   <div className="app-header__empty-state">No notifications</div>
                 ) : (
-                  notifications.map((notification) => (
+                  notifications.filter(n => !n.read_at).map((notification) => (
                     <div
                       key={notification.id}
-                      className={`app-header__notification-item ${!notification.read ? 'unread' : ''}`}
+                      className={`app-header__notification-item ${!notification.read_at ? 'unread' : ''}`}
                     >
-                      <div className="app-header__notification-title">{notification.title}</div>
-                      <div className="app-header__notification-content">{notification.content}</div>
-                      <div className="app-header__notification-time">{notification.time}</div>
+                      <button
+                        type="button"
+                        className="app-header__notification-body"
+                        onClick={() => handleNotificationClick(notification)}
+                      >
+                        <div className="app-header__notification-title">{notification.title}</div>
+                        <div className="app-header__notification-content">{notification.body}</div>
+                        <div className="app-header__notification-time">
+                          {formatRelativeTime(notification.created_at)}
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="app-header__notification-dismiss"
+                        aria-label="Dismiss notification"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void markRead(notification.id);
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
                   ))
                 )}

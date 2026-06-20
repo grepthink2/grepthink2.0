@@ -1,0 +1,8 @@
+@use '@styles/index.scss' as *;
+
+.skeleton {
+  @include skeleton-block;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Smile, Meh, Frown, ChevronRight } from 'lucide-react';
+import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import './ProjectList.scss';
 
 export type ProjectSentiment = 'positive' | 'neutral' | 'negative';
@@ -38,16 +39,13 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
 
   if (loading) {
     return (
-      <div className="assignment-list">
-        <div className="assignment-list__header">
-          <h2 className="assignment-list__title">Project Count</h2>
-        </div>
-        <div className="assignment-list__table-card">
-          <div className="assignment-list__table-wrapper">
-            <div className="projects-table__empty-state">Loading projects...</div>
-          </div>
-        </div>
-      </div>
+      <TableSkeleton
+        block="assignment-list"
+        title="Project Count"
+        headers={['Name', 'Team Size', 'PO', 'SM', 'Sentiment', '']}
+        rows={8}
+        cellWidths={['60%', '30%', '80%', '80%', '90%', 16]}
+      />
     );
   }
 

@@ -8,6 +8,16 @@ import { MessageBubble } from './MessageBubble';
 import { MessageComposer } from './MessageComposer';
 import { InitialsAvatar } from './InitialsAvatar';
 import { ConversationMenu } from './ConversationMenu';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
+
+/** A few alternating bubble placeholders shown while the thread loads. */
+const THREAD_SKELETON_BUBBLES: Array<{ mine: boolean; width: number }> = [
+  { mine: false, width: 180 },
+  { mine: true, width: 140 },
+  { mine: false, width: 220 },
+  { mine: true, width: 90 },
+  { mine: false, width: 160 },
+];
 
 interface Props {
   /** The conversation summary from the inbox cache. */
@@ -29,7 +39,7 @@ export const ConversationThread: React.FC<Props> = ({
   hideHeader = false,
 }) => {
   const { user } = useAuth();
-  const { messages, loading, refetch } = useConversationMessages(conversation.id);
+  const { messages, loading, refetch, addOptimisticMessage } = useConversationMessages(conversation.id);
   const { refetch: refetchInbox } = useConversations();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -64,16 +74,30 @@ export const ConversationThread: React.FC<Props> = ({
       ? new Date(conversation.other_user_last_read_at)
       : null;
 
+  const otherFirst = conversation.other_user.first_name?.trim() ?? '';
+  const otherLast = conversation.other_user.last_name?.trim() ?? '';
   const otherName =
-    conversation.other_user.name ||
+    `${otherFirst} ${otherLast}`.trim() ||
     (conversation.other_user.email
       ? emailToDisplayName(conversation.other_user.email)
       : 'Unknown');
 
   const handleSend = async (body: string) => {
-    await api.sendMessage(conversation.other_user.id, body);
-    // Refresh both views: thread + inbox cache (so badge / preview update).
-    await Promise.all([refetch(), refetchInbox()]);
+    const tempId = `temp-${Date.now()}`;
+    addOptimisticMessage({
+      id: tempId,
+      sender_id: user!.id,
+      body,
+      created_at: new Date().toISOString(),
+    });
+    try {
+      await api.sendMessage(conversation.other_user.id, body);
+      await Promise.all([refetch(), refetchInbox()]);
+    } catch (err) {
+      // Strip the optimistic message on failure so the thread reflects truth.
+      await refetch();
+      throw err;
+    }
   };
 
   return (
@@ -83,7 +107,8 @@ export const ConversationThread: React.FC<Props> = ({
           <div className="messages-thread__header-left">
             <InitialsAvatar
               email={conversation.other_user.email}
-              name={conversation.other_user.name}
+              name={otherName}
+              imageUrl={conversation.other_user.image_url}
               size={headerAvatarSize}
             />
             <h2 className="messages-thread__title">{otherName}</h2>
@@ -98,7 +123,17 @@ export const ConversationThread: React.FC<Props> = ({
 
       <div className="messages-thread__scroll" ref={scrollRef}>
         {loading && messages.length === 0 ? (
-          <div className="messages-thread__loading">Loading…</div>
+          <div className="messages-thread__skeleton" aria-busy="true">
+            {THREAD_SKELETON_BUBBLES.map((b, i) => (
+              <Skeleton
+                key={i}
+                width={b.width}
+                height={36}
+                radius={10}
+                style={{ alignSelf: b.mine ? 'flex-end' : 'flex-start' }}
+              />
+            ))}
+          </div>
         ) : messages.length === 0 ? (
           <div className="messages-thread__empty">
             No messages yet. Send the first one below.

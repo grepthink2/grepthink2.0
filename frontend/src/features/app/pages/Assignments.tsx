@@ -9,6 +9,7 @@ import StudentAssignmentsTable, {
   type StudentAssignmentStatus,
   type AssignmentType,
 } from '../components/Assignments/StudentAssignmentsTable';
+import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import './Assignments.scss';
 
 function resolveAssignmentState(
@@ -101,11 +102,12 @@ const Assignments: React.FC = () => {
         if (myClassProjects.length === 0) {
           const result = assignments.map((a) => {
             const isInterestForm = a.assignment_type === 'interest_form';
+            const isFeedback = a.assignment_type === 'feedback';
             return toStudentRow(a, today, {
               projectName: '—',
-              type: isInterestForm ? 'interest_form' : 'tsrs',
+              type: isFeedback ? 'feedback' : isInterestForm ? 'interest_form' : 'tsrs',
               isSubmitted: false,
-              canStart: isInterestForm,
+              canStart: isFeedback || isInterestForm,
             });
           });
           setRows(result);
@@ -113,7 +115,7 @@ const Assignments: React.FC = () => {
         }
 
         const tsrAssignments = assignments.filter(
-          (a) => a.assignment_type !== 'interest_form',
+          (a) => a.assignment_type !== 'interest_form' && a.assignment_type !== 'feedback',
         );
         const submittedByAssignmentProject: Record<string, Set<string>> = {};
         await Promise.all(
@@ -135,6 +137,21 @@ const Assignments: React.FC = () => {
           }),
         );
 
+        const feedbackAssignments = assignments.filter(
+          (a) => a.assignment_type === 'feedback',
+        );
+        const submittedFeedbackIds = new Set<string>();
+        await Promise.all(
+          feedbackAssignments.map(async (a) => {
+            try {
+              const { submission } = await api.getMyFeedback(a.id);
+              if (submission) submittedFeedbackIds.add(a.id);
+            } catch {
+              // not submitted or error — treat as not started
+            }
+          }),
+        );
+
         if (cancelled) return;
 
         const result: StudentAssignment[] = [];
@@ -145,6 +162,18 @@ const Assignments: React.FC = () => {
                 projectName: '—',
                 type: 'interest_form',
                 isSubmitted: false,
+                canStart: true,
+              }),
+            );
+            continue;
+          }
+
+          if (a.assignment_type === 'feedback') {
+            result.push(
+              toStudentRow(a, today, {
+                projectName: '—',
+                type: 'feedback',
+                isSubmitted: submittedFeedbackIds.has(a.id),
                 canStart: true,
               }),
             );
@@ -200,6 +229,7 @@ const Assignments: React.FC = () => {
         dueDate: assignment.dueDate,
         projectName: assignment.projectName,
         projectId: assignment.projectId,
+        isSubmitted: assignment.isSubmitted,
       },
     });
   };
@@ -207,8 +237,14 @@ const Assignments: React.FC = () => {
   if (loading) {
     return (
       <div className="assignments">
-        <div className="assignments__empty">
-          <p>Loading assignments…</p>
+        <div className="assignments__content">
+          <TableSkeleton
+            block="student-assignments"
+            title="Assignments"
+            headers={['Name', 'Due Date', 'Project Name', 'Status', 'Actions']}
+            rows={6}
+            cellWidths={['70%', '80px', '60%', '64px', '70px']}
+          />
         </div>
       </div>
     );

@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 TSR_FIELDS = (
     'id, evaluator_id, evaluatee_id, project_id, week, '
     'percent_contribution, positive_feedback, constructive_feedback, '
-    'scrum_master_notes, assignment_id, created_at'
+    'scrum_master_tickets, scrum_master_assessment, scrum_master_notes, '
+    'assignment_id, created_at'
 )
 
 
@@ -118,8 +119,13 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
             "percent_contribution": data.percent_contribution,
             "positive_feedback": data.positive_feedback,
             "constructive_feedback": data.constructive_feedback,
-            "scrum_master_notes": data.scrum_master_notes,
         }
+        if data.scrum_master_tickets is not None:
+            tsr_data["scrum_master_tickets"] = data.scrum_master_tickets
+        if data.scrum_master_assessment is not None:
+            tsr_data["scrum_master_assessment"] = data.scrum_master_assessment
+        if data.scrum_master_notes is not None:
+            tsr_data["scrum_master_notes"] = data.scrum_master_notes
         if data.assignment_id:
             tsr_data["assignment_id"] = str(data.assignment_id)
 

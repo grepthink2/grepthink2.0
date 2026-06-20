@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { api, type ApiMessage } from '@/lib/api';
-
-const POLL_INTERVAL_MS = 3_000;
+import { supabase } from '@/lib/supabaseClient';
 
 interface State {
   messages: ApiMessage[];
@@ -10,12 +9,12 @@ interface State {
 }
 
 /**
- * Polls /api/messages/conversations/:id/messages every 3s. Returns
- * messages in chronological order (oldest first) for direct render.
- *
- * Mounted only when a thread is open. Re-fetches the latest 50 each tick
- * — for the recruitment-DM use case (≤ 10 messages typical), this is
- * trivial overhead and dramatically simpler than diffing/cursoring.
+ * Returns a thread's messages in chronological order (oldest first) for
+ * direct render. Mounted only when a thread is open: loads once, then
+ * subscribes to Supabase Realtime (postgres_changes INSERT on `messages`,
+ * scoped to this conversation) and refetches when a new message lands — no
+ * interval polling. The realtime socket's auth is already set by the
+ * always-mounted ConversationsProvider above this hook.
  */
 export function useConversationMessages(conversationId: string | null) {
   const [state, setState] = useState<State>({
@@ -45,15 +44,29 @@ export function useConversationMessages(conversationId: string | null) {
       return;
     }
     refetch(conversationId);
-    const intervalId = window.setInterval(() => refetch(conversationId), POLL_INTERVAL_MS);
+    const channel = supabase
+      .channel(`messages:${conversationId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+        () => refetch(conversationId),
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') refetch(conversationId);
+      });
     return () => {
       cancelled.current = true;
-      window.clearInterval(intervalId);
+      supabase.removeChannel(channel);
     };
   }, [conversationId, refetch]);
+
+  const addOptimisticMessage = useCallback((msg: ApiMessage) => {
+    setState(prev => ({ ...prev, messages: [...prev.messages, msg] }));
+  }, []);
 
   return {
     ...state,
     refetch: () => conversationId ? refetch(conversationId) : Promise.resolve(),
+    addOptimisticMessage,
   };
 }

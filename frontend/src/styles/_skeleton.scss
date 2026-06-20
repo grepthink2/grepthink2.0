@@ -1,0 +1,37 @@
+@use './colors' as *;
+@use './variables' as *;
+
+/**
+ * Skeleton loader shimmer.
+ *
+ * A light gradient sweeps left→right across a grey placeholder block while the
+ * underlying view waits on a GET. Include `skeleton-block` on any element that
+ * should read as "loading content". Respects prefers-reduced-motion: the grey
+ * block stays, the motion stops.
+ */
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@mixin skeleton-block {
+  background-color: $background;
+  background-image: linear-gradient(
+    90deg,
+    $background 25%,
+    #f5f5f5 37%,
+    $background 63%
+  );
+  background-size: 400% 100%;
+  border-radius: $border-radius-sm;
+  animation: skeleton-shimmer 1.4s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

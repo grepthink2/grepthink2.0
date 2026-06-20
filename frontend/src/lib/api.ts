@@ -82,6 +82,13 @@ export interface ApiProject {
   user_role?: string | null;
   member_count?: number;
   image_url?: string;
+  /** Assigned product owner / scrum master (from API). */
+  product_owner_name?: string | null;
+  product_owner_email?: string | null;
+  scrum_master_name?: string | null;
+  scrum_master_email?: string | null;
+  /** Aggregated team sentiment from TSRs: 'positive' | 'neutral' | 'negative'. */
+  sentiment?: 'positive' | 'neutral' | 'negative' | null;
   // Sponsor information
   sponsor_name?: string;
   sponsor_company?: string;
@@ -97,6 +104,11 @@ export interface ApiProjectJoinRequest {
   user_role?: string;
   requested_at?: string;
   status: string;
+  project_id?: string;
+  project_name?: string;
+  member_count?: number;
+  sponsor_company?: string;
+  course_label?: string;
 }
 
 export interface ApiProjectMember {
@@ -133,7 +145,9 @@ export interface CreateTsrPayload {
   percent_contribution: number;
   positive_feedback: string;
   constructive_feedback: string;
-  scrum_master_notes: string;
+  scrum_master_tickets?: string;
+  scrum_master_assessment?: string;
+  scrum_master_notes?: string;
   week?: number;
   assignment_id?: string;
 }
@@ -145,6 +159,8 @@ export interface ApiTSR {
   percent_contribution: number;
   positive_feedback: string;
   constructive_feedback: string;
+  scrum_master_tickets?: string;
+  scrum_master_assessment?: string;
   scrum_master_notes?: string;
   email?: string;
   assignment_id?: string;
@@ -162,6 +178,8 @@ export interface ApiAssignmentTsrEntry {
   percent_contribution: number;
   positive_feedback: string;
   constructive_feedback?: string;
+  scrum_master_tickets?: string;
+  scrum_master_assessment?: string;
   scrum_master_notes?: string;
 }
 
@@ -169,6 +187,8 @@ export interface UpdateAssignmentTsrPayload {
   percent_contribution?: number;
   positive_feedback?: string;
   constructive_feedback?: string;
+  scrum_master_tickets?: string;
+  scrum_master_assessment?: string;
   scrum_master_notes?: string;
 }
 
@@ -186,6 +206,8 @@ export interface ApiAssignment {
   has_tsr_responses?: boolean;
   teams_submitted?: number;
   teams_total?: number;
+  feedback_submitted?: number;
+  feedback_total?: number;
 }
 
 export interface ApiTurnInStats {
@@ -213,12 +235,45 @@ export interface UpdateAssignmentPayload {
   assignment_type?: string;
 }
 
+export interface SubmitFeedbackPayload {
+  q1_liked: string;
+  q2_frustrating: string;
+  q3_missing_feature: string;
+  q4_bugs: string;
+  q5_suggestions: string;
+}
+
+export interface ApiFeedbackSubmission {
+  id: string;
+  assignment_id: string;
+  student_id: string;
+  student_name?: string;
+  q1_liked: string;
+  q2_frustrating: string;
+  q3_missing_feature: string;
+  q4_bugs: string;
+  q5_suggestions: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ApiFeedbackOverview {
+  assignment: ApiAssignment;
+  submissions: ApiFeedbackSubmission[];
+  submitted_count: number;
+  total_count: number;
+  non_submitters: { id: string; name: string }[];
+}
+
 // ----- Messages ------------------------------------------------------------
 
 export interface ApiMessageOtherUser {
   id: string;
   email: string | null;
   name: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  image_url?: string | null;
 }
 
 export interface ApiMessagePreview {
@@ -243,6 +298,17 @@ export interface ApiConversationSummary {
   other_user_last_read_at: string | null;
   can_send: boolean;
   last_message_at: string | null;
+}
+
+export interface ApiNotification {
+  id: string;
+  type: 'join_request' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster';
+  title: string;
+  body: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  read_at: string | null;
+  created_at: string;
 }
 
 // ----- Staffing / Interest form -------------------------------------------
@@ -435,7 +501,14 @@ export const api = {
    * The backend verifies that the JWT's ``sub`` matches ``userId`` in the
    * body, so the caller cannot provision a profile for someone else.
    */
-  createUser: async (data: { userId: string; email: string; userType: 'student' | 'instructor' }) => {
+  createUser: async (data: {
+    userId: string;
+    email: string;
+    userType: 'student' | 'instructor';
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
+  }) => {
     return apiRequest<{ message: string; email: string; role: string }>('/api/create-user', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -448,6 +521,7 @@ export const api = {
     description?: string;
     term: string;
     start_date: string;
+    tsr_count?: number;
   }) => {
     return apiRequest<{ message: string; class: ApiClass }>('/api/classes', {
       method: 'POST',
@@ -559,6 +633,18 @@ export const api = {
 
   getProjectJoinRequests: async (projectId: string) => {
     return apiRequest<{ requests: ApiProjectJoinRequest[] }>(`/api/projects/${projectId}/join-requests`);
+  },
+
+  getPendingTeamInvites: async (classId: string) => {
+    return apiRequest<{ requests: ApiProjectJoinRequest[] }>(
+      `/api/projects/pending-invites?class_id=${encodeURIComponent(classId)}`,
+    );
+  },
+
+  getMyJoinRequests: async (classId: string) => {
+    return apiRequest<{ requests: ApiProjectJoinRequest[] }>(
+      `/api/projects/my-join-requests?class_id=${encodeURIComponent(classId)}`,
+    );
   },
 
   getProjectMembers: async (projectId: string) => {
@@ -722,6 +808,13 @@ export const api = {
     });
   },
 
+  /** Delete an assignment (instructor only — DELETE /api/assignments/:id) */
+  deleteAssignment: async (assignmentId: string) => {
+    return apiRequest<{ message: string }>(`/api/assignments/${assignmentId}`, {
+      method: 'DELETE',
+    });
+  },
+
   /** Student's TSR submissions for an assignment (GET /api/assignments/:id/tsrs) */
   getMyAssignmentTsrs: async (assignmentId: string) => {
     return apiRequest<{ tsrs: ApiAssignmentTsrEntry[] }>(`/api/assignments/${assignmentId}/tsrs`);
@@ -733,6 +826,7 @@ export const api = {
       assignment: ApiAssignment;
       projects: { id: string; name: string }[];
       entries: ApiAssignmentTsrEntry[];
+      non_submitters_by_project: Record<string, { id: string; name: string }[]>;
     }>(`/api/assignments/${assignmentId}/tsr-overview`);
   },
 
@@ -748,6 +842,28 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(data),
       },
+    );
+  },
+
+  /** Submit (or update) a student's feedback response (POST /api/assignments/:id/feedback) */
+  submitFeedback: async (assignmentId: string, data: SubmitFeedbackPayload) => {
+    return apiRequest<{ message: string; submission: ApiFeedbackSubmission }>(
+      `/api/assignments/${assignmentId}/feedback`,
+      { method: 'POST', body: JSON.stringify(data) },
+    );
+  },
+
+  /** Student's own feedback submission (GET /api/assignments/:id/feedback/me) */
+  getMyFeedback: async (assignmentId: string) => {
+    return apiRequest<{ submission: ApiFeedbackSubmission | null }>(
+      `/api/assignments/${assignmentId}/feedback/me`,
+    );
+  },
+
+  /** Instructor overview of all feedback responses (GET /api/assignments/:id/feedback/overview) */
+  getFeedbackOverview: async (assignmentId: string) => {
+    return apiRequest<ApiFeedbackOverview>(
+      `/api/assignments/${assignmentId}/feedback/overview`,
     );
   },
 
@@ -784,6 +900,26 @@ export const api = {
   deleteConversation: async (conversationId: string) => {
     return apiRequest<void>(`/api/messages/conversations/${conversationId}`, {
       method: 'DELETE',
+    });
+  },
+
+  // ----- Notifications -----------------------------------------------------
+
+  getNotifications: async () => {
+    return apiRequest<{ notifications: ApiNotification[]; unread_count: number }>(
+      '/api/notifications',
+    );
+  },
+
+  markNotificationRead: async (notificationId: string) => {
+    return apiRequest<void>(`/api/notifications/${notificationId}/read`, {
+      method: 'POST',
+    });
+  },
+
+  markAllNotificationsRead: async () => {
+    return apiRequest<void>('/api/notifications/read-all', {
+      method: 'POST',
     });
   },
 

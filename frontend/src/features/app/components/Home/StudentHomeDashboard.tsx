@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import {
   BookOpen,
+  CalendarDays,
   ChevronRight,
   Clock,
   FolderOpen,
@@ -20,14 +21,14 @@ import { useUser } from '@/lib/auth';
 import { api, type ApiAssignment } from '@/lib/api';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import {
-  MOCK_OUTGOING_JOIN_REQUESTS,
-  MOCK_SCHEDULE,
+  // MOCK_SCHEDULE,
   buildFallbackDeadlineRows,
-  type MockJoinRequest,
 } from './mockData';
+import RequestsModal from './RequestsModal';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './StudentHomeDashboard.scss';
 
-type DeadlineDisplayStatus = 'due_soon' | 'not_started' | 'in_progress';
+type DeadlineDisplayStatus = 'due_soon' | 'not_started' | 'in_progress' | 'completed';
 
 interface DeadlineRow {
   id: string;
@@ -38,6 +39,7 @@ interface DeadlineRow {
   projectId?: string;
   projectName?: string;
   highlight: boolean;
+  assignmentType?: string;
 }
 
 interface TeamMemberRow {
@@ -133,10 +135,14 @@ function computeDeadlineStatus(params: {
   allPairsSubmitted: boolean;
   anySubmitted: boolean;
 }): DeadlineDisplayStatus | null {
-  if (params.allPairsSubmitted) return null;
-
   const today = startOfDay(new Date());
   const closeDay = startOfDay(parseLocalAssignmentDate(params.assignment.close_date));
+
+  if (params.allPairsSubmitted) {
+    if (closeDay >= today) return 'completed';
+    return null;
+  }
+
   const openDay = startOfDay(parseLocalAssignmentDate(params.assignment.open_date));
   const daysToClose = differenceInCalendarDays(closeDay, today);
 
@@ -184,6 +190,7 @@ function buildDeadlineRows(
         dueLabel: formatDueLabel(a.close_date),
         status: st,
         highlight: false,
+        assignmentType: a.assignment_type,
         closeMs: parseLocalAssignmentDate(a.close_date).getTime(),
       });
       continue;
@@ -212,6 +219,7 @@ function buildDeadlineRows(
       projectId: proj.id,
       projectName: proj.name,
       highlight: false,
+      assignmentType: a.assignment_type,
       closeMs: parseLocalAssignmentDate(a.close_date).getTime(),
     });
   }
@@ -230,12 +238,14 @@ const statusLabel: Record<DeadlineDisplayStatus, string> = {
   due_soon: 'Due Soon',
   not_started: 'Not Started',
   in_progress: 'In Progress',
+  completed: 'Completed',
 };
 
 const statusPillClass: Record<DeadlineDisplayStatus, string> = {
   due_soon: 'student-home__pill--due-soon',
   not_started: 'student-home__pill--not-started',
   in_progress: 'student-home__pill--in-progress',
+  completed: 'student-home__pill--submitted',
 };
 
 const JOIN_REVIEW_ROLES = new Set(['owner', 'product owner', 'admin']);
@@ -254,6 +264,16 @@ function avatarBgFromEmail(email: string | undefined): string {
   return `hsl(${h} 42% 40%)`;
 }
 
+interface OutgoingJoinRequestRow {
+  requestId: string;
+  projectId: string;
+  projectName: string;
+  courseLabel?: string;
+  memberCount: number;
+  sponsorCompany?: string;
+  requestedAt?: string;
+}
+
 interface IncomingJoinRequestRow {
   requestId: string;
   projectId: string;
@@ -261,6 +281,15 @@ interface IncomingJoinRequestRow {
   requesterEmail?: string;
   requestedAt?: string;
   memberCount: number;
+}
+
+function formatAwaitingMeta(iso: string | undefined): string | null {
+  if (!iso) return 'Awaiting Response';
+  try {
+    return `Awaiting Response • ${formatDistanceToNow(parseISO(iso), { addSuffix: true })}`;
+  } catch {
+    return 'Awaiting Response';
+  }
 }
 
 function formatRequestedMeta(iso: string | undefined): string | null {
@@ -274,6 +303,7 @@ function formatRequestedMeta(iso: string | undefined): string | null {
 
 const StudentHomeDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { openJoinClassModal } = useOutletContext<AppOutletContext>();
   const { selectedClass } = useClass();
   const { user } = useUser();
@@ -292,9 +322,17 @@ const StudentHomeDashboard: React.FC = () => {
     action: 'accept' | 'reject';
   } | null>(null);
   const [incomingRequestError, setIncomingRequestError] = useState<string | null>(null);
-  const [outgoingMockItems] = useState<MockJoinRequest[]>(() =>
-    MOCK_OUTGOING_JOIN_REQUESTS.map((r) => ({ ...r })),
-  );
+  const [outgoingRequests, setOutgoingRequests] = useState<OutgoingJoinRequestRow[]>([]);
+  const [outgoingLoading, setOutgoingLoading] = useState(false);
+  const [requestsModalOpen, setRequestsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const state = location.state as { openRequests?: boolean } | null;
+    if (state?.openRequests) {
+      setRequestsModalOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   const useMockDeadlines = !selectedClass;
   const displayDeadlines = useMockDeadlines
@@ -360,6 +398,40 @@ const StudentHomeDashboard: React.FC = () => {
     }
   }, [selectedClass?.id]);
 
+  const refreshOutgoingRequests = useCallback(async () => {
+    const classId = selectedClass?.id;
+    if (!classId) {
+      setOutgoingRequests([]);
+      setOutgoingLoading(false);
+      return;
+    }
+    setOutgoingLoading(true);
+    try {
+      const { requests } = await api.getMyJoinRequests(classId);
+      setOutgoingRequests(
+        (requests ?? []).map(
+          (r): OutgoingJoinRequestRow => ({
+            requestId: r.request_id,
+            projectId: r.project_id ?? '',
+            projectName: r.project_name ?? 'Project',
+            courseLabel: r.course_label,
+            memberCount: r.member_count ?? 0,
+            sponsorCompany: r.sponsor_company,
+            requestedAt: r.requested_at,
+          }),
+        ),
+      );
+    } catch {
+      setOutgoingRequests([]);
+    } finally {
+      setOutgoingLoading(false);
+    }
+  }, [selectedClass?.id]);
+
+  const refreshAllRequests = useCallback(async () => {
+    await Promise.all([refreshIncomingRequests(), refreshOutgoingRequests()]);
+  }, [refreshIncomingRequests, refreshOutgoingRequests]);
+
   useEffect(() => {
     if (!selectedClass) {
       setDeadlineRows([]);
@@ -414,7 +486,8 @@ const StudentHomeDashboard: React.FC = () => {
 
   useEffect(() => {
     void refreshIncomingRequests();
-  }, [refreshIncomingRequests]);
+    void refreshOutgoingRequests();
+  }, [refreshIncomingRequests, refreshOutgoingRequests]);
 
   useEffect(() => {
     setIncomingRequestError(null);
@@ -516,7 +589,11 @@ const StudentHomeDashboard: React.FC = () => {
       navigate(`/app/assignments/${r.id}`, {
         state: {
           assignmentName: r.name,
-          assignmentType: 'tsrs',
+          assignmentType: r.assignmentType === 'feedback'
+            ? 'feedback'
+            : r.assignmentType === 'interest_form'
+            ? 'interest_form'
+            : 'tsrs',
           dueDate: r.dueLabel,
           projectName: r.projectName ?? '—',
           projectId: r.projectId,
@@ -587,7 +664,28 @@ const StudentHomeDashboard: React.FC = () => {
               </h2>
             </div>
             {deadlinesLoading && selectedClass ? (
-              <p className="student-home__loading">Loading deadlines…</p>
+              <div className="student-home__deadlines-scroll" aria-busy="true">
+                <table className="student-home__deadlines-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Deadline</th>
+                      <th>Status</th>
+                      <th className="student-home__chevron" aria-hidden />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <tr key={i}>
+                        <td><Skeleton width="70%" height={13} /></td>
+                        <td><Skeleton width="60%" height={13} /></td>
+                        <td><Skeleton width={64} height={20} radius={20} /></td>
+                        <td className="student-home__chevron"><Skeleton width={16} height={16} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div className="student-home__deadlines-scroll">
                 <table className="student-home__deadlines-table">
@@ -652,7 +750,11 @@ const StudentHomeDashboard: React.FC = () => {
               <h2 id="requests-heading" className="student-home__card-title">
                 Requests
               </h2>
-              <button type="button" className="student-home__link">
+              <button
+                type="button"
+                className="student-home__link"
+                onClick={() => setRequestsModalOpen(true)}
+              >
                 See All
               </button>
             </div>
@@ -662,8 +764,20 @@ const StudentHomeDashboard: React.FC = () => {
               </p>
             ) : null}
             <div className="student-home__requests-list">
-              {incomingLoading && selectedClass ? (
-                <p className="student-home__loading">Loading requests…</p>
+              {(incomingLoading || outgoingLoading) && selectedClass ? (
+                <div aria-busy="true">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="student-home__request-card">
+                      <div className="student-home__request-top">
+                        <Skeleton circle height={40} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <Skeleton width="50%" height={13} />
+                          <Skeleton width="70%" height={11} style={{ marginTop: 6 }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : null}
               {!incomingLoading &&
                 incomingRequests.map((row) => {
@@ -745,41 +859,48 @@ const StudentHomeDashboard: React.FC = () => {
                     </div>
                   );
                 })}
-              {outgoingMockItems.map((req) => (
-                <div key={req.id} className="student-home__request-card">
-                  <div className="student-home__request-top">
-                    <div
-                      className="student-home__avatar"
-                      style={{ backgroundColor: req.avatarBg }}
-                    >
-                      {req.avatarInitials}
-                    </div>
-                    <div className="student-home__request-main">
-                      <h3 className="student-home__request-title">{req.projectName}</h3>
-                      <p className="student-home__request-sub">{req.subtext}</p>
-                      <div className="student-home__badges">
-                        {req.badges.map((b) => (
-                          <span
-                            key={b.label}
-                            className={`student-home__badge${b.variant === 'purple' ? ' student-home__badge--purple' : ''}`}
-                          >
-                            {b.label}
-                          </span>
-                        ))}
+              {outgoingRequests.map((req) => {
+                const awaitingMeta = formatAwaitingMeta(req.requestedAt);
+                return (
+                  <div key={req.requestId} className="student-home__request-card">
+                    <div className="student-home__request-top">
+                      <div
+                        className="student-home__avatar"
+                        style={{ backgroundColor: avatarBgFromEmail(req.projectName) }}
+                      >
+                        {req.projectName.trim()[0]?.toUpperCase() ?? '?'}
                       </div>
-                      {req.awaitingMeta ? (
-                        <div className="student-home__awaiting">
-                          <Clock size={14} aria-hidden />
-                          {req.awaitingMeta}
+                      <div className="student-home__request-main">
+                        <h3 className="student-home__request-title">{req.projectName}</h3>
+                        <p className="student-home__request-sub">
+                          {req.courseLabel ?? 'Pending project join request'}
+                        </p>
+                        <div className="student-home__badges">
+                          <span className="student-home__badge">
+                            {req.memberCount} {req.memberCount === 1 ? 'Member' : 'Members'}
+                          </span>
+                          {req.sponsorCompany ? (
+                            <span className="student-home__badge">Company Sponsored</span>
+                          ) : null}
+                          <span className="student-home__badge student-home__badge--purple">
+                            Outgoing
+                          </span>
                         </div>
-                      ) : null}
+                        {awaitingMeta ? (
+                          <div className="student-home__awaiting">
+                            <Clock size={14} aria-hidden />
+                            {awaitingMeta}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {!incomingLoading &&
+                !outgoingLoading &&
                 incomingRequests.length === 0 &&
-                outgoingMockItems.length === 0 && (
+                outgoingRequests.length === 0 && (
                   <p className="student-home__empty">No pending requests.</p>
                 )}
             </div>
@@ -823,6 +944,7 @@ const StudentHomeDashboard: React.FC = () => {
                 Today&apos;s Schedule
               </h2>
             </div>
+            {/* TODO: wire real schedule data once calendar integration exists.
             <ul className="student-home__schedule-list">
               {MOCK_SCHEDULE.map((item) => (
                 <li key={item.id} className="student-home__schedule-item">
@@ -839,6 +961,15 @@ const StudentHomeDashboard: React.FC = () => {
                 </li>
               ))}
             </ul>
+            */}
+            <div className="student-home__schedule-empty">
+              <div className="student-home__schedule-empty-icon" aria-hidden>
+                <CalendarDays size={22} strokeWidth={1.5} />
+              </div>
+              <p className="student-home__schedule-empty-title">
+                Class events and deadlines will appear here.
+              </p>
+            </div>
           </section>
 
           <section className="student-home__card" aria-labelledby="team-heading">
@@ -866,7 +997,19 @@ const StudentHomeDashboard: React.FC = () => {
               ) : null}
             </div>
             {teamLoading ? (
-              <p className="student-home__loading">Loading team…</p>
+              <ul className="student-home__team-list" aria-busy="true">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <li key={i} className="student-home__team-item">
+                    <div className="student-home__team-avatar-wrap">
+                      <Skeleton circle height={40} />
+                    </div>
+                    <div className="student-home__team-text">
+                      <Skeleton width="60%" height={13} />
+                      <Skeleton width="40%" height={11} style={{ marginTop: 6 }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ) : teamMembers.length === 0 ? (
               <p className="student-home__empty">
                 {selectedClass
@@ -915,6 +1058,12 @@ const StudentHomeDashboard: React.FC = () => {
         </div>
       </div>
 
+      <RequestsModal
+        isOpen={requestsModalOpen}
+        onClose={() => setRequestsModalOpen(false)}
+        classId={selectedClass?.id}
+        onRequestsChanged={() => void refreshAllRequests()}
+      />
     </div>
   );
 };

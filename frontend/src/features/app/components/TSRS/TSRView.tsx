@@ -4,11 +4,15 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { ChevronDown, Search, Users } from 'lucide-react';
+import { ChevronDown, Search, Shield, Users } from 'lucide-react';
 import { api, type ApiAssignmentTsrEntry } from '@/lib/api';
+import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
+import NonSubmittersList from '@features/app/components/NonSubmittersList/NonSubmittersList';
 import './TSRView.scss';
 
 export type TsrViewMode = 'about' | 'from';
+
+const ALL_MEMBERS_ID = '';
 
 export interface TsrViewMember {
   id: string;
@@ -30,6 +34,62 @@ function memberDisplayName(
   const full = [first, last].filter(Boolean).join(' ');
   return full || email || fallback || 'Unknown';
 }
+
+function isScrumMasterRole(role?: string | null): boolean {
+  return role?.trim().toLowerCase() === 'scrum master';
+}
+
+interface MemberNameProps {
+  name?: string | null;
+  userId?: string;
+  scrumMasterIds: ReadonlySet<string>;
+}
+
+const MemberName: React.FC<MemberNameProps> = ({ name, userId, scrumMasterIds }) => {
+  const isScrumMaster = Boolean(userId && scrumMasterIds.has(userId));
+
+  return (
+    <span className="tsr-view__name-cell">
+      <span>{name || '—'}</span>
+      {isScrumMaster && (
+        <StatTooltip label="Scrum Master">
+          <Shield size={14} className="tsr-view__sm-badge" aria-hidden />
+        </StatTooltip>
+      )}
+    </span>
+  );
+};
+
+interface ScrumMasterResponsesProps {
+  tickets?: string;
+  assessment?: string;
+  notes?: string;
+}
+
+const ScrumMasterResponses: React.FC<ScrumMasterResponsesProps> = ({
+  tickets,
+  assessment,
+  notes,
+}) => {
+  const sections = [
+    { label: 'Stories and Tickets Worked On', value: tickets },
+    { label: 'Performance Assessment & Evidence', value: assessment },
+    { label: 'Notes/Comments', value: notes },
+  ].filter((section) => section.value?.trim());
+
+  if (sections.length === 0) return <>—</>;
+
+  return (
+    <div className="tsr-view__sm-responses">
+      {sections.map((section) => (
+        <div className="tsr-view__sm-response" key={section.label}>
+          <span className="tsr-view__sm-response-label">{section.label}</span>
+          <span>{section.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // ── Inline searchable dropdown ────────────────────────────────
 interface SearchDropdownProps {
@@ -154,7 +214,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
             {results.length === 0 ? (
               <li className="tsrv-dd__empty">No results</li>
             ) : results.map((o, idx) => (
-              <li key={o.id}>
+              <li key={o.id || '__all__'}>
                 <button
                   type="button"
                   data-idx={idx}
@@ -188,9 +248,11 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
   const [entries, setEntries] = useState<ApiAssignmentTsrEntry[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [members, setMembers] = useState<TsrViewMember[]>([]);
+  const [scrumMasterIds, setScrumMasterIds] = useState<ReadonlySet<string>>(new Set());
   const [membersLoading, setMembersLoading] = useState(false);
   const [focalMemberId, setFocalMemberId] = useState('');
   const [viewMode, setViewMode] = useState<TsrViewMode>('about');
+  const [nonSubmittersByProject, setNonSubmittersByProject] = useState<Record<string, { id: string; name: string }[]>>({});
 
   // ── Load overview ────────────────────────────────────────────
   useEffect(() => {
@@ -203,6 +265,7 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
         if (cancelled) return;
         setProjects(overview.projects ?? []);
         setEntries(overview.entries ?? []);
+        setNonSubmittersByProject(overview.non_submitters_by_project ?? {});
 
         const withEntries = new Set(
           (overview.entries ?? [])
@@ -225,7 +288,12 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
 
   // ── Load members for selected project ────────────────────────
   useEffect(() => {
-    if (!selectedProjectId) { setMembers([]); setFocalMemberId(''); return; }
+    if (!selectedProjectId) {
+      setMembers([]);
+      setScrumMasterIds(new Set());
+      setFocalMemberId('');
+      return;
+    }
     let cancelled = false;
     setMembersLoading(true);
     (async () => {
@@ -250,11 +318,19 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
         }
         roster.sort((a, b) => a.name.localeCompare(b.name));
         setMembers(roster);
-        setFocalMemberId((prev) =>
-          prev && roster.some((m) => m.id === prev) ? prev : roster[0]?.id ?? '',
+        setScrumMasterIds(
+          new Set(
+            apiMembers
+              .filter((m) => isScrumMasterRole(m.project_role))
+              .map((m) => m.user_id),
+          ),
         );
+        setFocalMemberId(ALL_MEMBERS_ID);
       } catch {
-        if (!cancelled) setMembers([]);
+        if (!cancelled) {
+          setMembers([]);
+          setScrumMasterIds(new Set());
+        }
       } finally {
         if (!cancelled) setMembersLoading(false);
       }
@@ -267,10 +343,19 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
     [entries, selectedProjectId],
   );
 
-  const focalMember = members.find((m) => m.id === focalMemberId);
+  const isOverview = focalMemberId === ALL_MEMBERS_ID;
+  const focalMember = isOverview ? undefined : members.find((m) => m.id === focalMemberId);
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
   const visibleRows = useMemo(() => {
-    if (!focalMemberId) return [];
+    if (isOverview) {
+      return [...projectEntries].sort((a, b) => {
+        const byFrom = (a.evaluator_name ?? '').localeCompare(b.evaluator_name ?? '');
+        return byFrom !== 0
+          ? byFrom
+          : (a.evaluatee_name ?? '').localeCompare(b.evaluatee_name ?? '');
+      });
+    }
     const filtered =
       viewMode === 'about'
         ? projectEntries.filter((e) => e.evaluatee_id === focalMemberId)
@@ -280,7 +365,7 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
       const nameB = viewMode === 'about' ? (b.evaluator_name ?? '') : (b.evaluatee_name ?? '');
       return nameA.localeCompare(nameB);
     });
-  }, [projectEntries, focalMemberId, viewMode]);
+  }, [projectEntries, focalMemberId, viewMode, isOverview]);
 
   const submissionCountByProject = useMemo(() => {
     const byProject: Record<string, Set<string>> = {};
@@ -292,6 +377,11 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
       Object.entries(byProject).map(([pid, set]) => [pid, set.size]),
     );
   }, [entries]);
+
+  const currentNonSubmitters = useMemo(
+    () => nonSubmittersByProject[selectedProjectId] ?? [],
+    [nonSubmittersByProject, selectedProjectId],
+  );
 
   const projectOptions = useMemo(
     () =>
@@ -307,7 +397,10 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
   );
 
   const memberOptions = useMemo(
-    () => members.map((m) => ({ id: m.id, name: m.name })),
+    () => [
+      { id: ALL_MEMBERS_ID, name: 'All members' },
+      ...members.map((m) => ({ id: m.id, name: m.name })),
+    ],
     [members],
   );
 
@@ -342,40 +435,63 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
                 options={memberOptions}
                 value={focalMemberId}
                 onChange={setFocalMemberId}
-                placeholder="Select a member…"
-                disabled={membersLoading || members.length === 0}
+                placeholder="All members"
+                disabled={membersLoading || !selectedProjectId}
               />
             </div>
 
-            <div className="tsr-view__control tsr-view__control--view">
-              <label className="tsr-view__control-label">View</label>
-              <div className="tsr-view__mode-toggle">
-                <button
-                  type="button"
-                  className={`tsr-view__mode-btn${viewMode === 'about' ? ' tsr-view__mode-btn--active' : ''}`}
-                  onClick={() => setViewMode('about')}
-                  disabled={!focalMember}
-                >
-                  About {focalMember ? focalName : 'member'}
-                </button>
-                <button
-                  type="button"
-                  className={`tsr-view__mode-btn${viewMode === 'from' ? ' tsr-view__mode-btn--active' : ''}`}
-                  onClick={() => setViewMode('from')}
-                  disabled={!focalMember}
-                >
-                  From {focalMember ? focalName : 'member'}
-                </button>
+            {!isOverview && (
+              <div className="tsr-view__control tsr-view__control--view">
+                <label className="tsr-view__control-label">View</label>
+                <div className="tsr-view__mode-toggle">
+                  <button
+                    type="button"
+                    className={`tsr-view__mode-btn${viewMode === 'about' ? ' tsr-view__mode-btn--active' : ''}`}
+                    onClick={() => setViewMode('about')}
+                  >
+                    <span className="tsr-view__mode-btn-label">
+                      About {focalName}
+                      {scrumMasterIds.has(focalMemberId) && (
+                        <StatTooltip label="Scrum Master">
+                          <Shield size={14} className="tsr-view__sm-badge" aria-hidden />
+                        </StatTooltip>
+                      )}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`tsr-view__mode-btn${viewMode === 'from' ? ' tsr-view__mode-btn--active' : ''}`}
+                    onClick={() => setViewMode('from')}
+                  >
+                    <span className="tsr-view__mode-btn-label">
+                      From {focalName}
+                      {scrumMasterIds.has(focalMemberId) && (
+                        <StatTooltip label="Scrum Master">
+                          <Shield size={14} className="tsr-view__sm-badge" aria-hidden />
+                        </StatTooltip>
+                      )}
+                    </span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
+
+          {selectedProjectId && (
+            <NonSubmittersList
+              nonSubmitters={currentNonSubmitters}
+              label="Missing Submissions"
+            />
+          )}
 
           {/* Results */}
           <section className="tsr-view__results">
             <h2 className="tsr-view__section-title">
-              {viewMode === 'about'
-                ? `What teammates said about ${focalName}`
-                : `What ${focalName} said about teammates`}
+              {isOverview
+                ? `All responses for ${selectedProject?.name ?? 'this team'} (${visibleRows.length} ${visibleRows.length === 1 ? 'response' : 'responses'})`
+                : viewMode === 'about'
+                  ? `What teammates said about ${focalName}`
+                  : `What ${focalName} said about teammates`}
             </h2>
 
             {visibleRows.length === 0 ? (
@@ -386,24 +502,62 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
               </p>
             ) : (
               <div className="tsr-view__table-card">
-                <table className="tsr-view__table">
+                <table className={`tsr-view__table${isOverview ? ' tsr-view__table--overview' : ''}`}>
                   <thead>
                     <tr>
-                      <th>{viewMode === 'about' ? 'From' : 'About'}</th>
+                      {isOverview ? (
+                        <>
+                          <th>From</th>
+                          <th>About</th>
+                        </>
+                      ) : (
+                        <th>{viewMode === 'about' ? 'From' : 'About'}</th>
+                      )}
                       <th>Contribution</th>
-                      <th>Positive feedback</th>
-                      <th>Constructive feedback</th>
+                      <th>Positive Feedback</th>
+                      <th>Constructive Feedback</th>
+                      <th>Scrum Master Responses</th>
                     </tr>
                   </thead>
                   <tbody>
                     {visibleRows.map((row) => (
                       <tr key={row.tsr_id}>
-                        <td className="tsr-view__td-name">
-                          {viewMode === 'about' ? row.evaluator_name : row.evaluatee_name}
-                        </td>
+                        {isOverview ? (
+                          <>
+                            <td className="tsr-view__td-name">
+                              <MemberName
+                                name={row.evaluator_name}
+                                userId={row.evaluator_id}
+                                scrumMasterIds={scrumMasterIds}
+                              />
+                            </td>
+                            <td className="tsr-view__td-name">
+                              <MemberName
+                                name={row.evaluatee_name}
+                                userId={row.evaluatee_id}
+                                scrumMasterIds={scrumMasterIds}
+                              />
+                            </td>
+                          </>
+                        ) : (
+                          <td className="tsr-view__td-name">
+                            <MemberName
+                              name={viewMode === 'about' ? row.evaluator_name : row.evaluatee_name}
+                              userId={viewMode === 'about' ? row.evaluator_id : row.evaluatee_id}
+                              scrumMasterIds={scrumMasterIds}
+                            />
+                          </td>
+                        )}
                         <td className="tsr-view__td-pct">{row.percent_contribution}%</td>
                         <td>{row.positive_feedback || '—'}</td>
                         <td>{row.constructive_feedback || '—'}</td>
+                        <td>
+                          <ScrumMasterResponses
+                            tickets={row.scrum_master_tickets}
+                            assessment={row.scrum_master_assessment}
+                            notes={row.scrum_master_notes}
+                          />
+                        </td>
                       </tr>
                     ))}
                   </tbody>

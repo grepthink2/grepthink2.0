@@ -6,11 +6,16 @@ import logging
 from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
-from app.database.client import service_client, supabase
+from app.database.client import (
+    _TRANSIENT_HTTPX_ERRORS,
+    retry_on_disconnect,
+    service_client,
+    supabase,
+)
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
-ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form"}
+ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form", "feedback"}
 
 
 def _client():
@@ -73,7 +78,7 @@ def create_assignment(
             if normalized_type not in ALLOWED_ASSIGNMENT_TYPES:
                 raise HTTPException(
                     status_code=400,
-                    detail="assignment_type must be one of: tsr, interest_form",
+                    detail="assignment_type must be one of: tsr, interest_form, feedback",
                 )
             assignment_data["assignment_type"] = normalized_type
 
@@ -100,8 +105,8 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
     """Build the canonical TSR entry shape from a row + profile lookup map.
 
     Always includes tsr_id, evaluator_id, evaluator_name, evaluatee_name,
-    percent_contribution, positive_feedback. constructive_feedback and
-    scrum_master_notes are included only when non-empty.
+    percent_contribution, positive_feedback, constructive_feedback, and
+    Scrum Master fields.
     """
     evaluator_profile = profile_map.get(row['evaluator_id'], {})
     evaluatee_profile = profile_map.get(row['evaluatee_id'], {})
@@ -115,6 +120,8 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
         "percent_contribution": row['percent_contribution'],
         "positive_feedback": row['positive_feedback'],
         "constructive_feedback": row.get('constructive_feedback') or '',
+        "scrum_master_tickets": row.get('scrum_master_tickets') or '',
+        "scrum_master_assessment": row.get('scrum_master_assessment') or '',
         "scrum_master_notes": row.get('scrum_master_notes') or '',
     }
     return entry
@@ -139,8 +146,7 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
 
     Each entry always includes tsr_id, evaluator_id, evaluator_name,
     evaluatee_name, percent_contribution, and positive_feedback.
-    constructive_feedback and scrum_master_notes are only included when
-    they are non-empty.
+    constructive_feedback and Scrum Master fields are always included.
 
     Because every project member evaluates every other member independently,
     multiple entries can exist for the same evaluatee (one per evaluator).
@@ -151,7 +157,8 @@ def _fetch_tsr_entries(client, assignment_id: str) -> list:
         client.table('TSRs')
         .select(
             'id, evaluator_id, evaluatee_id, project_id, percent_contribution, '
-            'positive_feedback, constructive_feedback, scrum_master_notes, created_at'
+            'positive_feedback, constructive_feedback, scrum_master_tickets, '
+            'scrum_master_assessment, scrum_master_notes, created_at'
         )
         .eq('assignment_id', assignment_id)
         .execute()
@@ -192,7 +199,7 @@ def update_assignment(
     Returns the updated assignment row. If the assignment type is 'tsr', a
     'tsrs' key is also included containing all linked TSR submissions with
     evaluatee_name, percent_contribution, constructive_feedback, and positive_feedback (always present)
-    plus scrum_master_notes when non-empty.
+    plus Scrum Master fields.
     """
     _require_instructor(user_id)
 
@@ -225,7 +232,7 @@ def update_assignment(
             if normalized_type not in ALLOWED_ASSIGNMENT_TYPES:
                 raise HTTPException(
                     status_code=400,
-                    detail="assignment_type must be one of: tsr, interest_form",
+                    detail="assignment_type must be one of: tsr, interest_form, feedback",
                 )
             updates['assignment_type'] = normalized_type
 
@@ -269,6 +276,29 @@ def update_assignment(
             assignment_id, user_id,
         )
         raise HTTPException(status_code=500, detail="Failed to update assignment")
+
+
+def delete_assignment(user_id: str, assignment_id: UUID) -> None:
+    """Delete an assignment (instructor who owns the class only)."""
+    _require_instructor(user_id)
+    try:
+        client = _client()
+        assignment_result = (
+            client.table('assignments')
+            .select('id, class_id')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        _require_class_instructor(user_id, assignment_result.data[0]['class_id'])
+        client.table('assignments').delete().eq('id', str(assignment_id)).execute()
+        logger.info("Assignment deleted | assignment_id=%s user_id=%s", assignment_id, user_id)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error deleting assignment | assignment_id=%s user_id=%s", assignment_id, user_id)
+        raise HTTPException(status_code=500, detail="Failed to delete assignment")
 
 
 def _enrich_instructor_tsr_stats(client, class_id: str, assignments: list) -> list:
@@ -364,7 +394,8 @@ def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
                 .execute()
             )
             assignments = result.data or []
-            return _enrich_instructor_tsr_stats(client, str(class_id), assignments)
+            assignments = _enrich_instructor_tsr_stats(client, str(class_id), assignments)
+            return _enrich_instructor_feedback_stats(client, str(class_id), assignments)
         else:
             enrollment = (
                 client.table('class_enrollments')
@@ -403,6 +434,8 @@ def update_tsr_entry(
     percent_contribution: Optional[int] = None,
     positive_feedback: Optional[str] = None,
     constructive_feedback: Optional[str] = None,
+    scrum_master_tickets: Optional[str] = None,
+    scrum_master_assessment: Optional[str] = None,
     scrum_master_notes: Optional[str] = None,
 ) -> dict:
     """
@@ -470,6 +503,10 @@ def update_tsr_entry(
             updates['positive_feedback'] = positive_feedback
         if constructive_feedback is not None:
             updates['constructive_feedback'] = constructive_feedback
+        if scrum_master_tickets is not None:
+            updates['scrum_master_tickets'] = scrum_master_tickets
+        if scrum_master_assessment is not None:
+            updates['scrum_master_assessment'] = scrum_master_assessment
         if scrum_master_notes is not None:
             updates['scrum_master_notes'] = scrum_master_notes
 
@@ -483,7 +520,8 @@ def update_tsr_entry(
             client.table('TSRs')
             .select(
                 'id, evaluator_id, evaluatee_id, percent_contribution, '
-                'positive_feedback, constructive_feedback, scrum_master_notes'
+                'positive_feedback, constructive_feedback, scrum_master_tickets, '
+                'scrum_master_assessment, scrum_master_notes'
             )
             .eq('id', str(tsr_id))
             .execute()
@@ -514,13 +552,14 @@ def update_tsr_entry(
         raise HTTPException(status_code=500, detail="Failed to update TSR")
 
 
+@retry_on_disconnect()
 def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
     """
     Return all TSR submissions the requesting user made for a given assignment.
 
     Each entry is in the same shape as _fetch_tsr_entries (tsr_id,
     evaluator_id, evaluator_name, evaluatee_name, percent_contribution,
-    positive_feedback, plus optional fields).
+    positive_feedback, plus Scrum Master fields).
     """
     try:
         client = _client()
@@ -544,7 +583,8 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
             client.table('TSRs')
             .select(
                 'id, evaluator_id, evaluatee_id, project_id, percent_contribution, '
-                'positive_feedback, constructive_feedback, scrum_master_notes, created_at'
+                'positive_feedback, constructive_feedback, scrum_master_tickets, '
+                'scrum_master_assessment, scrum_master_notes, created_at'
             )
             .eq('assignment_id', str(assignment_id))
             .eq('evaluator_id', user_id)
@@ -570,6 +610,10 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
         return entries
     except HTTPException:
         raise
+    except _TRANSIENT_HTTPX_ERRORS:
+        # Bubble to @retry_on_disconnect; if the retry also fails the
+        # decorator re-raises and the framework returns 500.
+        raise
     except Exception:
         logger.exception(
             "Error fetching user TSR entries | assignment_id=%s user_id=%s",
@@ -590,7 +634,7 @@ def get_tsr_responses_about_user(
 
     Each entry is in the same shape as _fetch_tsr_entries (tsr_id, evaluator_id,
     evaluator_name, evaluatee_name, percent_contribution, positive_feedback,
-    plus optional constructive_feedback and scrum_master_notes).
+    plus optional constructive_feedback and Scrum Master fields).
     """
     try:
         client = _client()
@@ -613,7 +657,8 @@ def get_tsr_responses_about_user(
             client.table('TSRs')
             .select(
                 'id, evaluator_id, evaluatee_id, percent_contribution, '
-                'positive_feedback, constructive_feedback, scrum_master_notes'
+                'positive_feedback, constructive_feedback, scrum_master_tickets, '
+                'scrum_master_assessment, scrum_master_notes'
             )
             .eq('assignment_id', str(assignment_id))
             .eq('evaluatee_id', str(evaluatee_id))
@@ -683,10 +728,63 @@ def get_instructor_tsr_overview(user_id: str, assignment_id: UUID) -> dict:
 
         entries = _fetch_tsr_entries(client, str(assignment_id))
 
+        project_ids = [p['id'] for p in projects]
+        non_submitters_by_project: dict[str, list[dict]] = {}
+
+        if project_ids:
+            memberships_result = (
+                client.table('project_members')
+                .select('project_id, user_id')
+                .in_('project_id', project_ids)
+                .execute()
+            )
+            # Build set of evaluators per project from entries
+            evaluators_by_project: dict[str, set[str]] = {}
+            for e in entries:
+                if e.get('project_id') and e.get('evaluator_id'):
+                    evaluators_by_project.setdefault(e['project_id'], set()).add(e['evaluator_id'])
+
+            # Group members by project
+            members_by_project: dict[str, list[str]] = {}
+            for row in memberships_result.data or []:
+                pid = row.get('project_id')
+                uid = row.get('user_id')
+                if pid and uid:
+                    members_by_project.setdefault(pid, []).append(uid)
+
+            # Collect all non-submitter IDs across projects for a single profile fetch
+            all_ns_ids: set[str] = set()
+            for pid, member_ids in members_by_project.items():
+                submitted = evaluators_by_project.get(pid, set())
+                for uid in member_ids:
+                    if uid not in submitted:
+                        all_ns_ids.add(uid)
+
+            ns_profile_map: dict = {}
+            if all_ns_ids:
+                ns_profiles = (
+                    client.table('profiles')
+                    .select(PROFILE_SELECT)
+                    .in_('id', list(all_ns_ids))
+                    .execute()
+                )
+                ns_profile_map = {p['id']: p for p in (ns_profiles.data or [])}
+
+            for pid, member_ids in members_by_project.items():
+                submitted = evaluators_by_project.get(pid, set())
+                ns_list = [
+                    {'id': uid, 'name': profile_display_name(ns_profile_map.get(uid, {}))}
+                    for uid in member_ids
+                    if uid not in submitted
+                ]
+                ns_list.sort(key=lambda x: x['name'])
+                non_submitters_by_project[pid] = ns_list
+
         return {
             'assignment': assignment,
             'projects': projects,
             'entries': entries,
+            'non_submitters_by_project': non_submitters_by_project,
         }
     except HTTPException:
         raise
@@ -698,3 +796,253 @@ def get_instructor_tsr_overview(user_id: str, assignment_id: UUID) -> dict:
         raise HTTPException(status_code=500, detail="Failed to fetch TSR overview")
 
 
+def submit_feedback(
+    user_id: str,
+    assignment_id: UUID,
+    q1_liked: str,
+    q2_frustrating: str,
+    q3_missing_feature: str,
+    q4_bugs: str,
+    q5_suggestions: str,
+) -> dict:
+    """Upsert a student's feedback submission for a published feedback assignment."""
+    try:
+        client = _client()
+
+        assignment_result = (
+            client.table('assignments')
+            .select('id, assignment_type, status, class_id')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        assignment = assignment_result.data[0]
+        if assignment.get('assignment_type') != 'feedback':
+            raise HTTPException(status_code=400, detail="Assignment is not a feedback assignment")
+        if assignment.get('status') != 'publish':
+            raise HTTPException(status_code=400, detail="Assignment is not published")
+
+        enrollment = (
+            client.table('class_enrollments')
+            .select('id')
+            .eq('class_id', assignment['class_id'])
+            .eq('user_id', user_id)
+            .execute()
+        )
+        if not enrollment.data:
+            raise HTTPException(status_code=403, detail="You are not enrolled in this class")
+
+        row = {
+            'assignment_id': str(assignment_id),
+            'student_id': user_id,
+            'q1_liked': q1_liked,
+            'q2_frustrating': q2_frustrating,
+            'q3_missing_feature': q3_missing_feature,
+            'q4_bugs': q4_bugs,
+            'q5_suggestions': q5_suggestions,
+            'updated_at': datetime.datetime.utcnow().isoformat(),
+        }
+        result = (
+            client.table('feedback_submissions')
+            .upsert(row, on_conflict='assignment_id,student_id')
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to save feedback")
+
+        logger.info(
+            "Feedback submitted | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        return result.data[0]
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error submitting feedback | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to save feedback")
+
+
+def get_my_feedback(user_id: str, assignment_id: UUID) -> Optional[dict]:
+    """Return the student's own feedback submission, or None if not yet submitted."""
+    try:
+        client = _client()
+
+        assignment_result = (
+            client.table('assignments')
+            .select('id, assignment_type, status, class_id')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        assignment = assignment_result.data[0]
+        if assignment.get('assignment_type') != 'feedback':
+            raise HTTPException(status_code=400, detail="Assignment is not a feedback assignment")
+
+        enrollment = (
+            client.table('class_enrollments')
+            .select('id')
+            .eq('class_id', assignment['class_id'])
+            .eq('user_id', user_id)
+            .execute()
+        )
+        if not enrollment.data:
+            raise HTTPException(status_code=403, detail="You are not enrolled in this class")
+
+        result = (
+            client.table('feedback_submissions')
+            .select('*')
+            .eq('assignment_id', str(assignment_id))
+            .eq('student_id', user_id)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching feedback submission | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch feedback submission")
+
+
+def get_feedback_overview(user_id: str, assignment_id: UUID) -> dict:
+    """Instructor view: all feedback submissions with student names + enrolled count."""
+    try:
+        client = _client()
+
+        assignment_result = (
+            client.table('assignments')
+            .select('id, Title, open_date, close_date, status, class_id, assignment_type')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        assignment = assignment_result.data[0]
+        if assignment.get('assignment_type') != 'feedback':
+            raise HTTPException(status_code=400, detail="Assignment is not a feedback assignment")
+
+        _require_class_instructor(user_id, assignment['class_id'])
+
+        enrolled_result = (
+            client.table('class_enrollments')
+            .select('user_id')
+            .eq('class_id', assignment['class_id'])
+            .execute()
+        )
+        total_count = len(enrolled_result.data or [])
+
+        submissions_result = (
+            client.table('feedback_submissions')
+            .select('*')
+            .eq('assignment_id', str(assignment_id))
+            .execute()
+        )
+        submissions = submissions_result.data or []
+
+        student_ids = [s['student_id'] for s in submissions if s.get('student_id')]
+        profile_map: dict = {}
+        if student_ids:
+            profiles = (
+                client.table('profiles')
+                .select(PROFILE_SELECT)
+                .in_('id', student_ids)
+                .execute()
+            )
+            profile_map = {p['id']: p for p in (profiles.data or [])}
+
+        submitted_ids = {s['student_id'] for s in submissions if s.get('student_id')}
+        non_submitter_ids = [
+            row['user_id'] for row in (enrolled_result.data or [])
+            if row.get('user_id') and row['user_id'] not in submitted_ids
+        ]
+
+        non_submitter_profiles: dict = {}
+        if non_submitter_ids:
+            ns_profiles = (
+                client.table('profiles')
+                .select(PROFILE_SELECT)
+                .in_('id', non_submitter_ids)
+                .execute()
+            )
+            non_submitter_profiles = {p['id']: p for p in (ns_profiles.data or [])}
+
+        non_submitters = [
+            {'id': uid, 'name': profile_display_name(non_submitter_profiles.get(uid, {}))}
+            for uid in non_submitter_ids
+        ]
+        non_submitters.sort(key=lambda x: x['name'])
+
+        enriched = [
+            {
+                'id': s['id'],
+                'student_id': s['student_id'],
+                'student_name': profile_display_name(profile_map.get(s.get('student_id', ''), {})),
+                'q1_liked': s['q1_liked'],
+                'q2_frustrating': s['q2_frustrating'],
+                'q3_missing_feature': s['q3_missing_feature'],
+                'q4_bugs': s['q4_bugs'],
+                'q5_suggestions': s['q5_suggestions'],
+                'created_at': s.get('created_at'),
+                'updated_at': s.get('updated_at'),
+            }
+            for s in submissions
+        ]
+
+        return {
+            'assignment': assignment,
+            'submissions': enriched,
+            'submitted_count': len(submissions),
+            'total_count': total_count,
+            'non_submitters': non_submitters,
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching feedback overview | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch feedback overview")
+
+
+def _enrich_instructor_feedback_stats(client, class_id: str, assignments: list) -> list:
+    """Attach feedback_submitted / feedback_total counts to feedback-type assignments."""
+    feedback_ids = [a['id'] for a in assignments if a.get('assignment_type') == 'feedback']
+    if not feedback_ids:
+        return assignments
+
+    enrolled_result = (
+        client.table('class_enrollments')
+        .select('user_id')
+        .eq('class_id', class_id)
+        .execute()
+    )
+    total_count = len(enrolled_result.data or [])
+
+    subs_result = (
+        client.table('feedback_submissions')
+        .select('assignment_id, student_id')
+        .in_('assignment_id', feedback_ids)
+        .execute()
+    )
+    submitted_by: dict[str, int] = {}
+    for row in subs_result.data or []:
+        aid = row.get('assignment_id')
+        if aid:
+            submitted_by[aid] = submitted_by.get(aid, 0) + 1
+
+    for assignment in assignments:
+        if assignment.get('assignment_type') != 'feedback':
+            continue
+        aid = assignment['id']
+        assignment['feedback_submitted'] = submitted_by.get(aid, 0)
+        assignment['feedback_total'] = total_count
+
+    return assignments

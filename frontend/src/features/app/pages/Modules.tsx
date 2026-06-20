@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import type { ApiAssignment } from '@/lib/api';
 import AddAssignmentButton from '@features/app/components/Modules/AddAssignmentButton';
 import AssignmentList, { type Assignment, type AssignmentStatus } from '@features/app/components/Modules/AssignmentList';
+import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import AssignmentTurnInRate from '@/features/app/components/Stats/AssignmentTurnInRate';
 import ProjectHealth, { type ProjectHealthItem } from '@/features/app/components/Stats/ProjectHealth';
 import CreateAssignmentModal from '@features/app/components/Modules/CreateAssignmentModal';
@@ -53,11 +54,16 @@ function mapApiAssignment(a: ApiAssignment): Assignment {
     dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
     openDate: `${a.open_date} 00:00`,
     dueDatetime: `${a.close_date} 23:59`,
-    submitted: a.teams_submitted ?? 0,
-    total: a.teams_total ?? 0,
+    submitted: a.assignment_type === 'feedback'
+      ? (a.feedback_submitted ?? 0)
+      : (a.teams_submitted ?? 0),
+    total: a.assignment_type === 'feedback'
+      ? (a.feedback_total ?? 0)
+      : (a.teams_total ?? 0),
     status,
     assignmentType: a.assignment_type,
     hasTsrResponses: a.has_tsr_responses ?? false,
+    hasFeedbackResponses: (a.feedback_submitted ?? 0) > 0,
   };
 }
 
@@ -93,12 +99,16 @@ const Modules: React.FC = () => {
     name: string;
     openDate: string;
     dueDate: string;
-    template: 'Team Status Report' | 'Project Interest Form';
+    template: 'Team Status Report' | 'Project Interest Form' | 'Post Feedback';
     status: 'draft' | 'published';
   }) => {
     if (!selectedClass) return;
     const assignment_type =
-      data.template === 'Project Interest Form' ? 'interest_form' : 'tsr';
+      data.template === 'Project Interest Form'
+        ? 'interest_form'
+        : data.template === 'Post Feedback'
+        ? 'feedback'
+        : 'tsr';
     await api.createAssignment({
       class_id: selectedClass.id,
       title: data.name,
@@ -126,6 +136,13 @@ const Modules: React.FC = () => {
     setEditingAssignment(null);
   };
 
+  const handleDeleteAssignment = async (id: string) => {
+    await api.deleteAssignment(id);
+    await fetchAssignments();
+    await refetchTurnInStats();
+    setEditingAssignment(null);
+  };
+
   if (!selectedClass) {
     return (
       <div className="modules">
@@ -144,7 +161,13 @@ const Modules: React.FC = () => {
         <div className="modules__main">
           <AddAssignmentButton onClick={() => setCreateModalOpen(true)} />
           {loading ? (
-            <p className="modules__loading">Loading assignments…</p>
+            <TableSkeleton
+              block="assignment-list"
+              title="Assignment Count"
+              headers={['Title', 'Due Date', 'Submissions', 'Status', 'Actions']}
+              rows={6}
+              cellWidths={['70%', '80px', '60%', '64px', '56px']}
+            />
           ) : error ? (
             <p className="modules__error">{error}</p>
           ) : (
@@ -156,6 +179,12 @@ const Modules: React.FC = () => {
                   return;
                 }
                 navigate(`/app/modules/tsr/${assignment.id}`, {
+                  state: { assignmentName: assignment.title },
+                });
+              }}
+              onViewFeedback={(assignment) => {
+                if (!assignment.hasFeedbackResponses) return;
+                navigate(`/app/modules/feedback/${assignment.id}`, {
                   state: { assignmentName: assignment.title },
                 });
               }}
@@ -180,6 +209,7 @@ const Modules: React.FC = () => {
         assignment={editingAssignment}
         onClose={() => setEditingAssignment(null)}
         onSave={handleSaveAssignment}
+        onDelete={handleDeleteAssignment}
       />
     </div>
   );

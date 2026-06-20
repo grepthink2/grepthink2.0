@@ -1,0 +1,169 @@
+@use '@styles/index.scss' as *;
+
+.contact-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: $background;
+  font-family: $primary-font;
+  color: $text-primary;
+  overflow-x: clip;
+
+  &__main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: clamp(140px, 18vh, 200px) $spacing-lg clamp(64px, 10vh, 100px);
+  }
+
+  &__card {
+    width: 100%;
+    max-width: 560px;
+    background: $white;
+    border: 1px solid rgba(33, 43, 54, 0.05);
+    border-radius: $border-radius-lg;
+    box-shadow: 0 20px 50px rgba(33, 43, 54, 0.08);
+    padding: clamp($spacing-lg, 5vw, 48px);
+  }
+
+  &__eyebrow {
+    display: inline-block;
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: $primary-color;
+    background: rgba(1, 129, 86, 0.1);
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: $spacing-md;
+  }
+
+  &__title {
+    font-family: $primary-font;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: $text-dark;
+    margin: 0 0 $spacing-sm;
+  }
+
+  &__sub {
+    font-family: $primary-font;
+    font-size: $font-size-large;
+    line-height: 1.6;
+    color: $text-tertiary;
+    margin: 0 0 $spacing-xl;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    span {
+      font-size: $font-size-base;
+      font-weight: $font-weight-medium;
+      color: $text-secondary;
+    }
+
+    input,
+    textarea {
+      font-family: $primary-font;
+      font-size: $font-size-base;
+      color: $text-primary;
+      padding: 12px 14px;
+      border: 1px solid $border-color;
+      border-radius: $border-radius-sm;
+      background: $white;
+      resize: vertical;
+      transition: border-color $transition-fast, box-shadow $transition-fast;
+
+      &::placeholder {
+        color: #9aa0a6;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba(1, 129, 86, 0.15);
+      }
+    }
+  }
+
+  // Honeypot: visually and from-assistive-tech hidden, but still focusable-free
+  // and submittable so bots that ignore display rules fill it in.
+  &__honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  &__status {
+    margin: $spacing-sm 0 0;
+    font-size: $font-size-base;
+    line-height: 1.5;
+
+    &--success {
+      color: $primary-color;
+    }
+
+    &--error {
+      color: #c0392b;
+    }
+  }
+
+  &__submit {
+    align-self: flex-start;
+    margin-top: $spacing-sm;
+    font-family: $primary-font;
+    font-size: $font-size-large;
+    font-weight: $font-weight-semibold;
+    color: $white;
+    background: $primary-color;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 30px;
+    cursor: pointer;
+    transition: transform $transition-fast, background $transition-fast;
+
+    &:hover {
+      transform: translateY(-1px);
+      background: $primary-hover;
+      color: $white;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    &:focus-visible {
+      outline: 3px solid rgba(1, 129, 86, 0.5);
+      outline-offset: 3px;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-page__field input,
+  .contact-page__field textarea,
+  .contact-page__submit {
+    transition: none;
+  }
+}

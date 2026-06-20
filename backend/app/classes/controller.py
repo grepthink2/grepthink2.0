@@ -8,7 +8,13 @@ import logging
 from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
-from app.database.client import query_pool, service_client, supabase
+from app.database.client import (
+    _TRANSIENT_HTTPX_ERRORS,
+    query_pool,
+    retry_on_disconnect,
+    service_client,
+    supabase,
+)
 from app.utils.generators import generate_course_code
 from app.utils.class_banner import upload_class_banner
 
@@ -17,10 +23,10 @@ logger = logging.getLogger(__name__)
 _ROSTER_INSERT_BATCH = 200
 
 
-# Terms that run a full semester (8 TSR weeks); summer runs 3 weeks.
+# Default TSR counts per term. Instructors may override at class creation.
 _FULL_TERM_NAMES = {"fall", "winter", "spring"}
 _SUMMER_TSR_COUNT = 3
-_FULL_TSR_COUNT = 8
+_FULL_TSR_COUNT = 5
 
 
 def normalize_roster_status(raw: str) -> str:
@@ -208,18 +214,27 @@ def _parse_roster_csv(csv_text: str) -> list[dict]:
     return list(deduped.values())
 
 
-def _generate_tsr_assignments(client, class_id: str, term: str, start_date: datetime.date) -> None:
+def _generate_tsr_assignments(
+    client,
+    class_id: str,
+    term: str,
+    start_date: datetime.date,
+    tsr_count: Optional[int] = None,
+) -> None:
     """
     Auto-create TSR assignments for a new class.
 
     Assignments open after the first 2 weeks of class (start_date + 14 days)
     and are each one week long, one per sprint week.
 
-    Fall / Winter / Spring  →  8 TSR assignments (weeks 3–10)
-    Summer                  →  3 TSR assignments (weeks 3–5)
+    Default counts (overridable via tsr_count):
+      Fall / Winter / Spring  →  5 TSR assignments
+      Summer                  →  3 TSR assignments
     """
     term_lower = (term or "").strip().lower()
-    count = _FULL_TSR_COUNT if term_lower in _FULL_TERM_NAMES else _SUMMER_TSR_COUNT
+    default_count = _FULL_TSR_COUNT if term_lower in _FULL_TERM_NAMES else _SUMMER_TSR_COUNT
+    count = tsr_count if tsr_count is not None else default_count
+    count = max(1, min(count, 20))  # safety clamp
 
     first_open = start_date + datetime.timedelta(days=14)
 
@@ -258,14 +273,14 @@ def create_class(
     term: str,
     start_date: datetime.date,
     user_id: str,
+    tsr_count: Optional[int] = None,
 ) -> dict:
     """
     Create a new class with a unique course code and auto-generate TSR assignments.
 
     After the class is created, TSR assignments are automatically generated
-    starting after the first 2 weeks of class:
-      - Fall / Winter / Spring  →  8 weekly TSR assignments
-      - Summer                  →  3 weekly TSR assignments
+    starting after the first 2 weeks of class. tsr_count overrides the
+    term-based default (5 for Fall/Winter/Spring, 3 for Summer).
     """
     try:
         client = service_client if service_client else supabase
@@ -317,7 +332,7 @@ def create_class(
         )
 
         # Auto-generate TSR assignments for this class
-        _generate_tsr_assignments(client, class_id, term, start_date)
+        _generate_tsr_assignments(client, class_id, term, start_date, tsr_count)
 
         return new_class
     except HTTPException:
@@ -908,6 +923,10 @@ def upload_class_roster(class_id: UUID, csv_text: str, instructor_id: str) -> di
             "Roster uploaded | class_id=%s rows=%d matched=%d uploaded_by=%s",
             class_id, len(insert_rows), matched_count, instructor_id,
         )
+
+        from app.notifications.controller import dismiss_roster_upload_notification
+        dismiss_roster_upload_notification(instructor_id, cid)
+
         return {
             'message': 'Roster uploaded successfully',
             'inserted_count': len(insert_rows),
@@ -1082,6 +1101,7 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
         logger.exception("Error in bulk_invite_students | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to bulk invite students")
 
+@retry_on_disconnect()
 def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
     """
     Get all projects for a class.
@@ -1228,6 +1248,10 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
 
         return results
     except HTTPException:
+        raise
+    except _TRANSIENT_HTTPX_ERRORS:
+        # Bubble to @retry_on_disconnect; if the retry also fails the
+        # decorator re-raises and the framework returns 500.
         raise
     except Exception:
         logger.exception(

@@ -37,7 +37,14 @@ def _smtp_login_user(host: str, configured_user: str) -> str:
     return configured_user
 
 
-def send_email(*, to: str, subject: str, body_text: str, body_html: str | None = None) -> None:
+def send_email(
+    *,
+    to: str,
+    subject: str,
+    body_text: str,
+    body_html: str | None = None,
+    reply_to: str | None = None,
+) -> None:
     """
     Send a plain-text (and optionally HTML) email via the configured SMTP server.
 
@@ -47,6 +54,9 @@ def send_email(*, to: str, subject: str, body_text: str, body_html: str | None =
         body_text: Plain-text body (always required — acts as the fallback).
         body_html: Optional HTML body. If provided, sent as a multipart/alternative
                    message so clients that can't render HTML fall back to the text part.
+        reply_to:  Optional Reply-To address. Useful when From is a fixed sending
+                   account but replies should go to a different person (e.g. the
+                   contact-form submitter).
 
     Raises:
         RuntimeError: If SMTP settings are missing from the environment.
@@ -66,6 +76,8 @@ def send_email(*, to: str, subject: str, body_text: str, body_html: str | None =
     msg["Subject"] = subject
     msg["From"] = sender
     msg["To"] = to
+    if reply_to:
+        msg["Reply-To"] = reply_to
 
     msg.attach(MIMEText(body_text, "plain"))
     if body_html:

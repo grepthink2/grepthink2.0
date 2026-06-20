@@ -280,6 +280,10 @@
       border-color: transparent;
     }
 
+    &--unread {
+      font-weight: 600;
+    }
+
     &--danger {
       color: $error-color;
     }
@@ -351,6 +355,12 @@
     font-size: 0.9rem;
     text-align: center;
     padding: $spacing-lg;
+  }
+
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
   }
 
   &__seen {

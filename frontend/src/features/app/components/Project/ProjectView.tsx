@@ -13,6 +13,67 @@ import MemberManagerModal from './MemberManagerModal';
 import EditProjectModal from '../EditProject/EditProjectModal';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
 import { getMemberCopyEmail } from '@/features/app/utils/memberUtils';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
+
+/** Loading placeholder mirroring the project header + team-members layout. */
+export const ProjectViewSkeleton: React.FC = () => (
+  <div className="project-view" aria-busy="true">
+    <div className="project-view__header">
+      <div className="project-view__header-content">
+        <div className="project-view__header-left">
+          <Skeleton width={260} height={28} />
+          <Skeleton width={120} height={14} style={{ marginTop: 8 }} />
+          <div className="project-view__stats" style={{ marginTop: 12 }}>
+            <Skeleton width={90} height={14} />
+            <Skeleton width={70} height={14} />
+          </div>
+          <div className="project-view__divider" />
+          <div className="project-view__skills-list">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} width={70} height={24} radius={20} />
+            ))}
+          </div>
+        </div>
+        <div className="project-view__header-right">
+          <Skeleton width={130} height={38} radius={8} />
+        </div>
+      </div>
+    </div>
+    <div className="project-view__content">
+      <div className="project-view__left-column">
+        <div
+          className="project-view__markdown"
+          style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+        >
+          <Skeleton width="90%" height={14} />
+          <Skeleton width="80%" height={14} />
+          <Skeleton width="95%" height={14} />
+          <Skeleton width="60%" height={14} />
+        </div>
+      </div>
+      <div className="project-view__right-column">
+        <div className="project-view__section">
+          <div className="project-view__section-header">
+            <Skeleton width={140} height={18} />
+          </div>
+          <div className="project-view__team-list">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="project-view__team-member">
+                <div className="project-view__member-avatar">
+                  <Skeleton circle height={44} />
+                </div>
+                <div className="project-view__member-info">
+                  <Skeleton width="60%" height={14} />
+                  <Skeleton width="40%" height={12} style={{ marginTop: 6 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 export interface ProjectViewMember {
   id?: string;
@@ -48,6 +109,10 @@ interface ProjectViewProps {
   onMembersChange?: () => void;
   /** Called after the project is successfully deleted so the parent can navigate away. */
   onDelete?: () => void;
+  /** True when the current user has a pending join request for this project. */
+  hasPendingRequest?: boolean;
+  /** Called after a join request is successfully sent. */
+  onRequestSent?: () => void;
   // Sponsor information — typed so callers compile; rendering is gated
   // behind the (still commented-out) sponsor section in the JSX below.
   sponsorName?: string | null;
@@ -72,6 +137,8 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   projectMembers = [],
   onMembersChange,
   onDelete,
+  hasPendingRequest = false,
+  onRequestSent,
   // sponsorName,
   // sponsorCompany,
   // sponsorEmail,
@@ -225,6 +292,17 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 </svg>
                 Joined
               </span>
+            ) : hasPendingRequest ? (
+              <button
+                type="button"
+                className="project-view__request-button project-view__request-button--requested"
+                disabled
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Requested
+              </button>
             ) : (
               <button
                 type="button"
@@ -427,7 +505,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           projectId={projectId}
           onClose={() => setRequestModalOpen(false)}
           onSuccess={() => {
-            // Optional: refetch project or show toast when backend supports it
+            onRequestSent?.();
           }}
         />
       )}
