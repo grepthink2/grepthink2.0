@@ -8,7 +8,13 @@ import logging
 from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
-from app.database.client import query_pool, service_client, supabase
+from app.database.client import (
+    _TRANSIENT_HTTPX_ERRORS,
+    query_pool,
+    retry_on_disconnect,
+    service_client,
+    supabase,
+)
 from app.utils.generators import generate_course_code
 from app.utils.class_banner import upload_class_banner
 
@@ -1095,6 +1101,7 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
         logger.exception("Error in bulk_invite_students | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to bulk invite students")
 
+@retry_on_disconnect()
 def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
     """
     Get all projects for a class.
@@ -1241,6 +1248,10 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
 
         return results
     except HTTPException:
+        raise
+    except _TRANSIENT_HTTPX_ERRORS:
+        # Bubble to @retry_on_disconnect; if the retry also fails the
+        # decorator re-raises and the framework returns 500.
         raise
     except Exception:
         logger.exception(

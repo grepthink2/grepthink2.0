@@ -423,6 +423,7 @@ def delete_project(project_id: UUID, user_id: str) -> dict:
         raise HTTPException(status_code=500, detail="Failed to delete project")
 
 
+@retry_on_disconnect()
 def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
     """
     Get all projects for a user, optionally filtered by class.
@@ -501,6 +502,10 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
             for p in projects
         ]
     except HTTPException:
+        raise
+    except _TRANSIENT_HTTPX_ERRORS:
+        # Bubble to @retry_on_disconnect; if the retry also fails the
+        # decorator re-raises and the framework returns 500.
         raise
     except Exception:
         logger.exception(

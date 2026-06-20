@@ -6,7 +6,12 @@ import logging
 from typing import Optional
 from uuid import UUID
 from fastapi import HTTPException
-from app.database.client import service_client, supabase
+from app.database.client import (
+    _TRANSIENT_HTTPX_ERRORS,
+    retry_on_disconnect,
+    service_client,
+    supabase,
+)
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
@@ -523,6 +528,7 @@ def update_tsr_entry(
         raise HTTPException(status_code=500, detail="Failed to update TSR")
 
 
+@retry_on_disconnect()
 def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
     """
     Return all TSR submissions the requesting user made for a given assignment.
@@ -579,6 +585,10 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
         entries = [_serialize_tsr_entry(row, profile_map) for row in rows]
         return entries
     except HTTPException:
+        raise
+    except _TRANSIENT_HTTPX_ERRORS:
+        # Bubble to @retry_on_disconnect; if the retry also fails the
+        # decorator re-raises and the framework returns 500.
         raise
     except Exception:
         logger.exception(
