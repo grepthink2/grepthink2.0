@@ -5,6 +5,7 @@ import { useConversations } from '../hooks/useConversations';
 
 interface Props {
   conversationId: string;
+  unread_count?: number;
   /** Called after a successful delete. */
   onDeleted?: () => void;
   /** When true, the icon is always visible (used in the thread header).
@@ -19,13 +20,14 @@ interface Props {
  */
 export const ConversationMenu: React.FC<Props> = ({
   conversationId,
+  unread_count,
   onDeleted,
   alwaysVisible = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { refetch } = useConversations();
+  const { refetch, optimisticMarkRead } = useConversations();
 
   useEffect(() => {
     if (!open) return;
@@ -42,6 +44,23 @@ export const ConversationMenu: React.FC<Props> = ({
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
+
+  const handleMarkRead = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (busy) return;
+    optimisticMarkRead(conversationId);
+    setOpen(false);
+    setBusy(true);
+    try {
+      await api.markConversationRead(conversationId);
+      await refetch();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[ConversationMenu] mark read failed:', err);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -82,6 +101,15 @@ export const ConversationMenu: React.FC<Props> = ({
       </button>
       {open && (
         <div className="conversation-menu__dropdown" role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            className={`conversation-menu__item${unread_count ? ' conversation-menu__item--unread' : ''}`}
+            onClick={handleMarkRead}
+            disabled={busy}
+          >
+            Mark as read
+          </button>
           <button
             type="button"
             role="menuitem"

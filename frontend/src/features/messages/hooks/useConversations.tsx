@@ -9,6 +9,7 @@ interface ConversationsValue {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+  optimisticMarkRead: (conversationId: string) => void;
 }
 
 const ConversationsContext = createContext<ConversationsValue | undefined>(undefined);
@@ -31,6 +32,12 @@ export const ConversationsProvider: React.FC<{ children: ReactNode }> = ({ child
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const cancelled = useRef(false);
+
+  const optimisticMarkRead = useCallback((conversationId: string) => {
+    setConversations(prev =>
+      prev.map(c => c.id === conversationId ? { ...c, unread_count: 0 } : c),
+    );
+  }, []);
 
   const refetch = useCallback(async () => {
     try {
@@ -84,7 +91,7 @@ export const ConversationsProvider: React.FC<{ children: ReactNode }> = ({ child
   }, [userId, refetch]);
 
   return (
-    <ConversationsContext.Provider value={{ conversations, loading, error, refetch }}>
+    <ConversationsContext.Provider value={{ conversations, loading, error, refetch, optimisticMarkRead }}>
       {children}
     </ConversationsContext.Provider>
   );

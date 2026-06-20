@@ -39,7 +39,7 @@ export const ConversationThread: React.FC<Props> = ({
   hideHeader = false,
 }) => {
   const { user } = useAuth();
-  const { messages, loading, refetch } = useConversationMessages(conversation.id);
+  const { messages, loading, refetch, addOptimisticMessage } = useConversationMessages(conversation.id);
   const { refetch: refetchInbox } = useConversations();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -83,9 +83,21 @@ export const ConversationThread: React.FC<Props> = ({
       : 'Unknown');
 
   const handleSend = async (body: string) => {
-    await api.sendMessage(conversation.other_user.id, body);
-    // Refresh both views: thread + inbox cache (so badge / preview update).
-    await Promise.all([refetch(), refetchInbox()]);
+    const tempId = `temp-${Date.now()}`;
+    addOptimisticMessage({
+      id: tempId,
+      sender_id: user!.id,
+      body,
+      created_at: new Date().toISOString(),
+    });
+    try {
+      await api.sendMessage(conversation.other_user.id, body);
+      await Promise.all([refetch(), refetchInbox()]);
+    } catch (err) {
+      // Strip the optimistic message on failure so the thread reflects truth.
+      await refetch();
+      throw err;
+    }
   };
 
   return (

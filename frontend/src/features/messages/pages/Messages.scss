@@ -280,6 +280,10 @@
       border-color: transparent;
     }
 
+    &--unread {
+      font-weight: 600;
+    }
+
     &--danger {
       color: $error-color;
     }
