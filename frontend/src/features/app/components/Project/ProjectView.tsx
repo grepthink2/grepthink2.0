@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
+import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore, ChevronDown, LogOut/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
+import { useClickOutside } from '@features/app/components/Interest/useClickOutside';
 import EmailIcon from '@assets/ic_outline-email.svg';
 import GithubIcon from '@assets/line-md_github.svg';
 import LinkedInIcon from '@assets/mdi_linkedin.svg';
@@ -109,6 +110,8 @@ interface ProjectViewProps {
   onMembersChange?: () => void;
   /** Called after the project is successfully deleted so the parent can navigate away. */
   onDelete?: () => void;
+  /** Called when the current user (student) leaves the project. */
+  onLeave?: () => void;
   /** True when the current user has a pending join request for this project. */
   hasPendingRequest?: boolean;
   /** Called after a join request is successfully sent. */
@@ -137,6 +140,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   projectMembers = [],
   onMembersChange,
   onDelete,
+  onLeave,
   hasPendingRequest = false,
   onRequestSent,
   // sponsorName,
@@ -154,6 +158,9 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const [memberManagerOpen, setMemberManagerOpen] = useState(false);
   const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [emailsCopied, setEmailsCopied] = useState(false);
+  const [joinedDropdownOpen, setJoinedDropdownOpen] = useState(false);
+  const joinedDropdownRef = useRef<HTMLDivElement>(null);
+  useClickOutside(joinedDropdownRef, useCallback(() => setJoinedDropdownOpen(false), []));
 
   const handleCopyAllEmails = async () => {
     const emails = projectMembers
@@ -283,15 +290,40 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 </button>
               </div>
             ) : userRoleOnProject != null && userRoleOnProject !== '' ? (
-              <span className="project-view__joined" aria-label="You are a member of this project">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="8.5" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                Joined
-              </span>
+              <div className="project-view__joined-dropdown" ref={joinedDropdownRef}>
+                <button
+                  type="button"
+                  className="project-view__joined-btn"
+                  onClick={() => setJoinedDropdownOpen((o) => !o)}
+                  aria-expanded={joinedDropdownOpen}
+                  aria-haspopup="menu"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="8.5" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  Joined
+                  <ChevronDown size={16} />
+                </button>
+                {joinedDropdownOpen && (
+                  <div className="project-view__joined-menu" role="menu">
+                    <button
+                      type="button"
+                      className="project-view__joined-menu-item project-view__joined-menu-item--danger"
+                      role="menuitem"
+                      onClick={() => {
+                        setJoinedDropdownOpen(false);
+                        onLeave?.();
+                      }}
+                    >
+                      <LogOut size={15} />
+                      Leave Project
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : hasPendingRequest ? (
               <button
                 type="button"
