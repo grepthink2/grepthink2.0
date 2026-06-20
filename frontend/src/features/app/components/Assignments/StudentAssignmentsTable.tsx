@@ -27,6 +27,7 @@ export interface StudentAssignment {
   projectId?: string;
   /** When action is opens_later, used to render "Opens MMM d" on the button. */
   openDateIso?: string;
+  isSubmitted?: boolean;
 }
 
 interface StudentAssignmentsTableProps {
