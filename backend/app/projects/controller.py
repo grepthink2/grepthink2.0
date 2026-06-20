@@ -1737,9 +1737,10 @@ def instructor_remove_member(project_id:UUID, requester_id:str, target_user_id:s
             )
             return False
         class_id = class_result.data[0]['class_id']
-        # Allow class instructor, or product owner/admin
+        # Allow class instructor, product owner/admin, or the student removing themselves
         is_instructor = _is_instructor(requester_id, class_id)
-        if not is_instructor:
+        is_self_removal = requester_id == target_user_id
+        if not is_instructor and not is_self_removal:
             membership = (
                 client.table('project_members').select('role')
                 .eq('project_id', str(project_id)).eq('user_id', str(requester_id))
