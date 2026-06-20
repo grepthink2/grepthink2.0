@@ -60,8 +60,13 @@ export function useConversationMessages(conversationId: string | null) {
     };
   }, [conversationId, refetch]);
 
+  const addOptimisticMessage = useCallback((msg: ApiMessage) => {
+    setState(prev => ({ ...prev, messages: [...prev.messages, msg] }));
+  }, []);
+
   return {
     ...state,
     refetch: () => conversationId ? refetch(conversationId) : Promise.resolve(),
+    addOptimisticMessage,
   };
 }

@@ -27,7 +27,7 @@ export const ConversationMenu: React.FC<Props> = ({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { refetch } = useConversations();
+  const { refetch, optimisticMarkRead } = useConversations();
 
   useEffect(() => {
     if (!open) return;
@@ -48,11 +48,12 @@ export const ConversationMenu: React.FC<Props> = ({
   const handleMarkRead = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (busy) return;
+    optimisticMarkRead(conversationId);
+    setOpen(false);
     setBusy(true);
     try {
       await api.markConversationRead(conversationId);
       await refetch();
-      setOpen(false);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('[ConversationMenu] mark read failed:', err);
