@@ -13,6 +13,67 @@ import MemberManagerModal from './MemberManagerModal';
 import EditProjectModal from '../EditProject/EditProjectModal';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
 import { getMemberCopyEmail } from '@/features/app/utils/memberUtils';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
+
+/** Loading placeholder mirroring the project header + team-members layout. */
+export const ProjectViewSkeleton: React.FC = () => (
+  <div className="project-view" aria-busy="true">
+    <div className="project-view__header">
+      <div className="project-view__header-content">
+        <div className="project-view__header-left">
+          <Skeleton width={260} height={28} />
+          <Skeleton width={120} height={14} style={{ marginTop: 8 }} />
+          <div className="project-view__stats" style={{ marginTop: 12 }}>
+            <Skeleton width={90} height={14} />
+            <Skeleton width={70} height={14} />
+          </div>
+          <div className="project-view__divider" />
+          <div className="project-view__skills-list">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} width={70} height={24} radius={20} />
+            ))}
+          </div>
+        </div>
+        <div className="project-view__header-right">
+          <Skeleton width={130} height={38} radius={8} />
+        </div>
+      </div>
+    </div>
+    <div className="project-view__content">
+      <div className="project-view__left-column">
+        <div
+          className="project-view__markdown"
+          style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+        >
+          <Skeleton width="90%" height={14} />
+          <Skeleton width="80%" height={14} />
+          <Skeleton width="95%" height={14} />
+          <Skeleton width="60%" height={14} />
+        </div>
+      </div>
+      <div className="project-view__right-column">
+        <div className="project-view__section">
+          <div className="project-view__section-header">
+            <Skeleton width={140} height={18} />
+          </div>
+          <div className="project-view__team-list">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="project-view__team-member">
+                <div className="project-view__member-avatar">
+                  <Skeleton circle height={44} />
+                </div>
+                <div className="project-view__member-info">
+                  <Skeleton width="60%" height={14} />
+                  <Skeleton width="40%" height={12} style={{ marginTop: 6 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 export interface ProjectViewMember {
   id?: string;

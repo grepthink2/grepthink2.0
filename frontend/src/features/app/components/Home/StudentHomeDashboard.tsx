@@ -25,6 +25,7 @@ import {
   buildFallbackDeadlineRows,
 } from './mockData';
 import RequestsModal from './RequestsModal';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './StudentHomeDashboard.scss';
 
 type DeadlineDisplayStatus = 'due_soon' | 'not_started' | 'in_progress' | 'completed';
@@ -656,7 +657,28 @@ const StudentHomeDashboard: React.FC = () => {
               </h2>
             </div>
             {deadlinesLoading && selectedClass ? (
-              <p className="student-home__loading">Loading deadlines…</p>
+              <div className="student-home__deadlines-scroll" aria-busy="true">
+                <table className="student-home__deadlines-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Deadline</th>
+                      <th>Status</th>
+                      <th className="student-home__chevron" aria-hidden />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <tr key={i}>
+                        <td><Skeleton width="70%" height={13} /></td>
+                        <td><Skeleton width="60%" height={13} /></td>
+                        <td><Skeleton width={64} height={20} radius={20} /></td>
+                        <td className="student-home__chevron"><Skeleton width={16} height={16} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div className="student-home__deadlines-scroll">
                 <table className="student-home__deadlines-table">
@@ -735,11 +757,20 @@ const StudentHomeDashboard: React.FC = () => {
               </p>
             ) : null}
             <div className="student-home__requests-list">
-              {incomingLoading && selectedClass ? (
-                <p className="student-home__loading">Loading requests…</p>
-              ) : null}
-              {outgoingLoading && selectedClass && !incomingLoading ? (
-                <p className="student-home__loading">Loading requests…</p>
+              {(incomingLoading || outgoingLoading) && selectedClass ? (
+                <div aria-busy="true">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="student-home__request-card">
+                      <div className="student-home__request-top">
+                        <Skeleton circle height={40} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <Skeleton width="50%" height={13} />
+                          <Skeleton width="70%" height={11} style={{ marginTop: 6 }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : null}
               {!incomingLoading &&
                 incomingRequests.map((row) => {
@@ -959,7 +990,19 @@ const StudentHomeDashboard: React.FC = () => {
               ) : null}
             </div>
             {teamLoading ? (
-              <p className="student-home__loading">Loading team…</p>
+              <ul className="student-home__team-list" aria-busy="true">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <li key={i} className="student-home__team-item">
+                    <div className="student-home__team-avatar-wrap">
+                      <Skeleton circle height={40} />
+                    </div>
+                    <div className="student-home__team-text">
+                      <Skeleton width="60%" height={13} />
+                      <Skeleton width="40%" height={11} style={{ marginTop: 6 }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ) : teamMembers.length === 0 ? (
               <p className="student-home__empty">
                 {selectedClass

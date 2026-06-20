@@ -14,6 +14,7 @@ import type { ApiAssignment, ApiProject, ApiRosterStudent } from '@/lib/api';
 import { useClassTurnInStats } from '@features/app/hooks/useClassTurnInStats';
 import ProjectHealth from '@features/app/components/Stats/ProjectHealth';
 import DashboardMetricCard from '@features/app/components/Dashboard/DashboardMetricCard';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import {
   buildProjectHealth,
   recentAssignments,
@@ -159,7 +160,19 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
           {loading ? (
-            <p className="dashboard__card-empty">Loading…</p>
+            <ul className="dashboard__assignment-list" aria-busy="true">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <li key={i} className="dashboard__assignment-row">
+                  <div className="dashboard__assignment-text">
+                    <Skeleton width="55%" height={13} />
+                    <Skeleton width="35%" height={11} />
+                  </div>
+                  <div className="dashboard__assignment-end">
+                    <Skeleton width={64} height={20} radius={20} />
+                  </div>
+                </li>
+              ))}
+            </ul>
           ) : recentRows.length === 0 ? (
             <p className="dashboard__card-empty">No assignments yet.</p>
           ) : (

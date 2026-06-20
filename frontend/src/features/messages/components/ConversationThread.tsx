@@ -8,6 +8,16 @@ import { MessageBubble } from './MessageBubble';
 import { MessageComposer } from './MessageComposer';
 import { InitialsAvatar } from './InitialsAvatar';
 import { ConversationMenu } from './ConversationMenu';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
+
+/** A few alternating bubble placeholders shown while the thread loads. */
+const THREAD_SKELETON_BUBBLES: Array<{ mine: boolean; width: number }> = [
+  { mine: false, width: 180 },
+  { mine: true, width: 140 },
+  { mine: false, width: 220 },
+  { mine: true, width: 90 },
+  { mine: false, width: 160 },
+];
 
 interface Props {
   /** The conversation summary from the inbox cache. */
@@ -101,7 +111,17 @@ export const ConversationThread: React.FC<Props> = ({
 
       <div className="messages-thread__scroll" ref={scrollRef}>
         {loading && messages.length === 0 ? (
-          <div className="messages-thread__loading">Loading…</div>
+          <div className="messages-thread__skeleton" aria-busy="true">
+            {THREAD_SKELETON_BUBBLES.map((b, i) => (
+              <Skeleton
+                key={i}
+                width={b.width}
+                height={36}
+                radius={10}
+                style={{ alignSelf: b.mine ? 'flex-end' : 'flex-start' }}
+              />
+            ))}
+          </div>
         ) : messages.length === 0 ? (
           <div className="messages-thread__empty">
             No messages yet. Send the first one below.

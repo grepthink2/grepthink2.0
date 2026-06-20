@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import type { ApiAssignment } from '@/lib/api';
 import AddAssignmentButton from '@features/app/components/Modules/AddAssignmentButton';
 import AssignmentList, { type Assignment, type AssignmentStatus } from '@features/app/components/Modules/AssignmentList';
+import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import AssignmentTurnInRate from '@/features/app/components/Stats/AssignmentTurnInRate';
 import ProjectHealth, { type ProjectHealthItem } from '@/features/app/components/Stats/ProjectHealth';
 import CreateAssignmentModal from '@features/app/components/Modules/CreateAssignmentModal';
@@ -144,7 +145,13 @@ const Modules: React.FC = () => {
         <div className="modules__main">
           <AddAssignmentButton onClick={() => setCreateModalOpen(true)} />
           {loading ? (
-            <p className="modules__loading">Loading assignments…</p>
+            <TableSkeleton
+              block="assignment-list"
+              title="Assignment Count"
+              headers={['Title', 'Due Date', 'Submissions', 'Status', 'Actions']}
+              rows={6}
+              cellWidths={['70%', '80px', '60%', '64px', '56px']}
+            />
           ) : error ? (
             <p className="modules__error">{error}</p>
           ) : (

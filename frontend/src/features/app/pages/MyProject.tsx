@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
-import ProjectGrid, { type ProjectGridItem } from '@features/app/components/Project/ProjectGrid';
+import ProjectGrid, { ProjectGridSkeleton, type ProjectGridItem } from '@features/app/components/Project/ProjectGrid';
 import { toProjectGridItem } from '@features/app/components/Project/projectGridHelpers';
 import './BrowseProjects.scss';
 
@@ -91,9 +91,10 @@ const MyProject: React.FC = () => {
   if (loading) {
     return (
       <div className="browse-projects">
-        <div className="browse-projects__empty">
-          <p>Loading...</p>
-        </div>
+        <header className="browse-projects__header">
+          <h2 className="browse-projects__title">My Project Count</h2>
+        </header>
+        <ProjectGridSkeleton count={3} />
       </div>
     );
   }

@@ -17,6 +17,7 @@ import { useClass, type Class } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import CreateClassModal from '@features/app/components/Classes/CreateClassModal';
 import { summarizeRoster } from '@features/app/components/Dashboard/dashboardData';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './InstructorHomeDashboard.scss';
 
 type AttentionType = 'roster_missing' | 'unmatched';
@@ -170,7 +171,19 @@ const InstructorHomeDashboard: React.FC = () => {
             </div>
 
             {alertsLoading ? (
-              <p className="instructor-home__muted">Checking your classes…</p>
+              <ul className="instructor-home__alert-list" aria-busy="true">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <li key={i} className="instructor-home__alert">
+                    <div className="instructor-home__alert-main">
+                      <Skeleton circle height={18} />
+                      <span className="instructor-home__alert-text">
+                        <Skeleton width="40%" height={13} />
+                        <Skeleton width="70%" height={12} style={{ marginTop: 6 }} />
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ) : visibleAlerts.length === 0 ? (
               <div className="instructor-home__all-clear">
                 <span className="instructor-home__all-clear-icon" aria-hidden>

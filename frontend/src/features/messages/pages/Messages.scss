@@ -353,6 +353,12 @@
     padding: $spacing-lg;
   }
 
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
   &__seen {
     align-self: flex-end;
     color: $text-tertiary;

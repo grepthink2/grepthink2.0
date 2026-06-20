@@ -6,6 +6,7 @@ import BellIcon from '@assets/mingcute_notification-fill.svg';
 import { useClass } from '@/lib/classContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
 import { formatRelativeTime } from '@features/messages/utils/relativeTime';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './Header.scss';
 
 function notificationPath(notification: {
@@ -313,7 +314,23 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
               </div>
               <div className="app-header__dropdown-content">
                 {notificationsLoading && notifications.length === 0 ? (
-                  <div className="app-header__empty-state">Loading…</div>
+                  <div aria-busy="true">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="app-header__notification-item">
+                        <div className="app-header__notification-body">
+                          <div className="app-header__notification-title">
+                            <Skeleton width="60%" height={13} />
+                          </div>
+                          <div className="app-header__notification-content">
+                            <Skeleton width="85%" height={12} />
+                          </div>
+                          <div className="app-header__notification-time">
+                            <Skeleton width={48} height={10} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : notifications.filter(n => !n.read_at).length === 0 ? (
                   <div className="app-header__empty-state">No notifications</div>
                 ) : (

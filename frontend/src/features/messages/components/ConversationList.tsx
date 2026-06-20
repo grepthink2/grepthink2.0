@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { LuSearch, LuX } from 'react-icons/lu';
 import type { ApiConversationSummary } from '@/lib/api';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { formatRelativeTime } from '../utils/relativeTime';
 import { InitialsAvatar } from './InitialsAvatar';
@@ -98,7 +99,22 @@ export const ConversationList: React.FC<Props> = ({
     return (
       <div className="messages-list">
         {renderHeader()}
-        <div className="messages-list__empty">Loading…</div>
+        <ul className="messages-list__items" aria-busy="true">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <li key={i} className="messages-list__item" style={{ cursor: 'default' }}>
+              <Skeleton circle height={avatarSize} />
+              <div className="messages-list__body">
+                <div className="messages-list__row">
+                  <Skeleton width="40%" height={13} />
+                  <Skeleton width={32} height={11} />
+                </div>
+                <div className="messages-list__row">
+                  <Skeleton width="70%" height={12} />
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     );
   }

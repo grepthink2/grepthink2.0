@@ -1,5 +1,6 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './DashboardMetricCard.scss';
 
 export type MetricAccent = 'primary' | 'blue' | 'purple' | 'amber';
@@ -35,14 +36,23 @@ const DashboardMetricCard: React.FC<DashboardMetricCardProps> = ({
           <Icon size={18} />
         </span>
       </div>
-      <span className="metric-card__value">{loading ? '—' : value}</span>
-      <span className="metric-card__hint">{hint ?? ' '}</span>
+      <span className="metric-card__value">
+        {loading ? <Skeleton width={56} height="1.6rem" /> : value}
+      </span>
+      <span className="metric-card__hint">
+        {loading ? <Skeleton width="70%" height={11} /> : hint ?? "�"}
+      </span>
     </>
   );
 
   if (onClick) {
     return (
-      <button type="button" className={className} onClick={onClick}>
+      <button
+        type="button"
+        className={className}
+        onClick={onClick}
+        aria-busy={loading || undefined}
+      >
         {content}
       </button>
     );

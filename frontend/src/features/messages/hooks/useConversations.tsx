@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { api, type ApiConversationSummary } from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/auth';
-
-const POLL_INTERVAL_MS = 15_000;
 
 interface ConversationsValue {
   conversations: ApiConversationSummary[];
@@ -15,8 +14,13 @@ interface ConversationsValue {
 const ConversationsContext = createContext<ConversationsValue | undefined>(undefined);
 
 /**
- * Polls /api/messages/conversations every 15s. Single source of truth for
- * the inbox AND the unread badge — both surfaces read from this provider.
+ * Single source of truth for the inbox AND the unread badge — both surfaces
+ * read from this provider. Loads /api/messages/conversations once, then
+ * subscribes to Supabase Realtime (postgres_changes on `conversations`,
+ * scoped to this user via RLS) and refetches on any change — no interval
+ * polling. The messages_bump_last_message trigger updates last_message_at on
+ * every new message, so a participant gets a conversations UPDATE event and
+ * the refetch picks up the new preview + unread count.
  *
  * Mounted once at the app root (via Layout) so the badge updates even
  * when the user isn't on the Messages page.
@@ -43,20 +47,41 @@ export const ConversationsProvider: React.FC<{ children: ReactNode }> = ({ child
     }
   }, []);
 
+  const userId = session?.user?.id;
+
   useEffect(() => {
     cancelled.current = false;
-    if (!session) {
+    if (!session || !userId) {
       setConversations([]);
       setLoading(false);
       return;
     }
+    supabase.realtime.setAuth(session.access_token);
     refetch();
-    const id = window.setInterval(refetch, POLL_INTERVAL_MS);
+    // postgres_changes allows one filter per handler, so attach one per
+    // participant column (user_a / user_b) on the same channel. Any
+    // conversation insert/update for this user triggers a refetch.
+    const channel = supabase
+      .channel(`conversations:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'conversations', filter: `user_a=eq.${userId}` },
+        () => refetch(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'conversations', filter: `user_b=eq.${userId}` },
+        () => refetch(),
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') refetch();
+      });
     return () => {
       cancelled.current = true;
-      window.clearInterval(id);
+      supabase.removeChannel(channel);
     };
-  }, [session, refetch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, refetch]);
 
   return (
     <ConversationsContext.Provider value={{ conversations, loading, error, refetch }}>

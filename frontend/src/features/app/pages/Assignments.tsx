@@ -9,6 +9,7 @@ import StudentAssignmentsTable, {
   type StudentAssignmentStatus,
   type AssignmentType,
 } from '../components/Assignments/StudentAssignmentsTable';
+import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import './Assignments.scss';
 
 function resolveAssignmentState(
@@ -207,8 +208,14 @@ const Assignments: React.FC = () => {
   if (loading) {
     return (
       <div className="assignments">
-        <div className="assignments__empty">
-          <p>Loading assignments…</p>
+        <div className="assignments__content">
+          <TableSkeleton
+            block="student-assignments"
+            title="Assignments"
+            headers={['Name', 'Due Date', 'Project Name', 'Status', 'Actions']}
+            rows={6}
+            cellWidths={['70%', '80px', '60%', '64px', '70px']}
+          />
         </div>
       </div>
     );

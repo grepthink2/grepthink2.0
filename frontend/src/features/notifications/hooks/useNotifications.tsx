@@ -1,9 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { api, type ApiNotification } from '@/lib/api';
+import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/auth';
-
-const POLL_INTERVAL_MS = 15_000;
 
 interface NotificationsValue {
   notifications: ApiNotification[];
@@ -18,7 +17,10 @@ interface NotificationsValue {
 const NotificationsContext = createContext<NotificationsValue | undefined>(undefined);
 
 /**
- * Polls GET /api/notifications every 15s. Powers the header bell dropdown.
+ * Powers the header bell dropdown. Loads GET /api/notifications once, then
+ * subscribes to Supabase Realtime (postgres_changes on the `notifications`
+ * table, scoped to this user via RLS) and refetches whenever a row for this
+ * user is inserted or updated — no interval polling.
  */
 export const NotificationsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { session } = useAuth();
@@ -62,21 +64,40 @@ export const NotificationsProvider: React.FC<{ children: ReactNode }> = ({ child
     setUnreadCount(0);
   }, []);
 
+  const userId = session?.user?.id;
+
   useEffect(() => {
     cancelled.current = false;
-    if (!session) {
+    if (!session || !userId) {
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
       return;
     }
+    // Point the realtime socket at this user's JWT so RLS only delivers
+    // their own notification rows.
+    supabase.realtime.setAuth(session.access_token);
     refetch();
-    const id = window.setInterval(refetch, POLL_INTERVAL_MS);
+    // INSERT = new notification; UPDATE = read_at synced from another tab/device.
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        () => refetch(),
+      )
+      .subscribe((status) => {
+        // Catch up on anything missed while disconnected.
+        if (status === 'SUBSCRIBED') refetch();
+      });
     return () => {
       cancelled.current = true;
-      window.clearInterval(id);
+      supabase.removeChannel(channel);
     };
-  }, [session, refetch]);
+    // Keyed on userId (not the whole session) so a token refresh doesn't tear
+    // down and rebuild the channel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, refetch]);
 
   return (
     <NotificationsContext.Provider

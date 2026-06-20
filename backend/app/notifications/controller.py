@@ -75,7 +75,7 @@ def _upsert_unread_notification(
         client = _client()
         query = (
             client.table("notifications")
-            .select("id")
+            .select("id, title, body")
             .eq("user_id", user_id)
             .eq("type", type)
             .is_("read_at", "null")
@@ -85,11 +85,19 @@ def _upsert_unread_notification(
         existing = query.limit(1).execute()
 
         if existing.data:
+            row = existing.data[0]
+            # Skip a no-op write. Because list_notifications() calls the
+            # ensure_* helpers on every GET, re-writing identical content would
+            # emit a realtime change event, which the client's subscription
+            # turns back into another GET — an endless refetch loop. Only write
+            # when the content actually changed.
+            if row.get("title") == title and row.get("body") == body:
+                return
             client.table("notifications").update({
                 "title": title,
                 "body": body,
                 "created_at": _now_iso(),
-            }).eq("id", existing.data[0]["id"]).execute()
+            }).eq("id", row["id"]).execute()
             return
 
         _insert_notification(
@@ -166,7 +174,7 @@ def ensure_profile_completion_notification(user_id: str) -> None:
         client = _client()
         all_rows = (
             client.table("notifications")
-            .select("id, read_at, created_at")
+            .select("id, read_at, created_at, title, body")
             .eq("user_id", user_id)
             .eq("type", "complete_profile")
             .order("created_at", desc=True)
@@ -201,11 +209,15 @@ def ensure_profile_completion_notification(user_id: str) -> None:
                     }).eq("id", row["id"]).execute()
                 # else: still in cooldown; leave it dismissed
             else:
-                # Already unread — just keep the content current.
-                client.table("notifications").update({
-                    "title": title,
-                    "body": body,
-                }).eq("id", row["id"]).execute()
+                # Already unread — refresh only when the content actually
+                # changed. A no-op update emits a realtime event, and since
+                # this runs on every GET that would loop the client's refetch
+                # endlessly.
+                if row.get("title") != title or row.get("body") != body:
+                    client.table("notifications").update({
+                        "title": title,
+                        "body": body,
+                    }).eq("id", row["id"]).execute()
         else:
             _insert_notification(
                 user_id=user_id,

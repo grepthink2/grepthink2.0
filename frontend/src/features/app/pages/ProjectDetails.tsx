@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
-import ProjectView from '@features/app/components/Project/ProjectView';
+import ProjectView, { ProjectViewSkeleton } from '@features/app/components/Project/ProjectView';
 
 const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -95,9 +95,7 @@ const ProjectDetails: React.FC = () => {
   if (loading) {
     return (
       <div className="projects">
-        <div className="projects__empty">
-          <h2>Loading project...</h2>
-        </div>
+        <ProjectViewSkeleton />
       </div>
     );
   }
