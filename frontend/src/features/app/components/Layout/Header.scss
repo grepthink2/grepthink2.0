@@ -328,6 +328,10 @@ $app-header-text: #424242;
   .app-header__dropdown-header {
     padding: $spacing-md $spacing-md $spacing-sm;
     border-bottom: 1px solid $border-color;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
 
     h3 {
       margin: 0;
@@ -335,6 +339,21 @@ $app-header-text: #424242;
       font-weight: $font-weight-semibold;
       color: $app-header-text;
       font-family: $primary-font;
+    }
+  }
+
+  .app-header__mark-all-read {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: $primary-font;
+    color: $accent-color;
+    white-space: nowrap;
+
+    &:hover {
+      text-decoration: underline;
     }
   }
 
@@ -352,14 +371,9 @@ $app-header-text: #424242;
   }
 
   .app-header__notification-item {
-    display: block;
-    width: 100%;
-    text-align: left;
-    border: none;
-    background: none;
-    padding: $spacing-md;
+    display: flex;
+    align-items: flex-start;
     border-bottom: 1px solid $border-color;
-    cursor: pointer;
     transition: background-color $transition-fast;
 
     &:last-child {
@@ -373,6 +387,16 @@ $app-header-text: #424242;
     &.unread {
       background-color: rgba($accent-color, 0.05);
     }
+  }
+
+  .app-header__notification-body {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    border: none;
+    background: none;
+    padding: $spacing-md;
+    cursor: pointer;
 
     .app-header__notification-title {
       font-size: $font-size-base;
@@ -396,6 +420,26 @@ $app-header-text: #424242;
       font-weight: $font-weight-medium;
       color: $app-header-text;
       font-family: $primary-font;
+    }
+  }
+
+  .app-header__notification-dismiss {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: $spacing-sm;
+    margin: $spacing-sm $spacing-sm 0 0;
+    cursor: pointer;
+    color: $text-secondary;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color $transition-fast, color $transition-fast;
+
+    &:hover {
+      background-color: rgba($accent-color, 0.1);
+      color: $accent-color;
     }
   }
 }

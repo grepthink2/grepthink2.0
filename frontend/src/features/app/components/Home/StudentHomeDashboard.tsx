@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import {
   BookOpen,
   CalendarDays,
@@ -299,6 +299,7 @@ function formatRequestedMeta(iso: string | undefined): string | null {
 
 const StudentHomeDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { openJoinClassModal } = useOutletContext<AppOutletContext>();
   const { selectedClass } = useClass();
   const { user } = useUser();
@@ -320,6 +321,14 @@ const StudentHomeDashboard: React.FC = () => {
   const [outgoingRequests, setOutgoingRequests] = useState<OutgoingJoinRequestRow[]>([]);
   const [outgoingLoading, setOutgoingLoading] = useState(false);
   const [requestsModalOpen, setRequestsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const state = location.state as { openRequests?: boolean } | null;
+    if (state?.openRequests) {
+      setRequestsModalOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   const useMockDeadlines = !selectedClass;
   const displayDeadlines = useMockDeadlines

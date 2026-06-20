@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { Search, User, ChevronDown, Settings, LogOut, Copy, Check } from 'lucide-react';
+import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
 import { useClass } from '@/lib/classContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
@@ -143,6 +143,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
     unreadCount,
     loading: notificationsLoading,
     markRead,
+    markAllRead,
   } = useNotifications();
 
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -167,6 +168,11 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
 
     if (notification.type === 'complete_profile') {
       onOpenSettings();
+      return;
+    }
+
+    if (notification.type === 'join_request') {
+      navigate('/app/home', { state: { openRequests: true } });
       return;
     }
 
@@ -295,26 +301,50 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
             <div className="app-header__dropdown app-header__notifications-dropdown">
               <div className="app-header__dropdown-header">
                 <h3>Notifications</h3>
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    className="app-header__mark-all-read"
+                    onClick={() => void markAllRead()}
+                  >
+                    Mark all read
+                  </button>
+                )}
               </div>
               <div className="app-header__dropdown-content">
                 {notificationsLoading && notifications.length === 0 ? (
                   <div className="app-header__empty-state">Loading…</div>
-                ) : notifications.length === 0 ? (
+                ) : notifications.filter(n => !n.read_at).length === 0 ? (
                   <div className="app-header__empty-state">No notifications</div>
                 ) : (
-                  notifications.map((notification) => (
-                    <button
+                  notifications.filter(n => !n.read_at).map((notification) => (
+                    <div
                       key={notification.id}
-                      type="button"
                       className={`app-header__notification-item ${!notification.read_at ? 'unread' : ''}`}
-                      onClick={() => handleNotificationClick(notification)}
                     >
-                      <div className="app-header__notification-title">{notification.title}</div>
-                      <div className="app-header__notification-content">{notification.body}</div>
-                      <div className="app-header__notification-time">
-                        {formatRelativeTime(notification.created_at)}
-                      </div>
-                    </button>
+                      <button
+                        type="button"
+                        className="app-header__notification-body"
+                        onClick={() => handleNotificationClick(notification)}
+                      >
+                        <div className="app-header__notification-title">{notification.title}</div>
+                        <div className="app-header__notification-content">{notification.body}</div>
+                        <div className="app-header__notification-time">
+                          {formatRelativeTime(notification.created_at)}
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="app-header__notification-dismiss"
+                        aria-label="Dismiss notification"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void markRead(notification.id);
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                   ))
                 )}
               </div>

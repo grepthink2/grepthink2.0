@@ -134,8 +134,15 @@ def _profile_needs_completion(profile: dict) -> bool:
     return False
 
 
+_PROFILE_NOTIFICATION_COOLDOWN_SECONDS = 300  # 5 minutes
+
+
 def ensure_profile_completion_notification(user_id: str) -> None:
-    """Create or refresh a reminder when the user's profile is incomplete."""
+    """Maintain exactly one profile-completion reminder per user.
+
+    After dismissal the notification re-surfaces after a 5-minute cooldown so
+    the user isn't immediately re-notified on the next poll.
+    """
     profile = _get_profile(user_id)
     if not profile or not _profile_needs_completion(profile):
         dismiss_profile_completion_notification(user_id)
@@ -153,24 +160,73 @@ def ensure_profile_completion_notification(user_id: str) -> None:
         missing.append("roster .edu email")
 
     body = f"Please add your {' and '.join(missing)} in Settings to finish setting up your account."
-    _upsert_unread_notification(
-        user_id=user_id,
-        type="complete_profile",
-        title="Complete your profile",
-        body=body,
-        entity_type="profile",
-        entity_id=user_id,
-    )
+    title = "Complete your profile"
+
+    try:
+        client = _client()
+        all_rows = (
+            client.table("notifications")
+            .select("id, read_at, created_at")
+            .eq("user_id", user_id)
+            .eq("type", "complete_profile")
+            .order("created_at", desc=True)
+            .execute()
+        )
+        rows = all_rows.data or []
+
+        # Delete every duplicate — keep only the most recent row.
+        if len(rows) > 1:
+            stale_ids = [r["id"] for r in rows[1:]]
+            client.table("notifications").delete().in_("id", stale_ids).execute()
+
+        if rows:
+            row = rows[0]
+            read_at_raw = row.get("read_at")
+            if read_at_raw:
+                # Dismissed — only re-surface after the cooldown has elapsed.
+                try:
+                    dismissed_at = datetime.fromisoformat(
+                        read_at_raw.replace("Z", "+00:00")
+                    )
+                    elapsed = (datetime.now(timezone.utc) - dismissed_at).total_seconds()
+                except (ValueError, TypeError):
+                    elapsed = _PROFILE_NOTIFICATION_COOLDOWN_SECONDS  # treat as expired
+
+                if elapsed >= _PROFILE_NOTIFICATION_COOLDOWN_SECONDS:
+                    client.table("notifications").update({
+                        "title": title,
+                        "body": body,
+                        "read_at": None,
+                        "created_at": _now_iso(),
+                    }).eq("id", row["id"]).execute()
+                # else: still in cooldown; leave it dismissed
+            else:
+                # Already unread — just keep the content current.
+                client.table("notifications").update({
+                    "title": title,
+                    "body": body,
+                }).eq("id", row["id"]).execute()
+        else:
+            _insert_notification(
+                user_id=user_id,
+                type="complete_profile",
+                title=title,
+                body=body,
+                entity_type="profile",
+                entity_id=user_id,
+            )
+    except Exception:
+        logger.exception(
+            "ensure_profile_completion_notification failed | user_id=%s", user_id,
+        )
 
 
 def dismiss_profile_completion_notification(user_id: str) -> None:
-    """Mark profile-completion reminders as read once the profile is complete."""
+    """Profile is now complete — delete all complete_profile notifications for this user."""
     try:
-        _client().table("notifications").update({
-            "read_at": _now_iso(),
-        }).eq("user_id", user_id).eq("type", "complete_profile").is_(
-            "read_at", "null",
-        ).execute()
+        _client().table("notifications").delete().eq(
+            "user_id", user_id,
+        ).eq("type", "complete_profile").execute()
     except Exception:
         logger.exception(
             "Failed to dismiss profile notification | user_id=%s", user_id,
