@@ -11,7 +11,7 @@ export type StudentAssignmentAction =
   | 'opens_later';
 
 /** Discriminator for which form component to render on the detail page. */
-export type AssignmentType = 'tsrs' | 'interest_form';
+export type AssignmentType = 'tsrs' | 'interest_form' | 'feedback';
 
 export interface StudentAssignment {
   id: string;

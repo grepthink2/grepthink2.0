@@ -119,12 +119,13 @@
 // ── Template button ────────────────────────────────────────────
 .create-assignment-modal__template-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: $spacing-md;
 }
 
 .create-assignment-modal__template-button {
-  flex: 1;
-  min-width: 140px;
+  white-space: nowrap;
+  min-width: 120px;
   padding: 12px 16px;
   background-color: $white;
   border: 1px solid $border-color;
