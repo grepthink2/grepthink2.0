@@ -13,6 +13,7 @@ from app.tsr.url import router as tsr_router
 from app.staffing.url import router as staffing_router
 from app.messages.url import router as messages_router
 from app.profiles.url import router as profiles_router
+from app.contact.url import router as contact_router
 from app.notifications.url import router as notifications_router
 
 # Initialize FastAPI app
@@ -41,4 +42,5 @@ app.include_router(tsr_router)
 app.include_router(staffing_router)
 app.include_router(messages_router)
 app.include_router(profiles_router)
+app.include_router(contact_router)
 app.include_router(notifications_router)

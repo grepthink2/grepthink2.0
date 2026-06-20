@@ -42,6 +42,8 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
       onOpenJoinClass();
     } else if (path === '/app/settings' && onOpenSettings) {
       onOpenSettings();
+    } else if (path === '/app/help-center') {
+      window.open('/contact', '_blank', 'noopener,noreferrer');
     } else {
       navigate(path);
     }

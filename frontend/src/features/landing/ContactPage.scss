@@ -99,6 +99,30 @@
     }
   }
 
+  // Honeypot: visually and from-assistive-tech hidden, but still focusable-free
+  // and submittable so bots that ignore display rules fill it in.
+  &__honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  &__status {
+    margin: $spacing-sm 0 0;
+    font-size: $font-size-base;
+    line-height: 1.5;
+
+    &--success {
+      color: $primary-color;
+    }
+
+    &--error {
+      color: #c0392b;
+    }
+  }
+
   &__submit {
     align-self: flex-start;
     margin-top: $spacing-sm;
@@ -121,6 +145,12 @@
 
     &:active {
       transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
     }
 
     &:focus-visible {
