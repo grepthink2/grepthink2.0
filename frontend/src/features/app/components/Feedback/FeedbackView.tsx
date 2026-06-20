@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import type { ApiFeedbackSubmission } from '@/lib/api';
+import NonSubmittersList from '@features/app/components/NonSubmittersList/NonSubmittersList';
 import './FeedbackView.scss';
 
 const QUESTIONS: { key: keyof ApiFeedbackSubmission; label: string }[] = [
@@ -20,18 +21,20 @@ const FeedbackView: React.FC<FeedbackViewProps> = ({ assignmentId }) => {
   const [submissions, setSubmissions] = useState<ApiFeedbackSubmission[]>([]);
   const [submittedCount, setSubmittedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [nonSubmitters, setNonSubmitters] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     api.getFeedbackOverview(assignmentId)
-      .then(({ assignment, submissions: subs, submitted_count, total_count }) => {
+      .then(({ assignment, submissions: subs, submitted_count, total_count, non_submitters }) => {
         if (cancelled) return;
         setAssignmentTitle(assignment.Title);
         setSubmissions(subs);
         setSubmittedCount(submitted_count);
         setTotalCount(total_count);
+        setNonSubmitters(non_submitters ?? []);
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load responses');
@@ -51,6 +54,8 @@ const FeedbackView: React.FC<FeedbackViewProps> = ({ assignmentId }) => {
           {submittedCount} of {totalCount} students responded
         </p>
       </div>
+
+      <NonSubmittersList nonSubmitters={nonSubmitters} />
 
       {submissions.length === 0 ? (
         <p className="feedback-view__empty">No responses yet.</p>

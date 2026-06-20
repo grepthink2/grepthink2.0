@@ -262,6 +262,7 @@ export interface ApiFeedbackOverview {
   submissions: ApiFeedbackSubmission[];
   submitted_count: number;
   total_count: number;
+  non_submitters: { id: string; name: string }[];
 }
 
 // ----- Messages ------------------------------------------------------------
@@ -825,6 +826,7 @@ export const api = {
       assignment: ApiAssignment;
       projects: { id: string; name: string }[];
       entries: ApiAssignmentTsrEntry[];
+      non_submitters_by_project: Record<string, { id: string; name: string }[]>;
     }>(`/api/assignments/${assignmentId}/tsr-overview`);
   },
 

@@ -39,9 +39,11 @@ const DashboardMetricCard: React.FC<DashboardMetricCardProps> = ({
       <span className="metric-card__value">
         {loading ? <Skeleton width={56} height="1.6rem" /> : value}
       </span>
-      <span className="metric-card__hint">
-        {loading ? <Skeleton width="70%" height={11} /> : hint ?? "�"}
-      </span>
+      {(loading || hint) && (
+        <span className="metric-card__hint">
+          {loading ? <Skeleton width="70%" height={11} /> : hint}
+        </span>
+      )}
     </>
   );
 
