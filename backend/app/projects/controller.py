@@ -944,6 +944,8 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
         client.table('project_members').insert(member_data).execute()
         logger.debug("accept_join_request: member inserted | user_id=%s", join_request['user_id'])
 
+        _auto_assign_scrum_master(client, join_request['project_id'], join_request['user_id'])
+
         # Increment num_members on the project
         _increment_project_num_members(client, join_request['project_id'], 1)
 
@@ -1036,6 +1038,25 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
 
 def _pm_client():
     return service_client if service_client else supabase
+
+
+def _auto_assign_scrum_master(client, project_id: str, new_user_id: str) -> None:
+    """If the project has no scrum master yet, promote new_user_id to scrum master."""
+    existing = (
+        client.table('project_members')
+        .select('user_id')
+        .eq('project_id', project_id)
+        .eq('role', 'scrum master')
+        .execute()
+    )
+    if not existing.data:
+        client.table('project_members').update({'role': 'scrum master'}).eq(
+            'project_id', project_id
+        ).eq('user_id', new_user_id).execute()
+        logger.info(
+            "Auto-assigned scrum master | project_id=%s user_id=%s",
+            project_id, new_user_id,
+        )
 
 
 def _require_project_role_manager(client, requester_id: str, project_id: str) -> None:
@@ -1647,6 +1668,9 @@ def instructor_add_member(project_id:UUID, requester_id:str, target_user_id:str,
             }
 
             client.table('project_members').insert(member_data).execute()
+
+            if role == "member":
+                _auto_assign_scrum_master(client, str(project_id), str(target_user_id))
 
             # Increment num_members on the project
             _increment_project_num_members(client, str(project_id), 1)
