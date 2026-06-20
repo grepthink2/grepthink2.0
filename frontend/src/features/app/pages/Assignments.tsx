@@ -229,6 +229,7 @@ const Assignments: React.FC = () => {
         dueDate: assignment.dueDate,
         projectName: assignment.projectName,
         projectId: assignment.projectId,
+        isSubmitted: assignment.isSubmitted,
       },
     });
   };

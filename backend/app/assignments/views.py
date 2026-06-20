@@ -46,6 +46,14 @@ def update_assignment(
     return {"message": "Assignment updated successfully", "assignment": assignment}
 
 
+def delete_assignment(
+    assignment_id: UUID,
+    user_id: str = Depends(require_user),
+):
+    controller.delete_assignment(user_id=user_id, assignment_id=assignment_id)
+    return {"message": "Assignment deleted successfully"}
+
+
 def update_tsr_entry(
     assignment_id: UUID,
     tsr_id: UUID,

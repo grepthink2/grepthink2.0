@@ -807,6 +807,13 @@ export const api = {
     });
   },
 
+  /** Delete an assignment (instructor only — DELETE /api/assignments/:id) */
+  deleteAssignment: async (assignmentId: string) => {
+    return apiRequest<{ message: string }>(`/api/assignments/${assignmentId}`, {
+      method: 'DELETE',
+    });
+  },
+
   /** Student's TSR submissions for an assignment (GET /api/assignments/:id/tsrs) */
   getMyAssignmentTsrs: async (assignmentId: string) => {
     return apiRequest<{ tsrs: ApiAssignmentTsrEntry[] }>(`/api/assignments/${assignmentId}/tsrs`);

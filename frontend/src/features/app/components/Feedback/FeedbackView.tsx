@@ -45,10 +45,12 @@ const FeedbackView: React.FC<FeedbackViewProps> = ({ assignmentId }) => {
 
   return (
     <div className="feedback-view">
-      <h1 className="feedback-view__title">{assignmentTitle}</h1>
-      <p className="feedback-view__count">
-        {submittedCount} of {totalCount} students responded
-      </p>
+      <div className="feedback-view__header">
+        <h1 className="feedback-view__title">{assignmentTitle}</h1>
+        <p className="feedback-view__count">
+          {submittedCount} of {totalCount} students responded
+        </p>
+      </div>
 
       {submissions.length === 0 ? (
         <p className="feedback-view__empty">No responses yet.</p>

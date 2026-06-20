@@ -136,6 +136,13 @@ const Modules: React.FC = () => {
     setEditingAssignment(null);
   };
 
+  const handleDeleteAssignment = async (id: string) => {
+    await api.deleteAssignment(id);
+    await fetchAssignments();
+    await refetchTurnInStats();
+    setEditingAssignment(null);
+  };
+
   if (!selectedClass) {
     return (
       <div className="modules">
@@ -202,6 +209,7 @@ const Modules: React.FC = () => {
         assignment={editingAssignment}
         onClose={() => setEditingAssignment(null)}
         onSave={handleSaveAssignment}
+        onDelete={handleDeleteAssignment}
       />
     </div>
   );

@@ -49,15 +49,16 @@ const EMPTY_FORM: SubmitFeedbackPayload = {
 
 interface FeedbackFormProps {
   assignment: FeedbackFormAssignment;
+  isSubmitted?: boolean;
 }
 
-const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment }) => {
+const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = false }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState<SubmitFeedbackPayload>(EMPTY_FORM);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isSubmitted);
   const [submitting, setSubmitting] = useState(false);
-  const [justSubmitted, setJustSubmitted] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [justSubmitted, setJustSubmitted] = useState(isSubmitted);
+  const [isEditMode, setIsEditMode] = useState(isSubmitted);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,8 +74,15 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment }) => {
           q5_suggestions: submission.q5_suggestions,
         });
         setIsEditMode(true);
+        if (!isSubmitted) setJustSubmitted(true);
       })
-      .catch(() => {})
+      .catch((err) => {
+        // If the student is already known to have submitted (isSubmitted prop),
+        // keep showing the success screen. Otherwise surface the load error.
+        if (!isSubmitted) {
+          console.error('getMyFeedback failed:', err);
+        }
+      })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [assignment.id]);
@@ -104,55 +112,78 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment }) => {
     return <div className="feedback-form feedback-form--loading">Loading…</div>;
   }
 
+  if (justSubmitted) {
+    return (
+      <div className="feedback-form__submitted">
+        <div className="feedback-form__submitted-icon">✓</div>
+        <h3 className="feedback-form__submitted-title">Submission Received</h3>
+        <p className="feedback-form__submitted-sub">
+          Your feedback for <strong>{assignment.name}</strong> has been submitted.
+        </p>
+        <div className="feedback-form__submitted-actions">
+          <button
+            type="button"
+            className="feedback-form__btn feedback-form__btn--secondary"
+            onClick={() => setJustSubmitted(false)}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            className="feedback-form__btn feedback-form__btn--primary"
+            onClick={() => navigate('/app/assignments')}
+          >
+            Back to assignments
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="feedback-form">
-      <div className="feedback-form__header">
-        <button
-          type="button"
-          className="feedback-form__back"
-          onClick={() => navigate('/app/assignments')}
-        >
-          ← Back to Assignments
-        </button>
-        <h1 className="feedback-form__title">{assignment.name}</h1>
-        <p className="feedback-form__due">Due {assignment.dueDate}</p>
-      </div>
-
-      {justSubmitted && (
-        <div className="feedback-form__banner">
-          {isEditMode ? 'Feedback updated!' : 'Feedback submitted!'} You can still edit your responses below.
+      <div className="feedback-form__card">
+        <div className="feedback-form__header">
+          <h1 className="feedback-form__title">{assignment.name}</h1>
+          <p className="feedback-form__due">Due {assignment.dueDate}</p>
         </div>
-      )}
 
-      <div className="feedback-form__questions">
-        {QUESTIONS.map(({ key, label, placeholder }, idx) => (
-          <div className="feedback-form__question" key={key}>
-            <label className="feedback-form__label" htmlFor={key}>
-              {idx + 1}. {label}
-            </label>
-            <textarea
-              id={key}
-              className="feedback-form__textarea"
-              rows={4}
-              placeholder={placeholder}
-              value={form[key]}
-              onChange={(e) => handleChange(key, e.target.value)}
-            />
+        {isEditMode && (
+          <div className="feedback-form__banner feedback-form__banner--edit">
+            You are editing your previous submission. Submit to update your answers.
           </div>
-        ))}
-      </div>
+        )}
 
-      {error && <p className="feedback-form__error">{error}</p>}
+        <div className="feedback-form__questions">
+          {QUESTIONS.map(({ key, label, placeholder }, idx) => (
+            <div className="feedback-form__question" key={key}>
+              <label className="feedback-form__label" htmlFor={key}>
+                {idx + 1}. {label}
+              </label>
+              <textarea
+                id={key}
+                className="feedback-form__textarea"
+                rows={4}
+                placeholder={placeholder}
+                value={form[key]}
+                onChange={(e) => handleChange(key, e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
 
-      <div className="feedback-form__actions">
-        <button
-          type="button"
-          className="feedback-form__submit"
-          onClick={handleSubmit}
-          disabled={submitting || !isValid}
-        >
-          {submitting ? 'Submitting…' : isEditMode ? 'Update Feedback' : 'Submit Feedback'}
-        </button>
+        {error && <p className="feedback-form__error">{error}</p>}
+
+        <div className="feedback-form__footer">
+          <button
+            type="button"
+            className="feedback-form__submit"
+            onClick={handleSubmit}
+            disabled={submitting || !isValid}
+          >
+            {submitting ? 'Submitting…' : isEditMode ? 'Update Feedback' : 'Submit Feedback'}
+          </button>
+        </div>
       </div>
     </div>
   );

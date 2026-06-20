@@ -278,6 +278,29 @@ def update_assignment(
         raise HTTPException(status_code=500, detail="Failed to update assignment")
 
 
+def delete_assignment(user_id: str, assignment_id: UUID) -> None:
+    """Delete an assignment (instructor who owns the class only)."""
+    _require_instructor(user_id)
+    try:
+        client = _client()
+        assignment_result = (
+            client.table('assignments')
+            .select('id, class_id')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        _require_class_instructor(user_id, assignment_result.data[0]['class_id'])
+        client.table('assignments').delete().eq('id', str(assignment_id)).execute()
+        logger.info("Assignment deleted | assignment_id=%s user_id=%s", assignment_id, user_id)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error deleting assignment | assignment_id=%s user_id=%s", assignment_id, user_id)
+        raise HTTPException(status_code=500, detail="Failed to delete assignment")
+
+
 def _enrich_instructor_tsr_stats(client, class_id: str, assignments: list) -> list:
     """Attach TSR response flags and team submission counts for instructor assignment lists."""
     tsr_ids = [a['id'] for a in assignments if a.get('assignment_type') == 'tsr']
@@ -797,7 +820,7 @@ def get_my_feedback(user_id: str, assignment_id: UUID) -> Optional[dict]:
 
         assignment_result = (
             client.table('assignments')
-            .select('id, assignment_type, status')
+            .select('id, assignment_type, status, class_id')
             .eq('id', str(assignment_id))
             .execute()
         )

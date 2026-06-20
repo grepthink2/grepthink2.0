@@ -18,6 +18,7 @@ interface AssignmentDetailState {
   dueDate?: string;
   projectName?: string;
   projectId?: string;
+  isSubmitted?: boolean;
 }
 
 const AssignmentDetail: React.FC = () => {
@@ -34,6 +35,7 @@ const AssignmentDetail: React.FC = () => {
   const dueDate         = stateData.dueDate         ?? '';
   const projectName     = stateData.projectName     ?? '';
   const projectId       = stateData.projectId       ?? '';
+  const isSubmitted     = stateData.isSubmitted     ?? false;
 
   if (!selectedClass) {
     return (
@@ -76,7 +78,7 @@ const AssignmentDetail: React.FC = () => {
           <InterestForm assignment={interestAssignment} />
         )}
         {assignmentType === 'feedback' && (
-          <FeedbackForm assignment={feedbackAssignment} />
+          <FeedbackForm assignment={feedbackAssignment} isSubmitted={isSubmitted} />
         )}
       </div>
     </div>
