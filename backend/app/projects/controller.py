@@ -587,8 +587,8 @@ def _notify_product_owners_of_departure(
     new_project_name: str,
 ) -> None:
     """
-    Send a notification message from the leaving user to each product owner
-    of the project they just left. Failures are non-fatal and only logged.
+    Send an in-app notification to each product owner of the project the user
+    just left. Failures are non-fatal and only logged.
     """
     po_rows = (
         client.table('project_members')
@@ -619,23 +619,31 @@ def _notify_product_owners_of_departure(
     else:
         user_name = 'A student'
 
+    title = "Member left your project"
     body = (
         f"{user_name} has left \"{old_project_name}\" and submitted a join request "
         f"for \"{new_project_name}\"."
     )
 
-    from app.messages.controller import send_message  # local import — avoids circular dep
+    from app.notifications.controller import _insert_notification  # local import — avoids circular dep
     for po_id in po_ids:
         try:
-            send_message(sender_id=leaving_user_id, to_user_id=po_id, body=body)
+            _insert_notification(
+                user_id=po_id,
+                type="join_request",
+                title=title,
+                body=body,
+                entity_type="project",
+                entity_id=old_project_id,
+            )
             logger.info(
-                "departure_notify: message sent | from=%s to=%s old_project=%s",
-                leaving_user_id, po_id, old_project_id,
+                "departure_notify: notification sent | to=%s old_project=%s",
+                po_id, old_project_id,
             )
         except Exception:
             logger.warning(
-                "departure_notify: failed to notify PO (non-fatal) | from=%s to=%s",
-                leaving_user_id, po_id,
+                "departure_notify: failed to notify PO (non-fatal) | to=%s",
+                po_id,
             )
 
 
