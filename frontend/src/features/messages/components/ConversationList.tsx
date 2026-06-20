@@ -182,7 +182,7 @@ export const ConversationList: React.FC<Props> = ({
                   )}
                 </div>
               </div>
-              <ConversationMenu conversationId={c.id} />
+              <ConversationMenu conversationId={c.id} unread_count={c.unread_count} />
             </li>
           );
         })}
