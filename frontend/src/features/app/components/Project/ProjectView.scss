@@ -117,6 +117,14 @@
       background: $primary-hover;
     }
 
+    &--requested {
+      cursor: not-allowed;
+
+      &:hover {
+        background: $primary-color;
+      }
+    }
+
     svg {
       flex-shrink: 0;
     }

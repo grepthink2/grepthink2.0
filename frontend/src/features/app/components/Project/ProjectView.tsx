@@ -48,6 +48,10 @@ interface ProjectViewProps {
   onMembersChange?: () => void;
   /** Called after the project is successfully deleted so the parent can navigate away. */
   onDelete?: () => void;
+  /** True when the current user has a pending join request for this project. */
+  hasPendingRequest?: boolean;
+  /** Called after a join request is successfully sent. */
+  onRequestSent?: () => void;
   // Sponsor information — typed so callers compile; rendering is gated
   // behind the (still commented-out) sponsor section in the JSX below.
   sponsorName?: string | null;
@@ -72,6 +76,8 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   projectMembers = [],
   onMembersChange,
   onDelete,
+  hasPendingRequest = false,
+  onRequestSent,
   // sponsorName,
   // sponsorCompany,
   // sponsorEmail,
@@ -225,6 +231,17 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 </svg>
                 Joined
               </span>
+            ) : hasPendingRequest ? (
+              <button
+                type="button"
+                className="project-view__request-button project-view__request-button--requested"
+                disabled
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Requested
+              </button>
             ) : (
               <button
                 type="button"
@@ -427,7 +444,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           projectId={projectId}
           onClose={() => setRequestModalOpen(false)}
           onSuccess={() => {
-            // Optional: refetch project or show toast when backend supports it
+            onRequestSent?.();
           }}
         />
       )}
