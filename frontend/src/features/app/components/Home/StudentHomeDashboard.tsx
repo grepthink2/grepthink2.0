@@ -39,6 +39,7 @@ interface DeadlineRow {
   projectId?: string;
   projectName?: string;
   highlight: boolean;
+  assignmentType?: string;
 }
 
 interface TeamMemberRow {
@@ -189,6 +190,7 @@ function buildDeadlineRows(
         dueLabel: formatDueLabel(a.close_date),
         status: st,
         highlight: false,
+        assignmentType: a.assignment_type,
         closeMs: parseLocalAssignmentDate(a.close_date).getTime(),
       });
       continue;
@@ -217,6 +219,7 @@ function buildDeadlineRows(
       projectId: proj.id,
       projectName: proj.name,
       highlight: false,
+      assignmentType: a.assignment_type,
       closeMs: parseLocalAssignmentDate(a.close_date).getTime(),
     });
   }
@@ -586,7 +589,11 @@ const StudentHomeDashboard: React.FC = () => {
       navigate(`/app/assignments/${r.id}`, {
         state: {
           assignmentName: r.name,
-          assignmentType: 'tsrs',
+          assignmentType: r.assignmentType === 'feedback'
+            ? 'feedback'
+            : r.assignmentType === 'interest_form'
+            ? 'interest_form'
+            : 'tsrs',
           dueDate: r.dueLabel,
           projectName: r.projectName ?? '—',
           projectId: r.projectId,

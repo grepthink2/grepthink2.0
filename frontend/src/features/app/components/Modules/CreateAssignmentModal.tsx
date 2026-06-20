@@ -4,12 +4,13 @@ import { X, FileText, Globe } from 'lucide-react';
 import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
 import './CreateAssignmentModal.scss';
 
-type AssignmentTemplate = 'Team Status Report' | 'Project Interest Form';
+type AssignmentTemplate = 'Team Status Report' | 'Project Interest Form' | 'Post Feedback';
 export type CreateAssignmentStatus = 'draft' | 'published';
 
 const ASSIGNMENT_TEMPLATES: AssignmentTemplate[] = [
   'Team Status Report',
   'Project Interest Form',
+  'Post Feedback',
 ];
 
 interface CreateAssignmentModalProps {

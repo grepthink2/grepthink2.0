@@ -54,11 +54,16 @@ function mapApiAssignment(a: ApiAssignment): Assignment {
     dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
     openDate: `${a.open_date} 00:00`,
     dueDatetime: `${a.close_date} 23:59`,
-    submitted: a.teams_submitted ?? 0,
-    total: a.teams_total ?? 0,
+    submitted: a.assignment_type === 'feedback'
+      ? (a.feedback_submitted ?? 0)
+      : (a.teams_submitted ?? 0),
+    total: a.assignment_type === 'feedback'
+      ? (a.feedback_total ?? 0)
+      : (a.teams_total ?? 0),
     status,
     assignmentType: a.assignment_type,
     hasTsrResponses: a.has_tsr_responses ?? false,
+    hasFeedbackResponses: (a.feedback_submitted ?? 0) > 0,
   };
 }
 
@@ -94,12 +99,16 @@ const Modules: React.FC = () => {
     name: string;
     openDate: string;
     dueDate: string;
-    template: 'Team Status Report' | 'Project Interest Form';
+    template: 'Team Status Report' | 'Project Interest Form' | 'Post Feedback';
     status: 'draft' | 'published';
   }) => {
     if (!selectedClass) return;
     const assignment_type =
-      data.template === 'Project Interest Form' ? 'interest_form' : 'tsr';
+      data.template === 'Project Interest Form'
+        ? 'interest_form'
+        : data.template === 'Post Feedback'
+        ? 'feedback'
+        : 'tsr';
     await api.createAssignment({
       class_id: selectedClass.id,
       title: data.name,
@@ -122,6 +131,13 @@ const Modules: React.FC = () => {
       close_date: data.dueDate.split(' ')[0],
       status: data.status === 'published' ? 'publish' : 'draft',
     });
+    await fetchAssignments();
+    await refetchTurnInStats();
+    setEditingAssignment(null);
+  };
+
+  const handleDeleteAssignment = async (id: string) => {
+    await api.deleteAssignment(id);
     await fetchAssignments();
     await refetchTurnInStats();
     setEditingAssignment(null);
@@ -166,6 +182,12 @@ const Modules: React.FC = () => {
                   state: { assignmentName: assignment.title },
                 });
               }}
+              onViewFeedback={(assignment) => {
+                if (!assignment.hasFeedbackResponses) return;
+                navigate(`/app/modules/feedback/${assignment.id}`, {
+                  state: { assignmentName: assignment.title },
+                });
+              }}
             />
           )}
         </div>
@@ -187,6 +209,7 @@ const Modules: React.FC = () => {
         assignment={editingAssignment}
         onClose={() => setEditingAssignment(null)}
         onSave={handleSaveAssignment}
+        onDelete={handleDeleteAssignment}
       />
     </div>
   );

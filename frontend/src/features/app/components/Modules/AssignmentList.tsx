@@ -19,12 +19,15 @@ export interface Assignment {
   assignmentType?: string;
   /** True when at least one TSR response exists (instructor Modules list). */
   hasTsrResponses?: boolean;
+  /** True when at least one feedback response exists (instructor Modules list). */
+  hasFeedbackResponses?: boolean;
 }
 
 interface AssignmentListProps {
   assignments: Assignment[];
   onEdit?: (assignment: Assignment) => void;
   onViewTsr?: (assignment: Assignment) => void;
+  onViewFeedback?: (assignment: Assignment) => void;
 }
 
 const statusLabel: Record<AssignmentStatus, string> = {
@@ -33,7 +36,7 @@ const statusLabel: Record<AssignmentStatus, string> = {
   closed: 'Closed',
 };
 
-const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit, onViewTsr }) => {
+const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit, onViewTsr, onViewFeedback }) => {
   const [_editingId, setEditingId] = useState<string | null>(null);
 
   const handleEdit = (assignment: Assignment) => {
@@ -65,27 +68,38 @@ const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit, on
                 const pct = assignment.total > 0
                   ? Math.round((assignment.submitted / assignment.total) * 100)
                   : 0;
-                const isTsr = assignment.assignmentType !== 'interest_form';
+                const isTsr = assignment.assignmentType !== 'interest_form' && assignment.assignmentType !== 'feedback';
                 const canViewTsr =
                   isTsr && onViewTsr && Boolean(assignment.hasTsrResponses);
+                const isFeedback = assignment.assignmentType === 'feedback';
+                const canViewFeedback =
+                  isFeedback && onViewFeedback && Boolean(assignment.hasFeedbackResponses);
                 const handleTitleClick = () => {
-                  if (canViewTsr) onViewTsr(assignment);
+                  if (canViewTsr) onViewTsr?.(assignment);
+                  else if (canViewFeedback) onViewFeedback?.(assignment);
                 };
                 return (
                   <tr
                     key={assignment.id}
-                    className={canViewTsr ? 'assignment-list__row--clickable' : ''}
-                    onClick={canViewTsr ? handleTitleClick : undefined}
+                    className={
+                      canViewTsr || canViewFeedback ? 'assignment-list__row--clickable' : ''
+                    }
+                    onClick={canViewTsr || canViewFeedback ? handleTitleClick : undefined}
                   >
                     <td className="assignment-list__td-title">
                       {canViewTsr ? (
                         <button
                           type="button"
                           className="assignment-list__title-link"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onViewTsr(assignment);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); onViewTsr?.(assignment); }}
+                        >
+                          {assignment.title}
+                        </button>
+                      ) : canViewFeedback ? (
+                        <button
+                          type="button"
+                          className="assignment-list__title-link"
+                          onClick={(e) => { e.stopPropagation(); onViewFeedback?.(assignment); }}
                         >
                           {assignment.title}
                         </button>

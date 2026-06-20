@@ -257,22 +257,36 @@ $panel-width: 420px;
 // ── Footer ─────────────────────────────────────────────────────
 .aem__footer {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: $spacing-md;
   padding: $spacing-md $spacing-lg;
   border-top: 1px solid $border-color;
   flex-shrink: 0;
-  justify-content: flex-end;
+}
+
+.aem__footer-delete {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.aem__footer-actions {
+  display: flex;
+  gap: $spacing-md;
+  margin-left: auto;
 }
 
 .aem__cancel-btn {
-  padding: 10px 20px;
+  padding: 8px 14px;
   background: $white;
   border: 1px solid $border-color;
   border-radius: $border-radius-sm;
-  font-size: $font-size-base;
+  font-size: $font-size-sm;
   font-family: $primary-font;
   color: $text-primary;
   cursor: pointer;
+  white-space: nowrap;
 
   &:hover { background-color: $background; }
   &:focus { outline: none; }
@@ -281,20 +295,76 @@ $panel-width: 420px;
 }
 
 .aem__save-btn {
-  padding: 10px 20px;
+  padding: 8px 14px;
   background: $primary-color;
   border: none;
   border-radius: $border-radius-sm;
-  font-size: $font-size-base;
+  font-size: $font-size-sm;
   font-weight: $font-weight-semibold;
   font-family: $primary-font;
   color: $white;
   cursor: pointer;
+  white-space: nowrap;
 
   &:hover { background-color: $primary-hover; }
   &:focus { outline: none; }
   &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
   &:disabled { background-color: $disabled-bg; cursor: not-allowed; }
+}
+
+// ── Delete button ──────────────────────────────────────────────
+.aem__delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: none;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  color: $text-secondary;
+  cursor: pointer;
+  transition: color $transition-fast, border-color $transition-fast;
+
+  &:hover {
+    color: #dc2626;
+    border-color: #dc2626;
+  }
+  &:focus { outline: none; }
+  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.aem__delete-confirm-btn {
+  padding: 8px 14px;
+  background: #dc2626;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  font-weight: $font-weight-semibold;
+  color: $white;
+  cursor: pointer;
+
+  &:hover { background: #b91c1c; }
+  &:focus { outline: none; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.aem__delete-cancel-btn {
+  padding: 8px 14px;
+  background: none;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  color: $text-secondary;
+  cursor: pointer;
+
+  &:hover { background: $background; }
+  &:focus { outline: none; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 // Date picker styles live in DatePickerField.scss (shared component)

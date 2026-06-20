@@ -15,7 +15,7 @@ from app.database.client import (
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
-ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form"}
+ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form", "feedback"}
 
 
 def _client():
@@ -78,7 +78,7 @@ def create_assignment(
             if normalized_type not in ALLOWED_ASSIGNMENT_TYPES:
                 raise HTTPException(
                     status_code=400,
-                    detail="assignment_type must be one of: tsr, interest_form",
+                    detail="assignment_type must be one of: tsr, interest_form, feedback",
                 )
             assignment_data["assignment_type"] = normalized_type
 
@@ -232,7 +232,7 @@ def update_assignment(
             if normalized_type not in ALLOWED_ASSIGNMENT_TYPES:
                 raise HTTPException(
                     status_code=400,
-                    detail="assignment_type must be one of: tsr, interest_form",
+                    detail="assignment_type must be one of: tsr, interest_form, feedback",
                 )
             updates['assignment_type'] = normalized_type
 
@@ -276,6 +276,29 @@ def update_assignment(
             assignment_id, user_id,
         )
         raise HTTPException(status_code=500, detail="Failed to update assignment")
+
+
+def delete_assignment(user_id: str, assignment_id: UUID) -> None:
+    """Delete an assignment (instructor who owns the class only)."""
+    _require_instructor(user_id)
+    try:
+        client = _client()
+        assignment_result = (
+            client.table('assignments')
+            .select('id, class_id')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        _require_class_instructor(user_id, assignment_result.data[0]['class_id'])
+        client.table('assignments').delete().eq('id', str(assignment_id)).execute()
+        logger.info("Assignment deleted | assignment_id=%s user_id=%s", assignment_id, user_id)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error deleting assignment | assignment_id=%s user_id=%s", assignment_id, user_id)
+        raise HTTPException(status_code=500, detail="Failed to delete assignment")
 
 
 def _enrich_instructor_tsr_stats(client, class_id: str, assignments: list) -> list:
@@ -371,7 +394,8 @@ def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
                 .execute()
             )
             assignments = result.data or []
-            return _enrich_instructor_tsr_stats(client, str(class_id), assignments)
+            assignments = _enrich_instructor_tsr_stats(client, str(class_id), assignments)
+            return _enrich_instructor_feedback_stats(client, str(class_id), assignments)
         else:
             enrollment = (
                 client.table('class_enrollments')
@@ -719,3 +743,230 @@ def get_instructor_tsr_overview(user_id: str, assignment_id: UUID) -> dict:
         raise HTTPException(status_code=500, detail="Failed to fetch TSR overview")
 
 
+def submit_feedback(
+    user_id: str,
+    assignment_id: UUID,
+    q1_liked: str,
+    q2_frustrating: str,
+    q3_missing_feature: str,
+    q4_bugs: str,
+    q5_suggestions: str,
+) -> dict:
+    """Upsert a student's feedback submission for a published feedback assignment."""
+    try:
+        client = _client()
+
+        assignment_result = (
+            client.table('assignments')
+            .select('id, assignment_type, status, class_id')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        assignment = assignment_result.data[0]
+        if assignment.get('assignment_type') != 'feedback':
+            raise HTTPException(status_code=400, detail="Assignment is not a feedback assignment")
+        if assignment.get('status') != 'publish':
+            raise HTTPException(status_code=400, detail="Assignment is not published")
+
+        enrollment = (
+            client.table('class_enrollments')
+            .select('id')
+            .eq('class_id', assignment['class_id'])
+            .eq('user_id', user_id)
+            .execute()
+        )
+        if not enrollment.data:
+            raise HTTPException(status_code=403, detail="You are not enrolled in this class")
+
+        row = {
+            'assignment_id': str(assignment_id),
+            'student_id': user_id,
+            'q1_liked': q1_liked,
+            'q2_frustrating': q2_frustrating,
+            'q3_missing_feature': q3_missing_feature,
+            'q4_bugs': q4_bugs,
+            'q5_suggestions': q5_suggestions,
+            'updated_at': datetime.datetime.utcnow().isoformat(),
+        }
+        result = (
+            client.table('feedback_submissions')
+            .upsert(row, on_conflict='assignment_id,student_id')
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to save feedback")
+
+        logger.info(
+            "Feedback submitted | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        return result.data[0]
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error submitting feedback | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to save feedback")
+
+
+def get_my_feedback(user_id: str, assignment_id: UUID) -> Optional[dict]:
+    """Return the student's own feedback submission, or None if not yet submitted."""
+    try:
+        client = _client()
+
+        assignment_result = (
+            client.table('assignments')
+            .select('id, assignment_type, status, class_id')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        assignment = assignment_result.data[0]
+        if assignment.get('assignment_type') != 'feedback':
+            raise HTTPException(status_code=400, detail="Assignment is not a feedback assignment")
+
+        enrollment = (
+            client.table('class_enrollments')
+            .select('id')
+            .eq('class_id', assignment['class_id'])
+            .eq('user_id', user_id)
+            .execute()
+        )
+        if not enrollment.data:
+            raise HTTPException(status_code=403, detail="You are not enrolled in this class")
+
+        result = (
+            client.table('feedback_submissions')
+            .select('*')
+            .eq('assignment_id', str(assignment_id))
+            .eq('student_id', user_id)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching feedback submission | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch feedback submission")
+
+
+def get_feedback_overview(user_id: str, assignment_id: UUID) -> dict:
+    """Instructor view: all feedback submissions with student names + enrolled count."""
+    try:
+        client = _client()
+
+        assignment_result = (
+            client.table('assignments')
+            .select('id, Title, open_date, close_date, status, class_id, assignment_type')
+            .eq('id', str(assignment_id))
+            .execute()
+        )
+        if not assignment_result.data:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+        assignment = assignment_result.data[0]
+        if assignment.get('assignment_type') != 'feedback':
+            raise HTTPException(status_code=400, detail="Assignment is not a feedback assignment")
+
+        _require_class_instructor(user_id, assignment['class_id'])
+
+        enrolled_result = (
+            client.table('class_enrollments')
+            .select('user_id')
+            .eq('class_id', assignment['class_id'])
+            .execute()
+        )
+        total_count = len(enrolled_result.data or [])
+
+        submissions_result = (
+            client.table('feedback_submissions')
+            .select('*')
+            .eq('assignment_id', str(assignment_id))
+            .execute()
+        )
+        submissions = submissions_result.data or []
+
+        student_ids = [s['student_id'] for s in submissions if s.get('student_id')]
+        profile_map: dict = {}
+        if student_ids:
+            profiles = (
+                client.table('profiles')
+                .select(PROFILE_SELECT)
+                .in_('id', student_ids)
+                .execute()
+            )
+            profile_map = {p['id']: p for p in (profiles.data or [])}
+
+        enriched = [
+            {
+                'id': s['id'],
+                'student_id': s['student_id'],
+                'student_name': profile_display_name(profile_map.get(s.get('student_id', ''), {})),
+                'q1_liked': s['q1_liked'],
+                'q2_frustrating': s['q2_frustrating'],
+                'q3_missing_feature': s['q3_missing_feature'],
+                'q4_bugs': s['q4_bugs'],
+                'q5_suggestions': s['q5_suggestions'],
+                'created_at': s.get('created_at'),
+                'updated_at': s.get('updated_at'),
+            }
+            for s in submissions
+        ]
+
+        return {
+            'assignment': assignment,
+            'submissions': enriched,
+            'submitted_count': len(submissions),
+            'total_count': total_count,
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching feedback overview | assignment_id=%s user_id=%s",
+            assignment_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch feedback overview")
+
+
+def _enrich_instructor_feedback_stats(client, class_id: str, assignments: list) -> list:
+    """Attach feedback_submitted / feedback_total counts to feedback-type assignments."""
+    feedback_ids = [a['id'] for a in assignments if a.get('assignment_type') == 'feedback']
+    if not feedback_ids:
+        return assignments
+
+    enrolled_result = (
+        client.table('class_enrollments')
+        .select('user_id')
+        .eq('class_id', class_id)
+        .execute()
+    )
+    total_count = len(enrolled_result.data or [])
+
+    subs_result = (
+        client.table('feedback_submissions')
+        .select('assignment_id, student_id')
+        .in_('assignment_id', feedback_ids)
+        .execute()
+    )
+    submitted_by: dict[str, int] = {}
+    for row in subs_result.data or []:
+        aid = row.get('assignment_id')
+        if aid:
+            submitted_by[aid] = submitted_by.get(aid, 0) + 1
+
+    for assignment in assignments:
+        if assignment.get('assignment_type') != 'feedback':
+            continue
+        aid = assignment['id']
+        assignment['feedback_submitted'] = submitted_by.get(aid, 0)
+        assignment['feedback_total'] = total_count
+
+    return assignments

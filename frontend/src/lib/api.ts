@@ -206,6 +206,8 @@ export interface ApiAssignment {
   has_tsr_responses?: boolean;
   teams_submitted?: number;
   teams_total?: number;
+  feedback_submitted?: number;
+  feedback_total?: number;
 }
 
 export interface ApiTurnInStats {
@@ -231,6 +233,35 @@ export interface UpdateAssignmentPayload {
   close_date?: string;
   status?: 'draft' | 'publish';
   assignment_type?: string;
+}
+
+export interface SubmitFeedbackPayload {
+  q1_liked: string;
+  q2_frustrating: string;
+  q3_missing_feature: string;
+  q4_bugs: string;
+  q5_suggestions: string;
+}
+
+export interface ApiFeedbackSubmission {
+  id: string;
+  assignment_id: string;
+  student_id: string;
+  student_name?: string;
+  q1_liked: string;
+  q2_frustrating: string;
+  q3_missing_feature: string;
+  q4_bugs: string;
+  q5_suggestions: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ApiFeedbackOverview {
+  assignment: ApiAssignment;
+  submissions: ApiFeedbackSubmission[];
+  submitted_count: number;
+  total_count: number;
 }
 
 // ----- Messages ------------------------------------------------------------
@@ -776,6 +807,13 @@ export const api = {
     });
   },
 
+  /** Delete an assignment (instructor only — DELETE /api/assignments/:id) */
+  deleteAssignment: async (assignmentId: string) => {
+    return apiRequest<{ message: string }>(`/api/assignments/${assignmentId}`, {
+      method: 'DELETE',
+    });
+  },
+
   /** Student's TSR submissions for an assignment (GET /api/assignments/:id/tsrs) */
   getMyAssignmentTsrs: async (assignmentId: string) => {
     return apiRequest<{ tsrs: ApiAssignmentTsrEntry[] }>(`/api/assignments/${assignmentId}/tsrs`);
@@ -802,6 +840,28 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify(data),
       },
+    );
+  },
+
+  /** Submit (or update) a student's feedback response (POST /api/assignments/:id/feedback) */
+  submitFeedback: async (assignmentId: string, data: SubmitFeedbackPayload) => {
+    return apiRequest<{ message: string; submission: ApiFeedbackSubmission }>(
+      `/api/assignments/${assignmentId}/feedback`,
+      { method: 'POST', body: JSON.stringify(data) },
+    );
+  },
+
+  /** Student's own feedback submission (GET /api/assignments/:id/feedback/me) */
+  getMyFeedback: async (assignmentId: string) => {
+    return apiRequest<{ submission: ApiFeedbackSubmission | null }>(
+      `/api/assignments/${assignmentId}/feedback/me`,
+    );
+  },
+
+  /** Instructor overview of all feedback responses (GET /api/assignments/:id/feedback/overview) */
+  getFeedbackOverview: async (assignmentId: string) => {
+    return apiRequest<ApiFeedbackOverview>(
+      `/api/assignments/${assignmentId}/feedback/overview`,
     );
   },
 
