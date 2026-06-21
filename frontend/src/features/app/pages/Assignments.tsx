@@ -63,6 +63,7 @@ function toStudentRow(
     status,
     action,
     type: opts.type,
+    isSubmitted: opts.isSubmitted,
     openDateIso: action === 'opens_later' ? a.open_date : undefined,
   };
 }
