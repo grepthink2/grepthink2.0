@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
-import type { ApiProject, ApiProjectMember } from '@/lib/api';
+import type { ApiProject, ApiProjectMember, ApiProjectTA } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import ProjectView, { ProjectViewSkeleton } from '@features/app/components/Project/ProjectView';
@@ -14,6 +14,7 @@ const ProjectDetails: React.FC = () => {
   const navigate = useNavigate();
   const [project, setProject] = useState<ApiProject | null>(null);
   const [members, setMembers] = useState<ApiProjectMember[]>([]);
+  const [tas, setTas] = useState<ApiProjectTA[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
@@ -30,13 +31,15 @@ const ProjectDetails: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [projectRes, membersRes] = await Promise.all([
+        const [projectRes, membersRes, tasRes] = await Promise.all([
           api.getProject(projectId),
           api.getProjectMembers(projectId).catch(() => ({ members: [] as ApiProjectMember[] })),
+          api.getProjectTAs(projectId).catch(() => ({ tas: [] as ApiProjectTA[] })),
         ]);
         if (!isMounted) return;
         setProject(projectRes.project);
         setMembers(membersRes.members ?? []);
+        setTas(tasRes.tas ?? []);
 
         const classId = projectRes.project.class_id;
         if (classId) {
@@ -93,12 +96,14 @@ const ProjectDetails: React.FC = () => {
   const refreshProjectAndMembers = useCallback(async () => {
     if (!projectId) return;
     try {
-      const [projectRes, membersRes] = await Promise.all([
+      const [projectRes, membersRes, tasRes] = await Promise.all([
         api.getProject(projectId),
         api.getProjectMembers(projectId).catch(() => ({ members: [] as ApiProjectMember[] })),
+        api.getProjectTAs(projectId).catch(() => ({ tas: [] as ApiProjectTA[] })),
       ]);
       setProject(projectRes.project);
       setMembers(membersRes.members ?? []);
+      setTas(tasRes.tas ?? []);
     } catch {
       // keep current state
     }
@@ -164,6 +169,7 @@ const ProjectDetails: React.FC = () => {
         skills={skills}
         selectedRoles={selectedRoles}
         members={teamMembers}
+        tas={tas}
         userRoleOnProject={project.user_role}
         classId={project.class_id}
         project={project}

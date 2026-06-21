@@ -1,0 +1,78 @@
+@use '@styles/index.scss' as *;
+
+.authConfirm {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+
+  &__card {
+    background-color: $background;
+    border-radius: 20px;
+    padding: 48px 60px;
+    width: min(480px, calc(100vw - 2rem));
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  &__title {
+    font-family: $primary-font;
+    font-size: 24px;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 12px;
+  }
+
+  &__status {
+    font-family: $primary-font;
+    font-size: 14px;
+    color: $text-secondary;
+    margin: 0;
+  }
+
+  &__error {
+    font-family: $primary-font;
+    font-size: 14px;
+    color: $error-color;
+    background-color: rgba($error-color, 0.1);
+    padding: 12px;
+    border-radius: 8px;
+    margin: 16px 0 0;
+  }
+
+  &__button {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    background-color: $primary-color;
+    color: $white;
+    border: none;
+    border-radius: 7px;
+    font-family: $primary-font;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+
+    &:hover {
+      background-color: $primary-hover;
+    }
+  }
+
+  &__link {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 8px;
+    background: none;
+    border: none;
+    color: $accent-color;
+    font-family: $primary-font;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+}

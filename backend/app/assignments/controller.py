@@ -43,6 +43,49 @@ def _require_class_instructor(user_id: str, class_id: str) -> None:
         raise HTTPException(status_code=404, detail="Class not found or you don't have permission")
 
 
+def _resolve_tsr_overview_access(client, user_id: str, class_id: str) -> Optional[set]:
+    """Authorize a TSR-overview request and return the projects the caller may see.
+
+    Returns ``None`` for the class instructor (no project restriction). For a TA
+    (``class_enrollments.enrollment_role == 'ta'``) returns the set of project
+    ids they are assigned to via ``project_ta_assignments``. Anyone else gets a
+    403.
+    """
+    class_row = (
+        client.table('classes')
+        .select('id, created_by')
+        .eq('id', class_id)
+        .execute()
+    )
+    if not class_row.data:
+        raise HTTPException(status_code=404, detail="Class not found")
+    if class_row.data[0].get('created_by') == user_id:
+        return None
+
+    enrollment = (
+        client.table('class_enrollments')
+        .select('enrollment_role')
+        .eq('class_id', class_id)
+        .eq('user_id', user_id)
+        .execute()
+    )
+    is_ta = bool(enrollment.data) and enrollment.data[0].get('enrollment_role') == 'ta'
+    if not is_ta:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have access to this assignment's TSR responses",
+        )
+
+    ta_rows = (
+        client.table('project_ta_assignments')
+        .select('project_id')
+        .eq('class_id', class_id)
+        .eq('user_id', user_id)
+        .execute()
+    )
+    return {str(r['project_id']) for r in (ta_rows.data or []) if r.get('project_id')}
+
+
 def create_assignment(
     user_id: str,
     class_id: UUID,
@@ -715,7 +758,11 @@ def get_instructor_tsr_overview(user_id: str, assignment_id: UUID) -> dict:
         if assignment.get('assignment_type') != 'tsr':
             raise HTTPException(status_code=400, detail="Assignment is not a TSR-type assignment")
 
-        _require_class_instructor(user_id, assignment['class_id'])
+        # Instructor → all projects (allowed_project_ids is None).
+        # TA → only the projects they are assigned to oversee.
+        allowed_project_ids = _resolve_tsr_overview_access(
+            client, user_id, assignment['class_id']
+        )
 
         projects_result = (
             client.table('projects')
@@ -725,8 +772,15 @@ def get_instructor_tsr_overview(user_id: str, assignment_id: UUID) -> dict:
             .execute()
         )
         projects = projects_result.data or []
+        if allowed_project_ids is not None:
+            projects = [p for p in projects if str(p['id']) in allowed_project_ids]
 
         entries = _fetch_tsr_entries(client, str(assignment_id))
+        if allowed_project_ids is not None:
+            entries = [
+                e for e in entries
+                if str(e.get('project_id')) in allowed_project_ids
+            ]
 
         project_ids = [p['id'] for p in projects]
         non_submitters_by_project: dict[str, list[dict]] = {}

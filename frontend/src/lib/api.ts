@@ -21,15 +21,36 @@ export interface ApiClass {
   enrolled_count?: number;
 }
 
+/** Class-level role on a class_enrollments row. TAs keep global role 'student'. */
+export type EnrollmentRole = 'student' | 'ta';
+
 export interface ApiStudent {
   id: string;
   email: string;
   user_id?: string;
   role: string;
+  /** Class-scoped role: 'student' or 'ta'. */
+  enrollment_role?: EnrollmentRole;
   first_name?: string;
   last_name?: string;
   project_id?: string | null;
   project_name?: string | null;
+}
+
+/** A TA in a class, with the projects they oversee. */
+export interface ApiClassTA {
+  id: string;
+  name: string;
+  email: string | null;
+  projects: { id: string; name: string | null }[];
+}
+
+/** A TA assigned to a specific project. */
+export interface ApiProjectTA {
+  user_id: string;
+  name: string;
+  email: string | null;
+  assigned_at?: string;
 }
 
 export interface ApiRosterStudent {
@@ -43,6 +64,8 @@ export interface ApiRosterStudent {
   project?: string;
   class_status: 'enrolled' | 'waitlisted' | 'dropped' | 'not_on_roster';
   grepthink_status: 'registered' | 'not_registered';
+  /** Class-scoped role: 'student' or 'ta' (only meaningful when registered). */
+  enrollment_role?: EnrollmentRole;
   projects: string[];
 }
 
@@ -866,6 +889,65 @@ export const api = {
   getFeedbackOverview: async (assignmentId: string) => {
     return apiRequest<ApiFeedbackOverview>(
       `/api/assignments/${assignmentId}/feedback/overview`,
+    );
+  },
+
+  // ----- Teaching Assistants (TAs) -----------------------------------------
+
+  /** Instructor: list a class's TAs with the projects they oversee. */
+  getClassTAs: async (classId: string) => {
+    return apiRequest<{ tas: ApiClassTA[] }>(`/api/tas/classes/${classId}`);
+  },
+
+  /** Instructor: promote an enrolled student to TA. */
+  promoteToTA: async (classId: string, userId: string) => {
+    return apiRequest<{ message: string; user_id: string }>(
+      `/api/tas/classes/${classId}/promote`,
+      { method: 'POST', body: JSON.stringify({ user_id: userId }) },
+    );
+  },
+
+  /** Instructor: demote a TA back to a regular student. */
+  demoteTA: async (classId: string, userId: string) => {
+    return apiRequest<{ message: string; user_id: string }>(
+      `/api/tas/classes/${classId}/demote`,
+      { method: 'POST', body: JSON.stringify({ user_id: userId }) },
+    );
+  },
+
+  /** The current user's class-level role: 'instructor' | 'ta' | 'student' | null. */
+  getMyEnrollmentRole: async (classId: string) => {
+    return apiRequest<{ enrollment_role: 'instructor' | EnrollmentRole | null }>(
+      `/api/tas/classes/${classId}/my-role`,
+    );
+  },
+
+  /** TA: the projects they oversee plus the class's TSR assignments. */
+  getTAReviewTargets: async (classId: string) => {
+    return apiRequest<{
+      projects: { id: string; name: string | null }[];
+      assignments: ApiAssignment[];
+    }>(`/api/tas/classes/${classId}/review-targets`);
+  },
+
+  /** TAs assigned to a project (instructor or any class member). */
+  getProjectTAs: async (projectId: string) => {
+    return apiRequest<{ tas: ApiProjectTA[] }>(`/api/tas/projects/${projectId}`);
+  },
+
+  /** Instructor: assign a class TA to oversee a project. */
+  assignTAToProject: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string; user_id: string }>(
+      `/api/tas/projects/${projectId}/assign`,
+      { method: 'POST', body: JSON.stringify({ user_id: userId }) },
+    );
+  },
+
+  /** Instructor: remove a TA's assignment from a project. */
+  removeTAFromProject: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string; user_id: string }>(
+      `/api/tas/projects/${projectId}/tas/${userId}`,
+      { method: 'DELETE' },
     );
   },
 

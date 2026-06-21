@@ -639,7 +639,7 @@ def get_class_students(class_id: UUID) -> list:
 
         enrollments = (
             client.table('class_enrollments')
-            .select('user_id')
+            .select('user_id, enrollment_role')
             .eq('class_id', str(class_id))
             .execute()
         )
@@ -647,6 +647,10 @@ def get_class_students(class_id: UUID) -> list:
             return []
 
         user_ids = [e['user_id'] for e in enrollments.data]
+        enrollment_role_map = {
+            e['user_id']: (e.get('enrollment_role') or 'student')
+            for e in enrollments.data
+        }
 
         profiles_res = (
             client.table('profiles')
@@ -686,6 +690,7 @@ def get_class_students(class_id: UUID) -> list:
                 'id': s['id'],
                 'email': s.get('email'),
                 'role': s.get('role', 'student'),
+                'enrollment_role': enrollment_role_map.get(s['id'], 'student'),
                 'first_name': s.get('first_name'),
                 'last_name': s.get('last_name'),
                 'project_id': pid,
@@ -725,11 +730,15 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
 
         enrollments_res = (
             client.table('class_enrollments')
-            .select('user_id')
+            .select('user_id, enrollment_role')
             .eq('class_id', cid)
             .execute()
         )
         enrolled_ids = [e['user_id'] for e in (enrollments_res.data or [])]
+        enrollment_role_by_user = {
+            e['user_id']: (e.get('enrollment_role') or 'student')
+            for e in (enrollments_res.data or [])
+        }
 
         profiles: list[dict] = []
         if enrolled_ids:
@@ -795,6 +804,7 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
                 'project': _format_project_export(project_names),
                 'class_status': entry.get('status') or 'enrolled',
                 'grepthink_status': 'registered' if is_registered else 'not_registered',
+                'enrollment_role': enrollment_role_by_user.get(profile_id, 'student') if is_registered else 'student',
                 'projects': project_names,
             })
 
@@ -821,6 +831,7 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
                 'project': _format_project_export(project_names),
                 'class_status': 'not_on_roster',
                 'grepthink_status': 'registered',
+                'enrollment_role': enrollment_role_by_user.get(uid, 'student'),
                 'projects': project_names,
             })
 
@@ -1006,6 +1017,11 @@ def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: st
             ).in_('project_id', project_ids).eq(
                 'request_status', 'pending'
             ).execute()
+
+        # Remove any TA project assignments for this user in the class.
+        client.table('project_ta_assignments').delete().eq(
+            'class_id', str(class_id)
+        ).eq('user_id', student_id).execute()
 
         # Remove class enrollment.
         client.table('class_enrollments').delete().eq(
