@@ -29,6 +29,27 @@
   }
 }
 
+/* Mobile: turn the sidebar into an off-canvas drawer */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 264px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.35);
+
+    &.mobile-open {
+      transform: translateX(0);
+    }
+
+    // Collapsing is a desktop-only affordance; the drawer is always full width.
+    // Nested under `.sidebar` so it outranks the base `.collapse-button` rule
+    // regardless of source order.
+    .collapse-button {
+      display: none;
+    }
+  }
+}
+
 /* Header */
 .sidebar-header {
   display: flex;

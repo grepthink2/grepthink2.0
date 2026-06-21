@@ -88,6 +88,7 @@ $morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     text-decoration: none;
+    white-space: nowrap;
     border-radius: 8px;
     padding: 9px 18px;
     cursor: pointer;
@@ -155,18 +156,38 @@ $morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
     padding: $spacing-sm $spacing-md;
   }
 
+  // Slightly smaller than desktop so the two CTAs share the row on one line,
+  // but kept large enough to read with presence on a phone.
+  .landing-header__logo img {
+    height: 40px;
+  }
+
   // Drop the text link on small screens; keep the two conversion CTAs.
   .landing-header__link {
     display: none;
   }
 
   .landing-header__btn {
-    padding: 8px 14px;
-    font-size: $font-size-sm;
+    padding: 9px 16px;
+  }
+
+  .landing-header--scrolled .landing-header__logo img {
+    height: 36px;
   }
 
   .landing-header--scrolled .landing-header__inner {
     padding: 10px 16px 10px 20px;
+  }
+}
+
+@media (max-width: 400px) {
+  .landing-header__logo img {
+    height: 34px;
+  }
+
+  .landing-header__btn {
+    padding: 8px 13px;
+    font-size: $font-size-sm;
   }
 }
 

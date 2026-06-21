@@ -17,6 +17,7 @@ const AppView: React.FC = () => {
   const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
   const [isJoinClassModalOpen, setIsJoinClassModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const location = useLocation();
 
   const handleOpenCreateClassModal = () => {
@@ -35,10 +36,11 @@ const AppView: React.FC = () => {
     setIsJoinClassModalOpen(false);
   };
 
-  // Close modals when navigation occurs
+  // Close modals and the mobile nav drawer when navigation occurs
   useEffect(() => {
     setIsCreateClassModalOpen(false);
     setIsJoinClassModalOpen(false);
+    setMobileNavOpen(false);
   }, [location.pathname]);
 
   if (authLoading) {
@@ -61,15 +63,29 @@ const AppView: React.FC = () => {
   return (
     <ClassProvider>
       <div className="app-view">
-        <Sidebar 
-          role={role} 
+        <Sidebar
+          role={role}
           onOpenCreateClass={handleOpenCreateClassModal}
           onOpenJoinClass={handleOpenJoinClassModal}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          mobileOpen={mobileNavOpen}
+          onMobileClose={() => setMobileNavOpen(false)}
         />
 
+        {/* Backdrop behind the mobile nav drawer */}
+        {mobileNavOpen && (
+          <div
+            className="app-nav-backdrop"
+            onClick={() => setMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         <main className="app-main">
-          <Header onOpenSettings={() => setIsSettingsOpen(true)} />
+          <Header
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onToggleNav={() => setMobileNavOpen((open) => !open)}
+          />
           <Outlet
             context={
               { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext

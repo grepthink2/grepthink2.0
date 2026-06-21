@@ -18,6 +18,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: true, // Listen on all addresses (LAN) so other devices can connect over wifi
     proxy: {
       '/api': {
         target: 'http://localhost:5001',

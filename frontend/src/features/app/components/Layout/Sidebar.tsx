@@ -13,10 +13,17 @@ interface SidebarProps {
   onOpenCreateClass?: () => void;
   onOpenJoinClass?: () => void;
   onOpenSettings?: () => void;
+  /** Whether the off-canvas drawer is open (mobile only). */
+  mobileOpen?: boolean;
+  /** Close the mobile drawer (called after navigating). */
+  onMobileClose?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinClass, onOpenSettings }) => {
+const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinClass, onOpenSettings, mobileOpen, onMobileClose }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches,
+  );
   const [showClassDropdown, setShowClassDropdown] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,6 +32,18 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   const { sidebarClasses, selectedClass, setSelectedClass } = useClass();
   const unreadTotal = useUnreadTotal();
   const sidebarConfig = role === 'instructor' ? instructorSidebarConfig : studentSidebarConfig;
+
+  // Track the mobile breakpoint so the desktop collapse affordance never
+  // applies to the off-canvas drawer (which would hide its labels/logo).
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handler = (event: MediaQueryListEvent) => setIsMobile(event.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // On mobile the sidebar is a full-width drawer — always render it expanded.
+  const collapsed = isCollapsed && !isMobile;
 
   // Browser tab title prefix — `(N) GrepThink` when there are unread messages.
   useEffect(() => {
@@ -47,6 +66,8 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
     } else {
       navigate(path);
     }
+    // Close the off-canvas drawer after a selection on mobile.
+    onMobileClose?.();
   };
 
   const toggleCollapse = () => {
@@ -71,10 +92,10 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   }, []);
 
   return (
-    <div className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${role === 'instructor' ? 'instructor' : 'student'}`}>
+    <div className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''} ${role === 'instructor' ? 'instructor' : 'student'}`}>
       {/* Header with Logo */}
       <div className="sidebar-header">
-        {!isCollapsed && (
+        {!collapsed && (
           <div className="sidebar-logo">
             <img src={logo} alt="GrepThink Logo" />
           </div>
@@ -85,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
       </div>
 
       {/* Class Selector */}
-      {!isCollapsed && (
+      {!collapsed && (
         <div className="class-selector" ref={dropdownRef}>
           <button
             className="class-selector-header"
@@ -122,7 +143,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
       <nav className="sidebar-nav">
         {sidebarConfig.map((section) => (
           <div key={section.title} className="sidebar-section">
-            {!isCollapsed && (
+            {!collapsed && (
               <h3 className="section-title">
                 {section.title === 'Class' && selectedClass
                   ? `Class: ${selectedClass.name}`
@@ -152,14 +173,14 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
                     <button
                       className={`sidebar-item ${isActive ? 'active' : ''}`}
                       onClick={() => handleNavigation(item.path)}
-                      title={isCollapsed ? item.label : undefined}
+                      title={collapsed ? item.label : undefined}
                     >
                       {item.icon ? (
                         React.createElement(item.icon, { size: 18 })
                       ) : item.iconSvg ? (
                         <img src={item.iconSvg} alt={item.label} className="icon-svg" />
                       ) : null}
-                      {!isCollapsed && <span>{item.label}</span>}
+                      {!collapsed && <span>{item.label}</span>}
                       {item.path === '/app/messages' && unreadTotal > 0 && (
                         <span className="sidebar-item__badge">{unreadTotal}</span>
                       )}

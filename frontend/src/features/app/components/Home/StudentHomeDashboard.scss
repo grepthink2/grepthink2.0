@@ -712,6 +712,49 @@ $quick-purple-hover: #6a3382;
   font-size: $font-size-base;
 }
 
+// —— Mobile polish ——
+@media (max-width: 600px) {
+  .student-home {
+    padding: $spacing-md $spacing-md $spacing-xl;
+  }
+
+  .student-home__card {
+    padding: $spacing-md;
+  }
+
+  // Keep the edge-to-edge scroll shadow aligned with the tighter card padding.
+  .student-home__deadlines-scroll {
+    margin: 0 (-$spacing-md);
+    padding: 0 $spacing-md;
+  }
+
+  // Compact the deadlines table so it fits the viewport without a sideways
+  // scroll: drop the decorative chevron column and tighten cell spacing.
+  .student-home__chevron {
+    display: none;
+  }
+
+  .student-home__deadlines-table {
+    font-size: $font-size-sm;
+  }
+
+  .student-home__deadlines-table th,
+  .student-home__deadlines-table td {
+    padding-left: 0;
+    padding-right: $spacing-sm;
+  }
+
+  .student-home__deadlines-table td:last-child,
+  .student-home__deadlines-table th:last-child {
+    padding-right: 0;
+  }
+
+  .student-home__pill {
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+}
+
 // Floating help
 .student-home__fab {
   position: fixed;
