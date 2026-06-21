@@ -69,6 +69,7 @@ const RosterList: React.FC<RosterListProps> = ({
         <span className="roster-list__count-badge">{students.length}</span>
       </div>
 
+      {/* Desktop table */}
       <div className="roster-list__table-card">
         <div className="roster-list__table-wrapper">
           {students.length === 0 ? (
@@ -94,24 +95,17 @@ const RosterList: React.FC<RosterListProps> = ({
                   <tr key={`${student.id}-${student.email}`}>
                     <td className="roster-list__td-name">{student.name}</td>
                     <td className="roster-list__td-email">
-                      <a
-                        href={`mailto:${student.email}`}
-                        className="roster-list__email-link"
-                      >
+                      <a href={`mailto:${student.email}`} className="roster-list__email-link">
                         {student.email}
                       </a>
                     </td>
                     <td>
-                      <span
-                        className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}
-                      >
+                      <span className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}>
                         {CLASS_STATUS_LABELS[student.classStatus]}
                       </span>
                     </td>
                     <td>
-                      <span
-                        className={`roster-list__badge roster-list__badge--gt-${student.grepthinkStatus}`}
-                      >
+                      <span className={`roster-list__badge roster-list__badge--gt-${student.grepthinkStatus}`}>
                         {GREPTHINK_STATUS_LABELS[student.grepthinkStatus]}
                       </span>
                     </td>
@@ -121,9 +115,7 @@ const RosterList: React.FC<RosterListProps> = ({
                           <span className="roster-list__no-projects">—</span>
                         ) : (
                           student.projects.map((p) => (
-                            <span key={p} className="roster-list__project-tag">
-                              {p}
-                            </span>
+                            <span key={p} className="roster-list__project-tag">{p}</span>
                           ))
                         )}
                       </div>
@@ -131,22 +123,12 @@ const RosterList: React.FC<RosterListProps> = ({
                     {showActions && (
                       <td className="roster-list__td-actions">
                         {student.grepthinkStatus === 'registered' ? (
-                          <button
-                            className="roster-list__action-btn roster-list__action-btn--remove"
-                            onClick={() => onRemove?.(student)}
-                            type="button"
-                          >
-                            <UserMinus size={13} />
-                            Remove
+                          <button className="roster-list__action-btn roster-list__action-btn--remove" onClick={() => onRemove?.(student)} type="button">
+                            <UserMinus size={13} /> Remove
                           </button>
                         ) : (
-                          <button
-                            className="roster-list__action-btn roster-list__action-btn--invite"
-                            onClick={() => onInvite?.(student)}
-                            type="button"
-                          >
-                            <Mail size={13} />
-                            Invite
+                          <button className="roster-list__action-btn roster-list__action-btn--invite" onClick={() => onInvite?.(student)} type="button">
+                            <Mail size={13} /> Invite
                           </button>
                         )}
                       </td>
@@ -157,6 +139,54 @@ const RosterList: React.FC<RosterListProps> = ({
             </table>
           )}
         </div>
+      </div>
+
+      {/* Mobile cards — proper div structure avoids CSS grid/td browser quirks */}
+      <div className="roster-list__mobile-cards">
+        {students.length === 0 ? (
+          <div className="roster-list__empty-state">No students match the current filter.</div>
+        ) : (
+          students.map((student) => (
+            <div key={`mobile-${student.id}-${student.email}`} className="roster-list__mobile-card">
+              <div className="roster-list__mobile-card-top">
+                <div className="roster-list__mobile-card-info">
+                  <span className="roster-list__td-name">{student.name}</span>
+                  <a href={`mailto:${student.email}`} className="roster-list__email-link">
+                    {student.email}
+                  </a>
+                </div>
+                <div className="roster-list__mobile-card-badges">
+                  <span className={`roster-list__badge roster-list__badge--class-${student.classStatus}`}>
+                    {CLASS_STATUS_LABELS[student.classStatus]}
+                  </span>
+                  <span className={`roster-list__badge roster-list__badge--gt-${student.grepthinkStatus}`}>
+                    {GREPTHINK_STATUS_LABELS[student.grepthinkStatus]}
+                  </span>
+                </div>
+              </div>
+              {student.projects.length > 0 && (
+                <div className="roster-list__projects-wrap roster-list__projects-wrap--mobile">
+                  {student.projects.map((p) => (
+                    <span key={p} className="roster-list__project-tag">{p}</span>
+                  ))}
+                </div>
+              )}
+              {showActions && (
+                <div className="roster-list__mobile-card-actions">
+                  {student.grepthinkStatus === 'registered' ? (
+                    <button className="roster-list__action-btn roster-list__action-btn--remove" onClick={() => onRemove?.(student)} type="button">
+                      <UserMinus size={13} /> Remove
+                    </button>
+                  ) : (
+                    <button className="roster-list__action-btn roster-list__action-btn--invite" onClick={() => onInvite?.(student)} type="button">
+                      <Mail size={13} /> Invite
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

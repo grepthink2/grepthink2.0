@@ -100,10 +100,14 @@ const StudentAssignmentsTable: React.FC<StudentAssignmentsTableProps> = ({
             </thead>
             <tbody>
               {assignments.map((assignment) => (
-                <tr key={`${assignment.id}-${assignment.projectId ?? ''}`}>
+                <tr
+                  key={`${assignment.id}-${assignment.projectId ?? ''}`}
+                  className={`student-assignments__row${!isActionDisabled(assignment.action) ? ' student-assignments__row--clickable' : ''}`}
+                  onClick={() => !isActionDisabled(assignment.action) && handleActionClick(assignment)}
+                >
                   <td className="student-assignments__td-name">{assignment.name}</td>
                   <td className="student-assignments__td-date">{assignment.dueDate}</td>
-                  <td className="student-assignments__td-project">{assignment.projectName}</td>
+                  <td className="student-assignments__td-project">{assignment.projectName || '—'}</td>
                   <td className="student-assignments__td-status">
                     <span
                       className={`status-badge status-badge--${statusClassName[assignment.status]}`}
@@ -115,7 +119,7 @@ const StudentAssignmentsTable: React.FC<StudentAssignmentsTableProps> = ({
                     <button
                       type="button"
                       className={`student-assignments__action-btn student-assignments__action-btn--${assignment.action}`}
-                      onClick={() => handleActionClick(assignment)}
+                      onClick={(e) => { e.stopPropagation(); handleActionClick(assignment); }}
                       disabled={isActionDisabled(assignment.action)}
                     >
                       {formatActionText(assignment)}
