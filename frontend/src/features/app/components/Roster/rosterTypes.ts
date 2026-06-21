@@ -18,6 +18,7 @@ export interface UiStudent {
   email: string;
   classStatus: ClassStatus;
   grepthinkStatus: GrepthinkStatus;
+  isTa: boolean;
   projects: string[];
 }
 
@@ -38,6 +39,7 @@ export function mapApiRosterStudent(student: ApiRosterStudent): UiStudent {
     email: student.email,
     classStatus: student.class_status,
     grepthinkStatus: student.grepthink_status,
+    isTa: student.enrollment_role === 'ta',
     projects: student.projects,
   };
 }

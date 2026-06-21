@@ -93,7 +93,10 @@ const RosterList: React.FC<RosterListProps> = ({
               <tbody>
                 {students.map((student) => (
                   <tr key={`${student.id}-${student.email}`}>
-                    <td className="roster-list__td-name">{student.name}</td>
+                    <td className="roster-list__td-name">
+                      {student.name}
+                      {student.isTa && <span className="roster-list__ta-badge">TA</span>}
+                    </td>
                     <td className="roster-list__td-email">
                       <a href={`mailto:${student.email}`} className="roster-list__email-link">
                         {student.email}
@@ -150,7 +153,10 @@ const RosterList: React.FC<RosterListProps> = ({
             <div key={`mobile-${student.id}-${student.email}`} className="roster-list__mobile-card">
               <div className="roster-list__mobile-card-top">
                 <div className="roster-list__mobile-card-info">
-                  <span className="roster-list__td-name">{student.name}</span>
+                  <span className="roster-list__td-name">
+                    {student.name}
+                    {student.isTa && <span className="roster-list__ta-badge">TA</span>}
+                  </span>
                   <a href={`mailto:${student.email}`} className="roster-list__email-link">
                     {student.email}
                   </a>

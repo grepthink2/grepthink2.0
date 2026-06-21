@@ -12,7 +12,7 @@ import { MessageButton } from '@features/messages/components/MessageButton';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
 import EditProjectModal from '../EditProject/EditProjectModal';
-import type { ApiProject, ApiProjectMember } from '@/lib/api';
+import type { ApiProject, ApiProjectMember, ApiProjectTA } from '@/lib/api';
 import { getMemberCopyEmail } from '@/features/app/utils/memberUtils';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 
@@ -98,6 +98,8 @@ interface ProjectViewProps {
   skills: string[];
   selectedRoles: string[];
   members?: ProjectViewMember[];
+  /** TAs assigned to oversee this project. Shown separately from team members. */
+  tas?: ApiProjectTA[];
   /** Current user's role on this project (from API). Enables owner/admin to see management buttons. */
   userRoleOnProject?: string | null;
   /** Required for Team Management modal (Add/Drop Members). */
@@ -134,6 +136,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   skills,
   selectedRoles,
   members = [],
+  tas = [],
   userRoleOnProject,
   classId,
   project,
@@ -468,6 +471,54 @@ const ProjectView: React.FC<ProjectViewProps> = ({
               )}
             </div>
           </div>
+
+          {/* Teaching Assistants — overseers, not team members. */}
+          {tas.length > 0 && (
+            <div className="project-view__section">
+              <h3 className="project-view__section-title">Teaching Assistants</h3>
+              <div className="project-view__team-list">
+                {tas.map((ta) => (
+                  <div key={ta.user_id} className="project-view__team-member">
+                    <div className="project-view__member-avatar">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+                    <div className="project-view__member-info">
+                      <div className="project-view__member-name">{ta.name}</div>
+                      <div className="project-view__member-role">Teaching Assistant</div>
+                      <div className="project-view__member-links">
+                        {ta.email ? (
+                          <a href={`mailto:${ta.email}`} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title={ta.email} aria-label={`Email ${ta.name}`}>
+                            <img src={EmailIcon} alt="" className="project-view__link-icon" />
+                          </a>
+                        ) : (
+                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
+                            <img src={EmailIcon} alt="" className="project-view__link-icon" />
+                          </span>
+                        )}
+                        {ta.user_id && ta.user_id !== user?.id && (
+                          <MessageButton
+                            toUserId={ta.user_id}
+                            toUserName={ta.name}
+                            className="project-view__link-icon-wrap project-view__message-icon-wrap"
+                          >
+                            <MessageCircleMore
+                              size={18}
+                              strokeWidth={2.75}
+                              className="project-view__message-icon"
+                              aria-hidden="true"
+                            />
+                          </MessageButton>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Roles Needed */}
           {selectedRoles.length > 0 && (

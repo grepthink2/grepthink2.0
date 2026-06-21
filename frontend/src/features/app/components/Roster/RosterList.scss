@@ -182,6 +182,19 @@ $gt-not-reg-text:     #6b7280;
     white-space: nowrap;
   }
 
+  &__ta-badge {
+    display: inline-block;
+    margin-left: $spacing-sm;
+    padding: 1px 7px;
+    border-radius: $border-radius-lg;
+    background: rgba($primary-color, 0.12);
+    color: $primary-color;
+    font-size: 10px;
+    font-weight: $font-weight-semibold;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+  }
+
   &__td-email {
     white-space: nowrap;
   }

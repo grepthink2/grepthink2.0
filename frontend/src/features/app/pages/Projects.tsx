@@ -77,7 +77,11 @@ function buildProjectHealth(apiProjects: ApiProject[]): ProjectHealthItem[] {
 }
 
 function countProjectMembership(students: ApiStudent[]) {
-  const enrolledStudents = students.filter((s) => s.role !== 'instructor');
+  // TAs are overseers, not assignable team members, so they must not be
+  // counted as in/not-in a project.
+  const enrolledStudents = students.filter(
+    (s) => s.role !== 'instructor' && s.enrollment_role !== 'ta',
+  );
   const inProject = enrolledStudents.filter((s) => s.project_id).length;
   return {
     inProject,

@@ -1,0 +1,308 @@
+@use '@styles/index.scss' as *;
+
+.ta-management {
+  padding: $spacing-lg;
+  font-family: $primary-font;
+  color: $text-secondary;
+
+  &__empty {
+    text-align: center;
+    padding: $spacing-xxl $spacing-lg;
+
+    h2 {
+      margin-bottom: $spacing-sm;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+  }
+
+  &__intro {
+    margin-bottom: $spacing-lg;
+
+    h2 {
+      margin: 0 0 $spacing-xs;
+      font-size: $font-size-header;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+
+    p {
+      margin: 0;
+      max-width: 720px;
+      font-size: $font-size-base;
+      color: $text-tertiary;
+    }
+  }
+
+  &__error {
+    margin-bottom: $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-sm;
+    background: rgba($error-color, 0.08);
+    color: $error-color;
+    font-size: $font-size-sm;
+  }
+
+  &__layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-lg;
+
+    @media (max-width: 980px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__panel {
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    padding: $spacing-md;
+  }
+
+  &__panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-md;
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: $spacing-xs;
+      margin: 0;
+      font-size: $font-size-large;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+  }
+
+  &__count {
+    margin-left: $spacing-xs;
+    padding: 1px 8px;
+    border-radius: $border-radius-lg;
+    background: rgba($primary-color, 0.12);
+    color: $primary-color;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__search {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: 6px $spacing-sm;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    color: $text-tertiary;
+
+    input {
+      border: none;
+      outline: none;
+      font-family: $primary-font;
+      font-size: $font-size-sm;
+      color: $text-primary;
+      background: transparent;
+    }
+  }
+
+  &__hint {
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+}
+
+.ta-card {
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  padding: $spacing-sm $spacing-md;
+
+  &__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+
+  &__identity {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__name {
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  &__email {
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+  }
+
+  &__demote {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $white;
+    color: $error-color;
+    font-size: $font-size-sm;
+    padding: 4px $spacing-sm;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover:not(:disabled) {
+      background: rgba($error-color, 0.08);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &__projects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    margin: $spacing-sm 0;
+  }
+
+  &__no-projects {
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+    font-style: italic;
+  }
+
+  &__assign {
+    display: flex;
+    gap: $spacing-sm;
+
+    select {
+      flex: 1;
+      padding: 6px $spacing-sm;
+      border: 1px solid $border-color;
+      border-radius: $border-radius-sm;
+      font-family: $primary-font;
+      font-size: $font-size-sm;
+      color: $text-primary;
+      background: $white;
+    }
+  }
+
+  &__assign-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    border-radius: $border-radius-sm;
+    background: $primary-color;
+    color: $white;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    padding: 6px $spacing-md;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover:not(:disabled) {
+      background: $primary-hover;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.ta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px $spacing-sm;
+  border-radius: $border-radius-lg;
+  background: rgba($primary-color, 0.1);
+  color: $primary-color;
+  font-size: $font-size-sm;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: $primary-color;
+    cursor: pointer;
+    padding: 0;
+
+    &:hover:not(:disabled) {
+      color: $primary-hover;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.student-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  padding: $spacing-sm $spacing-md;
+
+  &__identity {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__name {
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+  }
+
+  &__email {
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+  }
+
+  &__promote {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid $primary-color;
+    border-radius: $border-radius-sm;
+    background: $white;
+    color: $primary-color;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    padding: 5px $spacing-md;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      background: $primary-color;
+      color: $white;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}

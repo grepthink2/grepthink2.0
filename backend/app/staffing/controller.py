@@ -136,14 +136,23 @@ def _list_class_projects(client, class_id: UUID) -> list[dict]:
 
 
 def _list_class_students(client, class_id: UUID) -> list[dict]:
-    """Enrolled students for a class, with profile fields hydrated."""
+    """Enrolled students for a class, with profile fields hydrated.
+
+    TAs (``enrollment_role == 'ta'``) are intentionally excluded: they are
+    overseers, not assignable team members, so they must never appear in the
+    staffing/assignment pools or the assigned/unassigned counts.
+    """
     enroll = (
         client.table("class_enrollments")
-        .select("user_id")
+        .select("user_id, enrollment_role")
         .eq("class_id", str(class_id))
         .execute()
     )
-    student_ids = [str(r["user_id"]) for r in (enroll.data or []) if r.get("user_id")]
+    student_ids = [
+        str(r["user_id"])
+        for r in (enroll.data or [])
+        if r.get("user_id") and (r.get("enrollment_role") or "student") != "ta"
+    ]
     if not student_ids:
         return []
     profiles = (

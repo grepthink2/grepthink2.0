@@ -23,6 +23,8 @@ import ClassManagement from '@features/classes/pages/ClassManagement';
 import Projects from '@features/app/pages/Projects';
 import Roster from '@features/app/pages/Roster';
 import Modules from '@features/app/pages/Modules';
+import TAManagement from '@features/app/pages/TAManagement';
+import TAReview from '@features/app/pages/TAReview';
 import TSRViewPage from '@features/app/pages/TSRViewPage';
 import FeedbackViewPage from '@features/app/pages/FeedbackViewPage';
 import Dashboard from '@features/app/pages/Dashboard';
@@ -83,7 +85,9 @@ function App() {
             <Route path="modules" element={<Modules />} />
             <Route path="modules/tsr/:assignmentId" element={<TSRViewPage />} />
             <Route path="modules/feedback/:assignmentId" element={<FeedbackViewPage />} />
-            <Route path="ta-management" element={<div>TA Management - Coming Soon</div>} />
+            <Route path="ta-management" element={<TAManagement />} />
+            <Route path="ta-review" element={<TAReview />} />
+            <Route path="ta-review/:assignmentId" element={<TAReview />} />
             <Route path="create-project" element={<CreateProject />} />
             <Route path="assign-projects" element={<Assign />} />
             <Route path="staff-projects" element={<Staffing />} />

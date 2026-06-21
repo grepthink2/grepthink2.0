@@ -1,0 +1,67 @@
+@use '@styles/index.scss' as *;
+
+.ta-review {
+  padding: $spacing-lg;
+  font-family: $primary-font;
+  color: $text-secondary;
+
+  &__empty {
+    text-align: center;
+    padding: $spacing-xxl $spacing-lg;
+
+    h2 {
+      margin-bottom: $spacing-sm;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+  }
+
+  &__intro {
+    margin-bottom: $spacing-lg;
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: $spacing-xs;
+      margin: 0 0 $spacing-xs;
+      font-size: $font-size-header;
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+
+    p {
+      margin: 0;
+      font-size: $font-size-base;
+      color: $text-tertiary;
+    }
+  }
+
+  &__hint {
+    font-size: $font-size-base;
+    color: $text-tertiary;
+  }
+
+  &__controls {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    margin-bottom: $spacing-md;
+    max-width: 360px;
+  }
+
+  &__control-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $text-secondary;
+  }
+
+  &__select {
+    padding: 8px $spacing-md;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    color: $text-primary;
+    background: $white;
+  }
+}
