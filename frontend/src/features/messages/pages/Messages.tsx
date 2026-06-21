@@ -1,20 +1,12 @@
 import React from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useConversations } from '../hooks/useConversations';
 import { ConversationList } from '../components/ConversationList';
 import { ConversationThread } from '../components/ConversationThread';
 import { NewConversationCompose } from '../components/NewConversationCompose';
 import './Messages.scss';
 
-/**
- * Two-pane messaging view.
- *
- * Left: inbox (always visible).
- * Right: depends on URL —
- *   /app/messages                    → "Select a conversation" placeholder
- *   /app/messages/:conversationId    → open thread
- *   /app/messages/compose?to=...     → new-conversation composer
- */
 const Messages: React.FC = () => {
   const { conversationId } = useParams<{ conversationId?: string }>();
   const location = useLocation();
@@ -26,8 +18,10 @@ const Messages: React.FC = () => {
     ? conversations.find(c => c.id === conversationId)
     : undefined;
 
+  const hasActiveThread = isCompose || !!conversationId;
+
   return (
-    <div className="messages-page">
+    <div className={`messages-page${hasActiveThread ? ' messages-page--thread-active' : ''}`}>
       <aside className="messages-page__list">
         <ConversationList
           conversations={conversations}
@@ -37,6 +31,14 @@ const Messages: React.FC = () => {
         />
       </aside>
       <main className="messages-page__thread">
+        <button
+          className="messages-page__back-btn"
+          onClick={() => navigate('/app/messages')}
+          aria-label="Back to conversations"
+        >
+          <ArrowLeft size={18} />
+          All Messages
+        </button>
         {isCompose ? (
           <NewConversationCompose />
         ) : activeConversation ? (
@@ -45,8 +47,6 @@ const Messages: React.FC = () => {
             onDeleted={() => navigate('/app/messages', { replace: true })}
           />
         ) : conversationId ? (
-          // URL has an id but it's not in our inbox — could be a stale link,
-          // a non-participant tried to open it, or the inbox hasn't loaded yet.
           <div className="messages-thread messages-thread--empty">
             {loading ? 'Loading…' : 'Conversation not found.'}
           </div>

@@ -53,3 +53,21 @@
   color: $error-color;
   font-size: $font-size-sm;
 }
+
+@media (max-width: 768px) {
+  .roster {
+    padding: $spacing-sm;
+  }
+
+  .roster__layout {
+    flex-direction: column;
+  }
+
+  .roster__sidebar {
+    display: none;
+  }
+
+  .roster__main {
+    width: 100%;
+  }
+}

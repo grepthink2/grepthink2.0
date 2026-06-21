@@ -17,6 +17,26 @@
   }
 }
 
+/* Dimmed overlay behind the mobile nav drawer (sidebar is z-index 1000). */
+.app-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 999;
+}
+
+/* Mobile: sidebar floats as a drawer, so content spans the full width */
+@media (max-width: 768px) {
+  .app-main {
+    margin-left: 0;
+
+    .sidebar.collapsed ~ & {
+      margin-left: 0;
+      width: 100%;
+    }
+  }
+}
+
 /* Dev Mode Toggle - Top Right Outside Navbar */
 .dev-mode-toggle {
   position: fixed;

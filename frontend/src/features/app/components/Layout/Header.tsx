@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X } from 'lucide-react';
+import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
 import { useClass } from '@/lib/classContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
@@ -135,9 +135,11 @@ function buildBreadcrumbs(
 
 interface HeaderProps {
   onOpenSettings: () => void;
+  /** Toggle the off-canvas nav drawer (mobile only). */
+  onToggleNav: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, role } = useAuth();
@@ -230,6 +232,15 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
 
   return (
     <header className={`app-header${isClassRoute ? ' app-header--class' : ''}`}>
+      {/* Mobile-only: open the off-canvas nav drawer */}
+      <button
+        className="app-header__menu-button"
+        onClick={onToggleNav}
+        aria-label="Open menu"
+      >
+        <Menu size={22} />
+      </button>
+
       {/* Left: Page Title */}
       <div className="app-header__title-block">
         <h1 className="app-header__page-title">

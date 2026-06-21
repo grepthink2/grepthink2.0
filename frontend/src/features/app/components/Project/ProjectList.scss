@@ -69,4 +69,64 @@
   color: $primary-color;
 }
 
+// ── Mobile cards — hide desktop table, show divs ─────────────
+.projects-table__mobile-cards {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .project-list .assignment-list__table-card {
+    display: none;
+  }
+
+  .projects-table__mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    padding: 0 $spacing-xs;
+  }
+
+  .projects-table__mobile-card {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    padding: $spacing-md;
+    background: $white;
+    cursor: pointer;
+    touch-action: manipulation;
+
+    &:active { background-color: #f5f5f5; }
+
+    &-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    &-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .projects-table__mobile-name {
+    font-size: 1rem;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+  }
+
+  .projects-table__mobile-arrow {
+    color: $primary-color;
+    flex-shrink: 0;
+  }
+
+  .projects-table__mobile-team {
+    font-size: 0.8rem;
+    color: $text-secondary;
+  }
+}
+
 

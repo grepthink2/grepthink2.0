@@ -81,12 +81,13 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
   }
 
   return (
-    <div className="assignment-list">
+    <div className="assignment-list project-list">
       <div className="assignment-list__header">
         <h2 className="assignment-list__title">Project Count</h2>
         <span className="assignment-list__count-badge">{projects.length}</span>
       </div>
 
+      {/* Desktop table */}
       <div className="assignment-list__table-card">
         <div className="assignment-list__table-wrapper">
           <table className="assignment-list__table">
@@ -112,12 +113,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
                   <td className="projects-table__person-cell">
                     <div className="projects-table__person-name">{project.poName}</div>
                     {project.poEmail ? (
-                      <a
-                        className="projects-table__person-email"
-                        href={`mailto:${project.poEmail}`}
-                      >
-                        {project.poEmail}
-                      </a>
+                      <a className="projects-table__person-email" href={`mailto:${project.poEmail}`}>{project.poEmail}</a>
                     ) : (
                       <span className="projects-table__person-email">—</span>
                     )}
@@ -125,25 +121,50 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
                   <td className="projects-table__person-cell">
                     <div className="projects-table__person-name">{project.smName}</div>
                     {project.smEmail ? (
-                      <a
-                        className="projects-table__person-email"
-                        href={`mailto:${project.smEmail}`}
-                      >
-                        {project.smEmail}
-                      </a>
+                      <a className="projects-table__person-email" href={`mailto:${project.smEmail}`}>{project.smEmail}</a>
                     ) : (
                       <span className="projects-table__person-email">—</span>
                     )}
                   </td>
                   <td>{renderSentiment(project.sentiment)}</td>
-                  <td className="projects-table__arrow-cell">
-                    <ChevronRight size={16} />
-                  </td>
+                  <td className="projects-table__arrow-cell"><ChevronRight size={16} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile cards — proper div structure avoids td-in-grid browser quirks */}
+      <div className="projects-table__mobile-cards">
+        {projects.map((project) => (
+          <div
+            key={`mobile-${project.id}`}
+            className="projects-table__mobile-card"
+            onClick={() => onProjectClick?.(project)}
+          >
+            <div className="projects-table__mobile-card-top">
+              <span className="assignment-list__td-title projects-table__mobile-name">{project.name}</span>
+              <ChevronRight size={16} className="projects-table__mobile-arrow" />
+            </div>
+            <div className="projects-table__mobile-card-meta">
+              <span className="projects-table__mobile-team">Team: {project.students}</span>
+              {renderSentiment(project.sentiment)}
+            </div>
+            <div className="projects-table__person-cell">
+              <div className="projects-table__person-name">{project.poName}</div>
+              {project.poEmail ? (
+                <a
+                  className="projects-table__person-email"
+                  href={`mailto:${project.poEmail}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {project.poEmail}
+                </a>
+              ) : null}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
