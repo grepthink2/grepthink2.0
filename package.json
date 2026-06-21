@@ -1,0 +1,10 @@
+{
+  "name": "grepthink",
+  "private": true,
+  "description": "Monorepo root — orchestrates the frontend (Vitest) and backend (pytest) test suites.",
+  "scripts": {
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "npm --prefix frontend run test",
+    "test:backend": "cd backend && if [ -x venv/bin/python ]; then venv/bin/python -m pytest; else python3 -m pytest; fi"
+  }
+}

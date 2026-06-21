@@ -1,4 +1,5 @@
-import { defineConfig } from 'vite'
+/// <reference types="vitest/config" />
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
@@ -30,6 +31,20 @@ export default defineConfig(({ mode }) => {
           target: apiTarget,
           changeOrigin: true,
         },
+      },
+    },
+    test: {
+      // Component tests need a browser-like DOM; jsdom is enough for Testing Library.
+      environment: 'jsdom',
+      // Expose describe/it/expect/vi globally (Jest-like, no per-file imports).
+      globals: true,
+      // jest-dom matchers + shared mocks; runs before every test file.
+      setupFiles: ['./src/test/setup.ts'],
+      // The app uses SCSS; let Vitest process style imports so components render.
+      css: true,
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'html'],
       },
     },
   };
