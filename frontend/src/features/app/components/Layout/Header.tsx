@@ -7,6 +7,7 @@ import { useClass } from '@/lib/classContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
 import { formatRelativeTime } from '@features/messages/utils/relativeTime';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { apiRequest, type ApiProfile } from '@/lib/api';
 import './Header.scss';
 
 function notificationPath(notification: {
@@ -142,13 +143,14 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, role } = useAuth();
+  const { signOut, role, user } = useAuth();
   const { selectedClass, classes, setSelectedClass } = useClass();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const {
     notifications,
@@ -160,6 +162,16 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
 
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    apiRequest<ApiProfile>('/api/profiles/me')
+      .then((profile) => setAvatarUrl(profile.image_url ?? null))
+      .catch(() => {
+        const meta = (user.user_metadata ?? {}) as Record<string, string>;
+        setAvatarUrl(meta.image_url || null);
+      });
+  }, [user]);
 
   const path = location.pathname;
 
@@ -409,7 +421,15 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
             aria-label="Profile menu"
           >
             <div className="app-header__profile-icon">
-              <User size={20} />
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="app-header__profile-avatar"
+                />
+              ) : (
+                <User size={20} />
+              )}
             </div>
             <ChevronDown size={16} className="app-header__chevron-icon" />
           </button>
