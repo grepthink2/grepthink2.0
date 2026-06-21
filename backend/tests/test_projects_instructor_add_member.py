@@ -47,17 +47,21 @@ def test_membership_precheck_is_scoped_to_project_id(svc, _is_inst):
       1. projects → fetch class_id
       2. project_members → membership check (this is the one we assert on)
       3. project_members → insert new member
-      4. projects → fetch num_members
-      5. projects → update num_members
+      4. project_members → _auto_assign_scrum_master existing-SM check
+         (returns an existing scrum master, so no promotion update runs)
+      5. projects → fetch num_members
+      6. projects → update num_members
     """
     project_lookup = _chain([{"class_id": "cls-1"}])
     membership_check = _chain([])
     insert_member = _chain([{}])
+    scrum_master_check = _chain([{"user_id": "existing-sm"}])
     num_lookup = _chain([{"num_members": 0}])
     num_update = _chain([{}])
 
     client = _client_with_chains(
-        project_lookup, membership_check, insert_member, num_lookup, num_update,
+        project_lookup, membership_check, insert_member,
+        scrum_master_check, num_lookup, num_update,
     )
     svc.table = client.table
 

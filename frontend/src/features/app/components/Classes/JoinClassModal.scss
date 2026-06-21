@@ -140,4 +140,25 @@
     font-family: $primary-font;
     margin: 0;
   }
+
+  @media (max-width: 480px) {
+    padding: 1.5rem 1rem;
+    width: 95%;
+
+    &__code-container {
+      gap: 0.3rem;
+      margin: 0.5rem 0;
+    }
+
+    &__code-input {
+      width: 32px;
+      height: 42px;
+      font-size: 1.15rem;
+      border-radius: 6px;
+    }
+
+    &__title {
+      font-size: 1.4rem;
+    }
+  }
 }

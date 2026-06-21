@@ -36,3 +36,4 @@ backend/.venv
 backend/tests
 backend/cse115b Project staffing.xlsx
 backend/requirements-dev.txt
+.playright-mcp/

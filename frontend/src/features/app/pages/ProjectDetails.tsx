@@ -3,11 +3,13 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
+import { useAuth } from '@/lib/auth';
 import ProjectView, { ProjectViewSkeleton } from '@features/app/components/Project/ProjectView';
 
 const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const { selectedClass } = useClass();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [project, setProject] = useState<ApiProject | null>(null);
@@ -77,6 +79,16 @@ const ProjectDetails: React.FC = () => {
       replace: true,
     });
   }, [project, location.pathname, location.state, navigate]);
+
+  const handleLeaveProject = useCallback(async () => {
+    if (!projectId || !user) return;
+    try {
+      await api.removeProjectMember(projectId, user.id);
+      navigate('/app/browse-projects');
+    } catch {
+      // keep on page if request fails
+    }
+  }, [projectId, user, navigate]);
 
   const refreshProjectAndMembers = useCallback(async () => {
     if (!projectId) return;
@@ -157,6 +169,7 @@ const ProjectDetails: React.FC = () => {
         project={project}
         projectMembers={members}
         onMembersChange={refreshProjectAndMembers}
+        onLeave={handleLeaveProject}
         onDelete={() => navigate('/app/browse-projects')}
         hasPendingRequest={hasPendingRequest}
         onRequestSent={() => setHasPendingRequest(true)}

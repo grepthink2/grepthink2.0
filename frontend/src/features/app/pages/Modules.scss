@@ -54,3 +54,22 @@ $modules-stats-width: 345px;
   flex-direction: column;
   gap: $spacing-lg;
 }
+
+@media (max-width: 768px) {
+  .modules {
+    padding: $spacing-sm;
+  }
+
+  .modules__layout {
+    flex-direction: column;
+  }
+
+  .modules__stats {
+    display: none;
+  }
+
+  .modules__main {
+    max-width: 100%;
+    width: 100%;
+  }
+}

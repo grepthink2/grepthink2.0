@@ -4,6 +4,7 @@ FastAPI application initialization and configuration
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.middleware import SecurityHeadersMiddleware
 from app.health.url import router as health_router
 from app.auth.url import router as auth_router
 from app.classes.url import router as classes_router
@@ -31,6 +32,9 @@ app.add_middleware(
     allow_methods=settings.CORS_METHODS,
     allow_headers=settings.CORS_HEADERS,
 )
+
+# Attach defensive security headers to every response.
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Include routers
 app.include_router(health_router)

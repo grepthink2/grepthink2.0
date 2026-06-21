@@ -22,7 +22,7 @@ import { api, type ApiAssignment } from '@/lib/api';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import {
   // MOCK_SCHEDULE,
-  buildFallbackDeadlineRows,
+  // buildFallbackDeadlineRows,
 } from './mockData';
 import RequestsModal from './RequestsModal';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
@@ -334,21 +334,9 @@ const StudentHomeDashboard: React.FC = () => {
     }
   }, [location.state]);
 
-  const useMockDeadlines = !selectedClass;
-  const displayDeadlines = useMockDeadlines
-    ? buildFallbackDeadlineRows('Select a class to see your course').map((d) => ({
-        id: d.id,
-        name: d.name,
-        courseLabel: d.courseLabel,
-        dueLabel: d.dueLabel,
-        status: d.status,
-        highlight: Boolean(d.highlight),
-        isMock: true as const,
-      }))
-    : deadlineRows.map((d) => ({ ...d, isMock: false as const }));
+  const displayDeadlines = deadlineRows.map((d) => ({ ...d, isMock: false as const }));
 
-  const showEmptyDeadlines =
-    Boolean(selectedClass) && !deadlinesLoading && deadlineRows.length === 0;
+  const showEmptyDeadlines = !deadlinesLoading && deadlineRows.length === 0;
 
   const refreshIncomingRequests = useCallback(async () => {
     const classId = selectedClass?.id;
@@ -701,7 +689,7 @@ const StudentHomeDashboard: React.FC = () => {
                     {showEmptyDeadlines ? (
                       <tr>
                         <td colSpan={4} className="student-home__deadlines-empty">
-                          No upcoming deadlines.
+                          {!selectedClass ? 'Select a class to see your deadlines.' : 'No upcoming deadlines.'}
                         </td>
                       </tr>
                     ) : (

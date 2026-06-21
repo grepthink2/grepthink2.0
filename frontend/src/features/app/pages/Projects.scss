@@ -65,3 +65,22 @@ $projects-stats-width: 345px;
   gap: $spacing-sm;
 }
 
+@media (max-width: 768px) {
+  .projects {
+    padding: $spacing-sm;
+  }
+
+  .projects__layout {
+    flex-direction: column;
+  }
+
+  .projects__stats {
+    display: none;
+  }
+
+  .projects__main {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+

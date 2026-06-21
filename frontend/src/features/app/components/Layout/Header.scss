@@ -226,6 +226,31 @@ $app-header-text: #424242;
   }
 }
 
+// Mobile hamburger — opens the off-canvas nav drawer. Hidden on desktop.
+.app-header__menu-button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-right: $spacing-sm;
+  background: transparent;
+  border: none;
+  border-radius: $border-radius-sm;
+  color: $app-header-text;
+  cursor: pointer;
+
+  // Keep the lucide icon from collapsing as a flex item (Chromium shrinks
+  // SVGs with an intrinsic aspect-ratio to ~0 width without this).
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background-color: $background;
+  }
+}
+
 // Notification Badge
 .app-header__notification-badge {
   position: absolute;
@@ -284,6 +309,14 @@ $app-header-text: #424242;
     background-color: $background;
     border-radius: 50%;
     color: $app-header-text;
+    overflow: hidden;
+  }
+
+  .app-header__profile-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
   }
 
   .app-header__chevron-icon {
@@ -496,5 +529,40 @@ $app-header-text: #424242;
         color: $error-color;
       }
     }
+  }
+}
+
+/* Mobile: show the hamburger, drop the fixed-width search to free up the row */
+@media (max-width: 768px) {
+  .app-header {
+    padding: $spacing-md;
+    gap: $spacing-sm;
+  }
+
+  .app-header__menu-button {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  .app-header__search-bar {
+    display: none;
+  }
+
+  // Title may be a long breadcrumb — let it shrink/truncate instead of
+  // pushing the row wider than the viewport.
+  .app-header__title-block {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .app-header__page-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Keep the action icons together and never let them be squeezed off-screen.
+  .app-header__right {
+    flex-shrink: 0;
   }
 }

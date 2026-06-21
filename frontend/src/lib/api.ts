@@ -1,6 +1,8 @@
 import { supabase } from './supabaseClient';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+// In dev, use relative paths so Vite proxy routes to the right backend (localhost or prod).
+// In production builds, fall back to VITE_API_URL or same-origin.
+const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || '');
 
 export interface ApiClass {
   id: string;

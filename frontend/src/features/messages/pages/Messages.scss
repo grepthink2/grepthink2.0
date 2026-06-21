@@ -39,6 +39,70 @@
     min-height: 0;
     background: $white;
   }
+
+  &__back-btn {
+    display: none;
+  }
+
+  /* Mobile: single-pane, list or thread */
+  @media (max-width: 768px) {
+    /* dvh updates when the virtual keyboard opens, keeping composer anchored */
+    height: calc(100dvh - 64px);
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+
+    &__list {
+      border-right: none;
+      height: 100%;
+    }
+
+    /* When a thread is open, hide the list and show only the thread */
+    &--thread-active &__list {
+      display: none;
+    }
+
+    /* When no thread, hide the thread pane */
+    &:not(&--thread-active) &__thread {
+      display: none;
+    }
+
+    /* Thread fills full grid cell so the composer sticks to the bottom */
+    &--thread-active &__thread {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    &__back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-xs;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid $border-color;
+      color: $primary-color;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: $spacing-sm $spacing-md;
+      cursor: pointer;
+      width: 100%;
+      flex-shrink: 0;
+
+      &:hover {
+        background: $background;
+      }
+    }
+
+    /* Hide the 3-dot menu in the list on mobile — first touch was triggering
+       focus-within, making the trigger visible and eating the navigation tap */
+    .messages-list__item .conversation-menu {
+      display: none;
+    }
+
+    /* Prevent double-tap zoom delay on list rows */
+    .messages-list__item {
+      touch-action: manipulation;
+    }
+  }
 }
 
 /* ---------- Initials avatar ---------- */

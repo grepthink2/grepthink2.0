@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X } from 'lucide-react';
+import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
 import { useClass } from '@/lib/classContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
 import { formatRelativeTime } from '@features/messages/utils/relativeTime';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { apiRequest, type ApiProfile } from '@/lib/api';
 import './Header.scss';
 
 function notificationPath(notification: {
@@ -135,18 +136,21 @@ function buildBreadcrumbs(
 
 interface HeaderProps {
   onOpenSettings: () => void;
+  /** Toggle the off-canvas nav drawer (mobile only). */
+  onToggleNav: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, role } = useAuth();
+  const { signOut, role, user } = useAuth();
   const { selectedClass, classes, setSelectedClass } = useClass();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const {
     notifications,
@@ -158,6 +162,16 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
 
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    apiRequest<ApiProfile>('/api/profiles/me')
+      .then((profile) => setAvatarUrl(profile.image_url ?? null))
+      .catch(() => {
+        const meta = (user.user_metadata ?? {}) as Record<string, string>;
+        setAvatarUrl(meta.image_url || null);
+      });
+  }, [user]);
 
   const path = location.pathname;
 
@@ -230,6 +244,15 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
 
   return (
     <header className={`app-header${isClassRoute ? ' app-header--class' : ''}`}>
+      {/* Mobile-only: open the off-canvas nav drawer */}
+      <button
+        className="app-header__menu-button"
+        onClick={onToggleNav}
+        aria-label="Open menu"
+      >
+        <Menu size={22} />
+      </button>
+
       {/* Left: Page Title */}
       <div className="app-header__title-block">
         <h1 className="app-header__page-title">
@@ -398,7 +421,15 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings }) => {
             aria-label="Profile menu"
           >
             <div className="app-header__profile-icon">
-              <User size={20} />
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="app-header__profile-avatar"
+                />
+              ) : (
+                <User size={20} />
+              )}
             </div>
             <ChevronDown size={16} className="app-header__chevron-icon" />
           </button>
