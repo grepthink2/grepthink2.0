@@ -57,7 +57,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   const [form, setForm] = useState<SubmitFeedbackPayload>(EMPTY_FORM);
   const [loading, setLoading] = useState(!isSubmitted);
   const [submitting, setSubmitting] = useState(false);
-  const [justSubmitted, setJustSubmitted] = useState(isSubmitted);
+  const [justSubmitted, setJustSubmitted] = useState(false);
   const [isEditMode, setIsEditMode] = useState(isSubmitted);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,7 +74,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
           q5_suggestions: submission.q5_suggestions,
         });
         setIsEditMode(true);
-        if (!isSubmitted) setJustSubmitted(true);
       })
       .catch((err) => {
         // If the student is already known to have submitted (isSubmitted prop),
