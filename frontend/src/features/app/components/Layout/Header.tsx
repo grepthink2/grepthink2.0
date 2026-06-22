@@ -197,7 +197,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
       return;
     }
 
-    if (notification.type === 'join_request') {
+    if (notification.type === 'join_request' || notification.type === 'join_rejected') {
       navigate('/app/home', { state: { openRequests: true } });
       return;
     }

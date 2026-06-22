@@ -140,11 +140,20 @@ export interface ApiProjectJoinRequest {
   user_role?: string;
   requested_at?: string;
   status: string;
+  message?: string | null;
   project_id?: string;
   project_name?: string;
   member_count?: number;
   sponsor_company?: string;
   course_label?: string;
+  image_url?: string | null;
+}
+
+export interface ApiProjectPendingInvite {
+  request_id: string;
+  user_id: string;
+  email?: string;
+  invited_at?: string;
 }
 
 export interface ApiProjectMember {
@@ -338,7 +347,7 @@ export interface ApiConversationSummary {
 
 export interface ApiNotification {
   id: string;
-  type: 'join_request' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster';
+  type: 'join_request' | 'join_rejected' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster';
   title: string;
   body: string;
   entity_type: string | null;
@@ -674,10 +683,11 @@ export const api = {
     return apiRequest<{ projects: ApiProject[] }>(`/api/projects${query ? `?${query}` : ''}`);
   },
 
-  requestJoinProject: async (projectId: string) => {
+  requestJoinProject: async (projectId: string, message?: string) => {
+    const trimmed = message?.trim();
     return apiRequest<{ message: string; request: { id: string; project_id: string; user_id: string }; project: ApiProject }>('/api/projects/request-join', {
       method: 'POST',
-      body: JSON.stringify({ project_id: projectId }),
+      body: JSON.stringify({ project_id: projectId, message: trimmed ? trimmed : null }),
     });
   },
 
@@ -738,6 +748,31 @@ export const api = {
     });
   },
 
+  dismissJoinRequest: async (requestId: string) => {
+    return apiRequest<{ message: string; request_id: string }>('/api/projects/dismiss-request', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  },
+
+  cancelJoinRequest: async (requestId: string) => {
+    return apiRequest<{ message: string; request_id: string }>('/api/projects/cancel-request', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  },
+
+  cancelTeamInvite: async (requestId: string) => {
+    return apiRequest<{ message: string; request_id: string }>('/api/projects/cancel-invite', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  },
+
+  getProjectPendingInvites: async (projectId: string) => {
+    return apiRequest<{ invites: ApiProjectPendingInvite[] }>(`/api/projects/${projectId}/pending-invites`);
+  },
+
   /** Create a project (full form: POST /api/projects) */
   createProject: async (data: CreateProjectPayload) => {
     return apiRequest<{ message: string; project: ApiProject }>('/api/projects', {
@@ -756,7 +791,7 @@ export const api = {
 
   /** Add a member to a project (instructor or authorized role). */
   addProjectMember: async (projectId: string, data: { user_id: string; role?: string }) => {
-    return apiRequest<{ message: string }>(`/api/projects/${projectId}/members`, {
+    return apiRequest<{ message: string; request?: { id: string } }>(`/api/projects/${projectId}/members`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
