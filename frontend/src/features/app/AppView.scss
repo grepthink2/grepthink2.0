@@ -6,6 +6,25 @@
   position: relative;
 }
 
+/* While "View as Student" preview is active, the fixed PreviewBanner (44px)
+   sits across the very top. Push the fixed sidebar and the sticky header down
+   so nothing hides behind it. */
+.app-view--previewing {
+  $preview-banner-h: 44px;
+
+  .sidebar {
+    top: $preview-banner-h;
+  }
+
+  .app-main {
+    margin-top: $preview-banner-h;
+  }
+
+  .app-header {
+    top: $preview-banner-h;
+  }
+}
+
 .app-main {
   margin-left: 256px; // Account for sidebar width
   min-height: 100vh;

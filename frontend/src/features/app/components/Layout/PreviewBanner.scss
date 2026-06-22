@@ -1,0 +1,105 @@
+/* "View as Student" preview chrome.
+   The banner is fixed across the top; AppView pads the shell down by
+   --preview-banner-h while previewing (see AppView.scss). */
+
+.preview-banner {
+  --preview-banner-h: 44px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--preview-banner-h);
+  z-index: 1100; // above sidebar (1000) and header dropdowns
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0 1rem;
+
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, #6d28d9, #4f46e5);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__eye {
+    flex-shrink: 0;
+  }
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1rem 0.5rem;
+    margin-left: 0.25rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  &__exit {
+    position: absolute;
+    right: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 6px;
+    background: transparent;
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+  }
+
+  &__toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1200;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: 8px;
+
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    background: #1f2937;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+    animation: preview-toast-in 0.18s ease;
+  }
+}
+
+@keyframes preview-toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (max-width: 768px) {
+  .preview-banner {
+    font-size: 0.8125rem;
+
+    &__pill { display: none; }
+    &__exit { padding: 0.3rem 0.55rem; }
+  }
+}

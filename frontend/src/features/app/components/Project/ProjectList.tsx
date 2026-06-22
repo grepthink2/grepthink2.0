@@ -1,5 +1,5 @@
 import React from 'react';
-import { Smile, Meh, Frown, ChevronRight } from 'lucide-react';
+import { Smile, Meh, Frown, ChevronRight, Eye } from 'lucide-react';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import SortableHeader from '@features/app/components/shared/SortableHeader';
 import { useTableSort, type SortAccessors } from '@features/app/utils/useTableSort';
@@ -23,6 +23,8 @@ interface ProjectListProps {
   loading: boolean;
   error: string | null;
   onProjectClick?: (project: UiProject) => void;
+  /** When provided, renders a per-row "preview as a member of this project" action. */
+  onPreviewMember?: (project: UiProject) => void;
 }
 
 const SENTIMENT_LABEL: Record<ProjectSentiment, string> = {
@@ -41,7 +43,7 @@ const SORT_ACCESSORS: SortAccessors<UiProject, ProjectSortKey> = {
   sentiment: (p) => SENTIMENT_LABEL[p.sentiment],
 };
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onProjectClick }) => {
+const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onProjectClick, onPreviewMember }) => {
   const { sortedRows: sortedProjects, sort, toggleSort } = useTableSort(
     projects,
     SORT_ACCESSORS,
@@ -151,7 +153,22 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
                     )}
                   </td>
                   <td>{renderSentiment(project.sentiment)}</td>
-                  <td className="projects-table__arrow-cell"><ChevronRight size={16} /></td>
+                  <td className="projects-table__arrow-cell">
+                    {onPreviewMember && (
+                      <button
+                        type="button"
+                        className="projects-table__preview-btn"
+                        title="Preview as a member of this project"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPreviewMember(project);
+                        }}
+                      >
+                        <Eye size={15} />
+                      </button>
+                    )}
+                    <ChevronRight size={16} />
+                  </td>
                 </tr>
               ))}
             </tbody>

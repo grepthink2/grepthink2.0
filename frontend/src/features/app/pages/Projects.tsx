@@ -185,6 +185,14 @@ const Projects: React.FC = () => {
                 state: { projectName: project.name },
               })
             }
+            onPreviewMember={(project) =>
+              // Navigate to the (shared) detail route first, then let
+              // ProjectDetails flip into preview — entering preview while still
+              // on the instructor-only list path would bounce us to Home.
+              navigate(`/app/projects/${project.id}`, {
+                state: { projectName: project.name, previewAsMember: true },
+              })
+            }
           />
         </div>
 

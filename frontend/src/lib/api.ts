@@ -1,4 +1,14 @@
 import { supabase } from './supabaseClient';
+import { assertWritableRequest } from './previewGuard';
+
+/**
+ * Read-tracking writes (mark-as-read) fire automatically as a side effect of
+ * viewing a screen. In read-only preview we still block them, but silently —
+ * surfacing a "changes disabled" toast for them would be noise, not signal.
+ */
+function isSilentWrite(endpoint: string): boolean {
+  return /\/read(-all)?$/.test(endpoint);
+}
 
 // In dev, use relative paths so Vite proxy routes to the right backend (localhost or prod).
 // In production builds, fall back to VITE_API_URL or same-origin.
@@ -447,6 +457,9 @@ export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
+  // Read-only preview: refuse mutating requests before they leave the browser.
+  assertWritableRequest(options.method, isSilentWrite(endpoint));
+
   // Get the current session token
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
@@ -489,6 +502,9 @@ export async function apiUpload<T = unknown>(
   endpoint: string,
   formData: FormData,
 ): Promise<T> {
+  // Uploads are always writes (multipart POST) — block them in preview.
+  assertWritableRequest('POST');
+
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 

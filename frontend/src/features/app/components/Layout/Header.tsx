@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu } from 'lucide-react';
+import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu, Eye } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
 import { useClass } from '@/lib/classContext';
+import { usePreview } from '@/lib/previewContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
 import { formatRelativeTime } from '@features/messages/utils/relativeTime';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
@@ -143,7 +144,8 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, role, user } = useAuth();
+  const { signOut, role, realRole, isPreviewing, user } = useAuth();
+  const { enterPreview, exitPreview } = usePreview();
   const { selectedClass, classes, setSelectedClass } = useClass();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -240,6 +242,17 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
   const handleSettingsClick = () => {
     setShowProfileMenu(false);
     onOpenSettings();
+  };
+
+  const handleViewAsStudent = () => {
+    setShowProfileMenu(false);
+    if (isPreviewing) {
+      exitPreview();
+      navigate('/app/home');
+    } else {
+      enterPreview();
+      navigate('/app/home');
+    }
   };
 
   // Lightweight search: "leave class" (and close variants) jumps to My Classes,
@@ -459,6 +472,15 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
 
           {showProfileMenu && (
             <div className="app-header__dropdown app-header__profile-dropdown">
+              {realRole === 'instructor' && (
+                <button
+                  className="app-header__dropdown-item"
+                  onClick={handleViewAsStudent}
+                >
+                  <Eye size={18} />
+                  <span>{isPreviewing ? 'Instructor View' : 'View as Student'}</span>
+                </button>
+              )}
               <button
                 className="app-header__dropdown-item"
                 onClick={handleSettingsClick}
