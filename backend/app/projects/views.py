@@ -6,7 +6,7 @@ from uuid import UUID
 from typing import Optional
 from fastapi import HTTPException, Depends, Query
 from app.dependencies import require_user
-from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, ManageProjectMemberRequest, AssignRoleRequest
+from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, DismissJoinRequestRequest, ManageProjectMemberRequest, AssignRoleRequest
 from app.projects import controller
 
 logger = logging.getLogger(__name__)
@@ -150,7 +150,7 @@ def update_project(
 
 
 def request_join(data: JoinProjectRequest, user_id: str = Depends(require_user)):
-    return controller.request_to_join_project(data.project_id, user_id)
+    return controller.request_to_join_project(data.project_id, user_id, data.message)
 
 
 def accept_request(data: AcceptJoinRequestRequest, user_id: str = Depends(require_user)):
@@ -159,6 +159,10 @@ def accept_request(data: AcceptJoinRequestRequest, user_id: str = Depends(requir
 
 def reject_request(data: AcceptJoinRequestRequest, user_id: str = Depends(require_user)):
     return controller.reject_join_request(data.request_id, user_id)
+
+
+def dismiss_request(data: DismissJoinRequestRequest, user_id: str = Depends(require_user)):
+    return controller.dismiss_my_join_request(data.request_id, user_id)
 
 
 def get_project_members(project_id: UUID, user_id: str = Depends(require_user)):

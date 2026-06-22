@@ -40,7 +40,7 @@ const RequestModal: React.FC<RequestModalProps> = ({ isOpen, projectId, onClose,
     setError(null);
     setLoading(true);
     try {
-      await api.requestJoinProject(projectId);
+      await api.requestJoinProject(projectId, message);
       onSuccess?.();
       onClose();
     } catch (err) {

@@ -246,6 +246,19 @@
     margin-top: 0.25rem;
   }
 
+  &__request-note {
+    margin: 0.4rem 0 0;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8125rem;
+    font-style: italic;
+    color: $text-secondary;
+    background: $button-secondary;
+    border-left: 3px solid rgba($text-tertiary, 0.4);
+    border-radius: $border-radius-sm;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
   &__skill-tag {
     display: inline-flex;
     padding: 0.2rem 0.5rem;

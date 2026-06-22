@@ -8,6 +8,7 @@ import {
   FolderOpen,
   Loader2,
   MessageCircle,
+  X,
 } from 'lucide-react';
 import {
   differenceInCalendarDays,
@@ -272,6 +273,7 @@ interface OutgoingJoinRequestRow {
   memberCount: number;
   sponsorCompany?: string;
   requestedAt?: string;
+  status?: string;
 }
 
 interface IncomingJoinRequestRow {
@@ -281,6 +283,7 @@ interface IncomingJoinRequestRow {
   requesterEmail?: string;
   requestedAt?: string;
   memberCount: number;
+  message?: string | null;
 }
 
 function formatAwaitingMeta(iso: string | undefined): string | null {
@@ -324,6 +327,7 @@ const StudentHomeDashboard: React.FC = () => {
   const [incomingRequestError, setIncomingRequestError] = useState<string | null>(null);
   const [outgoingRequests, setOutgoingRequests] = useState<OutgoingJoinRequestRow[]>([]);
   const [outgoingLoading, setOutgoingLoading] = useState(false);
+  const [dismissingRequestId, setDismissingRequestId] = useState<string | null>(null);
   const [requestsModalOpen, setRequestsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -365,6 +369,7 @@ const StudentHomeDashboard: React.FC = () => {
                 requesterEmail: r.email,
                 requestedAt: r.requested_at,
                 memberCount: proj.member_count ?? 0,
+                message: r.message,
               }),
             );
           } catch {
@@ -406,6 +411,7 @@ const StudentHomeDashboard: React.FC = () => {
             memberCount: r.member_count ?? 0,
             sponsorCompany: r.sponsor_company,
             requestedAt: r.requested_at,
+            status: r.status,
           }),
         ),
       );
@@ -638,6 +644,21 @@ const StudentHomeDashboard: React.FC = () => {
     [refreshIncomingRequests],
   );
 
+  const handleDismissOutgoing = useCallback(
+    async (row: OutgoingJoinRequestRow) => {
+      setDismissingRequestId(row.requestId);
+      try {
+        await api.dismissJoinRequest(row.requestId);
+        setOutgoingRequests((prev) => prev.filter((r) => r.requestId !== row.requestId));
+      } catch {
+        await refreshOutgoingRequests();
+      } finally {
+        setDismissingRequestId(null);
+      }
+    },
+    [refreshOutgoingRequests],
+  );
+
   return (
     <div className="student-home">
       <div className="student-home__grid">
@@ -788,6 +809,11 @@ const StudentHomeDashboard: React.FC = () => {
                           <p className="student-home__request-sub">
                             {`${who} wants to join this project`}
                           </p>
+                          {row.message ? (
+                            <p className="student-home__request-message">
+                              &ldquo;{row.message}&rdquo;
+                            </p>
+                          ) : null}
                           <div className="student-home__badges">
                             <span className="student-home__badge">
                               {row.memberCount} {row.memberCount === 1 ? 'Member' : 'Members'}
@@ -848,7 +874,9 @@ const StudentHomeDashboard: React.FC = () => {
                   );
                 })}
               {outgoingRequests.map((req) => {
+                const denied = req.status === 'rejected';
                 const awaitingMeta = formatAwaitingMeta(req.requestedAt);
+                const dismissing = dismissingRequestId === req.requestId;
                 return (
                   <div key={req.requestId} className="student-home__request-card">
                     <div className="student-home__request-top">
@@ -861,7 +889,9 @@ const StudentHomeDashboard: React.FC = () => {
                       <div className="student-home__request-main">
                         <h3 className="student-home__request-title">{req.projectName}</h3>
                         <p className="student-home__request-sub">
-                          {req.courseLabel ?? 'Pending project join request'}
+                          {denied
+                            ? 'Your request to join this project was denied'
+                            : req.courseLabel ?? 'Pending project join request'}
                         </p>
                         <div className="student-home__badges">
                           <span className="student-home__badge">
@@ -870,11 +900,43 @@ const StudentHomeDashboard: React.FC = () => {
                           {req.sponsorCompany ? (
                             <span className="student-home__badge">Company Sponsored</span>
                           ) : null}
-                          <span className="student-home__badge student-home__badge--purple">
-                            Outgoing
-                          </span>
+                          {denied ? (
+                            <span className="student-home__badge student-home__badge--denied">
+                              Denied
+                            </span>
+                          ) : (
+                            <span className="student-home__badge student-home__badge--purple">
+                              Outgoing
+                            </span>
+                          )}
                         </div>
-                        {awaitingMeta ? (
+                        {denied ? (
+                          <div className="student-home__request-actions">
+                            <button
+                              type="button"
+                              className="student-home__btn-deny"
+                              disabled={dismissing}
+                              aria-busy={dismissing}
+                              onClick={() => void handleDismissOutgoing(req)}
+                            >
+                              {dismissing ? (
+                                <>
+                                  <Loader2
+                                    className="student-home__btn-spinner"
+                                    size={16}
+                                    aria-hidden
+                                  />
+                                  Dismissing…
+                                </>
+                              ) : (
+                                <>
+                                  <X size={16} aria-hidden />
+                                  Dismiss
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        ) : awaitingMeta ? (
                           <div className="student-home__awaiting">
                             <Clock size={14} aria-hidden />
                             {awaitingMeta}

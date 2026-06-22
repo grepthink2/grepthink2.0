@@ -280,6 +280,11 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                                 <span className="member-manager__skill-tag">{req.user_role}</span>
                               </div>
                             )}
+                            {req.message && (
+                              <p className="member-manager__request-note">
+                                &ldquo;{req.message}&rdquo;
+                              </p>
+                            )}
                           </div>
                           <div className="member-manager__card-actions">
                             <div className="member-manager__request-decision">

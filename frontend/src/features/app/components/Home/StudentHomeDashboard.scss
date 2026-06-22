@@ -485,6 +485,19 @@ $quick-purple-hover: #6a3382;
   color: $text-secondary;
 }
 
+.student-home__request-message {
+  margin: 0 0 $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  font-size: $font-size-sm;
+  font-style: italic;
+  color: $text-secondary;
+  background: rgba($text-tertiary, 0.08);
+  border-left: 3px solid rgba($text-tertiary, 0.3);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .student-home__badges {
   display: flex;
   flex-wrap: wrap;
@@ -502,6 +515,11 @@ $quick-purple-hover: #6a3382;
   &--purple {
     background: rgba(142, 68, 173, 0.14);
     color: #7d3c98;
+  }
+
+  &--denied {
+    background: rgba(192, 57, 43, 0.14);
+    color: #c0392b;
   }
 }
 

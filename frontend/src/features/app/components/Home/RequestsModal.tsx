@@ -15,6 +15,7 @@ export interface IncomingRequestRow {
   counterpartyEmail?: string;
   requestedAt?: string;
   memberCount: number;
+  message?: string | null;
 }
 
 export interface OutgoingRequestRow {
@@ -25,6 +26,7 @@ export interface OutgoingRequestRow {
   memberCount: number;
   sponsorCompany?: string;
   requestedAt?: string;
+  status?: string;
 }
 
 export interface RequestsModalProps {
@@ -103,6 +105,7 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
     requestId: string;
     action: 'accept' | 'reject';
   } | null>(null);
+  const [dismissingId, setDismissingId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!classId) {
@@ -140,6 +143,7 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
                 counterpartyEmail: r.email,
                 requestedAt: r.requested_at,
                 memberCount: proj.member_count ?? 0,
+                message: r.message,
               }),
             );
           } catch {
@@ -173,6 +177,7 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
         memberCount: r.member_count ?? 0,
         sponsorCompany: r.sponsor_company,
         requestedAt: r.requested_at,
+        status: r.status,
       }));
 
       setIncoming(incomingRows);
@@ -232,6 +237,24 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
         await refresh();
       } finally {
         setProcessing(null);
+      }
+    },
+    [onRequestsChanged, refresh],
+  );
+
+  const handleDismiss = useCallback(
+    async (row: OutgoingRequestRow) => {
+      setError(null);
+      setDismissingId(row.requestId);
+      try {
+        await api.dismissJoinRequest(row.requestId);
+        setOutgoing((prev) => prev.filter((r) => r.requestId !== row.requestId));
+        onRequestsChanged?.();
+      } catch {
+        setError('Could not dismiss this request. Please try again.');
+        await refresh();
+      } finally {
+        setDismissingId(null);
       }
     },
     [onRequestsChanged, refresh],
@@ -347,6 +370,9 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
                     <div className="requests-modal__card-main">
                       <h3 className="requests-modal__card-title">{row.projectName}</h3>
                       <p className="requests-modal__card-sub">{subtext}</p>
+                      {row.kind === 'join_request' && row.message ? (
+                        <p className="requests-modal__card-message">&ldquo;{row.message}&rdquo;</p>
+                      ) : null}
                       <div className="requests-modal__badges">
                         <span className="requests-modal__badge">
                           {row.memberCount} {row.memberCount === 1 ? 'Member' : 'Members'}
@@ -406,7 +432,9 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
           ) : (
             <ul className="requests-modal__list">
               {outgoing.map((row) => {
+                const denied = row.status === 'rejected';
                 const awaitingMeta = formatAwaitingMeta(row.requestedAt);
+                const dismissing = dismissingId === row.requestId;
                 return (
                   <li key={row.requestId} className="requests-modal__card">
                     <div
@@ -417,7 +445,11 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
                     </div>
                     <div className="requests-modal__card-main">
                       <h3 className="requests-modal__card-title">{row.projectName}</h3>
-                      {row.courseLabel ? (
+                      {denied ? (
+                        <p className="requests-modal__card-sub">
+                          Your request to join this project was denied
+                        </p>
+                      ) : row.courseLabel ? (
                         <p className="requests-modal__card-sub">{row.courseLabel}</p>
                       ) : null}
                       <div className="requests-modal__badges">
@@ -427,11 +459,36 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
                         {row.sponsorCompany ? (
                           <span className="requests-modal__badge">Company Sponsored</span>
                         ) : null}
-                        <span className="requests-modal__badge requests-modal__badge--purple">
-                          Outgoing
-                        </span>
+                        {denied ? (
+                          <span className="requests-modal__badge requests-modal__badge--denied">
+                            Denied
+                          </span>
+                        ) : (
+                          <span className="requests-modal__badge requests-modal__badge--purple">
+                            Outgoing
+                          </span>
+                        )}
                       </div>
-                      {awaitingMeta ? (
+                      {denied ? (
+                        <div className="requests-modal__actions">
+                          <button
+                            type="button"
+                            className="requests-modal__btn requests-modal__btn--decline"
+                            disabled={dismissing}
+                            aria-busy={dismissing}
+                            onClick={() => void handleDismiss(row)}
+                          >
+                            {dismissing ? (
+                              <>
+                                <Loader2 className="requests-modal__btn-spinner" size={16} aria-hidden />
+                                Dismissing…
+                              </>
+                            ) : (
+                              'Dismiss'
+                            )}
+                          </button>
+                        </div>
+                      ) : awaitingMeta ? (
                         <div className="requests-modal__meta">
                           <Clock size={14} aria-hidden />
                           {awaitingMeta}

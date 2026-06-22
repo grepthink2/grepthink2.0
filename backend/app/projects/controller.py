@@ -759,7 +759,7 @@ def _leave_current_project_in_class(
         )
 
 
-def request_to_join_project(project_id: UUID, user_id: str) -> dict:
+def request_to_join_project(project_id: UUID, user_id: str, message: Optional[str] = None) -> dict:
     """
     Create a request to join a project.
 
@@ -771,6 +771,7 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
     Args:
         project_id: Project unique identifier
         user_id: User's unique identifier
+        message: Optional note from the requester, shown to the reviewers
 
     Returns:
         Dictionary with message and request data
@@ -829,6 +830,11 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
                 )
             raise HTTPException(status_code=400, detail="Join request already pending")
 
+        # Normalize the optional requester message (trim, drop if empty)
+        clean_message = message.strip() if isinstance(message, str) else None
+        if not clean_message:
+            clean_message = None
+
         # Create the join request (student-initiated; invited_by stays null)
         request_data = {
             "project_id": str(project_id),
@@ -837,6 +843,7 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
             "reviewer_id": None,
             "reviewed_at": None,
             "invited_by": None,
+            "message": clean_message,
         }
 
         result = client.table('project_join_requests').insert(request_data).execute()
@@ -851,6 +858,7 @@ def request_to_join_project(project_id: UUID, user_id: str) -> dict:
                 project_name=new_project_name,
                 request_id=str(request_id),
                 requester_id=user_id,
+                message=clean_message,
             )
 
         logger.info(
@@ -1026,6 +1034,22 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
         
         client.table('project_join_requests').update(update_data).eq('id', str(request_id)).execute()
 
+        # Notify the requester that a student-initiated request was denied.
+        # (Team invites being declined notify nobody — the invitee declined their own invite.)
+        if not invited_by:
+            project_row = client.table('projects').select('name').eq(
+                'id', join_request['project_id']
+            ).execute()
+            project_name = (
+                project_row.data[0].get('name') if project_row.data else None
+            ) or 'the project'
+            from app.notifications.controller import notify_join_request_rejected
+            notify_join_request_rejected(
+                requester_id=join_request['user_id'],
+                project_id=str(join_request['project_id']),
+                project_name=project_name,
+            )
+
         logger.info(
             "Join request rejected | request_id=%s project_id=%s user_id=%s reviewer=%s",
             request_id, join_request['project_id'], join_request['user_id'], reviewer_id,
@@ -1042,6 +1066,47 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
             request_id, reviewer_id,
         )
         raise HTTPException(status_code=500, detail="Failed to reject join request")
+
+
+def dismiss_my_join_request(request_id: UUID, user_id: str) -> dict:
+    """
+    Dismiss a **denied** join request that the caller submitted.
+
+    Only the requester may dismiss, and only a ``rejected`` row. Dismissing
+    removes the row so it no longer surfaces in the requester's outgoing list.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        request_result = client.table('project_join_requests').select(
+            'id, user_id, request_status'
+        ).eq('id', str(request_id)).execute()
+
+        if not request_result.data:
+            raise HTTPException(status_code=404, detail="Join request not found")
+
+        join_request = request_result.data[0]
+
+        if str(join_request['user_id']) != str(user_id):
+            raise HTTPException(status_code=403, detail="You can only dismiss your own requests")
+
+        if join_request['request_status'] != 'rejected':
+            raise HTTPException(status_code=400, detail="Only denied requests can be dismissed")
+
+        client.table('project_join_requests').delete().eq('id', str(request_id)).execute()
+
+        logger.info(
+            "Join request dismissed | request_id=%s user_id=%s", request_id, user_id,
+        )
+        return {"message": "Join request dismissed", "request_id": str(request_id)}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error dismissing join request | request_id=%s user_id=%s",
+            request_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to dismiss join request")
 
 
 # ---------------------------------------------------------------------------
@@ -1457,12 +1522,15 @@ def get_my_pending_join_requests_for_user(user_id: str, class_id: UUID) -> list:
 
         project_map = {p['id']: p for p in projects}
 
+        # Pending requests are still awaiting review; rejected ones surface as a
+        # dismissible "denied" notice until the requester dismisses them (which
+        # deletes the row). Accepted requests are dropped — the student is now a member.
         rows = (
             client.table('project_join_requests').select(
                 'id, user_id, project_id, created_at, request_status, invited_by'
             )
             .eq('user_id', user_id)
-            .eq('request_status', 'pending')
+            .in_('request_status', ['pending', 'rejected'])
             .in_('project_id', project_ids)
             .execute()
         )
@@ -1507,7 +1575,7 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
 
         # Pending student-initiated requests only (team invites omit invited_by)
         requests = client.table('project_join_requests').select(
-            'id, user_id, created_at, request_status, invited_by'
+            'id, user_id, created_at, request_status, invited_by, message'
         ).eq('project_id', str(project_id)).eq('request_status', 'pending').execute()
 
         student_requests = [r for r in (requests.data or []) if not r.get('invited_by')]
@@ -1531,7 +1599,8 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
                 "email": user_info.get('email'),
                 "user_role": user_info.get('role'),
                 "requested_at": request.get('created_at'),
-                "status": request['request_status']
+                "status": request['request_status'],
+                "message": request.get('message'),
             })
         
         return result

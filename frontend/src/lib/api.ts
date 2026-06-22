@@ -139,6 +139,7 @@ export interface ApiProjectJoinRequest {
   user_role?: string;
   requested_at?: string;
   status: string;
+  message?: string | null;
   project_id?: string;
   project_name?: string;
   member_count?: number;
@@ -673,10 +674,11 @@ export const api = {
     return apiRequest<{ projects: ApiProject[] }>(`/api/projects${query ? `?${query}` : ''}`);
   },
 
-  requestJoinProject: async (projectId: string) => {
+  requestJoinProject: async (projectId: string, message?: string) => {
+    const trimmed = message?.trim();
     return apiRequest<{ message: string; request: { id: string; project_id: string; user_id: string }; project: ApiProject }>('/api/projects/request-join', {
       method: 'POST',
-      body: JSON.stringify({ project_id: projectId }),
+      body: JSON.stringify({ project_id: projectId, message: trimmed ? trimmed : null }),
     });
   },
 
@@ -734,6 +736,13 @@ export const api = {
     return apiRequest<{ message: string; user_id: string }>('/api/projects/reject-request', {
       method: 'POST',
       body: JSON.stringify({ request_id: requestId, user_id: user.id }),
+    });
+  },
+
+  dismissJoinRequest: async (requestId: string) => {
+    return apiRequest<{ message: string; request_id: string }>('/api/projects/dismiss-request', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
     });
   },
 
