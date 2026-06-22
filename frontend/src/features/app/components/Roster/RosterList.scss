@@ -148,20 +148,22 @@ $gt-not-reg-text:     #6b7280;
       }
 
       th:nth-child(1), td:nth-child(1) {
-        width: 16%;
+        width: 24%;
         padding-left: $spacing-md;
         padding-right: $spacing-md;
         min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       th:nth-child(2), td:nth-child(2) {
-        width: 26%;
+        width: 28%;
         padding-left: $spacing-md;
         padding-right: $spacing-md;
       }
 
       th:nth-child(3), td:nth-child(3) {
-        width: 14%;
+        width: 16%;
         white-space: nowrap;
       }
 
@@ -171,7 +173,7 @@ $gt-not-reg-text:     #6b7280;
       }
 
       th:nth-child(5), td:nth-child(5) {
-        width: 28%;
+        width: 16%;
         padding-right: $spacing-md;
       }
     }

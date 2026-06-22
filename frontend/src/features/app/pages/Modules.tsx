@@ -8,35 +8,35 @@ import AddAssignmentButton from '@features/app/components/Modules/AddAssignmentB
 import AssignmentList, { type Assignment, type AssignmentStatus } from '@features/app/components/Modules/AssignmentList';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import AssignmentTurnInRate from '@/features/app/components/Stats/AssignmentTurnInRate';
-import ProjectHealth, { type ProjectHealthItem } from '@/features/app/components/Stats/ProjectHealth';
+// import ProjectHealth, { type ProjectHealthItem } from '@/features/app/components/Stats/ProjectHealth';
 import CreateAssignmentModal from '@features/app/components/Modules/CreateAssignmentModal';
 import AssignmentEditorModal from '@features/app/components/Modules/AssignmentEditorModal';
 import { useClassTurnInStats } from '@features/app/hooks/useClassTurnInStats';
 import './Modules.scss';
 
-const mockProjectHealth: ProjectHealthItem[] = [
-  {
-    id: '1',
-    name: 'ShoeShopper',
-    health: 'excellent',
-    description: 'Excellent collaboration and progress on schedule',
-    via: 'Team Status Report 1',
-  },
-  {
-    id: '2',
-    name: 'Chatcut',
-    health: 'warning',
-    description: 'Minor disagreements on tech stack decisions',
-    via: 'Team Status Report 1',
-  },
-  {
-    id: '3',
-    name: 'TaskMaster',
-    health: 'poor',
-    description: 'Significant delays and communication breakdowns',
-    via: 'Team Status Report 2',
-  },
-];
+// const mockProjectHealth: ProjectHealthItem[] = [
+//   {
+//     id: '1',
+//     name: 'ShoeShopper',
+//     health: 'excellent',
+//     description: 'Excellent collaboration and progress on schedule',
+//     via: 'Team Status Report 1',
+//   },
+//   {
+//     id: '2',
+//     name: 'Chatcut',
+//     health: 'warning',
+//     description: 'Minor disagreements on tech stack decisions',
+//     via: 'Team Status Report 1',
+//   },
+//   {
+//     id: '3',
+//     name: 'TaskMaster',
+//     health: 'poor',
+//     description: 'Significant delays and communication breakdowns',
+//     via: 'Team Status Report 2',
+//   },
+// ];
 
 function mapApiAssignment(a: ApiAssignment): Assignment {
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -83,7 +83,11 @@ const Modules: React.FC = () => {
     setError(null);
     try {
       const result = await api.getAssignments(selectedClass.id);
-      setAssignments((result.assignments ?? []).map(mapApiAssignment));
+      setAssignments(
+        (result.assignments ?? [])
+          .sort((a, b) => a.close_date.localeCompare(b.close_date))
+          .map(mapApiAssignment),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load assignments');
     } finally {
@@ -133,7 +137,6 @@ const Modules: React.FC = () => {
     });
     await fetchAssignments();
     await refetchTurnInStats();
-    setEditingAssignment(null);
   };
 
   const handleDeleteAssignment = async (id: string) => {
@@ -195,7 +198,13 @@ const Modules: React.FC = () => {
         {/* ── Right ── */}
         <div className="modules__stats">
           <AssignmentTurnInRate data={turnInRate} />
-          <ProjectHealth projects={mockProjectHealth} />
+          {/* <ProjectHealth projects={mockProjectHealth} /> */}
+          <div className="project-health">
+            <h3 className="project-health__heading">Project Health</h3>
+            <div className="project-health__coming-soon">
+              <p>Coming Soon</p>
+            </div>
+          </div>
         </div>
       </div>
 

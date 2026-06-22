@@ -58,6 +58,7 @@ function toStudentRow(
     id: a.id,
     name: a.Title,
     dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
+    dueDateIso: a.close_date,
     projectName: opts.projectName,
     projectId: opts.projectId,
     status,
@@ -87,6 +88,7 @@ const Assignments: React.FC = () => {
         const today = format(new Date(), 'yyyy-MM-dd');
 
         const { assignments } = await api.getAssignments(selectedClass.id);
+        assignments.sort((a, b) => a.close_date.localeCompare(b.close_date));
         const { projects: myAllProjects } = await api.getProjects();
         const { projects: classProjects } = await api.getProjects(selectedClass.id);
 
@@ -266,6 +268,7 @@ const Assignments: React.FC = () => {
     <div className="assignments">
       <div className="assignments__content">
         <StudentAssignmentsTable
+          key={selectedClass?.id}
           assignments={rows}
           onStart={handleOpen}
           onEditSubmission={handleOpen}

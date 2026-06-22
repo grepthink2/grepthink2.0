@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import Sidebar from '@features/app/components/Layout/Sidebar';
 import Header from '@features/app/components/Layout/Header';
+import PreviewBanner from '@features/app/components/Layout/PreviewBanner';
 import CreateClassModal from '@/features/app/components/Classes/CreateClassModal';
 import JoinClassModal from '@/features/app/components/Classes/JoinClassModal';
 import Settings from '@features/app/pages/Settings';
@@ -13,7 +14,7 @@ import { MessageWidget } from '@features/messages/components/MessageWidget';
 import './AppView.scss';
 
 const AppView: React.FC = () => {
-  const { role, loading: authLoading } = useAuth();
+  const { role, isPreviewing, loading: authLoading } = useAuth();
   const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
   const [isJoinClassModalOpen, setIsJoinClassModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -62,7 +63,8 @@ const AppView: React.FC = () => {
 
   return (
     <ClassProvider>
-      <div className="app-view">
+      <div className={`app-view${isPreviewing ? ' app-view--previewing' : ''}`}>
+        <PreviewBanner />
         <Sidebar
           role={role}
           onOpenCreateClass={handleOpenCreateClassModal}
