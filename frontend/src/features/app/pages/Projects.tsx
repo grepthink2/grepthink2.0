@@ -192,7 +192,13 @@ const Projects: React.FC = () => {
             inProject={membershipStats.inProject}
             notInProject={membershipStats.notInProject}
           />
-          <ProjectHealth projects={projectHealth} />
+          {/* <ProjectHealth projects={projectHealth} /> */}
+          <div className="project-health">
+            <h3 className="project-health__heading">Project Health</h3>
+            <div className="project-health__coming-soon">
+              <p>Coming Soon</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
