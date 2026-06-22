@@ -600,6 +600,20 @@ export const api = {
     return apiRequest<{ message: string; user_id: string; role: string | null }>('/api/login-check');
   },
 
+  checkEmail: async (email: string): Promise<{ available: boolean } | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/check-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!response.ok) return null;
+      return response.json();
+    } catch {
+      return null;
+    }
+  },
+
   /**
    * Create the profiles row for a newly-authenticated user.
    * The backend verifies that the JWT's ``sub`` matches ``userId`` in the
