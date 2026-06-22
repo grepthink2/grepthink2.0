@@ -55,6 +55,59 @@ export interface ApiClassTA {
   projects: { id: string; name: string | null }[];
 }
 
+// ----- TA meeting schedule + attendance (app/attendance backend) ------------
+
+export type AttendanceStatus = 'present' | 'late' | 'absent' | 'unmarked';
+
+export interface ApiAssignedTa {
+  id: string;
+  name: string | null;
+  email?: string | null;
+  image_url?: string | null;
+}
+
+export interface ApiTeamMeeting {
+  project_id: string;
+  project_name: string;
+  meeting_day?: string | null;
+  meeting_time?: string | null;
+  zoom_url?: string | null;
+  assigned_ta?: ApiAssignedTa | null;
+  attendance_present: number;
+  attendance_total: number;
+}
+
+export interface ApiTAMeetingSchedule {
+  class_id: string;
+  week_number: number;
+  total_weeks: number;
+  week_of?: string | null;
+  teams: ApiTeamMeeting[];
+}
+
+export interface ApiAttendanceEntry {
+  person_id: string;
+  name: string | null;
+  email?: string | null;
+  image_url?: string | null;
+  status: AttendanceStatus;
+}
+
+export interface ApiTeamAttendance {
+  project_id: string;
+  week_number: number;
+  entries: ApiAttendanceEntry[];
+}
+
+/** A class member with their class-TA designation flag (attendance feature). */
+export interface ApiClassTa {
+  user_id: string;
+  name: string | null;
+  email?: string | null;
+  image_url?: string | null;
+  is_ta: boolean;
+}
+
 /** A TA assigned to a specific project. */
 export interface ApiProjectTA {
   user_id: string;
@@ -944,6 +997,87 @@ export const api = {
   getMyEnrollmentRole: async (classId: string) => {
     return apiRequest<{ enrollment_role: 'instructor' | EnrollmentRole | null }>(
       `/api/tas/classes/${classId}/my-role`,
+    );
+  },
+
+  // ----- TA meeting schedule + attendance (app/attendance backend) ----------
+
+  /** Instructor: weekly schedule of every team's meeting slot + attendance. */
+  getTAMeetingSchedule: async (classId: string, week?: number) => {
+    const q = week != null ? `?week=${week}` : '';
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule${q}`);
+  },
+
+  /** TA: only the teams assigned to me in this class + week. */
+  getMyAssignedTeams: async (classId: string, week?: number) => {
+    const q = week != null ? `?week=${week}` : '';
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/mine${q}`);
+  },
+
+  /** Student: my own team's meeting slot + my own attendance for the week. */
+  getMyTeamSchedule: async (classId: string, week?: number) => {
+    const q = week != null ? `?week=${week}` : '';
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/my-team${q}`);
+  },
+
+  /** Roster + statuses for one team's check-in panel (week-scoped). */
+  getTeamAttendance: async (projectId: string, week: number) => {
+    return apiRequest<ApiTeamAttendance>(`/api/projects/${projectId}/attendance?week=${week}`);
+  },
+
+  /** Mark one person present/late/absent for a (project, week). */
+  upsertAttendance: async (
+    projectId: string,
+    week: number,
+    personId: string,
+    status: 'present' | 'late' | 'absent',
+  ) => {
+    return apiRequest<{ message: string; record: unknown }>(
+      `/api/projects/${projectId}/attendance`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ week_number: week, person_id: personId, status }),
+      },
+    );
+  },
+
+  /** Mark every team member present for a (project, week). */
+  markAllPresent: async (projectId: string, week: number) => {
+    return apiRequest<{ message: string; records: unknown[] }>(
+      `/api/projects/${projectId}/attendance/mark-all-present`,
+      { method: 'POST', body: JSON.stringify({ week_number: week }) },
+    );
+  },
+
+  /** Update a project's Zoom link / recurring meeting slot. */
+  updateProjectMeeting: async (
+    projectId: string,
+    data: { zoom_url?: string | null; meeting_day?: string | null; meeting_time?: string | null },
+  ) => {
+    return apiRequest<{ message: string; project: ApiProject }>(
+      `/api/projects/${projectId}/meeting`,
+      { method: 'PATCH', body: JSON.stringify(data) },
+    );
+  },
+
+  /** Instructor: enrolled students with their class-TA flag (attendance UI). */
+  getClassTaRoster: async (classId: string) => {
+    return apiRequest<{ tas: ApiClassTa[] }>(`/api/classes/${classId}/tas`);
+  },
+
+  /** Instructor: designate (isTa=true) or remove (isTa=false) a class TA. */
+  setClassTA: async (classId: string, userId: string, isTa: boolean) => {
+    return apiRequest<{ message: string; user_id: string; is_ta: boolean }>(
+      `/api/classes/${classId}/tas`,
+      { method: 'POST', body: JSON.stringify({ user_id: userId, is_ta: isTa }) },
+    );
+  },
+
+  /** Instructor: assign (taId) or clear (null) the TA for a project. */
+  assignProjectTA: async (projectId: string, taId: string | null) => {
+    return apiRequest<{ message: string; project_id: string; assigned_ta_id: string | null }>(
+      `/api/projects/${projectId}/assign-ta`,
+      { method: 'POST', body: JSON.stringify({ ta_id: taId }) },
     );
   },
 

@@ -1,0 +1,316 @@
+@use '@styles/index.scss' as *;
+
+// Local tokens with no global equivalent (match the Figma design).
+$ta-card-border: #e6e6e6;
+$ta-card-radius: 12px;
+$ta-btn-radius: 9px;
+$ta-label: #9a9a9a;
+$ta-amber: #e8833a;
+$ta-amber-bg: rgba(232, 131, 58, 0.15);
+$ta-amber-text: #b26a00;
+$ta-pill-green-bg: rgba(1, 129, 86, 0.12);
+
+.ta-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+  background: $white;
+  border: 1px solid $ta-card-border;
+  border-radius: $ta-card-radius;
+  font-family: $primary-font;
+}
+
+// ── Avatar (initials) ───────────────────────────────────────────
+.ta-card__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: $ta-pill-green-bg;
+  color: $primary-color;
+  font-weight: $font-weight-semibold;
+  line-height: 1;
+}
+
+// ── Header ──────────────────────────────────────────────────────
+.ta-card__header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+}
+
+.ta-card__name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ta-card__name {
+  font-size: 0.875rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.ta-card__sub {
+  font-size: 0.6875rem;
+  color: $text-tertiary;
+}
+
+.ta-card__pill {
+  flex-shrink: 0;
+  padding: 4px 11px;
+  border-radius: $border-radius-lg;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+
+  &--ok {
+    background: $ta-pill-green-bg;
+    color: $primary-color;
+  }
+
+  &--warn {
+    background: $ta-amber-bg;
+    color: $ta-amber-text;
+  }
+}
+
+.ta-card__chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: $text-tertiary;
+  cursor: pointer;
+  padding: 0;
+}
+
+// ── Meta grid ───────────────────────────────────────────────────
+.ta-card__meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-md;
+}
+
+.ta-card__col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ta-card__label {
+  font-size: 0.625rem;
+  font-weight: $font-weight-medium;
+  letter-spacing: 0.03em;
+  color: $ta-label;
+}
+
+.ta-card__value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: $text-primary;
+}
+
+.ta-card__value-icon {
+  color: $text-tertiary;
+  flex-shrink: 0;
+
+  &--ok {
+    color: $primary-color;
+  }
+}
+
+.ta-card__muted {
+  color: $ta-label;
+}
+
+.ta-card__ta-select {
+  font-family: $primary-font;
+  font-size: 0.75rem;
+  color: $text-primary;
+  padding: 6px 8px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  max-width: 100%;
+
+  &:focus {
+    outline: none;
+    border-color: $accent-color;
+  }
+}
+
+.ta-card__own {
+  font-weight: $font-weight-medium;
+
+  &--present { color: $primary-color; }
+  &--late { color: $ta-amber; }
+  &--absent { color: $error-color; }
+  &--unmarked { color: $ta-label; }
+}
+
+// ── Actions ─────────────────────────────────────────────────────
+.ta-card__actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.ta-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: $ta-btn-radius;
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: filter $transition-fast;
+
+  &--join {
+    background: $accent-color;
+    color: $white;
+
+    &:hover { filter: brightness(1.05); }
+  }
+
+  &--add {
+    background: $white;
+    color: $accent-color;
+    border: 1px dashed $accent-color;
+  }
+
+  &--checkin {
+    background: $white;
+    color: $text-secondary;
+    border: 1px solid $border-color;
+
+    &:hover { background: $background; }
+  }
+
+  &--disabled {
+    background: $white;
+    color: $ta-label;
+    border: 1px solid $border-color;
+    cursor: default;
+  }
+}
+
+// ── Roster (expanded check-in) ──────────────────────────────────
+.ta-card__roster {
+  border-top: 1px solid #eeeeee;
+  padding-top: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ta-card__roster-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.ta-card__roster-title {
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  color: $text-secondary;
+}
+
+.ta-card__mark-all {
+  border: none;
+  background: none;
+  color: $primary-color;
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  cursor: pointer;
+}
+
+.ta-card__roster-empty {
+  margin: 0;
+  font-size: 0.75rem;
+  color: $ta-label;
+}
+
+.ta-card__student {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 7px 0;
+
+  & + .ta-card__student {
+    border-top: 1px solid #f4f4f4;
+  }
+}
+
+.ta-card__student-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.75rem;
+  color: $text-primary;
+}
+
+// ── Segmented Present / Late / Absent ───────────────────────────
+.ta-toggle {
+  display: inline-flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ta-toggle__seg {
+  padding: 4px 9px;
+  border-radius: $border-radius-sm;
+  border: 1px solid $border-color;
+  background: $white;
+  color: #7a7a7a;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  cursor: pointer;
+
+  &.is-selected {
+    color: $white;
+    border-color: transparent;
+  }
+
+  &--present.is-selected { background: $primary-color; border-color: $primary-color; }
+  &--late.is-selected { background: $ta-amber; border-color: $ta-amber; }
+  &--absent.is-selected { background: $error-color; border-color: $error-color; }
+}
+
+// Read-only status pill (student roster row)
+.ta-card__status-pill {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: $border-radius-sm;
+  font-size: 0.6875rem;
+  font-weight: $font-weight-medium;
+
+  &--present { background: $ta-pill-green-bg; color: $primary-color; }
+  &--late { background: $ta-amber-bg; color: $ta-amber-text; }
+  &--absent { background: rgba($error-color, 0.12); color: $error-color; }
+  &--unmarked { background: #f1f1f1; color: $ta-label; }
+}
+
+// ── Responsive ──────────────────────────────────────────────────
+@media (max-width: 720px) {
+  .ta-card__meta {
+    grid-template-columns: 1fr;
+  }
+  .ta-card__student {
+    flex-wrap: wrap;
+  }
+}

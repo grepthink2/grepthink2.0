@@ -28,6 +28,10 @@ docs/
 *.sw?
 .claude/
 .env
+.env.*
+*.prod.env
+# Supabase CLI machine-local cache (linked-project ref, pooler url, versions)
+supabase/.temp/
 __pycache__/
 venv/
 .coverage
