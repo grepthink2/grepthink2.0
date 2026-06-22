@@ -58,6 +58,7 @@ function toStudentRow(
     id: a.id,
     name: a.Title,
     dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
+    dueDateIso: a.close_date,
     projectName: opts.projectName,
     projectId: opts.projectId,
     status,
