@@ -2,12 +2,22 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import type { UserRole } from '@/features/app/config/sidebar';
+import { usePreview } from './previewContext';
 
 interface AuthContextValue {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  /**
+   * Effective role driving the UI. In "View as Student" preview this is forced
+   * to 'student' so the sidebar, route guards, and page branching all simulate
+   * the student experience. Use `realRole` when you need the true account role.
+   */
   role: UserRole;
+  /** The account's true role, unaffected by preview mode. */
+  realRole: UserRole;
+  /** Whether "View as Student" preview is currently active. */
+  isPreviewing: boolean;
   getToken: () => Promise<string | null>;
   signOut: () => Promise<void>;
 }
@@ -66,7 +76,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       session,
       user: session?.user ?? null,
       loading,
+      // Provider exposes the true role; the `useAuth` hook below overlays
+      // preview state (it can't be read here — PreviewProvider is a descendant).
       role,
+      realRole: role,
+      isPreviewing: false,
       getToken: async () => {
         // Try the cached session first (cheap, no network).
         const { data } = await supabase.auth.getSession();
@@ -95,12 +109,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextValue => {
   const ctx = useContext(AuthContext);
   if (!ctx) {
     throw new Error('useAuth must be used within AuthProvider');
   }
-  return ctx;
+
+  // Overlay "View as Student" preview. Only an instructor can preview, so a
+  // student account is never affected. `usePreview` safely returns a
+  // not-previewing default when no PreviewProvider is mounted (e.g. /login).
+  const { isPreviewing } = usePreview();
+  const previewing = isPreviewing && ctx.realRole === 'instructor';
+
+  return {
+    ...ctx,
+    role: previewing ? 'student' : ctx.realRole,
+    isPreviewing: previewing,
+  };
 };
 
 export const useUser = () => {

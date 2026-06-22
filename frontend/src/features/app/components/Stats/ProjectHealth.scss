@@ -153,3 +153,22 @@ $health-orange-light: #fdf3dc;
   &:hover  { color: $text-primary; }
   &:focus  { outline: none; }
 }
+
+// ── Coming soon placeholder ────────────────────────────────────
+.project-health__coming-soon {
+  background-color: #eeeeee;
+  border-radius: $border-radius-md;
+  padding: $spacing-md;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: $font-weight-semibold;
+    color: $text-secondary;
+    letter-spacing: 0.02em;
+  }
+}

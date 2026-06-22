@@ -41,6 +41,7 @@ import TestProjects from '@pages/TestProjects';
 import Messages from '@features/messages/pages/Messages';
 import { ConversationsProvider } from '@features/messages/hooks/useConversations';
 import { NotificationsProvider } from '@features/notifications/hooks/useNotifications';
+import { PreviewProvider } from '@/lib/previewContext';
 function App() {
   return (
     <Router>
@@ -64,11 +65,13 @@ function App() {
             on /app/messages. */}
         <Route path="/app" element={<ProtectedRoute />}>
           <Route element={
-            <ConversationsProvider>
-              <NotificationsProvider>
-                <AppView />
-              </NotificationsProvider>
-            </ConversationsProvider>
+            <PreviewProvider>
+              <ConversationsProvider>
+                <NotificationsProvider>
+                  <AppView />
+                </NotificationsProvider>
+              </ConversationsProvider>
+            </PreviewProvider>
           }>
             <Route index element={<Navigate to="/app/home" replace />} />
             <Route path="home" element={<Home />} />

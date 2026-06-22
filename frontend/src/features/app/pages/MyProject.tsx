@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
+import { usePreview } from '@/lib/previewContext';
 import ProjectGrid, { ProjectGridSkeleton, type ProjectGridItem } from '@features/app/components/Project/ProjectGrid';
 import { toProjectGridItem } from '@features/app/components/Project/projectGridHelpers';
 import './BrowseProjects.scss';
 
 const MyProject: React.FC = () => {
   const { selectedClass } = useClass();
+  const { isPreviewing, previewProjectId } = usePreview();
   const [gridProjects, setGridProjects] = useState<ProjectGridItem[]>([]);
   const [singleRedirectId, setSingleRedirectId] = useState<string | null>(null);
   const [count, setCount] = useState(0);
@@ -76,6 +78,12 @@ const MyProject: React.FC = () => {
       isMounted = false;
     };
   }, [selectedClass]);
+
+  // In "View as Student" preview bound to a project, treat it as the user's
+  // project so this page mirrors a member's single-project experience.
+  if (isPreviewing && previewProjectId) {
+    return <Navigate to={`/app/projects/${previewProjectId}`} replace />;
+  }
 
   if (!selectedClass) {
     return (

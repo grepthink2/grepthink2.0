@@ -411,7 +411,7 @@ def delete_project(project_id: UUID, user_id: str) -> dict:
 
         logger.info(
             "Project deleted | project_id=%s deleted_by=%s is_instructor=%s",
-            project_id, user_id, is_instructor,
+            project_id, user_id, _is_instructor(user_id, class_id),
         )
         return {"message": "Project deleted successfully", "project_id": str(project_id)}
     except HTTPException:

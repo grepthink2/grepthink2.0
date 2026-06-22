@@ -1,5 +1,7 @@
 import React from 'react';
 import { format, parseISO } from 'date-fns';
+import SortableHeader from '@features/app/components/shared/SortableHeader';
+import { useTableSort, type SortAccessors } from '@features/app/utils/useTableSort';
 import './StudentAssignmentsTable.scss';
 
 export type StudentAssignmentStatus = 'not_started' | 'in_progress' | 'submitted';
@@ -18,6 +20,8 @@ export interface StudentAssignment {
   name: string;
   /** Display string for the table, e.g. "Jan 12, 2026" */
   dueDate: string;
+  /** Raw ISO close date (yyyy-MM-dd) used for chronological sorting. */
+  dueDateIso: string;
   projectName: string;
   status: StudentAssignmentStatus;
   action: StudentAssignmentAction;
@@ -66,11 +70,26 @@ function isActionDisabled(action: StudentAssignmentAction): boolean {
   return action === 'closed' || action === 'opens_later';
 }
 
+type AssignmentSortKey = 'name' | 'dueDate' | 'projectName' | 'status';
+
+const SORT_ACCESSORS: SortAccessors<StudentAssignment, AssignmentSortKey> = {
+  name: (a) => a.name,
+  dueDate: (a) => a.dueDateIso,
+  projectName: (a) => a.projectName,
+  status: (a) => statusLabel[a.status],
+};
+
 const StudentAssignmentsTable: React.FC<StudentAssignmentsTableProps> = ({
   assignments,
   onStart,
   onEditSubmission,
 }) => {
+  const { sortedRows: sortedAssignments, sort, toggleSort } = useTableSort(
+    assignments,
+    SORT_ACCESSORS,
+    { key: 'dueDate', direction: 'asc' },
+  );
+
   const handleActionClick = (assignment: StudentAssignment) => {
     if (assignment.action === 'start') {
       onStart?.(assignment);
@@ -91,15 +110,15 @@ const StudentAssignmentsTable: React.FC<StudentAssignmentsTableProps> = ({
           <table className="student-assignments__table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Due Date</th>
-                <th>Project Name</th>
-                <th>Status</th>
+                <SortableHeader label="Name" sortKey="name" currentSort={sort} onSort={toggleSort} />
+                <SortableHeader label="Due Date" sortKey="dueDate" currentSort={sort} onSort={toggleSort} />
+                <SortableHeader label="Project Name" sortKey="projectName" currentSort={sort} onSort={toggleSort} />
+                <SortableHeader label="Status" sortKey="status" currentSort={sort} onSort={toggleSort} />
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {assignments.map((assignment) => (
+              {sortedAssignments.map((assignment) => (
                 <tr
                   key={`${assignment.id}-${assignment.projectId ?? ''}`}
                   className={`student-assignments__row${!isActionDisabled(assignment.action) ? ' student-assignments__row--clickable' : ''}`}

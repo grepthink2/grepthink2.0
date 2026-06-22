@@ -135,6 +135,7 @@ $my-classes-app-header-height: 64px;
 
 .my-classes-card-hero {
   &--student {
+    position: relative;
     flex-shrink: 0;
     min-height: $my-classes-banner-min-height;
     background-color: $background;
@@ -237,6 +238,65 @@ $my-classes-app-header-height: 64px;
 .my-classes-card--instructor:hover .my-classes-card-hero-edit,
 .my-classes-card--instructor:focus-within .my-classes-card-hero-edit {
   opacity: 1;
+}
+
+// Student leave button — top-right of the card, always visible (not hover-gated).
+.my-classes-card-hero-leave {
+  position: absolute;
+  top: $spacing-sm;
+  right: $spacing-sm;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.92);
+  color: $text-primary;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: background-color $transition-fast, color $transition-fast, transform $transition-fast;
+
+  &:hover {
+    background-color: $white;
+    color: $error-color;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $accent-color;
+    outline-offset: 2px;
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  // CSS tooltip shown on hover — positioned below the button.
+  &::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    white-space: nowrap;
+    background-color: $text-primary;
+    color: $white;
+    font-size: 0.72rem;
+    font-weight: $font-weight-medium;
+    padding: 4px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity $transition-fast, transform $transition-fast;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .my-classes-card-body {

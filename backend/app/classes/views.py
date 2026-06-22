@@ -116,3 +116,8 @@ def bulk_invite(
 ):
     """Bulk-enroll students by email list (instructor only)."""
     return controller.bulk_invite_students(class_id, data.emails, user_id)
+
+
+def leave_class(class_id: UUID, user_id: str = Depends(require_user)):
+    """Leave a class you're enrolled in (acting student only)."""
+    return controller.leave_class(class_id, user_id)

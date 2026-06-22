@@ -176,12 +176,21 @@ const Projects: React.FC = () => {
           </div>
 
           <ProjectList
+            key={selectedClass?.id}
             projects={projects}
             loading={loading}
             error={error}
             onProjectClick={(project) =>
               navigate(`/app/projects/${project.id}`, {
                 state: { projectName: project.name },
+              })
+            }
+            onPreviewMember={(project) =>
+              // Navigate to the (shared) detail route first, then let
+              // ProjectDetails flip into preview — entering preview while still
+              // on the instructor-only list path would bounce us to Home.
+              navigate(`/app/projects/${project.id}`, {
+                state: { projectName: project.name, previewAsMember: true },
               })
             }
           />
@@ -192,7 +201,13 @@ const Projects: React.FC = () => {
             inProject={membershipStats.inProject}
             notInProject={membershipStats.notInProject}
           />
-          <ProjectHealth projects={projectHealth} />
+          {/* <ProjectHealth projects={projectHealth} /> */}
+          <div className="project-health">
+            <h3 className="project-health__heading">Project Health</h3>
+            <div className="project-health__coming-soon">
+              <p>Coming Soon</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
