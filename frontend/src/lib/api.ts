@@ -346,7 +346,7 @@ export interface ApiConversationSummary {
 
 export interface ApiNotification {
   id: string;
-  type: 'join_request' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster';
+  type: 'join_request' | 'join_rejected' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster';
   title: string;
   body: string;
   entity_type: string | null;
