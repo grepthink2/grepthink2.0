@@ -240,10 +240,13 @@ def _generate_tsr_assignments(
 
     assignments = []
     for week in range(1, count + 1):
-        open_date = first_open + datetime.timedelta(weeks=week - 1)
-        close_date = open_date + datetime.timedelta(days=6)
+        anchor = first_open + datetime.timedelta(weeks=week - 1)
+        # Snap to the Sunday that starts the anchor's week (US convention: week starts Sunday)
+        days_since_sunday = (anchor.weekday() + 1) % 7
+        open_date = anchor - datetime.timedelta(days=days_since_sunday)
+        close_date = open_date + datetime.timedelta(days=3)  # Wednesday
         assignments.append({
-            "Title": f"TSR Week {week + 2}",
+            "Title": f"TSR {week}",
             "open_date": open_date.isoformat(),
             "close_date": close_date.isoformat(),
             "status": "publish",
