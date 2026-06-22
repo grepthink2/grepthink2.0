@@ -9,7 +9,7 @@ import ProjectView, { ProjectViewSkeleton } from '@features/app/components/Proje
 const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const { selectedClass } = useClass();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [project, setProject] = useState<ApiProject | null>(null);
@@ -176,7 +176,7 @@ const ProjectDetails: React.FC = () => {
         projectMembers={members}
         onMembersChange={refreshProjectAndMembers}
         onLeave={handleLeaveProject}
-        onDelete={() => navigate('/app/browse-projects')}
+        onDelete={() => navigate(role === 'instructor' ? '/app/projects' : '/app/browse-projects')}
         hasPendingRequest={hasPendingRequest}
         onRequestSent={() => setHasPendingRequest(true)}
         sponsorName={project.sponsor_name}
