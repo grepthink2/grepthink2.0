@@ -83,7 +83,11 @@ const Modules: React.FC = () => {
     setError(null);
     try {
       const result = await api.getAssignments(selectedClass.id);
-      setAssignments((result.assignments ?? []).map(mapApiAssignment));
+      setAssignments(
+        (result.assignments ?? [])
+          .sort((a, b) => a.close_date.localeCompare(b.close_date))
+          .map(mapApiAssignment),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load assignments');
     } finally {
@@ -133,7 +137,6 @@ const Modules: React.FC = () => {
     });
     await fetchAssignments();
     await refetchTurnInStats();
-    setEditingAssignment(null);
   };
 
   const handleDeleteAssignment = async (id: string) => {

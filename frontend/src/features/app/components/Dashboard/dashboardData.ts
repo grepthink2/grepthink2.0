@@ -90,14 +90,14 @@ export function mapDashboardAssignment(a: ApiAssignment): DashboardAssignment {
   };
 }
 
-/** Most recent assignments first (by close date), limited to `limit`. */
+/** Soonest due first (by close date), limited to `limit`. */
 export function recentAssignments(
   assignments: ApiAssignment[],
   limit = 3,
 ): DashboardAssignment[] {
   return assignments
     .map(mapDashboardAssignment)
-    .sort((a, b) => b.closeDate.localeCompare(a.closeDate))
+    .sort((a, b) => a.closeDate.localeCompare(b.closeDate))
     .slice(0, limit);
 }
 

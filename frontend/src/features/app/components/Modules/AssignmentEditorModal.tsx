@@ -98,6 +98,7 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
     setIsSubmitting(true);
     try {
       await onSave?.(assignment!.id, { name: name.trim(), openDate, dueDate, status });
+      handleClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save assignment');
     } finally {

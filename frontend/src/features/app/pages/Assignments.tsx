@@ -87,6 +87,7 @@ const Assignments: React.FC = () => {
         const today = format(new Date(), 'yyyy-MM-dd');
 
         const { assignments } = await api.getAssignments(selectedClass.id);
+        assignments.sort((a, b) => a.close_date.localeCompare(b.close_date));
         const { projects: myAllProjects } = await api.getProjects();
         const { projects: classProjects } = await api.getProjects(selectedClass.id);
 
