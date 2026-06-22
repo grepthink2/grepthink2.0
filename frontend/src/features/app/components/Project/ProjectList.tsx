@@ -45,7 +45,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
   const { sortedRows: sortedProjects, sort, toggleSort } = useTableSort(
     projects,
     SORT_ACCESSORS,
-    { key: 'name', direction: 'desc' },
+    { key: 'name', direction: 'asc' },
   );
 
   const renderSentiment = (sentiment: ProjectSentiment) => {

@@ -49,7 +49,7 @@ const RosterList: React.FC<RosterListProps> = ({
   const { sortedRows: sortedStudents, sort, toggleSort } = useTableSort(
     students,
     SORT_ACCESSORS,
-    { key: 'name', direction: 'desc' },
+    { key: 'name', direction: 'asc' },
   );
 
   // TAs stay visible in the table but don't count toward the student total.

@@ -176,6 +176,7 @@ const Projects: React.FC = () => {
           </div>
 
           <ProjectList
+            key={selectedClass?.id}
             projects={projects}
             loading={loading}
             error={error}

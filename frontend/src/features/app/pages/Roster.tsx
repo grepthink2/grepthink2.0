@@ -39,6 +39,8 @@ const Roster: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    setSearch('');
+    setFilter('all');
     if (!selectedClass?.id) {
       setStudents([]);
       return;
@@ -143,7 +145,7 @@ const Roster: React.FC = () => {
           filter={filter}
           onFilterChange={setFilter}
         />
-        <RosterList students={filtered} loading={loading} error={error} showActions={false} />
+        <RosterList key={selectedClass?.id} students={filtered} loading={loading} error={error} showActions={false} />
       </div>
     );
   }
@@ -167,6 +169,7 @@ const Roster: React.FC = () => {
       <div className="roster__layout">
         <div className="roster__main">
           <RosterList
+            key={selectedClass?.id}
             students={filtered}
             loading={loading}
             error={error}

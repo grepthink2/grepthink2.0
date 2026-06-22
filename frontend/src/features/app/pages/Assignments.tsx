@@ -268,6 +268,7 @@ const Assignments: React.FC = () => {
     <div className="assignments">
       <div className="assignments__content">
         <StudentAssignmentsTable
+          key={selectedClass?.id}
           assignments={rows}
           onStart={handleOpen}
           onEditSubmission={handleOpen}
