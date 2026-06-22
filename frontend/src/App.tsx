@@ -16,6 +16,7 @@ import Login from '@features/auth/pages/Login';
 import AuthCallback from '@features/auth/pages/AuthCallback';
 import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
 import RoleSelection from '@features/auth/pages/RoleSelection';
+import CompleteProfile from '@features/auth/pages/CompleteProfile';
 import ForgetPassword from '@features/auth/pages/ForgotPassword';
 import VerifyResetPassword from '@features/auth/pages/VerifyResetPassword';
 import ResetPassword from '@features/auth/pages/ResetPassword';
@@ -56,6 +57,7 @@ function App() {
         <Route path="/studentsignup" element={<SignUpOrchestrator />} />
         <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
         <Route path="/select" element={<RoleSelection />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/forgot-password" element={<ForgetPassword />} />
         <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
