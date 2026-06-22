@@ -9,6 +9,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/auth';
+import { api } from '@/lib/api';
 import './SignUp.scss';
 import eyeIcon from '@assets/ph_eye.svg?url';
 import eyeSlashIcon from '@assets/eye-slash.svg?url';
@@ -98,23 +99,11 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
     // If signing up with a .edu email, check it isn't already claimed as
     // another account's verified edu_email before creating the auth account.
     if (formData.email.toLowerCase().endsWith('.edu')) {
-      try {
-        const checkRes = await fetch('/api/check-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.email }),
-        });
-        if (checkRes.ok) {
-          const checkData = await checkRes.json();
-          if (!checkData.available) {
-            setError('This .edu email is already linked to another account.');
-            setIsLoading(false);
-            return;
-          }
-        }
-      } catch {
-        // Network error on the pre-check — let signup proceed; the backend
-        // create-user endpoint has a defensive check as a second layer.
+      const checkData = await api.checkEmail(formData.email);
+      if (checkData && !checkData.available) {
+        setError('This .edu email is already linked to another account.');
+        setIsLoading(false);
+        return;
       }
     }
 
@@ -148,24 +137,14 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
 
       // Sync with Backend
       try {
-        const response = await fetch('/api/create-user', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            userId: data.user.id,
-            email: formData.email,
-            userType: userType
-          }),
+        await api.createUser({
+          userId: data.user.id,
+          email: formData.email,
+          userType: userType || 'student',
         });
-        
-        if (!response.ok) {
-          console.error('Failed to sync user to database, but auth succeeded');
-        }
       } catch (syncError) {
-           console.error('Sync error:', syncError);
+        // 409 means the DB trigger already created the profile row — treat as success.
+        console.error('Failed to sync user to database, but auth succeeded', syncError);
       }
 
       if (onAccountCreated) {

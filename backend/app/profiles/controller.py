@@ -38,10 +38,10 @@ def get_profile(user_id: str) -> dict:
         client.table('profiles')
         .select(PROFILE_FIELDS)
         .eq('id', user_id)
-        .single()
+        .limit(1)
         .execute()
     )
-    return result.data or {}
+    return result.data[0] if result.data else {}
 
 
 def _user_has_class_access(client, user_id: str, class_id: str, created_by: str) -> bool:
