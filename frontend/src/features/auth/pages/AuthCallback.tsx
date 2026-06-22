@@ -82,7 +82,9 @@ const AuthCallback: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (cancelled) return;
-        if (event === 'SIGNED_IN' && session) {
+        // SIGNED_IN fires for OAuth logins.
+        // USER_UPDATED fires after email confirmation links are clicked.
+        if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session) {
           subscription.unsubscribe();
           routeUser(session.access_token);
         }
