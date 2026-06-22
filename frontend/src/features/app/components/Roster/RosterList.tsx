@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserMinus, Mail } from 'lucide-react';
+import { UserMinus, Mail, Loader2 } from 'lucide-react';
 import type { UiStudent, ClassStatus, GrepthinkStatus } from './rosterTypes';
 import { countableStudents } from './rosterTypes';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
@@ -14,6 +14,7 @@ interface RosterListProps {
   showActions?: boolean;
   onInvite?: (student: UiStudent) => void;
   onRemove?: (student: UiStudent) => void;
+  invitingEmails?: Set<string>;
 }
 
 const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
@@ -45,6 +46,7 @@ const RosterList: React.FC<RosterListProps> = ({
   showActions = false,
   onInvite,
   onRemove,
+  invitingEmails = new Set(),
 }) => {
   const { sortedRows: sortedStudents, sort, toggleSort } = useTableSort<UiStudent, RosterSortKey>(
     students,
@@ -152,8 +154,18 @@ const RosterList: React.FC<RosterListProps> = ({
                             <UserMinus size={13} /> Remove
                           </button>
                         ) : (
-                          <button className="roster-list__action-btn roster-list__action-btn--invite" onClick={() => onInvite?.(student)} type="button">
-                            <Mail size={13} /> Invite
+                          <button
+                            className="roster-list__action-btn roster-list__action-btn--invite"
+                            onClick={() => onInvite?.(student)}
+                            type="button"
+                            disabled={invitingEmails.has(student.email)}
+                          >
+                            {invitingEmails.has(student.email) ? (
+                              <Loader2 size={13} className="roster-list__spinner" />
+                            ) : (
+                              <Mail size={13} />
+                            )}
+                            {invitingEmails.has(student.email) ? 'Sending…' : 'Invite'}
                           </button>
                         )}
                       </td>
@@ -206,8 +218,18 @@ const RosterList: React.FC<RosterListProps> = ({
                       <UserMinus size={13} /> Remove
                     </button>
                   ) : (
-                    <button className="roster-list__action-btn roster-list__action-btn--invite" onClick={() => onInvite?.(student)} type="button">
-                      <Mail size={13} /> Invite
+                    <button
+                      className="roster-list__action-btn roster-list__action-btn--invite"
+                      onClick={() => onInvite?.(student)}
+                      type="button"
+                      disabled={invitingEmails.has(student.email)}
+                    >
+                      {invitingEmails.has(student.email) ? (
+                        <Loader2 size={13} className="roster-list__spinner" />
+                      ) : (
+                        <Mail size={13} />
+                      )}
+                      {invitingEmails.has(student.email) ? 'Sending…' : 'Invite'}
                     </button>
                   )}
                 </div>
