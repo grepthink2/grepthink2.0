@@ -122,6 +122,12 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
         throw signUpError;
       }
 
+      if (!data.user) {
+        setError('Failed to create account. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
       const token = data.session?.access_token || (await getToken());
       if (!token) {
         setError('Failed to retrieve auth token. Please try again.');
