@@ -84,7 +84,7 @@ const StudentAssignmentsTable: React.FC<StudentAssignmentsTableProps> = ({
   onStart,
   onEditSubmission,
 }) => {
-  const { sortedRows: sortedAssignments, sort, toggleSort } = useTableSort(
+  const { sortedRows: sortedAssignments, sort, toggleSort } = useTableSort<StudentAssignment, AssignmentSortKey>(
     assignments,
     SORT_ACCESSORS,
     { key: 'dueDate', direction: 'asc' },

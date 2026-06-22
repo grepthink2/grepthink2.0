@@ -10,25 +10,9 @@ import ProjectList, {
   type ProjectSentiment,
 } from '@features/app/components/Project/ProjectList';
 import ProjectMembershipChart from '@features/app/components/Stats/ProjectMembershipChart';
-import ProjectHealth, {
-  type ProjectHealthItem,
-  type HealthStatus,
-} from '@features/app/components/Stats/ProjectHealth';
 import './Projects.scss';
 
 const UNASSIGNED = 'Unassigned';
-
-const SENTIMENT_TO_HEALTH: Record<ProjectSentiment, HealthStatus> = {
-  positive: 'excellent',
-  neutral: 'warning',
-  negative: 'poor',
-};
-
-const HEALTH_DESCRIPTION: Record<ProjectSentiment, string> = {
-  positive: 'Team sentiment is positive',
-  neutral: 'Team sentiment is neutral',
-  negative: 'Team sentiment is negative',
-};
 
 function normalizeSentiment(raw: string | null | undefined): ProjectSentiment {
   if (raw === 'positive' || raw === 'neutral' || raw === 'negative') {
@@ -48,32 +32,6 @@ function mapApiProjectToUi(project: ApiProject): UiProject {
     smEmail: project.scrum_master_email ?? '',
     sentiment: normalizeSentiment(project.sentiment ?? undefined),
   };
-}
-
-function buildProjectHealth(apiProjects: ApiProject[]): ProjectHealthItem[] {
-  const severityOrder: Record<ProjectSentiment, number> = {
-    negative: 0,
-    neutral: 1,
-    positive: 2,
-  };
-
-  return apiProjects
-    .filter((p) => p.sentiment)
-    .map((p) => {
-      const sentiment = normalizeSentiment(p.sentiment);
-      return {
-        order: severityOrder[sentiment],
-        item: {
-          id: p.id,
-          name: p.name,
-          health: SENTIMENT_TO_HEALTH[sentiment],
-          description: HEALTH_DESCRIPTION[sentiment],
-          via: 'Team Sentiment',
-        },
-      };
-    })
-    .sort((a, b) => a.order - b.order)
-    .map(({ item }) => item);
 }
 
 function countProjectMembership(students: ApiStudent[]) {
@@ -99,11 +57,6 @@ const Projects: React.FC = () => {
 
   const projects = useMemo(
     () => apiProjects.map(mapApiProjectToUi),
-    [apiProjects],
-  );
-
-  const projectHealth = useMemo(
-    () => buildProjectHealth(apiProjects),
     [apiProjects],
   );
 

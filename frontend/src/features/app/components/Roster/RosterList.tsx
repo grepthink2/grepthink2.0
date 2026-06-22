@@ -46,7 +46,7 @@ const RosterList: React.FC<RosterListProps> = ({
   onInvite,
   onRemove,
 }) => {
-  const { sortedRows: sortedStudents, sort, toggleSort } = useTableSort(
+  const { sortedRows: sortedStudents, sort, toggleSort } = useTableSort<UiStudent, RosterSortKey>(
     students,
     SORT_ACCESSORS,
     { key: 'name', direction: 'asc' },

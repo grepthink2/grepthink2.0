@@ -44,7 +44,7 @@ const SORT_ACCESSORS: SortAccessors<UiProject, ProjectSortKey> = {
 };
 
 const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onProjectClick, onPreviewMember }) => {
-  const { sortedRows: sortedProjects, sort, toggleSort } = useTableSort(
+  const { sortedRows: sortedProjects, sort, toggleSort } = useTableSort<UiProject, ProjectSortKey>(
     projects,
     SORT_ACCESSORS,
     { key: 'name', direction: 'asc' },
