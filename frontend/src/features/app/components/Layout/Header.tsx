@@ -242,6 +242,28 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
     onOpenSettings();
   };
 
+  // Lightweight search: "leave class" (and close variants) jumps to My Classes,
+  // where students can leave a class from its card.
+  const matchesLeaveClass = (query: string): boolean => {
+    const q = query.toLowerCase().trim();
+    if (!q) return false;
+    return (
+      (q.includes('leave') && q.includes('class')) ||
+      (q.includes('drop') && q.includes('class')) ||
+      q.includes('unenroll')
+    );
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    if (matchesLeaveClass(searchQuery)) {
+      e.preventDefault();
+      navigate('/app/my-classes');
+      setSearchQuery('');
+      e.currentTarget.blur();
+    }
+  };
+
   return (
     <header className={`app-header${isClassRoute ? ' app-header--class' : ''}`}>
       {/* Mobile-only: open the off-canvas nav drawer */}
@@ -409,6 +431,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
             placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
             className="app-header__search-input"
           />
         </div>

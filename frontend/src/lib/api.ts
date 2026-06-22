@@ -610,6 +610,14 @@ export const api = {
     );
   },
 
+  // Student leaves a class they're enrolled in.
+  leaveClass: async (classId: string) => {
+    return apiRequest<{ message: string; class_id: string }>(
+      `/api/classes/${classId}/leave`,
+      { method: 'DELETE' },
+    );
+  },
+
   bulkInviteStudents: async (classId: string, emails: string[]) => {
     return apiRequest<ApiBulkInviteResult>(
       `/api/classes/${classId}/students/bulk-invite`,

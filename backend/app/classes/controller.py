@@ -953,15 +953,78 @@ def upload_class_roster(class_id: UUID, csv_text: str, instructor_id: str) -> di
         raise HTTPException(status_code=500, detail="Failed to upload roster")
 
 
+def _purge_student_from_class(client, class_id: UUID, student_id: str) -> None:
+    """
+    Remove all of a student's class-scoped state. Caller is responsible for
+    authorization and error handling.
+
+    - Removes from every project in the class (project_members) and
+      decrements each affected project's num_members counter.
+    - Cancels all pending project_join_requests for projects in this class.
+    - Removes any TA project assignments for the user in the class.
+    - Removes the class_enrollments row.
+    """
+    projects_res = (
+        client.table('projects').select('id')
+        .eq('class_id', str(class_id))
+        .execute()
+    )
+    project_ids = [p['id'] for p in (projects_res.data or [])]
+
+    if project_ids:
+        # Find which projects the student is actually a member of so we
+        # can decrement their num_members counters accurately.
+        existing_memberships = (
+            client.table('project_members').select('project_id')
+            .eq('user_id', student_id)
+            .in_('project_id', project_ids)
+            .execute()
+        )
+        affected_project_ids = [
+            m['project_id'] for m in (existing_memberships.data or [])
+        ]
+
+        # Remove project memberships.
+        client.table('project_members').delete().eq(
+            'user_id', student_id
+        ).in_('project_id', project_ids).execute()
+
+        # Decrement num_members for each affected project.
+        for pid in affected_project_ids:
+            proj = (
+                client.table('projects').select('num_members')
+                .eq('id', pid).execute()
+            )
+            if proj.data:
+                current = proj.data[0].get('num_members') or 0
+                client.table('projects').update(
+                    {'num_members': max(0, int(current) - 1)}
+                ).eq('id', pid).execute()
+
+        # Cancel all pending join requests for projects in this class.
+        client.table('project_join_requests').delete().eq(
+            'user_id', student_id
+        ).in_('project_id', project_ids).eq(
+            'request_status', 'pending'
+        ).execute()
+
+    # Remove any TA project assignments for this user in the class.
+    client.table('project_ta_assignments').delete().eq(
+        'class_id', str(class_id)
+    ).eq('user_id', student_id).execute()
+
+    # Remove class enrollment.
+    client.table('class_enrollments').delete().eq(
+        'class_id', str(class_id)
+    ).eq('user_id', student_id).execute()
+
+
 def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: str) -> dict:
     """
     Remove a student's enrollment from a class (instructor only).
 
-    Cleans up all class-related state for the student:
-    - Removes from every project in the class (project_members) and
-      decrements each affected project's num_members counter.
-    - Cancels all pending project_join_requests for projects in this class.
-    - Removes the class_enrollments row.
+    Cleans up all class-related state for the student via
+    :func:`_purge_student_from_class`.
     """
     try:
         client = service_client if service_client else supabase
@@ -977,59 +1040,7 @@ def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: st
                 detail="Class not found or you do not have permission",
             )
 
-        projects_res = (
-            client.table('projects').select('id')
-            .eq('class_id', str(class_id))
-            .execute()
-        )
-        project_ids = [p['id'] for p in (projects_res.data or [])]
-
-        if project_ids:
-            # Find which projects the student is actually a member of so we
-            # can decrement their num_members counters accurately.
-            existing_memberships = (
-                client.table('project_members').select('project_id')
-                .eq('user_id', student_id)
-                .in_('project_id', project_ids)
-                .execute()
-            )
-            affected_project_ids = [
-                m['project_id'] for m in (existing_memberships.data or [])
-            ]
-
-            # Remove project memberships.
-            client.table('project_members').delete().eq(
-                'user_id', student_id
-            ).in_('project_id', project_ids).execute()
-
-            # Decrement num_members for each affected project.
-            for pid in affected_project_ids:
-                proj = (
-                    client.table('projects').select('num_members')
-                    .eq('id', pid).execute()
-                )
-                if proj.data:
-                    current = proj.data[0].get('num_members') or 0
-                    client.table('projects').update(
-                        {'num_members': max(0, int(current) - 1)}
-                    ).eq('id', pid).execute()
-
-            # Cancel all pending join requests for projects in this class.
-            client.table('project_join_requests').delete().eq(
-                'user_id', student_id
-            ).in_('project_id', project_ids).eq(
-                'request_status', 'pending'
-            ).execute()
-
-        # Remove any TA project assignments for this user in the class.
-        client.table('project_ta_assignments').delete().eq(
-            'class_id', str(class_id)
-        ).eq('user_id', student_id).execute()
-
-        # Remove class enrollment.
-        client.table('class_enrollments').delete().eq(
-            'class_id', str(class_id)
-        ).eq('user_id', student_id).execute()
+        _purge_student_from_class(client, class_id, student_id)
 
         logger.info(
             "Student removed from class | class_id=%s student_id=%s removed_by=%s",
@@ -1043,6 +1054,42 @@ def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: st
             "Error removing student | class_id=%s student_id=%s", class_id, student_id
         )
         raise HTTPException(status_code=500, detail="Failed to remove student")
+
+
+def leave_class(class_id: UUID, user_id: str) -> dict:
+    """
+    Remove the acting student's own enrollment from a class.
+
+    Authorizes the user as themselves (must be enrolled) and then performs the
+    same cleanup as an instructor-initiated removal.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        enrollment = (
+            client.table('class_enrollments').select('id')
+            .eq('class_id', str(class_id)).eq('user_id', user_id)
+            .execute()
+        )
+        if not enrollment.data:
+            raise HTTPException(
+                status_code=404,
+                detail="You are not enrolled in this class",
+            )
+
+        _purge_student_from_class(client, class_id, user_id)
+
+        logger.info(
+            "Student left class | class_id=%s user_id=%s", class_id, user_id,
+        )
+        return {"message": "You have left the class", "class_id": str(class_id)}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error leaving class | class_id=%s user_id=%s", class_id, user_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to leave class")
 
 
 def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) -> dict:
