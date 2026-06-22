@@ -32,7 +32,7 @@ const ProjectHeader: React.FC<ProjectHeaderProps> = ({
               className="create-project__title-input"
               value={projectTitle}
               onChange={(e) => onTitleChange(e.target.value)}
-              placeholder="Project Title"
+              placeholder="Your Project Title Here"
             />
             {titleError && (
               <div className="create-project__field-error" role="alert">
