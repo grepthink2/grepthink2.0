@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Search, Mail, Upload, ChevronDown } from 'lucide-react';
+import { Search, Mail, Upload, ChevronDown, Loader2 } from 'lucide-react';
 import type { FilterOption } from './rosterTypes';
 import { FILTER_LABELS } from './rosterTypes';
 import { useClickOutside } from '@features/app/components/Interest/useClickOutside';
@@ -13,6 +13,7 @@ interface ControlBarProps {
   /** Instructor-only — omit for student view */
   notRegisteredCount?: number;
   onInviteAll?: () => void;
+  inviteAllLoading?: boolean;
   onRosterFileSelected?: (file: File) => void;
 }
 
@@ -23,6 +24,7 @@ const ControlBar: React.FC<ControlBarProps> = ({
   onFilterChange,
   notRegisteredCount,
   onInviteAll,
+  inviteAllLoading = false,
   onRosterFileSelected,
 }) => {
   const [filterOpen, setFilterOpen] = useState(false);
@@ -100,10 +102,15 @@ const ControlBar: React.FC<ControlBarProps> = ({
         <button
           className="roster-control-bar__btn roster-control-bar__btn--invite"
           onClick={onInviteAll}
+          disabled={inviteAllLoading || notRegisteredCount === 0}
         >
-          <Mail size={14} />
-          Invite All Not Registered
-          {notRegisteredCount !== undefined && (
+          {inviteAllLoading ? (
+            <Loader2 size={14} className="roster-control-bar__spinner" />
+          ) : (
+            <Mail size={14} />
+          )}
+          {inviteAllLoading ? 'Sending…' : 'Invite All Not Registered'}
+          {!inviteAllLoading && notRegisteredCount !== undefined && (
             <span className="roster-control-bar__badge">{notRegisteredCount}</span>
           )}
         </button>
