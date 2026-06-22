@@ -25,6 +25,7 @@ import Roster from '@features/app/pages/Roster';
 import Modules from '@features/app/pages/Modules';
 import TAManagement from '@features/app/pages/TAManagement';
 import TAReview from '@features/app/pages/TAReview';
+import TAMeetings from '@features/app/pages/TAMeetings';
 import TSRViewPage from '@features/app/pages/TSRViewPage';
 import FeedbackViewPage from '@features/app/pages/FeedbackViewPage';
 import Dashboard from '@features/app/pages/Dashboard';
@@ -89,6 +90,7 @@ function App() {
             <Route path="modules/tsr/:assignmentId" element={<TSRViewPage />} />
             <Route path="modules/feedback/:assignmentId" element={<FeedbackViewPage />} />
             <Route path="ta-management" element={<TAManagement />} />
+            <Route path="ta-meetings" element={<TAMeetings />} />
             <Route path="ta-review" element={<TAReview />} />
             <Route path="ta-review/:assignmentId" element={<TAReview />} />
             <Route path="create-project" element={<CreateProject />} />

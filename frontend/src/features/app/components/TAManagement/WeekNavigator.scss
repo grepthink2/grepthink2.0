@@ -1,0 +1,46 @@
+@use '@styles/index.scss' as *;
+
+.week-navigator {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: 6px 10px;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  font-family: $primary-font;
+}
+
+.week-navigator__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: $text-tertiary;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: $border-radius-sm;
+
+  &:hover:not(:disabled) {
+    background: $background;
+    color: $text-primary;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.week-navigator__label {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  color: $text-secondary;
+  white-space: nowrap;
+}
+
+.week-navigator__sub {
+  color: $text-tertiary;
+  font-weight: $font-weight-normal;
+}

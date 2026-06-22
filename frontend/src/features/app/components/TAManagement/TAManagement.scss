@@ -1,0 +1,124 @@
+@use '@styles/index.scss' as *;
+
+.ta-page {
+  padding: $spacing-lg;
+  min-height: 100%;
+  font-family: $primary-font;
+}
+
+// ── Topbar (title + week navigator) ─────────────────────────────
+.ta-page__topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+  flex-wrap: wrap;
+}
+
+.ta-page__heading {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.ta-page__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.ta-page__subtitle {
+  font-size: 0.9375rem;
+  color: $text-tertiary;
+}
+
+.ta-page__topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.ta-page__manage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  background: $white;
+  color: $text-secondary;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  cursor: pointer;
+
+  &:hover { background: $background; }
+}
+
+// ── Section header + count badge ────────────────────────────────
+.ta-page__section-head {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.ta-page__section-title {
+  font-size: 1rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.ta-page__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  background: $primary-color;
+  color: $white;
+  border-radius: 11px;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+}
+
+.ta-page__divider {
+  height: 1px;
+  background: $border-color;
+  margin-bottom: $spacing-md;
+}
+
+// ── List of team cards ──────────────────────────────────────────
+.ta-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// ── States ──────────────────────────────────────────────────────
+.ta-page__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30vh;
+  color: $text-secondary;
+  font-size: $font-size-base;
+  text-align: center;
+
+  p { margin: 0; }
+}
+
+.ta-page__empty--stack {
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+}
+
+.ta-page__empty-text {
+  max-width: 28rem;
+  line-height: 1.5;
+}

@@ -22,6 +22,7 @@ from app.contact.url import router as contact_router
 from app.notifications.url import router as notifications_router
 from app.tas.url import router as tas_router
 from app.stats.url import router as stats_router
+from app.attendance.url import router as attendance_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -60,3 +61,4 @@ app.include_router(contact_router)
 app.include_router(notifications_router)
 app.include_router(tas_router)
 app.include_router(stats_router)
+app.include_router(attendance_router)
