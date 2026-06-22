@@ -87,12 +87,20 @@ const Roster: React.FC = () => {
     setActionError(null);
     try {
       const result = await api.bulkInviteStudents(selectedClass.id, emails);
-      const notFound = result.results.filter((r) => r.status === 'not_found').length;
+      const emailFailed = result.results.filter((r) => r.status === 'email_failed').length;
       await loadRoster(selectedClass.id);
-      if (notFound > 0) {
-        setActionError(
-          `Invited ${result.enrolled_count} student(s). ${notFound} email(s) have no GrepThink account yet.`,
-        );
+      const parts: string[] = [];
+      if (result.invited_count > 0) {
+        parts.push(`Sent ${result.invited_count} signup invitation(s)`);
+      }
+      if (result.enrolled_count > 0) {
+        parts.push(`Enrolled ${result.enrolled_count} registered student(s)`);
+      }
+      if (emailFailed > 0) {
+        parts.push(`${emailFailed} email(s) could not be delivered`);
+      }
+      if (parts.length > 0) {
+        setActionError(parts.join('. ') + '.');
       }
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Failed to invite students');

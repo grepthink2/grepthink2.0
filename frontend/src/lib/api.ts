@@ -78,6 +78,7 @@ export interface ApiRosterUploadResult {
 export interface ApiBulkInviteResult {
   results: { email: string; status: string }[];
   enrolled_count: number;
+  invited_count: number;
 }
 
 export interface ApiProfile {

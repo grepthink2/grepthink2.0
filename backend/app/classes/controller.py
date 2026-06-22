@@ -17,6 +17,8 @@ from app.database.client import (
 )
 from app.utils.generators import generate_course_code
 from app.utils.class_banner import upload_class_banner
+from app.utils.profiles import profile_display_name
+from app.classes.invite_email import send_class_invite_email, send_class_invite_email_or_raise
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +124,22 @@ def _find_student_profile_by_email(client, email: str) -> dict | None:
     if email_match.data:
         return email_match.data[0]
     return None
+
+
+def _class_invite_email_context(client, class_row: dict, instructor_id: str) -> dict:
+    """Build shared invite-email fields from a class row and instructor profile."""
+    instructor_res = (
+        client.table('profiles')
+        .select('id, email, first_name, last_name')
+        .eq('id', instructor_id)
+        .execute()
+    )
+    instructor = instructor_res.data[0] if instructor_res.data else {}
+    return {
+        'class_name': class_row.get('name') or 'your class',
+        'course_code': class_row.get('course_code') or '',
+        'instructor_name': profile_display_name(instructor),
+    }
 
 
 def _build_profile_email_map(profiles: list[dict]) -> dict[str, dict]:
@@ -564,56 +582,88 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
 
 def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: str) -> dict:
     """
-    Invite a student to a class
-    
-    Args:
-        class_id: Class unique identifier
-        student_email: Email of the student to invite
-        instructor_id: ID of the instructor making the invitation
-        
-    Returns:
-        Dictionary with success message
-        
-    Raises:
-        HTTPException: If class not found, student not found, or database error occurs
+    Invite a student to a class by email.
+
+    If the student already has a GrepThink account, enroll them and send a
+    notification email. If they are on the roster but not registered yet, send
+    a signup invitation with the class access code instead of returning 404.
     """
     try:
         client = service_client if service_client else supabase
-        
-        # Verify the class exists and belongs to this instructor
-        class_result = client.table('classes').select('*').eq('id', str(class_id)).eq('created_by', instructor_id).execute()
-        if not class_result.data or len(class_result.data) == 0:
+        normalized_email = student_email.strip().lower()
+
+        class_result = (
+            client.table('classes')
+            .select('id, name, course_code, created_by')
+            .eq('id', str(class_id))
+            .eq('created_by', instructor_id)
+            .execute()
+        )
+        if not class_result.data:
             raise HTTPException(status_code=404, detail="Class not found or you don't have permission")
-        
-        # Find the student by email (edu_email or primary email)
-        student = _find_student_profile_by_email(client, student_email)
+
+        class_row = class_result.data[0]
+        email_ctx = _class_invite_email_context(client, class_row, instructor_id)
+
+        student = _find_student_profile_by_email(client, normalized_email)
         if not student:
-            raise HTTPException(status_code=404, detail="Student not found")
-        
-        # Verify the user is actually a student
+            send_class_invite_email_or_raise(
+                to=normalized_email,
+                registered=False,
+                **email_ctx,
+            )
+            logger.info(
+                "Signup invite email sent | class_id=%s student_email=%s invited_by=%s",
+                class_id, normalized_email, instructor_id,
+            )
+            return {
+                "message": "Invitation email sent",
+                "student_email": normalized_email,
+            }
+
         if student['role'] != 'student':
             raise HTTPException(status_code=400, detail="User is not a student")
-        
-        # Check if already enrolled
-        existing = client.table('class_enrollments').select('*').eq('class_id', str(class_id)).eq('user_id', student['id']).execute()
-        if existing.data and len(existing.data) > 0:
-            return {"message": "Student already enrolled in this class"}
-        
-        # Create enrollment
-        enrollment_data = {
-            "class_id": str(class_id),
-            "user_id": student['id']
-        }
-        client.table('class_enrollments').insert(enrollment_data).execute()
-        
-        logger.info(
-            "Student invited to class | class_id=%s student_email=%s invited_by=%s",
-            class_id, student_email, instructor_id,
+
+        existing = (
+            client.table('class_enrollments')
+            .select('id')
+            .eq('class_id', str(class_id))
+            .eq('user_id', student['id'])
+            .execute()
         )
-        return {
-            "message": "Student invited successfully",
-            "student_email": student_email
-        }
+        already_enrolled = bool(existing.data)
+        if not already_enrolled:
+            client.table('class_enrollments').insert({
+                "class_id": str(class_id),
+                "user_id": student['id'],
+            }).execute()
+
+        delivery_email = (student.get('email') or normalized_email).strip().lower()
+        try:
+            send_class_invite_email(
+                to=delivery_email,
+                registered=True,
+                **email_ctx,
+            )
+        except Exception:
+            logger.exception(
+                "Enrollment succeeded but invite email failed | class_id=%s email=%s",
+                class_id, delivery_email,
+            )
+            if not already_enrolled:
+                return {
+                    "message": "Student enrolled, but the notification email could not be sent",
+                    "student_email": normalized_email,
+                }
+            raise HTTPException(status_code=502, detail="Failed to send invitation email")
+
+        logger.info(
+            "Student invited to class | class_id=%s student_email=%s invited_by=%s enrolled=%s",
+            class_id, normalized_email, instructor_id, not already_enrolled,
+        )
+        if already_enrolled:
+            return {"message": "Student already enrolled; invitation email resent", "student_email": normalized_email}
+        return {"message": "Student invited successfully", "student_email": normalized_email}
     except HTTPException:
         raise
     except Exception:
@@ -1044,21 +1094,24 @@ def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: st
 
 def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) -> dict:
     """
-    Enroll a batch of students by email address (instructor only).
+    Invite a batch of roster students by email (instructor only).
 
     For each email the possible statuses are:
-    - ``enrolled``       – new enrollment created.
-    - ``already_enrolled`` – student was already in the class.
-    - ``not_found``      – no profile exists with this email.
-    - ``not_a_student``  – profile exists but the role is not 'student'.
-    - ``error``          – unexpected DB error for this email.
+    - ``enrolled``         – existing GrepThink student enrolled + email sent.
+    - ``invited``          – no account yet; signup invitation email sent.
+    - ``already_enrolled`` – student was already in the class; reminder email sent.
+    - ``not_a_student``    – profile exists but the role is not 'student'.
+    - ``email_failed``     – SMTP/delivery error for this address.
+    - ``error``            – unexpected DB error for this email.
     """
     try:
         client = service_client if service_client else supabase
 
         class_result = (
-            client.table('classes').select('id')
-            .eq('id', str(class_id)).eq('created_by', instructor_id)
+            client.table('classes')
+            .select('id, name, course_code, created_by')
+            .eq('id', str(class_id))
+            .eq('created_by', instructor_id)
             .execute()
         )
         if not class_result.data:
@@ -1067,7 +1120,9 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
                 detail="Class not found or you do not have permission",
             )
 
-        # Normalise and deduplicate the submitted list.
+        class_row = class_result.data[0]
+        email_ctx = _class_invite_email_context(client, class_row, instructor_id)
+
         clean_emails = list({e.strip().lower() for e in emails if e.strip()})
 
         results = []
@@ -1075,7 +1130,15 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
             try:
                 profile = _find_student_profile_by_email(client, email)
                 if not profile:
-                    results.append({'email': email, 'status': 'not_found'})
+                    try:
+                        send_class_invite_email(to=email, registered=False, **email_ctx)
+                        results.append({'email': email, 'status': 'invited'})
+                    except Exception as exc:
+                        logger.warning(
+                            "bulk_invite: email failed for unregistered | email=%s err=%s",
+                            email, exc,
+                        )
+                        results.append({'email': email, 'status': 'email_failed'})
                     continue
 
                 if profile.get('role') != 'student':
@@ -1083,20 +1146,39 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
                     continue
 
                 existing = (
-                    client.table('class_enrollments').select('id')
+                    client.table('class_enrollments')
+                    .select('id')
                     .eq('class_id', str(class_id))
                     .eq('user_id', profile['id'])
                     .execute()
                 )
-                if existing.data:
-                    results.append({'email': email, 'status': 'already_enrolled'})
-                    continue
+                already_enrolled = bool(existing.data)
+                if not already_enrolled:
+                    client.table('class_enrollments').insert({
+                        'class_id': str(class_id),
+                        'user_id': profile['id'],
+                    }).execute()
 
-                client.table('class_enrollments').insert({
-                    'class_id': str(class_id),
-                    'user_id': profile['id'],
-                }).execute()
-                results.append({'email': email, 'status': 'enrolled'})
+                delivery_email = (profile.get('email') or email).strip().lower()
+                try:
+                    send_class_invite_email(
+                        to=delivery_email,
+                        registered=True,
+                        **email_ctx,
+                    )
+                    results.append({
+                        'email': email,
+                        'status': 'already_enrolled' if already_enrolled else 'enrolled',
+                    })
+                except Exception as exc:
+                    logger.warning(
+                        "bulk_invite: email failed for registered | email=%s err=%s",
+                        email, exc,
+                    )
+                    if already_enrolled:
+                        results.append({'email': email, 'status': 'email_failed'})
+                    else:
+                        results.append({'email': email, 'status': 'enrolled'})
 
             except Exception as e:
                 logger.warning(
@@ -1106,11 +1188,16 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
                 results.append({'email': email, 'status': 'error'})
 
         enrolled_count = sum(1 for r in results if r['status'] == 'enrolled')
+        invited_count = sum(1 for r in results if r['status'] == 'invited')
         logger.info(
-            "bulk_invite_students: class=%s enrolled=%d total=%d",
-            class_id, enrolled_count, len(results),
+            "bulk_invite_students: class=%s enrolled=%d invited=%d total=%d",
+            class_id, enrolled_count, invited_count, len(results),
         )
-        return {'results': results, 'enrolled_count': enrolled_count}
+        return {
+            'results': results,
+            'enrolled_count': enrolled_count,
+            'invited_count': invited_count,
+        }
     except HTTPException:
         raise
     except Exception:
