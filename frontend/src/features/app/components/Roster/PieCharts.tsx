@@ -1,6 +1,7 @@
 import React from 'react';
 import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 import type { UiStudent, ClassStatus, GrepthinkStatus } from './rosterTypes';
+import { countableStudents } from './rosterTypes';
 import './PieCharts.scss';
 
 interface PieChartsProps {
@@ -65,10 +66,14 @@ const SliceTooltip = ({
 };
 
 const PieCharts: React.FC<PieChartsProps> = ({ students }) => {
+  // TAs are overseers, not part of the student population, so they're excluded
+  // from these charts.
+  const countable = countableStudents(students);
+
   const classStatusData: ChartEntry[] = (Object.keys(CLASS_STATUS_COLORS) as ClassStatus[])
     .map((status) => ({
       name: CLASS_STATUS_LABELS[status],
-      value: students.filter((s) => s.classStatus === status).length,
+      value: countable.filter((s) => s.classStatus === status).length,
       color: CLASS_STATUS_COLORS[status],
     }))
     .filter((d) => d.value > 0);
@@ -76,7 +81,7 @@ const PieCharts: React.FC<PieChartsProps> = ({ students }) => {
   const gtStatusData: ChartEntry[] = (Object.keys(GT_STATUS_COLORS) as GrepthinkStatus[])
     .map((status) => ({
       name: GT_STATUS_LABELS[status],
-      value: students.filter((s) => s.grepthinkStatus === status).length,
+      value: countable.filter((s) => s.grepthinkStatus === status).length,
       color: GT_STATUS_COLORS[status],
     }))
     .filter((d) => d.value > 0);
@@ -120,8 +125,8 @@ const PieCharts: React.FC<PieChartsProps> = ({ students }) => {
 
   return (
     <div className="pie-charts">
-      {renderChart('Class Roster Status', classStatusData, students.length)}
-      {renderChart('GrepThink Registration', gtStatusData, students.length)}
+      {renderChart('Class Roster Status', classStatusData, countable.length)}
+      {renderChart('GrepThink Registration', gtStatusData, countable.length)}
     </div>
   );
 };

@@ -346,17 +346,23 @@ def create_class(
 
 
 def _enrollment_counts_by_class(client, class_ids: list) -> dict[str, int]:
-    """Count class_enrollments rows per class_id (empty list → empty dict)."""
+    """Count enrolled students per class_id (empty list → empty dict).
+
+    TAs (``enrollment_role == 'ta'``) are overseers, not part of the student
+    population, so they're excluded from the count surfaced as ``enrolled_count``.
+    """
     if not class_ids:
         return {}
     enrollments = (
         client.table('class_enrollments')
-        .select('class_id')
+        .select('class_id, enrollment_role')
         .in_('class_id', class_ids)
         .execute()
     )
     counts: dict[str, int] = {}
     for row in enrollments.data or []:
+        if (row.get('enrollment_role') or 'student') == 'ta':
+            continue
         cid = row['class_id']
         counts[cid] = counts.get(cid, 0) + 1
     return counts

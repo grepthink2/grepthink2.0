@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserMinus, Mail } from 'lucide-react';
 import type { UiStudent, ClassStatus, GrepthinkStatus } from './rosterTypes';
+import { countableStudents } from './rosterTypes';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import SortableHeader from '@features/app/components/shared/SortableHeader';
 import { useTableSort, type SortAccessors } from '@features/app/utils/useTableSort';
@@ -51,6 +52,9 @@ const RosterList: React.FC<RosterListProps> = ({
     { key: 'name', direction: 'desc' },
   );
 
+  // TAs stay visible in the table but don't count toward the student total.
+  const studentCount = countableStudents(students).length;
+
   if (loading) {
     const headers = ['Name', 'Email', 'Class Status', 'GrepThink Status', 'Projects'];
     if (showActions) headers.push('Actions');
@@ -84,7 +88,7 @@ const RosterList: React.FC<RosterListProps> = ({
     <div className="roster-list">
       <div className="roster-list__header">
         <h2 className="roster-list__title">Student Count</h2>
-        <span className="roster-list__count-badge">{students.length}</span>
+        <span className="roster-list__count-badge">{studentCount}</span>
       </div>
 
       {/* Desktop table */}

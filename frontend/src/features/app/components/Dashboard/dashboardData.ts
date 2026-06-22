@@ -109,14 +109,19 @@ export interface RosterBreakdown {
   total: number;
 }
 
-/** Count roster rows into the buckets the dashboard surfaces. */
+/**
+ * Count roster rows into the buckets the dashboard surfaces. TAs are overseers,
+ * not part of the student population, so they're excluded from every bucket.
+ */
 export function summarizeRoster(students: ApiRosterStudent[]): RosterBreakdown {
   let registered = 0;
   let enrolled = 0;
   let waitlisted = 0;
   let notOnRoster = 0;
 
-  for (const s of students) {
+  const countable = students.filter((s) => s.enrollment_role !== 'ta');
+
+  for (const s of countable) {
     if (s.grepthink_status === 'registered') registered += 1;
     if (s.class_status === 'enrolled') enrolled += 1;
     else if (s.class_status === 'waitlisted') waitlisted += 1;
@@ -130,6 +135,6 @@ export function summarizeRoster(students: ApiRosterStudent[]): RosterBreakdown {
     enrolled,
     waitlisted,
     notOnRoster,
-    total: students.length,
+    total: countable.length,
   };
 }
