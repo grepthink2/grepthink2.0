@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 NOTIFICATION_TYPES = frozenset({
     "join_request",
+    "join_rejected",
     "message",
     "project_created",
     "complete_profile",
@@ -309,6 +310,7 @@ def notify_join_request(
     project_name: str,
     request_id: str,
     requester_id: str,
+    message: Optional[str] = None,
 ) -> None:
     """Notify project owners/admins when someone requests to join."""
     try:
@@ -331,6 +333,9 @@ def notify_join_request(
         requester_name = profile_display_name(_get_profile(requester_id)) or "A student"
         title = "New join request"
         body = f"{requester_name} requested to join {project_name}."
+        clean_message = message.strip() if isinstance(message, str) else ""
+        if clean_message:
+            body = f'{body} "{clean_message}"'
 
         for owner_id in owner_ids:
             _insert_notification(
@@ -372,6 +377,29 @@ def notify_new_message(
         entity_type="conversation",
         entity_id=conversation_id,
     )
+
+
+def notify_join_request_rejected(
+    *,
+    requester_id: str,
+    project_id: str,
+    project_name: str,
+) -> None:
+    """Notify the requesting student when their join request is denied."""
+    try:
+        _insert_notification(
+            user_id=requester_id,
+            type="join_rejected",
+            title="Join request denied",
+            body=f'Your request to join "{project_name}" was denied.',
+            entity_type="project",
+            entity_id=project_id,
+        )
+    except Exception:
+        logger.exception(
+            "notify_join_request_rejected failed | project_id=%s requester_id=%s",
+            project_id, requester_id,
+        )
 
 
 def notify_project_created_by_student(

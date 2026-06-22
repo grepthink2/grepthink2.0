@@ -2,7 +2,7 @@
 Project management request models
 """
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
 
 
@@ -39,12 +39,18 @@ class UpdateProjectRequest(BaseModel):
 class JoinProjectRequest(BaseModel):
     """Request model for requesting to join a project"""
     project_id: UUID
+    message: Optional[str] = Field(default=None, max_length=500)
 
 
 class AcceptJoinRequestRequest(BaseModel):
     """Request model for accepting a join request"""
     request_id: UUID
     user_id: UUID
+
+
+class DismissJoinRequestRequest(BaseModel):
+    """Request model for a requester dismissing their own denied request"""
+    request_id: UUID
 
 class ManageProjectMemberRequest(BaseModel):
     """Request model for adding a member to a project (instructor only)."""
