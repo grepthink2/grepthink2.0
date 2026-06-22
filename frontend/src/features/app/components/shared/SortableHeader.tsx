@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import type { SortState } from '@features/app/utils/useTableSort';
 import './SortableHeader.scss';

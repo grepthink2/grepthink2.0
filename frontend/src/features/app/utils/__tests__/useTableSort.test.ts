@@ -4,6 +4,7 @@ import {
   nextSortState,
   sortRows,
   useTableSort,
+  type SortAccessors,
 } from '../useTableSort';
 
 describe('compareValues', () => {
@@ -84,9 +85,10 @@ describe('useTableSort', () => {
     { name: 'alice', size: 10 },
     { name: 'Bob', size: 1 },
   ];
-  const accessors = {
-    name: (r: (typeof rows)[number]) => r.name,
-    size: (r: (typeof rows)[number]) => r.size,
+  type TestRow = (typeof rows)[number];
+  const accessors: SortAccessors<TestRow, 'name' | 'size'> = {
+    name: (r) => r.name,
+    size: (r) => r.size,
   };
 
   it('applies the initial sort state', () => {
