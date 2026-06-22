@@ -53,7 +53,7 @@ export function nextSortState<K extends string>(
 export function useTableSort<T, K extends string>(
   rows: T[],
   accessors: SortAccessors<T, K>,
-  initial: SortState<K>,
+  initial: SortState<NoInfer<K>>,
 ): {
   sortedRows: T[];
   sort: SortState<K>;
