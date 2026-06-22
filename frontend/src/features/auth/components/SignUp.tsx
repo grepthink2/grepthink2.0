@@ -116,6 +116,7 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
           data: {
             role: userType,
           },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
