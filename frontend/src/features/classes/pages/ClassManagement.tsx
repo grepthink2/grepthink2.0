@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import './ClassManagement.scss';
 
+// Dev: relative path so the Vite proxy routes /api to the backend.
+// Prod: VITE_API_URL, falling back to same-origin (never localhost).
+const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || '');
+
 interface Class {
   id: string;
   name: string;
@@ -62,7 +66,7 @@ const ClassManagement: React.FC = () => {
   const checkUserRole = async () => {
     try {
       const token = await getAccessToken();
-      const response = await fetch('http://localhost:5001/api/login-check', {
+      const response = await fetch(`${API_BASE_URL}/api/login-check`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -79,7 +83,7 @@ const ClassManagement: React.FC = () => {
     setError(null);
     try {
       const token = await getAccessToken();
-      const response = await fetch('http://localhost:5001/api/classes', {
+      const response = await fetch(`${API_BASE_URL}/api/classes`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -106,7 +110,7 @@ const ClassManagement: React.FC = () => {
 
     try {
       const token = await getAccessToken();
-      const response = await fetch('http://localhost:5001/api/classes', {
+      const response = await fetch(`${API_BASE_URL}/api/classes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -146,7 +150,7 @@ const ClassManagement: React.FC = () => {
     try {
       const token = await getAccessToken();
       const response = await fetch(
-        `http://localhost:5001/api/classes/${selectedClass.id}/invite`,
+        `${API_BASE_URL}/api/classes/${selectedClass.id}/invite`,
         {
           method: 'POST',
           headers: {
@@ -183,7 +187,7 @@ const ClassManagement: React.FC = () => {
 
     try {
       const token = await getAccessToken();
-      const response = await fetch('http://localhost:5001/api/classes/join', {
+      const response = await fetch(`${API_BASE_URL}/api/classes/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -214,7 +218,7 @@ const ClassManagement: React.FC = () => {
     try {
       const token = await getAccessToken();
       const response = await fetch(
-        `http://localhost:5001/api/classes/${classId}/students`,
+        `${API_BASE_URL}/api/classes/${classId}/students`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -250,7 +254,7 @@ const ClassManagement: React.FC = () => {
       <div className="class-management-container">
         {/* Left Panel - Create Class and List */}
         <div className="left-panel">
-          {userRole === 'teacher' && (
+          {userRole === 'instructor' && (
             <div className="create-class-section">
               <h2>Create New Class</h2>
               <form onSubmit={createClass}>
@@ -319,10 +323,10 @@ const ClassManagement: React.FC = () => {
                 >
                   <h3>{cls.name}</h3>
                   <p>{cls.description || 'No description'}</p>
-                  {userRole !== 'teacher' && userRole !== 'instructor' && cls.teacher_email && (
+                  {userRole !== 'instructor' && cls.teacher_email && (
                     <p className="teacher-email">Teacher: {cls.teacher_email}</p>
                   )}
-                  {userRole === 'teacher' && cls.course_code && (
+                  {userRole === 'instructor' && cls.course_code && (
                     <p className="course-code">Course Code: {cls.course_code}</p>
                   )}
                   <small>Created: {new Date(cls.created_at).toLocaleDateString()}</small>
@@ -339,15 +343,15 @@ const ClassManagement: React.FC = () => {
               <div className="class-details">
                 <h2>{selectedClass.name}</h2>
                 <p>{selectedClass.description || 'No description'}</p>
-                {userRole !== 'teacher' && userRole !== 'instructor' && selectedClass.teacher_email && (
+                {userRole !== 'instructor' && selectedClass.teacher_email && (
                   <p className="teacher-email">Teacher: {selectedClass.teacher_email}</p>
                 )}
-                {userRole === 'teacher' && selectedClass.course_code && (
+                {userRole === 'instructor' && selectedClass.course_code && (
                   <p className="course-code">Course Code: {selectedClass.course_code}</p>
                 )}
               </div>
 
-              {userRole === 'teacher' && (
+              {userRole === 'instructor' && (
                 <div className="invite-section">
                   <h3>Invite Students</h3>
                   <form onSubmit={inviteStudent}>

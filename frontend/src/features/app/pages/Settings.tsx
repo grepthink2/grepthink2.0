@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Camera, Linkedin, Github, UserPen, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
-import { apiRequest, type ApiProfile } from '@/lib/api';
+import { apiRequest, api, type ApiProfile } from '@/lib/api';
 import './Settings.scss';
 
 interface SettingsProps {
@@ -126,16 +126,9 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         if (!newEduEmail.toLowerCase().endsWith('.edu')) {
           throw new Error('Must be a valid .edu email address');
         }
-        const checkRes = await fetch('/api/check-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: newEduEmail }),
-        });
-        if (checkRes.ok) {
-          const checkData = await checkRes.json();
-          if (!checkData.available) {
-            throw new Error('This .edu email is already linked to another account.');
-          }
+        const checkData = await api.checkEmail(newEduEmail);
+        if (checkData && !checkData.available) {
+          throw new Error('This .edu email is already linked to another account.');
         }
       }
 
