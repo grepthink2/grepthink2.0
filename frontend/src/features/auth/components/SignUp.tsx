@@ -39,7 +39,6 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
   // State for error handling and loading
   const [error, setError] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
-  const [confirmationSent, setConfirmationSent] = React.useState(false);
   
   // Handler for form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,18 +115,11 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
           data: {
             role: userType,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (signUpError) {
         throw signUpError;
-      }
-
-      if (!data.session || !data.user) {
-        setConfirmationSent(true);
-        setIsLoading(false);
-        return;
       }
 
       const token = data.session?.access_token || (await getToken());
@@ -173,30 +165,6 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
     : userType === 'student' 
     ? 'Create a Student Account'
     : 'Create an Account';
-
-  if (confirmationSent) {
-    return (
-      <div className={embedded ? 'embeddedWrapper' : 'pageWrapper'}>
-        <div className="container">
-          <h1 className="header">Check your email</h1>
-          <p className="subtext">
-            We sent a confirmation link to <strong>{formData.email}</strong>.
-            Click it to complete your signup.
-          </p>
-          <p className="subtext" style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#666' }}>
-            Didn't get it? Check your spam folder or{' '}
-            <span
-              style={{ cursor: 'pointer', textDecoration: 'underline' }}
-              onClick={() => setConfirmationSent(false)}
-            >
-              try again
-            </span>
-            .
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={embedded ? 'embeddedWrapper' : 'pageWrapper'}>
