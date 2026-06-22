@@ -274,12 +274,14 @@ interface OutgoingJoinRequestRow {
   sponsorCompany?: string;
   requestedAt?: string;
   status?: string;
+  imageUrl?: string | null;
 }
 
 interface IncomingJoinRequestRow {
   requestId: string;
   projectId: string;
   projectName: string;
+  kind: 'join_request' | 'team_invite';
   requesterEmail?: string;
   requestedAt?: string;
   memberCount: number;
@@ -351,8 +353,11 @@ const StudentHomeDashboard: React.FC = () => {
     }
     setIncomingLoading(true);
     try {
-      const { projects: myAllProjects } = await api.getProjects();
-      const { projects: classProjects } = await api.getProjects(classId);
+      const [{ projects: myAllProjects }, { projects: classProjects }, invitesRes] = await Promise.all([
+        api.getProjects(),
+        api.getProjects(classId),
+        api.getPendingTeamInvites(classId),
+      ]);
       const myIds = new Set(myAllProjects.map((p) => p.id));
       const mineInClass = classProjects.filter((p) => myIds.has(p.id));
       const reviewable = mineInClass.filter((p) => canReviewJoinRequests(p.user_role));
@@ -366,6 +371,7 @@ const StudentHomeDashboard: React.FC = () => {
                 requestId: r.request_id,
                 projectId: proj.id,
                 projectName: proj.name,
+                kind: 'join_request',
                 requesterEmail: r.email,
                 requestedAt: r.requested_at,
                 memberCount: proj.member_count ?? 0,
@@ -377,7 +383,18 @@ const StudentHomeDashboard: React.FC = () => {
           }
         }),
       );
-      const collected = chunks.flat();
+
+      const teamInvites: IncomingJoinRequestRow[] = (invitesRes.requests ?? []).map((r) => ({
+        requestId: r.request_id,
+        projectId: r.project_id ?? '',
+        projectName: r.project_name ?? 'Project',
+        kind: 'team_invite',
+        requesterEmail: r.email,
+        requestedAt: r.requested_at,
+        memberCount: r.member_count ?? 0,
+      }));
+
+      const collected = [...chunks.flat(), ...teamInvites];
       collected.sort((a, b) => {
         const ta = a.requestedAt ? parseISO(a.requestedAt).getTime() : 0;
         const tb = b.requestedAt ? parseISO(b.requestedAt).getTime() : 0;
@@ -412,6 +429,7 @@ const StudentHomeDashboard: React.FC = () => {
             sponsorCompany: r.sponsor_company,
             requestedAt: r.requested_at,
             status: r.status,
+            imageUrl: r.image_url,
           }),
         ),
       );
@@ -807,7 +825,9 @@ const StudentHomeDashboard: React.FC = () => {
                         <div className="student-home__request-main">
                           <h3 className="student-home__request-title">{row.projectName}</h3>
                           <p className="student-home__request-sub">
-                            {`${who} wants to join this project`}
+                            {row.kind === 'team_invite'
+                              ? `${who} invited you to join this project`
+                              : `${who} wants to join this project`}
                           </p>
                           {row.message ? (
                             <p className="student-home__request-message">
@@ -880,12 +900,20 @@ const StudentHomeDashboard: React.FC = () => {
                 return (
                   <div key={req.requestId} className="student-home__request-card">
                     <div className="student-home__request-top">
-                      <div
-                        className="student-home__avatar"
-                        style={{ backgroundColor: avatarBgFromEmail(req.projectName) }}
-                      >
-                        {req.projectName.trim()[0]?.toUpperCase() ?? '?'}
-                      </div>
+                      {req.imageUrl ? (
+                        <img
+                          src={req.imageUrl}
+                          alt={req.projectName}
+                          className="student-home__avatar student-home__avatar--thumbnail"
+                        />
+                      ) : (
+                        <div
+                          className="student-home__avatar"
+                          style={{ backgroundColor: avatarBgFromEmail(req.projectName) }}
+                        >
+                          {req.projectName.trim()[0]?.toUpperCase() ?? '?'}
+                        </div>
+                      )}
                       <div className="student-home__request-main">
                         <h3 className="student-home__request-title">{req.projectName}</h3>
                         <p className="student-home__request-sub">

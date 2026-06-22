@@ -12,6 +12,7 @@ import { MessageButton } from '@features/messages/components/MessageButton';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
 import EditProjectModal from '../EditProject/EditProjectModal';
+import { api } from '@/lib/api';
 import type { ApiProject, ApiProjectMember, ApiProjectTA } from '@/lib/api';
 import { getMemberCopyEmail } from '@/features/app/utils/memberUtils';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
@@ -114,10 +115,12 @@ interface ProjectViewProps {
   onDelete?: () => void;
   /** Called when the current user (student) leaves the project. */
   onLeave?: () => void;
-  /** True when the current user has a pending join request for this project. */
-  hasPendingRequest?: boolean;
-  /** Called after a join request is successfully sent. */
-  onRequestSent?: () => void;
+  /** request_id of the current user's pending join request, if any. */
+  pendingRequestId?: string | null;
+  /** Called after a join request is successfully sent, with its request_id. */
+  onRequestSent?: (requestId: string) => void;
+  /** Called after the pending join request is cancelled. */
+  onRequestCancelled?: () => void;
   // Sponsor information — typed so callers compile; rendering is gated
   // behind the (still commented-out) sponsor section in the JSX below.
   sponsorName?: string | null;
@@ -144,8 +147,9 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   onMembersChange,
   onDelete,
   onLeave,
-  hasPendingRequest = false,
+  pendingRequestId = null,
   onRequestSent,
+  onRequestCancelled,
   // sponsorName,
   // sponsorCompany,
   // sponsorEmail,
@@ -158,12 +162,28 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     isInstructor ||
     (userRoleOnProject != null && MANAGER_ROLES.includes(userRoleOnProject as (typeof MANAGER_ROLES)[number]));
   const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [requestedHovered, setRequestedHovered] = useState(false);
+  const [cancellingRequest, setCancellingRequest] = useState(false);
   const [memberManagerOpen, setMemberManagerOpen] = useState(false);
   const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [emailsCopied, setEmailsCopied] = useState(false);
   const [joinedDropdownOpen, setJoinedDropdownOpen] = useState(false);
   const joinedDropdownRef = useRef<HTMLDivElement>(null);
   useClickOutside(joinedDropdownRef, useCallback(() => setJoinedDropdownOpen(false), []));
+
+  const handleCancelRequest = useCallback(async () => {
+    if (!pendingRequestId || cancellingRequest) return;
+    setCancellingRequest(true);
+    try {
+      await api.cancelJoinRequest(pendingRequestId);
+      onRequestCancelled?.();
+    } catch {
+      // stay in requested state on failure
+    } finally {
+      setCancellingRequest(false);
+      setRequestedHovered(false);
+    }
+  }, [pendingRequestId, cancellingRequest, onRequestCancelled]);
 
   const handleCopyAllEmails = async () => {
     const emails = projectMembers
@@ -327,16 +347,33 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                   </div>
                 )}
               </div>
-            ) : hasPendingRequest ? (
+            ) : pendingRequestId ? (
               <button
                 type="button"
-                className="project-view__request-button project-view__request-button--requested"
-                disabled
+                className={`project-view__request-button project-view__request-button--requested${requestedHovered ? ' project-view__request-button--unsend' : ''}`}
+                disabled={cancellingRequest}
+                onMouseEnter={() => setRequestedHovered(true)}
+                onMouseLeave={() => setRequestedHovered(false)}
+                onClick={() => void handleCancelRequest()}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Requested
+                {cancellingRequest ? (
+                  'Cancelling…'
+                ) : requestedHovered ? (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                    Unsend
+                  </>
+                ) : (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Requested
+                  </>
+                )}
               </button>
             ) : (
               <button
@@ -587,8 +624,8 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           isOpen={requestModalOpen}
           projectId={projectId}
           onClose={() => setRequestModalOpen(false)}
-          onSuccess={() => {
-            onRequestSent?.();
+          onSuccess={(requestId) => {
+            onRequestSent?.(requestId);
           }}
         />
       )}

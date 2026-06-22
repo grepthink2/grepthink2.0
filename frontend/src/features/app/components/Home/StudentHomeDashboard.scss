@@ -465,6 +465,11 @@ $quick-purple-hover: #6a3382;
   font-size: $font-size-sm;
   font-weight: $font-weight-semibold;
   flex-shrink: 0;
+
+  &--thumbnail {
+    object-fit: cover;
+    border-radius: 8px;
+  }
 }
 
 .student-home__request-main {

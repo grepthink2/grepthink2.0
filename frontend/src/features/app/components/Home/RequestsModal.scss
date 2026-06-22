@@ -183,6 +183,11 @@
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     flex-shrink: 0;
+
+    &--thumbnail {
+      object-fit: cover;
+      border-radius: 8px;
+    }
   }
 
   &__card-main {

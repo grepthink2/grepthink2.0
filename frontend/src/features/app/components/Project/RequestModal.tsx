@@ -9,7 +9,7 @@ interface RequestModalProps {
   isOpen: boolean;
   projectId: string;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (requestId: string) => void;
 }
 
 const RequestModal: React.FC<RequestModalProps> = ({ isOpen, projectId, onClose, onSuccess }) => {
@@ -40,8 +40,8 @@ const RequestModal: React.FC<RequestModalProps> = ({ isOpen, projectId, onClose,
     setError(null);
     setLoading(true);
     try {
-      await api.requestJoinProject(projectId, message);
-      onSuccess?.();
+      const res = await api.requestJoinProject(projectId, message);
+      onSuccess?.(res.request?.id ?? '');
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send request');

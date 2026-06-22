@@ -1109,6 +1109,130 @@ def dismiss_my_join_request(request_id: UUID, user_id: str) -> dict:
         raise HTTPException(status_code=500, detail="Failed to dismiss join request")
 
 
+def cancel_my_join_request(request_id: UUID, user_id: str) -> dict:
+    """
+    Cancel a **pending** join request that the caller submitted (student-initiated only).
+
+    The caller must be the requester and the row must still be pending.
+    Deletes the row so it no longer surfaces anywhere.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        result = client.table('project_join_requests').select(
+            'id, user_id, request_status, invited_by'
+        ).eq('id', str(request_id)).execute()
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Join request not found")
+
+        row = result.data[0]
+
+        if str(row['user_id']) != str(user_id):
+            raise HTTPException(status_code=403, detail="You can only cancel your own requests")
+
+        if row.get('invited_by'):
+            raise HTTPException(status_code=400, detail="Use cancel-invite to cancel a team invitation")
+
+        if row['request_status'] != 'pending':
+            raise HTTPException(status_code=400, detail="Only pending requests can be cancelled")
+
+        client.table('project_join_requests').delete().eq('id', str(request_id)).execute()
+
+        logger.info("Join request cancelled | request_id=%s user_id=%s", request_id, user_id)
+        return {"message": "Join request cancelled", "request_id": str(request_id)}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error cancelling join request | request_id=%s user_id=%s", request_id, user_id)
+        raise HTTPException(status_code=500, detail="Failed to cancel join request")
+
+
+def cancel_team_invite(request_id: UUID, requester_id: str) -> dict:
+    """
+    Cancel a pending team invite that the caller sent (``invited_by == requester_id``).
+
+    Project instructor can also cancel any invite for the project.
+    Deletes the invite row.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        result = client.table('project_join_requests').select(
+            'id, project_id, user_id, request_status, invited_by'
+        ).eq('id', str(request_id)).execute()
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Invite not found")
+
+        row = result.data[0]
+
+        if not row.get('invited_by'):
+            raise HTTPException(status_code=400, detail="This is not a team invite")
+
+        if row['request_status'] != 'pending':
+            raise HTTPException(status_code=400, detail="Only pending invites can be cancelled")
+
+        is_inviter = str(row['invited_by']) == str(requester_id)
+        if not is_inviter:
+            class_res = client.table('projects').select('class_id').eq('id', str(row['project_id'])).execute()
+            class_id = class_res.data[0]['class_id'] if class_res.data else None
+            if not class_id or not _is_instructor(requester_id, class_id):
+                raise HTTPException(status_code=403, detail="Only the sender or class instructor can cancel this invite")
+
+        client.table('project_join_requests').delete().eq('id', str(request_id)).execute()
+
+        logger.info("Team invite cancelled | request_id=%s requester=%s", request_id, requester_id)
+        return {"message": "Invite cancelled", "request_id": str(request_id)}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error cancelling invite | request_id=%s requester=%s", request_id, requester_id)
+        raise HTTPException(status_code=500, detail="Failed to cancel invite")
+
+
+def get_project_pending_invites(project_id: UUID, requester_id: str) -> list:
+    """
+    Return all pending team invites for a project (``invited_by`` set).
+
+    Caller must be class instructor or project owner/product-owner/admin.
+    Returns each invite with the invitee's user_id, email, and request_id.
+    """
+    try:
+        client = service_client if service_client else supabase
+
+        _assert_can_review_student_join_request(client, requester_id, str(project_id))
+
+        rows = client.table('project_join_requests').select(
+            'id, user_id, created_at, invited_by'
+        ).eq('project_id', str(project_id)).eq('request_status', 'pending').execute()
+
+        invites = [r for r in (rows.data or []) if r.get('invited_by')]
+        if not invites:
+            return []
+
+        user_ids = [r['user_id'] for r in invites]
+        profiles = client.table('profiles').select('id, email').in_('id', user_ids).execute()
+        profile_map = {p['id']: p for p in (profiles.data or [])}
+
+        result = []
+        for row in invites:
+            profile = profile_map.get(row['user_id'], {})
+            result.append({
+                "request_id": row['id'],
+                "user_id": row['user_id'],
+                "email": profile.get('email'),
+                "invited_at": row.get('created_at'),
+            })
+
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error fetching project invites | project_id=%s requester=%s", project_id, requester_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch project invites")
+
+
 # ---------------------------------------------------------------------------
 # Product owner / scrum master / admin role management
 # ---------------------------------------------------------------------------
@@ -1511,7 +1635,7 @@ def get_my_pending_join_requests_for_user(user_id: str, class_id: UUID) -> list:
 
         projects_res = (
             client.table('projects')
-            .select('id, name, num_members, sponsor_company')
+            .select('id, name, num_members, sponsor_company, image_url')
             .eq('class_id', str(class_id))
             .execute()
         )
@@ -1551,6 +1675,7 @@ def get_my_pending_join_requests_for_user(user_id: str, class_id: UUID) -> list:
                 "member_count": project.get('num_members') or 0,
                 "sponsor_company": project.get('sponsor_company'),
                 "course_label": course_label or None,
+                "image_url": project.get('image_url'),
             })
         return result
     except HTTPException:

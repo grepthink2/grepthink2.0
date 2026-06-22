@@ -27,6 +27,7 @@ export interface OutgoingRequestRow {
   sponsorCompany?: string;
   requestedAt?: string;
   status?: string;
+  imageUrl?: string | null;
 }
 
 export interface RequestsModalProps {
@@ -178,6 +179,7 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
         sponsorCompany: r.sponsor_company,
         requestedAt: r.requested_at,
         status: r.status,
+        imageUrl: r.image_url,
       }));
 
       setIncoming(incomingRows);
@@ -437,12 +439,20 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
                 const dismissing = dismissingId === row.requestId;
                 return (
                   <li key={row.requestId} className="requests-modal__card">
-                    <div
-                      className="requests-modal__avatar"
-                      style={{ backgroundColor: avatarBgFromEmail(row.projectName) }}
-                    >
-                      {row.projectName.trim()[0]?.toUpperCase() ?? '?'}
-                    </div>
+                    {row.imageUrl ? (
+                      <img
+                        src={row.imageUrl}
+                        alt={row.projectName}
+                        className="requests-modal__avatar requests-modal__avatar--thumbnail"
+                      />
+                    ) : (
+                      <div
+                        className="requests-modal__avatar"
+                        style={{ backgroundColor: avatarBgFromEmail(row.projectName) }}
+                      >
+                        {row.projectName.trim()[0]?.toUpperCase() ?? '?'}
+                      </div>
+                    )}
                     <div className="requests-modal__card-main">
                       <h3 className="requests-modal__card-title">{row.projectName}</h3>
                       {denied ? (

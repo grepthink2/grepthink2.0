@@ -32,7 +32,7 @@ const ProjectDetails: React.FC = () => {
   const [tas, setTas] = useState<ApiProjectTA[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!projectId) {
@@ -60,11 +60,10 @@ const ProjectDetails: React.FC = () => {
         if (classId) {
           const requestsRes = await api.getMyJoinRequests(classId).catch(() => ({ requests: [] }));
           if (isMounted) {
-            setHasPendingRequest(
-              requestsRes.requests.some(
-                (r) => r.project_id === projectId && r.status === 'pending'
-              )
+            const pending = requestsRes.requests.find(
+              (r) => r.project_id === projectId && r.status === 'pending'
             );
+            setPendingRequestId(pending?.request_id ?? null);
           }
         }
 
@@ -192,8 +191,9 @@ const ProjectDetails: React.FC = () => {
         onMembersChange={refreshProjectAndMembers}
         onLeave={handleLeaveProject}
         onDelete={() => navigate(role === 'instructor' ? '/app/projects' : '/app/browse-projects')}
-        hasPendingRequest={hasPendingRequest}
-        onRequestSent={() => setHasPendingRequest(true)}
+        pendingRequestId={pendingRequestId}
+        onRequestSent={(id) => setPendingRequestId(id)}
+        onRequestCancelled={() => setPendingRequestId(null)}
         sponsorName={project.sponsor_name}
         sponsorCompany={project.sponsor_company}
         sponsorEmail={project.sponsor_email}

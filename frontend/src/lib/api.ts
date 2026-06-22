@@ -145,6 +145,14 @@ export interface ApiProjectJoinRequest {
   member_count?: number;
   sponsor_company?: string;
   course_label?: string;
+  image_url?: string | null;
+}
+
+export interface ApiProjectPendingInvite {
+  request_id: string;
+  user_id: string;
+  email?: string;
+  invited_at?: string;
 }
 
 export interface ApiProjectMember {
@@ -746,6 +754,24 @@ export const api = {
     });
   },
 
+  cancelJoinRequest: async (requestId: string) => {
+    return apiRequest<{ message: string; request_id: string }>('/api/projects/cancel-request', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  },
+
+  cancelTeamInvite: async (requestId: string) => {
+    return apiRequest<{ message: string; request_id: string }>('/api/projects/cancel-invite', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  },
+
+  getProjectPendingInvites: async (projectId: string) => {
+    return apiRequest<{ invites: ApiProjectPendingInvite[] }>(`/api/projects/${projectId}/pending-invites`);
+  },
+
   /** Create a project (full form: POST /api/projects) */
   createProject: async (data: CreateProjectPayload) => {
     return apiRequest<{ message: string; project: ApiProject }>('/api/projects', {
@@ -764,7 +790,7 @@ export const api = {
 
   /** Add a member to a project (instructor or authorized role). */
   addProjectMember: async (projectId: string, data: { user_id: string; role?: string }) => {
-    return apiRequest<{ message: string }>(`/api/projects/${projectId}/members`, {
+    return apiRequest<{ message: string; request?: { id: string } }>(`/api/projects/${projectId}/members`, {
       method: 'POST',
       body: JSON.stringify(data),
     });

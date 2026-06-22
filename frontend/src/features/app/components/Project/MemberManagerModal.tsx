@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { X, Users, UserPlus, Search, Check, XCircle, Trash2 } from 'lucide-react';
+import { X, Users, UserPlus, Search, Check, XCircle, Trash2, Mail } from 'lucide-react';
 import { api } from '@/lib/api';
 import type {
   ApiProject,
@@ -61,6 +61,11 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [exitingRequestIds, setExitingRequestIds] = useState<Set<string>>(new Set());
+  /** userId → requestId for pending team invites (non-instructor flow) */
+  const [invitedMap, setInvitedMap] = useState<Record<string, string>>({});
+  /** userId being hovered in the Invited button (to show Unsend) */
+  const [unsendHoverId, setUnsendHoverId] = useState<string | null>(null);
+  const [unsendingId, setUnsendingId] = useState<string | null>(null);
 
   const isInstructor = role === 'instructor';
 
@@ -115,8 +120,17 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
   useEffect(() => {
     if (isOpen && activeTab === 'add') {
       fetchClassStudents();
+      if (!isInstructor) {
+        api.getProjectPendingInvites(projectId).then(({ invites }) => {
+          const map: Record<string, string> = {};
+          for (const inv of invites) {
+            map[inv.user_id] = inv.request_id;
+          }
+          setInvitedMap(map);
+        }).catch(() => {/* keep existing map */});
+      }
     }
-  }, [isOpen, activeTab, classId]);
+  }, [isOpen, activeTab, classId, projectId, isInstructor]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -199,13 +213,38 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
     setActionError(null);
     setInvitingId(userId);
     try {
-      await api.addProjectMember(projectId, { user_id: userId, role: 'member' });
-      await fetchMembers();
-      onMembersChange?.();
+      const res = await api.addProjectMember(projectId, { user_id: userId, role: 'member' });
+      // Non-instructors get a pending invite; instructors get an immediate add
+      const requestId = res.request?.id;
+      if (requestId) {
+        setInvitedMap((prev) => ({ ...prev, [userId]: requestId }));
+      } else {
+        await fetchMembers();
+        onMembersChange?.();
+      }
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Failed to add member');
     } finally {
       setInvitingId(null);
+    }
+  };
+
+  const handleUnsend = async (userId: string) => {
+    const requestId = invitedMap[userId];
+    if (!requestId || unsendingId) return;
+    setUnsendingId(userId);
+    try {
+      await api.cancelTeamInvite(requestId);
+      setInvitedMap((prev) => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to cancel invite');
+    } finally {
+      setUnsendingId(null);
+      setUnsendHoverId(null);
     }
   };
 
@@ -411,7 +450,10 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                       const initials = getInitials(name, s.email ?? '');
                       const isAlreadyMember = memberIds.has(studentId);
                       const isInviting = invitingId === studentId;
-                      const canInvite = spotsRemaining > 0 && !isAlreadyMember;
+                      const isInvited = !isInstructor && Boolean(invitedMap[studentId]);
+                      const isUnsending = unsendingId === studentId;
+                      const isHoveringUnsend = unsendHoverId === studentId;
+                      const canInvite = spotsRemaining > 0 && !isAlreadyMember && !isInvited;
                       const actionLabel = isInviting ? 'Adding...' : isInstructor ? 'Add' : 'Invite';
                       return (
                         <li key={studentId} className="member-manager__card">
@@ -432,6 +474,30 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                               <Check size={16} />
                               Added
                             </span>
+                          ) : isInvited ? (
+                            <button
+                              type="button"
+                              className={`member-manager__btn member-manager__btn--invited${isHoveringUnsend ? ' member-manager__btn--unsend' : ''}`}
+                              onClick={() => void handleUnsend(studentId)}
+                              disabled={isUnsending}
+                              onMouseEnter={() => setUnsendHoverId(studentId)}
+                              onMouseLeave={() => setUnsendHoverId(null)}
+                              aria-label={isHoveringUnsend ? `Cancel invite for ${name}` : `${name} has been invited`}
+                            >
+                              {isUnsending ? (
+                                'Cancelling…'
+                              ) : isHoveringUnsend ? (
+                                <>
+                                  <XCircle size={16} />
+                                  Unsend
+                                </>
+                              ) : (
+                                <>
+                                  <Mail size={16} />
+                                  Invited
+                                </>
+                              )}
+                            </button>
                           ) : (
                             <button
                               type="button"
