@@ -3,7 +3,8 @@ import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 import '@features/app/components/Roster/PieCharts.scss';
 
 const IN_PROJECT_COLOR = '#018156';
-const NOT_IN_PROJECT_COLOR = '#DADADA';
+const REGISTERED_NO_PROJECT_COLOR = '#F59E0B';
+const NOT_REGISTERED_COLOR = '#DADADA';
 
 interface ChartEntry {
   name: string;
@@ -38,22 +39,38 @@ const SliceTooltip = ({
 
 export interface ProjectMembershipChartProps {
   inProject: number;
-  notInProject: number;
+  registeredNoProject: number;
+  notRegistered: number;
 }
+
+const LEGEND_ENTRIES = [
+  { key: 'inProject' as const, name: 'In a Project', color: IN_PROJECT_COLOR },
+  {
+    key: 'registeredNoProject' as const,
+    name: 'Not in a Project, Registered',
+    color: REGISTERED_NO_PROJECT_COLOR,
+  },
+  {
+    key: 'notRegistered' as const,
+    name: 'Not Registered in GrepThink',
+    color: NOT_REGISTERED_COLOR,
+  },
+];
 
 const ProjectMembershipChart: React.FC<ProjectMembershipChartProps> = ({
   inProject,
-  notInProject,
+  registeredNoProject,
+  notRegistered,
 }) => {
-  const total = inProject + notInProject;
+  const counts: Record<string, number> = { inProject, registeredNoProject, notRegistered };
+  const total = inProject + registeredNoProject + notRegistered;
 
   const chartData: ChartEntry[] = useMemo(
     () =>
-      [
-        { name: 'In a Project', value: inProject, color: IN_PROJECT_COLOR },
-        { name: 'Not in a Project', value: notInProject, color: NOT_IN_PROJECT_COLOR },
-      ].filter((entry) => entry.value > 0),
-    [inProject, notInProject],
+      LEGEND_ENTRIES.map((e) => ({ name: e.name, value: counts[e.key], color: e.color })).filter(
+        (entry) => entry.value > 0,
+      ),
+    [inProject, registeredNoProject, notRegistered],
   );
 
   return (
@@ -72,10 +89,7 @@ const ProjectMembershipChart: React.FC<ProjectMembershipChartProps> = ({
       </div>
 
       <div className="pie-charts__legend">
-        {[
-          { name: 'In a Project', value: inProject, color: IN_PROJECT_COLOR },
-          { name: 'Not in a Project', value: notInProject, color: NOT_IN_PROJECT_COLOR },
-        ].map((entry) => (
+        {LEGEND_ENTRIES.map((entry) => (
           <div key={entry.name} className="pie-charts__legend-item">
             <div className="pie-charts__legend-left">
               <span
@@ -85,9 +99,9 @@ const ProjectMembershipChart: React.FC<ProjectMembershipChartProps> = ({
               <span className="pie-charts__legend-name">{entry.name}</span>
             </div>
             <span className="pie-charts__legend-count">
-              {entry.value}
+              {counts[entry.key]}
               <span className="pie-charts__legend-pct">
-                {total > 0 ? ` (${Math.round((entry.value / total) * 100)}%)` : ''}
+                {total > 0 ? ` (${Math.round((counts[entry.key] / total) * 100)}%)` : ''}
               </span>
             </span>
           </div>

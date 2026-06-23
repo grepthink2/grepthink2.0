@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
-import type { ApiProject, ApiStudent } from '@/lib/api';
+import type { ApiProject, ApiRosterStudent } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import AddProjectButton from '@features/app/components/Project/AddProjectButton';
 import AssignProjectsButton from '@features/app/components/Project/AssignProjectsButton';
@@ -34,24 +34,24 @@ function mapApiProjectToUi(project: ApiProject): UiProject {
   };
 }
 
-function countProjectMembership(students: ApiStudent[]) {
-  // TAs are overseers, not assignable team members, so they must not be
-  // counted as in/not-in a project.
-  const enrolledStudents = students.filter(
-    (s) => s.role !== 'instructor' && s.enrollment_role !== 'ta',
+function countProjectMembership(students: ApiRosterStudent[]) {
+  // TAs and dropped students are excluded from project assignment counts.
+  const countable = students.filter(
+    (s) => s.enrollment_role !== 'ta' && s.class_status !== 'dropped',
   );
-  const inProject = enrolledStudents.filter((s) => s.project_id).length;
-  return {
-    inProject,
-    notInProject: enrolledStudents.length - inProject,
-  };
+  const inProject = countable.filter((s) => s.projects.length > 0).length;
+  const registeredNoProject = countable.filter(
+    (s) => s.projects.length === 0 && s.grepthink_status === 'registered',
+  ).length;
+  const notRegistered = countable.filter((s) => s.grepthink_status === 'not_registered').length;
+  return { inProject, registeredNoProject, notRegistered };
 }
 
 const Projects: React.FC = () => {
   const { selectedClass } = useClass();
   const navigate = useNavigate();
   const [apiProjects, setApiProjects] = useState<ApiProject[]>([]);
-  const [classStudents, setClassStudents] = useState<ApiStudent[]>([]);
+  const [classStudents, setClassStudents] = useState<ApiRosterStudent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,14 +79,14 @@ const Projects: React.FC = () => {
     const fetchProjectsPageData = async () => {
       try {
         setLoading(true);
-        const [projectsResponse, studentsResponse] = await Promise.all([
+        const [projectsResponse, rosterResponse] = await Promise.all([
           api.getClassProjects(selectedClass.id),
-          api.getClassStudents(selectedClass.id),
+          api.getClassRoster(selectedClass.id),
         ]);
         if (!isMounted) return;
 
         setApiProjects(projectsResponse.projects ?? []);
-        setClassStudents(studentsResponse.students ?? []);
+        setClassStudents(rosterResponse.students ?? []);
         setError(null);
       } catch (err) {
         if (isMounted) {
@@ -152,7 +152,8 @@ const Projects: React.FC = () => {
         <div className="projects__stats">
           <ProjectMembershipChart
             inProject={membershipStats.inProject}
-            notInProject={membershipStats.notInProject}
+            registeredNoProject={membershipStats.registeredNoProject}
+            notRegistered={membershipStats.notRegistered}
           />
           {/* <ProjectHealth projects={projectHealth} /> */}
           <div className="project-health">
