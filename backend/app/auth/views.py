@@ -247,6 +247,29 @@ def create_user(  # noqa: C901
         raise HTTPException(status_code=500, detail="Database insert failed")
 
 
+def check_user_exists(data: CheckEmailRequest):
+    """
+    Unauthenticated endpoint. Returns whether an email belongs to an existing
+    account. Used by ForgotPassword.tsx to surface an error before calling
+    Supabase resetPasswordForEmail (which silently succeeds for unknown emails).
+    """
+    client = service_client
+    if client is None:
+        raise HTTPException(status_code=503, detail="Service unavailable")
+
+    try:
+        result = (
+            client.table('profiles')
+            .select('id')
+            .eq('email', data.email.lower())
+            .execute()
+        )
+        return {"exists": len(result.data) > 0}
+    except Exception:
+        logger.exception("check_user_exists: lookup failed | email=%s", data.email)
+        raise HTTPException(status_code=500, detail="Failed to check user existence")
+
+
 def check_email(data: CheckEmailRequest):
     """
     Unauthenticated endpoint. Returns whether a .edu email address is
