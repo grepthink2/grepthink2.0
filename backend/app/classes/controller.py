@@ -1261,6 +1261,82 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
         raise HTTPException(status_code=500, detail="Failed to bulk invite students")
 
 @retry_on_disconnect()
+def queue_invite(
+    class_id: UUID,
+    emails: list[str],
+    instructor_id: str,
+    delay_seconds: int = 60,
+    custom_subject: str | None = None,
+    custom_body: str | None = None,
+) -> dict:
+    """Store a pending invite batch; the background worker sends it after delay_seconds."""
+    try:
+        client = service_client if service_client else supabase
+        class_result = (
+            client.table('classes')
+            .select('id')
+            .eq('id', str(class_id))
+            .eq('created_by', instructor_id)
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(status_code=404, detail="Class not found or you don't have permission")
+
+        send_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=delay_seconds)
+        payload: dict = {
+            'class_id': str(class_id),
+            'instructor_id': instructor_id,
+            'emails': emails,
+            'send_at': send_at.isoformat(),
+        }
+        if custom_subject is not None:
+            payload['custom_subject'] = custom_subject
+        if custom_body is not None:
+            payload['custom_body'] = custom_body
+        row = (
+            client.table('pending_invites')
+            .insert(payload)
+            .execute()
+        )
+        inserted = row.data[0]
+        logger.info("queue_invite: queued job=%s class=%s emails=%d", inserted['id'], class_id, len(emails))
+        return {'job_id': inserted['id'], 'send_at': inserted['send_at']}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error in queue_invite | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to queue invite")
+
+
+@retry_on_disconnect()
+def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
+    """Cancel a queued invite batch before it is sent."""
+    try:
+        client = service_client if service_client else supabase
+        result = (
+            client.table('pending_invites')
+            .select('id, sent, cancelled')
+            .eq('id', job_id)
+            .eq('class_id', str(class_id))
+            .eq('instructor_id', instructor_id)
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Invite job not found")
+        row = result.data[0]
+        if row['sent']:
+            raise HTTPException(status_code=409, detail="Emails already sent")
+        client.table('pending_invites').update({'cancelled': True}).eq('id', job_id).execute()
+        logger.info("cancel_invite: cancelled job=%s class=%s", job_id, class_id)
+        return {'cancelled': True}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error in cancel_invite | job_id=%s", job_id)
+        raise HTTPException(status_code=500, detail="Failed to cancel invite")
+
+
+@retry_on_disconnect()
 def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
     """
     Get all projects for a class.
