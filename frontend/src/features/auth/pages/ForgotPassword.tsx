@@ -38,6 +38,19 @@ const ForgotPassword: React.FC = () => {
     setError('');
 
     try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const checkRes = await fetch(`${apiUrl}/api/check-user-exists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      if (!checkRes.ok) throw new Error('Unable to verify email. Please try again.');
+      const { exists } = await checkRes.json();
+      if (!exists) {
+        setError('No account found with that email address.');
+        return;
+      }
+
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         formData.email,
         {

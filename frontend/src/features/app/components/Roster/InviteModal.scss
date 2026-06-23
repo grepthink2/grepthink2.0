@@ -1,0 +1,441 @@
+@use '@styles/index.scss' as *;
+
+.invite-modal {
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: $z-index-modal;
+    padding: $spacing-md;
+  }
+
+  background: $white;
+  border-radius: $border-radius-md;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-family: $primary-font;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: $text-tertiary;
+    display: flex;
+    align-items: center;
+    padding: $spacing-xs;
+    border-radius: $border-radius-sm;
+    transition: color $transition-fast, background $transition-fast;
+
+    &:hover {
+      color: $text-primary;
+      background: $background;
+    }
+  }
+
+  &__draft-banner {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-lg;
+    background: rgba($accent-color, 0.06);
+    border-bottom: 1px solid rgba($accent-color, 0.18);
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    color: $accent-color;
+    flex-shrink: 0;
+
+    span {
+      flex: 1;
+    }
+  }
+
+  &__draft-restore {
+    background: none;
+    border: 1px solid rgba($accent-color, 0.4);
+    border-radius: $border-radius-sm;
+    padding: 2px $spacing-sm;
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $accent-color;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: rgba($accent-color, 0.1);
+    }
+  }
+
+  &__draft-discard {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: $accent-color;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    transition: opacity $transition-fast;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  &__body {
+    overflow-y: auto;
+    padding: $spacing-lg;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+    flex: 1;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__section-title {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: $text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: $primary-color;
+    color: $white;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border-radius: 99px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+  }
+
+  // Scrollable chip container
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    max-height: 180px;
+    overflow-y: auto;
+    padding: $spacing-xs;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $background;
+    min-height: 40px;
+
+    // Subtle scrollbar
+    scrollbar-width: thin;
+    scrollbar-color: $border-color transparent;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: $border-color;
+      border-radius: 2px;
+    }
+  }
+
+  &__no-recipients {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    color: $text-tertiary;
+    font-style: italic;
+    align-self: center;
+    padding: $spacing-xs;
+  }
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: 99px;
+    padding: 3px 10px;
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    color: $text-primary;
+    cursor: pointer;
+    transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+
+    &:hover {
+      background: rgba($error-color, 0.06);
+      border-color: rgba($error-color, 0.35);
+      color: $error-color;
+
+      .invite-modal__chip-x {
+        color: $error-color;
+      }
+    }
+  }
+
+  &__chip-x {
+    color: $text-tertiary;
+    flex-shrink: 0;
+    transition: color $transition-fast;
+  }
+
+  &__add-row {
+    display: flex;
+    gap: $spacing-sm;
+  }
+
+  // Shared input style — explicit white so dark-mode browsers don't override
+  %modal-input {
+    background-color: $white;
+    color: $text-primary;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    outline: none;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.12);
+    }
+  }
+
+  &__add-input {
+    @extend %modal-input;
+    flex: 1;
+    padding: 7px 12px;
+
+    &--error {
+      border-color: $error-color;
+
+      &:focus {
+        box-shadow: 0 0 0 2px rgba($error-color, 0.12);
+      }
+    }
+  }
+
+  &__add-btn {
+    padding: 7px $spacing-md;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: $text-primary;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background $transition-fast, border-color $transition-fast;
+
+    &:hover {
+      background: $background;
+    }
+  }
+
+  &__input-error {
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    color: $error-color;
+    margin: 0;
+  }
+
+  // Editable email content fields
+  &__field-label {
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $text-secondary;
+    margin-bottom: 2px;
+  }
+
+  &__field-input {
+    @extend %modal-input;
+    width: 100%;
+    padding: 8px 12px;
+    box-sizing: border-box;
+  }
+
+  &__field-textarea {
+    @extend %modal-input;
+    width: 100%;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    line-height: 1.6;
+    min-height: 130px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-y: auto;
+
+    // contenteditable cursor
+    &:focus {
+      outline: none;
+    }
+
+    br {
+      display: block;
+      content: '';
+    }
+  }
+
+  // Inline uneditable token chip inside the contenteditable body
+  &__token {
+    display: inline-flex;
+    align-items: center;
+    background: rgba($primary-color, 0.08);
+    border: 1px solid rgba($primary-color, 0.25);
+    border-radius: 4px;
+    color: $primary-color;
+    font-size: 0.8125rem;
+    font-family: $primary-font;
+    padding: 0 5px;
+    line-height: 1.5;
+    white-space: nowrap;
+    cursor: default;
+    user-select: none;
+  }
+
+  // Wrapper for contenteditable + insert row
+  &__body-editor {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  // Row of "re-insert token" buttons shown when a token is missing
+  &__token-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex-wrap: wrap;
+  }
+
+  &__token-row-label {
+    font-family: $primary-font;
+    font-size: 0.6875rem;
+    color: $text-tertiary;
+    white-space: nowrap;
+  }
+
+  &__token-insert {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: 1px dashed rgba($primary-color, 0.4);
+    border-radius: 4px;
+    padding: 2px $spacing-xs;
+    font-family: $primary-font;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: $primary-color;
+    cursor: pointer;
+    transition: background $transition-fast, border-color $transition-fast;
+
+    &:hover {
+      background: rgba($primary-color, 0.06);
+      border-color: $primary-color;
+    }
+  }
+
+  &__error {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    color: $error-color;
+    background: rgba($error-color, 0.06);
+    border: 1px solid rgba($error-color, 0.2);
+    border-radius: $border-radius-sm;
+    padding: $spacing-sm $spacing-md;
+    margin: 0;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    border-top: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__btn {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: $border-radius-sm;
+    padding: 8px $spacing-md;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background $transition-fast, opacity $transition-fast;
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    &--cancel {
+      background: $white;
+      border-color: $border-color;
+      color: $text-primary;
+
+      &:hover:not(:disabled) {
+        background: $background;
+      }
+    }
+
+    &--send {
+      background: $primary-color;
+      color: $white;
+
+      &:hover:not(:disabled) {
+        background: $primary-hover;
+      }
+    }
+  }
+
+  &__spinner {
+    animation: invite-spin 0.75s linear infinite;
+  }
+}
+
+@keyframes invite-spin {
+  to { transform: rotate(360deg); }
+}

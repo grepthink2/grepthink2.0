@@ -721,6 +721,32 @@ export const api = {
     );
   },
 
+  queueInvite: async (
+    classId: string,
+    emails: string[],
+    customSubject?: string,
+    customBody?: string,
+  ) => {
+    return apiRequest<{ job_id: string; send_at: string }>(
+      `/api/classes/${classId}/invites/queue`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          emails,
+          ...(customSubject !== undefined && { custom_subject: customSubject }),
+          ...(customBody !== undefined && { custom_body: customBody }),
+        }),
+      },
+    );
+  },
+
+  cancelInvite: async (classId: string, jobId: string) => {
+    return apiRequest<{ cancelled: boolean }>(
+      `/api/classes/${classId}/invites/${jobId}`,
+      { method: 'DELETE' },
+    );
+  },
+
   // Projects
   createClassProject: async (classId: string, data: { name: string; description?: string }) => {
     return apiRequest<{ message: string; project: ApiProject }>(`/api/classes/${classId}/projects`, {

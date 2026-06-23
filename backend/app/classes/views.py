@@ -7,9 +7,12 @@ from app.dependencies import require_user, require_instructor
 from app.auth.controller import get_user_role
 from app.classes.models import (
     BulkInviteRequest,
+    CancelInviteResponse,
     CreateClassRequest,
     InviteStudentRequest,
     JoinClassRequest,
+    QueueInviteRequest,
+    QueueInviteResponse,
     UpdateClassStatusRequest,
 )
 from app.classes import controller
@@ -121,3 +124,27 @@ def bulk_invite(
 def leave_class(class_id: UUID, user_id: str = Depends(require_user)):
     """Leave a class you're enrolled in (acting student only)."""
     return controller.leave_class(class_id, user_id)
+
+
+def queue_invite(
+    class_id: UUID,
+    data: QueueInviteRequest,
+    user_id: str = Depends(require_instructor),
+) -> QueueInviteResponse:
+    """Queue an invite batch for delayed delivery (instructor only)."""
+    return controller.queue_invite(
+        class_id,
+        data.emails,
+        user_id,
+        custom_subject=data.custom_subject,
+        custom_body=data.custom_body,
+    )
+
+
+def cancel_invite(
+    class_id: UUID,
+    job_id: str,
+    user_id: str = Depends(require_instructor),
+) -> CancelInviteResponse:
+    """Cancel a queued invite batch before it is sent (instructor only)."""
+    return controller.cancel_invite(class_id, job_id, user_id)
