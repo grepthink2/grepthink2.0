@@ -5,7 +5,7 @@ These tests exercise the dependency contract end-to-end through the real
 FastAPI app so we catch regressions in the "dependency -> view -> response"
 wiring, not just the dependency in isolation.
 
-``/api/test-auth`` is the simplest view that uses ``require_user``, so we
+``/api/login-check`` is the simplest view that uses ``require_user``, so we
 use it as a probe for every positive/negative case around missing headers,
 malformed headers, bad signatures, and expired tokens.
 """
@@ -20,34 +20,37 @@ from tests.conftest import make_token
 
 
 class TestRequireUser:
-    """Covers require_user → verify_supabase_token via /api/test-auth."""
+    """Covers require_user → verify_supabase_token via /api/login-check."""
 
     def test_missing_authorization_header_returns_401(self, client: TestClient):
-        r = client.get("/api/test-auth")
+        r = client.get("/api/login-check")
         assert r.status_code == 401
         assert r.json()["detail"] == "Authentication required"
 
     def test_malformed_authorization_header_returns_401(self, client: TestClient):
-        r = client.get("/api/test-auth", headers={"Authorization": "Basic abc"})
+        r = client.get("/api/login-check", headers={"Authorization": "Basic abc"})
         assert r.status_code == 401
 
     def test_bearer_without_token_returns_401(self, client: TestClient):
-        r = client.get("/api/test-auth", headers={"Authorization": "Bearer "})
+        r = client.get("/api/login-check", headers={"Authorization": "Bearer "})
         assert r.status_code == 401
 
     def test_invalid_signature_returns_401(self, client: TestClient):
         bad = make_token(sub="user-xyz", secret="wrong-secret")
-        r = client.get("/api/test-auth", headers={"Authorization": f"Bearer {bad}"})
+        r = client.get("/api/login-check", headers={"Authorization": f"Bearer {bad}"})
         assert r.status_code == 401
         assert r.json()["detail"] == "Invalid authentication token"
 
     def test_expired_token_returns_401(self, client: TestClient):
         bad = make_token(sub="user-xyz", expired=True)
-        r = client.get("/api/test-auth", headers={"Authorization": f"Bearer {bad}"})
+        r = client.get("/api/login-check", headers={"Authorization": f"Bearer {bad}"})
         assert r.status_code == 401
 
-    def test_valid_token_returns_user_id(self, client: TestClient, auth_header):
-        r = client.get("/api/test-auth", headers=auth_header)
+    @patch("app.auth.views.get_user_role")
+    def test_valid_token_returns_user_id(self, mock_get_role, client: TestClient, auth_header):
+        # login_check reads the caller's role; stub it so the probe needs no DB.
+        mock_get_role.return_value = "student"
+        r = client.get("/api/login-check", headers=auth_header)
         assert r.status_code == 200
         body = r.json()
         assert body["user_id"] == "user-abc"

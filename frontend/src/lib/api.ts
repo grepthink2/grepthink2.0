@@ -874,14 +874,6 @@ export const api = {
     });
   },
 
-  /** Test-only: create a project bypassing instructor check (POST /api/projects/test-create) */
-  testCreateProject: async (data: CreateProjectPayload) => {
-    return apiRequest<{ message: string; project: ApiProject }>('/api/projects/test-create', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
   /** Add a member to a project (instructor or authorized role). */
   addProjectMember: async (projectId: string, data: { user_id: string; role?: string }) => {
     return apiRequest<{ message: string; request?: { id: string } }>(`/api/projects/${projectId}/members`, {
