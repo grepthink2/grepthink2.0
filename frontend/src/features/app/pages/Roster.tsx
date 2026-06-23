@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import ControlBar from '@features/app/components/Roster/ControlBar';
 import RosterList from '@features/app/components/Roster/RosterList';
 import PieCharts from '@features/app/components/Roster/PieCharts';
+import InviteModal, { type InvitePayload } from '@features/app/components/Roster/InviteModal';
 import {
   applyFilter,
   isBulkInviteCandidate,
@@ -19,6 +20,12 @@ interface ActionMessage {
   text: string;
 }
 
+interface UnsendJob {
+  jobId: string;
+  classId: string;
+  secondsLeft: number;
+}
+
 const Roster: React.FC = () => {
   const { selectedClass } = useClass();
   const { role } = useAuth();
@@ -28,9 +35,20 @@ const Roster: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<ActionMessage | null>(null);
-  const [inviteAllLoading, setInviteAllLoading] = useState(false);
-  const [invitingEmails, setInvitingEmails] = useState<Set<string>>(new Set());
+  const [inviteModal, setInviteModal] = useState<{ initialEmails: string[] } | null>(null);
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [unsendJob, setUnsendJob] = useState<UnsendJob | null>(null);
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unsendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearUnsend = useCallback(() => {
+    if (unsendIntervalRef.current) {
+      clearInterval(unsendIntervalRef.current);
+      unsendIntervalRef.current = null;
+    }
+    setUnsendJob(null);
+  }, []);
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
@@ -63,6 +81,14 @@ const Roster: React.FC = () => {
     }
     void loadRoster(selectedClass.id);
   }, [selectedClass?.id, loadRoster]);
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+      if (unsendIntervalRef.current) clearInterval(unsendIntervalRef.current);
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     const byFilter = applyFilter(students, filter);
@@ -98,52 +124,64 @@ const Roster: React.FC = () => {
     }
   };
 
-  const handleInviteAll = async () => {
+  const handleInviteAll = () => {
     if (!selectedClass?.id) return;
     const emails = students.filter(isBulkInviteCandidate).map((s) => s.email);
     if (emails.length === 0) return;
+    setModalError(null);
+    setInviteModal({ initialEmails: emails });
+  };
 
-    setActionMessage(null);
-    setInviteAllLoading(true);
+  const handleInvite = (student: UiStudent) => {
+    setModalError(null);
+    setInviteModal({ initialEmails: [student.email] });
+  };
+
+  const startUnsendCountdown = useCallback((jobId: string, classId: string) => {
+    clearUnsend();
+    setUnsendJob({ jobId, classId, secondsLeft: 60 });
+    unsendIntervalRef.current = setInterval(() => {
+      setUnsendJob((prev) => {
+        if (!prev) return null;
+        if (prev.secondsLeft <= 1) {
+          clearInterval(unsendIntervalRef.current!);
+          unsendIntervalRef.current = null;
+          void loadRoster(prev.classId, true);
+          setActionMessage(null);
+          return null;
+        }
+        return { ...prev, secondsLeft: prev.secondsLeft - 1 };
+      });
+    }, 1000);
+  }, [clearUnsend, loadRoster]);
+
+  const handleModalSend = async ({ emails, subject, body }: InvitePayload) => {
+    if (!selectedClass?.id) return;
+    setIsSendingInvite(true);
+    setModalError(null);
     try {
-      const result = await api.bulkInviteStudents(selectedClass.id, emails);
-      const emailFailed = result.results.filter((r) => r.status === 'email_failed').length;
-      await loadRoster(selectedClass.id, true);
-      const parts: string[] = [];
-      if (result.invited_count > 0) {
-        parts.push(`Sent ${result.invited_count} signup invitation${result.invited_count !== 1 ? 's' : ''}`);
-      }
-      if (result.enrolled_count > 0) {
-        parts.push(`Enrolled ${result.enrolled_count} registered student${result.enrolled_count !== 1 ? 's' : ''}`);
-      }
-      if (emailFailed > 0) {
-        parts.push(`${emailFailed} email${emailFailed !== 1 ? 's' : ''} could not be delivered`);
-      }
-      const hasErrors = emailFailed > 0 && result.invited_count === 0 && result.enrolled_count === 0;
-      showMessage(hasErrors ? 'error' : 'success', (parts.join('. ') || 'Done') + '.');
+      const result = await api.queueInvite(selectedClass.id, emails, subject, body);
+      setInviteModal(null);
+      // Don't use showMessage here — it auto-dismisses after 4s, but we need
+      // the banner to stay for the full 60s unsend window.
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+      setActionMessage({ type: 'success', text: `${emails.length} invitation${emails.length !== 1 ? 's' : ''} queued.` });
+      startUnsendCountdown(result.job_id, selectedClass.id);
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Failed to invite students');
+      setModalError(err instanceof Error ? err.message : 'Failed to send invitations');
     } finally {
-      setInviteAllLoading(false);
+      setIsSendingInvite(false);
     }
   };
 
-  const handleInvite = async (student: UiStudent) => {
-    if (!selectedClass?.id) return;
-    setActionMessage(null);
-    setInvitingEmails((prev) => new Set(prev).add(student.email));
+  const handleUnsend = async () => {
+    if (!unsendJob) return;
+    clearUnsend();
     try {
-      await api.inviteStudent(selectedClass.id, student.email);
-      await loadRoster(selectedClass.id, true);
-      showMessage('success', `Invitation sent to ${student.name}.`);
+      await api.cancelInvite(unsendJob.classId, unsendJob.jobId);
+      showMessage('success', 'Invitations cancelled.');
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Failed to invite student');
-    } finally {
-      setInvitingEmails((prev) => {
-        const next = new Set(prev);
-        next.delete(student.email);
-        return next;
-      });
+      showMessage('error', err instanceof Error ? err.message : 'Could not cancel invitations');
     }
   };
 
@@ -160,6 +198,9 @@ const Roster: React.FC = () => {
       showMessage('error', err instanceof Error ? err.message : 'Failed to remove student');
     }
   };
+
+  const formatCountdown = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(1, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   if (!selectedClass) {
     return (
@@ -196,17 +237,29 @@ const Roster: React.FC = () => {
         notRegisteredCount={notRegisteredCount}
         onInviteAll={handleInviteAll}
         onRosterFileSelected={handleUploadRoster}
-        inviteAllLoading={inviteAllLoading}
+        inviteAllLoading={false}
       />
       {actionMessage && (
         <div
           className={`roster__action-message roster__action-message--${actionMessage.type}`}
           role="alert"
         >
-          {actionMessage.text}
+          <span>{actionMessage.text}</span>
+          {unsendJob && actionMessage.type === 'success' && (
+            <button
+              className="roster__unsend-btn"
+              onClick={handleUnsend}
+              type="button"
+            >
+              Unsend ({formatCountdown(unsendJob.secondsLeft)})
+            </button>
+          )}
           <button
             className="roster__action-message-dismiss"
-            onClick={() => setActionMessage(null)}
+            onClick={() => {
+              setActionMessage(null);
+              clearUnsend();
+            }}
             type="button"
             aria-label="Dismiss"
           >
@@ -224,13 +277,24 @@ const Roster: React.FC = () => {
             showActions
             onInvite={handleInvite}
             onRemove={handleRemove}
-            invitingEmails={invitingEmails}
+            invitingEmails={new Set()}
           />
         </div>
         <div className="roster__sidebar">
           <PieCharts students={students} />
         </div>
       </div>
+
+      <InviteModal
+        isOpen={inviteModal !== null}
+        onClose={() => setInviteModal(null)}
+        onSend={handleModalSend}
+        initialEmails={inviteModal?.initialEmails ?? []}
+        className={selectedClass.name}
+        courseCode={selectedClass.course_code ?? ''}
+        isSending={isSendingInvite}
+        errorMessage={modalError}
+      />
     </div>
   );
 };
