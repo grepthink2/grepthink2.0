@@ -12,6 +12,7 @@ from fastapi import HTTPException
 
 from app.attendance import controller
 import app.projects.controller as projects_controller
+import app.tas.controller as tas_controller
 from tests.fake_supabase import FakeSupabase
 
 
@@ -40,7 +41,11 @@ def db(monkeypatch):
         profiles=[_profile(INSTR, "Ina"), _profile(TA1, "Tara"),
                   _profile(S1, "Sam"), _profile(S2, "Sara"), _profile(S3, "Sid")],
         classes=[{"id": CLASS, "created_by": INSTR, "term": "fall", "start_date": start}],
-        class_enrollments=[{"class_id": CLASS, "user_id": u} for u in (TA1, S1, S2, S3)],
+        class_enrollments=[
+            {"id": f"enr-{u}", "class_id": CLASS, "user_id": u,
+             "enrollment_role": ("ta" if u == TA1 else "student")}
+            for u in (TA1, S1, S2, S3)
+        ],
         projects=[
             {"id": P1, "class_id": CLASS, "name": "Alpha", "assigned_ta_id": TA1,
              "zoom_url": None, "meeting_day": "wednesday", "meeting_time": "2:00 PM", "num_members": 2},
@@ -53,12 +58,12 @@ def db(monkeypatch):
             {"project_id": P2, "user_id": S1, "role": "member"},
             {"project_id": P2, "user_id": S3, "role": "member"},
         ],
-        class_tas=[{"class_id": CLASS, "user_id": TA1}],
         attendance=[],
     )
-    # Patch both modules: attendance._client() and projects._is_instructor read
-    # their own module-level service_client/supabase.
-    for mod in (controller, projects_controller):
+    # Patch every module whose _client() these controllers reach: attendance
+    # delegates class-TA writes to tas_controller, and projects._is_instructor
+    # reads its own module-level client.
+    for mod in (controller, projects_controller, tas_controller):
         monkeypatch.setattr(mod, "service_client", fake, raising=False)
         monkeypatch.setattr(mod, "supabase", fake, raising=False)
     return fake
@@ -111,11 +116,17 @@ def test_designate_requires_instructor(db):
 
 
 def test_undesignate_clears_project_assignment(db):
-    # TA1 is assigned to P1; removing TA1 as class TA clears that assignment.
+    # TA1 oversees P1 both as meeting TA (projects.assigned_ta_id) and as a
+    # review TA (project_ta_assignments). Removing TA1 as a class TA flips
+    # enrollment_role back to student and clears BOTH project-level roles.
+    db.rows("project_ta_assignments").append(
+        {"id": "pta-1", "class_id": CLASS, "project_id": P1, "user_id": TA1}
+    )
     controller.set_class_ta(CLASS, INSTR, TA1, False)
     assert controller.is_class_ta(TA1, CLASS) is False
     p1 = next(p for p in db.rows("projects") if p["id"] == P1)
     assert p1["assigned_ta_id"] is None
+    assert not [r for r in db.rows("project_ta_assignments") if r["user_id"] == TA1]
 
 
 # --------------------------------------------------------------------------

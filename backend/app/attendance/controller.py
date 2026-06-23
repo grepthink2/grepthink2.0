@@ -2,9 +2,15 @@
 TA Management business logic.
 
 Owns three related surfaces that share permission helpers:
-  * per-class TA designation (``class_tas``)
-  * per-project TA assignment + meeting/Zoom metadata (columns on ``projects``)
+  * per-class TA designation (``class_enrollments.enrollment_role`` — the single
+    source of truth, shared with the tas module and TA Review)
+  * per-project meeting TA + meeting/Zoom metadata (columns on ``projects``)
   * per-week attendance (``attendance``)
+
+Note: "meeting TA" (``projects.assigned_ta_id``, who runs a team's weekly
+meeting + takes attendance) and "review TA" (``project_ta_assignments``, who
+reviews a team's TSRs, owned by the tas module) are intentionally distinct
+project-level roles — both now drawn from the one class-TA pool above.
 
 Permission model (RLS is off; everything is enforced here):
   * Designate class TAs / assign a project TA  -> class instructor only.
@@ -30,6 +36,9 @@ from app.classes.controller import (
     _FULL_TSR_COUNT,
     _SUMMER_TSR_COUNT,
 )
+# Class-TA designation lives in class_enrollments.enrollment_role; reuse the tas
+# module so attendance and TA Review share one source of truth.
+from app.tas import controller as tas_controller
 
 logger = logging.getLogger(__name__)
 
@@ -88,15 +97,13 @@ def _week_of_iso(start_date, week_number: int) -> Optional[str]:
 # ---------------------------------------------------------------------------
 
 def is_class_ta(user_id: str, class_id: str) -> bool:
-    """True iff a class_tas row exists for (class_id, user_id)."""
+    """True iff the user is a class TA (class_enrollments.enrollment_role='ta')."""
     if not user_id or not class_id:
         return False
-    res = (
-        _client().table("class_tas").select("user_id")
-        .eq("class_id", str(class_id)).eq("user_id", str(user_id))
-        .execute()
+    return (
+        tas_controller.get_enrollment_role(_client(), class_id, str(user_id))
+        == tas_controller.ENROLLMENT_ROLE_TA
     )
-    return bool(res.data)
 
 
 def _is_enrolled(client, class_id: str, user_id: str) -> bool:
@@ -142,38 +149,31 @@ def _require_class_instructor(client, user_id: str, class_id: str) -> None:
 # ---------------------------------------------------------------------------
 
 def set_class_ta(class_id: UUID, instructor_id: str, target_user_id: str, is_ta: bool) -> dict:
-    """Designate or undesignate an enrolled student as a TA for the class."""
+    """Designate or undesignate an enrolled student as a class TA.
+
+    Class-TA status is stored in ``class_enrollments.enrollment_role`` — the
+    single source of truth shared with the tas module and TA Review. The
+    enrollment write is delegated to the tas controller so both designation UIs
+    (TA Management and TA Meetings) stay in lockstep; on undesignate we also
+    clear the user's meeting ownership (``projects.assigned_ta_id``) in the class
+    (``demote_ta`` already clears their ``project_ta_assignments`` review rows).
+    """
+    cid, tid = str(class_id), str(target_user_id)
+    if is_ta:
+        tas_controller.promote_to_ta(instructor_id, class_id, target_user_id)
+        logger.info("Class TA designated | class_id=%s user_id=%s by=%s", cid, tid, instructor_id)
+        return {"message": "TA designated", "user_id": tid, "is_ta": True}
+
+    tas_controller.demote_ta(instructor_id, class_id, target_user_id)
     try:
-        client = _client()
-        cid, tid = str(class_id), str(target_user_id)
-        _require_class_instructor(client, instructor_id, cid)
-
-        if is_ta:
-            if not _is_enrolled(client, cid, tid):
-                raise HTTPException(status_code=400, detail="Student must be enrolled in this class")
-            # Idempotent: skip if already a TA.
-            existing = (
-                client.table("class_tas").select("user_id")
-                .eq("class_id", cid).eq("user_id", tid).execute()
-            )
-            if not existing.data:
-                client.table("class_tas").insert(
-                    {"class_id": cid, "user_id": tid, "created_by": instructor_id}
-                ).execute()
-            logger.info("Class TA designated | class_id=%s user_id=%s by=%s", cid, tid, instructor_id)
-            return {"message": "TA designated", "user_id": tid, "is_ta": True}
-
-        # Undesignate: remove the row and clear any project assignments in this class.
-        client.table("class_tas").delete().eq("class_id", cid).eq("user_id", tid).execute()
-        client.table("projects").update({"assigned_ta_id": None}) \
+        _client().table("projects").update({"assigned_ta_id": None}) \
             .eq("class_id", cid).eq("assigned_ta_id", tid).execute()
-        logger.info("Class TA removed | class_id=%s user_id=%s by=%s", cid, tid, instructor_id)
-        return {"message": "TA removed", "user_id": tid, "is_ta": False}
-    except HTTPException:
-        raise
     except Exception:
-        logger.exception("Error setting class TA | class_id=%s user_id=%s", class_id, target_user_id)
-        raise HTTPException(status_code=500, detail="Failed to update class TA")
+        logger.exception(
+            "Failed to clear meeting ownership on TA removal | class_id=%s user_id=%s", cid, tid
+        )
+    logger.info("Class TA removed | class_id=%s user_id=%s by=%s", cid, tid, instructor_id)
+    return {"message": "TA removed", "user_id": tid, "is_ta": False}
 
 
 def list_class_tas(class_id: UUID, user_id: str, role: str) -> list:
@@ -191,14 +191,19 @@ def list_class_tas(class_id: UUID, user_id: str, role: str) -> list:
             raise HTTPException(status_code=403, detail="You do not have access to this class")
 
         enrollments = (
-            client.table("class_enrollments").select("user_id").eq("class_id", cid).execute()
+            client.table("class_enrollments").select("user_id, enrollment_role")
+            .eq("class_id", cid).execute()
         )
-        student_ids = [r["user_id"] for r in (enrollments.data or [])]
+        enroll_rows = enrollments.data or []
+        student_ids = [r["user_id"] for r in enroll_rows]
         if not student_ids:
             return []
 
-        ta_rows = client.table("class_tas").select("user_id").eq("class_id", cid).execute()
-        ta_ids = {r["user_id"] for r in (ta_rows.data or [])}
+        # is_ta derives from the single source of truth (enrollment_role).
+        ta_ids = {
+            r["user_id"] for r in enroll_rows
+            if r.get("enrollment_role") == tas_controller.ENROLLMENT_ROLE_TA
+        }
 
         profiles = (
             client.table("profiles")

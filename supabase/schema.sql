@@ -265,18 +265,6 @@ COMMENT ON COLUMN "public"."class_enrollments"."user_id" IS 'Foreign key to user
 COMMENT ON COLUMN "public"."class_enrollments"."enrolled_at" IS 'Timestamp when the student was enrolled';
 
 
-
-CREATE TABLE IF NOT EXISTS "public"."class_tas" (
-    "class_id" "uuid" NOT NULL,
-    "user_id" "uuid" NOT NULL,
-    "created_by" "uuid",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
-);
-
-
-ALTER TABLE "public"."class_tas" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."classes" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "name" "text" NOT NULL,
@@ -573,11 +561,6 @@ ALTER TABLE ONLY "public"."class_enrollments"
 
 
 
-ALTER TABLE ONLY "public"."class_tas"
-    ADD CONSTRAINT "class_tas_pkey" PRIMARY KEY ("class_id", "user_id");
-
-
-
 ALTER TABLE ONLY "public"."classes"
     ADD CONSTRAINT "classes_pkey" PRIMARY KEY ("id");
 
@@ -711,14 +694,6 @@ CREATE INDEX "class_enrollments_class_id_idx" ON "public"."class_enrollments" US
 
 
 CREATE INDEX "class_enrollments_user_id_idx" ON "public"."class_enrollments" USING "btree" ("user_id");
-
-
-
-CREATE INDEX "class_tas_class_idx" ON "public"."class_tas" USING "btree" ("class_id");
-
-
-
-CREATE INDEX "class_tas_user_idx" ON "public"."class_tas" USING "btree" ("user_id");
 
 
 
@@ -877,21 +852,6 @@ ALTER TABLE ONLY "public"."class_enrollments"
 
 ALTER TABLE ONLY "public"."class_enrollments"
     ADD CONSTRAINT "class_enrollments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."class_tas"
-    ADD CONSTRAINT "class_tas_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id");
-
-
-
-ALTER TABLE ONLY "public"."class_tas"
-    ADD CONSTRAINT "class_tas_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id");
-
-
-
-ALTER TABLE ONLY "public"."class_tas"
-    ADD CONSTRAINT "class_tas_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id");
 
 
 
@@ -1090,9 +1050,6 @@ ALTER TABLE "public"."attendance" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."class_enrollments" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."class_tas" ENABLE ROW LEVEL SECURITY;
-
-
 ALTER TABLE "public"."classes" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1237,12 +1194,6 @@ GRANT ALL ON TABLE "public"."attendance" TO "service_role";
 GRANT ALL ON TABLE "public"."class_enrollments" TO "anon";
 GRANT ALL ON TABLE "public"."class_enrollments" TO "authenticated";
 GRANT ALL ON TABLE "public"."class_enrollments" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."class_tas" TO "anon";
-GRANT ALL ON TABLE "public"."class_tas" TO "authenticated";
-GRANT ALL ON TABLE "public"."class_tas" TO "service_role";
 
 
 
