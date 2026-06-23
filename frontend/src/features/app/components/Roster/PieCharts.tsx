@@ -78,10 +78,12 @@ const PieCharts: React.FC<PieChartsProps> = ({ students }) => {
     }))
     .filter((d) => d.value > 0);
 
+  const nonDropped = countable.filter((s) => s.classStatus !== 'dropped');
+
   const gtStatusData: ChartEntry[] = (Object.keys(GT_STATUS_COLORS) as GrepthinkStatus[])
     .map((status) => ({
       name: GT_STATUS_LABELS[status],
-      value: countable.filter((s) => s.grepthinkStatus === status).length,
+      value: nonDropped.filter((s) => s.grepthinkStatus === status).length,
       color: GT_STATUS_COLORS[status],
     }))
     .filter((d) => d.value > 0);
@@ -126,7 +128,7 @@ const PieCharts: React.FC<PieChartsProps> = ({ students }) => {
   return (
     <div className="pie-charts">
       {renderChart('Class Roster Status', classStatusData, countable.length)}
-      {renderChart('GrepThink Registration', gtStatusData, countable.length)}
+      {renderChart('GrepThink Registration', gtStatusData, nonDropped.length)}
     </div>
   );
 };
