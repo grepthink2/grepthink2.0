@@ -3,6 +3,7 @@ import { UserMinus, Mail, Loader2 } from 'lucide-react';
 import type { UiStudent, ClassStatus, GrepthinkStatus } from './rosterTypes';
 import { countableStudents } from './rosterTypes';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
+import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
 import SortableHeader from '@features/app/components/shared/SortableHeader';
 import { useTableSort, type SortAccessors } from '@features/app/utils/useTableSort';
 import './RosterList.scss';
@@ -54,8 +55,8 @@ const RosterList: React.FC<RosterListProps> = ({
     { key: 'name', direction: 'asc' },
   );
 
-  // TAs stay visible in the table but don't count toward the student total.
-  const studentCount = countableStudents(students).length;
+  // TAs and dropped students don't count toward the roster total.
+  const studentCount = countableStudents(students).filter((s) => s.classStatus !== 'dropped').length;
 
   if (loading) {
     const headers = ['Name', 'Email', 'Class Status', 'GrepThink Status', 'Projects'];
@@ -63,7 +64,7 @@ const RosterList: React.FC<RosterListProps> = ({
     return (
       <TableSkeleton
         block="roster-list"
-        title="Student Count"
+        title="Roster Count"
         headers={headers}
         rows={10}
         cellWidths={['70%', '85%', '90px', '90px', '50%', '70px']}
@@ -75,7 +76,9 @@ const RosterList: React.FC<RosterListProps> = ({
     return (
       <div className="roster-list">
         <div className="roster-list__header">
-          <h2 className="roster-list__title">Student Count</h2>
+          <h2 className="roster-list__title">
+            <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
+          </h2>
         </div>
         <div className="roster-list__table-card">
           <div className="roster-list__table-wrapper">
@@ -89,7 +92,9 @@ const RosterList: React.FC<RosterListProps> = ({
   return (
     <div className="roster-list">
       <div className="roster-list__header">
-        <h2 className="roster-list__title">Student Count</h2>
+        <h2 className="roster-list__title">
+          <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
+        </h2>
         <span className="roster-list__count-badge">{studentCount}</span>
       </div>
 

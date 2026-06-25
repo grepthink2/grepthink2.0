@@ -86,7 +86,7 @@ const Dashboard: React.FC = () => {
   const projectHealth = useMemo(() => buildProjectHealth(projects), [projects]);
   const recentRows = useMemo(() => recentAssignments(assignments, 5), [assignments]);
 
-  const studentsRegistered = rosterSummary.registered || selectedClass?.enrolled_count || 0;
+  const studentsRegistered = selectedClass?.enrolled_count ?? 0;
   const activeProjects = projects.length;
 
   const submitted = turnInStats?.teamsSubmitted.count ?? 0;
@@ -111,10 +111,11 @@ const Dashboard: React.FC = () => {
 
       <section className="dashboard__metrics" aria-label="Class metrics">
         <DashboardMetricCard
-          label="Students"
+          label="Registered Students"
           value={studentsRegistered}
           icon={Users}
           accent="primary"
+          tooltip="Students registered in GrepThink"
           loading={loading}
           onClick={() => navigate('/app/roster')}
         />

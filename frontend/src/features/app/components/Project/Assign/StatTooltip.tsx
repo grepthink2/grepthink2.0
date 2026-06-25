@@ -5,13 +5,14 @@ import './StatTooltip.scss';
 interface StatTooltipProps {
   label: string;
   children: React.ReactNode;
+  underline?: boolean;
 }
 
 /**
  * Lightweight single-label hover tooltip rendered via a portal so it is
  * never clipped by scroll containers or overflow ancestors.
  */
-const StatTooltip: React.FC<StatTooltipProps> = ({ label, children }) => {
+const StatTooltip: React.FC<StatTooltipProps> = ({ label, children, underline = false }) => {
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLSpanElement>(null);
@@ -28,7 +29,7 @@ const StatTooltip: React.FC<StatTooltipProps> = ({ label, children }) => {
   return (
     <span
       ref={triggerRef}
-      className="stat-tooltip__trigger"
+      className={`stat-tooltip__trigger${underline ? ' stat-tooltip__trigger--underline' : ''}`}
       onMouseEnter={() => setVisible(true)}
       onMouseLeave={() => setVisible(false)}
     >
