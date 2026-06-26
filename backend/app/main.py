@@ -20,7 +20,7 @@ async def _process_pending_invites() -> None:
     """Poll pending_invites every 5 s and fire emails whose send_at has passed."""
     from app.database.client import service_client, supabase
     from app.classes.controller import bulk_invite_students
-    from app.utils.email import send_email
+    from app.utils.email import send_email, wrap_editor_html_for_email
     while True:
         await asyncio.sleep(5)
         try:
@@ -29,7 +29,7 @@ async def _process_pending_invites() -> None:
             now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
             rows = (
                 client.table('pending_invites')
-                .select('id, class_id, instructor_id, emails, custom_subject, custom_body')
+                .select('id, class_id, instructor_id, emails, cc, bcc, custom_subject, custom_body, custom_body_html')
                 .lte('send_at', now_iso)
                 .eq('cancelled', False)
                 .eq('sent', False)
@@ -42,6 +42,10 @@ async def _process_pending_invites() -> None:
                     if row.get('custom_subject') and row.get('custom_body'):
                         subject = row['custom_subject']
                         body_text = row['custom_body']
+                        raw_html = row.get('custom_body_html')
+                        body_html = wrap_editor_html_for_email(raw_html) if raw_html else None
+                        cc_list = row.get('cc') or []
+                        bcc_list = row.get('bcc') or []
                         for email in row['emails']:
                             try:
                                 await asyncio.to_thread(
@@ -49,6 +53,9 @@ async def _process_pending_invites() -> None:
                                     to=email,
                                     subject=subject,
                                     body_text=body_text,
+                                    body_html=body_html,
+                                    cc=cc_list,
+                                    bcc=bcc_list,
                                 )
                             except Exception:
                                 logger.exception("pending_invite custom email failed: job=%s to=%s", row['id'], email)
