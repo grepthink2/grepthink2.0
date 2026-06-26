@@ -1266,8 +1266,11 @@ def queue_invite(
     emails: list[str],
     instructor_id: str,
     delay_seconds: int = 60,
+    cc: list[str] | None = None,
+    bcc: list[str] | None = None,
     custom_subject: str | None = None,
     custom_body: str | None = None,
+    custom_body_html: str | None = None,
 ) -> dict:
     """Store a pending invite batch; the background worker sends it after delay_seconds."""
     try:
@@ -1289,10 +1292,16 @@ def queue_invite(
             'emails': emails,
             'send_at': send_at.isoformat(),
         }
+        if cc:
+            payload['cc'] = cc
+        if bcc:
+            payload['bcc'] = bcc
         if custom_subject is not None:
             payload['custom_subject'] = custom_subject
         if custom_body is not None:
             payload['custom_body'] = custom_body
+        if custom_body_html is not None:
+            payload['custom_body_html'] = custom_body_html
         row = (
             client.table('pending_invites')
             .insert(payload)

@@ -155,12 +155,12 @@ const Roster: React.FC = () => {
     }, 1000);
   }, [clearUnsend, loadRoster]);
 
-  const handleModalSend = async ({ emails, subject, body }: InvitePayload) => {
+  const handleModalSend = async ({ emails, cc, bcc, subject, body, bodyHtml }: InvitePayload) => {
     if (!selectedClass?.id) return;
     setIsSendingInvite(true);
     setModalError(null);
     try {
-      const result = await api.queueInvite(selectedClass.id, emails, subject, body);
+      const result = await api.queueInvite(selectedClass.id, emails, subject, body, bodyHtml, cc, bcc);
       setInviteModal(null);
       // Don't use showMessage here — it auto-dismisses after 4s, but we need
       // the banner to stay for the full 60s unsend window.
