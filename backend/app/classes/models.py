@@ -40,8 +40,11 @@ class BulkInviteRequest(BaseModel):
 class QueueInviteRequest(BaseModel):
     """Request model for queuing a delayed invite batch"""
     emails: list[str]
+    cc: list[str] = []
+    bcc: list[str] = []
     custom_subject: Optional[str] = None
     custom_body: Optional[str] = None
+    custom_body_html: Optional[str] = None
 
 
 class QueueInviteResponse(BaseModel):

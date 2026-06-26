@@ -136,8 +136,11 @@ def queue_invite(
         class_id,
         data.emails,
         user_id,
+        cc=data.cc,
+        bcc=data.bcc,
         custom_subject=data.custom_subject,
         custom_body=data.custom_body,
+        custom_body_html=data.custom_body_html,
     )
 
 

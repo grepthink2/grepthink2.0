@@ -726,6 +726,9 @@ export const api = {
     emails: string[],
     customSubject?: string,
     customBody?: string,
+    customBodyHtml?: string,
+    cc?: string[],
+    bcc?: string[],
   ) => {
     return apiRequest<{ job_id: string; send_at: string }>(
       `/api/classes/${classId}/invites/queue`,
@@ -735,6 +738,9 @@ export const api = {
           emails,
           ...(customSubject !== undefined && { custom_subject: customSubject }),
           ...(customBody !== undefined && { custom_body: customBody }),
+          ...(customBodyHtml !== undefined && { custom_body_html: customBodyHtml }),
+          ...(cc && cc.length > 0 && { cc }),
+          ...(bcc && bcc.length > 0 && { bcc }),
         }),
       },
     );
