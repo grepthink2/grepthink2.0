@@ -1,0 +1,233 @@
+{
+  "$schema": "https://grepthink.com/schemas/agent-actions-v1.json",
+  "version": "1",
+  "name": "GrepThink 2.0",
+  "description": "Agent-facing catalog of user actions. All actions require a Supabase-authenticated session and are role-gated. Param syntax: 'type!' = required, 'type' = optional.",
+  "apiBase": "/api",
+  "auth": {
+    "type": "supabase-jwt",
+    "header": "Authorization: Bearer <access_token>",
+    "note": "Sign-up, login, password reset, and OAuth are performed client-side via Supabase Auth, not these endpoints. POST /api/create-user provisions the profile row after sign-up."
+  },
+  "roles": ["public", "student", "ta", "instructor", "project-member", "project-owner"],
+  "actions": [
+    {
+      "id": "create_user_profile", "title": "Provision profile after sign-up", "role": "public",
+      "method": "POST", "endpoint": "/api/create-user", "rateLimit": "20/min",
+      "params": {"userId": "string!", "email": "string!", "userType": "enum(student|instructor)!", "firstName": "string", "lastName": "string", "avatarUrl": "string"}
+    },
+    {
+      "id": "check_email", "title": "Check whether a .edu email is available", "role": "public",
+      "method": "POST", "endpoint": "/api/check-email", "rateLimit": "60/min",
+      "params": {"email": "string!"}
+    },
+    {
+      "id": "submit_contact", "title": "Submit the contact form", "role": "public",
+      "method": "POST", "endpoint": "/api/contact", "rateLimit": "10/min",
+      "params": {"name": "string!", "email": "string!", "message": "string!", "website": "string (honeypot — leave empty)"}
+    },
+
+    {
+      "id": "create_class", "title": "Create a class", "role": "instructor",
+      "method": "POST", "endpoint": "/api/classes",
+      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "tsr_count": "int"},
+      "uiRoute": "/app → Create Class"
+    },
+    {
+      "id": "list_my_classes", "title": "List my classes", "role": "any",
+      "method": "GET", "endpoint": "/api/classes", "uiRoute": "/app/my-classes"
+    },
+    {
+      "id": "join_class", "title": "Join a class by course code", "role": "student",
+      "method": "POST", "endpoint": "/api/classes/join",
+      "params": {"course_code": "string!"}, "uiRoute": "/app → Join Class"
+    },
+    {
+      "id": "leave_class", "title": "Leave a class", "role": "student",
+      "method": "DELETE", "endpoint": "/api/classes/{class_id}/leave", "uiRoute": "/app/my-classes"
+    },
+    {
+      "id": "upload_roster", "title": "Upload the class roster (UCSC CSV)", "role": "instructor",
+      "method": "POST", "endpoint": "/api/classes/{class_id}/roster",
+      "params": {"file": "CSV multipart!"}, "uiRoute": "/app/roster", "multiStep": true
+    },
+    {
+      "id": "invite_student", "title": "Invite/enroll one student by email", "role": "instructor",
+      "method": "POST", "endpoint": "/api/classes/{class_id}/invite",
+      "params": {"student_email": "string!"}, "uiRoute": "/app/roster"
+    },
+    {
+      "id": "bulk_invite_students", "title": "Bulk-enroll students by email", "role": "instructor",
+      "method": "POST", "endpoint": "/api/classes/{class_id}/students/bulk-invite",
+      "params": {"emails": "string[]!"}, "uiRoute": "/app/roster", "multiStep": true
+    },
+    {
+      "id": "remove_student", "title": "Remove a student from a class", "role": "instructor",
+      "method": "DELETE", "endpoint": "/api/classes/{class_id}/students/{student_id}", "uiRoute": "/app/roster"
+    },
+    {
+      "id": "set_class_status", "title": "Set class to active/complete", "role": "instructor",
+      "method": "PATCH", "endpoint": "/api/classes/{class_id}/status",
+      "params": {"status": "enum(active|complete)!"}
+    },
+
+    {
+      "id": "create_project", "title": "Create a project", "role": "instructor",
+      "method": "POST", "endpoint": "/api/projects",
+      "params": {"class_id": "uuid!", "name": "string!", "description": "string (markdown)", "team_size": "int!", "looking_for_roles": "string[]", "skills": "string[]", "sponsor_name": "string", "sponsor_company": "string", "sponsor_email": "string", "sponsor_website": "string", "sponsor_description": "string"},
+      "uiRoute": "/app/create-project", "multiStep": true
+    },
+    {
+      "id": "list_projects", "title": "List/browse projects in a class", "role": "any",
+      "method": "GET", "endpoint": "/api/projects?class_id={class_id}", "uiRoute": "/app/projects | /app/browse-projects"
+    },
+    {
+      "id": "edit_project", "title": "Edit a project", "role": "owner|product owner|admin|instructor",
+      "method": "PATCH", "endpoint": "/api/projects/{project_id}",
+      "params": {"name": "string", "description": "string (markdown)", "team_size": "int", "image_url": "string", "sponsor_*": "string"}, "multiStep": true
+    },
+    {
+      "id": "delete_project", "title": "Delete a project", "role": "product owner|admin|instructor",
+      "method": "DELETE", "endpoint": "/api/projects/{project_id}"
+    },
+    {
+      "id": "request_join_project", "title": "Request to join a project", "role": "student",
+      "method": "POST", "endpoint": "/api/projects/request-join",
+      "params": {"project_id": "uuid!", "message": "string"}
+    },
+    {
+      "id": "accept_join_request", "title": "Accept a join request", "role": "owner|product owner|admin|instructor",
+      "method": "POST", "endpoint": "/api/projects/accept-request", "params": {"request_id": "uuid!", "user_id": "uuid!"}
+    },
+    {
+      "id": "reject_join_request", "title": "Reject a join request", "role": "owner|product owner|admin|instructor",
+      "method": "POST", "endpoint": "/api/projects/reject-request", "params": {"request_id": "uuid!", "user_id": "uuid!"}
+    },
+    {
+      "id": "add_project_member", "title": "Add a member / invite to team", "role": "owner|product owner|admin|instructor",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/members",
+      "params": {"user_id": "uuid!", "role": "string"}, "note": "Instructor adds immediately; owner/PO/admin create a pending invite."
+    },
+    {
+      "id": "remove_project_member", "title": "Remove a project member", "role": "instructor",
+      "method": "DELETE", "endpoint": "/api/projects/{project_id}/members/{user_id}"
+    },
+    {
+      "id": "assign_product_owner", "title": "Assign product owner", "role": "owner|product owner|admin|instructor",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/assign-product-owner", "params": {"user_id": "uuid!"}
+    },
+    {
+      "id": "remove_product_owner", "title": "Remove product owner (demote to member)", "role": "product owner|admin|instructor",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/remove-product-owner", "params": {"user_id": "uuid!"}
+    },
+    {
+      "id": "assign_scrum_master", "title": "Assign scrum master", "role": "owner|product owner|admin|instructor",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/assign-scrum-master", "params": {"user_id": "uuid!"}
+    },
+    {
+      "id": "assign_admin", "title": "Assign admin", "role": "owner|product owner|admin|instructor",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/assign-admin", "params": {"user_id": "uuid!"}
+    },
+
+    {
+      "id": "create_assignment", "title": "Create an assignment/module (TSR or feedback)", "role": "instructor",
+      "method": "POST", "endpoint": "/api/assignments",
+      "params": {"class_id": "uuid!", "title": "string!", "open_date": "date", "close_date": "date", "status": "enum(draft|publish)", "assignment_type": "enum(tsr|feedback|interest_form)!"},
+      "uiRoute": "/app/modules", "multiStep": true
+    },
+    {
+      "id": "list_assignments", "title": "List a class's assignments", "role": "any",
+      "method": "GET", "endpoint": "/api/assignments?class_id={class_id}", "uiRoute": "/app/assignments"
+    },
+    {
+      "id": "submit_tsr", "title": "Submit a Team Status Report about a teammate", "role": "project-member",
+      "method": "POST", "endpoint": "/api/tsrs",
+      "params": {"project_id": "uuid!", "evaluatee_id": "uuid!", "percent_contribution": "int!", "positive_feedback": "string!", "constructive_feedback": "string", "scrum_master_tickets": "string", "scrum_master_assessment": "string", "scrum_master_notes": "string", "week": "int", "assignment_id": "uuid"},
+      "uiRoute": "/app/assignments/{id}", "multiStep": true
+    },
+    {
+      "id": "submit_feedback", "title": "Submit a feedback survey", "role": "student",
+      "method": "POST", "endpoint": "/api/assignments/{assignment_id}/feedback",
+      "params": {"q1_liked": "string", "q2_frustrating": "string", "q3_missing_feature": "string", "q4_bugs": "string", "q5_suggestions": "string"}, "multiStep": true
+    },
+    {
+      "id": "view_tsr_overview", "title": "View TSR responses for an assignment", "role": "instructor",
+      "method": "GET", "endpoint": "/api/assignments/{assignment_id}/tsr-overview", "uiRoute": "/app/modules/tsr/{id}"
+    },
+
+    {
+      "id": "submit_interest_form", "title": "Submit ranked project preferences", "role": "student",
+      "method": "POST", "endpoint": "/api/staffing/{class_id}/submission",
+      "params": {"taking_115c": "bool", "previous_project_name": "string", "ranked_projects": "array of {project_id, interest_value, interest_reason}!", "work_with": "uuid[]", "dont_work_with": "uuid[]", "submitted": "bool!"},
+      "uiRoute": "/app/assignments (interest form)", "multiStep": true
+    },
+    {
+      "id": "staffing_assign", "title": "Assign a student to a project", "role": "instructor",
+      "method": "POST", "endpoint": "/api/staffing/{class_id}/assign", "params": {"user_id": "uuid!", "project_id": "uuid!"}, "uiRoute": "/app/assign-projects"
+    },
+    {
+      "id": "staffing_unassign", "title": "Unassign a student from a project", "role": "instructor",
+      "method": "POST", "endpoint": "/api/staffing/{class_id}/unassign", "params": {"user_id": "uuid!"}
+    },
+
+    {
+      "id": "list_class_ta_roster", "title": "List enrolled students with TA flag", "role": "instructor",
+      "method": "GET", "endpoint": "/api/classes/{class_id}/tas"
+    },
+    {
+      "id": "designate_class_ta", "title": "Designate/undesignate a class TA", "role": "instructor",
+      "method": "POST", "endpoint": "/api/classes/{class_id}/tas",
+      "params": {"user_id": "uuid!", "is_ta": "bool!"},
+      "note": "Writes class_enrollments.enrollment_role (the single source of truth shared with TA Review)."
+    },
+    {
+      "id": "promote_to_ta", "title": "Promote a student to TA (TA Management)", "role": "instructor",
+      "method": "POST", "endpoint": "/api/tas/classes/{class_id}/promote", "params": {"user_id": "uuid!"}
+    },
+    {
+      "id": "assign_review_ta", "title": "Assign a TA to review a project's TSRs", "role": "instructor",
+      "method": "POST", "endpoint": "/api/tas/projects/{project_id}/assign", "params": {"user_id": "uuid!"}
+    },
+    {
+      "id": "assign_meeting_ta", "title": "Assign the meeting TA for a project", "role": "instructor",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/assign-ta",
+      "params": {"ta_id": "uuid (null to clear)"}, "note": "Sets projects.assigned_ta_id — who runs the weekly meeting + takes attendance."
+    },
+    {
+      "id": "set_project_meeting", "title": "Set a project's Zoom link + meeting slot", "role": "instructor|meeting-ta",
+      "method": "PATCH", "endpoint": "/api/projects/{project_id}/meeting",
+      "params": {"zoom_url": "string", "meeting_day": "weekday", "meeting_time": "string"}, "multiStep": true
+    },
+    {
+      "id": "view_ta_schedule", "title": "View weekly TA meeting schedule", "role": "instructor|ta|student",
+      "method": "GET", "endpoint": "/api/classes/{class_id}/ta-schedule?week={week}", "uiRoute": "/app/ta-meetings"
+    },
+    {
+      "id": "mark_attendance", "title": "Mark one member present/late/absent", "role": "instructor|meeting-ta",
+      "method": "PUT", "endpoint": "/api/projects/{project_id}/attendance",
+      "params": {"week_number": "int!", "person_id": "uuid!", "status": "enum(present|late|absent)!"}
+    },
+    {
+      "id": "mark_all_present", "title": "Mark every team member present", "role": "instructor|meeting-ta",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/attendance/mark-all-present", "params": {"week_number": "int!"}
+    },
+
+    {
+      "id": "send_message", "title": "Send a direct message", "role": "any",
+      "method": "POST", "endpoint": "/api/messages", "params": {"to_user_id": "uuid!", "body": "string!"}, "uiRoute": "/app/messages"
+    },
+    {
+      "id": "list_conversations", "title": "List my conversations", "role": "any",
+      "method": "GET", "endpoint": "/api/messages/conversations"
+    },
+    {
+      "id": "list_notifications", "title": "List my notifications", "role": "any",
+      "method": "GET", "endpoint": "/api/notifications"
+    },
+    {
+      "id": "update_profile", "title": "Update my profile", "role": "any",
+      "method": "PATCH", "endpoint": "/api/profiles/me",
+      "params": {"first_name": "string", "last_name": "string", "linkedin": "string", "github": "string", "image_url": "string"}, "uiRoute": "/app/settings", "multiStep": true
+    }
+  ]
+}

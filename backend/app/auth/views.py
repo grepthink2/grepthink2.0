@@ -9,23 +9,13 @@ from app.dependencies import require_user, require_user_payload
 from app.auth.models import SignupRequest, CheckEmailRequest
 from app.auth.controller import get_user_role
 from app.database.client import service_client, get_authenticated_client
+from app.limiter import limiter
 
 logger = logging.getLogger(__name__)
 
 
-def test_auth(user_id: str = Depends(require_user)):
-    """
-    Diagnostic endpoint: confirms the backend is reachable and the caller's
-    token was verified. Requires a valid bearer token — use ``GET /health``
-    for a no-auth liveness probe.
-    """
-    return {
-        "message": f"Backend connected & Authenticated. Hello {user_id}",
-        "user_id": user_id,
-    }
-
-
-def login_check(user_id: str = Depends(require_user)):
+@limiter.limit("120/minute")
+def login_check(request: Request, user_id: str = Depends(require_user)):
     """
     Returns the caller's id and profile role. Used by the frontend
     ``/auth/callback`` route to decide whether to send a first-time user to
@@ -39,6 +29,7 @@ def login_check(user_id: str = Depends(require_user)):
     }
 
 
+@limiter.limit("20/minute")
 def create_user(  # noqa: C901
     request: Request,
     data: SignupRequest,
@@ -247,7 +238,8 @@ def create_user(  # noqa: C901
         raise HTTPException(status_code=500, detail="Database insert failed")
 
 
-def check_user_exists(data: CheckEmailRequest):
+@limiter.limit("60/minute")
+def check_user_exists(request: Request, data: CheckEmailRequest):
     """
     Unauthenticated endpoint. Returns whether an email belongs to an existing
     account. Used by ForgotPassword.tsx to surface an error before calling
@@ -270,7 +262,8 @@ def check_user_exists(data: CheckEmailRequest):
         raise HTTPException(status_code=500, detail="Failed to check user existence")
 
 
-def check_email(data: CheckEmailRequest):
+@limiter.limit("60/minute")
+def check_email(request: Request, data: CheckEmailRequest):
     """
     Unauthenticated endpoint. Returns whether a .edu email address is
     available to be claimed — i.e. not already stored as edu_email on any

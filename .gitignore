@@ -1,5 +1,4 @@
-# Logs
-logs
+# ---- Logs ----
 logs/
 backend/logs/
 *.log
@@ -10,34 +9,60 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-docs/
-*.local
+# ---- OS ----
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
 
-# Editor directories and files
+# ---- Editors ----
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 .claude/
+.playwright-mcp/
+
+# ---- Secrets / env (commit *.example templates only) ----
 .env
 .env.*
+!.env.example
+!.env.*.example
 *.prod.env
-# Supabase CLI machine-local cache (linked-project ref, pooler url, versions)
-supabase/.temp/
+
+# ---- Node / Vite / frontend ----
+node_modules/
+dist/
+dist-ssr/
+*.local
+.vite/
+coverage/
+*.tsbuildinfo
+
+# ---- Python / FastAPI / backend ----
 __pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
 venv/
+.venv/
+backend/.venv/
 .coverage
 backend/.coverage
-backend/.venv
-backend/tests
-backend/cse115b Project staffing.xlsx
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Supabase CLI machine-local cache ----
+supabase/.temp/
+
+# ---- Repo-specific artifacts (should never be committed) ----
+*.xlsx
 backend/requirements-dev.txt
-.playright-mcp/
