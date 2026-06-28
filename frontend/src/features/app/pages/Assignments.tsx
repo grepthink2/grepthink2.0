@@ -3,6 +3,7 @@ import { format, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useClass } from '@/lib/classContext';
 import { api, type ApiAssignment } from '@/lib/api';
+import { usePreview } from '@/lib/previewContext';
 import StudentAssignmentsTable, {
   type StudentAssignment,
   type StudentAssignmentAction,
@@ -71,6 +72,7 @@ function toStudentRow(
 
 const Assignments: React.FC = () => {
   const { selectedClass } = useClass();
+  const { isPreviewing } = usePreview();
   const navigate = useNavigate();
   const [rows, setRows] = useState<StudentAssignment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,11 +108,12 @@ const Assignments: React.FC = () => {
           const result = assignments.map((a) => {
             const isInterestForm = a.assignment_type === 'interest_form';
             const isFeedback = a.assignment_type === 'feedback';
+            const isTsr = !isInterestForm && !isFeedback;
             return toStudentRow(a, today, {
-              projectName: '—',
+              projectName: isPreviewing && isTsr ? 'Preview Mode' : '—',
               type: isFeedback ? 'feedback' : isInterestForm ? 'interest_form' : 'tsrs',
               isSubmitted: false,
-              canStart: isFeedback || isInterestForm,
+              canStart: isFeedback || isInterestForm || (isPreviewing && isTsr),
             });
           });
           setRows(result);

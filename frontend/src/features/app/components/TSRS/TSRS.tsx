@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { ApiAssignmentTsrEntry } from '@/lib/api';
 import { useUser } from '@/lib/auth';
+import { usePreview } from '@/lib/previewContext';
 import TsrsStepper from './TsrsStepper';
 import ContributionsTab from './ContributionsTab';
 import TeamFeedbackTab from './TeamFeedbackTab';
@@ -38,6 +39,14 @@ function entriesByEvaluatee(
   return map;
 }
 
+const PREVIEW_MEMBERS: TeamMember[] = [1, 2, 3, 4].map((n) => ({
+  id: `preview-member-${n}`,
+  name: `Team Member ${n}`,
+  role: 'student',
+  isCurrentUser: n === 1,
+  isScrumMaster: false,
+}));
+
 interface TSRSProps {
   assignment: TsrsAssignment;
 }
@@ -45,6 +54,8 @@ interface TSRSProps {
 const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
   const navigate = useNavigate();
   const { user } = useUser();
+  const { isPreviewing } = usePreview();
+  const isPreviewMode = isPreviewing && !assignment.projectId;
 
   // ── Member loading ──────────────────────────────────────────
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -65,6 +76,13 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
 
   // Kick off both fetches in parallel when the projectId is known.
   useEffect(() => {
+    if (isPreviewMode) {
+      setMembers(PREVIEW_MEMBERS);
+      setMembersLoading(false);
+      setTsrsLoading(false);
+      return;
+    }
+
     if (!assignment.projectId) {
       setMembersLoading(false);
       setTsrsLoading(false);
@@ -123,7 +141,7 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
       });
 
     return () => { cancelled = true; };
-  }, [assignment.projectId, assignment.id, user?.id]);
+  }, [assignment.projectId, assignment.id, user?.id, isPreviewMode]);
 
   // ── Form state ──────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TsrsTab>('contributions');
@@ -248,6 +266,8 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
   });
 
   const handleSubmit = async () => {
+    if (isPreviewMode) return;
+
     if (isScrumMaster && !completedSteps.has('team_feedback')) {
       setActiveTab('team_feedback');
       setPendingTeamFeedbackValidationOnSubmit(true);
@@ -319,7 +339,7 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
     );
   }
 
-  if (!assignment.projectId) {
+  if (!assignment.projectId && !isPreviewMode) {
     return (
       <div className="tsrs tsrs--error">
         <p className="tsrs__error-message">
