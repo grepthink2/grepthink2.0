@@ -82,6 +82,13 @@ export interface ApiTAMeetingSchedule {
   week_number: number;
   total_weeks: number;
   week_of?: string | null;
+  /** Which meeting within the week this schedule's attendance reflects (1..meetings_per_week). */
+  meeting_in_week: number;
+  /** TA meetings per week for this class (1 = once weekly). */
+  meetings_per_week: number;
+  meeting_duration_minutes?: number | null;
+  /** total_weeks * meetings_per_week. */
+  total_meetings: number;
   teams: ApiTeamMeeting[];
 }
 
@@ -96,6 +103,7 @@ export interface ApiAttendanceEntry {
 export interface ApiTeamAttendance {
   project_id: string;
   week_number: number;
+  meeting_in_week: number;
   entries: ApiAttendanceEntry[];
 }
 
@@ -591,6 +599,15 @@ export async function apiUpload<T = unknown>(
   return response.json();
 }
 
+/** Build the ?week=&meeting= query for the TA-schedule endpoints. */
+function scheduleQuery(week?: number, meeting = 1): string {
+  const p = new URLSearchParams();
+  if (week != null) p.set('week', String(week));
+  if (meeting && meeting !== 1) p.set('meeting', String(meeting));
+  const q = p.toString();
+  return q ? `?${q}` : '';
+}
+
 /**
  * API client for backend endpoints
  */
@@ -1076,49 +1093,58 @@ export const api = {
   // ----- TA meeting schedule + attendance (app/attendance backend) ----------
 
   /** Instructor: weekly schedule of every team's meeting slot + attendance. */
-  getTAMeetingSchedule: async (classId: string, week?: number) => {
-    const q = week != null ? `?week=${week}` : '';
-    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule${q}`);
+  getTAMeetingSchedule: async (classId: string, week?: number, meeting = 1) => {
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule${scheduleQuery(week, meeting)}`);
   },
 
   /** TA: only the teams assigned to me in this class + week. */
-  getMyAssignedTeams: async (classId: string, week?: number) => {
-    const q = week != null ? `?week=${week}` : '';
-    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/mine${q}`);
+  getMyAssignedTeams: async (classId: string, week?: number, meeting = 1) => {
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/mine${scheduleQuery(week, meeting)}`);
   },
 
   /** Student: my own team's meeting slot + my own attendance for the week. */
-  getMyTeamSchedule: async (classId: string, week?: number) => {
-    const q = week != null ? `?week=${week}` : '';
-    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/my-team${q}`);
+  getMyTeamSchedule: async (classId: string, week?: number, meeting = 1) => {
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/my-team${scheduleQuery(week, meeting)}`);
   },
 
-  /** Roster + statuses for one team's check-in panel (week-scoped). */
-  getTeamAttendance: async (projectId: string, week: number) => {
-    return apiRequest<ApiTeamAttendance>(`/api/projects/${projectId}/attendance?week=${week}`);
+  /** Roster + statuses for one team's check-in panel (week + meeting scoped). */
+  getTeamAttendance: async (projectId: string, week: number, meeting = 1) => {
+    return apiRequest<ApiTeamAttendance>(`/api/projects/${projectId}/attendance?week=${week}&meeting=${meeting}`);
   },
 
-  /** Mark one person present/late/absent for a (project, week). */
+  /** Mark one person present/late/absent for a (project, week, meeting). */
   upsertAttendance: async (
     projectId: string,
     week: number,
     personId: string,
     status: 'present' | 'late' | 'absent',
+    meetingInWeek = 1,
   ) => {
     return apiRequest<{ message: string; record: unknown }>(
       `/api/projects/${projectId}/attendance`,
       {
         method: 'PUT',
-        body: JSON.stringify({ week_number: week, person_id: personId, status }),
+        body: JSON.stringify({ week_number: week, meeting_in_week: meetingInWeek, person_id: personId, status }),
       },
     );
   },
 
-  /** Mark every team member present for a (project, week). */
-  markAllPresent: async (projectId: string, week: number) => {
+  /** Mark every team member present for a (project, week, meeting). */
+  markAllPresent: async (projectId: string, week: number, meetingInWeek = 1) => {
     return apiRequest<{ message: string; records: unknown[] }>(
       `/api/projects/${projectId}/attendance/mark-all-present`,
-      { method: 'POST', body: JSON.stringify({ week_number: week }) },
+      { method: 'POST', body: JSON.stringify({ week_number: week, meeting_in_week: meetingInWeek }) },
+    );
+  },
+
+  /** Instructor: set how many TA meetings/week + per-meeting duration for a class. */
+  setMeetingCadence: async (
+    classId: string,
+    data: { meetings_per_week?: number; meeting_duration_minutes?: number },
+  ) => {
+    return apiRequest<{ message: string; class: ApiClass }>(
+      `/api/classes/${classId}/meeting-cadence`,
+      { method: 'PATCH', body: JSON.stringify(data) },
     );
   },
 

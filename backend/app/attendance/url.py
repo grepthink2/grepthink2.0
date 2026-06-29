@@ -19,6 +19,9 @@ router.post('/classes/{class_id}/tas')(views.set_class_ta)
 router.post('/projects/{project_id}/assign-ta')(views.assign_project_ta)
 router.patch('/projects/{project_id}/meeting')(views.update_project_meeting)
 
+# Class-level meeting cadence (frequency + duration)
+router.patch('/classes/{class_id}/meeting-cadence')(views.set_meeting_cadence)
+
 # Weekly schedule (instructor: all; TA: mine; student: my-team)
 router.get('/classes/{class_id}/ta-schedule')(views.get_ta_schedule)
 router.get('/classes/{class_id}/ta-schedule/mine')(views.get_my_assigned_teams)

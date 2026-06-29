@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { UserCog } from 'lucide-react';
-import { api, type ApiTAMeetingSchedule } from '@/lib/api';
+import { api, type ApiTAMeetingSchedule, type ApiAttendanceEntry } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import TeamMeetingCard from './TeamMeetingCard';
 import WeekNavigator from './WeekNavigator';
@@ -22,19 +22,22 @@ interface TAScheduleViewProps {
   scope: Scope;
   /** Can edit Zoom + mark attendance. */
   editable: boolean;
-  /** Instructor: assign a TA per team + manage class TAs. */
+  /** Instructor: assign a TA per team + manage class TAs + set cadence. */
   assignable: boolean;
   /** Student: show the viewer's own status instead of team tallies. */
   readOnlyOwn?: boolean;
   emptyMessage: string;
 }
 
-const fetchSchedule = (scope: Scope, classId: string, week: number | null) => {
+const fetchSchedule = (scope: Scope, classId: string, week: number | null, meeting: number) => {
   const w = week ?? undefined;
-  if (scope === 'mine') return api.getMyAssignedTeams(classId, w);
-  if (scope === 'my-team') return api.getMyTeamSchedule(classId, w);
-  return api.getTAMeetingSchedule(classId, w);
+  if (scope === 'mine') return api.getMyAssignedTeams(classId, w, meeting);
+  if (scope === 'my-team') return api.getMyTeamSchedule(classId, w, meeting);
+  return api.getTAMeetingSchedule(classId, w, meeting);
 };
+
+const toRoster = (entries: ApiAttendanceEntry[]): AttendanceRow[] =>
+  entries.map((e) => ({ personId: e.person_id, name: e.name ?? e.email ?? 'Student', email: e.email, status: e.status }));
 
 const TAScheduleView: React.FC<TAScheduleViewProps> = ({
   title, subtitle, scope, editable, assignable, readOnlyOwn = false, emptyMessage,
@@ -44,6 +47,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
 
   const [schedule, setSchedule] = useState<ApiTAMeetingSchedule | null>(null);
   const [week, setWeek] = useState<number | null>(null);
+  const [meeting, setMeeting] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,15 +59,16 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
   const [taOptions, setTaOptions] = useState<{ id: string; name: string }[]>([]);
   const [zoomTeam, setZoomTeam] = useState<TeamMeetingItem | null>(null);
   const [designateOpen, setDesignateOpen] = useState(false);
+  const [savingCadence, setSavingCadence] = useState(false);
 
-  // Reset week when switching classes (so each class shows its current week).
-  useEffect(() => { setWeek(null); setExpandedId(null); }, [classId]);
+  // Reset week/meeting when switching classes.
+  useEffect(() => { setWeek(null); setMeeting(1); setExpandedId(null); }, [classId]);
 
   const loadSchedule = useCallback(async () => {
     if (!classId) { setSchedule(null); setLoading(false); return; }
     try {
       setLoading(true);
-      const res = await fetchSchedule(scope, classId, week);
+      const res = await fetchSchedule(scope, classId, week, meeting);
       setSchedule(res);
       setError(null);
     } catch (err) {
@@ -72,7 +77,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [classId, scope, week]);
+  }, [classId, scope, week, meeting]);
 
   useEffect(() => { void loadSchedule(); }, [loadSchedule]);
 
@@ -89,7 +94,29 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
 
   useEffect(() => { void loadTaOptions(); }, [loadTaOptions]);
 
-  // Student view: resolve the viewer's own status per team.
+  const effWeek = schedule?.week_number ?? 1;
+  const totalWeeks = schedule?.total_weeks ?? 1;
+  const meetingsPerWeek = schedule?.meetings_per_week ?? 1;
+  const meetingDuration = schedule?.meeting_duration_minutes ?? null;
+  const teams = useMemo(() => (schedule?.teams ?? []).map(toTeamMeetingItem), [schedule]);
+
+  // Keep the selected meeting within the class's cadence.
+  useEffect(() => { if (meeting > meetingsPerWeek) setMeeting(1); }, [meetingsPerWeek, meeting]);
+
+  // (Re)load the expanded team's roster whenever the team, week, or meeting changes.
+  useEffect(() => {
+    if (!expandedId) return;
+    let active = true;
+    setRoster([]);
+    setRosterLoading(true);
+    api.getTeamAttendance(expandedId, effWeek, meeting)
+      .then((res) => { if (active) setRoster(toRoster(res.entries)); })
+      .catch(() => { if (active) setRoster([]); })
+      .finally(() => { if (active) setRosterLoading(false); });
+    return () => { active = false; };
+  }, [expandedId, effWeek, meeting]);
+
+  // Student view: resolve the viewer's own status per team for the selected meeting.
   useEffect(() => {
     if (!readOnlyOwn || !schedule) return;
     let active = true;
@@ -97,7 +124,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
       const map: Record<string, AttendanceStatus> = {};
       for (const t of schedule.teams) {
         try {
-          const att = await api.getTeamAttendance(t.project_id, schedule.week_number);
+          const att = await api.getTeamAttendance(t.project_id, schedule.week_number, meeting);
           map[t.project_id] = att.entries[0]?.status ?? 'unmarked';
         } catch {
           map[t.project_id] = 'unmarked';
@@ -106,11 +133,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
       if (active) setOwnStatusMap(map);
     })();
     return () => { active = false; };
-  }, [readOnlyOwn, schedule]);
-
-  const effWeek = schedule?.week_number ?? 1;
-  const totalWeeks = schedule?.total_weeks ?? 1;
-  const teams = useMemo(() => (schedule?.teams ?? []).map(toTeamMeetingItem), [schedule]);
+  }, [readOnlyOwn, schedule, meeting]);
 
   const patchTeam = useCallback((projectId: string, patch: Partial<TeamMeetingItem>) => {
     setSchedule((prev) => {
@@ -134,22 +157,9 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
     });
   }, []);
 
-  const handleToggleExpand = useCallback(async (projectId: string) => {
-    if (expandedId === projectId) { setExpandedId(null); return; }
-    setExpandedId(projectId);
-    setRoster([]);
-    setRosterLoading(true);
-    try {
-      const res = await api.getTeamAttendance(projectId, effWeek);
-      setRoster(res.entries.map((e) => ({
-        personId: e.person_id, name: e.name ?? e.email ?? 'Student', email: e.email, status: e.status,
-      })));
-    } catch {
-      setRoster([]);
-    } finally {
-      setRosterLoading(false);
-    }
-  }, [expandedId, effWeek]);
+  const handleToggleExpand = useCallback((projectId: string) => {
+    setExpandedId((cur) => (cur === projectId ? null : projectId));
+  }, []);
 
   const presentCount = (rows: AttendanceRow[]) => rows.filter((r) => r.status === 'present').length;
 
@@ -159,12 +169,12 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
     setRoster(nextRows);
     patchTeam(projectId, { present: presentCount(nextRows) });
     try {
-      await api.upsertAttendance(projectId, effWeek, personId, status);
+      await api.upsertAttendance(projectId, effWeek, personId, status, meeting);
     } catch {
       setRoster(prevRows);
       patchTeam(projectId, { present: presentCount(prevRows) });
     }
-  }, [roster, effWeek, patchTeam]);
+  }, [roster, effWeek, meeting, patchTeam]);
 
   const handleMarkAll = useCallback(async (projectId: string) => {
     const prevRows = roster;
@@ -172,12 +182,12 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
     setRoster(nextRows);
     patchTeam(projectId, { present: nextRows.length });
     try {
-      await api.markAllPresent(projectId, effWeek);
+      await api.markAllPresent(projectId, effWeek, meeting);
     } catch {
       setRoster(prevRows);
       patchTeam(projectId, { present: presentCount(prevRows) });
     }
-  }, [roster, effWeek, patchTeam]);
+  }, [roster, effWeek, meeting, patchTeam]);
 
   const handleAssignTa = useCallback(async (projectId: string, taId: string | null) => {
     const opt = taId ? taOptions.find((o) => o.id === taId) ?? null : null;
@@ -189,6 +199,19 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
     }
   }, [taOptions, patchTeam, loadSchedule]);
 
+  const handleSetCadence = useCallback(async (patch: { meetings_per_week?: number; meeting_duration_minutes?: number }) => {
+    if (!classId) return;
+    setSavingCadence(true);
+    try {
+      await api.setMeetingCadence(classId, patch);
+      await loadSchedule();
+    } catch {
+      // leave the schedule as-is on failure
+    } finally {
+      setSavingCadence(false);
+    }
+  }, [classId, loadSchedule]);
+
   if (!selectedClass) {
     return (
       <div className="ta-page">
@@ -199,6 +222,8 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
       </div>
     );
   }
+
+  const cadenceLabel = `${meetingsPerWeek}×/week${meetingDuration ? ` · ${meetingDuration} min` : ''}`;
 
   return (
     <div className="ta-page">
@@ -230,7 +255,42 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
           {scope === 'my-team' ? 'My team' : scope === 'mine' ? 'My assigned teams' : 'Teams'}
         </span>
         {schedule && <span className="ta-page__count">{teams.length}</span>}
+        {schedule && (
+          assignable ? (
+            <label className="ta-page__cadence-edit">
+              <span>Meetings/week</span>
+              <select
+                value={meetingsPerWeek}
+                disabled={savingCadence}
+                onChange={(e) => handleSetCadence({ meetings_per_week: Number(e.target.value) })}
+              >
+                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+              {meetingDuration != null && <span className="ta-page__cadence-dur">· {meetingDuration} min</span>}
+            </label>
+          ) : (
+            <span className="ta-page__cadence">{cadenceLabel}</span>
+          )
+        )}
       </div>
+
+      {schedule && meetingsPerWeek > 1 && (
+        <div className="ta-page__meeting-tabs" role="tablist" aria-label="Meeting within the week">
+          {Array.from({ length: meetingsPerWeek }, (_, i) => i + 1).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={m === meeting}
+              className={`ta-page__meeting-tab ${m === meeting ? 'is-active' : ''}`}
+              onClick={() => setMeeting(m)}
+            >
+              Meeting {m}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="ta-page__divider" />
 
       {loading ? (
@@ -248,6 +308,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
               key={team.projectId}
               item={team}
               weekNumber={effWeek}
+              meetingInWeek={meetingsPerWeek > 1 ? meeting : undefined}
               editable={editable}
               expandable={editable}
               expanded={expandedId === team.projectId}

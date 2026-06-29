@@ -58,8 +58,20 @@ def _client():
 # ---------------------------------------------------------------------------
 
 def _term_max_weeks(term: Optional[str]) -> int:
-    """Number of meeting weeks in a term (matches the TSR convention)."""
+    """TSR week count for a term (kept for parity with the TSR convention)."""
     return _FULL_TSR_COUNT if (term or "").strip().lower() in _FULL_TERM_NAMES else _SUMMER_TSR_COUNT
+
+
+# TA meetings run across the working term, which is wider than the TSR window:
+# ~10 weeks for a full quarter, ~6 for a summer session (e.g. CSE115A, late
+# June -> end of July). Total TA meets = meeting_weeks * meetings_per_week.
+_MEETING_WEEKS_FULL = 10
+_MEETING_WEEKS_SUMMER = 6
+
+
+def _meeting_weeks(term: Optional[str]) -> int:
+    """Number of TA-meeting weeks in a term."""
+    return _MEETING_WEEKS_FULL if (term or "").strip().lower() in _FULL_TERM_NAMES else _MEETING_WEEKS_SUMMER
 
 
 def _parse_date(value) -> Optional[datetime.date]:
@@ -75,7 +87,7 @@ def _parse_date(value) -> Optional[datetime.date]:
 
 def _current_term_week(start_date, term: Optional[str]) -> int:
     """Week index (1..max) for today, relative to the class start date."""
-    max_weeks = _term_max_weeks(term)
+    max_weeks = _meeting_weeks(term)
     start = _parse_date(start_date)
     if start is None:
         return 1
@@ -299,6 +311,41 @@ def update_project_meeting(
 
 
 # ---------------------------------------------------------------------------
+# Meeting cadence (class-level)
+# ---------------------------------------------------------------------------
+
+def set_meeting_cadence(class_id: UUID, instructor_id: str,
+                        meetings_per_week: Optional[int] = None,
+                        meeting_duration_minutes: Optional[int] = None) -> dict:
+    """Set a class's TA-meeting frequency + per-meeting duration (instructor only)."""
+    if meetings_per_week is None and meeting_duration_minutes is None:
+        raise HTTPException(status_code=400, detail="Provide at least one field to update")
+    try:
+        client = _client()
+        _require_class_instructor(client, instructor_id, str(class_id))
+        updates: dict = {}
+        if meetings_per_week is not None:
+            if not (1 <= int(meetings_per_week) <= 7):
+                raise HTTPException(status_code=400, detail="meetings_per_week must be between 1 and 7")
+            updates["meetings_per_week"] = int(meetings_per_week)
+        if meeting_duration_minutes is not None:
+            if int(meeting_duration_minutes) < 1:
+                raise HTTPException(status_code=400, detail="meeting_duration_minutes must be positive")
+            updates["meeting_duration_minutes"] = int(meeting_duration_minutes)
+        res = client.table("classes").update(updates).eq("id", str(class_id)).execute()
+        if not res.data:
+            raise HTTPException(status_code=500, detail="Failed to update meeting cadence")
+        logger.info("Meeting cadence updated | class_id=%s fields=%s by=%s",
+                    class_id, list(updates.keys()), instructor_id)
+        return res.data[0]
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error updating meeting cadence | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to update meeting cadence")
+
+
+# ---------------------------------------------------------------------------
 # Schedule aggregation
 # ---------------------------------------------------------------------------
 
@@ -308,6 +355,7 @@ def get_ta_schedule(
     role: str,
     week_number: Optional[int] = None,
     scope: str = "all",
+    meeting_in_week: Optional[int] = None,
 ) -> dict:
     """Weekly meeting schedule for a class.
 
@@ -320,7 +368,9 @@ def get_ta_schedule(
         client = _client()
         cid = str(class_id)
 
-        cls = client.table("classes").select("id, created_by, term, start_date").eq("id", cid).execute()
+        cls = client.table("classes").select(
+            "id, created_by, term, start_date, meetings_per_week, meeting_duration_minutes"
+        ).eq("id", cid).execute()
         if not cls.data:
             raise HTTPException(status_code=404, detail="Class not found")
         class_row = cls.data[0]
@@ -337,10 +387,12 @@ def get_ta_schedule(
         else:
             raise HTTPException(status_code=400, detail="Invalid scope")
 
-        total_weeks = _term_max_weeks(class_row.get("term"))
+        total_weeks = _meeting_weeks(class_row.get("term"))
+        meetings_per_week = int(class_row.get("meetings_per_week") or 1)
         if week_number is None:
             week_number = _current_term_week(class_row.get("start_date"), class_row.get("term"))
         week_number = max(1, min(int(week_number), total_weeks))
+        meeting_in_week = max(1, min(int(meeting_in_week or 1), meetings_per_week))
 
         projects = (
             client.table("projects")
@@ -363,6 +415,10 @@ def get_ta_schedule(
             "week_number": week_number,
             "total_weeks": total_weeks,
             "week_of": _week_of_iso(class_row.get("start_date"), week_number),
+            "meeting_in_week": meeting_in_week,
+            "meetings_per_week": meetings_per_week,
+            "meeting_duration_minutes": class_row.get("meeting_duration_minutes"),
+            "total_meetings": total_weeks * meetings_per_week,
         }
         if not projects:
             return {**meta, "teams": []}
@@ -379,7 +435,8 @@ def get_ta_schedule(
 
         att = (
             client.table("attendance").select("project_id, status")
-            .in_("project_id", project_ids).eq("week_number", week_number).execute()
+            .in_("project_id", project_ids)
+            .eq("week_number", week_number).eq("meeting_in_week", meeting_in_week).execute()
         ).data or []
         present_count: dict[str, int] = {}
         for a in att:
@@ -430,8 +487,8 @@ def get_ta_schedule(
 # Attendance read + write
 # ---------------------------------------------------------------------------
 
-def get_team_attendance(project_id: UUID, user_id: str, week_number: int) -> dict:
-    """Roster + statuses for a (project, week).
+def get_team_attendance(project_id: UUID, user_id: str, week_number: int, meeting_in_week: int = 1) -> dict:
+    """Roster + statuses for a (project, week, meeting).
 
     Instructor / assigned TA see every member; a plain member sees only their
     own row.
@@ -458,7 +515,7 @@ def get_team_attendance(project_id: UUID, user_id: str, week_number: int) -> dic
             member_ids = [user_id]
 
         if not member_ids:
-            return {"project_id": str(project_id), "week_number": week_number, "entries": []}
+            return {"project_id": str(project_id), "week_number": week_number, "meeting_in_week": meeting_in_week, "entries": []}
 
         profiles = (
             client.table("profiles").select("id, email, first_name, last_name, image_url")
@@ -469,6 +526,7 @@ def get_team_attendance(project_id: UUID, user_id: str, week_number: int) -> dic
         att = (
             client.table("attendance").select("user_id, status")
             .eq("project_id", str(project_id)).eq("week_number", week_number)
+            .eq("meeting_in_week", meeting_in_week)
             .in_("user_id", member_ids).execute()
         ).data or []
         status_map = {a["user_id"]: a["status"] for a in att}
@@ -485,7 +543,7 @@ def get_team_attendance(project_id: UUID, user_id: str, week_number: int) -> dic
                 "status": status_map.get(uid, "unmarked"),
             })
         entries.sort(key=lambda e: (e["name"] or "").lower())
-        return {"project_id": str(project_id), "week_number": week_number, "entries": entries}
+        return {"project_id": str(project_id), "week_number": week_number, "meeting_in_week": meeting_in_week, "entries": entries}
     except HTTPException:
         raise
     except Exception:
@@ -493,11 +551,15 @@ def get_team_attendance(project_id: UUID, user_id: str, week_number: int) -> dic
         raise HTTPException(status_code=500, detail="Failed to fetch attendance")
 
 
-def _upsert_one(client, project_id: str, person_id: str, week_number: int, status: str, marker_id: str) -> dict:
+def _upsert_one(client, project_id: str, person_id: str, week_number: int,
+                meeting_in_week: int, status: str, marker_id: str) -> dict:
     """Select-then-update/insert one attendance row (avoids upsert version risk)."""
+    base = {"project_id": project_id, "user_id": person_id,
+            "week_number": week_number, "meeting_in_week": meeting_in_week}
     existing = (
         client.table("attendance").select("id")
-        .eq("project_id", project_id).eq("user_id", person_id).eq("week_number", week_number)
+        .eq("project_id", project_id).eq("user_id", person_id)
+        .eq("week_number", week_number).eq("meeting_in_week", meeting_in_week)
         .execute()
     )
     payload = {
@@ -508,32 +570,34 @@ def _upsert_one(client, project_id: str, person_id: str, week_number: int, statu
     if existing.data:
         res = (
             client.table("attendance").update(payload)
-            .eq("project_id", project_id).eq("user_id", person_id).eq("week_number", week_number)
+            .eq("project_id", project_id).eq("user_id", person_id)
+            .eq("week_number", week_number).eq("meeting_in_week", meeting_in_week)
             .execute()
         )
-        return res.data[0] if res.data else {**payload, "project_id": project_id, "user_id": person_id, "week_number": week_number}
-    res = client.table("attendance").insert({
-        "project_id": project_id, "user_id": person_id, "week_number": week_number, **payload,
-    }).execute()
-    return res.data[0] if res.data else {**payload, "project_id": project_id, "user_id": person_id, "week_number": week_number}
+        return res.data[0] if res.data else {**base, **payload}
+    res = client.table("attendance").insert({**base, **payload}).execute()
+    return res.data[0] if res.data else {**base, **payload}
 
 
-def _validate_week(client, class_id: str, week_number: int) -> None:
-    cls = client.table("classes").select("term").eq("id", str(class_id)).execute()
-    term = cls.data[0].get("term") if cls.data else None
-    if week_number < 1 or week_number > _term_max_weeks(term):
+def _validate_slot(client, class_id: str, week_number: int, meeting_in_week: int) -> None:
+    cls = client.table("classes").select("term, meetings_per_week").eq("id", str(class_id)).execute()
+    row = cls.data[0] if cls.data else {}
+    if week_number < 1 or week_number > _meeting_weeks(row.get("term")):
         raise HTTPException(status_code=400, detail="week_number is outside the term")
+    if meeting_in_week < 1 or meeting_in_week > int(row.get("meetings_per_week") or 1):
+        raise HTTPException(status_code=400, detail="meeting_in_week is outside this class's weekly cadence")
 
 
-def upsert_attendance(project_id: UUID, marker_id: str, person_id: str, week_number: int, status: str) -> dict:
-    """Mark one member present/late/absent for a (project, week)."""
+def upsert_attendance(project_id: UUID, marker_id: str, person_id: str, week_number: int,
+                      status: str, meeting_in_week: int = 1) -> dict:
+    """Mark one member present/late/absent for a (project, week, meeting)."""
     if status not in _VALID_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid status")
     try:
         client = _client()
         project = _load_project(client, project_id)
         _require_meeting_editor(client, marker_id, project)
-        _validate_week(client, project["class_id"], week_number)
+        _validate_slot(client, project["class_id"], week_number, meeting_in_week)
 
         member = (
             client.table("project_members").select("user_id")
@@ -542,10 +606,10 @@ def upsert_attendance(project_id: UUID, marker_id: str, person_id: str, week_num
         if not member.data:
             raise HTTPException(status_code=400, detail="User is not a member of this team")
 
-        record = _upsert_one(client, str(project_id), str(person_id), week_number, status, marker_id)
+        record = _upsert_one(client, str(project_id), str(person_id), week_number, meeting_in_week, status, marker_id)
         logger.info(
-            "Attendance marked | project_id=%s user_id=%s week=%s status=%s by=%s",
-            project_id, person_id, week_number, status, marker_id,
+            "Attendance marked | project_id=%s user_id=%s week=%s meeting=%s status=%s by=%s",
+            project_id, person_id, week_number, meeting_in_week, status, marker_id,
         )
         return record
     except HTTPException:
@@ -555,13 +619,13 @@ def upsert_attendance(project_id: UUID, marker_id: str, person_id: str, week_num
         raise HTTPException(status_code=500, detail="Failed to mark attendance")
 
 
-def mark_all_present(project_id: UUID, marker_id: str, week_number: int) -> list:
-    """Mark every team member present for a (project, week)."""
+def mark_all_present(project_id: UUID, marker_id: str, week_number: int, meeting_in_week: int = 1) -> list:
+    """Mark every team member present for a (project, week, meeting)."""
     try:
         client = _client()
         project = _load_project(client, project_id)
         _require_meeting_editor(client, marker_id, project)
-        _validate_week(client, project["class_id"], week_number)
+        _validate_slot(client, project["class_id"], week_number, meeting_in_week)
 
         members = (
             client.table("project_members").select("user_id")
@@ -569,8 +633,9 @@ def mark_all_present(project_id: UUID, marker_id: str, week_number: int) -> list
         ).data or []
         records = []
         for m in members:
-            records.append(_upsert_one(client, str(project_id), m["user_id"], week_number, "present", marker_id))
-        logger.info("Marked all present | project_id=%s week=%s count=%d", project_id, week_number, len(records))
+            records.append(_upsert_one(client, str(project_id), m["user_id"], week_number, meeting_in_week, "present", marker_id))
+        logger.info("Marked all present | project_id=%s week=%s meeting=%s count=%d",
+                    project_id, week_number, meeting_in_week, len(records))
         return records
     except HTTPException:
         raise

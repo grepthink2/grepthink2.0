@@ -22,15 +22,24 @@ class AssignProjectTARequest(BaseModel):
 
 
 class UpsertAttendanceRequest(BaseModel):
-    """Mark one person present/late/absent for a (project, week)."""
+    """Mark one person present/late/absent for a (project, week, meeting)."""
     person_id: UUID
     week_number: int
+    meeting_in_week: int = 1
     status: Literal["present", "late", "absent"]
 
 
 class MarkAllPresentRequest(BaseModel):
-    """Mark every team member present for a (project, week)."""
+    """Mark every team member present for a (project, week, meeting)."""
     week_number: int
+    meeting_in_week: int = 1
+
+
+class SetMeetingCadenceRequest(BaseModel):
+    """Set a class's TA-meeting cadence (instructor only). Omitted fields are
+    left unchanged."""
+    meetings_per_week: Optional[int] = None
+    meeting_duration_minutes: Optional[int] = None
 
 
 class UpdateProjectMeetingRequest(BaseModel):

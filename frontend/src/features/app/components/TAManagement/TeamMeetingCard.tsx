@@ -19,6 +19,8 @@ interface TaOption {
 interface TeamMeetingCardProps {
   item: TeamMeetingItem;
   weekNumber: number;
+  /** Which meeting in the week the check-in reflects; omitted when 1/week. */
+  meetingInWeek?: number;
   /** Can edit Zoom + mark attendance (instructor or assigned TA). */
   editable: boolean;
   /** Can expand the inline check-in roster. */
@@ -71,6 +73,7 @@ const AttendanceToggle: React.FC<{
 const TeamMeetingCard: React.FC<TeamMeetingCardProps> = ({
   item,
   weekNumber,
+  meetingInWeek,
   editable,
   expandable,
   expanded = false,
@@ -196,7 +199,9 @@ const TeamMeetingCard: React.FC<TeamMeetingCardProps> = ({
       {expanded && (
         <div className="ta-card__roster">
           <div className="ta-card__roster-head">
-            <span className="ta-card__roster-title">Check-in · Week {weekNumber}</span>
+            <span className="ta-card__roster-title">
+              Check-in · Week {weekNumber}{meetingInWeek ? ` · Meeting ${meetingInWeek}` : ''}
+            </span>
             {editable && (
               <button type="button" className="ta-card__mark-all" onClick={onMarkAllPresent}>
                 Mark all present
