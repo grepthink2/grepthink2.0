@@ -40,7 +40,8 @@ def db(monkeypatch):
     fake = FakeSupabase(
         profiles=[_profile(INSTR, "Ina"), _profile(TA1, "Tara"),
                   _profile(S1, "Sam"), _profile(S2, "Sara"), _profile(S3, "Sid")],
-        classes=[{"id": CLASS, "created_by": INSTR, "term": "fall", "start_date": start}],
+        classes=[{"id": CLASS, "created_by": INSTR, "term": "fall", "start_date": start,
+                  "meetings_per_week": 2, "meeting_duration_minutes": 30}],
         class_enrollments=[
             {"id": f"enr-{u}", "class_id": CLASS, "user_id": u,
              "enrollment_role": ("ta" if u == TA1 else "student")}
@@ -82,12 +83,20 @@ def test_term_max_weeks():
     assert controller._term_max_weeks(None) == 3
 
 
+def test_meeting_weeks():
+    # TA meetings span the working term (wider than the TSR window).
+    assert controller._meeting_weeks("fall") == 10
+    assert controller._meeting_weeks("Spring") == 10
+    assert controller._meeting_weeks("summer") == 6
+    assert controller._meeting_weeks(None) == 6
+
+
 def test_current_term_week_clamps():
     today = datetime.date.today()
     assert controller._current_term_week(today.isoformat(), "fall") == 1
     assert controller._current_term_week((today - datetime.timedelta(days=7)).isoformat(), "fall") == 2
-    # Far in the past clamps to max weeks (5 for fall, per the TSR convention).
-    assert controller._current_term_week((today - datetime.timedelta(days=400)).isoformat(), "fall") == 5
+    # Far in the past clamps to the meeting-week count (10 for a full term).
+    assert controller._current_term_week((today - datetime.timedelta(days=400)).isoformat(), "fall") == 10
 
 
 # --------------------------------------------------------------------------
@@ -160,22 +169,26 @@ def test_assign_project_ta_requires_instructor(db):
 # --------------------------------------------------------------------------
 
 def test_update_meeting_by_assigned_ta(db):
-    controller.update_project_meeting(P1, TA1, zoom_url="https://zoom.us/j/1", meeting_time="2:00–2:30 PM")
-    p1 = next(p for p in db.rows("projects") if p["id"] == P1)
-    assert p1["zoom_url"] == "https://zoom.us/j/1"
-    assert p1["meeting_time"] == "2:00–2:30 PM"
+    out = controller.upsert_meeting(P1, TA1, meeting_in_week=1,
+                                    zoom_url="https://zoom.us/j/1", meeting_day="tuesday", meeting_time="2:00 PM")
+    assert out["zoom_url"] == "https://zoom.us/j/1"
+    assert out["meeting_day"] == "tuesday"
+    assert out["meeting_time"] == "2:00 PM"
+    # a meetings row was created for (P1, sequence 1)
+    m = next(r for r in db.rows("meetings") if r["project_id"] == P1 and r["sequence"] == 1)
+    assert m["day_of_week"] == "tuesday" and m["zoom_url"] == "https://zoom.us/j/1"
 
 
 def test_update_meeting_denied_for_unassigned_ta(db):
     # TA1 is not assigned to P2 → cannot edit it.
     with pytest.raises(HTTPException) as exc:
-        controller.update_project_meeting(P2, TA1, zoom_url="https://zoom.us/j/2")
+        controller.upsert_meeting(P2, TA1, zoom_url="https://zoom.us/j/2")
     assert exc.value.status_code == 403
 
 
 def test_update_meeting_rejects_bad_day(db):
     with pytest.raises(HTTPException) as exc:
-        controller.update_project_meeting(P1, INSTR, meeting_day="someday")
+        controller.upsert_meeting(P1, INSTR, meeting_day="someday")
     assert exc.value.status_code == 400
 
 
@@ -244,7 +257,10 @@ def test_schedule_all_for_instructor_with_summary(db):
     controller.upsert_attendance(P1, INSTR, S1, 3, "present")
     sched = controller.get_ta_schedule(CLASS, INSTR, "instructor", week_number=3, scope="all")
     assert sched["week_number"] == 3
-    assert sched["total_weeks"] == 5
+    assert sched["total_weeks"] == 10
+    assert sched["meetings_per_week"] == 2
+    assert sched["meeting_in_week"] == 1
+    assert sched["total_meetings"] == 20  # 10 weeks x 2 meetings
     teams = {t["project_id"]: t for t in sched["teams"]}
     assert teams[P1]["attendance_present"] == 1
     assert teams[P1]["attendance_total"] == 2
@@ -288,3 +304,66 @@ def test_team_attendance_non_member_denied(db):
     with pytest.raises(HTTPException) as exc:
         controller.get_team_attendance(P1, S3, 3)
     assert exc.value.status_code == 403
+
+
+# --------------------------------------------------------------------------
+# Per-meeting cadence (meetings_per_week)
+# --------------------------------------------------------------------------
+
+def test_attendance_distinct_per_meeting(db):
+    # Same (project, person, week) but different meeting-in-week → independent rows.
+    controller.upsert_attendance(P1, INSTR, S1, 3, "present", meeting_in_week=1)
+    controller.upsert_attendance(P1, INSTR, S1, 3, "absent", meeting_in_week=2)
+    rows = [a for a in db.rows("attendance")
+            if a["project_id"] == P1 and a["user_id"] == S1 and a["week_number"] == 3]
+    assert len(rows) == 2
+    # meeting 1 and meeting 2 resolve to distinct meetings -> distinct meeting_ids
+    seq_by_mid = {m["id"]: m["sequence"] for m in db.rows("meetings") if m["project_id"] == P1}
+    by_seq = {seq_by_mid[a["meeting_id"]]: a["status"] for a in rows}
+    assert by_seq == {1: "present", 2: "absent"}
+
+
+def test_mark_attendance_rejects_out_of_range_meeting(db):
+    # Class is 2 meetings/week → meeting 3 is invalid.
+    with pytest.raises(HTTPException) as exc:
+        controller.upsert_attendance(P1, INSTR, S1, 3, "present", meeting_in_week=3)
+    assert exc.value.status_code == 400
+
+
+def test_team_attendance_filtered_by_meeting(db):
+    controller.upsert_attendance(P1, INSTR, S1, 3, "present", meeting_in_week=1)
+    controller.upsert_attendance(P1, INSTR, S1, 3, "absent", meeting_in_week=2)
+    m1 = controller.get_team_attendance(P1, INSTR, 3, 1)
+    m2 = controller.get_team_attendance(P1, INSTR, 3, 2)
+    assert m1["meeting_in_week"] == 1
+    assert {e["person_id"]: e["status"] for e in m1["entries"]}[S1] == "present"
+    assert {e["person_id"]: e["status"] for e in m2["entries"]}[S1] == "absent"
+
+
+def test_schedule_summary_is_per_meeting(db):
+    controller.upsert_attendance(P1, INSTR, S1, 3, "present", meeting_in_week=2)
+    s1 = controller.get_ta_schedule(CLASS, INSTR, "instructor", week_number=3, scope="all", meeting_in_week=1)
+    s2 = controller.get_ta_schedule(CLASS, INSTR, "instructor", week_number=3, scope="all", meeting_in_week=2)
+    p1_m1 = next(t for t in s1["teams"] if t["project_id"] == P1)
+    p1_m2 = next(t for t in s2["teams"] if t["project_id"] == P1)
+    assert p1_m1["attendance_present"] == 0
+    assert p1_m2["attendance_present"] == 1
+
+
+def test_set_meeting_cadence(db):
+    controller.set_meeting_cadence(CLASS, INSTR, meetings_per_week=1, meeting_duration_minutes=45)
+    cls = next(c for c in db.rows("classes") if c["id"] == CLASS)
+    assert cls["meetings_per_week"] == 1
+    assert cls["meeting_duration_minutes"] == 45
+
+
+def test_set_meeting_cadence_requires_instructor(db):
+    with pytest.raises(HTTPException) as exc:
+        controller.set_meeting_cadence(CLASS, TA1, meetings_per_week=3)
+    assert exc.value.status_code == 403
+
+
+def test_set_meeting_cadence_rejects_bad_value(db):
+    with pytest.raises(HTTPException) as exc:
+        controller.set_meeting_cadence(CLASS, INSTR, meetings_per_week=9)
+    assert exc.value.status_code == 400
