@@ -126,14 +126,11 @@ const Projects: React.FC = () => {
     const fetchProjectsPageData = async () => {
       try {
         setLoading(true);
-        const [projectsResponse, studentsResponse] = await Promise.all([
-          api.getClassProjects(selectedClass.id),
-          api.getClassStudents(selectedClass.id),
-        ]);
+        const overview = await api.getClassProjectsOverview(selectedClass.id);
         if (!isMounted) return;
 
-        setApiProjects(projectsResponse.projects ?? []);
-        setClassStudents(studentsResponse.students ?? []);
+        setApiProjects(overview.projects ?? []);
+        setClassStudents(overview.students ?? []);
         setError(null);
       } catch (err) {
         if (isMounted) {

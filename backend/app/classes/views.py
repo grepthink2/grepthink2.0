@@ -91,6 +91,12 @@ def get_class_projects(class_id: UUID, user_id: str = Depends(require_user)):
     return {"projects": projects}
 
 
+def get_class_projects_overview(class_id: UUID, user_id: str = Depends(require_user)):
+    """Projects + enrolled-student list for the Projects page in a single call."""
+    role = get_user_role(user_id)
+    return controller.get_class_projects_overview(class_id, user_id, role)
+
+
 def get_class_turn_in_stats(
     class_id: UUID,
     user_id: str = Depends(require_instructor),

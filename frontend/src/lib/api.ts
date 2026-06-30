@@ -633,6 +633,17 @@ export const api = {
     return apiRequest<{ projects: ApiProject[] }>(`/api/classes/${classId}/projects`);
   },
 
+  /**
+   * Projects + enrolled-student list for the Projects page in a single request.
+   * Backed by one endpoint that reads each underlying table once, replacing the
+   * two parallel getClassProjects + getClassStudents calls.
+   */
+  getClassProjectsOverview: async (classId: string) => {
+    return apiRequest<{ projects: ApiProject[]; students: ApiStudent[] }>(
+      `/api/classes/${classId}/projects-overview`,
+    );
+  },
+
   getClassTurnInStats: async (classId: string) => {
     return apiRequest<{ turn_in: ApiTurnInStats }>(`/api/classes/${classId}/turn-in-stats`);
   },

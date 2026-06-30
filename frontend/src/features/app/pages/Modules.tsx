@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { formatAssignmentDueDate } from '@/lib/dateUtils';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import type { ApiAssignment } from '@/lib/api';
@@ -51,7 +52,7 @@ function mapApiAssignment(a: ApiAssignment): Assignment {
   return {
     id: a.id,
     title: a.Title,
-    dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
+    dueDate: formatAssignmentDueDate(a.close_date),
     openDate: `${a.open_date} 00:00`,
     dueDatetime: `${a.close_date} 23:59`,
     submitted: a.assignment_type === 'feedback'

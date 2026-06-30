@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { formatAssignmentDueDate } from '@/lib/dateUtils';
 import { useNavigate } from 'react-router-dom';
 import { useClass } from '@/lib/classContext';
 import { api, type ApiAssignment } from '@/lib/api';
@@ -57,7 +58,7 @@ function toStudentRow(
   return {
     id: a.id,
     name: a.Title,
-    dueDate: format(parseISO(a.close_date), 'MMM d, yyyy'),
+    dueDate: formatAssignmentDueDate(a.close_date),
     projectName: opts.projectName,
     projectId: opts.projectId,
     status,
