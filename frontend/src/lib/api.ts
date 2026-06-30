@@ -1148,12 +1148,12 @@ export const api = {
     );
   },
 
-  /** Update a project's Zoom link / recurring meeting slot. */
+  /** Set a team's weekly meeting slot (day/time/Zoom) for a given meeting-in-week. */
   updateProjectMeeting: async (
     projectId: string,
-    data: { zoom_url?: string | null; meeting_day?: string | null; meeting_time?: string | null },
+    data: { meeting_in_week?: number; zoom_url?: string | null; meeting_day?: string | null; meeting_time?: string | null },
   ) => {
-    return apiRequest<{ message: string; project: ApiProject }>(
+    return apiRequest<{ message: string; meeting: { meeting_id: string; meeting_in_week: number; meeting_day: string | null; meeting_time: string | null; zoom_url: string | null } }>(
       `/api/projects/${projectId}/meeting`,
       { method: 'PATCH', body: JSON.stringify(data) },
     );

@@ -330,6 +330,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
       <AddZoomModal
         isOpen={zoomTeam !== null}
         team={zoomTeam}
+        meetingInWeek={meeting}
         onClose={() => setZoomTeam(null)}
         onSaved={(projectId, fields) => patchTeam(projectId, fields)}
       />

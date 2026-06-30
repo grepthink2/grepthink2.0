@@ -39,13 +39,14 @@ def assign_project_ta(project_id: UUID, data: AssignProjectTARequest, user_id: s
 
 
 def update_project_meeting(project_id: UUID, data: UpdateProjectMeetingRequest, user_id: str = Depends(require_user)):
-    project = controller.update_project_meeting(
+    meeting = controller.upsert_meeting(
         project_id, user_id,
+        meeting_in_week=data.meeting_in_week,
         zoom_url=data.zoom_url,
         meeting_day=data.meeting_day,
         meeting_time=data.meeting_time,
     )
-    return {"message": "Meeting updated successfully", "project": project}
+    return {"message": "Meeting updated successfully", "meeting": meeting}
 
 
 def set_meeting_cadence(class_id: UUID, data: SetMeetingCadenceRequest, user_id: str = Depends(require_user)):
