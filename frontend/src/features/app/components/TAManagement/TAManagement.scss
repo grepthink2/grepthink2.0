@@ -1,0 +1,186 @@
+@use '@styles/index.scss' as *;
+
+.ta-page {
+  padding: $spacing-lg;
+  min-height: 100%;
+  font-family: $primary-font;
+}
+
+// ── Topbar (title + week navigator) ─────────────────────────────
+.ta-page__topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+  flex-wrap: wrap;
+}
+
+.ta-page__heading {
+  display: flex;
+  align-items: baseline;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+}
+
+.ta-page__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.ta-page__subtitle {
+  font-size: 0.9375rem;
+  color: $text-tertiary;
+}
+
+.ta-page__topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.ta-page__manage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  background: $white;
+  color: $text-secondary;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  cursor: pointer;
+
+  &:hover { background: $background; }
+}
+
+// ── Section header + count badge ────────────────────────────────
+.ta-page__section-head {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.ta-page__section-title {
+  font-size: 1rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.ta-page__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  background: $primary-color;
+  color: $white;
+  border-radius: 11px;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+}
+
+.ta-page__divider {
+  height: 1px;
+  background: $border-color;
+  margin-bottom: $spacing-md;
+}
+
+// ── Cadence (meetings/week + duration) ──────────────────────────
+.ta-page__cadence {
+  margin-left: auto;
+  font-size: 0.8125rem;
+  color: $text-tertiary;
+}
+
+.ta-page__cadence-edit {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: 0.8125rem;
+  color: $text-secondary;
+
+  select {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    padding: 4px 6px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $white;
+    color: $text-primary;
+    cursor: pointer;
+
+    &:focus { outline: none; border-color: $accent-color; }
+    &:disabled { opacity: 0.6; cursor: default; }
+  }
+}
+
+.ta-page__cadence-dur {
+  color: $text-tertiary;
+}
+
+// ── Meeting-within-week selector (only when meetings_per_week > 1) ──
+.ta-page__meeting-tabs {
+  display: inline-flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-md;
+  background: $background;
+  padding: 3px;
+  border-radius: $border-radius-md;
+}
+
+.ta-page__meeting-tab {
+  border: none;
+  background: none;
+  padding: 6px 14px;
+  border-radius: $border-radius-sm;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  color: $text-secondary;
+  cursor: pointer;
+
+  &.is-active {
+    background: $white;
+    color: $primary-color;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+}
+
+// ── List of team cards ──────────────────────────────────────────
+.ta-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+// ── States ──────────────────────────────────────────────────────
+.ta-page__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30vh;
+  color: $text-secondary;
+  font-size: $font-size-base;
+  text-align: center;
+
+  p { margin: 0; }
+}
+
+.ta-page__empty--stack {
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-lg;
+}
+
+.ta-page__empty-text {
+  max-width: 28rem;
+  line-height: 1.5;
+}

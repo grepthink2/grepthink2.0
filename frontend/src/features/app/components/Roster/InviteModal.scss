@@ -1,0 +1,744 @@
+@use '@styles/index.scss' as *;
+
+.invite-modal {
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: $z-index-modal;
+    padding: $spacing-md;
+  }
+
+  background: $white;
+  border-radius: $border-radius-md;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-family: $primary-font;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: $text-tertiary;
+    display: flex;
+    align-items: center;
+    padding: $spacing-xs;
+    border-radius: $border-radius-sm;
+    transition: color $transition-fast, background $transition-fast;
+
+    &:hover {
+      color: $text-primary;
+      background: $background;
+    }
+  }
+
+  &__draft-banner {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-lg;
+    background: rgba($accent-color, 0.06);
+    border-bottom: 1px solid rgba($accent-color, 0.18);
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    color: $accent-color;
+    flex-shrink: 0;
+
+    span {
+      flex: 1;
+    }
+  }
+
+  &__draft-restore {
+    background: none;
+    border: 1px solid rgba($accent-color, 0.4);
+    border-radius: $border-radius-sm;
+    padding: 2px $spacing-sm;
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $accent-color;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: rgba($accent-color, 0.1);
+    }
+  }
+
+  &__draft-discard {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: $accent-color;
+    opacity: 0.6;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    transition: opacity $transition-fast;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  // Scrollable modal body
+  &__body {
+    overflow-y: auto;
+    padding: $spacing-lg;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+    flex: 1;
+
+    scrollbar-width: thin;
+    scrollbar-color: $border-color transparent;
+
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb { background: $border-color; border-radius: 2px; }
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  // Section header row (title + CC/BCC toggles)
+  &__section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__section-title {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: $text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: $primary-color;
+    color: $white;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border-radius: 99px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+  }
+
+  // CC / BCC toggle group
+  &__cc-bcc-toggle {
+    display: flex;
+    gap: 4px;
+  }
+
+  &__cc-btn {
+    background: none;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    padding: 2px 8px;
+    font-family: $primary-font;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: $text-tertiary;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+
+    &:hover {
+      background: $background;
+      color: $text-primary;
+    }
+
+    &--active {
+      background: rgba($primary-color, 0.08);
+      border-color: rgba($primary-color, 0.3);
+      color: $primary-color;
+
+      &:hover {
+        background: rgba($primary-color, 0.12);
+      }
+    }
+  }
+
+  // Sub-field wrapper (CC, BCC) with top separator
+  &__sub-field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    padding-top: $spacing-sm;
+    border-top: 1px dashed $border-color;
+  }
+
+  // Scrollable chip container
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: $spacing-xs;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $background;
+    min-height: 40px;
+
+    scrollbar-width: thin;
+    scrollbar-color: $border-color transparent;
+
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb { background: $border-color; border-radius: 2px; }
+  }
+
+  &__no-recipients {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    color: $text-tertiary;
+    font-style: italic;
+    align-self: center;
+    padding: $spacing-xs;
+  }
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: 99px;
+    padding: 3px 10px;
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    color: $text-primary;
+    cursor: pointer;
+    transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+
+    &:hover {
+      background: rgba($error-color, 0.06);
+      border-color: rgba($error-color, 0.35);
+      color: $error-color;
+
+      .invite-modal__chip-x {
+        color: $error-color;
+      }
+    }
+  }
+
+  &__chip-x {
+    color: $text-tertiary;
+    flex-shrink: 0;
+    transition: color $transition-fast;
+  }
+
+  &__add-row {
+    display: flex;
+    gap: $spacing-sm;
+  }
+
+  %modal-input {
+    background-color: $white;
+    color: $text-primary;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    outline: none;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.12);
+    }
+  }
+
+  &__add-input {
+    @extend %modal-input;
+    flex: 1;
+    padding: 7px 12px;
+
+    &--error {
+      border-color: $error-color;
+
+      &:focus {
+        box-shadow: 0 0 0 2px rgba($error-color, 0.12);
+      }
+    }
+  }
+
+  &__add-btn {
+    padding: 7px $spacing-md;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: $text-primary;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background $transition-fast, border-color $transition-fast;
+
+    &:hover {
+      background: $background;
+    }
+  }
+
+  &__input-error {
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    color: $error-color;
+    margin: 0;
+  }
+
+  &__field-label {
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $text-secondary;
+    margin: 0 0 2px;
+  }
+
+  &__field-input {
+    @extend %modal-input;
+    width: 100%;
+    padding: 8px 12px;
+    box-sizing: border-box;
+  }
+
+  // ── Rich text body editor ────────────────────────────────────────────────────
+
+  &__body-editor {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  // Toolbar row of formatting buttons
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 6px;
+    background: $background;
+    border: 1px solid $border-color;
+    border-bottom: none;
+    border-radius: $border-radius-sm $border-radius-sm 0 0;
+    flex-wrap: wrap;
+  }
+
+  &__toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: $text-secondary;
+    cursor: pointer;
+    transition: background $transition-fast, color $transition-fast, border-color $transition-fast;
+
+    // Chromium shrinks lucide SVGs to ~0 width inside flex containers without this
+    svg {
+      flex-shrink: 0;
+      display: block;
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      background: $white;
+      border-color: $border-color;
+      color: $text-primary;
+    }
+
+    &--active {
+      background: rgba($primary-color, 0.1);
+      border-color: rgba($primary-color, 0.25);
+      color: $primary-color;
+    }
+  }
+
+  &__toolbar-sep {
+    width: 1px;
+    height: 18px;
+    background: $border-color;
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+
+  // Link panel — floats over the editor, anchored to the bottom-left
+  &__link-panel {
+    position: absolute;
+    bottom: 24px; // sits above the resize handle
+    left: 8px;
+    width: 260px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    padding: 10px 12px;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.13);
+  }
+
+  &__link-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__link-panel-title {
+    font-family: $primary-font;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: $text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__link-fields {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__link-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__link-field-label {
+    font-family: $primary-font;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: $text-secondary;
+  }
+
+  &__link-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $spacing-xs;
+  }
+
+  &__link-input {
+    @extend %modal-input;
+    width: 100%;
+    padding: 5px 10px;
+    font-size: 0.8125rem;
+    box-sizing: border-box;
+  }
+
+  &__link-remove {
+    margin-right: auto;
+    padding: 4px 8px;
+    background: none;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $error-color;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: rgba($error-color, 0.08);
+    }
+  }
+
+  &__link-apply {
+    padding: 5px 10px;
+    background: $primary-color;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $white;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $primary-hover;
+    }
+  }
+
+  &__link-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: $text-tertiary;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color $transition-fast, background $transition-fast;
+
+    &:hover {
+      color: $text-primary;
+      background: $background;
+    }
+  }
+
+  // Container that holds the editor + resize handle.
+  // Top corners are always square — toolbar (and optional link panel) sit directly above.
+  &__editor-wrap {
+    position: relative;
+    border: 1px solid $border-color;
+    border-radius: 0 0 $border-radius-sm $border-radius-sm;
+    overflow: visible; // allows the link panel popup to extend beyond the wrap bounds
+
+    &:focus-within {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.12);
+    }
+  }
+
+  // The contenteditable field inside the fixed-height container
+  &__field-textarea {
+    background-color: $white;
+    color: $text-primary;
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    width: 100%;
+    height: 100%;
+    padding: 8px 12px;
+    padding-bottom: 20px; // room for the resize handle
+    box-sizing: border-box;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-y: auto;
+    outline: none;
+
+    scrollbar-width: thin;
+    scrollbar-color: $border-color transparent;
+
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb { background: $border-color; border-radius: 2px; }
+
+    br { display: block; content: ''; }
+
+    ul, ol {
+      margin: 0.25em 0;
+      padding-left: 1.5em;
+    }
+
+    b, strong {
+      font-weight: 600;
+    }
+
+    i, em {
+      font-style: italic;
+    }
+
+    u {
+      text-decoration: underline;
+    }
+
+    s, strike {
+      text-decoration: line-through;
+    }
+
+    a {
+      color: $primary-color;
+      text-decoration: underline;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: background $transition-fast;
+
+      &:hover {
+        background: rgba($primary-color, 0.1);
+      }
+    }
+  }
+
+  // Bottom-right drag handle (like a window resize gripper)
+  &__resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 18px;
+    height: 18px;
+    cursor: nwse-resize;
+    opacity: 0.35;
+    transition: opacity $transition-fast;
+
+    // Draw the classic 3-line grip using a SVG-like repeating gradient
+    background-image:
+      linear-gradient(135deg, transparent 33%, $text-tertiary 33%, $text-tertiary 40%, transparent 40%),
+      linear-gradient(135deg, transparent 53%, $text-tertiary 53%, $text-tertiary 60%, transparent 60%),
+      linear-gradient(135deg, transparent 73%, $text-tertiary 73%, $text-tertiary 80%, transparent 80%);
+    background-size: 100% 100%;
+
+    &:hover {
+      opacity: 0.7;
+    }
+  }
+
+  // Inline uneditable token chip inside the contenteditable body
+  &__token {
+    display: inline-flex;
+    align-items: center;
+    background: rgba($primary-color, 0.08);
+    border: 1px solid rgba($primary-color, 0.25);
+    border-radius: 4px;
+    color: $primary-color;
+    font-size: 0.8125rem;
+    font-family: $primary-font;
+    padding: 0 5px;
+    line-height: 1.5;
+    white-space: nowrap;
+    cursor: default;
+    user-select: none;
+  }
+
+  // Row of "re-insert token" buttons shown when a token is missing
+  &__token-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex-wrap: wrap;
+  }
+
+  &__token-row-label {
+    font-family: $primary-font;
+    font-size: 0.6875rem;
+    color: $text-tertiary;
+    white-space: nowrap;
+  }
+
+  &__token-insert {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: 1px dashed rgba($primary-color, 0.4);
+    border-radius: 4px;
+    padding: 2px $spacing-xs;
+    font-family: $primary-font;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: $primary-color;
+    cursor: pointer;
+    transition: background $transition-fast, border-color $transition-fast;
+
+    &:hover {
+      background: rgba($primary-color, 0.06);
+      border-color: $primary-color;
+    }
+  }
+
+  &__error {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    color: $error-color;
+    background: rgba($error-color, 0.06);
+    border: 1px solid rgba($error-color, 0.2);
+    border-radius: $border-radius-sm;
+    padding: $spacing-sm $spacing-md;
+    margin: 0;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    border-top: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__btn {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: $border-radius-sm;
+    padding: 8px $spacing-md;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background $transition-fast, opacity $transition-fast;
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    &--cancel {
+      background: $white;
+      border-color: $border-color;
+      color: $text-primary;
+
+      &:hover:not(:disabled) {
+        background: $background;
+      }
+    }
+
+    &--send {
+      background: $primary-color;
+      color: $white;
+
+      &:hover:not(:disabled) {
+        background: $primary-hover;
+      }
+    }
+  }
+
+  &__spinner {
+    animation: invite-spin 0.75s linear infinite;
+  }
+}
+
+@keyframes invite-spin {
+  to { transform: rotate(360deg); }
+}

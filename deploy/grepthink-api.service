@@ -1,0 +1,40 @@
+# GrepThink 2.0 API — systemd unit (native deploy on VM2, mirrors slug-mcp).
+# Install: sudo cp deploy/grepthink-api.service /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable --now grepthink-api
+[Unit]
+Description=GrepThink 2.0 API (FastAPI/uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pmundra
+Group=pmundra
+WorkingDirectory=/home/pmundra/grepthink2.0/backend
+EnvironmentFile=/home/pmundra/grepthink2.0/.env
+Environment=HOST=127.0.0.1
+Environment=PORT=5001
+Environment=ENVIRONMENT=production
+# Production server: NO --reload. 3 workers on this 4-vCPU box leaves a core
+# for nginx/slug-mcp/zeus. --proxy-headers + --forwarded-allow-ips lets the
+# app trust X-Forwarded-* from the local nginx (correct client IP/scheme).
+ExecStart=/home/pmundra/grepthink2.0/backend/.venv/bin/uvicorn app.main:app \
+    --host 127.0.0.1 --port 5001 \
+    --workers 3 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+RestartSec=3
+
+# ---- Resource control (cgroup v2): Layer 1 — always-on soft priority ----
+# CPUWeight/IOWeight are RELATIVE and only bite under contention: while zeus
+# load-gen saturates the box this service yields (default weight is 100, so
+# 20 ⇒ zeus out-competes it ~5:1), but at idle it still runs full speed — no
+# toggle required. MemoryHigh throttles via reclaim (no swap on this box, so
+# avoid a tight hard cap); MemoryMax is the safety ceiling for 3 workers.
+# `experiment-mode on` layers a hard CPUQuota + core pin on top of this.
+CPUWeight=20
+IOWeight=20
+MemoryHigh=512M
+MemoryMax=768M
+
+[Install]
+WantedBy=multi-user.target

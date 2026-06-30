@@ -1,6 +1,8 @@
 import React from 'react';
-import { Smile, Meh, Frown, ChevronRight } from 'lucide-react';
+import { Smile, Meh, Frown, ChevronRight, Eye } from 'lucide-react';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
+import SortableHeader from '@features/app/components/shared/SortableHeader';
+import { useTableSort, type SortAccessors } from '@features/app/utils/useTableSort';
 import './ProjectList.scss';
 
 export type ProjectSentiment = 'positive' | 'neutral' | 'negative';
@@ -21,9 +23,33 @@ interface ProjectListProps {
   loading: boolean;
   error: string | null;
   onProjectClick?: (project: UiProject) => void;
+  /** When provided, renders a per-row "preview as a member of this project" action. */
+  onPreviewMember?: (project: UiProject) => void;
 }
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onProjectClick }) => {
+const SENTIMENT_LABEL: Record<ProjectSentiment, string> = {
+  positive: 'Positive',
+  neutral: 'Neutral',
+  negative: 'Negative',
+};
+
+type ProjectSortKey = 'name' | 'students' | 'poName' | 'smName' | 'sentiment';
+
+const SORT_ACCESSORS: SortAccessors<UiProject, ProjectSortKey> = {
+  name: (p) => p.name,
+  students: (p) => p.students,
+  poName: (p) => p.poName,
+  smName: (p) => p.smName,
+  sentiment: (p) => SENTIMENT_LABEL[p.sentiment],
+};
+
+const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onProjectClick, onPreviewMember }) => {
+  const { sortedRows: sortedProjects, sort, toggleSort } = useTableSort<UiProject, ProjectSortKey>(
+    projects,
+    SORT_ACCESSORS,
+    { key: 'name', direction: 'asc' },
+  );
+
   const renderSentiment = (sentiment: ProjectSentiment) => {
     const label =
       sentiment === 'positive' ? 'Positive' : sentiment === 'neutral' ? 'Neutral' : 'Negative';
@@ -93,16 +119,16 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
           <table className="assignment-list__table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Team Size</th>
-                <th>PO</th>
-                <th>SM</th>
-                <th>Sentiment</th>
+                <SortableHeader label="Name" sortKey="name" currentSort={sort} onSort={toggleSort} />
+                <SortableHeader label="Team Size" sortKey="students" currentSort={sort} onSort={toggleSort} />
+                <SortableHeader label="PO" sortKey="poName" currentSort={sort} onSort={toggleSort} />
+                <SortableHeader label="SM" sortKey="smName" currentSort={sort} onSort={toggleSort} />
+                <SortableHeader label="Sentiment" sortKey="sentiment" currentSort={sort} onSort={toggleSort} />
                 <th />
               </tr>
             </thead>
             <tbody>
-              {projects.map((project) => (
+              {sortedProjects.map((project) => (
                 <tr
                   key={project.id}
                   className="projects-table__row"
@@ -127,7 +153,22 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
                     )}
                   </td>
                   <td>{renderSentiment(project.sentiment)}</td>
-                  <td className="projects-table__arrow-cell"><ChevronRight size={16} /></td>
+                  <td className="projects-table__arrow-cell">
+                    {onPreviewMember && (
+                      <button
+                        type="button"
+                        className="projects-table__preview-btn"
+                        title="Preview as a member of this project"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPreviewMember(project);
+                        }}
+                      >
+                        <Eye size={15} />
+                      </button>
+                    )}
+                    <ChevronRight size={16} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -137,7 +178,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, loading, error, onP
 
       {/* Mobile cards — proper div structure avoids td-in-grid browser quirks */}
       <div className="projects-table__mobile-cards">
-        {projects.map((project) => (
+        {sortedProjects.map((project) => (
           <div
             key={`mobile-${project.id}`}
             className="projects-table__mobile-card"

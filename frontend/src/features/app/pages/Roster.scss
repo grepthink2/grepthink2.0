@@ -1,5 +1,7 @@
 @use '@styles/index.scss' as *;
 
+$success-color: #018156;
+
 // ── Page shell ────────────────────────────────────────────────
 .roster {
   padding: $spacing-lg;
@@ -45,13 +47,76 @@
   flex-shrink: 0;
 }
 
-.roster__action-error {
+.roster__action-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
   margin-bottom: $spacing-md;
   padding: $spacing-sm $spacing-md;
   border-radius: $border-radius-sm;
-  background: rgba($error-color, 0.08);
-  color: $error-color;
   font-size: $font-size-sm;
+  animation: roster-msg-in 0.18s ease;
+
+  &--success {
+    background: rgba($success-color, 0.1);
+    color: darken($success-color, 10%);
+    border: 1px solid rgba($success-color, 0.25);
+  }
+
+  &--error {
+    background: rgba($error-color, 0.08);
+    color: $error-color;
+    border: 1px solid rgba($error-color, 0.2);
+  }
+}
+
+.roster__unsend-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: $border-radius-sm;
+  padding: 2px $spacing-sm;
+  font-family: $primary-font;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+  margin-left: auto;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.roster__action-message-dismiss {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  border-radius: 50%;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+@keyframes roster-msg-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {

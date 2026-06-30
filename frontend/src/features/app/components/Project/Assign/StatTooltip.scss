@@ -5,6 +5,15 @@
   display: inline-flex;
   align-items: center;
   cursor: default;
+
+  &--underline {
+    background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+    background-repeat: repeat-x;
+    background-size: 5px 2px;
+    background-position: 0 100%;
+    padding-bottom: 3px;
+    cursor: pointer;
+  }
 }
 
 .stat-tooltip {

@@ -1,4 +1,14 @@
 import { supabase } from './supabaseClient';
+import { assertWritableRequest } from './previewGuard';
+
+/**
+ * Read-tracking writes (mark-as-read) fire automatically as a side effect of
+ * viewing a screen. In read-only preview we still block them, but silently —
+ * surfacing a "changes disabled" toast for them would be noise, not signal.
+ */
+function isSilentWrite(endpoint: string): boolean {
+  return /\/read(-all)?$/.test(endpoint);
+}
 
 // In dev, use relative paths so Vite proxy routes to the right backend (localhost or prod).
 // In production builds, fall back to VITE_API_URL or same-origin.
@@ -43,6 +53,67 @@ export interface ApiClassTA {
   name: string;
   email: string | null;
   projects: { id: string; name: string | null }[];
+}
+
+// ----- TA meeting schedule + attendance (app/attendance backend) ------------
+
+export type AttendanceStatus = 'present' | 'late' | 'absent' | 'unmarked';
+
+export interface ApiAssignedTa {
+  id: string;
+  name: string | null;
+  email?: string | null;
+  image_url?: string | null;
+}
+
+export interface ApiTeamMeeting {
+  project_id: string;
+  project_name: string;
+  meeting_day?: string | null;
+  meeting_time?: string | null;
+  zoom_url?: string | null;
+  assigned_ta?: ApiAssignedTa | null;
+  attendance_present: number;
+  attendance_total: number;
+}
+
+export interface ApiTAMeetingSchedule {
+  class_id: string;
+  week_number: number;
+  total_weeks: number;
+  week_of?: string | null;
+  /** Which meeting within the week this schedule's attendance reflects (1..meetings_per_week). */
+  meeting_in_week: number;
+  /** TA meetings per week for this class (1 = once weekly). */
+  meetings_per_week: number;
+  meeting_duration_minutes?: number | null;
+  /** total_weeks * meetings_per_week. */
+  total_meetings: number;
+  teams: ApiTeamMeeting[];
+}
+
+export interface ApiAttendanceEntry {
+  person_id: string;
+  name: string | null;
+  email?: string | null;
+  image_url?: string | null;
+  status: AttendanceStatus;
+}
+
+export interface ApiTeamAttendance {
+  project_id: string;
+  week_number: number;
+  meeting_in_week: number;
+  entries: ApiAttendanceEntry[];
+}
+
+/** A class member with their class-TA designation flag (attendance feature). */
+export interface ApiClassTa {
+  user_id: string;
+  name: string | null;
+  email?: string | null;
+  image_url?: string | null;
+  is_ta: boolean;
 }
 
 /** A TA assigned to a specific project. */
@@ -130,11 +201,20 @@ export interface ApiProjectJoinRequest {
   user_role?: string;
   requested_at?: string;
   status: string;
+  message?: string | null;
   project_id?: string;
   project_name?: string;
   member_count?: number;
   sponsor_company?: string;
   course_label?: string;
+  image_url?: string | null;
+}
+
+export interface ApiProjectPendingInvite {
+  request_id: string;
+  user_id: string;
+  email?: string;
+  invited_at?: string;
 }
 
 export interface ApiProjectMember {
@@ -328,7 +408,7 @@ export interface ApiConversationSummary {
 
 export interface ApiNotification {
   id: string;
-  type: 'join_request' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster';
+  type: 'join_request' | 'join_rejected' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster';
   title: string;
   body: string;
   entity_type: string | null;
@@ -448,6 +528,9 @@ export async function apiRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
+  // Read-only preview: refuse mutating requests before they leave the browser.
+  assertWritableRequest(options.method, isSilentWrite(endpoint));
+
   // Get the current session token
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
@@ -490,6 +573,9 @@ export async function apiUpload<T = unknown>(
   endpoint: string,
   formData: FormData,
 ): Promise<T> {
+  // Uploads are always writes (multipart POST) — block them in preview.
+  assertWritableRequest('POST');
+
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
@@ -513,6 +599,15 @@ export async function apiUpload<T = unknown>(
   return response.json();
 }
 
+/** Build the ?week=&meeting= query for the TA-schedule endpoints. */
+function scheduleQuery(week?: number, meeting = 1): string {
+  const p = new URLSearchParams();
+  if (week != null) p.set('week', String(week));
+  if (meeting && meeting !== 1) p.set('meeting', String(meeting));
+  const q = p.toString();
+  return q ? `?${q}` : '';
+}
+
 /**
  * API client for backend endpoints
  */
@@ -520,6 +615,20 @@ export const api = {
   // Auth
   loginCheck: async () => {
     return apiRequest<{ message: string; user_id: string; role: string | null }>('/api/login-check');
+  },
+
+  checkEmail: async (email: string): Promise<{ available: boolean } | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/check-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!response.ok) return null;
+      return response.json();
+    } catch {
+      return null;
+    }
   },
 
   /**
@@ -611,6 +720,14 @@ export const api = {
     );
   },
 
+  // Student leaves a class they're enrolled in.
+  leaveClass: async (classId: string) => {
+    return apiRequest<{ message: string; class_id: string }>(
+      `/api/classes/${classId}/leave`,
+      { method: 'DELETE' },
+    );
+  },
+
   bulkInviteStudents: async (classId: string, emails: string[]) => {
     return apiRequest<ApiBulkInviteResult>(
       `/api/classes/${classId}/students/bulk-invite`,
@@ -618,6 +735,38 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ emails }),
       },
+    );
+  },
+
+  queueInvite: async (
+    classId: string,
+    emails: string[],
+    customSubject?: string,
+    customBody?: string,
+    customBodyHtml?: string,
+    cc?: string[],
+    bcc?: string[],
+  ) => {
+    return apiRequest<{ job_id: string; send_at: string }>(
+      `/api/classes/${classId}/invites/queue`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          emails,
+          ...(customSubject !== undefined && { custom_subject: customSubject }),
+          ...(customBody !== undefined && { custom_body: customBody }),
+          ...(customBodyHtml !== undefined && { custom_body_html: customBodyHtml }),
+          ...(cc && cc.length > 0 && { cc }),
+          ...(bcc && bcc.length > 0 && { bcc }),
+        }),
+      },
+    );
+  },
+
+  cancelInvite: async (classId: string, jobId: string) => {
+    return apiRequest<{ cancelled: boolean }>(
+      `/api/classes/${classId}/invites/${jobId}`,
+      { method: 'DELETE' },
     );
   },
 
@@ -661,10 +810,11 @@ export const api = {
     return apiRequest<{ projects: ApiProject[] }>(`/api/projects${query ? `?${query}` : ''}`);
   },
 
-  requestJoinProject: async (projectId: string) => {
+  requestJoinProject: async (projectId: string, message?: string) => {
+    const trimmed = message?.trim();
     return apiRequest<{ message: string; request: { id: string; project_id: string; user_id: string }; project: ApiProject }>('/api/projects/request-join', {
       method: 'POST',
-      body: JSON.stringify({ project_id: projectId }),
+      body: JSON.stringify({ project_id: projectId, message: trimmed ? trimmed : null }),
     });
   },
 
@@ -725,6 +875,31 @@ export const api = {
     });
   },
 
+  dismissJoinRequest: async (requestId: string) => {
+    return apiRequest<{ message: string; request_id: string }>('/api/projects/dismiss-request', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  },
+
+  cancelJoinRequest: async (requestId: string) => {
+    return apiRequest<{ message: string; request_id: string }>('/api/projects/cancel-request', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  },
+
+  cancelTeamInvite: async (requestId: string) => {
+    return apiRequest<{ message: string; request_id: string }>('/api/projects/cancel-invite', {
+      method: 'POST',
+      body: JSON.stringify({ request_id: requestId }),
+    });
+  },
+
+  getProjectPendingInvites: async (projectId: string) => {
+    return apiRequest<{ invites: ApiProjectPendingInvite[] }>(`/api/projects/${projectId}/pending-invites`);
+  },
+
   /** Create a project (full form: POST /api/projects) */
   createProject: async (data: CreateProjectPayload) => {
     return apiRequest<{ message: string; project: ApiProject }>('/api/projects', {
@@ -733,17 +908,9 @@ export const api = {
     });
   },
 
-  /** Test-only: create a project bypassing instructor check (POST /api/projects/test-create) */
-  testCreateProject: async (data: CreateProjectPayload) => {
-    return apiRequest<{ message: string; project: ApiProject }>('/api/projects/test-create', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
   /** Add a member to a project (instructor or authorized role). */
   addProjectMember: async (projectId: string, data: { user_id: string; role?: string }) => {
-    return apiRequest<{ message: string }>(`/api/projects/${projectId}/members`, {
+    return apiRequest<{ message: string; request?: { id: string } }>(`/api/projects/${projectId}/members`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -931,6 +1098,96 @@ export const api = {
   getMyEnrollmentRole: async (classId: string) => {
     return apiRequest<{ enrollment_role: 'instructor' | EnrollmentRole | null }>(
       `/api/tas/classes/${classId}/my-role`,
+    );
+  },
+
+  // ----- TA meeting schedule + attendance (app/attendance backend) ----------
+
+  /** Instructor: weekly schedule of every team's meeting slot + attendance. */
+  getTAMeetingSchedule: async (classId: string, week?: number, meeting = 1) => {
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule${scheduleQuery(week, meeting)}`);
+  },
+
+  /** TA: only the teams assigned to me in this class + week. */
+  getMyAssignedTeams: async (classId: string, week?: number, meeting = 1) => {
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/mine${scheduleQuery(week, meeting)}`);
+  },
+
+  /** Student: my own team's meeting slot + my own attendance for the week. */
+  getMyTeamSchedule: async (classId: string, week?: number, meeting = 1) => {
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/my-team${scheduleQuery(week, meeting)}`);
+  },
+
+  /** Roster + statuses for one team's check-in panel (week + meeting scoped). */
+  getTeamAttendance: async (projectId: string, week: number, meeting = 1) => {
+    return apiRequest<ApiTeamAttendance>(`/api/projects/${projectId}/attendance?week=${week}&meeting=${meeting}`);
+  },
+
+  /** Mark one person present/late/absent for a (project, week, meeting). */
+  upsertAttendance: async (
+    projectId: string,
+    week: number,
+    personId: string,
+    status: 'present' | 'late' | 'absent',
+    meetingInWeek = 1,
+  ) => {
+    return apiRequest<{ message: string; record: unknown }>(
+      `/api/projects/${projectId}/attendance`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ week_number: week, meeting_in_week: meetingInWeek, person_id: personId, status }),
+      },
+    );
+  },
+
+  /** Mark every team member present for a (project, week, meeting). */
+  markAllPresent: async (projectId: string, week: number, meetingInWeek = 1) => {
+    return apiRequest<{ message: string; records: unknown[] }>(
+      `/api/projects/${projectId}/attendance/mark-all-present`,
+      { method: 'POST', body: JSON.stringify({ week_number: week, meeting_in_week: meetingInWeek }) },
+    );
+  },
+
+  /** Instructor: set how many TA meetings/week + per-meeting duration for a class. */
+  setMeetingCadence: async (
+    classId: string,
+    data: { meetings_per_week?: number; meeting_duration_minutes?: number },
+  ) => {
+    return apiRequest<{ message: string; class: ApiClass }>(
+      `/api/classes/${classId}/meeting-cadence`,
+      { method: 'PATCH', body: JSON.stringify(data) },
+    );
+  },
+
+  /** Set a team's weekly meeting slot (day/time/Zoom) for a given meeting-in-week. */
+  updateProjectMeeting: async (
+    projectId: string,
+    data: { meeting_in_week?: number; zoom_url?: string | null; meeting_day?: string | null; meeting_time?: string | null },
+  ) => {
+    return apiRequest<{ message: string; meeting: { meeting_id: string; meeting_in_week: number; meeting_day: string | null; meeting_time: string | null; zoom_url: string | null } }>(
+      `/api/projects/${projectId}/meeting`,
+      { method: 'PATCH', body: JSON.stringify(data) },
+    );
+  },
+
+  /** Instructor: enrolled students with their class-TA flag (attendance UI). */
+  getClassTaRoster: async (classId: string) => {
+    return apiRequest<{ tas: ApiClassTa[] }>(`/api/classes/${classId}/tas`);
+  },
+
+  /** Instructor: designate (isTa=true) or remove (isTa=false) a class TA. */
+  setClassTA: async (classId: string, userId: string, isTa: boolean) => {
+    return apiRequest<{ message: string; user_id: string; is_ta: boolean }>(
+      `/api/classes/${classId}/tas`,
+      { method: 'POST', body: JSON.stringify({ user_id: userId, is_ta: isTa }) },
+    );
+  },
+
+  /** Instructor: assign (taId) or clear (null) the TA for a project. */
+  assignProjectTA: async (projectId: string, taId: string | null) => {
+    return apiRequest<{ message: string; project_id: string; assigned_ta_id: string | null }>(
+      `/api/projects/${projectId}/assign-ta`,
+      { method: 'POST', body: JSON.stringify({ ta_id: taId }) },
     );
   },
 

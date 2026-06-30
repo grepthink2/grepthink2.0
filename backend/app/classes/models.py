@@ -35,3 +35,24 @@ class UpdateClassStatusRequest(BaseModel):
 class BulkInviteRequest(BaseModel):
     """Request model for bulk-enrolling students by email list"""
     emails: list[str]
+
+
+class QueueInviteRequest(BaseModel):
+    """Request model for queuing a delayed invite batch"""
+    emails: list[str]
+    cc: list[str] = []
+    bcc: list[str] = []
+    custom_subject: Optional[str] = None
+    custom_body: Optional[str] = None
+    custom_body_html: Optional[str] = None
+
+
+class QueueInviteResponse(BaseModel):
+    """Response after queuing an invite batch"""
+    job_id: str
+    send_at: str  # ISO 8601
+
+
+class CancelInviteResponse(BaseModel):
+    """Response after cancelling a queued invite batch"""
+    cancelled: bool

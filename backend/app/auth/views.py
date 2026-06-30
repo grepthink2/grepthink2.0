@@ -2,29 +2,20 @@
 Auth views — parameter handling and responses
 """
 import logging
+from datetime import datetime, timezone, timedelta
 
 from fastapi import HTTPException, Request, Depends
 from app.dependencies import require_user, require_user_payload
 from app.auth.models import SignupRequest, CheckEmailRequest
 from app.auth.controller import get_user_role
 from app.database.client import service_client, get_authenticated_client
+from app.limiter import limiter
 
 logger = logging.getLogger(__name__)
 
 
-def test_auth(user_id: str = Depends(require_user)):
-    """
-    Diagnostic endpoint: confirms the backend is reachable and the caller's
-    token was verified. Requires a valid bearer token — use ``GET /health``
-    for a no-auth liveness probe.
-    """
-    return {
-        "message": f"Backend connected & Authenticated. Hello {user_id}",
-        "user_id": user_id,
-    }
-
-
-def login_check(user_id: str = Depends(require_user)):
+@limiter.limit("120/minute")
+def login_check(request: Request, user_id: str = Depends(require_user)):
     """
     Returns the caller's id and profile role. Used by the frontend
     ``/auth/callback`` route to decide whether to send a first-time user to
@@ -38,7 +29,8 @@ def login_check(user_id: str = Depends(require_user)):
     }
 
 
-def create_user(
+@limiter.limit("20/minute")
+def create_user(  # noqa: C901
     request: Request,
     data: SignupRequest,
     payload: dict = Depends(require_user_payload),
@@ -86,7 +78,7 @@ def create_user(
     # detect an existing row without depending on policy. Falls back to the
     # caller's JWT-authenticated client if no service key is configured.
     def _select_profile(client):
-        return client.table('profiles').select('id, role').eq('id', user_id).execute()
+        return client.table('profiles').select('id, role, created_at').eq('id', user_id).execute()
 
     def _insert_profile(client):
         row = {"id": user_id, "email": email, "role": user_type}
@@ -115,10 +107,51 @@ def create_user(
         existing = _select_profile(client)
         if existing.data:
             current_role = existing.data[0].get('role')
+            created_at_str = existing.data[0].get('created_at')
             logger.info(
                 "create_user: profile already exists | user_id=%s email=%s current_role=%s requested_role=%s",
                 user_id, email, current_role, user_type,
             )
+
+            # A Supabase DB trigger may have auto-created the profile row at
+            # auth.users INSERT time with a hardcoded default role of 'student',
+            # before this endpoint was called. Detect that case by checking:
+            #   1. The roles differ (trigger used wrong default).
+            #   2. The profile was created very recently (≤ 60 s ago) — meaning
+            #      it was created by the trigger during this signup, not by a
+            #      previous create-user call.
+            #   3. The JWT user_metadata agrees with the requested role — rules
+            #      out an attacker who updated their metadata after signup.
+            # Only allow upgrading student→instructor here, not the reverse.
+            if (
+                current_role != user_type
+                and current_role == 'student'
+                and user_type == 'instructor'
+                and created_at_str
+            ):
+                jwt_role = (payload.get('user_metadata') or {}).get('role', '')
+                try:
+                    created_at = datetime.fromisoformat(
+                        created_at_str.replace('Z', '+00:00')
+                    )
+                    age = datetime.now(timezone.utc) - created_at
+                    if age < timedelta(seconds=60) and jwt_role == 'instructor':
+                        client.table('profiles').update(
+                            {'role': 'instructor'}
+                        ).eq('id', user_id).execute()
+                        from app.auth.controller import invalidate_user_role
+                        invalidate_user_role(user_id)
+                        logger.info(
+                            "create_user: corrected trigger-defaulted role | user_id=%s email=%s",
+                            user_id, email,
+                        )
+                        return {
+                            "message": "User record created successfully.",
+                            "email": email,
+                            "role": user_type,
+                        }
+                except (ValueError, TypeError):
+                    pass
 
             # A Supabase trigger may have auto-created the profile row without
             # edu_email. If the primary email is .edu and edu_email isn't set
@@ -182,18 +215,55 @@ def create_user(
         }
     except HTTPException:
         raise
-    except Exception:
-        # WARN: This is almost always an RLS policy problem if running on the
-        # authenticated client — profiles table likely doesn't allow INSERT
-        # for the authenticated role. On the service-role client it indicates
-        # a schema mismatch or network issue.
+    except Exception as exc:
+        exc_str = str(exc)
+        # FK violation on profiles_id_fkey means the auth user ID is not in
+        # auth.users — stale JWT for a deleted account. Return 401 so the
+        # frontend can prompt a re-login instead of showing "Database insert
+        # failed".
+        if 'profiles_id_fkey' in exc_str or (
+            'not present in table' in exc_str and 'users' in exc_str
+        ):
+            logger.warning(
+                "create_user: auth user missing from users table (stale JWT?) | user_id=%s email=%s",
+                user_id, email,
+            )
+            raise HTTPException(
+                status_code=401,
+                detail="Auth account not found. Please sign out and sign back in.",
+            )
         logger.exception(
             "create_user: profile insert failed | user_id=%s email=%s", user_id, email,
         )
         raise HTTPException(status_code=500, detail="Database insert failed")
 
 
-def check_email(data: CheckEmailRequest):
+@limiter.limit("60/minute")
+def check_user_exists(request: Request, data: CheckEmailRequest):
+    """
+    Unauthenticated endpoint. Returns whether an email belongs to an existing
+    account. Used by ForgotPassword.tsx to surface an error before calling
+    Supabase resetPasswordForEmail (which silently succeeds for unknown emails).
+    """
+    client = service_client
+    if client is None:
+        raise HTTPException(status_code=503, detail="Service unavailable")
+
+    try:
+        result = (
+            client.table('profiles')
+            .select('id')
+            .eq('email', data.email.lower())
+            .execute()
+        )
+        return {"exists": len(result.data) > 0}
+    except Exception:
+        logger.exception("check_user_exists: lookup failed | email=%s", data.email)
+        raise HTTPException(status_code=500, detail="Failed to check user existence")
+
+
+@limiter.limit("60/minute")
+def check_email(request: Request, data: CheckEmailRequest):
     """
     Unauthenticated endpoint. Returns whether a .edu email address is
     available to be claimed — i.e. not already stored as edu_email on any

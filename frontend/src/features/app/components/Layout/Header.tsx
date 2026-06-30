@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu } from 'lucide-react';
+import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu, Eye } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
 import { useClass } from '@/lib/classContext';
+import { usePreview } from '@/lib/previewContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
 import { formatRelativeTime } from '@features/messages/utils/relativeTime';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
@@ -143,7 +144,8 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, role, user } = useAuth();
+  const { signOut, role, realRole, isPreviewing, user } = useAuth();
+  const { enterPreview, exitPreview } = usePreview();
   const { selectedClass, classes, setSelectedClass } = useClass();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -195,7 +197,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
       return;
     }
 
-    if (notification.type === 'join_request') {
+    if (notification.type === 'join_request' || notification.type === 'join_rejected') {
       navigate('/app/home', { state: { openRequests: true } });
       return;
     }
@@ -240,6 +242,39 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
   const handleSettingsClick = () => {
     setShowProfileMenu(false);
     onOpenSettings();
+  };
+
+  const handleViewAsStudent = () => {
+    setShowProfileMenu(false);
+    if (isPreviewing) {
+      exitPreview();
+      navigate('/app/home');
+    } else {
+      enterPreview();
+      navigate('/app/home');
+    }
+  };
+
+  // Lightweight search: "leave class" (and close variants) jumps to My Classes,
+  // where students can leave a class from its card.
+  const matchesLeaveClass = (query: string): boolean => {
+    const q = query.toLowerCase().trim();
+    if (!q) return false;
+    return (
+      (q.includes('leave') && q.includes('class')) ||
+      (q.includes('drop') && q.includes('class')) ||
+      q.includes('unenroll')
+    );
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    if (matchesLeaveClass(searchQuery)) {
+      e.preventDefault();
+      navigate('/app/my-classes');
+      setSearchQuery('');
+      e.currentTarget.blur();
+    }
   };
 
   return (
@@ -409,6 +444,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
             placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
             className="app-header__search-input"
           />
         </div>
@@ -436,6 +472,15 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
 
           {showProfileMenu && (
             <div className="app-header__dropdown app-header__profile-dropdown">
+              {realRole === 'instructor' && (
+                <button
+                  className="app-header__dropdown-item"
+                  onClick={handleViewAsStudent}
+                >
+                  <Eye size={18} />
+                  <span>{isPreviewing ? 'Instructor View' : 'View as Student'}</span>
+                </button>
+              )}
               <button
                 className="app-header__dropdown-item"
                 onClick={handleSettingsClick}

@@ -18,7 +18,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
-import { api } from '@/lib/api';
+import { api, apiRequest, type ApiProfile } from '@/lib/api';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ const AuthCallback: React.FC = () => {
     //   source=login   → new users are rejected with a friendly error
     const source = url.searchParams.get('source');
 
-    const routeUser = async (_accessToken: string) => {
+    const routeUser = async () => {
       if (cancelled) return;
       try {
         const me = await api.loginCheck();
@@ -67,9 +67,22 @@ const AuthCallback: React.FC = () => {
           return;
         }
 
+        // A profile row exists (role set by the signup trigger) but the
+        // email-confirmation flow skips the in-orchestrator name step, so the
+        // row may have no name yet. Send those users to finish their profile.
+        try {
+          const profile = await apiRequest<ApiProfile>('/api/profiles/me');
+          if (cancelled) return;
+          if (!profile.first_name?.trim() || !profile.last_name?.trim()) {
+            navigate('/complete-profile', { replace: true });
+            return;
+          }
+        } catch {
+          // Profile fetch failed — fall through to the app rather than block.
+        }
+
         navigate('/app/home', { replace: true });
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error('[AuthCallback] loginCheck failed:', err);
         // Signed in but backend unreachable — send them to the app
         // anyway; Home.tsx will surface the backend status.
@@ -82,9 +95,11 @@ const AuthCallback: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (cancelled) return;
-        if (event === 'SIGNED_IN' && session) {
+        // SIGNED_IN fires for OAuth logins.
+        // USER_UPDATED fires after email confirmation links are clicked.
+        if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session) {
           subscription.unsubscribe();
-          routeUser(session.access_token);
+          routeUser();
         }
       },
     );
@@ -95,7 +110,7 @@ const AuthCallback: React.FC = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (cancelled || !session) return;
       subscription.unsubscribe();
-      routeUser(session.access_token);
+      routeUser();
     });
 
     // Safety net: redirect to login if nothing resolves within 15 s.

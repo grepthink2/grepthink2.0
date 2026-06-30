@@ -1,7 +1,11 @@
 import React from 'react';
-import { UserMinus, Mail } from 'lucide-react';
+import { UserMinus, Mail, Loader2 } from 'lucide-react';
 import type { UiStudent, ClassStatus, GrepthinkStatus } from './rosterTypes';
+import { countableStudents } from './rosterTypes';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
+import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
+import SortableHeader from '@features/app/components/shared/SortableHeader';
+import { useTableSort, type SortAccessors } from '@features/app/utils/useTableSort';
 import './RosterList.scss';
 
 interface RosterListProps {
@@ -11,6 +15,7 @@ interface RosterListProps {
   showActions?: boolean;
   onInvite?: (student: UiStudent) => void;
   onRemove?: (student: UiStudent) => void;
+  invitingEmails?: Set<string>;
 }
 
 const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
@@ -25,6 +30,16 @@ const GREPTHINK_STATUS_LABELS: Record<GrepthinkStatus, string> = {
   not_registered: 'Not Registered',
 };
 
+type RosterSortKey = 'name' | 'email' | 'classStatus' | 'grepthinkStatus' | 'projects';
+
+const SORT_ACCESSORS: SortAccessors<UiStudent, RosterSortKey> = {
+  name: (s) => s.name,
+  email: (s) => s.email,
+  classStatus: (s) => CLASS_STATUS_LABELS[s.classStatus],
+  grepthinkStatus: (s) => GREPTHINK_STATUS_LABELS[s.grepthinkStatus],
+  projects: (s) => s.projects.join(', '),
+};
+
 const RosterList: React.FC<RosterListProps> = ({
   students,
   loading,
@@ -32,14 +47,24 @@ const RosterList: React.FC<RosterListProps> = ({
   showActions = false,
   onInvite,
   onRemove,
+  invitingEmails = new Set(),
 }) => {
+  const { sortedRows: sortedStudents, sort, toggleSort } = useTableSort<UiStudent, RosterSortKey>(
+    students,
+    SORT_ACCESSORS,
+    { key: 'name', direction: 'asc' },
+  );
+
+  // TAs and dropped students don't count toward the roster total.
+  const studentCount = countableStudents(students).filter((s) => s.classStatus !== 'dropped').length;
+
   if (loading) {
     const headers = ['Name', 'Email', 'Class Status', 'GrepThink Status', 'Projects'];
     if (showActions) headers.push('Actions');
     return (
       <TableSkeleton
         block="roster-list"
-        title="Student Count"
+        title="Roster Count"
         headers={headers}
         rows={10}
         cellWidths={['70%', '85%', '90px', '90px', '50%', '70px']}
@@ -51,7 +76,9 @@ const RosterList: React.FC<RosterListProps> = ({
     return (
       <div className="roster-list">
         <div className="roster-list__header">
-          <h2 className="roster-list__title">Student Count</h2>
+          <h2 className="roster-list__title">
+            <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
+          </h2>
         </div>
         <div className="roster-list__table-card">
           <div className="roster-list__table-wrapper">
@@ -65,8 +92,10 @@ const RosterList: React.FC<RosterListProps> = ({
   return (
     <div className="roster-list">
       <div className="roster-list__header">
-        <h2 className="roster-list__title">Student Count</h2>
-        <span className="roster-list__count-badge">{students.length}</span>
+        <h2 className="roster-list__title">
+          <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
+        </h2>
+        <span className="roster-list__count-badge">{studentCount}</span>
       </div>
 
       {/* Desktop table */}
@@ -82,16 +111,16 @@ const RosterList: React.FC<RosterListProps> = ({
             >
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Class Status</th>
-                  <th>GrepThink Status</th>
-                  <th>Projects</th>
+                  <SortableHeader label="Name" sortKey="name" currentSort={sort} onSort={toggleSort} />
+                  <SortableHeader label="Email" sortKey="email" currentSort={sort} onSort={toggleSort} />
+                  <SortableHeader label="Class Status" sortKey="classStatus" currentSort={sort} onSort={toggleSort} />
+                  <SortableHeader label="GrepThink Status" sortKey="grepthinkStatus" currentSort={sort} onSort={toggleSort} />
+                  <SortableHeader label="Projects" sortKey="projects" currentSort={sort} onSort={toggleSort} />
                   {showActions && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
-                {students.map((student) => (
+                {sortedStudents.map((student) => (
                   <tr key={`${student.id}-${student.email}`}>
                     <td className="roster-list__td-name">
                       {student.name}
@@ -130,8 +159,18 @@ const RosterList: React.FC<RosterListProps> = ({
                             <UserMinus size={13} /> Remove
                           </button>
                         ) : (
-                          <button className="roster-list__action-btn roster-list__action-btn--invite" onClick={() => onInvite?.(student)} type="button">
-                            <Mail size={13} /> Invite
+                          <button
+                            className="roster-list__action-btn roster-list__action-btn--invite"
+                            onClick={() => onInvite?.(student)}
+                            type="button"
+                            disabled={invitingEmails.has(student.email)}
+                          >
+                            {invitingEmails.has(student.email) ? (
+                              <Loader2 size={13} className="roster-list__spinner" />
+                            ) : (
+                              <Mail size={13} />
+                            )}
+                            {invitingEmails.has(student.email) ? 'Sending…' : 'Invite'}
                           </button>
                         )}
                       </td>
@@ -149,7 +188,7 @@ const RosterList: React.FC<RosterListProps> = ({
         {students.length === 0 ? (
           <div className="roster-list__empty-state">No students match the current filter.</div>
         ) : (
-          students.map((student) => (
+          sortedStudents.map((student) => (
             <div key={`mobile-${student.id}-${student.email}`} className="roster-list__mobile-card">
               <div className="roster-list__mobile-card-top">
                 <div className="roster-list__mobile-card-info">
@@ -184,8 +223,18 @@ const RosterList: React.FC<RosterListProps> = ({
                       <UserMinus size={13} /> Remove
                     </button>
                   ) : (
-                    <button className="roster-list__action-btn roster-list__action-btn--invite" onClick={() => onInvite?.(student)} type="button">
-                      <Mail size={13} /> Invite
+                    <button
+                      className="roster-list__action-btn roster-list__action-btn--invite"
+                      onClick={() => onInvite?.(student)}
+                      type="button"
+                      disabled={invitingEmails.has(student.email)}
+                    >
+                      {invitingEmails.has(student.email) ? (
+                        <Loader2 size={13} className="roster-list__spinner" />
+                      ) : (
+                        <Mail size={13} />
+                      )}
+                      {invitingEmails.has(student.email) ? 'Sending…' : 'Invite'}
                     </button>
                   )}
                 </div>

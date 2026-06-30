@@ -3,7 +3,9 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import './ContactPage.scss';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+// Dev: relative path so the Vite proxy routes /api to the backend.
+// Prod: VITE_API_URL, falling back to same-origin (never localhost).
+const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || '');
 
 type Status = 'idle' | 'sending' | 'success' | 'error';
 

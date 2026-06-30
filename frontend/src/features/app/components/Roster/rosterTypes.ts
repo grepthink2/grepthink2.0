@@ -44,10 +44,20 @@ export function mapApiRosterStudent(student: ApiRosterStudent): UiStudent {
   };
 }
 
-/** Not on GrepThink yet and not dropped from the official roster. */
+/**
+ * Students that count toward class statistics. TAs are overseers, not part of
+ * the student population, so they're excluded from every count and chart.
+ */
+export function countableStudents(students: UiStudent[]): UiStudent[] {
+  return students.filter((s) => !s.isTa);
+}
+
+/** Not on GrepThink yet and not dropped from the official roster, excluding TAs. */
 export function isBulkInviteCandidate(student: UiStudent): boolean {
   return (
-    student.grepthinkStatus === 'not_registered' && student.classStatus !== 'dropped'
+    !student.isTa &&
+    student.grepthinkStatus === 'not_registered' &&
+    student.classStatus !== 'dropped'
   );
 }
 

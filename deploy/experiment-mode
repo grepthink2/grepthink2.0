@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+#
+# experiment-mode — throttle the GrepThink (+ slug-mcp) web tier during zeus
+# faults-lab load-gen runs, then restore it.
+#
+# Mechanism: transient cgroup-v2 CPU properties via `systemctl set-property
+# --runtime`. "--runtime" keeps the clamp in /run, so it auto-clears on
+# reboot; "off" assigns empty values, reverting each unit to its baked-in
+# Layer-1 defaults (CPUWeight/IOWeight/MemoryHigh/MemoryMax in the unit file).
+# This toggle touches only CPU — the resource zeus contends for. Memory stays
+# governed by the unit at all times, so there's no risk of a tight transient
+# cap OOM-killing a worker mid-experiment.
+#
+# Install:  sudo install -m 0755 deploy/experiment-mode /usr/local/bin/experiment-mode
+# Usage:    experiment-mode on | off | status
+#
+# Tunables (env overrides) — on this 4-vCPU box, confine the web tier to
+# core 3 so zeus owns cores 0-2:
+#   WEB_CPUS=3   WEB_QUOTA=10%   ZEUS_CPUS=0-2
+#
+# nginx is intentionally NOT throttled: it's a shared service (also fronts
+# slug-mcp/zeus/healthz) and its CPU cost for a low-traffic SPA is negligible.
+# If you want full isolation during a run, add manually:
+#   sudo systemctl set-property --runtime nginx.service AllowedCPUs=3
+set -euo pipefail
+
+SERVICES=(grepthink-api.service slug-mcp.service)
+WEB_CPUS="${WEB_CPUS:-3}"
+WEB_QUOTA="${WEB_QUOTA:-10%}"
+ZEUS_CPUS="${ZEUS_CPUS:-0-2}"
+
+SUDO=()
+[ "$(id -u)" -ne 0 ] && SUDO=(sudo)
+
+installed() { systemctl cat "$1" >/dev/null 2>&1; }
+
+case "${1:-}" in
+  on)
+    for s in "${SERVICES[@]}"; do
+      installed "$s" || { echo "skip $s (not installed)"; continue; }
+      "${SUDO[@]}" systemctl set-property --runtime "$s" \
+        CPUQuota="$WEB_QUOTA" AllowedCPUs="$WEB_CPUS"
+      echo "throttled $s -> CPUQuota=$WEB_QUOTA AllowedCPUs=$WEB_CPUS"
+    done
+    echo
+    echo "Cores $ZEUS_CPUS are free for zeus. Launch it pinned + prioritized, e.g.:"
+    echo "  systemd-run --scope -p AllowedCPUs=$ZEUS_CPUS -p CPUWeight=10000 /zeus <args>"
+    echo "  # or simply:  taskset -c $ZEUS_CPUS /zeus <args>"
+    ;;
+  off)
+    for s in "${SERVICES[@]}"; do
+      installed "$s" || { echo "skip $s (not installed)"; continue; }
+      # Empty value drops the runtime override, reverting to the unit default.
+      "${SUDO[@]}" systemctl set-property --runtime "$s" CPUQuota= AllowedCPUs=
+      echo "restored $s to unit defaults"
+    done
+    ;;
+  status)
+    for s in "${SERVICES[@]}"; do
+      installed "$s" || { echo "$s: not installed"; continue; }
+      printf '== %s ==\n' "$s"
+      systemctl show "$s" \
+        -p CPUWeight -p CPUQuotaPerSecUSec -p AllowedCPUs \
+        -p IOWeight -p MemoryHigh -p MemoryMax
+    done
+    ;;
+  *)
+    echo "usage: $(basename "$0") on|off|status" >&2
+    exit 2
+    ;;
+esac

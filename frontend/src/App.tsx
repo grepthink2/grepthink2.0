@@ -14,8 +14,10 @@ import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
 import Login from '@features/auth/pages/Login';
 import AuthCallback from '@features/auth/pages/AuthCallback';
+import AuthConfirm from '@features/auth/pages/AuthConfirm';
 import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
 import RoleSelection from '@features/auth/pages/RoleSelection';
+import CompleteProfile from '@features/auth/pages/CompleteProfile';
 import ForgetPassword from '@features/auth/pages/ForgotPassword';
 import VerifyResetPassword from '@features/auth/pages/VerifyResetPassword';
 import ResetPassword from '@features/auth/pages/ResetPassword';
@@ -25,6 +27,7 @@ import Roster from '@features/app/pages/Roster';
 import Modules from '@features/app/pages/Modules';
 import TAManagement from '@features/app/pages/TAManagement';
 import TAReview from '@features/app/pages/TAReview';
+import TAMeetings from '@features/app/pages/TAMeetings';
 import TSRViewPage from '@features/app/pages/TSRViewPage';
 import FeedbackViewPage from '@features/app/pages/FeedbackViewPage';
 import Dashboard from '@features/app/pages/Dashboard';
@@ -37,10 +40,10 @@ import Assignments from '@features/app/pages/Assignments';
 import AssignmentDetail from '@features/app/pages/AssignmentDetail';
 import BrowseProjects from '@features/app/pages/BrowseProjects';
 import MyProject from '@features/app/pages/MyProject';
-import TestProjects from '@pages/TestProjects';
 import Messages from '@features/messages/pages/Messages';
 import { ConversationsProvider } from '@features/messages/hooks/useConversations';
 import { NotificationsProvider } from '@features/notifications/hooks/useNotifications';
+import { PreviewProvider } from '@/lib/previewContext';
 function App() {
   return (
     <Router>
@@ -51,9 +54,11 @@ function App() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/auth/confirm" element={<AuthConfirm />} />
         <Route path="/studentsignup" element={<SignUpOrchestrator />} />
         <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
         <Route path="/select" element={<RoleSelection />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/forgot-password" element={<ForgetPassword />} />
         <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -64,11 +69,13 @@ function App() {
             on /app/messages. */}
         <Route path="/app" element={<ProtectedRoute />}>
           <Route element={
-            <ConversationsProvider>
-              <NotificationsProvider>
-                <AppView />
-              </NotificationsProvider>
-            </ConversationsProvider>
+            <PreviewProvider>
+              <ConversationsProvider>
+                <NotificationsProvider>
+                  <AppView />
+                </NotificationsProvider>
+              </ConversationsProvider>
+            </PreviewProvider>
           }>
             <Route index element={<Navigate to="/app/home" replace />} />
             <Route path="home" element={<Home />} />
@@ -86,6 +93,7 @@ function App() {
             <Route path="modules/tsr/:assignmentId" element={<TSRViewPage />} />
             <Route path="modules/feedback/:assignmentId" element={<FeedbackViewPage />} />
             <Route path="ta-management" element={<TAManagement />} />
+            <Route path="ta-meetings" element={<TAMeetings />} />
             <Route path="ta-review" element={<TAReview />} />
             <Route path="ta-review/:assignmentId" element={<TAReview />} />
             <Route path="create-project" element={<CreateProject />} />
@@ -101,9 +109,6 @@ function App() {
         </Route>
 
         <Route path="/classes" element={<ClassManagement />} />
-        <Route path="/test-projects" element={<Navigate to="/test-115a-projects" replace />} />
-        <Route path="/test-115a-projects" element={<TestProjects />} />
-        <Route path="/test-115b-projects" element={<TestProjects />} />
       </Routes>
     </Router>
   );

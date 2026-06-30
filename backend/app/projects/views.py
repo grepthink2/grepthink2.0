@@ -6,77 +6,10 @@ from uuid import UUID
 from typing import Optional
 from fastapi import HTTPException, Depends, Query
 from app.dependencies import require_user
-from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, ManageProjectMemberRequest, AssignRoleRequest
+from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, DismissJoinRequestRequest, ManageProjectMemberRequest, AssignRoleRequest
 from app.projects import controller
 
 logger = logging.getLogger(__name__)
-
-
-def test_create_project(data: CreateProjectRequest, user_id: str = Depends(require_user)):
-    """Test endpoint for project creation without teacher-only enforcement."""
-    # WARN: This endpoint bypasses ALL role checks. It's registered on the public
-    # router. Anyone with a valid JWT can create projects in any class.
-    # See CODE_REVIEW.md #7. Remove before production.
-    logger.warning(
-        "test_create_project called — this endpoint bypasses role checks | "
-        "user_id=%s class_id=%s name=%r",
-        user_id,
-        getattr(data, 'class_id', None),
-        getattr(data, 'name', None),
-    )
-
-    try:
-        from app.database.client import service_client, supabase as sb_client
-        client = service_client if service_client else sb_client
-
-        # Verify class exists
-        class_result = client.table('classes').select('id').eq('id', str(data.class_id)).execute()
-        if not class_result.data:
-            raise HTTPException(status_code=404, detail="Class not found")
-
-        project_data = {
-            "class_id": str(data.class_id),
-            "name": data.name,
-            "description": data.description,
-            "created_by": user_id,
-            "team_size": data.team_size,
-            "num_members": 0,
-        }
-        if data.looking_for_roles is not None:
-            project_data["looking_for_roles"] = data.looking_for_roles
-        if data.skills is not None:
-            project_data["skills"] = data.skills
-        if data.sponsor_name is not None:
-            project_data["sponsor_name"] = data.sponsor_name
-        if data.sponsor_company is not None:
-            project_data["sponsor_company"] = data.sponsor_company
-        if data.sponsor_email is not None:
-            project_data["sponsor_email"] = data.sponsor_email
-        if data.sponsor_website is not None:
-            project_data["sponsor_website"] = data.sponsor_website
-        if data.sponsor_description is not None:
-            project_data["sponsor_description"] = data.sponsor_description
-
-        result = client.table('projects').insert(project_data).execute()
-        if not result.data:
-            raise HTTPException(status_code=500, detail="Failed to create project")
-        logger.info(
-            "Test project created (no role check) | project_id=%s class_id=%s",
-            result.data[0].get('id'), data.class_id,
-        )
-        return {"message": "Test project created (no role check)", "project": result.data[0]}
-    except HTTPException:
-        raise
-    except Exception as e:
-        err = str(e)
-        logger.exception("test_create_project failed | class_id=%s", data.class_id)
-        if "sponsor_" in err and ("column" in err.lower() or "schema" in err.lower()):
-            raise HTTPException(
-                status_code=500,
-                detail="Sponsor columns are missing in the projects table. Run the sponsor migration first."
-            )
-        raise HTTPException(status_code=500, detail="Failed to create test project")
-
 
 
 def create_project(data: CreateProjectRequest, user_id: str = Depends(require_user)):
@@ -150,7 +83,7 @@ def update_project(
 
 
 def request_join(data: JoinProjectRequest, user_id: str = Depends(require_user)):
-    return controller.request_to_join_project(data.project_id, user_id)
+    return controller.request_to_join_project(data.project_id, user_id, data.message)
 
 
 def accept_request(data: AcceptJoinRequestRequest, user_id: str = Depends(require_user)):
@@ -159,6 +92,24 @@ def accept_request(data: AcceptJoinRequestRequest, user_id: str = Depends(requir
 
 def reject_request(data: AcceptJoinRequestRequest, user_id: str = Depends(require_user)):
     return controller.reject_join_request(data.request_id, user_id)
+
+
+def dismiss_request(data: DismissJoinRequestRequest, user_id: str = Depends(require_user)):
+    return controller.dismiss_my_join_request(data.request_id, user_id)
+
+
+def cancel_request(data: DismissJoinRequestRequest, user_id: str = Depends(require_user)):
+    return controller.cancel_my_join_request(data.request_id, user_id)
+
+
+def cancel_invite(data: DismissJoinRequestRequest, user_id: str = Depends(require_user)):
+    return controller.cancel_team_invite(data.request_id, user_id)
+
+
+def get_project_pending_invites(project_id: UUID, user_id: str = Depends(require_user)):
+    """Pending team invites sent FROM this project (invited_by set), for the project owner's view."""
+    invites = controller.get_project_pending_invites(project_id, user_id)
+    return {"invites": invites}
 
 
 def get_project_members(project_id: UUID, user_id: str = Depends(require_user)):
@@ -245,6 +196,19 @@ def assign_admin(
 ):
     """Assign the admin role to a project member (owner, product owner, admin, or instructor only)."""
     return controller.assign_admin(
+        project_id=project_id,
+        requester_id=user_id,
+        target_user_id=str(data.user_id),
+    )
+
+
+def remove_product_owner(
+    project_id: UUID,
+    data: AssignRoleRequest,
+    user_id: str = Depends(require_user),
+):
+    """Demote the product owner back to member (product owner, admin, or instructor only)."""
+    return controller.remove_product_owner(
         project_id=project_id,
         requester_id=user_id,
         target_user_id=str(data.user_id),

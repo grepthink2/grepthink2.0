@@ -4,6 +4,7 @@ import { formatAssignmentDueDate } from '@/lib/dateUtils';
 import { useNavigate } from 'react-router-dom';
 import { useClass } from '@/lib/classContext';
 import { api, type ApiAssignment } from '@/lib/api';
+import { usePreview } from '@/lib/previewContext';
 import StudentAssignmentsTable, {
   type StudentAssignment,
   type StudentAssignmentAction,
@@ -59,6 +60,7 @@ function toStudentRow(
     id: a.id,
     name: a.Title,
     dueDate: formatAssignmentDueDate(a.close_date),
+    dueDateIso: a.close_date,
     projectName: opts.projectName,
     projectId: opts.projectId,
     status,
@@ -71,6 +73,7 @@ function toStudentRow(
 
 const Assignments: React.FC = () => {
   const { selectedClass } = useClass();
+  const { isPreviewing } = usePreview();
   const navigate = useNavigate();
   const [rows, setRows] = useState<StudentAssignment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -88,6 +91,7 @@ const Assignments: React.FC = () => {
         const today = format(new Date(), 'yyyy-MM-dd');
 
         const { assignments } = await api.getAssignments(selectedClass.id);
+        assignments.sort((a, b) => a.close_date.localeCompare(b.close_date));
         const { projects: myAllProjects } = await api.getProjects();
         const { projects: classProjects } = await api.getProjects(selectedClass.id);
 
@@ -105,11 +109,12 @@ const Assignments: React.FC = () => {
           const result = assignments.map((a) => {
             const isInterestForm = a.assignment_type === 'interest_form';
             const isFeedback = a.assignment_type === 'feedback';
+            const isTsr = !isInterestForm && !isFeedback;
             return toStudentRow(a, today, {
-              projectName: '—',
+              projectName: isPreviewing && isTsr ? 'Preview Mode' : '—',
               type: isFeedback ? 'feedback' : isInterestForm ? 'interest_form' : 'tsrs',
               isSubmitted: false,
-              canStart: isFeedback || isInterestForm,
+              canStart: isFeedback || isInterestForm || (isPreviewing && isTsr),
             });
           });
           setRows(result);
@@ -267,6 +272,7 @@ const Assignments: React.FC = () => {
     <div className="assignments">
       <div className="assignments__content">
         <StudentAssignmentsTable
+          key={selectedClass?.id}
           assignments={rows}
           onStart={handleOpen}
           onEditSubmission={handleOpen}

@@ -8,6 +8,7 @@ import {
   FolderOpen,
   Loader2,
   MessageCircle,
+  X,
 } from 'lucide-react';
 import {
   differenceInCalendarDays,
@@ -273,15 +274,19 @@ interface OutgoingJoinRequestRow {
   memberCount: number;
   sponsorCompany?: string;
   requestedAt?: string;
+  status?: string;
+  imageUrl?: string | null;
 }
 
 interface IncomingJoinRequestRow {
   requestId: string;
   projectId: string;
   projectName: string;
+  kind: 'join_request' | 'team_invite';
   requesterEmail?: string;
   requestedAt?: string;
   memberCount: number;
+  message?: string | null;
 }
 
 function formatAwaitingMeta(iso: string | undefined): string | null {
@@ -325,6 +330,7 @@ const StudentHomeDashboard: React.FC = () => {
   const [incomingRequestError, setIncomingRequestError] = useState<string | null>(null);
   const [outgoingRequests, setOutgoingRequests] = useState<OutgoingJoinRequestRow[]>([]);
   const [outgoingLoading, setOutgoingLoading] = useState(false);
+  const [dismissingRequestId, setDismissingRequestId] = useState<string | null>(null);
   const [requestsModalOpen, setRequestsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -348,8 +354,11 @@ const StudentHomeDashboard: React.FC = () => {
     }
     setIncomingLoading(true);
     try {
-      const { projects: myAllProjects } = await api.getProjects();
-      const { projects: classProjects } = await api.getProjects(classId);
+      const [{ projects: myAllProjects }, { projects: classProjects }, invitesRes] = await Promise.all([
+        api.getProjects(),
+        api.getProjects(classId),
+        api.getPendingTeamInvites(classId),
+      ]);
       const myIds = new Set(myAllProjects.map((p) => p.id));
       const mineInClass = classProjects.filter((p) => myIds.has(p.id));
       const reviewable = mineInClass.filter((p) => canReviewJoinRequests(p.user_role));
@@ -363,9 +372,11 @@ const StudentHomeDashboard: React.FC = () => {
                 requestId: r.request_id,
                 projectId: proj.id,
                 projectName: proj.name,
+                kind: 'join_request',
                 requesterEmail: r.email,
                 requestedAt: r.requested_at,
                 memberCount: proj.member_count ?? 0,
+                message: r.message,
               }),
             );
           } catch {
@@ -373,7 +384,18 @@ const StudentHomeDashboard: React.FC = () => {
           }
         }),
       );
-      const collected = chunks.flat();
+
+      const teamInvites: IncomingJoinRequestRow[] = (invitesRes.requests ?? []).map((r) => ({
+        requestId: r.request_id,
+        projectId: r.project_id ?? '',
+        projectName: r.project_name ?? 'Project',
+        kind: 'team_invite',
+        requesterEmail: r.email,
+        requestedAt: r.requested_at,
+        memberCount: r.member_count ?? 0,
+      }));
+
+      const collected = [...chunks.flat(), ...teamInvites];
       collected.sort((a, b) => {
         const ta = a.requestedAt ? parseISO(a.requestedAt).getTime() : 0;
         const tb = b.requestedAt ? parseISO(b.requestedAt).getTime() : 0;
@@ -407,6 +429,8 @@ const StudentHomeDashboard: React.FC = () => {
             memberCount: r.member_count ?? 0,
             sponsorCompany: r.sponsor_company,
             requestedAt: r.requested_at,
+            status: r.status,
+            imageUrl: r.image_url,
           }),
         ),
       );
@@ -639,6 +663,21 @@ const StudentHomeDashboard: React.FC = () => {
     [refreshIncomingRequests],
   );
 
+  const handleDismissOutgoing = useCallback(
+    async (row: OutgoingJoinRequestRow) => {
+      setDismissingRequestId(row.requestId);
+      try {
+        await api.dismissJoinRequest(row.requestId);
+        setOutgoingRequests((prev) => prev.filter((r) => r.requestId !== row.requestId));
+      } catch {
+        await refreshOutgoingRequests();
+      } finally {
+        setDismissingRequestId(null);
+      }
+    },
+    [refreshOutgoingRequests],
+  );
+
   return (
     <div className="student-home">
       <div className="student-home__grid">
@@ -787,8 +826,15 @@ const StudentHomeDashboard: React.FC = () => {
                         <div className="student-home__request-main">
                           <h3 className="student-home__request-title">{row.projectName}</h3>
                           <p className="student-home__request-sub">
-                            {`${who} wants to join this project`}
+                            {row.kind === 'team_invite'
+                              ? `${who} invited you to join this project`
+                              : `${who} wants to join this project`}
                           </p>
+                          {row.message ? (
+                            <p className="student-home__request-message">
+                              &ldquo;{row.message}&rdquo;
+                            </p>
+                          ) : null}
                           <div className="student-home__badges">
                             <span className="student-home__badge">
                               {row.memberCount} {row.memberCount === 1 ? 'Member' : 'Members'}
@@ -849,20 +895,32 @@ const StudentHomeDashboard: React.FC = () => {
                   );
                 })}
               {outgoingRequests.map((req) => {
+                const denied = req.status === 'rejected';
                 const awaitingMeta = formatAwaitingMeta(req.requestedAt);
+                const dismissing = dismissingRequestId === req.requestId;
                 return (
                   <div key={req.requestId} className="student-home__request-card">
                     <div className="student-home__request-top">
-                      <div
-                        className="student-home__avatar"
-                        style={{ backgroundColor: avatarBgFromEmail(req.projectName) }}
-                      >
-                        {req.projectName.trim()[0]?.toUpperCase() ?? '?'}
-                      </div>
+                      {req.imageUrl ? (
+                        <img
+                          src={req.imageUrl}
+                          alt={req.projectName}
+                          className="student-home__avatar student-home__avatar--thumbnail"
+                        />
+                      ) : (
+                        <div
+                          className="student-home__avatar"
+                          style={{ backgroundColor: avatarBgFromEmail(req.projectName) }}
+                        >
+                          {req.projectName.trim()[0]?.toUpperCase() ?? '?'}
+                        </div>
+                      )}
                       <div className="student-home__request-main">
                         <h3 className="student-home__request-title">{req.projectName}</h3>
                         <p className="student-home__request-sub">
-                          {req.courseLabel ?? 'Pending project join request'}
+                          {denied
+                            ? 'Your request to join this project was denied'
+                            : req.courseLabel ?? 'Pending project join request'}
                         </p>
                         <div className="student-home__badges">
                           <span className="student-home__badge">
@@ -871,11 +929,43 @@ const StudentHomeDashboard: React.FC = () => {
                           {req.sponsorCompany ? (
                             <span className="student-home__badge">Company Sponsored</span>
                           ) : null}
-                          <span className="student-home__badge student-home__badge--purple">
-                            Outgoing
-                          </span>
+                          {denied ? (
+                            <span className="student-home__badge student-home__badge--denied">
+                              Denied
+                            </span>
+                          ) : (
+                            <span className="student-home__badge student-home__badge--purple">
+                              Outgoing
+                            </span>
+                          )}
                         </div>
-                        {awaitingMeta ? (
+                        {denied ? (
+                          <div className="student-home__request-actions">
+                            <button
+                              type="button"
+                              className="student-home__btn-deny"
+                              disabled={dismissing}
+                              aria-busy={dismissing}
+                              onClick={() => void handleDismissOutgoing(req)}
+                            >
+                              {dismissing ? (
+                                <>
+                                  <Loader2
+                                    className="student-home__btn-spinner"
+                                    size={16}
+                                    aria-hidden
+                                  />
+                                  Dismissing…
+                                </>
+                              ) : (
+                                <>
+                                  <X size={16} aria-hidden />
+                                  Dismiss
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        ) : awaitingMeta ? (
                           <div className="student-home__awaiting">
                             <Clock size={14} aria-hidden />
                             {awaitingMeta}

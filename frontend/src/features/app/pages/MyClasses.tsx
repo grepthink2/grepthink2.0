@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo, type KeyboardEvent } from 'react';
-import { ArrowRight, Check, Copy, GraduationCap, Pencil, PlusCircle } from 'lucide-react';
+import { ArrowRight, Check, Copy, GraduationCap, LogOut, Pencil, PlusCircle } from 'lucide-react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import { useClass, type Class } from '@/lib/classContext';
 import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useAuth } from '@/lib/auth';
+import { api } from '@/lib/api';
 import CreateClassModal from '@features/app/components/Classes/CreateClassModal';
 import ClassSettingsModal from '@features/app/components/Classes/ClassSettingsModal';
+import ConfirmModal from '@features/app/components/Overlays/ConfirmModal';
 import { pickClassBannerPreset, presetToCssBackground } from '@/lib/classBannerGradients';
 import './MyClasses.scss';
 
@@ -70,6 +72,7 @@ const MyClasses: React.FC = () => {
     const [courseFilter, setCourseFilter] = useState<CourseFilter>('all');
     const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
     const [settingsClass, setSettingsClass] = useState<Class | null>(null);
+    const [leavingClass, setLeavingClass] = useState<Class | null>(null);
 
     const isInstructor = role === 'instructor';
 
@@ -121,6 +124,8 @@ const MyClasses: React.FC = () => {
     };
 
     const handleStudentCardKeyDown = (e: KeyboardEvent<HTMLDivElement>, cls: Class) => {
+        // Ignore keys originating from inner controls (e.g. the leave button).
+        if (e.target !== e.currentTarget) return;
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             handleStudentCardActivate(cls);
@@ -129,6 +134,20 @@ const MyClasses: React.FC = () => {
 
     const handleOpenSettings = (cls: Class) => {
         setSettingsClass(cls);
+    };
+
+    const handleConfirmLeave = async () => {
+        if (!leavingClass) return;
+        const cls = leavingClass;
+        setLeavingClass(null);
+        try {
+            await api.leaveClass(cls.id);
+            await refreshClasses(false);
+            setSuccessMessage(`You have left ${cls.name}.`);
+        } catch (error) {
+            console.error('Failed to leave class:', error);
+            setSuccessMessage(`Could not leave ${cls.name}. Please try again.`);
+        }
     };
 
     if (loading) {
@@ -293,7 +312,20 @@ const MyClasses: React.FC = () => {
                                     <div
                                         className="my-classes-card-hero my-classes-card-hero--student"
                                         style={classHeroStyle(cls)}
-                                    />
+                                    >
+                                        <button
+                                            type="button"
+                                            className="my-classes-card-hero-leave"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setLeavingClass(cls);
+                                            }}
+                                            aria-label={`Leave ${cls.name}`}
+                                            data-tooltip="Leave Class"
+                                        >
+                                            <LogOut size={18} strokeWidth={2} />
+                                        </button>
+                                    </div>
                                     <div className="my-classes-card-body my-classes-card-body--student">
                                         <div className="my-classes-card-title">{cls.name}</div>
                                         {cls.description && (
@@ -325,6 +357,18 @@ const MyClasses: React.FC = () => {
                         onClose={() => setSettingsClass(null)}
                     />
                 </>
+            )}
+
+            {!isInstructor && (
+                <ConfirmModal
+                    isOpen={leavingClass !== null}
+                    onClose={() => setLeavingClass(null)}
+                    onConfirm={() => void handleConfirmLeave()}
+                    title={leavingClass ? `Leave ${leavingClass.name}?` : 'Leave class?'}
+                    message="You'll be removed from this class, along with any project you're assigned to in it and any pending project requests. You can rejoin later with the course code."
+                    confirmText="Leave class"
+                    cancelText="Cancel"
+                />
             )}
         </div>
     );

@@ -6,7 +6,7 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, api } from '@/lib/api';
 // import EduVerifyModal from '@features/app/components/Settings/EduVerifyModal';
 import './AccountDetails.scss';
 
@@ -63,18 +63,11 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
 
     try {
       if (needsRosterEmail && !primaryIsEdu) {
-        const checkRes = await fetch('/api/check-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: trimmedEdu }),
-        });
-        if (checkRes.ok) {
-          const checkData = await checkRes.json();
-          if (!checkData.available) {
-            setError('This .edu email is already linked to another account.');
-            setIsLoading(false);
-            return;
-          }
+        const checkData = await api.checkEmail(trimmedEdu);
+        if (checkData && !checkData.available) {
+          setError('This .edu email is already linked to another account.');
+          setIsLoading(false);
+          return;
         }
       }
 

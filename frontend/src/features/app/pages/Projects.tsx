@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
-import type { ApiProject, ApiStudent } from '@/lib/api';
+import type { ApiProject, ApiRosterStudent } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import AddProjectButton from '@features/app/components/Project/AddProjectButton';
 import AssignProjectsButton from '@features/app/components/Project/AssignProjectsButton';
@@ -10,25 +10,9 @@ import ProjectList, {
   type ProjectSentiment,
 } from '@features/app/components/Project/ProjectList';
 import ProjectMembershipChart from '@features/app/components/Stats/ProjectMembershipChart';
-import ProjectHealth, {
-  type ProjectHealthItem,
-  type HealthStatus,
-} from '@features/app/components/Stats/ProjectHealth';
 import './Projects.scss';
 
 const UNASSIGNED = 'Unassigned';
-
-const SENTIMENT_TO_HEALTH: Record<ProjectSentiment, HealthStatus> = {
-  positive: 'excellent',
-  neutral: 'warning',
-  negative: 'poor',
-};
-
-const HEALTH_DESCRIPTION: Record<ProjectSentiment, string> = {
-  positive: 'Team sentiment is positive',
-  neutral: 'Team sentiment is neutral',
-  negative: 'Team sentiment is negative',
-};
 
 function normalizeSentiment(raw: string | null | undefined): ProjectSentiment {
   if (raw === 'positive' || raw === 'neutral' || raw === 'negative') {
@@ -50,60 +34,29 @@ function mapApiProjectToUi(project: ApiProject): UiProject {
   };
 }
 
-function buildProjectHealth(apiProjects: ApiProject[]): ProjectHealthItem[] {
-  const severityOrder: Record<ProjectSentiment, number> = {
-    negative: 0,
-    neutral: 1,
-    positive: 2,
-  };
-
-  return apiProjects
-    .filter((p) => p.sentiment)
-    .map((p) => {
-      const sentiment = normalizeSentiment(p.sentiment);
-      return {
-        order: severityOrder[sentiment],
-        item: {
-          id: p.id,
-          name: p.name,
-          health: SENTIMENT_TO_HEALTH[sentiment],
-          description: HEALTH_DESCRIPTION[sentiment],
-          via: 'Team Sentiment',
-        },
-      };
-    })
-    .sort((a, b) => a.order - b.order)
-    .map(({ item }) => item);
-}
-
-function countProjectMembership(students: ApiStudent[]) {
-  // TAs are overseers, not assignable team members, so they must not be
-  // counted as in/not-in a project.
-  const enrolledStudents = students.filter(
-    (s) => s.role !== 'instructor' && s.enrollment_role !== 'ta',
+function countProjectMembership(students: ApiRosterStudent[]) {
+  // TAs and dropped students are excluded from project assignment counts.
+  const countable = students.filter(
+    (s) => s.enrollment_role !== 'ta' && s.class_status !== 'dropped',
   );
-  const inProject = enrolledStudents.filter((s) => s.project_id).length;
-  return {
-    inProject,
-    notInProject: enrolledStudents.length - inProject,
-  };
+  const inProject = countable.filter((s) => s.projects.length > 0).length;
+  const registeredNoProject = countable.filter(
+    (s) => s.projects.length === 0 && s.grepthink_status === 'registered',
+  ).length;
+  const notRegistered = countable.filter((s) => s.grepthink_status === 'not_registered').length;
+  return { inProject, registeredNoProject, notRegistered };
 }
 
 const Projects: React.FC = () => {
   const { selectedClass } = useClass();
   const navigate = useNavigate();
   const [apiProjects, setApiProjects] = useState<ApiProject[]>([]);
-  const [classStudents, setClassStudents] = useState<ApiStudent[]>([]);
+  const [classStudents, setClassStudents] = useState<ApiRosterStudent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const projects = useMemo(
     () => apiProjects.map(mapApiProjectToUi),
-    [apiProjects],
-  );
-
-  const projectHealth = useMemo(
-    () => buildProjectHealth(apiProjects),
     [apiProjects],
   );
 
@@ -126,11 +79,14 @@ const Projects: React.FC = () => {
     const fetchProjectsPageData = async () => {
       try {
         setLoading(true);
-        const overview = await api.getClassProjectsOverview(selectedClass.id);
+        const [overview, rosterResponse] = await Promise.all([
+          api.getClassProjectsOverview(selectedClass.id),
+          api.getClassRoster(selectedClass.id),
+        ]);
         if (!isMounted) return;
 
         setApiProjects(overview.projects ?? []);
-        setClassStudents(overview.students ?? []);
+        setClassStudents(rosterResponse.students ?? []);
         setError(null);
       } catch (err) {
         if (isMounted) {
@@ -173,6 +129,7 @@ const Projects: React.FC = () => {
           </div>
 
           <ProjectList
+            key={selectedClass?.id}
             projects={projects}
             loading={loading}
             error={error}
@@ -181,15 +138,30 @@ const Projects: React.FC = () => {
                 state: { projectName: project.name },
               })
             }
+            onPreviewMember={(project) =>
+              // Navigate to the (shared) detail route first, then let
+              // ProjectDetails flip into preview — entering preview while still
+              // on the instructor-only list path would bounce us to Home.
+              navigate(`/app/projects/${project.id}`, {
+                state: { projectName: project.name, previewAsMember: true },
+              })
+            }
           />
         </div>
 
         <div className="projects__stats">
           <ProjectMembershipChart
             inProject={membershipStats.inProject}
-            notInProject={membershipStats.notInProject}
+            registeredNoProject={membershipStats.registeredNoProject}
+            notRegistered={membershipStats.notRegistered}
           />
-          <ProjectHealth projects={projectHealth} />
+          {/* <ProjectHealth projects={projectHealth} /> */}
+          <div className="project-health">
+            <h3 className="project-health__heading">Project Health</h3>
+            <div className="project-health__coming-soon">
+              <p>Coming Soon</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -4,20 +4,35 @@ import { api } from '@/lib/api';
 import type { ApiProject, ApiProjectMember, ApiProjectTA } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
+import { usePreview } from '@/lib/previewContext';
 import ProjectView, { ProjectViewSkeleton } from '@features/app/components/Project/ProjectView';
 
 const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const { selectedClass } = useClass();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const { isPreviewing, enterPreview } = usePreview();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // "Preview as a member of this project" navigates here with a one-shot flag
+  // (rather than entering preview on the instructor Projects page, which would
+  // bounce to Home). Now that we're on the shared detail route, flip into
+  // preview, then strip the flag so exiting preview here doesn't re-trigger it.
+  useEffect(() => {
+    const state = location.state as { previewAsMember?: boolean } | null;
+    if (state?.previewAsMember && projectId && !isPreviewing) {
+      enterPreview(projectId);
+      const { previewAsMember: _consumed, ...rest } = state;
+      navigate(location.pathname, { state: rest, replace: true });
+    }
+  }, [location.state, location.pathname, projectId, isPreviewing, enterPreview, navigate]);
   const [project, setProject] = useState<ApiProject | null>(null);
   const [members, setMembers] = useState<ApiProjectMember[]>([]);
   const [tas, setTas] = useState<ApiProjectTA[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!projectId) {
@@ -45,11 +60,10 @@ const ProjectDetails: React.FC = () => {
         if (classId) {
           const requestsRes = await api.getMyJoinRequests(classId).catch(() => ({ requests: [] }));
           if (isMounted) {
-            setHasPendingRequest(
-              requestsRes.requests.some(
-                (r) => r.project_id === projectId && r.status === 'pending'
-              )
+            const pending = requestsRes.requests.find(
+              (r) => r.project_id === projectId && r.status === 'pending'
             );
+            setPendingRequestId(pending?.request_id ?? null);
           }
         }
 
@@ -176,9 +190,10 @@ const ProjectDetails: React.FC = () => {
         projectMembers={members}
         onMembersChange={refreshProjectAndMembers}
         onLeave={handleLeaveProject}
-        onDelete={() => navigate('/app/browse-projects')}
-        hasPendingRequest={hasPendingRequest}
-        onRequestSent={() => setHasPendingRequest(true)}
+        onDelete={() => navigate(role === 'instructor' ? '/app/projects' : '/app/browse-projects')}
+        pendingRequestId={pendingRequestId}
+        onRequestSent={(id) => setPendingRequestId(id)}
+        onRequestCancelled={() => setPendingRequestId(null)}
         sponsorName={project.sponsor_name}
         sponsorCompany={project.sponsor_company}
         sponsorEmail={project.sponsor_email}

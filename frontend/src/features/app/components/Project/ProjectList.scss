@@ -53,11 +53,35 @@
 }
 
 .projects-table__arrow-cell {
-  width: 32px;
+  width: 64px;
+  white-space: nowrap;
   text-align: right;
   color: $primary-color;
   opacity: 0;
   transition: opacity $transition-fast;
+
+  svg {
+    vertical-align: middle;
+  }
+}
+
+.projects-table__preview-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin-right: 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: $primary-color;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: rgba($primary-color, 0.12);
+  }
 }
 
 .projects-table__row:hover .projects-table__arrow-cell {
