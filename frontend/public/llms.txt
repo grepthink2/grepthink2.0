@@ -1,0 +1,45 @@
+# GrepThink 2.0
+
+> Team-project management for the UCSC CSE 115 software-engineering series.
+> Instructors run classes and project teams; students join teams and submit
+> weekly peer evaluations (TSRs); TAs schedule meetings, take attendance, and
+> review TSRs. v2 of grepthink.com.
+
+GrepThink is a single-page React app backed by a FastAPI + Supabase API. Almost
+everything below /app requires an authenticated session; write actions are
+role-gated (instructor / TA / student).
+
+## Public pages
+- [Home](/): product overview and sign-in entry points
+- [Contact](/contact): contact form
+- [Student sign-up](/studentsignup) and [Instructor sign-up](/instructorsignup)
+- [Log in](/login), [Forgot password](/forgot-password)
+
+## Core concepts
+- **Class**: a course section owned by an instructor. Students join with a course code.
+- **Roster**: the official class list (uploaded from a UCSC CSV) merged with who has
+  actually signed up.
+- **Project**: a team workspace inside a class. Project roles: owner, product owner,
+  scrum master, admin, member.
+- **Assignment / Module**: an instructor-created task with open/close dates — either a
+  TSR round or a feedback survey.
+- **TSR (Team Status Report)**: a weekly peer evaluation a student submits about each
+  teammate (contribution %, positive + constructive feedback).
+- **TA**: an enrolled student promoted to a class-level TA. TAs run a team's weekly
+  meeting + take attendance (the "meeting TA") and/or review a team's TSRs (the
+  "review TA").
+- **Staffing / interest form**: students rank project preferences; instructors assign
+  students to teams (manually or auto-assign).
+
+## Acting as an agent
+All write actions require a Supabase-authenticated session
+(`Authorization: Bearer <jwt>`) and are role-gated. A machine-readable catalog of
+the available actions — workflow id, HTTP method + endpoint, required role, and form
+parameters — is published at:
+
+- [/.well-known/grepthink-actions.json](/.well-known/grepthink-actions.json)
+
+## Notes
+- This is a university course project; data is scoped per class.
+- The API base path is `/api`. Auth (sign-up, login, password reset, OAuth) is
+  handled directly by Supabase from the browser.
