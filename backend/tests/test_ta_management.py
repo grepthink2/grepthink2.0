@@ -169,22 +169,26 @@ def test_assign_project_ta_requires_instructor(db):
 # --------------------------------------------------------------------------
 
 def test_update_meeting_by_assigned_ta(db):
-    controller.update_project_meeting(P1, TA1, zoom_url="https://zoom.us/j/1", meeting_time="2:00–2:30 PM")
-    p1 = next(p for p in db.rows("projects") if p["id"] == P1)
-    assert p1["zoom_url"] == "https://zoom.us/j/1"
-    assert p1["meeting_time"] == "2:00–2:30 PM"
+    out = controller.upsert_meeting(P1, TA1, meeting_in_week=1,
+                                    zoom_url="https://zoom.us/j/1", meeting_day="tuesday", meeting_time="2:00 PM")
+    assert out["zoom_url"] == "https://zoom.us/j/1"
+    assert out["meeting_day"] == "tuesday"
+    assert out["meeting_time"] == "2:00 PM"
+    # a meetings row was created for (P1, sequence 1)
+    m = next(r for r in db.rows("meetings") if r["project_id"] == P1 and r["sequence"] == 1)
+    assert m["day_of_week"] == "tuesday" and m["zoom_url"] == "https://zoom.us/j/1"
 
 
 def test_update_meeting_denied_for_unassigned_ta(db):
     # TA1 is not assigned to P2 → cannot edit it.
     with pytest.raises(HTTPException) as exc:
-        controller.update_project_meeting(P2, TA1, zoom_url="https://zoom.us/j/2")
+        controller.upsert_meeting(P2, TA1, zoom_url="https://zoom.us/j/2")
     assert exc.value.status_code == 403
 
 
 def test_update_meeting_rejects_bad_day(db):
     with pytest.raises(HTTPException) as exc:
-        controller.update_project_meeting(P1, INSTR, meeting_day="someday")
+        controller.upsert_meeting(P1, INSTR, meeting_day="someday")
     assert exc.value.status_code == 400
 
 
@@ -313,8 +317,10 @@ def test_attendance_distinct_per_meeting(db):
     rows = [a for a in db.rows("attendance")
             if a["project_id"] == P1 and a["user_id"] == S1 and a["week_number"] == 3]
     assert len(rows) == 2
-    by_meeting = {a["meeting_in_week"]: a["status"] for a in rows}
-    assert by_meeting == {1: "present", 2: "absent"}
+    # meeting 1 and meeting 2 resolve to distinct meetings -> distinct meeting_ids
+    seq_by_mid = {m["id"]: m["sequence"] for m in db.rows("meetings") if m["project_id"] == P1}
+    by_seq = {seq_by_mid[a["meeting_id"]]: a["status"] for a in rows}
+    assert by_seq == {1: "present", 2: "absent"}
 
 
 def test_mark_attendance_rejects_out_of_range_meeting(db):
