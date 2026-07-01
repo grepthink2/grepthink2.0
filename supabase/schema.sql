@@ -528,7 +528,8 @@ CREATE TABLE IF NOT EXISTS "public"."roster_entries" (
     "matched_profile_id" "uuid",
     "uploaded_at" timestamp with time zone DEFAULT "now"(),
     "first_name" "text",
-    "last_name" "text"
+    "last_name" "text",
+    "is_manual" boolean DEFAULT false NOT NULL
 );
 
 

@@ -1,6 +1,6 @@
 import type { ApiRosterStudent } from '@/lib/api';
 
-export type ClassStatus = 'enrolled' | 'waitlisted' | 'dropped' | 'not_on_roster';
+export type ClassStatus = 'enrolled' | 'waitlisted' | 'dropped' | 'not_on_roster' | 'manual';
 export type GrepthinkStatus = 'registered' | 'not_registered';
 
 export type FilterOption =
@@ -20,6 +20,8 @@ export interface UiStudent {
   grepthinkStatus: GrepthinkStatus;
   isTa: boolean;
   projects: string[];
+  /** roster_entries.id — present only for manually added rows; used to delete them. */
+  rosterEntryId?: string | null;
 }
 
 export const FILTER_LABELS: Record<FilterOption, string> = {
@@ -41,6 +43,7 @@ export function mapApiRosterStudent(student: ApiRosterStudent): UiStudent {
     grepthinkStatus: student.grepthink_status,
     isTa: student.enrollment_role === 'ta',
     projects: student.projects,
+    rosterEntryId: student.roster_entry_id,
   };
 }
 

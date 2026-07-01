@@ -780,7 +780,7 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
 
         roster_res = (
             client.table('roster_entries')
-            .select('id, email, status, matched_profile_id, uploaded_at, first_name, last_name')
+            .select('id, email, status, matched_profile_id, uploaded_at, first_name, last_name, is_manual')
             .eq('course_id', cid)
             .execute()
         )
@@ -865,6 +865,10 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
                 'grepthink_status': 'registered' if is_registered else 'not_registered',
                 'enrollment_role': enrollment_role_by_user.get(profile_id, 'student') if is_registered else 'student',
                 'projects': project_names,
+                # Manual rows can be deleted directly by roster_entries.id
+                # regardless of whether the row's id above resolved to a
+                # matched profile.
+                'roster_entry_id': entry['id'] if entry.get('is_manual') else None,
             })
 
         for profile in profiles:
@@ -892,6 +896,7 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
                 'grepthink_status': 'registered',
                 'enrollment_role': enrollment_role_by_user.get(uid, 'student'),
                 'projects': project_names,
+                'roster_entry_id': None,
             })
 
         uploaded_at = None
@@ -964,7 +969,9 @@ def upload_class_roster(class_id: UUID, csv_text: str, instructor_id: str) -> di
                     if primary and primary not in profile_map:
                         profile_map[primary] = p['id']
 
-        client.table('roster_entries').delete().eq('course_id', cid).execute()
+        # Manually-added rows (is_manual = true) are never touched by a
+        # roster re-upload — only rows sourced from a previous CSV are replaced.
+        client.table('roster_entries').delete().eq('course_id', cid).eq('is_manual', False).execute()
 
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         insert_rows = []
@@ -1007,6 +1014,146 @@ def upload_class_roster(class_id: UUID, csv_text: str, instructor_id: str) -> di
     except Exception:
         logger.exception("Error uploading roster | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to upload roster")
+
+
+def add_manual_roster_student(
+    class_id: UUID,
+    first_name: str,
+    last_name: str,
+    email: str,
+    instructor_id: str,
+) -> dict:
+    """
+    Manually add a student to the class roster (instructor only).
+
+    Manual rows are flagged with ``is_manual = true`` so a later CSV roster
+    upload — which replaces non-manual rows — never deletes them. Class
+    status for these rows is surfaced to the UI as ``manual``.
+    """
+    try:
+        client = service_client if service_client else supabase
+        cid = str(class_id)
+
+        first_name = first_name.strip()
+        last_name = last_name.strip()
+        normalized_email = email.strip().lower()
+
+        if not first_name or not last_name:
+            raise HTTPException(status_code=400, detail="First and last name are required")
+        if not normalized_email or '@' not in normalized_email:
+            raise HTTPException(status_code=400, detail="A valid email is required")
+
+        class_result = (
+            client.table('classes')
+            .select('id')
+            .eq('id', cid)
+            .eq('created_by', instructor_id)
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Class not found or you do not have permission",
+            )
+
+        existing = (
+            client.table('roster_entries')
+            .select('id')
+            .eq('course_id', cid)
+            .eq('email', normalized_email)
+            .execute()
+        )
+        if existing.data:
+            raise HTTPException(status_code=409, detail="This student is already on the roster")
+
+        matched_profile = _find_student_profile_by_email(client, normalized_email)
+        matched_id = matched_profile['id'] if matched_profile else None
+
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        insert_row = {
+            'course_id': cid,
+            'email': normalized_email,
+            'status': 'manual',
+            'first_name': first_name,
+            'last_name': last_name,
+            'matched_profile_id': matched_id,
+            'uploaded_at': now,
+            'is_manual': True,
+        }
+        result = client.table('roster_entries').insert(insert_row).execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to add student to roster")
+
+        logger.info(
+            "Manual roster student added | class_id=%s email=%s added_by=%s",
+            class_id, normalized_email, instructor_id,
+        )
+        return {
+            'message': 'Student added to roster',
+            'entry': result.data[0],
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error adding manual roster student | class_id=%s email=%s", class_id, email
+        )
+        raise HTTPException(status_code=500, detail="Failed to add student to roster")
+
+
+def delete_manual_roster_entry(class_id: UUID, entry_id: str, instructor_id: str) -> dict:
+    """
+    Delete a manually-added roster row (instructor only).
+
+    Only rows with ``is_manual = true`` may be deleted this way — CSV-sourced
+    rows are managed exclusively via roster re-upload.
+    """
+    try:
+        client = service_client if service_client else supabase
+        cid = str(class_id)
+
+        class_result = (
+            client.table('classes')
+            .select('id')
+            .eq('id', cid)
+            .eq('created_by', instructor_id)
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Class not found or you do not have permission",
+            )
+
+        existing = (
+            client.table('roster_entries')
+            .select('id, is_manual')
+            .eq('id', entry_id)
+            .eq('course_id', cid)
+            .execute()
+        )
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Roster entry not found")
+        if not existing.data[0].get('is_manual'):
+            raise HTTPException(
+                status_code=400,
+                detail="Only manually added roster entries can be deleted this way",
+            )
+
+        client.table('roster_entries').delete().eq('id', entry_id).eq('course_id', cid).execute()
+
+        logger.info(
+            "Manual roster entry deleted | class_id=%s entry_id=%s deleted_by=%s",
+            class_id, entry_id, instructor_id,
+        )
+        return {"message": "Student removed from roster", "entry_id": entry_id}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception(
+            "Error deleting manual roster entry | class_id=%s entry_id=%s", class_id, entry_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to remove student from roster")
 
 
 def _purge_student_from_class(client, class_id: UUID, student_id: str) -> None:

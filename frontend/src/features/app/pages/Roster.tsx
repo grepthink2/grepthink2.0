@@ -6,6 +6,7 @@ import ControlBar from '@features/app/components/Roster/ControlBar';
 import RosterList from '@features/app/components/Roster/RosterList';
 import PieCharts from '@features/app/components/Roster/PieCharts';
 import InviteModal, { type InvitePayload } from '@features/app/components/Roster/InviteModal';
+import AddStudentModal, { type AddStudentPayload } from '@features/app/components/Roster/AddStudentModal';
 import {
   applyFilter,
   isBulkInviteCandidate,
@@ -38,6 +39,9 @@ const Roster: React.FC = () => {
   const [inviteModal, setInviteModal] = useState<{ initialEmails: string[] } | null>(null);
   const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [addStudentModalOpen, setAddStudentModalOpen] = useState(false);
+  const [isAddingStudent, setIsAddingStudent] = useState(false);
+  const [addStudentError, setAddStudentError] = useState<string | null>(null);
   const [unsendJob, setUnsendJob] = useState<UnsendJob | null>(null);
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unsendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -185,6 +189,26 @@ const Roster: React.FC = () => {
     }
   };
 
+  const handleAddStudent = async ({ firstName, lastName, email }: AddStudentPayload) => {
+    if (!selectedClass?.id) return;
+    setIsAddingStudent(true);
+    setAddStudentError(null);
+    try {
+      await api.addManualRosterStudent(selectedClass.id, {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+      });
+      await loadRoster(selectedClass.id, true);
+      setAddStudentModalOpen(false);
+      showMessage('success', `${firstName} ${lastName} added to the roster.`);
+    } catch (err) {
+      setAddStudentError(err instanceof Error ? err.message : 'Failed to add student');
+    } finally {
+      setIsAddingStudent(false);
+    }
+  };
+
   const handleRemove = async (student: UiStudent) => {
     if (!selectedClass?.id) return;
     if (!window.confirm(`Remove ${student.name} from this class?`)) return;
@@ -196,6 +220,20 @@ const Roster: React.FC = () => {
       showMessage('success', `${student.name} removed from the class.`);
     } catch (err) {
       showMessage('error', err instanceof Error ? err.message : 'Failed to remove student');
+    }
+  };
+
+  const handleDeleteManual = async (student: UiStudent) => {
+    if (!selectedClass?.id || !student.rosterEntryId) return;
+    if (!window.confirm(`Delete ${student.name} from the roster? This cannot be undone.`)) return;
+
+    setActionMessage(null);
+    try {
+      await api.deleteManualRosterEntry(selectedClass.id, student.rosterEntryId);
+      await loadRoster(selectedClass.id, true);
+      showMessage('success', `${student.name} removed from the roster.`);
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Failed to remove student from roster');
     }
   };
 
@@ -278,6 +316,11 @@ const Roster: React.FC = () => {
             onInvite={handleInvite}
             onRemove={handleRemove}
             invitingEmails={new Set()}
+            onDeleteManual={handleDeleteManual}
+            onAddStudent={() => {
+              setAddStudentError(null);
+              setAddStudentModalOpen(true);
+            }}
           />
         </div>
         <div className="roster__sidebar">
@@ -294,6 +337,14 @@ const Roster: React.FC = () => {
         courseCode={selectedClass.course_code ?? ''}
         isSending={isSendingInvite}
         errorMessage={modalError}
+      />
+
+      <AddStudentModal
+        isOpen={addStudentModalOpen}
+        onClose={() => setAddStudentModalOpen(false)}
+        onSubmit={handleAddStudent}
+        isSubmitting={isAddingStudent}
+        errorMessage={addStudentError}
       />
     </div>
   );
