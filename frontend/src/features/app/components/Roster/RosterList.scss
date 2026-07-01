@@ -9,6 +9,8 @@ $dropped-bg:          #fee2e2;
 $dropped-text:        #ef4444;
 $not-on-roster-bg:    #f3f4f6;
 $not-on-roster-text:  #6b7280;
+$manual-bg:           #fef9c3;
+$manual-text:         #a16207;
 $gt-registered-bg:    #d4f5ee;
 $gt-registered-text:  #018156;
 $gt-not-reg-bg:       #f3f4f6;
@@ -24,6 +26,28 @@ $gt-not-reg-text:     #6b7280;
     display: flex;
     align-items: center;
     gap: $spacing-sm;
+  }
+
+  &__add-student-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    padding: 7px 14px;
+    border: 1px solid transparent;
+    border-radius: $border-radius-sm;
+    background-color: $primary-color;
+    color: $white;
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background-color: $primary-hover;
+    }
   }
 
   &__title {
@@ -227,6 +251,7 @@ $gt-not-reg-text:     #6b7280;
     &--class-waitlisted    { background: $waitlisted-bg;    color: $waitlisted-text; }
     &--class-dropped       { background: $dropped-bg;       color: $dropped-text; }
     &--class-not_on_roster { background: $not-on-roster-bg; color: $not-on-roster-text; }
+    &--class-manual        { background: $manual-bg;        color: $manual-text; }
 
     &--gt-registered     { background: $gt-registered-bg; color: $gt-registered-text; }
     &--gt-not_registered { background: $gt-not-reg-bg;    color: $gt-not-reg-text; }
@@ -263,6 +288,10 @@ $gt-not-reg-text:     #6b7280;
   // ── Action buttons ───────────────────────────────────────────
   &__td-actions {
     white-space: nowrap;
+  }
+
+  &__no-actions {
+    color: $text-tertiary;
   }
 
   &__action-btn {
@@ -306,6 +335,51 @@ $gt-not-reg-text:     #6b7280;
 
   &__spinner {
     animation: roster-list-spin 0.8s linear infinite;
+  }
+
+  &__tr--deletable {
+    cursor: context-menu;
+  }
+
+  &__context-menu {
+    position: fixed;
+    z-index: $z-index-modal;
+    min-width: 140px;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.15);
+    padding: 4px;
+  }
+
+  &__context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background: $background;
+    }
+
+    &--danger {
+      color: $dropped-text;
+
+      &:hover {
+        background: $dropped-bg;
+      }
+    }
   }
 }
 

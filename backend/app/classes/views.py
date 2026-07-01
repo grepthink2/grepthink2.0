@@ -6,6 +6,7 @@ from fastapi import HTTPException, Depends, UploadFile, File
 from app.dependencies import require_user, require_instructor
 from app.auth.controller import get_user_role
 from app.classes.models import (
+    AddManualRosterStudentRequest,
     BulkInviteRequest,
     CancelInviteResponse,
     CreateClassRequest,
@@ -85,6 +86,26 @@ async def upload_class_roster(
     except UnicodeDecodeError as exc:
         raise HTTPException(status_code=400, detail="CSV must be UTF-8 encoded") from exc
     return controller.upload_class_roster(class_id, csv_text, user_id)
+
+
+def add_manual_roster_student(
+    class_id: UUID,
+    data: AddManualRosterStudentRequest,
+    user_id: str = Depends(require_instructor),
+):
+    """Manually add a student to the roster (instructor only)."""
+    return controller.add_manual_roster_student(
+        class_id, data.first_name, data.last_name, data.email, user_id,
+    )
+
+
+def delete_manual_roster_entry(
+    class_id: UUID,
+    entry_id: str,
+    user_id: str = Depends(require_instructor),
+):
+    """Delete a manually-added roster row (instructor only)."""
+    return controller.delete_manual_roster_entry(class_id, entry_id, user_id)
 
 
 def get_class_projects(class_id: UUID, user_id: str = Depends(require_user)):
