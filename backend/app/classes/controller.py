@@ -764,11 +764,6 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
         client = service_client if service_client else supabase
         cid = str(class_id)
 
-        _verify_roster_access(client, cid, user_id, role)
-
-        roster_res = (
-            client.table('roster_entries')
-            .select('id, email, status, matched_profile_id, uploaded_at, first_name, last_name, is_manual')
         # Stage 1: the access-check reads (class + enrollments) and the two
         # other independent reads (roster entries, projects) are all fanned
         # out in parallel. The enrollment list doubles as both the access
@@ -787,7 +782,7 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
         )
         roster_future = query_pool.submit(
             lambda: client.table('roster_entries')
-            .select('id, email, status, matched_profile_id, uploaded_at, first_name, last_name')
+            .select('id, email, status, matched_profile_id, uploaded_at, first_name, last_name, is_manual')
             .eq('course_id', cid)
             .execute()
         )
