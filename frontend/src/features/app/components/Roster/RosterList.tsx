@@ -25,6 +25,11 @@ function isManualDeletable(student: UiStudent): boolean {
   return student.classStatus === 'manual' && !!student.rosterEntryId;
 }
 
+/** Dropped students who never registered have nothing actionable left to do. */
+function hasNoActions(student: UiStudent): boolean {
+  return student.classStatus === 'dropped' && student.grepthinkStatus === 'not_registered';
+}
+
 const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
   enrolled: 'Enrolled',
   waitlisted: 'Waitlisted',
@@ -205,7 +210,9 @@ const RosterList: React.FC<RosterListProps> = ({
                     </td>
                     {showActions && (
                       <td className="roster-list__td-actions">
-                        {student.grepthinkStatus === 'registered' ? (
+                        {hasNoActions(student) ? (
+                          <span className="roster-list__no-actions">—</span>
+                        ) : student.grepthinkStatus === 'registered' ? (
                           <button className="roster-list__action-btn roster-list__action-btn--remove" onClick={() => onRemove?.(student)} type="button">
                             <UserMinus size={13} /> Remove
                           </button>
@@ -271,7 +278,7 @@ const RosterList: React.FC<RosterListProps> = ({
                   ))}
                 </div>
               )}
-              {showActions && (
+              {showActions && !hasNoActions(student) && (
                 <div className="roster-list__mobile-card-actions">
                   {student.grepthinkStatus === 'registered' ? (
                     <button className="roster-list__action-btn roster-list__action-btn--remove" onClick={() => onRemove?.(student)} type="button">

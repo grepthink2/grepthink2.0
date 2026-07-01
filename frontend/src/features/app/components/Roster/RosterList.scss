@@ -290,6 +290,10 @@ $gt-not-reg-text:     #6b7280;
     white-space: nowrap;
   }
 
+  &__no-actions {
+    color: $text-tertiary;
+  }
+
   &__action-btn {
     display: inline-flex;
     align-items: center;
