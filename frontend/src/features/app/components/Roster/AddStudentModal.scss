@@ -1,0 +1,177 @@
+@use '@styles/index.scss' as *;
+
+.add-student-modal {
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: $z-index-modal;
+    padding: $spacing-md;
+  }
+
+  background: $white;
+  border-radius: $border-radius-md;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-family: $primary-font;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: $text-tertiary;
+    display: flex;
+    align-items: center;
+    padding: $spacing-xs;
+    border-radius: $border-radius-sm;
+    transition: color $transition-fast, background $transition-fast;
+
+    &:hover {
+      color: $text-primary;
+      background: $background;
+    }
+  }
+
+  &__body {
+    padding: $spacing-lg;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__hint {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    color: $text-secondary;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__field-label {
+    font-family: $primary-font;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $text-secondary;
+  }
+
+  &__field-input {
+    background-color: $white;
+    color: $text-primary;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    outline: none;
+    width: 100%;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.12);
+    }
+
+    &--error {
+      border-color: $error-color;
+
+      &:focus {
+        box-shadow: 0 0 0 2px rgba($error-color, 0.12);
+      }
+    }
+  }
+
+  &__error {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    color: $error-color;
+    background: rgba($error-color, 0.06);
+    border: 1px solid rgba($error-color, 0.2);
+    border-radius: $border-radius-sm;
+    padding: $spacing-sm $spacing-md;
+    margin: 0;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    border-top: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__btn {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: $border-radius-sm;
+    padding: 8px $spacing-md;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background $transition-fast, opacity $transition-fast;
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    &--cancel {
+      background: $white;
+      border-color: $border-color;
+      color: $text-primary;
+
+      &:hover:not(:disabled) {
+        background: $background;
+      }
+    }
+
+    &--add {
+      background: $primary-color;
+      color: $white;
+
+      &:hover:not(:disabled) {
+        background: $primary-hover;
+      }
+    }
+  }
+
+  &__spinner {
+    animation: add-student-modal-spin 0.75s linear infinite;
+  }
+}
+
+@keyframes add-student-modal-spin {
+  to { transform: rotate(360deg); }
+}

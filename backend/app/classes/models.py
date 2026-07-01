@@ -32,6 +32,13 @@ class UpdateClassStatusRequest(BaseModel):
     status: ClassStatus
 
 
+class AddManualRosterStudentRequest(BaseModel):
+    """Request model for manually adding a student to the roster (instructor only)."""
+    first_name: str
+    last_name: str
+    email: str
+
+
 class BulkInviteRequest(BaseModel):
     """Request model for bulk-enrolling students by email list"""
     emails: list[str]

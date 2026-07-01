@@ -133,11 +133,13 @@ export interface ApiRosterStudent {
   roster_email?: string;
   grepthink_email?: string;
   project?: string;
-  class_status: 'enrolled' | 'waitlisted' | 'dropped' | 'not_on_roster';
+  class_status: 'enrolled' | 'waitlisted' | 'dropped' | 'not_on_roster' | 'manual';
   grepthink_status: 'registered' | 'not_registered';
   /** Class-scoped role: 'student' or 'ta' (only meaningful when registered). */
   enrollment_role?: EnrollmentRole;
   projects: string[];
+  /** roster_entries.id — present only for manually added rows; used to delete them. */
+  roster_entry_id?: string | null;
 }
 
 export interface ApiRosterUploadResult {
@@ -701,6 +703,23 @@ export const api = {
     const formData = new FormData();
     formData.append('file', file);
     return apiUpload<ApiRosterUploadResult>(`/api/classes/${classId}/roster`, formData);
+  },
+
+  addManualRosterStudent: async (
+    classId: string,
+    data: { first_name: string; last_name: string; email: string },
+  ) => {
+    return apiRequest<{ message: string }>(`/api/classes/${classId}/roster/manual`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteManualRosterEntry: async (classId: string, entryId: string) => {
+    return apiRequest<{ message: string; entry_id: string }>(
+      `/api/classes/${classId}/roster/manual/${entryId}`,
+      { method: 'DELETE' },
+    );
   },
 
   inviteStudent: async (classId: string, studentEmail: string) => {

@@ -13,6 +13,7 @@ const CLASS_STATUS_COLORS: Record<ClassStatus, string> = {
   waitlisted: '#F59E0B',
   dropped: '#EF4444',
   not_on_roster: '#9CA3AF',
+  manual: '#CA8A04',
 };
 
 const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
@@ -20,6 +21,7 @@ const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
   waitlisted: 'Waitlisted',
   dropped: 'Dropped',
   not_on_roster: 'Not on Roster',
+  manual: 'Manual',
 };
 
 const GT_STATUS_COLORS: Record<GrepthinkStatus, string> = {
