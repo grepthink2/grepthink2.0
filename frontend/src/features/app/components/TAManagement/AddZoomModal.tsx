@@ -7,11 +7,13 @@ import './AddZoomModal.scss';
 interface AddZoomModalProps {
   isOpen: boolean;
   team: TeamMeetingItem | null;
+  /** Which of the team's weekly meetings (1, 2, …) this slot edits. */
+  meetingInWeek?: number;
   onClose: () => void;
   onSaved: (projectId: string, fields: { zoomUrl: string; meetingDay: string | null; meetingTime: string | null }) => void;
 }
 
-const AddZoomModal: React.FC<AddZoomModalProps> = ({ isOpen, team, onClose, onSaved }) => {
+const AddZoomModal: React.FC<AddZoomModalProps> = ({ isOpen, team, meetingInWeek, onClose, onSaved }) => {
   const [zoomUrl, setZoomUrl] = useState('');
   const [meetingDay, setMeetingDay] = useState('');
   const [meetingTime, setMeetingTime] = useState('');
@@ -59,6 +61,7 @@ const AddZoomModal: React.FC<AddZoomModalProps> = ({ isOpen, team, onClose, onSa
     setError(null);
     try {
       const payload = {
+        meeting_in_week: meetingInWeek ?? 1,
         zoom_url: zoomUrl.trim(),
         meeting_day: meetingDay || null,
         meeting_time: meetingTime.trim() || null,

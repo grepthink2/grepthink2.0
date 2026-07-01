@@ -155,34 +155,6 @@ def _build_profile_email_map(profiles: list[dict]) -> dict[str, dict]:
     return email_map
 
 
-def _verify_roster_access(client, class_id: str, user_id: str, role: str) -> dict:
-    """Ensure the user may view roster data for this class."""
-    class_result = (
-        client.table('classes')
-        .select('id, created_by')
-        .eq('id', class_id)
-        .execute()
-    )
-    if not class_result.data:
-        raise HTTPException(status_code=404, detail="Class not found")
-
-    class_row = class_result.data[0]
-    if role == 'instructor' and class_row.get('created_by') == user_id:
-        return class_row
-
-    enrollment = (
-        client.table('class_enrollments')
-        .select('id')
-        .eq('class_id', class_id)
-        .eq('user_id', user_id)
-        .execute()
-    )
-    if enrollment.data:
-        return class_row
-
-    raise HTTPException(status_code=403, detail="You do not have access to this class roster")
-
-
 def _parse_roster_csv(csv_text: str) -> list[dict]:
     """Parse UCSC roster CSV; returns deduped rows (last row wins per email)."""
     if csv_text.startswith('\ufeff'):
@@ -688,20 +660,38 @@ def get_class_students(class_id: UUID) -> list:
 
     Returns a list of dicts with: id, email, role, first_name, last_name,
     project_id, project_name.
+
+    Performance: the class existence check, enrollment list, and project list
+    are independent, so they're issued in parallel via ``query_pool``. Profile
+    hydration and project-membership lookup (both of which depend on the
+    enrolled user ids) are then issued as a second parallel stage. This turns
+    five sequential Supabase round-trips into two parallel waves.
     """
     try:
         client = service_client if service_client else supabase
+        cid = str(class_id)
 
-        class_result = client.table('classes').select('id').eq('id', str(class_id)).execute()
-        if not class_result.data:
-            raise HTTPException(status_code=404, detail="Class not found")
-
-        enrollments = (
-            client.table('class_enrollments')
+        # Stage 1: independent reads fanned out in parallel.
+        class_future = query_pool.submit(
+            lambda: client.table('classes').select('id').eq('id', cid).execute()
+        )
+        enrollments_future = query_pool.submit(
+            lambda: client.table('class_enrollments')
             .select('user_id, enrollment_role')
-            .eq('class_id', str(class_id))
+            .eq('class_id', cid)
             .execute()
         )
+        projects_future = query_pool.submit(
+            lambda: client.table('projects')
+            .select('id, name')
+            .eq('class_id', cid)
+            .execute()
+        )
+
+        if not class_future.result().data:
+            raise HTTPException(status_code=404, detail="Class not found")
+
+        enrollments = enrollments_future.result()
         if not enrollments.data:
             return []
 
@@ -711,35 +701,33 @@ def get_class_students(class_id: UUID) -> list:
             for e in enrollments.data
         }
 
-        profiles_res = (
-            client.table('profiles')
+        projects = projects_future.result().data or []
+        project_ids = [p['id'] for p in projects]
+        project_name_map = {p['id']: p['name'] for p in projects}
+
+        # Stage 2: profile hydration and membership lookup in parallel; both
+        # depend on the enrolled user ids resolved above.
+        profiles_future = query_pool.submit(
+            lambda: client.table('profiles')
             .select('id, email, role, first_name, last_name')
             .in_('id', user_ids)
             .execute()
         )
-        profiles = profiles_res.data or []
-
-        # Fetch all projects in this class for the affiliation lookup.
-        projects_res = (
-            client.table('projects')
-            .select('id, name')
-            .eq('class_id', str(class_id))
-            .execute()
-        )
-        projects = projects_res.data or []
-        project_ids = [p['id'] for p in projects]
-        project_name_map = {p['id']: p['name'] for p in projects}
-
-        membership_map: dict[str, str] = {}
+        members_future = None
         if project_ids and user_ids:
-            members_res = (
-                client.table('project_members')
+            members_future = query_pool.submit(
+                lambda: client.table('project_members')
                 .select('user_id, project_id')
                 .in_('user_id', user_ids)
                 .in_('project_id', project_ids)
                 .execute()
             )
-            for m in (members_res.data or []):
+
+        profiles = profiles_future.result().data or []
+
+        membership_map: dict[str, str] = {}
+        if members_future is not None:
+            for m in (members_future.result().data or []):
                 membership_map[m['user_id']] = m['project_id']
 
         result = []
@@ -781,58 +769,90 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
         roster_res = (
             client.table('roster_entries')
             .select('id, email, status, matched_profile_id, uploaded_at, first_name, last_name, is_manual')
-            .eq('course_id', cid)
+        # Stage 1: the access-check reads (class + enrollments) and the two
+        # other independent reads (roster entries, projects) are all fanned
+        # out in parallel. The enrollment list doubles as both the access
+        # check and the roster's enrollment data, removing a duplicate query.
+        class_future = query_pool.submit(
+            lambda: client.table('classes')
+            .select('id, created_by')
+            .eq('id', cid)
             .execute()
         )
-        roster_rows = roster_res.data or []
-        roster_emails = {(r.get('email') or '').strip().lower() for r in roster_rows}
-
-        enrollments_res = (
-            client.table('class_enrollments')
+        enrollments_future = query_pool.submit(
+            lambda: client.table('class_enrollments')
             .select('user_id, enrollment_role')
             .eq('class_id', cid)
             .execute()
         )
-        enrolled_ids = [e['user_id'] for e in (enrollments_res.data or [])]
-        enrollment_role_by_user = {
-            e['user_id']: (e.get('enrollment_role') or 'student')
-            for e in (enrollments_res.data or [])
-        }
-
-        profiles: list[dict] = []
-        if enrolled_ids:
-            profiles_res = (
-                client.table('profiles')
-                .select('id, email, edu_email, first_name, last_name, role')
-                .in_('id', enrolled_ids)
-                .execute()
-            )
-            profiles = profiles_res.data or []
-
-        profile_by_id = {p['id']: p for p in profiles}
-        profile_by_email = _build_profile_email_map(profiles)
-        enrolled_id_set = set(enrolled_ids)
-
-        projects_res = (
-            client.table('projects')
+        roster_future = query_pool.submit(
+            lambda: client.table('roster_entries')
+            .select('id, email, status, matched_profile_id, uploaded_at, first_name, last_name')
+            .eq('course_id', cid)
+            .execute()
+        )
+        projects_future = query_pool.submit(
+            lambda: client.table('projects')
             .select('id, name')
             .eq('class_id', cid)
             .execute()
         )
-        projects = projects_res.data or []
+
+        class_result = class_future.result()
+        if not class_result.data:
+            raise HTTPException(status_code=404, detail="Class not found")
+        class_row = class_result.data[0]
+
+        enrollments_data = enrollments_future.result().data or []
+        enrolled_ids = [e['user_id'] for e in enrollments_data]
+
+        # Access: the class owner (instructor) or any enrolled user.
+        is_owner = role == 'instructor' and class_row.get('created_by') == user_id
+        if not is_owner and user_id not in set(enrolled_ids):
+            raise HTTPException(status_code=403, detail="You do not have access to this class roster")
+
+        roster_rows = roster_future.result().data or []
+        roster_emails = {(r.get('email') or '').strip().lower() for r in roster_rows}
+
+        enrollment_role_by_user = {
+            e['user_id']: (e.get('enrollment_role') or 'student')
+            for e in enrollments_data
+        }
+
+        # Stage 2: profile hydration and membership lookup in parallel; both
+        # depend on the enrolled user ids resolved above.
+        profiles_future = None
+        if enrolled_ids:
+            profiles_future = query_pool.submit(
+                lambda: client.table('profiles')
+                .select('id, email, edu_email, first_name, last_name, role')
+                .in_('id', enrolled_ids)
+                .execute()
+            )
+
+        projects = projects_future.result().data or []
         project_ids = [p['id'] for p in projects]
         project_name_map = {p['id']: p['name'] for p in projects}
 
-        projects_by_user: dict[str, list[str]] = {}
+        members_future = None
         if project_ids and enrolled_ids:
-            members_res = (
-                client.table('project_members')
+            members_future = query_pool.submit(
+                lambda: client.table('project_members')
                 .select('user_id, project_id')
                 .in_('user_id', enrolled_ids)
                 .in_('project_id', project_ids)
                 .execute()
             )
-            for m in (members_res.data or []):
+
+        profiles = profiles_future.result().data or [] if profiles_future else []
+
+        profile_by_id = {p['id']: p for p in profiles}
+        profile_by_email = _build_profile_email_map(profiles)
+        enrolled_id_set = set(enrolled_ids)
+
+        projects_by_user: dict[str, list[str]] = {}
+        if members_future is not None:
+            for m in (members_future.result().data or []):
                 uid = m['user_id']
                 pname = project_name_map.get(m['project_id'])
                 if pname:
@@ -1649,6 +1669,175 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
             "Error fetching class projects | class_id=%s user_id=%s", class_id, user_id
         )
         raise HTTPException(status_code=500, detail="Failed to fetch projects")
+
+
+def _key_role_name(profile: dict) -> str | None:
+    """Display name for an owner / scrum-master profile, falling back to email."""
+    if not profile:
+        return None
+    first = profile.get('first_name') or ''
+    last = profile.get('last_name') or ''
+    full = f"{first} {last}".strip()
+    return full or profile.get('email')
+
+
+def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict:
+    """Projects list + enrolled-student list for the Projects page in one call.
+
+    This merges what ``get_class_projects`` and ``get_class_students`` returned
+    separately. The Projects page needs the project cards (member counts,
+    sentiment, product owner / scrum master) *and* the enrolled-student list
+    (only used for the in-project / not-in-project membership donut). Both used
+    to be fetched as two parallel HTTP requests that each independently read the
+    class, enrollments, projects, project_members, and profiles tables.
+
+    Serving both from one endpoint lets us issue each underlying table read
+    exactly once, in two parallel waves via ``query_pool``:
+
+      Wave 1 (parallel): class (access), enrollments, projects
+      Wave 2 (parallel): profiles (all enrolled users), project_members
+
+    Returns ``{"projects": [...], "students": [...]}`` where each list matches
+    the shape previously returned by ``get_class_projects`` /
+    ``get_class_students`` so the frontend mapping is unchanged.
+    """
+    try:
+        client = service_client if service_client else supabase
+        cid = str(class_id)
+
+        # Wave 1: independent reads.
+        class_future = query_pool.submit(
+            lambda: client.table('classes')
+            .select('id, created_by')
+            .eq('id', cid)
+            .execute()
+        )
+        enrollments_future = query_pool.submit(
+            lambda: client.table('class_enrollments')
+            .select('user_id, enrollment_role')
+            .eq('class_id', cid)
+            .execute()
+        )
+        projects_future = query_pool.submit(
+            lambda: client.table('projects')
+            .select('id, name, team_size, sentiment, image_url')
+            .eq('class_id', cid)
+            .order('created_at', desc=True)
+            .execute()
+        )
+
+        class_result = class_future.result()
+        if not class_result.data:
+            raise HTTPException(status_code=404, detail='Class not found')
+        class_row = class_result.data[0]
+
+        enrollments_data = enrollments_future.result().data or []
+        enrolled_ids = [e['user_id'] for e in enrollments_data]
+
+        # Access: the class owner (instructor) or any enrolled user.
+        is_owner = role == 'instructor' and class_row.get('created_by') == user_id
+        if not is_owner and user_id not in set(enrolled_ids):
+            raise HTTPException(
+                status_code=403,
+                detail='You do not have access to this class projects list',
+            )
+
+        enrollment_role_map = {
+            e['user_id']: (e.get('enrollment_role') or 'student')
+            for e in enrollments_data
+        }
+
+        projects = projects_future.result().data or []
+        project_ids = [p['id'] for p in projects]
+        project_name_map = {p['id']: p.get('name') for p in projects}
+
+        # Wave 2: profiles for every enrolled user (covers both the student list
+        # and owner/scrum-master hydration, since members are enrolled users),
+        # and all project memberships for these projects.
+        profiles_future = None
+        if enrolled_ids:
+            profiles_future = query_pool.submit(
+                lambda: client.table('profiles')
+                .select('id, email, role, first_name, last_name')
+                .in_('id', enrolled_ids)
+                .execute()
+            )
+        members_future = None
+        if project_ids:
+            members_future = query_pool.submit(
+                lambda: client.table('project_members')
+                .select('project_id, user_id, role')
+                .in_('project_id', project_ids)
+                .execute()
+            )
+
+        profiles = profiles_future.result().data or [] if profiles_future else []
+        profile_map = {p['id']: p for p in profiles}
+
+        all_memberships = members_future.result().data or [] if members_future else []
+
+        # Per-project member counts and per-user project affiliation.
+        member_count_map: dict[str, int] = {}
+        membership_by_user: dict[str, str] = {}
+        for m in all_memberships:
+            pid = m['project_id']
+            member_count_map[pid] = member_count_map.get(pid, 0) + 1
+            membership_by_user[m['user_id']] = pid
+
+        # Owner / scrum-master lookup per project.
+        key_roles = {'product owner', 'owner', 'scrum master'}
+        project_member_map: dict[str, dict] = {}
+        for m in all_memberships:
+            if m.get('role') not in key_roles:
+                continue
+            project_member_map.setdefault(m['project_id'], {})[m['role']] = (
+                profile_map.get(m['user_id'], {})
+            )
+
+        projects_result = []
+        for project in projects:
+            pid = project['id']
+            members = project_member_map.get(pid, {})
+            owner_profile = members.get('product owner') or members.get('owner') or {}
+            scrum_profile = members.get('scrum master') or {}
+            projects_result.append({
+                'id': pid,
+                'name': project.get('name'),
+                'team_size': project.get('team_size'),
+                'image_url': project.get('image_url'),
+                'member_count': member_count_map.get(pid, 0),
+                'sentiment': project.get('sentiment') if role == 'instructor' else None,
+                'product_owner_name': _key_role_name(owner_profile),
+                'product_owner_email': owner_profile.get('email'),
+                'scrum_master_name': _key_role_name(scrum_profile) if scrum_profile else None,
+                'scrum_master_email': scrum_profile.get('email') if scrum_profile else None,
+            })
+
+        students_result = []
+        for s in profiles:
+            pid = membership_by_user.get(s['id'])
+            students_result.append({
+                'id': s['id'],
+                'email': s.get('email'),
+                'role': s.get('role', 'student'),
+                'enrollment_role': enrollment_role_map.get(s['id'], 'student'),
+                'first_name': s.get('first_name'),
+                'last_name': s.get('last_name'),
+                'project_id': pid,
+                'project_name': project_name_map.get(pid) if pid else None,
+            })
+
+        return {'projects': projects_result, 'students': students_result}
+    except HTTPException:
+        raise
+    except _TRANSIENT_HTTPX_ERRORS:
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching class projects overview | class_id=%s user_id=%s",
+            class_id, user_id,
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch projects overview")
 
 
 def get_class_turn_in_stats(class_id: UUID, user_id: str) -> dict:

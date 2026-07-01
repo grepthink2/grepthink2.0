@@ -40,7 +40,6 @@ import Assignments from '@features/app/pages/Assignments';
 import AssignmentDetail from '@features/app/pages/AssignmentDetail';
 import BrowseProjects from '@features/app/pages/BrowseProjects';
 import MyProject from '@features/app/pages/MyProject';
-import TestProjects from '@pages/TestProjects';
 import Messages from '@features/messages/pages/Messages';
 import { ConversationsProvider } from '@features/messages/hooks/useConversations';
 import { NotificationsProvider } from '@features/notifications/hooks/useNotifications';
@@ -110,9 +109,6 @@ function App() {
         </Route>
 
         <Route path="/classes" element={<ClassManagement />} />
-        <Route path="/test-projects" element={<Navigate to="/test-115a-projects" replace />} />
-        <Route path="/test-115a-projects" element={<TestProjects />} />
-        <Route path="/test-115b-projects" element={<TestProjects />} />
       </Routes>
     </Router>
   );

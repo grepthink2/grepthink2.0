@@ -1,13 +1,15 @@
 """HTTP handler for the contact form. Thin layer over controller.py."""
 from __future__ import annotations
 
-from fastapi import Response, status
+from fastapi import Request, Response, status
 
 from app.contact import controller
 from app.contact.models import ContactRequest
+from app.limiter import limiter
 
 
-def submit_contact(body: ContactRequest) -> Response:
+@limiter.limit("10/minute")
+def submit_contact(request: Request, body: ContactRequest) -> Response:
     controller.submit_contact(
         name=body.name,
         email=body.email,

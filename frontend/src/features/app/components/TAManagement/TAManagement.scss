@@ -92,6 +92,68 @@
   margin-bottom: $spacing-md;
 }
 
+// ── Cadence (meetings/week + duration) ──────────────────────────
+.ta-page__cadence {
+  margin-left: auto;
+  font-size: 0.8125rem;
+  color: $text-tertiary;
+}
+
+.ta-page__cadence-edit {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: 0.8125rem;
+  color: $text-secondary;
+
+  select {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    padding: 4px 6px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $white;
+    color: $text-primary;
+    cursor: pointer;
+
+    &:focus { outline: none; border-color: $accent-color; }
+    &:disabled { opacity: 0.6; cursor: default; }
+  }
+}
+
+.ta-page__cadence-dur {
+  color: $text-tertiary;
+}
+
+// ── Meeting-within-week selector (only when meetings_per_week > 1) ──
+.ta-page__meeting-tabs {
+  display: inline-flex;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-md;
+  background: $background;
+  padding: 3px;
+  border-radius: $border-radius-md;
+}
+
+.ta-page__meeting-tab {
+  border: none;
+  background: none;
+  padding: 6px 14px;
+  border-radius: $border-radius-sm;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  color: $text-secondary;
+  cursor: pointer;
+
+  &.is-active {
+    background: $white;
+    color: $primary-color;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+}
+
 // ── List of team cards ──────────────────────────────────────────
 .ta-page__list {
   display: flex;

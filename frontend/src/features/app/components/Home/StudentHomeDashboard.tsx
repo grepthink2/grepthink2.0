@@ -17,6 +17,7 @@ import {
   parseISO,
   startOfDay,
 } from 'date-fns';
+import { formatAssignmentDueDate } from '@/lib/dateUtils';
 import { useClass } from '@/lib/classContext';
 import { useUser } from '@/lib/auth';
 import { api, type ApiAssignment } from '@/lib/api';
@@ -83,9 +84,9 @@ function parseLocalAssignmentDate(iso: string): Date {
   return parseISO(iso);
 }
 
-/** Display string for assignment due date in the user’s local calendar. */
+/** Display string for assignment due date, pinned to 11:59 PM PST → local time. */
 function formatDueLabel(closeDate: string): string {
-  return format(parseLocalAssignmentDate(closeDate), 'MMM d, yyyy');
+  return formatAssignmentDueDate(closeDate);
 }
 
 function initialsFromName(

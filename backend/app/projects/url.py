@@ -25,13 +25,8 @@ router.delete('/{project_id}/members/{user_id}')(views.remove_project_member)
 router.post('/{project_id}/assign-product-owner')(views.assign_product_owner)
 router.post('/{project_id}/assign-scrum-master')(views.assign_scrum_master)
 router.post('/{project_id}/assign-admin')(views.assign_admin)
+router.post('/{project_id}/remove-product-owner')(views.remove_product_owner)
 router.post('/{project_id}/remove-scrum-master')(views.remove_scrum_master)
 router.post('/{project_id}/remove-admin')(views.remove_admin)
 router.get('/{project_id}/join-requests')(views.get_join_requests)
 router.get('/{project_id}/pending-invites')(views.get_project_pending_invites)
-
-# ---- Test-only route: bypasses instructor role check, still requires auth ----
-# Used by TestProjects.tsx (/test-115a-projects, /test-115b-projects) to
-# populate demo data. See CODE_REVIEW.md #7 — slated for removal once the
-# test pages are retired.
-router.post('/test-create')(views.test_create_project)

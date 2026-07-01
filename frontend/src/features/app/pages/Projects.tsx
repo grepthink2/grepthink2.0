@@ -79,13 +79,13 @@ const Projects: React.FC = () => {
     const fetchProjectsPageData = async () => {
       try {
         setLoading(true);
-        const [projectsResponse, rosterResponse] = await Promise.all([
-          api.getClassProjects(selectedClass.id),
+        const [overview, rosterResponse] = await Promise.all([
+          api.getClassProjectsOverview(selectedClass.id),
           api.getClassRoster(selectedClass.id),
         ]);
         if (!isMounted) return;
 
-        setApiProjects(projectsResponse.projects ?? []);
+        setApiProjects(overview.projects ?? []);
         setClassStudents(rosterResponse.students ?? []);
         setError(null);
       } catch (err) {

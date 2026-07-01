@@ -82,6 +82,13 @@ export interface ApiTAMeetingSchedule {
   week_number: number;
   total_weeks: number;
   week_of?: string | null;
+  /** Which meeting within the week this schedule's attendance reflects (1..meetings_per_week). */
+  meeting_in_week: number;
+  /** TA meetings per week for this class (1 = once weekly). */
+  meetings_per_week: number;
+  meeting_duration_minutes?: number | null;
+  /** total_weeks * meetings_per_week. */
+  total_meetings: number;
   teams: ApiTeamMeeting[];
 }
 
@@ -96,6 +103,7 @@ export interface ApiAttendanceEntry {
 export interface ApiTeamAttendance {
   project_id: string;
   week_number: number;
+  meeting_in_week: number;
   entries: ApiAttendanceEntry[];
 }
 
@@ -593,6 +601,15 @@ export async function apiUpload<T = unknown>(
   return response.json();
 }
 
+/** Build the ?week=&meeting= query for the TA-schedule endpoints. */
+function scheduleQuery(week?: number, meeting = 1): string {
+  const p = new URLSearchParams();
+  if (week != null) p.set('week', String(week));
+  if (meeting && meeting !== 1) p.set('meeting', String(meeting));
+  const q = p.toString();
+  return q ? `?${q}` : '';
+}
+
 /**
  * API client for backend endpoints
  */
@@ -784,6 +801,17 @@ export const api = {
     return apiRequest<{ projects: ApiProject[] }>(`/api/classes/${classId}/projects`);
   },
 
+  /**
+   * Projects + enrolled-student list for the Projects page in a single request.
+   * Backed by one endpoint that reads each underlying table once, replacing the
+   * two parallel getClassProjects + getClassStudents calls.
+   */
+  getClassProjectsOverview: async (classId: string) => {
+    return apiRequest<{ projects: ApiProject[]; students: ApiStudent[] }>(
+      `/api/classes/${classId}/projects-overview`,
+    );
+  },
+
   getClassTurnInStats: async (classId: string) => {
     return apiRequest<{ turn_in: ApiTurnInStats }>(`/api/classes/${classId}/turn-in-stats`);
   },
@@ -894,14 +922,6 @@ export const api = {
   /** Create a project (full form: POST /api/projects) */
   createProject: async (data: CreateProjectPayload) => {
     return apiRequest<{ message: string; project: ApiProject }>('/api/projects', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /** Test-only: create a project bypassing instructor check (POST /api/projects/test-create) */
-  testCreateProject: async (data: CreateProjectPayload) => {
-    return apiRequest<{ message: string; project: ApiProject }>('/api/projects/test-create', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -1103,58 +1123,67 @@ export const api = {
   // ----- TA meeting schedule + attendance (app/attendance backend) ----------
 
   /** Instructor: weekly schedule of every team's meeting slot + attendance. */
-  getTAMeetingSchedule: async (classId: string, week?: number) => {
-    const q = week != null ? `?week=${week}` : '';
-    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule${q}`);
+  getTAMeetingSchedule: async (classId: string, week?: number, meeting = 1) => {
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule${scheduleQuery(week, meeting)}`);
   },
 
   /** TA: only the teams assigned to me in this class + week. */
-  getMyAssignedTeams: async (classId: string, week?: number) => {
-    const q = week != null ? `?week=${week}` : '';
-    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/mine${q}`);
+  getMyAssignedTeams: async (classId: string, week?: number, meeting = 1) => {
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/mine${scheduleQuery(week, meeting)}`);
   },
 
   /** Student: my own team's meeting slot + my own attendance for the week. */
-  getMyTeamSchedule: async (classId: string, week?: number) => {
-    const q = week != null ? `?week=${week}` : '';
-    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/my-team${q}`);
+  getMyTeamSchedule: async (classId: string, week?: number, meeting = 1) => {
+    return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/my-team${scheduleQuery(week, meeting)}`);
   },
 
-  /** Roster + statuses for one team's check-in panel (week-scoped). */
-  getTeamAttendance: async (projectId: string, week: number) => {
-    return apiRequest<ApiTeamAttendance>(`/api/projects/${projectId}/attendance?week=${week}`);
+  /** Roster + statuses for one team's check-in panel (week + meeting scoped). */
+  getTeamAttendance: async (projectId: string, week: number, meeting = 1) => {
+    return apiRequest<ApiTeamAttendance>(`/api/projects/${projectId}/attendance?week=${week}&meeting=${meeting}`);
   },
 
-  /** Mark one person present/late/absent for a (project, week). */
+  /** Mark one person present/late/absent for a (project, week, meeting). */
   upsertAttendance: async (
     projectId: string,
     week: number,
     personId: string,
     status: 'present' | 'late' | 'absent',
+    meetingInWeek = 1,
   ) => {
     return apiRequest<{ message: string; record: unknown }>(
       `/api/projects/${projectId}/attendance`,
       {
         method: 'PUT',
-        body: JSON.stringify({ week_number: week, person_id: personId, status }),
+        body: JSON.stringify({ week_number: week, meeting_in_week: meetingInWeek, person_id: personId, status }),
       },
     );
   },
 
-  /** Mark every team member present for a (project, week). */
-  markAllPresent: async (projectId: string, week: number) => {
+  /** Mark every team member present for a (project, week, meeting). */
+  markAllPresent: async (projectId: string, week: number, meetingInWeek = 1) => {
     return apiRequest<{ message: string; records: unknown[] }>(
       `/api/projects/${projectId}/attendance/mark-all-present`,
-      { method: 'POST', body: JSON.stringify({ week_number: week }) },
+      { method: 'POST', body: JSON.stringify({ week_number: week, meeting_in_week: meetingInWeek }) },
     );
   },
 
-  /** Update a project's Zoom link / recurring meeting slot. */
+  /** Instructor: set how many TA meetings/week + per-meeting duration for a class. */
+  setMeetingCadence: async (
+    classId: string,
+    data: { meetings_per_week?: number; meeting_duration_minutes?: number },
+  ) => {
+    return apiRequest<{ message: string; class: ApiClass }>(
+      `/api/classes/${classId}/meeting-cadence`,
+      { method: 'PATCH', body: JSON.stringify(data) },
+    );
+  },
+
+  /** Set a team's weekly meeting slot (day/time/Zoom) for a given meeting-in-week. */
   updateProjectMeeting: async (
     projectId: string,
-    data: { zoom_url?: string | null; meeting_day?: string | null; meeting_time?: string | null },
+    data: { meeting_in_week?: number; zoom_url?: string | null; meeting_day?: string | null; meeting_time?: string | null },
   ) => {
-    return apiRequest<{ message: string; project: ApiProject }>(
+    return apiRequest<{ message: string; meeting: { meeting_id: string; meeting_in_week: number; meeting_day: string | null; meeting_time: string | null; zoom_url: string | null } }>(
       `/api/projects/${projectId}/meeting`,
       { method: 'PATCH', body: JSON.stringify(data) },
     );
