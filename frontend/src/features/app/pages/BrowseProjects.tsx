@@ -26,7 +26,9 @@ const BrowseProjects: React.FC = () => {
         setLoading(true);
         const response = await api.getClassProjects(selectedClass.id);
         if (!isMounted) return;
-        const list = response.projects ?? [];
+        const list = (response.projects ?? []).slice().sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+        );
         setProjects(
           list.map((p) =>
             toProjectGridItem({

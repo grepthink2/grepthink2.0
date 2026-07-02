@@ -178,24 +178,55 @@ const Dashboard: React.FC = () => {
             <p className="dashboard__card-empty">No assignments yet.</p>
           ) : (
             <ul className="dashboard__assignment-list">
-              {recentRows.map((a) => (
-                <li key={a.id} className="dashboard__assignment-row">
-                  <div className="dashboard__assignment-text">
-                    <span className="dashboard__assignment-title">{a.title}</span>
-                    <span className="dashboard__assignment-due">Due {a.dueLabel}</span>
-                  </div>
-                  <div className="dashboard__assignment-end">
-                    {a.total > 0 && (
-                      <span className="dashboard__assignment-count">
-                        {a.submitted}/{a.total}
+              {recentRows.map((a) => {
+                const isTsr =
+                  a.assignmentType !== 'interest_form' && a.assignmentType !== 'feedback';
+                const canViewTsr = isTsr && a.hasTsrResponses;
+                const isFeedback = a.assignmentType === 'feedback';
+                const canViewFeedback = isFeedback && a.hasFeedbackResponses;
+                const canView = canViewTsr || canViewFeedback;
+
+                const handleTitleClick = () => {
+                  if (canViewTsr) {
+                    navigate(`/app/modules/tsr/${a.id}`, {
+                      state: { assignmentName: a.title },
+                    });
+                  } else if (canViewFeedback) {
+                    navigate(`/app/modules/feedback/${a.id}`, {
+                      state: { assignmentName: a.title },
+                    });
+                  }
+                };
+
+                return (
+                  <li key={a.id} className="dashboard__assignment-row">
+                    <div className="dashboard__assignment-text">
+                      {canView ? (
+                        <button
+                          type="button"
+                          className="dashboard__assignment-title-link"
+                          onClick={handleTitleClick}
+                        >
+                          {a.title}
+                        </button>
+                      ) : (
+                        <span className="dashboard__assignment-title">{a.title}</span>
+                      )}
+                      <span className="dashboard__assignment-due">Due {a.dueLabel}</span>
+                    </div>
+                    <div className="dashboard__assignment-end">
+                      {a.total > 0 && (
+                        <span className="dashboard__assignment-count">
+                          {a.submitted}/{a.total}
+                        </span>
+                      )}
+                      <span className={`dashboard__pill dashboard__pill--${a.status}`}>
+                        {STATUS_PILL_LABEL[a.status]}
                       </span>
-                    )}
-                    <span className={`dashboard__pill dashboard__pill--${a.status}`}>
-                      {STATUS_PILL_LABEL[a.status]}
-                    </span>
-                  </div>
-                </li>
-              ))}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
