@@ -101,7 +101,7 @@ const RosterList: React.FC<RosterListProps> = ({
   const studentCount = countableStudents(students).filter((s) => s.classStatus !== 'dropped').length;
 
   if (loading) {
-    const headers = ['Name', 'Email', 'Class Status', 'GrepThink Status', 'Projects'];
+    const headers = ['Name', 'Email', 'Course Status', 'GrepThink Status', 'Projects'];
     if (showActions) headers.push('Actions');
     return (
       <TableSkeleton
@@ -165,7 +165,7 @@ const RosterList: React.FC<RosterListProps> = ({
                 <tr>
                   <SortableHeader label="Name" sortKey="name" currentSort={sort} onSort={toggleSort} />
                   <SortableHeader label="Email" sortKey="email" currentSort={sort} onSort={toggleSort} />
-                  <SortableHeader label="Class Status" sortKey="classStatus" currentSort={sort} onSort={toggleSort} />
+                  <SortableHeader label="Course Status" sortKey="classStatus" currentSort={sort} onSort={toggleSort} />
                   <SortableHeader label="GrepThink Status" sortKey="grepthinkStatus" currentSort={sort} onSort={toggleSort} />
                   <SortableHeader label="Projects" sortKey="projects" currentSort={sort} onSort={toggleSort} />
                   {showActions && <th>Actions</th>}
