@@ -208,7 +208,12 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     ? `${currentCount}/${totalMembers} Members`
     : `${currentCount} Members`;
   const spotsAvailable = hasValidTeamSize ? totalMembers - currentCount : null;
-  const spotsText = spotsAvailable !== null ? `${spotsAvailable} Spots Available` : 'Spots Available';
+  const spotsText =
+    spotsAvailable !== null
+      ? spotsAvailable === 1
+        ? '1 Spot Available'
+        : `${spotsAvailable} Spots Available`
+      : 'Spots Available';
 
   const getRoleIcon = (roleId: string) => {
     const size = 18;
