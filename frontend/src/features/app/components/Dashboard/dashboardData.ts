@@ -66,6 +66,9 @@ export interface DashboardAssignment {
   status: AssignmentStatus;
   submitted: number;
   total: number;
+  assignmentType?: string;
+  hasTsrResponses: boolean;
+  hasFeedbackResponses: boolean;
 }
 
 /** Map an API assignment to a dashboard row with a derived status pill. */
@@ -79,14 +82,18 @@ export function mapDashboardAssignment(a: ApiAssignment): DashboardAssignment {
   } else {
     status = 'active';
   }
+  const isFeedback = a.assignment_type === 'feedback';
   return {
     id: a.id,
     title: a.Title,
     dueLabel: format(parseISO(a.close_date), 'MMM d, yyyy'),
     closeDate: a.close_date,
     status,
-    submitted: a.teams_submitted ?? 0,
-    total: a.teams_total ?? 0,
+    submitted: isFeedback ? (a.feedback_submitted ?? 0) : (a.teams_submitted ?? 0),
+    total: isFeedback ? (a.feedback_total ?? 0) : (a.teams_total ?? 0),
+    assignmentType: a.assignment_type,
+    hasTsrResponses: a.has_tsr_responses ?? false,
+    hasFeedbackResponses: (a.feedback_submitted ?? 0) > 0,
   };
 }
 

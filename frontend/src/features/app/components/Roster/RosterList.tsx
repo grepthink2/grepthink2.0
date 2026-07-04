@@ -1,5 +1,5 @@
-import React from 'react';
-import { UserMinus, Mail, Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { UserMinus, Mail, Loader2, UserPlus, Trash2 } from 'lucide-react';
 import type { UiStudent, ClassStatus, GrepthinkStatus } from './rosterTypes';
 import { countableStudents } from './rosterTypes';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
@@ -16,6 +16,18 @@ interface RosterListProps {
   onInvite?: (student: UiStudent) => void;
   onRemove?: (student: UiStudent) => void;
   invitingEmails?: Set<string>;
+  onAddStudent?: () => void;
+  onDeleteManual?: (student: UiStudent) => void;
+}
+
+/** Manually added rows can be right-clicked to delete them entirely from the roster. */
+function isManualDeletable(student: UiStudent): boolean {
+  return student.classStatus === 'manual' && !!student.rosterEntryId;
+}
+
+/** Dropped students who never registered have nothing actionable left to do. */
+function hasNoActions(student: UiStudent): boolean {
+  return student.classStatus === 'dropped' && student.grepthinkStatus === 'not_registered';
 }
 
 const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
@@ -23,6 +35,7 @@ const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
   waitlisted: 'Waitlisted',
   dropped: 'Dropped',
   not_on_roster: 'Not on Roster',
+  manual: 'Manual',
 };
 
 const GREPTHINK_STATUS_LABELS: Record<GrepthinkStatus, string> = {
@@ -48,6 +61,8 @@ const RosterList: React.FC<RosterListProps> = ({
   onInvite,
   onRemove,
   invitingEmails = new Set(),
+  onAddStudent,
+  onDeleteManual,
 }) => {
   const { sortedRows: sortedStudents, sort, toggleSort } = useTableSort<UiStudent, RosterSortKey>(
     students,
@@ -55,11 +70,38 @@ const RosterList: React.FC<RosterListProps> = ({
     { key: 'name', direction: 'asc' },
   );
 
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; student: UiStudent } | null>(null);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    window.addEventListener('click', close);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [contextMenu]);
+
+  const handleContextMenu = (e: React.MouseEvent, student: UiStudent) => {
+    if (!onDeleteManual || !isManualDeletable(student)) return;
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, student });
+  };
+
+  const handleDeleteClick = () => {
+    if (contextMenu) onDeleteManual?.(contextMenu.student);
+    setContextMenu(null);
+  };
+
   // TAs and dropped students don't count toward the roster total.
   const studentCount = countableStudents(students).filter((s) => s.classStatus !== 'dropped').length;
 
   if (loading) {
-    const headers = ['Name', 'Email', 'Class Status', 'GrepThink Status', 'Projects'];
+    const headers = ['Name', 'Email', 'Course Status', 'GrepThink Status', 'Projects'];
     if (showActions) headers.push('Actions');
     return (
       <TableSkeleton
@@ -96,6 +138,16 @@ const RosterList: React.FC<RosterListProps> = ({
           <StatTooltip label="Counts all non-dropped students in the uploaded roster" underline>Roster Count</StatTooltip>
         </h2>
         <span className="roster-list__count-badge">{studentCount}</span>
+        {onAddStudent && (
+          <button
+            className="roster-list__add-student-btn"
+            onClick={onAddStudent}
+            type="button"
+          >
+            <UserPlus size={14} />
+            Add Student
+          </button>
+        )}
       </div>
 
       {/* Desktop table */}
@@ -113,7 +165,7 @@ const RosterList: React.FC<RosterListProps> = ({
                 <tr>
                   <SortableHeader label="Name" sortKey="name" currentSort={sort} onSort={toggleSort} />
                   <SortableHeader label="Email" sortKey="email" currentSort={sort} onSort={toggleSort} />
-                  <SortableHeader label="Class Status" sortKey="classStatus" currentSort={sort} onSort={toggleSort} />
+                  <SortableHeader label="Course Status" sortKey="classStatus" currentSort={sort} onSort={toggleSort} />
                   <SortableHeader label="GrepThink Status" sortKey="grepthinkStatus" currentSort={sort} onSort={toggleSort} />
                   <SortableHeader label="Projects" sortKey="projects" currentSort={sort} onSort={toggleSort} />
                   {showActions && <th>Actions</th>}
@@ -121,7 +173,11 @@ const RosterList: React.FC<RosterListProps> = ({
               </thead>
               <tbody>
                 {sortedStudents.map((student) => (
-                  <tr key={`${student.id}-${student.email}`}>
+                  <tr
+                    key={`${student.id}-${student.email}`}
+                    onContextMenu={(e) => handleContextMenu(e, student)}
+                    className={isManualDeletable(student) ? 'roster-list__tr--deletable' : undefined}
+                  >
                     <td className="roster-list__td-name">
                       {student.name}
                       {student.isTa && <span className="roster-list__ta-badge">TA</span>}
@@ -154,7 +210,9 @@ const RosterList: React.FC<RosterListProps> = ({
                     </td>
                     {showActions && (
                       <td className="roster-list__td-actions">
-                        {student.grepthinkStatus === 'registered' ? (
+                        {hasNoActions(student) ? (
+                          <span className="roster-list__no-actions">—</span>
+                        ) : student.grepthinkStatus === 'registered' ? (
                           <button className="roster-list__action-btn roster-list__action-btn--remove" onClick={() => onRemove?.(student)} type="button">
                             <UserMinus size={13} /> Remove
                           </button>
@@ -189,7 +247,11 @@ const RosterList: React.FC<RosterListProps> = ({
           <div className="roster-list__empty-state">No students match the current filter.</div>
         ) : (
           sortedStudents.map((student) => (
-            <div key={`mobile-${student.id}-${student.email}`} className="roster-list__mobile-card">
+            <div
+              key={`mobile-${student.id}-${student.email}`}
+              className="roster-list__mobile-card"
+              onContextMenu={(e) => handleContextMenu(e, student)}
+            >
               <div className="roster-list__mobile-card-top">
                 <div className="roster-list__mobile-card-info">
                   <span className="roster-list__td-name">
@@ -216,7 +278,7 @@ const RosterList: React.FC<RosterListProps> = ({
                   ))}
                 </div>
               )}
-              {showActions && (
+              {showActions && !hasNoActions(student) && (
                 <div className="roster-list__mobile-card-actions">
                   {student.grepthinkStatus === 'registered' ? (
                     <button className="roster-list__action-btn roster-list__action-btn--remove" onClick={() => onRemove?.(student)} type="button">
@@ -243,6 +305,24 @@ const RosterList: React.FC<RosterListProps> = ({
           ))
         )}
       </div>
+
+      {contextMenu && (
+        <div
+          className="roster-list__context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <button
+            type="button"
+            className="roster-list__context-menu-item roster-list__context-menu-item--danger"
+            onClick={handleDeleteClick}
+          >
+            <Trash2 size={13} />
+            Delete
+          </button>
+        </div>
+      )}
     </div>
   );
 };

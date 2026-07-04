@@ -130,7 +130,7 @@ def _is_enrolled(client, class_id: str, user_id: str) -> bool:
 def _load_project(client, project_id: str) -> dict:
     res = (
         client.table("projects")
-        .select("id, class_id, name, assigned_ta_id, zoom_url, meeting_day, meeting_time, num_members")
+        .select("id, class_id, name, assigned_ta_id, num_members")
         .eq("id", str(project_id)).execute()
     )
     if not res.data:
