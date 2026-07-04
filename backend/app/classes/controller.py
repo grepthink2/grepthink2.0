@@ -931,6 +931,245 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
         raise HTTPException(status_code=500, detail="Failed to fetch roster")
 
 
+def get_class_roster_timeline(class_id: UUID, instructor_id: str) -> dict:
+    """Enrollment, team-join, and drop timestamps for roster students (instructor only).
+
+    - ``enrolled_at``: from ``class_enrollments.enrolled_at`` when the student joined
+      the course on GrepThink.
+    - ``team_joined_at`` / ``project_name``: earliest ``project_members.created_at``
+      in this class (if the student joined a team).
+    - ``dropped_at``: ``roster_entries.uploaded_at`` when the roster row status is
+      ``dropped`` (reflects when the roster was updated to mark them dropped).
+    """
+    try:
+        client = service_client if service_client else supabase
+        cid = str(class_id)
+
+        class_result = (
+            client.table('classes')
+            .select('id')
+            .eq('id', cid)
+            .eq('created_by', instructor_id)
+            .execute()
+        )
+        if not class_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail='Class not found or you do not have permission',
+            )
+
+        enrollments_res = (
+            client.table('class_enrollments')
+            .select('user_id, enrolled_at, enrollment_role')
+            .eq('class_id', cid)
+            .execute()
+        )
+        enrollment_by_user = {
+            str(e['user_id']): e for e in (enrollments_res.data or [])
+        }
+
+        roster_rows = (
+            client.table('roster_entries')
+            .select('email, status, matched_profile_id, uploaded_at, first_name, last_name')
+            .eq('course_id', cid)
+            .execute()
+        ).data or []
+
+        projects = (
+            client.table('projects')
+            .select('id, name')
+            .eq('class_id', cid)
+            .execute()
+        ).data or []
+        project_ids = [p['id'] for p in projects]
+        project_names = {p['id']: p.get('name') for p in projects}
+
+        enrolled_ids = list(enrollment_by_user.keys())
+        profiles: list[dict] = []
+        if enrolled_ids:
+            profiles = (
+                client.table('profiles')
+                .select('id, email, edu_email, first_name, last_name')
+                .in_('id', enrolled_ids)
+                .execute()
+            ).data or []
+
+        profile_by_id = {p['id']: p for p in profiles}
+        profile_by_email = _build_profile_email_map(profiles)
+
+        team_join_by_user: dict[str, dict] = {}
+        if project_ids and enrolled_ids:
+            members = (
+                client.table('project_members')
+                .select('user_id, project_id, created_at')
+                .in_('project_id', project_ids)
+                .in_('user_id', enrolled_ids)
+                .execute()
+            ).data or []
+            for m in members:
+                uid = str(m['user_id'])
+                ts = m.get('created_at')
+                if not ts:
+                    continue
+                pid = m['project_id']
+                prev = team_join_by_user.get(uid)
+                if not prev or str(ts) < str(prev['joined_at']):
+                    team_join_by_user[uid] = {
+                        'joined_at': ts,
+                        'project_name': project_names.get(pid),
+                    }
+
+        roster_emails = {(r.get('email') or '').strip().lower() for r in roster_rows}
+        seen_keys: set[str] = set()
+        rows: list[dict] = []
+
+        for entry in roster_rows:
+            email = (entry.get('email') or '').strip().lower()
+            profile = profile_by_email.get(email)
+            if not profile and entry.get('matched_profile_id'):
+                profile = profile_by_id.get(entry['matched_profile_id'])
+            profile_id = str(profile['id']) if profile else None
+            status = entry.get('status') or 'enrolled'
+            enrollment = enrollment_by_user.get(profile_id) if profile_id else None
+            team = team_join_by_user.get(profile_id) if profile_id else None
+            row_key = profile_id or email
+            seen_keys.add(row_key)
+            rows.append({
+                'id': row_key,
+                'name': _resolve_roster_display_name(profile, entry, email),
+                'email': email,
+                'class_status': status,
+                'enrolled_at': enrollment.get('enrolled_at') if enrollment else None,
+                'team_joined_at': team['joined_at'] if team else None,
+                'project_name': team.get('project_name') if team else None,
+                'dropped_at': entry.get('uploaded_at') if status == 'dropped' else None,
+            })
+
+        for profile in profiles:
+            uid = str(profile['id'])
+            if uid in seen_keys:
+                continue
+            edu = (profile.get('edu_email') or '').strip().lower()
+            primary = (profile.get('email') or '').strip().lower()
+            roster_email = edu or primary
+            if roster_email in roster_emails or primary in roster_emails or edu in roster_emails:
+                continue
+            enrollment = enrollment_by_user[uid]
+            team = team_join_by_user.get(uid)
+            rows.append({
+                'id': uid,
+                'name': _resolve_roster_display_name(profile, None, roster_email),
+                'email': roster_email,
+                'class_status': 'not_on_roster',
+                'enrolled_at': enrollment.get('enrolled_at'),
+                'team_joined_at': team['joined_at'] if team else None,
+                'project_name': team.get('project_name') if team else None,
+                'dropped_at': None,
+            })
+
+        rows.sort(key=lambda r: (r['name'].lower(), r['email']))
+        return {'students': rows}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error fetching roster timeline | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch roster timeline")
+
+
+def _remove_dropped_roster_students_from_teams(client, class_id: str) -> int:
+    """Remove registered students marked dropped on the roster from class teams.
+
+    Called after a roster CSV upload. Any matched GrepThink profile whose
+    roster row is ``dropped`` is removed from every project in the class;
+    remaining teammates receive an in-app notification.
+    """
+    from app.notifications.controller import notify_team_member_dropped_from_roster
+    from app.projects.controller import _increment_project_num_members
+
+    cid = str(class_id)
+    dropped_res = (
+        client.table('roster_entries')
+        .select('matched_profile_id, email, first_name, last_name')
+        .eq('course_id', cid)
+        .eq('status', 'dropped')
+        .execute()
+    )
+    dropped_by_user: dict[str, dict] = {}
+    for row in (dropped_res.data or []):
+        uid = row.get('matched_profile_id')
+        if uid:
+            dropped_by_user[str(uid)] = row
+    if not dropped_by_user:
+        return 0
+
+    projects_res = (
+        client.table('projects')
+        .select('id, name')
+        .eq('class_id', cid)
+        .execute()
+    )
+    projects = projects_res.data or []
+    if not projects:
+        return 0
+
+    project_ids = [p['id'] for p in projects]
+    project_names = {p['id']: (p.get('name') or 'Unknown project') for p in projects}
+
+    memberships_res = (
+        client.table('project_members')
+        .select('project_id, user_id')
+        .in_('user_id', list(dropped_by_user.keys()))
+        .in_('project_id', project_ids)
+        .execute()
+    )
+    memberships = memberships_res.data or []
+    if not memberships:
+        return 0
+
+    removed = 0
+    for membership in memberships:
+        pid = str(membership['project_id'])
+        uid = str(membership['user_id'])
+        team_res = (
+            client.table('project_members')
+            .select('user_id')
+            .eq('project_id', pid)
+            .execute()
+        )
+        recipient_ids = [
+            str(r['user_id'])
+            for r in (team_res.data or [])
+            if r.get('user_id') and str(r['user_id']) != uid
+        ]
+
+        client.table('project_members').delete().eq(
+            'project_id', pid,
+        ).eq('user_id', uid).execute()
+        _increment_project_num_members(client, pid, -1)
+        removed += 1
+
+        row = dropped_by_user.get(uid, {})
+        display_name = _roster_entry_name(row) or row.get('email') or 'A student'
+        notify_team_member_dropped_from_roster(
+            project_id=pid,
+            project_name=project_names.get(pid, 'Unknown project'),
+            removed_user_id=uid,
+            removed_user_name=display_name,
+            recipient_ids=recipient_ids,
+        )
+
+    client.table('project_join_requests').delete().in_(
+        'user_id', list(dropped_by_user.keys()),
+    ).in_('project_id', project_ids).eq('request_status', 'pending').execute()
+
+    if removed:
+        logger.info(
+            "Removed dropped roster students from teams | class_id=%s count=%d",
+            cid, removed,
+        )
+    return removed
+
+
 def upload_class_roster(class_id: UUID, csv_text: str, instructor_id: str) -> dict:
     """
     Replace all roster_entries for a class from a UCSC roster CSV.
@@ -1019,10 +1258,13 @@ def upload_class_roster(class_id: UUID, csv_text: str, instructor_id: str) -> di
         from app.notifications.controller import dismiss_roster_upload_notification
         dismiss_roster_upload_notification(instructor_id, cid)
 
+        removed_from_teams = _remove_dropped_roster_students_from_teams(client, cid)
+
         return {
             'message': 'Roster uploaded successfully',
             'inserted_count': len(insert_rows),
             'matched_count': matched_count,
+            'removed_from_teams': removed_from_teams,
         }
     except HTTPException:
         raise

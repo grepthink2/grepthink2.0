@@ -20,6 +20,7 @@ NOTIFICATION_TYPES = frozenset({
     "project_created",
     "complete_profile",
     "upload_roster",
+    "member_removed",
 })
 
 ELEVATED_PROJECT_ROLES = ("owner", "product owner", "admin")
@@ -379,6 +380,25 @@ def notify_new_message(
     )
 
 
+def notify_project_created_by_student(
+    *,
+    instructor_id: str,
+    student_id: str,
+    project_id: str,
+    project_name: str,
+) -> None:
+    """Notify the class instructor when a student creates a project."""
+    student_name = profile_display_name(_get_profile(student_id)) or "A student"
+    _insert_notification(
+        user_id=instructor_id,
+        type="project_created",
+        title="New student project",
+        body=f"{student_name} created project \"{project_name}\".",
+        entity_type="project",
+        entity_id=project_id,
+    )
+
+
 def notify_join_request_rejected(
     *,
     requester_id: str,
@@ -402,23 +422,57 @@ def notify_join_request_rejected(
         )
 
 
-def notify_project_created_by_student(
+def notify_team_member_dropped_from_roster(
     *,
-    instructor_id: str,
-    student_id: str,
     project_id: str,
     project_name: str,
+    removed_user_id: str,
+    removed_user_name: str,
+    recipient_ids: list[str] | None = None,
 ) -> None:
-    """Notify the class instructor when a student creates a project."""
-    student_name = profile_display_name(_get_profile(student_id)) or "A student"
-    _insert_notification(
-        user_id=instructor_id,
-        type="project_created",
-        title="New student project",
-        body=f"{student_name} created project \"{project_name}\".",
-        entity_type="project",
-        entity_id=project_id,
-    )
+    """Notify remaining project members that a teammate was dropped from the course."""
+    try:
+        if recipient_ids is None:
+            client = _client()
+            members_res = (
+                client.table("project_members")
+                .select("user_id")
+                .eq("project_id", project_id)
+                .execute()
+            )
+            recipient_ids = [
+                str(row["user_id"])
+                for row in (members_res.data or [])
+                if row.get("user_id") and str(row["user_id"]) != str(removed_user_id)
+            ]
+        else:
+            recipient_ids = [
+                str(uid) for uid in recipient_ids
+                if uid and str(uid) != str(removed_user_id)
+            ]
+
+        if not recipient_ids:
+            return
+
+        title = "Team member removed"
+        body = (
+            f"{removed_user_name} has dropped the course and was removed from "
+            f"\"{project_name}\"."
+        )
+        for user_id in recipient_ids:
+            _insert_notification(
+                user_id=user_id,
+                type="member_removed",
+                title=title,
+                body=body,
+                entity_type="project",
+                entity_id=project_id,
+            )
+    except Exception:
+        logger.exception(
+            "notify_team_member_dropped_from_roster failed | project_id=%s removed_user=%s",
+            project_id, removed_user_id,
+        )
 
 
 def list_notifications(user_id: str, *, limit: int = 50) -> dict:

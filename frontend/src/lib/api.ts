@@ -142,6 +142,17 @@ export interface ApiRosterStudent {
   roster_entry_id?: string | null;
 }
 
+export interface ApiRosterTimelineStudent {
+  id: string;
+  name: string;
+  email: string;
+  class_status: ApiRosterStudent['class_status'];
+  enrolled_at: string | null;
+  team_joined_at: string | null;
+  project_name: string | null;
+  dropped_at: string | null;
+}
+
 export interface ApiRosterUploadResult {
   message: string;
   inserted_count: number;
@@ -410,7 +421,7 @@ export interface ApiConversationSummary {
 
 export interface ApiNotification {
   id: string;
-  type: 'join_request' | 'join_rejected' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster';
+  type: 'join_request' | 'join_rejected' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster' | 'member_removed';
   title: string;
   body: string;
   entity_type: string | null;
@@ -696,6 +707,13 @@ export const api = {
   getClassRoster: async (classId: string) => {
     return apiRequest<{ students: ApiRosterStudent[]; uploaded_at: string | null }>(
       `/api/classes/${classId}/roster`,
+    );
+  },
+
+  /** Enrollment, team-join, and drop timestamps (instructor only). */
+  getClassRosterTimeline: async (classId: string) => {
+    return apiRequest<{ students: ApiRosterTimelineStudent[] }>(
+      `/api/classes/${classId}/roster/timeline`,
     );
   },
 

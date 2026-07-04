@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { Search, Mail, Upload, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, Mail, Upload, ChevronDown, Loader2, Clock } from 'lucide-react';
 import type { FilterOption } from './rosterTypes';
 import { FILTER_LABELS } from './rosterTypes';
 import { useClickOutside } from '@features/app/components/Interest/useClickOutside';
@@ -15,6 +15,7 @@ interface ControlBarProps {
   onInviteAll?: () => void;
   inviteAllLoading?: boolean;
   onRosterFileSelected?: (file: File) => void;
+  onShowTimeline?: () => void;
 }
 
 const ControlBar: React.FC<ControlBarProps> = ({
@@ -26,6 +27,7 @@ const ControlBar: React.FC<ControlBarProps> = ({
   onInviteAll,
   inviteAllLoading = false,
   onRosterFileSelected,
+  onShowTimeline,
 }) => {
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -113,6 +115,17 @@ const ControlBar: React.FC<ControlBarProps> = ({
           {!inviteAllLoading && notRegisteredCount !== undefined && (
             <span className="roster-control-bar__badge">{notRegisteredCount}</span>
           )}
+        </button>
+      )}
+
+      {onShowTimeline && (
+        <button
+          className="roster-control-bar__btn roster-control-bar__btn--timeline"
+          onClick={onShowTimeline}
+          type="button"
+        >
+          <Clock size={14} />
+          Timeline
         </button>
       )}
 
