@@ -125,7 +125,7 @@
       "method": "POST", "endpoint": "/api/projects/{project_id}/assign-scrum-master", "params": {"user_id": "uuid!"}
     },
     {
-      "id": "assign_admin", "title": "Assign admin", "role": "owner|product owner|admin|instructor",
+      "id": "assign_admin", "title": "Assign admin", "role": "instructor|ta",
       "method": "POST", "endpoint": "/api/projects/{project_id}/assign-admin", "params": {"user_id": "uuid!"}
     },
 

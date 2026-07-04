@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore, ChevronDown, LogOut/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
 import { useClickOutside } from '@features/app/components/Interest/useClickOutside';
@@ -158,6 +158,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
 }) => {
   const { role, user } = useAuth();
   const isInstructor = role === 'instructor';
+  const [canManageAdmins, setCanManageAdmins] = useState(false);
   const canManageProject =
     isInstructor ||
     (userRoleOnProject != null && MANAGER_ROLES.includes(userRoleOnProject as (typeof MANAGER_ROLES)[number]));
@@ -170,6 +171,32 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const [joinedDropdownOpen, setJoinedDropdownOpen] = useState(false);
   const joinedDropdownRef = useRef<HTMLDivElement>(null);
   useClickOutside(joinedDropdownRef, useCallback(() => setJoinedDropdownOpen(false), []));
+
+  useEffect(() => {
+    if (!classId) {
+      setCanManageAdmins(false);
+      return;
+    }
+    if (isInstructor) {
+      setCanManageAdmins(true);
+      return;
+    }
+
+    let cancelled = false;
+    api.getMyEnrollmentRole(classId)
+      .then(({ enrollment_role }) => {
+        if (!cancelled) {
+          setCanManageAdmins(enrollment_role === 'instructor' || enrollment_role === 'ta');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCanManageAdmins(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [classId, isInstructor]);
 
   const handleCancelRequest = useCallback(async () => {
     if (!pendingRequestId || cancellingRequest) return;
@@ -312,6 +339,15 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                   Edit Project/Roles
                 </button>
               </div>
+            ) : canManageAdmins ? (
+              <button
+                className="project-view__request-button"
+                onClick={() => projectId && project && setEditProjectOpen(true)}
+                disabled={!projectId || !project}
+              >
+                <SquarePen size={18} />
+                Manage Admins
+              </button>
             ) : userRoleOnProject != null && userRoleOnProject !== '' ? (
               <div className="project-view__joined-dropdown" ref={joinedDropdownRef}>
                 <button
@@ -646,6 +682,8 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           onClose={() => setEditProjectOpen(false)}
           project={project}
           projectMembers={projectMembers}
+          canManageAdmins={canManageAdmins}
+          canEditProjectDetails={canManageProject}
           onProjectChange={onMembersChange}
           onDelete={onDelete}
         />

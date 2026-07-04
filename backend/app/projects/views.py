@@ -194,7 +194,7 @@ def assign_admin(
     data: AssignRoleRequest,
     user_id: str = Depends(require_user),
 ):
-    """Assign the admin role to a project member (owner, product owner, admin, or instructor only)."""
+    """Assign the admin role to a project member (class instructor or TA only)."""
     return controller.assign_admin(
         project_id=project_id,
         requester_id=user_id,
@@ -233,7 +233,7 @@ def remove_admin(
     data: AssignRoleRequest,
     user_id: str = Depends(require_user),
 ):
-    """Demote an admin back to member (product owner, admin, or instructor only)."""
+    """Demote an admin back to member (class instructor or TA only)."""
     return controller.remove_admin(
         project_id=project_id,
         requester_id=user_id,

@@ -959,7 +959,7 @@ export const api = {
     });
   },
 
-  /** Assign the 'admin' role to a member (POST /api/projects/:id/assign-admin). */
+  /** Assign the 'admin' role to a member (instructor or class TA only). */
   assignAdmin: async (projectId: string, userId: string) => {
     return apiRequest<{ message: string }>(`/api/projects/${projectId}/assign-admin`, {
       method: 'POST',

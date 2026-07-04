@@ -10,6 +10,7 @@ import httpx
 from fastapi import HTTPException
 
 from app.auth.controller import get_user_role
+from app.tas import controller as tas_controller
 from app.database.client import (
     query_pool,
     retry_on_disconnect,
@@ -1284,6 +1285,25 @@ def _require_project_role_manager(client, requester_id: str, project_id: str) ->
     raise HTTPException(status_code=403, detail="Insufficient permissions to manage project roles")
 
 
+def _require_instructor_or_class_ta(client, requester_id: str, project_id: str) -> None:
+    """Allow only the class instructor or a class TA to manage project admin role."""
+    proj = client.table('projects').select('class_id').eq('id', project_id).execute()
+    if not proj.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+    class_id = proj.data[0]['class_id']
+    if _is_instructor(requester_id, class_id):
+        return
+    if (
+        tas_controller.get_enrollment_role(client, class_id, str(requester_id))
+        == tas_controller.ENROLLMENT_ROLE_TA
+    ):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail="Only the class instructor or a TA can manage project admins",
+    )
+
+
 def _member_row(client, project_id: str, user_id: str):
     return (
         client.table('project_members')
@@ -1366,7 +1386,7 @@ def assign_admin(project_id: UUID, requester_id: str, target_user_id: str) -> di
         proj = client.table('projects').select('id').eq('id', pid).execute()
         if not proj.data:
             raise HTTPException(status_code=404, detail="Project not found")
-        _require_project_role_manager(client, requester_id, pid)
+        _require_instructor_or_class_ta(client, requester_id, pid)
         targ = _member_row(client, pid, tid)
         if not targ.data:
             raise HTTPException(status_code=404, detail="User is not a member of this project")
@@ -1439,7 +1459,7 @@ def remove_admin(project_id: UUID, requester_id: str, target_user_id: str) -> di
         proj = client.table('projects').select('id').eq('id', pid).execute()
         if not proj.data:
             raise HTTPException(status_code=404, detail="Project not found")
-        _require_project_role_manager(client, requester_id, pid)
+        _require_instructor_or_class_ta(client, requester_id, pid)
         targ = _member_row(client, pid, tid)
         if not targ.data:
             raise HTTPException(status_code=404, detail="User is not a member of this project")

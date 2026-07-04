@@ -15,6 +15,10 @@ export interface EditProjectModalProps {
   onClose: () => void;
   project: ApiProject;
   projectMembers: ApiProjectMember[];
+  /** Only class instructors and TAs may grant or revoke project admin. */
+  canManageAdmins?: boolean;
+  /** When false, only the admin-assignment section is editable (for class TAs). */
+  canEditProjectDetails?: boolean;
   /** Called after a successful save so the parent can refetch project data. */
   onProjectChange?: () => void;
   onDelete?: () => void;
@@ -27,6 +31,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   onClose,
   project,
   projectMembers,
+  canManageAdmins = false,
+  canEditProjectDetails = true,
   onProjectChange,
   onDelete,
 }) => {
@@ -77,7 +83,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
     setTeamSizeError(null);
     setApiError(null);
     setSaving(false);
-    setActiveTab('details');
+    setActiveTab(canEditProjectDetails ? 'details' : 'team');
     setShowDeleteConfirm(false);
 
     // Seed role state from current member list
@@ -96,7 +102,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
     initialProductOwnerIdRef.current = productOwnerMember?.user_id ?? null;
     initialScrumMasterIdRef.current = scrumMasterMember?.user_id ?? null;
     initialAdminIdsRef.current = new Set(initialAdmins);
-  }, [isOpen, project, projectMembers]);
+  }, [isOpen, project, projectMembers, canEditProjectDetails]);
 
   useEffect(() => {
     return () => {
@@ -147,18 +153,20 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
     setTeamSizeError(null);
     setApiError(null);
 
-    // Validate name (field visible but not saved yet — still required to be non-empty)
-    if (!name.trim()) {
-      setNameError('Project name is required');
-      setActiveTab('details');
-      return;
-    }
+    // Details validation only applies when the caller may edit project fields.
+    if (canEditProjectDetails) {
+      if (!name.trim()) {
+        setNameError('Project name is required');
+        setActiveTab('details');
+        return;
+      }
 
-    const teamSizeNum = parseInt(teamSize.trim(), 10);
-    if (!Number.isFinite(teamSizeNum) || teamSizeNum < 1) {
-      setTeamSizeError('Team size must be a number greater than 0');
-      setActiveTab('details');
-      return;
+      const teamSizeNum = parseInt(teamSize.trim(), 10);
+      if (!Number.isFinite(teamSizeNum) || teamSizeNum < 1) {
+        setTeamSizeError('Team size must be a number greater than 0');
+        setActiveTab('details');
+        return;
+      }
     }
 
     setSaving(true);
@@ -166,7 +174,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
       const projectId = project.id;
       let resolvedLogoUrl: string | null = logoUrl;
 
-      if (pendingLogoFile) {
+      if (canEditProjectDetails && pendingLogoFile) {
         const ext = pendingLogoFile.name.split('.').pop() ?? 'jpg';
         const path = `${projectId}/logo.${ext}`;
         const { error: uploadError } = await supabase.storage
@@ -175,59 +183,63 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from('project').getPublicUrl(path);
         resolvedLogoUrl = urlData.publicUrl;
-      } else if (logoRemoved) {
+      } else if (canEditProjectDetails && logoRemoved) {
         resolvedLogoUrl = null;
       }
 
-      const trimmedName = name.trim();
-      const nameChanged = trimmedName !== project.name;
-      const descriptionChanged = description !== (project.description ?? '');
-      const teamSizeChanged = teamSizeNum !== project.team_size;
-      const logoChanged =
-        logoRemoved ||
-        pendingLogoFile !== null ||
-        resolvedLogoUrl !== (project.image_url ?? null);
+      if (canEditProjectDetails) {
+        const teamSizeNum = parseInt(teamSize.trim(), 10);
+        const trimmedName = name.trim();
+        const nameChanged = trimmedName !== project.name;
+        const descriptionChanged = description !== (project.description ?? '');
+        const teamSizeChanged = teamSizeNum !== project.team_size;
+        const logoChanged =
+          logoRemoved ||
+          pendingLogoFile !== null ||
+          resolvedLogoUrl !== (project.image_url ?? null);
 
-      if (nameChanged || descriptionChanged || teamSizeChanged || logoChanged) {
-        await api.updateProject(projectId, {
-          name: trimmedName,
-          description,
-          team_size: teamSizeNum,
-          ...(logoChanged ? { image_url: resolvedLogoUrl ?? '' } : {}),
-        });
-        if (logoPreview) URL.revokeObjectURL(logoPreview);
-        setLogoPreview(null);
-        setPendingLogoFile(null);
-        setLogoRemoved(false);
-      }
+        if (nameChanged || descriptionChanged || teamSizeChanged || logoChanged) {
+          await api.updateProject(projectId, {
+            name: trimmedName,
+            description,
+            team_size: teamSizeNum,
+            ...(logoChanged ? { image_url: resolvedLogoUrl ?? '' } : {}),
+          });
+          if (logoPreview) URL.revokeObjectURL(logoPreview);
+          setLogoPreview(null);
+          setPendingLogoFile(null);
+          setLogoRemoved(false);
+        }
 
-      // 2. Product Owner: assign new or remove if cleared
-      if (productOwnerId !== initialProductOwnerIdRef.current) {
-        if (productOwnerId) {
-          // assignProductOwner auto-demotes the previous holder
-          await api.assignProductOwner(projectId, productOwnerId);
-        } else if (initialProductOwnerIdRef.current) {
-          await api.removeProductOwner(projectId, initialProductOwnerIdRef.current);
+        // 2. Product Owner: assign new or remove if cleared
+        if (productOwnerId !== initialProductOwnerIdRef.current) {
+          if (productOwnerId) {
+            await api.assignProductOwner(projectId, productOwnerId);
+          } else if (initialProductOwnerIdRef.current) {
+            await api.removeProductOwner(projectId, initialProductOwnerIdRef.current);
+          }
+        }
+
+        // 3. Scrum Master: assign new or remove if cleared
+        if (scrumMasterId !== initialScrumMasterIdRef.current) {
+          if (scrumMasterId) {
+            await api.assignScrumMaster(projectId, scrumMasterId);
+          } else if (initialScrumMasterIdRef.current) {
+            await api.removeScrumMaster(projectId, initialScrumMasterIdRef.current);
+          }
         }
       }
 
-      // 3. Scrum Master: assign new or remove if cleared
-      if (scrumMasterId !== initialScrumMasterIdRef.current) {
-        if (scrumMasterId) {
-          await api.assignScrumMaster(projectId, scrumMasterId);
-        } else if (initialScrumMasterIdRef.current) {
-          await api.removeScrumMaster(projectId, initialScrumMasterIdRef.current);
-        }
+      // 4. Admin: only instructors / TAs may change admin assignments
+      if (canManageAdmins) {
+        const initialAdmins = initialAdminIdsRef.current;
+        const addedAdmins = [...adminIds].filter((id) => !initialAdmins.has(id));
+        const removedAdmins = [...initialAdmins].filter((id) => !adminIds.has(id));
+        await Promise.all([
+          ...addedAdmins.map((id) => api.assignAdmin(projectId, id)),
+          ...removedAdmins.map((id) => api.removeAdmin(projectId, id)),
+        ]);
       }
-
-      // 4. Admin: diff the Sets to find adds and removes
-      const initialAdmins = initialAdminIdsRef.current;
-      const addedAdmins = [...adminIds].filter((id) => !initialAdmins.has(id));
-      const removedAdmins = [...initialAdmins].filter((id) => !adminIds.has(id));
-      await Promise.all([
-        ...addedAdmins.map((id) => api.assignAdmin(projectId, id)),
-        ...removedAdmins.map((id) => api.removeAdmin(projectId, id)),
-      ]);
 
       onProjectChange?.();
       onClose();
@@ -275,31 +287,37 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
           </button>
 
           <header className="edit-project__header">
-            <h2 className="edit-project__title">Edit Project</h2>
+            <h2 className="edit-project__title">
+              {canEditProjectDetails ? 'Edit Project' : 'Manage Project Admins'}
+            </h2>
             <p className="edit-project__subtitle">
-              Manage your project configuration and team roles
+              {canEditProjectDetails
+                ? 'Manage your project configuration and team roles'
+                : 'Assign or revoke admin access for project members'}
             </p>
           </header>
 
           {/* ── Tabs ── */}
-          <div className="edit-project__tabs">
-            <button
-              type="button"
-              className={`edit-project__tab ${activeTab === 'details' ? 'edit-project__tab--active' : ''}`}
-              onClick={() => setActiveTab('details')}
-            >
-              <Settings size={16} />
-              <span>Details</span>
-            </button>
-            <button
-              type="button"
-              className={`edit-project__tab ${activeTab === 'team' ? 'edit-project__tab--active' : ''}`}
-              onClick={() => setActiveTab('team')}
-            >
-              <Users size={16} />
-              <span>Team</span>
-            </button>
-          </div>
+          {canEditProjectDetails && (
+            <div className="edit-project__tabs">
+              <button
+                type="button"
+                className={`edit-project__tab ${activeTab === 'details' ? 'edit-project__tab--active' : ''}`}
+                onClick={() => setActiveTab('details')}
+              >
+                <Settings size={16} />
+                <span>Details</span>
+              </button>
+              <button
+                type="button"
+                className={`edit-project__tab ${activeTab === 'team' ? 'edit-project__tab--active' : ''}`}
+                onClick={() => setActiveTab('team')}
+              >
+                <Users size={16} />
+                <span>Team</span>
+              </button>
+            </div>
+          )}
 
           {/* ── Body ── */}
           <div className="edit-project__body">
@@ -322,7 +340,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
                 onRemoveLogo={handleRemoveLogo}
               />
             )}
-            {activeTab === 'team' && (
+            {(activeTab === 'team' || !canEditProjectDetails) && (
               <TeamTab
                 memberOptions={memberOptions}
                 projectOwnerId={projectOwnerId}
@@ -332,21 +350,25 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
                 onScrumMasterChange={setScrumMasterId}
                 adminIds={adminIds}
                 onToggleAdmin={toggleAdmin}
+                canManageAdmins={canManageAdmins}
+                canEditProjectDetails={canEditProjectDetails}
               />
             )}
           </div>
 
           {/* ── Footer ── */}
           <footer className="edit-project__footer">
-            <button
-              type="button"
-              className="edit-project__btn edit-project__btn--delete"
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={saving}
-            >
-              <Trash2 size={16} />
-              Delete Project
-            </button>
+            {canEditProjectDetails && (
+              <button
+                type="button"
+                className="edit-project__btn edit-project__btn--delete"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={saving}
+              >
+                <Trash2 size={16} />
+                Delete Project
+              </button>
+            )}
             <div className="edit-project__footer-right">
               <button
                 type="button"
