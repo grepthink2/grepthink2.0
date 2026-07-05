@@ -95,13 +95,15 @@ const TAManagement: React.FC = () => {
     const projectId = assignSelections[ta.id];
     if (!projectId) return;
     void runAction(ta.id, async () => {
-      await api.assignTAToProject(projectId, ta.id);
+      // One operational TA per team (projects.assigned_ta_id) — assigning here
+      // makes this TA the team's meeting + TSR-review TA.
+      await api.assignProjectTA(projectId, ta.id);
       setAssignSelections((prev) => ({ ...prev, [ta.id]: '' }));
     });
   };
 
   const handleUnassign = (ta: ApiClassTA, projectId: string) =>
-    runAction(ta.id, () => api.removeTAFromProject(projectId, ta.id));
+    runAction(ta.id, () => api.assignProjectTA(projectId, null));
 
   if (!selectedClass) {
     return (

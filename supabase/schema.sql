@@ -277,7 +277,8 @@ CREATE TABLE IF NOT EXISTS "public"."classes" (
     "start_date" "date",
     "can_students_make_project" boolean,
     "image_url" "text",
-    "status" "text" NOT NULL
+    "status" "text" NOT NULL,
+    "review_period_open" boolean DEFAULT false NOT NULL
 );
 
 
@@ -462,17 +463,17 @@ CREATE TABLE IF NOT EXISTS "public"."project_members" (
 ALTER TABLE "public"."project_members" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."project_ta_assignments" (
+CREATE TABLE IF NOT EXISTS "public"."project_review_tas" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "class_id" "uuid" NOT NULL,
     "project_id" "uuid" NOT NULL,
     "user_id" "uuid" NOT NULL,
     "assigned_by" "uuid",
-    "assigned_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "claimed_at" timestamp with time zone DEFAULT "now"() NOT NULL
 );
 
 
-ALTER TABLE "public"."project_ta_assignments" OWNER TO "postgres";
+ALTER TABLE "public"."project_review_tas" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."projects" (
@@ -662,13 +663,13 @@ ALTER TABLE ONLY "public"."project_members"
 
 
 
-ALTER TABLE ONLY "public"."project_ta_assignments"
-    ADD CONSTRAINT "project_ta_assignments_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."project_review_tas"
+    ADD CONSTRAINT "project_review_tas_pkey" PRIMARY KEY ("id");
 
 
 
-ALTER TABLE ONLY "public"."project_ta_assignments"
-    ADD CONSTRAINT "project_ta_assignments_unique" UNIQUE ("project_id", "user_id");
+ALTER TABLE ONLY "public"."project_review_tas"
+    ADD CONSTRAINT "project_review_tas_project_unique" UNIQUE ("project_id");
 
 
 
@@ -738,15 +739,15 @@ CREATE INDEX "idx_profiles_id" ON "public"."profiles" USING "btree" ("id");
 
 
 
-CREATE INDEX "idx_project_ta_assignments_class" ON "public"."project_ta_assignments" USING "btree" ("class_id");
+CREATE INDEX "idx_project_review_tas_class" ON "public"."project_review_tas" USING "btree" ("class_id");
 
 
 
-CREATE INDEX "idx_project_ta_assignments_project" ON "public"."project_ta_assignments" USING "btree" ("project_id");
+CREATE INDEX "idx_project_review_tas_project" ON "public"."project_review_tas" USING "btree" ("project_id");
 
 
 
-CREATE INDEX "idx_project_ta_assignments_user" ON "public"."project_ta_assignments" USING "btree" ("user_id");
+CREATE INDEX "idx_project_review_tas_user" ON "public"."project_review_tas" USING "btree" ("user_id");
 
 
 
@@ -991,23 +992,23 @@ ALTER TABLE ONLY "public"."project_members"
 
 
 
-ALTER TABLE ONLY "public"."project_ta_assignments"
-    ADD CONSTRAINT "project_ta_assignments_assigned_by_fkey" FOREIGN KEY ("assigned_by") REFERENCES "public"."profiles"("id");
+ALTER TABLE ONLY "public"."project_review_tas"
+    ADD CONSTRAINT "project_review_tas_assigned_by_fkey" FOREIGN KEY ("assigned_by") REFERENCES "public"."profiles"("id");
 
 
 
-ALTER TABLE ONLY "public"."project_ta_assignments"
-    ADD CONSTRAINT "project_ta_assignments_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id");
+ALTER TABLE ONLY "public"."project_review_tas"
+    ADD CONSTRAINT "project_review_tas_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE;
 
 
 
-ALTER TABLE ONLY "public"."project_ta_assignments"
-    ADD CONSTRAINT "project_ta_assignments_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id");
+ALTER TABLE ONLY "public"."project_review_tas"
+    ADD CONSTRAINT "project_review_tas_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
 
 
 
-ALTER TABLE ONLY "public"."project_ta_assignments"
-    ADD CONSTRAINT "project_ta_assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id");
+ALTER TABLE ONLY "public"."project_review_tas"
+    ADD CONSTRAINT "project_review_tas_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
@@ -1124,7 +1125,7 @@ ALTER TABLE "public"."project_join_requests" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."project_members" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."project_ta_assignments" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."project_review_tas" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."projects" ENABLE ROW LEVEL SECURITY;
@@ -1275,9 +1276,9 @@ GRANT ALL ON TABLE "public"."project_members" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."project_ta_assignments" TO "anon";
-GRANT ALL ON TABLE "public"."project_ta_assignments" TO "authenticated";
-GRANT ALL ON TABLE "public"."project_ta_assignments" TO "service_role";
+GRANT ALL ON TABLE "public"."project_review_tas" TO "anon";
+GRANT ALL ON TABLE "public"."project_review_tas" TO "authenticated";
+GRANT ALL ON TABLE "public"."project_review_tas" TO "service_role";
 
 
 

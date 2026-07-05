@@ -1241,22 +1241,6 @@ export const api = {
     return apiRequest<{ tas: ApiProjectTA[] }>(`/api/tas/projects/${projectId}`);
   },
 
-  /** Instructor: assign a class TA to oversee a project. */
-  assignTAToProject: async (projectId: string, userId: string) => {
-    return apiRequest<{ message: string; user_id: string }>(
-      `/api/tas/projects/${projectId}/assign`,
-      { method: 'POST', body: JSON.stringify({ user_id: userId }) },
-    );
-  },
-
-  /** Instructor: remove a TA's assignment from a project. */
-  removeTAFromProject: async (projectId: string, userId: string) => {
-    return apiRequest<{ message: string; user_id: string }>(
-      `/api/tas/projects/${projectId}/tas/${userId}`,
-      { method: 'DELETE' },
-    );
-  },
-
   // ----- Messages ----------------------------------------------------------
 
   /** Inbox: caller's conversations sorted by latest activity. */

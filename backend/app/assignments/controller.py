@@ -48,8 +48,9 @@ def _resolve_tsr_overview_access(client, user_id: str, class_id: str) -> Optiona
 
     Returns ``None`` for the class instructor (no project restriction). For a TA
     (``class_enrollments.enrollment_role == 'ta'``) returns the set of project
-    ids they are assigned to via ``project_ta_assignments``. Anyone else gets a
-    403.
+    ids where they are the team's assigned TA (``projects.assigned_ta_id`` — the
+    one operational TA who runs meetings, takes attendance, and reviews TSRs).
+    Anyone else gets a 403.
     """
     class_row = (
         client.table('classes')
@@ -77,13 +78,13 @@ def _resolve_tsr_overview_access(client, user_id: str, class_id: str) -> Optiona
         )
 
     ta_rows = (
-        client.table('project_ta_assignments')
-        .select('project_id')
+        client.table('projects')
+        .select('id')
         .eq('class_id', class_id)
-        .eq('user_id', user_id)
+        .eq('assigned_ta_id', user_id)
         .execute()
     )
-    return {str(r['project_id']) for r in (ta_rows.data or []) if r.get('project_id')}
+    return {str(r['id']) for r in (ta_rows.data or []) if r.get('id')}
 
 
 def create_assignment(

@@ -7,10 +7,10 @@ Owns three related surfaces that share permission helpers:
   * per-project meeting TA + meeting/Zoom metadata (columns on ``projects``)
   * per-week attendance (``attendance``)
 
-Note: "meeting TA" (``projects.assigned_ta_id``, who runs a team's weekly
-meeting + takes attendance) and "review TA" (``project_ta_assignments``, who
-reviews a team's TSRs, owned by the tas module) are intentionally distinct
-project-level roles — both now drawn from the one class-TA pool above.
+Note: ``projects.assigned_ta_id`` is the team's single operational TA — they run
+the weekly meeting, take attendance, and review the team's TSRs (the tas module
+reads this column for TA Review). The end-of-quarter "additional reviewer"
+(``project_review_tas``, owned by the tas module) is a separate role.
 
 Permission model (RLS is off; everything is enforced here):
   * Designate class TAs / assign a project TA  -> class instructor only.
@@ -231,11 +231,11 @@ def set_class_ta(class_id: UUID, instructor_id: str, target_user_id: str, is_ta:
     """Designate or undesignate an enrolled student as a class TA.
 
     Class-TA status is stored in ``class_enrollments.enrollment_role`` — the
-    single source of truth shared with the tas module and TA Review. The
-    enrollment write is delegated to the tas controller so both designation UIs
-    (TA Management and TA Meetings) stay in lockstep; on undesignate we also
-    clear the user's meeting ownership (``projects.assigned_ta_id``) in the class
-    (``demote_ta`` already clears their ``project_ta_assignments`` review rows).
+    single source of truth shared with the tas module and TA Review. The write is
+    delegated to the tas controller so both designation UIs (TA Management and TA
+    Meetings) stay in lockstep. On undesignate, ``demote_ta`` also clears the
+    user's assigned-TA ownership (``projects.assigned_ta_id`` — meeting + TSR
+    review) and any end-of-quarter review claims they hold.
     """
     cid, tid = str(class_id), str(target_user_id)
     if is_ta:
@@ -244,13 +244,6 @@ def set_class_ta(class_id: UUID, instructor_id: str, target_user_id: str, is_ta:
         return {"message": "TA designated", "user_id": tid, "is_ta": True}
 
     tas_controller.demote_ta(instructor_id, class_id, target_user_id)
-    try:
-        _client().table("projects").update({"assigned_ta_id": None}) \
-            .eq("class_id", cid).eq("assigned_ta_id", tid).execute()
-    except Exception:
-        logger.exception(
-            "Failed to clear meeting ownership on TA removal | class_id=%s user_id=%s", cid, tid
-        )
     logger.info("Class TA removed | class_id=%s user_id=%s by=%s", cid, tid, instructor_id)
     return {"message": "TA removed", "user_id": tid, "is_ta": False}
 
