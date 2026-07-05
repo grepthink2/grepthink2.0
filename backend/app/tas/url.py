@@ -13,7 +13,12 @@ router.post('/classes/{class_id}/demote')(views.demote_ta)
 router.get('/classes/{class_id}/my-role')(views.get_my_enrollment_role)
 router.get('/classes/{class_id}/review-targets')(views.get_ta_review_targets)
 
-# Project-level TA assignment.
+# Project-level: the team's assigned TA (0 or 1).
 router.get('/projects/{project_id}')(views.list_project_tas)
-router.post('/projects/{project_id}/assign')(views.assign_ta_to_project)
-router.delete('/projects/{project_id}/tas/{target_user_id}')(views.remove_ta_from_project)
+
+# End-of-quarter review: instructor toggles the class window; a TA self-appoints
+# (or the instructor appoints) the team's additional reviewer.
+router.post('/classes/{class_id}/review-window')(views.set_review_window)
+router.get('/projects/{project_id}/review-tas')(views.list_project_review_tas)
+router.post('/projects/{project_id}/review-tas')(views.set_review_ta)
+router.delete('/projects/{project_id}/review-tas/{target_user_id}')(views.release_review_ta)

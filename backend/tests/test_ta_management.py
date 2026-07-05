@@ -124,18 +124,18 @@ def test_designate_requires_instructor(db):
     assert exc.value.status_code == 403
 
 
-def test_undesignate_clears_project_assignment(db):
-    # TA1 oversees P1 both as meeting TA (projects.assigned_ta_id) and as a
-    # review TA (project_ta_assignments). Removing TA1 as a class TA flips
-    # enrollment_role back to student and clears BOTH project-level roles.
-    db.rows("project_ta_assignments").append(
-        {"id": "pta-1", "class_id": CLASS, "project_id": P1, "user_id": TA1}
+def test_undesignate_clears_assigned_and_review(db):
+    # TA1 is P1's assigned TA (meeting + attendance + TSR review) and also holds
+    # an end-of-quarter review claim on P2. Removing TA1 as a class TA flips
+    # enrollment_role back to student and clears BOTH roles.
+    db.rows("project_review_tas").append(
+        {"id": "prt-1", "class_id": CLASS, "project_id": P2, "user_id": TA1}
     )
     controller.set_class_ta(CLASS, INSTR, TA1, False)
     assert controller.is_class_ta(TA1, CLASS) is False
     p1 = next(p for p in db.rows("projects") if p["id"] == P1)
     assert p1["assigned_ta_id"] is None
-    assert not [r for r in db.rows("project_ta_assignments") if r["user_id"] == TA1]
+    assert not [r for r in db.rows("project_review_tas") if r["user_id"] == TA1]
 
 
 # --------------------------------------------------------------------------

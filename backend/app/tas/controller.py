@@ -3,15 +3,24 @@
 A TA is an enrolled student promoted to a class-level ``ta`` role
 (``class_enrollments.enrollment_role``). TAs are deliberately kept out of
 ``project_members`` so they never affect team size, seat availability, the
-scrum-master auto-assignment, or any membership count. Instead they are linked
-to projects through ``project_ta_assignments`` and can review the TSRs of the
-projects they are assigned to.
+scrum-master auto-assignment, or any membership count.
+
+A team's single operational TA is ``projects.assigned_ta_id`` (set by the
+instructor via the attendance module): they run the weekly meeting, take
+attendance, and review that team's TSRs. This module reads that column for the
+TA Review page and the project-TA list.
+
+Separately, the end-of-quarter review activity gives each team a second reviewer
+(``project_review_tas`` — self-appointed by a TA while the class review window is
+open, or set by the instructor; owner-or-instructor release). Reviewer #1 is
+always the assigned TA above and is not stored in that table.
 
 Who can call what:
-    * Promote / demote / assign / unassign / list-class-TAs  → class instructor.
-    * my-role / review targets                               → the TA themselves.
-    * list-project-TAs                                       → instructor or any
-                                                               class member.
+    * Promote / demote / list-class-TAs        → class instructor.
+    * my-role / review targets                 → the TA themselves.
+    * list-project-TAs / list-review-TAs       → instructor or any class member.
+    * claim / release additional reviewer      → the TA (self) or instructor.
+    * toggle review window                      → class instructor.
 """
 import logging
 from uuid import UUID
@@ -143,8 +152,13 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
             {"enrollment_role": ENROLLMENT_ROLE_STUDENT}
         ).eq("id", enrollment["id"]).execute()
 
-        # A demoted TA no longer oversees any project in this class.
-        client.table("project_ta_assignments").delete().eq(
+        # A demoted TA no longer oversees any project in this class: clear their
+        # assigned-TA (meeting + TSR-review) ownership and drop any end-of-quarter
+        # review claims they hold.
+        client.table("projects").update({"assigned_ta_id": None}).eq(
+            "class_id", str(class_id)
+        ).eq("assigned_ta_id", str(target_user_id)).execute()
+        client.table("project_review_tas").delete().eq(
             "class_id", str(class_id)
         ).eq("user_id", str(target_user_id)).execute()
 
@@ -163,35 +177,27 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
 
 
 def _ta_assignments_by_user(client, class_id, user_ids: list[str]) -> dict[str, list[dict]]:
-    """Map user_id → [{id, name}] of projects they are assigned to as a TA."""
+    """Map user_id → [{id, name}] of the projects each user is the assigned TA of.
+
+    Reads ``projects.assigned_ta_id`` — the single operational TA per team who
+    runs meetings/attendance and reviews the team's TSRs.
+    """
     if not user_ids:
         return {}
     rows = (
-        client.table("project_ta_assignments")
-        .select("project_id, user_id")
+        client.table("projects")
+        .select("id, name, assigned_ta_id")
         .eq("class_id", str(class_id))
-        .in_("user_id", user_ids)
+        .in_("assigned_ta_id", user_ids)
         .execute()
     )
-    data = rows.data or []
-    project_ids = list({r["project_id"] for r in data if r.get("project_id")})
-    name_map: dict[str, str] = {}
-    if project_ids:
-        projects = (
-            client.table("projects")
-            .select("id, name")
-            .in_("id", project_ids)
-            .execute()
-        )
-        name_map = {p["id"]: p.get("name") for p in (projects.data or [])}
-
     out: dict[str, list[dict]] = {}
-    for r in data:
-        uid = r.get("user_id")
-        pid = r.get("project_id")
+    for r in (rows.data or []):
+        uid = r.get("assigned_ta_id")
+        pid = r.get("id")
         if not uid or not pid:
             continue
-        out.setdefault(uid, []).append({"id": pid, "name": name_map.get(pid)})
+        out.setdefault(uid, []).append({"id": pid, "name": r.get("name")})
     for assignments in out.values():
         assignments.sort(key=lambda p: (p["name"] or "").lower())
     return out
@@ -241,133 +247,55 @@ def list_class_tas(instructor_id: str, class_id: UUID) -> list[dict]:
         raise HTTPException(status_code=500, detail="Failed to list TAs")
 
 
-def _project_class_id(client, project_id: UUID) -> str:
+def _load_project(client, project_id: UUID) -> dict:
+    """Load the columns the TA/review helpers need, or 404."""
     res = (
         client.table("projects")
-        .select("id, class_id")
+        .select("id, class_id, name, assigned_ta_id")
         .eq("id", str(project_id))
         .execute()
     )
     if not res.data:
         raise HTTPException(status_code=404, detail="Project not found")
-    return res.data[0]["class_id"]
+    return res.data[0]
 
 
-def assign_ta_to_project(instructor_id: str, project_id: UUID, target_user_id: UUID) -> dict:
-    """Assign a class TA to oversee a project (instructor only).
-
-    The target must already be a TA in the project's class. TAs are NOT added to
-    project_members, so this never changes team size or membership counts.
-    """
-    try:
-        client = _client()
-        class_id = _project_class_id(client, project_id)
-        _require_class_instructor(client, instructor_id, class_id)
-
-        if get_enrollment_role(client, class_id, str(target_user_id)) != ENROLLMENT_ROLE_TA:
-            raise HTTPException(
-                status_code=400,
-                detail="User must be a TA in this class before being assigned to a project",
-            )
-
-        existing = (
-            client.table("project_ta_assignments")
-            .select("id")
-            .eq("project_id", str(project_id))
-            .eq("user_id", str(target_user_id))
-            .execute()
-        )
-        if existing.data:
-            return {"message": "TA already assigned to this project", "user_id": str(target_user_id)}
-
-        client.table("project_ta_assignments").insert({
-            "class_id": str(class_id),
-            "project_id": str(project_id),
-            "user_id": str(target_user_id),
-            "assigned_by": instructor_id,
-        }).execute()
-
-        logger.info(
-            "TA assigned to project | project_id=%s user_id=%s by=%s",
-            project_id, target_user_id, instructor_id,
-        )
-        return {"message": "TA assigned to project", "user_id": str(target_user_id)}
-    except HTTPException:
-        raise
-    except Exception:
-        logger.exception(
-            "Error assigning TA | project_id=%s user_id=%s", project_id, target_user_id
-        )
-        raise HTTPException(status_code=500, detail="Failed to assign TA")
-
-
-def remove_ta_from_project(instructor_id: str, project_id: UUID, target_user_id: UUID) -> dict:
-    """Remove a TA's assignment from a project (instructor only)."""
-    try:
-        client = _client()
-        class_id = _project_class_id(client, project_id)
-        _require_class_instructor(client, instructor_id, class_id)
-
-        client.table("project_ta_assignments").delete().eq(
-            "project_id", str(project_id)
-        ).eq("user_id", str(target_user_id)).execute()
-
-        logger.info(
-            "TA removed from project | project_id=%s user_id=%s by=%s",
-            project_id, target_user_id, instructor_id,
-        )
-        return {"message": "TA removed from project", "user_id": str(target_user_id)}
-    except HTTPException:
-        raise
-    except Exception:
-        logger.exception(
-            "Error removing TA | project_id=%s user_id=%s", project_id, target_user_id
-        )
-        raise HTTPException(status_code=500, detail="Failed to remove TA")
+def _is_class_instructor(client, user_id: str, class_id) -> bool:
+    """True iff ``user_id`` owns ``class_id`` (does not raise)."""
+    res = client.table("classes").select("created_by").eq("id", str(class_id)).execute()
+    return bool(res.data) and res.data[0].get("created_by") == user_id
 
 
 def list_project_tas(user_id: str, project_id: UUID) -> list[dict]:
-    """List the TAs assigned to a project (instructor or any class member)."""
+    """The project's single assigned TA, as a 0-or-1 element list.
+
+    Kept as a list for response-shape compatibility with the project-details UI.
+    Readable by the class instructor or any enrolled class member.
+    """
     try:
         client = _client()
-        class_id = _project_class_id(client, project_id)
+        project = _load_project(client, project_id)
+        class_id = project["class_id"]
 
         # Access: class instructor or an enrolled member of the class.
-        class_res = (
-            client.table("classes").select("created_by").eq("id", str(class_id)).execute()
-        )
-        is_instructor = bool(class_res.data) and class_res.data[0].get("created_by") == user_id
-        if not is_instructor and get_enrollment_role(client, class_id, user_id) is None:
+        if not _is_class_instructor(client, user_id, class_id) \
+                and get_enrollment_role(client, class_id, user_id) is None:
             raise HTTPException(status_code=403, detail="You do not have access to this class")
 
-        rows = (
-            client.table("project_ta_assignments")
-            .select("user_id, assigned_at")
-            .eq("project_id", str(project_id))
-            .execute()
-        )
-        ta_rows = rows.data or []
-        ta_ids = [str(r["user_id"]) for r in ta_rows if r.get("user_id")]
-        if not ta_ids:
+        assigned_ta_id = project.get("assigned_ta_id")
+        if not assigned_ta_id:
             return []
 
-        profiles = (
-            client.table("profiles").select(PROFILE_SELECT).in_("id", ta_ids).execute()
+        prof_res = (
+            client.table("profiles").select(PROFILE_SELECT).eq("id", str(assigned_ta_id)).execute()
         )
-        profile_map = {p["id"]: p for p in (profiles.data or [])}
-
-        result = [
-            {
-                "user_id": r["user_id"],
-                "name": profile_display_name(profile_map.get(r["user_id"], {})),
-                "email": (profile_map.get(r["user_id"], {}) or {}).get("email"),
-                "assigned_at": r.get("assigned_at"),
-            }
-            for r in ta_rows
-            if r.get("user_id")
-        ]
-        result.sort(key=lambda t: (t["name"] or "").lower())
-        return result
+        prof = (prof_res.data or [{}])[0]
+        return [{
+            "user_id": assigned_ta_id,
+            "name": profile_display_name(prof),
+            "email": (prof or {}).get("email"),
+            "assigned_at": None,
+        }]
     except HTTPException:
         raise
     except Exception:
@@ -408,3 +336,201 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
             class_id, user_id,
         )
         raise HTTPException(status_code=500, detail="Failed to fetch TA review targets")
+
+
+# ---------------------------------------------------------------------------
+# End-of-quarter review (the team's ADDITIONAL reviewer)
+# ---------------------------------------------------------------------------
+#
+# Each team is reviewed by two TAs: the assigned TA (``projects.assigned_ta_id``,
+# implicit reviewer #1) plus one additional reviewer stored in
+# ``project_review_tas`` (<=1 row per team, enforced by UNIQUE(project_id)). The
+# additional reviewer is self-appointed by a TA while the class review window is
+# open, or set by the instructor at any time (override); only that TA or the
+# instructor can release the slot.
+
+REVIEW_TA_TABLE = "project_review_tas"
+
+
+def _review_window_open(client, class_id) -> bool:
+    res = client.table("classes").select("review_period_open").eq("id", str(class_id)).execute()
+    return bool(res.data) and bool(res.data[0].get("review_period_open"))
+
+
+def set_review_window(instructor_id: str, class_id: UUID, is_open: bool) -> dict:
+    """Open or close a class's end-of-quarter review window (instructor only)."""
+    try:
+        client = _client()
+        _require_class_instructor(client, instructor_id, class_id)
+        client.table("classes").update(
+            {"review_period_open": bool(is_open)}
+        ).eq("id", str(class_id)).execute()
+        logger.info(
+            "Review window %s | class_id=%s by=%s",
+            "opened" if is_open else "closed", class_id, instructor_id,
+        )
+        return {
+            "message": "Review window updated",
+            "class_id": str(class_id),
+            "review_period_open": bool(is_open),
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error setting review window | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to update review window")
+
+
+def list_project_review_tas(user_id: str, project_id: UUID) -> dict:
+    """Both end-of-quarter reviewers of a team + the class review-window state.
+
+    Reviewer #1 is the assigned TA (derived from ``projects.assigned_ta_id``);
+    reviewer #2 (if any) is the stored additional reviewer. Readable by the
+    instructor or any enrolled class member.
+    """
+    try:
+        client = _client()
+        project = _load_project(client, project_id)
+        class_id = project["class_id"]
+
+        if not _is_class_instructor(client, user_id, class_id) \
+                and get_enrollment_role(client, class_id, user_id) is None:
+            raise HTTPException(status_code=403, detail="You do not have access to this class")
+
+        main_id = project.get("assigned_ta_id")
+        extra_rows = (
+            client.table(REVIEW_TA_TABLE)
+            .select("user_id, assigned_by, claimed_at")
+            .eq("project_id", str(project_id))
+            .execute()
+        ).data or []
+
+        ids = [i for i in ([main_id] + [r.get("user_id") for r in extra_rows]) if i]
+        profile_map: dict[str, dict] = {}
+        if ids:
+            profs = client.table("profiles").select(PROFILE_SELECT).in_("id", ids).execute()
+            profile_map = {p["id"]: p for p in (profs.data or [])}
+
+        def _reviewer(uid, role, claimed_at=None):
+            p = profile_map.get(uid, {})
+            return {
+                "user_id": uid,
+                "name": profile_display_name(p),
+                "email": (p or {}).get("email"),
+                "role": role,
+                "claimed_at": claimed_at,
+            }
+
+        reviewers = []
+        if main_id:
+            reviewers.append(_reviewer(main_id, "assigned"))
+        for r in extra_rows:
+            if r.get("user_id"):
+                reviewers.append(_reviewer(r["user_id"], "additional", r.get("claimed_at")))
+
+        return {
+            "project_id": str(project_id),
+            "reviewers": reviewers,
+            "review_period_open": _review_window_open(client, class_id),
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error listing review TAs | project_id=%s", project_id)
+        raise HTTPException(status_code=500, detail="Failed to list review TAs")
+
+
+def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None = None) -> dict:
+    """Set a team's additional (2nd) end-of-quarter reviewer.
+
+    A TA self-appoints (``target_user_id`` omitted or == caller) while the class
+    review window is open; the instructor may appoint any class TA at any time
+    (override, which also replaces an existing additional reviewer). The
+    additional reviewer must be a class TA other than the team's assigned TA.
+    """
+    try:
+        client = _client()
+        project = _load_project(client, project_id)
+        class_id = project["class_id"]
+        main_id = project.get("assigned_ta_id")
+        is_instructor = _is_class_instructor(client, caller_id, class_id)
+
+        if is_instructor:
+            if not target_user_id:
+                raise HTTPException(status_code=400, detail="Specify which TA to assign as reviewer")
+            target = str(target_user_id)
+        else:
+            if target_user_id and str(target_user_id) != str(caller_id):
+                raise HTTPException(status_code=403, detail="Only the instructor can appoint another TA")
+            target = str(caller_id)
+            if not _review_window_open(client, class_id):
+                raise HTTPException(status_code=403, detail="The end-of-quarter review window is not open")
+
+        if get_enrollment_role(client, class_id, target) != ENROLLMENT_ROLE_TA:
+            raise HTTPException(status_code=400, detail="The reviewer must be a designated TA of this class")
+        if main_id and str(main_id) == target:
+            raise HTTPException(
+                status_code=400,
+                detail="The additional reviewer must be a different TA than the team's assigned TA",
+            )
+
+        existing = (
+            client.table(REVIEW_TA_TABLE)
+            .select("id, user_id")
+            .eq("project_id", str(project_id))
+            .execute()
+        ).data or []
+
+        if any(str(r.get("user_id")) == target for r in existing):
+            return {"message": "Already the additional reviewer", "project_id": str(project_id), "user_id": target}
+        if existing:
+            if not is_instructor:
+                raise HTTPException(status_code=409, detail="This team already has an additional reviewer")
+            # Instructor override replaces the current additional reviewer.
+            client.table(REVIEW_TA_TABLE).delete().eq("project_id", str(project_id)).execute()
+
+        client.table(REVIEW_TA_TABLE).insert({
+            "class_id": class_id,
+            "project_id": str(project_id),
+            "user_id": target,
+            "assigned_by": caller_id,
+        }).execute()
+        logger.info(
+            "Additional reviewer set | project_id=%s user_id=%s by=%s",
+            project_id, target, caller_id,
+        )
+        return {"message": "Additional reviewer assigned", "project_id": str(project_id), "user_id": target}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error setting review TA | project_id=%s", project_id)
+        raise HTTPException(status_code=500, detail="Failed to set review TA")
+
+
+def release_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID) -> dict:
+    """Release a team's additional reviewer (the reviewer themselves, or the instructor)."""
+    try:
+        client = _client()
+        project = _load_project(client, project_id)
+        class_id = project["class_id"]
+        target = str(target_user_id)
+
+        if not _is_class_instructor(client, caller_id, class_id) and target != str(caller_id):
+            raise HTTPException(
+                status_code=403,
+                detail="Only the reviewer themselves or the instructor can remove this review slot",
+            )
+
+        client.table(REVIEW_TA_TABLE).delete().eq(
+            "project_id", str(project_id)
+        ).eq("user_id", target).execute()
+        logger.info(
+            "Additional reviewer released | project_id=%s user_id=%s by=%s",
+            project_id, target, caller_id,
+        )
+        return {"message": "Additional reviewer removed", "project_id": str(project_id), "user_id": target}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error releasing review TA | project_id=%s", project_id)
+        raise HTTPException(status_code=500, detail="Failed to release review TA")

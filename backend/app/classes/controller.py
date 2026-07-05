@@ -1468,8 +1468,12 @@ def _purge_student_from_class(client, class_id: UUID, student_id: str) -> None:
             'request_status', 'pending'
         ).execute()
 
-    # Remove any TA project assignments for this user in the class.
-    client.table('project_ta_assignments').delete().eq(
+    # A removed member no longer oversees any project in this class as its TA,
+    # nor holds any end-of-quarter review claim.
+    client.table('projects').update({'assigned_ta_id': None}).eq(
+        'class_id', str(class_id)
+    ).eq('assigned_ta_id', student_id).execute()
+    client.table('project_review_tas').delete().eq(
         'class_id', str(class_id)
     ).eq('user_id', student_id).execute()
 
