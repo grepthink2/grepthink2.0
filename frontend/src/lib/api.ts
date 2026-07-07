@@ -613,10 +613,12 @@ export async function apiUpload<T = unknown>(
 }
 
 /** Build the ?week=&meeting= query for the TA-schedule endpoints. */
-function scheduleQuery(week?: number, meeting = 1): string {
+function scheduleQuery(week?: number, meeting?: number): string {
   const p = new URLSearchParams();
   if (week != null) p.set('week', String(week));
-  if (meeting && meeting !== 1) p.set('meeting', String(meeting));
+  // Send meeting only when explicitly chosen; omit it so the server defaults to
+  // the current/next meeting for the week.
+  if (meeting != null) p.set('meeting', String(meeting));
   const q = p.toString();
   return q ? `?${q}` : '';
 }
@@ -1141,17 +1143,17 @@ export const api = {
   // ----- TA meeting schedule + attendance (app/attendance backend) ----------
 
   /** Instructor: weekly schedule of every team's meeting slot + attendance. */
-  getTAMeetingSchedule: async (classId: string, week?: number, meeting = 1) => {
+  getTAMeetingSchedule: async (classId: string, week?: number, meeting?: number) => {
     return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule${scheduleQuery(week, meeting)}`);
   },
 
   /** TA: only the teams assigned to me in this class + week. */
-  getMyAssignedTeams: async (classId: string, week?: number, meeting = 1) => {
+  getMyAssignedTeams: async (classId: string, week?: number, meeting?: number) => {
     return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/mine${scheduleQuery(week, meeting)}`);
   },
 
   /** Student: my own team's meeting slot + my own attendance for the week. */
-  getMyTeamSchedule: async (classId: string, week?: number, meeting = 1) => {
+  getMyTeamSchedule: async (classId: string, week?: number, meeting?: number) => {
     return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/my-team${scheduleQuery(week, meeting)}`);
   },
 

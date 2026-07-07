@@ -367,3 +367,28 @@ def test_set_meeting_cadence_rejects_bad_value(db):
     with pytest.raises(HTTPException) as exc:
         controller.set_meeting_cadence(CLASS, INSTR, meetings_per_week=9)
     assert exc.value.status_code == 400
+
+
+def test_current_meeting_in_week_advances_with_time(db):
+    """Auto meeting-in-week tracks the clock: M1 early week, in-progress M1 wins,
+    M2 mid-week, then rolls back to next week's M1 once both are done."""
+    controller.upsert_meeting(P1, INSTR, meeting_in_week=1, meeting_day="tuesday", meeting_time="9:00 AM")
+    controller.upsert_meeting(P1, INSTR, meeting_in_week=2, meeting_day="friday", meeting_time="3:00 PM")
+
+    # Snap to a Monday 08:00 so weekday math is deterministic regardless of run date.
+    base = datetime.datetime(2026, 7, 6, 8, 0)
+    monday = base - datetime.timedelta(days=base.weekday())
+
+    def at(days, hour, minute=0):
+        return monday + datetime.timedelta(days=days, hours=hour - 8, minutes=minute)
+
+    assert controller._current_meeting_in_week(db, [P1], 2, now=monday) == 1          # Mon → next is Tue M1
+    assert controller._current_meeting_in_week(db, [P1], 2, now=at(1, 9, 10)) == 1     # Tue 09:10 → M1 in progress
+    assert controller._current_meeting_in_week(db, [P1], 2, now=at(2, 12)) == 2        # Wed → Fri M2 upcoming
+    assert controller._current_meeting_in_week(db, [P1], 2, now=at(4, 16)) == 1        # Fri late → rolls to next Tue M1
+
+
+def test_current_meeting_in_week_edge_cases(db):
+    controller.upsert_meeting(P1, INSTR, meeting_in_week=1, meeting_day="tuesday", meeting_time="9:00 AM")
+    assert controller._current_meeting_in_week(db, [P1], 1) == 1   # single cadence → always 1
+    assert controller._current_meeting_in_week(db, [], 2) == 1     # no teams → 1

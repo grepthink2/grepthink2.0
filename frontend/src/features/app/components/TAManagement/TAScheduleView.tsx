@@ -29,11 +29,12 @@ interface TAScheduleViewProps {
   emptyMessage: string;
 }
 
-const fetchSchedule = (scope: Scope, classId: string, week: number | null, meeting: number) => {
+const fetchSchedule = (scope: Scope, classId: string, week: number | null, meeting: number | null) => {
   const w = week ?? undefined;
-  if (scope === 'mine') return api.getMyAssignedTeams(classId, w, meeting);
-  if (scope === 'my-team') return api.getMyTeamSchedule(classId, w, meeting);
-  return api.getTAMeetingSchedule(classId, w, meeting);
+  const m = meeting ?? undefined; // omit -> server picks the current/next meeting
+  if (scope === 'mine') return api.getMyAssignedTeams(classId, w, m);
+  if (scope === 'my-team') return api.getMyTeamSchedule(classId, w, m);
+  return api.getTAMeetingSchedule(classId, w, m);
 };
 
 const toRoster = (entries: ApiAttendanceEntry[]): AttendanceRow[] =>
@@ -47,7 +48,8 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
 
   const [schedule, setSchedule] = useState<ApiTAMeetingSchedule | null>(null);
   const [week, setWeek] = useState<number | null>(null);
-  const [meeting, setMeeting] = useState(1);
+  // null = "auto": let the server default to the meeting happening now / next.
+  const [meeting, setMeeting] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +64,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
   const [savingCadence, setSavingCadence] = useState(false);
 
   // Reset week/meeting when switching classes.
-  useEffect(() => { setWeek(null); setMeeting(1); setExpandedId(null); }, [classId]);
+  useEffect(() => { setWeek(null); setMeeting(null); setExpandedId(null); }, [classId]);
 
   const loadSchedule = useCallback(async () => {
     if (!classId) { setSchedule(null); setLoading(false); return; }
@@ -99,9 +101,12 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
   const meetingsPerWeek = schedule?.meetings_per_week ?? 1;
   const meetingDuration = schedule?.meeting_duration_minutes ?? null;
   const teams = useMemo(() => (schedule?.teams ?? []).map(toTeamMeetingItem), [schedule]);
+  // Resolved meeting-in-week: the user's explicit pick, else the server's
+  // current/next choice (echoed back as meeting_in_week).
+  const effMeeting = meeting ?? schedule?.meeting_in_week ?? 1;
 
-  // Keep the selected meeting within the class's cadence.
-  useEffect(() => { if (meeting > meetingsPerWeek) setMeeting(1); }, [meetingsPerWeek, meeting]);
+  // Keep an explicit selection within cadence; otherwise fall back to auto.
+  useEffect(() => { if (meeting != null && meeting > meetingsPerWeek) setMeeting(null); }, [meetingsPerWeek, meeting]);
 
   // (Re)load the expanded team's roster whenever the team, week, or meeting changes.
   useEffect(() => {
@@ -109,12 +114,12 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
     let active = true;
     setRoster([]);
     setRosterLoading(true);
-    api.getTeamAttendance(expandedId, effWeek, meeting)
+    api.getTeamAttendance(expandedId, effWeek, effMeeting)
       .then((res) => { if (active) setRoster(toRoster(res.entries)); })
       .catch(() => { if (active) setRoster([]); })
       .finally(() => { if (active) setRosterLoading(false); });
     return () => { active = false; };
-  }, [expandedId, effWeek, meeting]);
+  }, [expandedId, effWeek, effMeeting]);
 
   // Student view: resolve the viewer's own status per team for the selected meeting.
   useEffect(() => {
@@ -124,7 +129,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
       const map: Record<string, AttendanceStatus> = {};
       for (const t of schedule.teams) {
         try {
-          const att = await api.getTeamAttendance(t.project_id, schedule.week_number, meeting);
+          const att = await api.getTeamAttendance(t.project_id, schedule.week_number, effMeeting);
           map[t.project_id] = att.entries[0]?.status ?? 'unmarked';
         } catch {
           map[t.project_id] = 'unmarked';
@@ -133,7 +138,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
       if (active) setOwnStatusMap(map);
     })();
     return () => { active = false; };
-  }, [readOnlyOwn, schedule, meeting]);
+  }, [readOnlyOwn, schedule, effMeeting]);
 
   const patchTeam = useCallback((projectId: string, patch: Partial<TeamMeetingItem>) => {
     setSchedule((prev) => {
@@ -169,12 +174,12 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
     setRoster(nextRows);
     patchTeam(projectId, { present: presentCount(nextRows) });
     try {
-      await api.upsertAttendance(projectId, effWeek, personId, status, meeting);
+      await api.upsertAttendance(projectId, effWeek, personId, status, effMeeting);
     } catch {
       setRoster(prevRows);
       patchTeam(projectId, { present: presentCount(prevRows) });
     }
-  }, [roster, effWeek, meeting, patchTeam]);
+  }, [roster, effWeek, effMeeting, patchTeam]);
 
   const handleMarkAll = useCallback(async (projectId: string) => {
     const prevRows = roster;
@@ -182,12 +187,12 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
     setRoster(nextRows);
     patchTeam(projectId, { present: nextRows.length });
     try {
-      await api.markAllPresent(projectId, effWeek, meeting);
+      await api.markAllPresent(projectId, effWeek, effMeeting);
     } catch {
       setRoster(prevRows);
       patchTeam(projectId, { present: presentCount(prevRows) });
     }
-  }, [roster, effWeek, meeting, patchTeam]);
+  }, [roster, effWeek, effMeeting, patchTeam]);
 
   const handleAssignTa = useCallback(async (projectId: string, taId: string | null) => {
     const opt = taId ? taOptions.find((o) => o.id === taId) ?? null : null;
@@ -281,8 +286,8 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
               key={m}
               type="button"
               role="tab"
-              aria-selected={m === meeting}
-              className={`ta-page__meeting-tab ${m === meeting ? 'is-active' : ''}`}
+              aria-selected={m === effMeeting}
+              className={`ta-page__meeting-tab ${m === effMeeting ? 'is-active' : ''}`}
               onClick={() => setMeeting(m)}
             >
               Meeting {m}
@@ -308,7 +313,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
               key={team.projectId}
               item={team}
               weekNumber={effWeek}
-              meetingInWeek={meetingsPerWeek > 1 ? meeting : undefined}
+              meetingInWeek={meetingsPerWeek > 1 ? effMeeting : undefined}
               editable={editable}
               expandable={editable}
               expanded={expandedId === team.projectId}
@@ -330,7 +335,7 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
       <AddZoomModal
         isOpen={zoomTeam !== null}
         team={zoomTeam}
-        meetingInWeek={meeting}
+        meetingInWeek={effMeeting}
         onClose={() => setZoomTeam(null)}
         onSaved={(projectId, fields) => patchTeam(projectId, fields)}
       />

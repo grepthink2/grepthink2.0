@@ -22,6 +22,10 @@ Permission model (RLS is off; everything is enforced here):
 import datetime
 import logging
 from typing import Optional
+try:  # UCSC class meeting times are Pacific; tolerate missing tzdata
+    from zoneinfo import ZoneInfo
+except Exception:  # pragma: no cover
+    ZoneInfo = None
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -47,6 +51,7 @@ _WEEKDAY_ORDER = {
     "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
     "friday": 4, "saturday": 5, "sunday": 6,
 }
+_CLASS_TZ = ZoneInfo("America/Los_Angeles") if ZoneInfo else None
 
 
 def _client():
@@ -431,6 +436,45 @@ def set_meeting_cadence(class_id: UUID, instructor_id: str,
 # Schedule aggregation
 # ---------------------------------------------------------------------------
 
+def _current_meeting_in_week(client, project_ids, meetings_per_week, now=None) -> int:
+    """Sequence (1..N) of the weekly meeting happening now or coming up soonest
+    across these teams, so the schedule advances M1 -> M2 -> … through the week
+    instead of always showing the first slot.
+
+    ``now`` is injectable for tests; it defaults to the current Pacific time.
+    Falls back to meeting 1 when there is nothing to rank.
+    """
+    if meetings_per_week <= 1 or not project_ids:
+        return 1
+    rows = (
+        client.table("meetings")
+        .select("sequence, day_of_week, start_time, duration_minutes")
+        .in_("project_id", project_ids).eq("cadence", "weekly").execute()
+    ).data or []
+    if now is None:
+        now = datetime.datetime.now(_CLASS_TZ) if _CLASS_TZ else datetime.datetime.now()
+    best_seq, best_delta = None, None
+    for r in rows:
+        dow = _WEEKDAY_ORDER.get((r.get("day_of_week") or "").lower())
+        parsed = _parse_time(r.get("start_time"))
+        if dow is None or not parsed:
+            continue
+        hh, mm, _ss = (int(x) for x in parsed.split(":"))
+        days_ahead = (dow - now.weekday()) % 7
+        start = (now + datetime.timedelta(days=days_ahead)).replace(
+            hour=hh, minute=mm, second=0, microsecond=0)
+        delta = (start - now).total_seconds()
+        if delta < 0:
+            # Started earlier today: still "current" while within its duration;
+            # otherwise it already happened this week -> next occurrence is +7d.
+            dur = int(r.get("duration_minutes") or 0) * 60
+            delta = 0 if -delta <= dur else delta + 7 * 86400
+        seq = int(r.get("sequence") or 1)
+        if best_delta is None or delta < best_delta:
+            best_delta, best_seq = delta, seq
+    return best_seq or 1
+
+
 def get_ta_schedule(
     class_id: UUID,
     user_id: str,
@@ -474,7 +518,6 @@ def get_ta_schedule(
         if week_number is None:
             week_number = _current_term_week(class_row.get("start_date"), class_row.get("term"))
         week_number = max(1, min(int(week_number), total_weeks))
-        meeting_in_week = max(1, min(int(meeting_in_week or 1), meetings_per_week))
 
         projects = (
             client.table("projects")
@@ -492,6 +535,14 @@ def get_ta_schedule(
             mine_ids = {r["project_id"] for r in mine}
             projects = [p for p in projects if p["id"] in mine_ids]
 
+        project_ids = [p["id"] for p in projects]
+        # meeting-in-week: an explicit ?meeting= query wins; otherwise default to
+        # the meeting happening now / coming up soonest so the schedule advances
+        # M1 -> M2 -> … through the week instead of always showing the first slot.
+        if meeting_in_week is None:
+            meeting_in_week = _current_meeting_in_week(client, project_ids, meetings_per_week)
+        meeting_in_week = max(1, min(int(meeting_in_week), meetings_per_week))
+
         meta = {
             "class_id": cid,
             "week_number": week_number,
@@ -504,8 +555,6 @@ def get_ta_schedule(
         }
         if not projects:
             return {**meta, "teams": []}
-
-        project_ids = [p["id"] for p in projects]
 
         members = (
             client.table("project_members").select("project_id, user_id")
