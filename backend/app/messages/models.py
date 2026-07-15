@@ -5,7 +5,7 @@ Pydantic validation here is a fast pre-flight so 400s short-circuit cheaply.
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -14,8 +14,8 @@ from pydantic import BaseModel, Field
 class SendMessageRequest(BaseModel):
     """Exactly one of to_user_id (new DM) or conversation_id (existing
     conversation / team channel) — enforced in the controller (400)."""
-    to_user_id: Optional[str] = None
-    conversation_id: Optional[str] = None
+    to_user_id: Optional[str] = Field(default=None, min_length=1)
+    conversation_id: Optional[str] = Field(default=None, min_length=1)
     # 1024 code-point limit; backend re-checks (defense in depth).
     body: str = Field(..., min_length=1, max_length=1024)
 
@@ -33,7 +33,7 @@ class OtherUser(BaseModel):
 
 class Participant(BaseModel):
     id: str
-    role: str  # 'member' | 'ta' | 'instructor'
+    role: Literal['member', 'ta', 'instructor']
     email: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -59,7 +59,7 @@ class Message(BaseModel):
 
 class ConversationSummary(BaseModel):
     id: str
-    type: str = "dm"  # 'dm' | 'team_ta' | 'team_instructor' | 'team_members'
+    type: Literal['dm', 'team_ta', 'team_instructor', 'team_members'] = "dm"
     project_id: Optional[str] = None
     team_name: Optional[str] = None
     participants: list[Participant] = []
@@ -97,5 +97,5 @@ class Contact(BaseModel):
     role: Optional[str] = None
 
 
-class ContactsResponse(BaseModel):
+class ContactsListResponse(BaseModel):
     contacts: list[Contact]
