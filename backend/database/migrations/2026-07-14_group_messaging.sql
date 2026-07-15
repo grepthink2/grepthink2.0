@@ -244,6 +244,8 @@ SELECT
   r.last_read_at AS my_last_read_at,
   lm.msg AS last_message,
   parts.arr AS participants,
+  -- NOTE: mirrors can_message() in backend/app/messages/controller.py — that
+  -- function is the authoritative send-time check; keep the two in sync.
   CASE
     WHEN c.type <> 'dm' THEN true
     ELSE (
