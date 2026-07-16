@@ -52,7 +52,18 @@ export const ConversationThread: React.FC<Props> = ({
   const { refetch: refetchInbox, optimisticMarkRead } = useConversations();
   const scrollRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
+
+  // Scroll bookkeeping: initial open lands at the newest message; prepends
+  // stay anchored; bottom appends are handled by the nearBottom effect.
+  const prevFirstId = useRef<string | null>(null);
   const prevScrollHeight = useRef(0);
+  const didInitialScroll = useRef(false);
+
+  useEffect(() => {
+    didInitialScroll.current = false;
+    prevFirstId.current = null;
+    prevScrollHeight.current = 0;
+  }, [conversation.id]);
 
   const isGroup = conversation.type !== 'dm';
   const senderNames = useMemo(() => {
@@ -68,13 +79,14 @@ export const ConversationThread: React.FC<Props> = ({
 
   // Mark read on mount and whenever new messages arrive; also clears the
   // sidebar unread badge immediately instead of waiting on the next inbox
-  // refetch.
+  // refetch. The server call stays unconditional (idempotent); the local
+  // clear is gated so it only fires when there is a badge to clear.
   useEffect(() => {
     api.markConversationRead(conversation.id).catch(() => {
       // Non-fatal — next mount will retry.
     });
-    optimisticMarkRead(conversation.id);
-  }, [conversation.id, messages.length, optimisticMarkRead]);
+    if (conversation.unread_count > 0) optimisticMarkRead(conversation.id);
+  }, [conversation.id, messages.length, conversation.unread_count, optimisticMarkRead]);
 
   // Auto-scroll to bottom when new messages arrive (only if user is near bottom).
   useEffect(() => {
@@ -92,22 +104,37 @@ export const ConversationThread: React.FC<Props> = ({
     const scroller = scrollRef.current;
     if (!sentinel || !scroller || !hasMore) return;
     const obs = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && !loadingOlder) {
-        prevScrollHeight.current = scroller.scrollHeight;
-        void loadOlder();
-      }
+      if (entries[0].isIntersecting && !loadingOlder) void loadOlder();
     }, { root: scroller, rootMargin: '120px' });
     obs.observe(sentinel);
     return () => obs.disconnect();
   }, [hasMore, loadingOlder, loadOlder]);
 
-  // Keep the viewport anchored when older messages are prepended.
   useLayoutEffect(() => {
     const scroller = scrollRef.current;
-    if (!scroller || !prevScrollHeight.current) return;
-    scroller.scrollTop += scroller.scrollHeight - prevScrollHeight.current;
-    prevScrollHeight.current = 0;
-  }, [messages.length]);
+    if (!scroller) return;
+    const firstId = messages[0]?.id ?? null;
+    const prevId = prevFirstId.current;
+
+    if (!didInitialScroll.current && !loading && messages.length > 0) {
+      // First page landed: open at the newest message. Also keeps the top
+      // sentinel out of view so it can't self-trigger a page fetch on open.
+      scroller.scrollTop = scroller.scrollHeight;
+      didInitialScroll.current = true;
+    } else if (
+      prevId !== null && firstId !== null && firstId !== prevId &&
+      messages.some(m => m.id === prevId)
+    ) {
+      // Older page prepended (previous first message still present, deeper):
+      // keep the viewport anchored. A bottom append never changes the first
+      // id, so realtime arrivals can't consume the anchor (the race the
+      // review found), and a reconnect reload (prevId absent) skips anchoring.
+      scroller.scrollTop += scroller.scrollHeight - prevScrollHeight.current;
+    }
+
+    prevFirstId.current = firstId;
+    prevScrollHeight.current = scroller.scrollHeight;
+  }, [messages, loading]);
 
   const myLatestSent = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
