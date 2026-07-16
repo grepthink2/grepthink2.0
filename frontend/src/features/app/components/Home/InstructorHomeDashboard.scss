@@ -152,8 +152,8 @@
   }
 
   &:focus-visible {
-    outline: 2px solid $accent-color;
-    outline-offset: -2px;
+    outline: none;
+    box-shadow: inset var(--gt-focus-ring-tight);
   }
 }
 
@@ -291,8 +291,8 @@
   }
 
   &:focus-visible {
-    outline: 2px solid $primary-color;
-    outline-offset: -2px;
+    outline: none;
+    box-shadow: inset var(--gt-focus-ring-tight);
   }
 }
 

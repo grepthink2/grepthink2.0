@@ -75,9 +75,14 @@ button:hover {
 
 /* ---- gt design system globals ---- */
 
-/* Standardized always-visible focus ring (accent blue, 2px). */
+/* Standardized always-visible focus ring (accent blue, 2px).
+   outline suppression is !important so legacy component-level
+   `:focus-visible { outline: ... }` rules (higher specificity than this
+   zero-specificity :where()) can't paint a second ring on top of the
+   box-shadow one. Components opt out by setting their own box-shadow
+   (e.g. `inset var(--gt-focus-ring-tight)` in overflow-clipped contexts). */
 :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
-  outline: none;
+  outline: none !important;
   box-shadow: var(--gt-focus-ring);
 }
 
@@ -88,7 +93,8 @@ button:hover {
   animation-timing-function: ease;
 }
 
-/* Reduced-motion kill switch — spec requires honoring it everywhere. */
+/* Reduced-motion kill switch for CSS animations/transitions. JS-timed UI delays
+   (modal close timers) are per-component concerns — see plan part 2. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
