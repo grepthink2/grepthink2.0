@@ -44,7 +44,7 @@ export function useConversationMessages(conversationId: string | null) {
       });
     } catch (err) {
       if (cancelled.current || seq !== requestSeq.current) return;
-      setState(prev => ({ ...prev, loading: false, error: (err as Error).message }));
+      setState(prev => ({ ...prev, loading: false, loadingOlder: false, error: (err as Error).message }));
     }
   }, []);
 
