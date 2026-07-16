@@ -456,7 +456,7 @@ class Contact(BaseModel):
     role: Optional[str] = None
 
 
-class ContactsResponse(BaseModel):
+class ContactsListResponse(BaseModel):
     contacts: list[Contact]
 ```
 
@@ -1290,14 +1290,14 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
     return out[:500]
 ```
 
-Add the view in `views.py` (import `ContactsResponse` from models):
+Add the view in `views.py` (import `ContactsListResponse` from models):
 
 ```python
 def list_contacts(
     user_id: str = Depends(require_user),
     q: str | None = None,
-) -> ContactsResponse:
-    return ContactsResponse(contacts=controller.list_contacts(caller_id=user_id, query=q))
+) -> ContactsListResponse:
+    return ContactsListResponse(contacts=controller.list_contacts(caller_id=user_id, query=q))
 ```
 
 Add the route in `url.py` (before the parameterized conversation routes for clarity):
