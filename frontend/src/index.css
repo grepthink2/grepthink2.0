@@ -78,3 +78,31 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* ---- gt design system globals ---- */
+
+/* Standardized always-visible focus ring (accent blue, 2px). */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--gt-focus-ring);
+}
+
+/* Route changes: quick cross-fade via the View Transitions API. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.2s;
+  animation-timing-function: ease;
+}
+
+/* Reduced-motion kill switch — spec requires honoring it everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
