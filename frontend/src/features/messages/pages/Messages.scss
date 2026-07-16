@@ -42,6 +42,7 @@
     background: var(--gt-surface);
     border-radius: var(--gt-radius-md);
     box-shadow: var(--gt-shadow-card);
+    overflow: hidden; /* keeps the flush composer from punching square corners through the rounded card */
   }
 
   &__back-btn {
@@ -244,7 +245,7 @@
        unread_count > 0. */
     &:has(.messages-list__unread) {
       .messages-list__name {
-        font-weight: var(--gt-weight-semibold);
+        font-weight: var(--gt-weight-bold);
       }
 
       .messages-list__preview {
@@ -512,7 +513,7 @@
     align-self: flex-end;
     background: var(--gt-primary);
     color: var(--gt-text-inverse);
-    .messages-bubble__time { color: rgba(255, 255, 255, 0.75); }
+    .messages-bubble__time { color: var(--gt-text-inverse); }
   }
   &--theirs {
     align-self: flex-start;
@@ -520,7 +521,7 @@
     border: 1px solid var(--gt-border);
     color: var(--gt-text-primary);
   }
-  &--pending { opacity: 0.6; }
+  &--pending { opacity: 0.6; animation: none; }
 
   &__author {
     font-size: var(--gt-text-caption);
