@@ -57,6 +57,37 @@ def test_malformed_cursor_400():
         assert exc.value.status_code == 400
 
 
+def test_cursor_filter_smuggling_400():
+    """Cursor halves that parse but carry PostgREST filter syntax (parens,
+    commas, dots in the id) must be rejected, not interpolated."""
+    from app.messages.controller import list_messages
+    with patch("app.messages.controller._require_participant"):
+        with pytest.raises(HTTPException) as exc:
+            list_messages(conversation_id="c1", caller_id="alice",
+                          before="2026-07-10T00:00:30+00:00|m29),or(1.eq.1")
+        assert exc.value.status_code == 400
+
+
+@patch("app.messages.controller._require_participant")
+@patch("app.messages.controller.service_client")
+def test_limit_clamped_high(client, _auth):
+    from app.messages.controller import list_messages
+    q = client.table.return_value.select.return_value.eq.return_value
+    q.order.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
+    list_messages(conversation_id="c1", caller_id="alice", limit=500)
+    q.order.return_value.order.return_value.limit.assert_called_once_with(100)
+
+
+@patch("app.messages.controller._require_participant")
+@patch("app.messages.controller.service_client")
+def test_limit_clamped_low(client, _auth):
+    from app.messages.controller import list_messages
+    q = client.table.return_value.select.return_value.eq.return_value
+    q.order.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(data=[])
+    list_messages(conversation_id="c1", caller_id="alice", limit=0)
+    q.order.return_value.order.return_value.limit.assert_called_once_with(1)
+
+
 @patch("app.messages.controller.service_client")
 def test_list_messages_403_for_non_participant_wired(client):
     """Defense-in-depth: exercises the real _require_participant wiring."""

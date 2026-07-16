@@ -7,6 +7,7 @@ for the full design.
 from __future__ import annotations
 
 import logging
+import re
 
 from fastapi import HTTPException
 
@@ -15,6 +16,14 @@ from app.database.client import service_client
 logger = logging.getLogger(__name__)
 
 MAX_MESSAGE_CODEPOINTS = 1024
+
+# Cursor-half shapes for list_messages' keyset cursor. The point is to
+# exclude PostgREST filter metacharacters (dots, commas, parens) so cursor
+# values can't smuggle extra OR terms into the or= filter — not to enforce
+# a strict timestamp/UUID grammar. The id half is deliberately
+# alphanumeric-and-dashes (not hex-only): looser than UUID, still inert.
+_CURSOR_TS_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.+\-]+")
+_CURSOR_ID_RE = re.compile(r"[0-9a-zA-Z\-]{1,64}")
 
 
 def get_profile_roles(user_ids: list[str]) -> dict[str, str | None]:
@@ -240,6 +249,9 @@ def list_messages(
             if not before_created_at or not before_id:
                 raise ValueError
         except ValueError:
+            raise HTTPException(status_code=400, detail="Malformed cursor")
+        if not (_CURSOR_TS_RE.fullmatch(before_created_at)
+                and _CURSOR_ID_RE.fullmatch(before_id)):
             raise HTTPException(status_code=400, detail="Malformed cursor")
 
     query = (
