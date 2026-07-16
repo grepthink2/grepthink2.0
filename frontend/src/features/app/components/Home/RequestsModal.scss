@@ -99,6 +99,11 @@
       background: $white;
       color: $text-primary;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: var(--gt-focus-ring), 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
     }
   }
 

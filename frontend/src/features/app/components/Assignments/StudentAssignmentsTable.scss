@@ -157,6 +157,12 @@ $status-submitted-text: #018156;
     &:hover {
       background-color: color.adjust($primary-color, $lightness: -4%);
     }
+
+    // Inset ring: sits inside the overflow-clipped table card/scroller.
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset var(--gt-focus-ring-tight), 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
   }
 
   &--edit_submission {
