@@ -418,6 +418,9 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
     (enrolled students/TAs + class owners), minus self and minus
     instructor↔instructor pairs. Optional case-insensitive name/email filter.
 
+    Mirrors can_message() eligibility — keep the two in sync (same
+    convention as the messages_inbox RPC).
+
     Replaces the frontend's per-class getClassStudents() fan-out.
     """
     owned = (
@@ -467,11 +470,15 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
     profiles = {p["id"]: p for p in (profiles_res.data or [])}
     caller_role = (profiles.get(caller_id) or {}).get("role")
 
-    needle = (query or "").strip().lower()
+    needle = (query or "").strip().lower()[:100]
     out: list[dict] = []
     for uid in sorted(peer_ids):
         p = profiles.get(uid)
         if not p:
+            # Deliberate: enrollments whose profiles row is missing (orphaned
+            # enrollment / auth-glue gap) are omitted — an unnameable contact
+            # is worse than an absent one. can_message stays permissive, so
+            # such users remain messageable via direct sends.
             continue
         if caller_role == "instructor" and p.get("role") == "instructor":
             continue
@@ -492,4 +499,4 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
             "role": p.get("role"),
         })
     out.sort(key=lambda c: (c["name"] or c["email"] or "").lower())
-    return out[:500]
+    return out[:500]  # accepted cap: course-scale peers ≪ 500; no has_more contract (see plan B7)

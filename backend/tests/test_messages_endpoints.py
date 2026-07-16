@@ -114,6 +114,35 @@ def test_get_conversations_requires_auth(client):
     assert res.status_code == 401
 
 
+# ----- list_contacts --------------------------------------------------------
+
+def test_get_contacts_requires_auth(client):
+    res = client.get("/api/messages/contacts")
+    assert res.status_code == 401
+
+
+@patch("app.messages.views.controller.list_contacts")
+def test_get_contacts_returns_contacts(lst, client, auth_header):
+    lst.return_value = [{
+        "id": "stu1",
+        "name": "Samantha Stone",
+        "first_name": "Samantha",
+        "last_name": "Stone",
+        "email": "s@u.e",
+        "image_url": None,
+        "role": "student",
+    }]
+    res = client.get("/api/messages/contacts?q=sam", headers=auth_header)
+    assert res.status_code == 200
+    contacts = res.json()["contacts"]
+    assert len(contacts) == 1
+    assert contacts[0]["id"] == "stu1"
+    assert contacts[0]["name"] == "Samantha Stone"
+    assert contacts[0]["email"] == "s@u.e"
+    assert contacts[0]["role"] == "student"
+    lst.assert_called_once_with(caller_id="user-abc", query="sam")
+
+
 # ----- send_message ---------------------------------------------------------
 
 @patch("app.messages.views.controller.send_message")

@@ -72,3 +72,29 @@ def test_contacts_query_filters_by_name(client):
     )
     contacts = list_contacts(caller_id="me", query="stone")
     assert [c["id"] for c in contacts] == ["stu1"]
+
+
+@patch("app.messages.controller.service_client")
+def test_contacts_drops_peers_without_profiles_row(client):
+    """Pin the documented decision: a peer id present in class_enrollments
+    but absent from profiles (orphaned enrollment / auth-glue gap) is
+    silently omitted — never an error, never an unnameable contact."""
+    from app.messages.controller import list_contacts
+    _wire(
+        client,
+        owned=[],
+        enrolled=[{"class_id": "cls1"}],
+        class_enrollments=[
+            {"class_id": "cls1", "user_id": "stu1"},
+            {"class_id": "cls1", "user_id": "ghost"},  # no profiles row
+        ],
+        class_owners=[],
+        profiles=[
+            {"id": "me", "role": "student", "email": "me@u.e",
+             "first_name": "Me", "last_name": "M", "image_url": None},
+            {"id": "stu1", "role": "student", "email": "s@u.e",
+             "first_name": "Sam", "last_name": "Stu", "image_url": None},
+        ],
+    )
+    contacts = list_contacts(caller_id="me")
+    assert [c["id"] for c in contacts] == ["stu1"]  # ghost dropped, no 500
