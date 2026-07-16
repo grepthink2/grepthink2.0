@@ -1,9 +1,10 @@
 """HTTP handlers for the messages feature. Thin layer over controller.py."""
 from __future__ import annotations
 
-from fastapi import Depends, Response, status
+from fastapi import Depends, Request, Response, status
 
 from app.dependencies import require_user
+from app.limiter import limiter
 from app.messages import controller
 from app.messages.models import (
     ConversationsListResponse,
@@ -20,12 +21,17 @@ def list_conversations(
     return ConversationsListResponse(conversations=rows)
 
 
+@limiter.limit("30/minute")
 def send_message(
+    request: Request,
     body: SendMessageRequest,
     user_id: str = Depends(require_user),
 ) -> SendMessageResponse:
     result = controller.send_message(
-        sender_id=user_id, to_user_id=body.to_user_id, body=body.body,
+        sender_id=user_id,
+        to_user_id=body.to_user_id,
+        conversation_id=body.conversation_id,
+        body=body.body,
     )
     return SendMessageResponse(**result)
 

@@ -119,14 +119,40 @@ def _get_or_create_conversation(a_id: str, b_id: str) -> str:
     return created.data[0]["id"]
 
 
-def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
+def notify_recipients(
+    *, recipient_ids: list[str], sender_id: str, conversation_id: str, body: str,
+) -> None:
+    """Fan out the new-message notification to every other participant."""
+    from app.notifications.controller import notify_new_message
+    for recipient_id in recipient_ids:
+        notify_new_message(
+            recipient_id=recipient_id,
+            sender_id=sender_id,
+            conversation_id=conversation_id,
+            body=body,
+        )
+
+
+def send_message(
+    *,
+    sender_id: str,
+    body: str,
+    to_user_id: str | None = None,
+    conversation_id: str | None = None,
+) -> dict:
     """Validate, persist, and mark sender as read-up-to-now.
 
+    Targets exactly one of:
+      - to_user_id: DM shortcut (creates the conversation on first send);
+      - conversation_id: an existing conversation — DM or team channel.
     Returns: {"conversation_id": "...", "message": {...row...}}.
-    Raises HTTPException(400|403) on validation/eligibility failures.
+    Raises HTTPException(400|403|404) on validation/eligibility failures.
     """
-    if to_user_id == sender_id:
-        raise HTTPException(status_code=400, detail="Cannot message yourself")
+    if bool(to_user_id) == bool(conversation_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Provide exactly one of to_user_id or conversation_id",
+        )
 
     cleaned = body.strip()
     if not cleaned:
@@ -137,14 +163,29 @@ def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
             detail=f"Message exceeds {MAX_MESSAGE_CODEPOINTS} character limit",
         )
 
-    if not can_message(sender_id, to_user_id):
-        logger.info(
-            "send_message: blocked | sender=%s target=%s reason=ineligible",
-            sender_id, to_user_id,
-        )
-        raise HTTPException(status_code=403, detail="Cannot message this user")
-
-    conversation_id = _get_or_create_conversation(sender_id, to_user_id)
+    if conversation_id is not None:
+        conv = _require_participant(conversation_id, sender_id)
+        participant_ids = _participant_ids(conversation_id)
+        if conv["type"] == "dm":
+            other_id = conv["user_b"] if conv["user_a"] == sender_id else conv["user_a"]
+            if not can_message(sender_id, other_id):
+                logger.info(
+                    "send_message: blocked | sender=%s conv=%s reason=dm-ineligible",
+                    sender_id, conversation_id,
+                )
+                raise HTTPException(status_code=403, detail="Cannot message this user")
+        recipient_ids = [uid for uid in participant_ids if uid != sender_id]
+    else:
+        if to_user_id == sender_id:
+            raise HTTPException(status_code=400, detail="Cannot message yourself")
+        if not can_message(sender_id, to_user_id):
+            logger.info(
+                "send_message: blocked | sender=%s target=%s reason=ineligible",
+                sender_id, to_user_id,
+            )
+            raise HTTPException(status_code=403, detail="Cannot message this user")
+        conversation_id = _get_or_create_conversation(sender_id, to_user_id)
+        recipient_ids = [to_user_id]
 
     inserted = (
         service_client.table("messages")
@@ -169,9 +210,8 @@ def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
         sender_id, conversation_id, message_row["id"],
     )
 
-    from app.notifications.controller import notify_new_message
-    notify_new_message(
-        recipient_id=to_user_id,
+    notify_recipients(
+        recipient_ids=recipient_ids,
         sender_id=sender_id,
         conversation_id=conversation_id,
         body=body,
