@@ -7,7 +7,6 @@ from typing import Optional
 
 from fastapi import HTTPException
 
-from app.auth.controller import get_user_role
 from app.database.client import service_client
 from app.utils.profiles import profile_display_name
 
@@ -361,10 +360,10 @@ def notify_new_message(
     conversation_id: str,
     body: str,
 ) -> None:
-    """Notify a student when they receive a new message."""
-    if get_user_role(recipient_id) != "student":
-        return
+    """Notify a participant when they receive a new message.
 
+    All roles get message notifications — TA/instructor channels mean staff
+    must hear replies (changed 2026-07-14; was students-only)."""
     sender_name = profile_display_name(_get_profile(sender_id)) or "Someone"
     preview = body.strip()
     if len(preview) > 120:
