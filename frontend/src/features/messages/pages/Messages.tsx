@@ -27,13 +27,13 @@ const Messages: React.FC = () => {
           conversations={conversations}
           loading={loading}
           activeId={conversationId ?? null}
-          onSelect={(id) => navigate(`/app/messages/${id}`)}
+          onSelect={(id) => navigate(`/app/messages/${id}`, { viewTransition: true })}
         />
       </aside>
       <main className="messages-page__thread">
         <button
           className="messages-page__back-btn"
-          onClick={() => navigate('/app/messages')}
+          onClick={() => navigate('/app/messages', { viewTransition: true })}
           aria-label="Back to conversations"
         >
           <ArrowLeft size={18} />
@@ -44,7 +44,7 @@ const Messages: React.FC = () => {
         ) : activeConversation ? (
           <ConversationThread
             conversation={activeConversation}
-            onDeleted={() => navigate('/app/messages', { replace: true })}
+            onDeleted={() => navigate('/app/messages', { replace: true, viewTransition: true })}
           />
         ) : conversationId ? (
           <div className="messages-thread messages-thread--empty">

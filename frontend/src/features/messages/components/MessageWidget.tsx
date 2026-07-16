@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { LuMessageCircle, LuChevronDown, LuChevronLeft } from 'react-icons/lu';
-import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { useConversations } from '../hooks/useConversations';
 import { useUnreadTotal } from '../hooks/useUnreadTotal';
+import { conversationTitle } from '../conversationTitle';
 import { ConversationList } from './ConversationList';
 import { ConversationThread } from './ConversationThread';
 import { ConversationMenu } from './ConversationMenu';
@@ -37,15 +37,11 @@ export const MessageWidget: React.FC = () => {
     ? conversations.find(c => c.id === selectedId) ?? null
     : null;
 
-  const otherName = selected
-    ? (() => {
-        const first = selected.other_user?.first_name?.trim() ?? '';
-        const last = selected.other_user?.last_name?.trim() ?? '';
-        const full = `${first} ${last}`.trim();
-        return full ||
-          (selected.other_user?.email ? emailToDisplayName(selected.other_user.email) : 'Unknown');
-      })()
-    : '';
+  // Mirrors ConversationList's F4 treatment: DMs show the peer's name/email,
+  // channels show the team name — never derive from other_user alone, since
+  // it's null for channels (that's what used to render "Unknown" here).
+  const isChannel = selected ? selected.type !== 'dm' : false;
+  const title = selected ? conversationTitle(selected) : '';
 
   const renderUnreadBadge = () =>
     unreadTotal > 0 && (
@@ -83,12 +79,12 @@ export const MessageWidget: React.FC = () => {
               <LuChevronLeft size={20} aria-hidden="true" />
             </button>
             <InitialsAvatar
-              email={selected.other_user?.email}
-              name={otherName}
-              imageUrl={selected.other_user?.image_url}
+              email={isChannel ? undefined : selected.other_user?.email}
+              name={title}
+              imageUrl={isChannel ? undefined : selected.other_user?.image_url}
               size={32}
             />
-            <span className="message-widget__title">{otherName}</span>
+            <span className="message-widget__title">{title}</span>
             <ConversationMenu
               conversationId={selected.id}
               onDeleted={() => setSelectedId(null)}

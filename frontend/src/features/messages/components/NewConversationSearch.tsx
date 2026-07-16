@@ -95,6 +95,7 @@ export const NewConversationSearch: React.FC = () => {
     handleClose();
     navigate(
       `/app/messages/compose?to=${c.id}&name=${encodeURIComponent(contactName(c))}`,
+      { viewTransition: true },
     );
   };
 
