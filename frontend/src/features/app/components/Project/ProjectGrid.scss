@@ -29,6 +29,11 @@ $tag-closed-text: #2771ff;
       opacity: 1;
     }
   }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--gt-focus-ring), 0 0 4px rgba(0, 0, 0, 0.08);
+  }
 }
 
 // ── Banner ─────────────────────────────────────────────────────

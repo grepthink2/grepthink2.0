@@ -117,8 +117,8 @@
     }
 
     &:focus-visible {
-      outline: 3px solid rgba(1, 129, 86, 0.5);
-      outline-offset: 3px;
+      outline: none;
+      box-shadow: var(--gt-focus-ring), 0 8px 24px rgba(1, 129, 86, 0.28);
     }
   }
 

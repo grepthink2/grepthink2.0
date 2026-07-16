@@ -62,8 +62,8 @@
     }
 
     &:focus-visible {
-      outline: 4px auto -webkit-focus-ring-color;
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--gt-focus-ring), 0 0 4px rgba(0, 0, 0, 0.08);
     }
   }
 

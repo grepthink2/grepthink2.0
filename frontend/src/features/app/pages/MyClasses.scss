@@ -111,8 +111,8 @@ $my-classes-app-header-height: 64px;
     }
 
     &:focus-visible {
-      outline: 2px solid $accent-color;
-      outline-offset: 3px;
+      outline: none;
+      box-shadow: var(--gt-focus-ring), 0 0 4px rgba(0, 0, 0, 0.08);
 
       .my-classes-select-cta {
         opacity: 1;
@@ -226,8 +226,8 @@ $my-classes-app-header-height: 64px;
 
   &:focus-visible {
     opacity: 1;
-    outline: 2px solid $accent-color;
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: var(--gt-focus-ring), 0 1px 3px rgba(0, 0, 0, 0.12);
   }
 
   &:active {
@@ -265,8 +265,8 @@ $my-classes-app-header-height: 64px;
   }
 
   &:focus-visible {
-    outline: 2px solid $accent-color;
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: var(--gt-focus-ring), 0 1px 3px rgba(0, 0, 0, 0.12);
   }
 
   &:active {

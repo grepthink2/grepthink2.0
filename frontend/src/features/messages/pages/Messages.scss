@@ -614,6 +614,11 @@
     &:hover {
       background: $background;
     }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring), 0 -2px 12px rgba(0, 0, 0, 0.08);
+    }
   }
 
   &__label {

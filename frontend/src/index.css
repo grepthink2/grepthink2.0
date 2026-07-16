@@ -80,9 +80,12 @@ button:hover {
    `:focus-visible { outline: ... }` rules (higher specificity than this
    zero-specificity :where()) can't paint a second ring on top of the
    box-shadow one. Components opt out by setting their own box-shadow
-   (e.g. `inset var(--gt-focus-ring-tight)` in overflow-clipped contexts). */
+   (e.g. `inset var(--gt-focus-ring-tight)` in overflow-clipped contexts).
+   The 2px transparent outline renders identically to none normally, but under
+   forced-colors/WHCM (which strips box-shadows) it repaints in a system color,
+   keeping every control's focus indicated there. */
 :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
-  outline: none !important;
+  outline: 2px solid transparent !important;
   box-shadow: var(--gt-focus-ring);
 }
 
