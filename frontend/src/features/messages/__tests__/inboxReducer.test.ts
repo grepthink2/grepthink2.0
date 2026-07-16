@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyIncomingMessage, type IncomingMessageRow } from '../inboxReducer';
+import { applyIncomingMessage, normalizeTimestamp, type IncomingMessageRow } from '../inboxReducer';
 import type { ApiConversationSummary } from '@/lib/api';
 
 const conv = (id: string, at: string | null): ApiConversationSummary => ({
@@ -38,10 +38,36 @@ describe('applyIncomingMessage', () => {
     expect(next.length).toBe(1);
   });
 
-  it('normalizes postgres space-separated timestamps', () => {
+  it('normalizes postgres space-separated timestamps into parseable ISO', () => {
     const prev = [conv('a', null)];
     const { next } = applyIncomingMessage(
       prev, msg('a', 'them', '2026-07-12 00:00:00+00'), 'me');
-    expect(next[0].last_message_at).toBe('2026-07-12T00:00:00+00');
+    expect(next[0].last_message_at).toBe('2026-07-12T00:00:00+00:00');
+    // The short "+00" offset is an Invalid Date per ECMA-262; the expanded
+    // form must actually parse or every realtime-touched row blanks its time.
+    expect(Number.isNaN(new Date(next[0].last_message_at!).getTime())).toBe(false);
+  });
+
+  it('expands negative short offsets and leaves full offsets/Z untouched', () => {
+    expect(normalizeTimestamp('2026-07-12 17:30:00-07')).toBe('2026-07-12T17:30:00-07:00');
+    expect(Number.isNaN(Date.parse(normalizeTimestamp('2026-07-12 17:30:00-07')))).toBe(false);
+    // Already-normalized inputs pass through unchanged (idempotent).
+    expect(normalizeTimestamp('2026-07-12T00:00:00+00:00')).toBe('2026-07-12T00:00:00+00:00');
+    expect(normalizeTimestamp('2026-07-12T00:00:00Z')).toBe('2026-07-12T00:00:00Z');
+  });
+
+  it('sorts refetch-format microsecond timestamps above same-second realtime ones', () => {
+    // Refetch payloads carry microseconds ("...00.500000+00:00"); realtime
+    // deltas are whole seconds. Numeric time comparison must rank the .5s
+    // row above the .0s row of the SAME second — string collation cannot be
+    // trusted across the two formats.
+    const prev = [
+      conv('a', '2026-07-12T00:00:00.500000+00:00'),
+      conv('b', '2026-07-01T00:00:00Z'),
+    ];
+    const { next } = applyIncomingMessage(
+      prev, msg('b', 'them', '2026-07-12 00:00:00+00'), 'me');
+    expect(next[0].id).toBe('a');
+    expect(next[1].id).toBe('b');
   });
 });

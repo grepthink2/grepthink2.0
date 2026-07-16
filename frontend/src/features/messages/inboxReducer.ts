@@ -9,12 +9,18 @@ export interface IncomingMessageRow {
   created_at: string;
 }
 
-/** Realtime serializes timestamptz with a space; Date parsing (esp. Safari)
- *  wants the ISO 'T'. Normalize once at the ingestion boundary. */
-export const normalizeTimestamp = (ts: string): string => ts.replace(' ', 'T');
+/** Realtime serializes timestamptz with a space and a short UTC offset
+ *  ("+00"); ECMA-262 Date parsing needs the ISO 'T' and a full "+00:00".
+ *  Normalize once at the ingestion boundary. */
+export const normalizeTimestamp = (ts: string): string =>
+  ts.replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
+
+/** Numeric sort key — realtime rows are whole-second, refetch rows carry
+ *  microseconds; string collation across the two formats misorders. */
+const sortKey = (iso: string | null) => (iso ? Date.parse(iso) : -Infinity);
 
 const byLatest = (a: ApiConversationSummary, b: ApiConversationSummary) =>
-  (b.last_message_at ?? '').localeCompare(a.last_message_at ?? '');
+  sortKey(b.last_message_at) - sortKey(a.last_message_at);
 
 /**
  * Pure delta-apply for an incoming message: patch that conversation's

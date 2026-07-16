@@ -42,15 +42,20 @@ export const ConversationsProvider: React.FC<{ children: ReactNode }> = ({ child
     );
   }, []);
 
+  // Monotonic ticket per refetch: only the latest-issued request may commit,
+  // so a stale late-resolving response can't clobber fresher delta state.
+  const requestSeq = useRef(0);
+
   const refetch = useCallback(async () => {
+    const seq = ++requestSeq.current;
     try {
       const res = await api.getConversations();
-      if (cancelled.current) return;
+      if (cancelled.current || seq !== requestSeq.current) return;
       setConversations(res.conversations);
       setError(null);
       setLoading(false);
     } catch (err) {
-      if (cancelled.current) return;
+      if (cancelled.current || seq !== requestSeq.current) return;
       // Silent on poll: stale data > intrusive error.
       setError((err as Error).message);
       setLoading(false);
