@@ -171,15 +171,26 @@ def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
     return {"conversation_id": conversation_id, "message": message_row}
 
 
-def _conversation_or_403(conversation_id: str, caller_id: str) -> dict:
-    """Load conversation, ensuring caller is one of its two participants.
+def _participant_ids(conversation_id: str) -> list[str]:
+    """All participant user ids for a conversation."""
+    res = (
+        service_client.table("conversation_participants")
+        .select("user_id, role")
+        .eq("conversation_id", conversation_id)
+        .execute()
+    )
+    return [r["user_id"] for r in (res.data or [])]
 
-    Raises 404 if the conversation doesn't exist, 403 if caller isn't a participant.
-    Honors Q4=A: read-only conversations stay readable by their participants.
+
+def _require_participant(conversation_id: str, caller_id: str) -> dict:
+    """Load conversation, ensuring caller is a participant.
+
+    Raises 404 if the conversation doesn't exist, 403 if caller isn't a
+    participant. Read-only conversations stay readable by participants.
     """
     res = (
         service_client.table("conversations")
-        .select("id, user_a, user_b")
+        .select("id, type, user_a, user_b, project_id")
         .eq("id", conversation_id)
         .maybe_single()
         .execute()
@@ -188,7 +199,7 @@ def _conversation_or_403(conversation_id: str, caller_id: str) -> dict:
     conv = res.data if res is not None else None
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    if caller_id not in (conv["user_a"], conv["user_b"]):
+    if caller_id not in _participant_ids(conversation_id):
         logger.warning(
             "messages: participant check failed | caller=%s conv=%s",
             caller_id, conversation_id,
@@ -203,7 +214,7 @@ def list_messages(*, conversation_id: str, caller_id: str, limit: int = 50) -> l
     Spec Q9=A: no scroll-up pagination in v1; we always return the latest
     `limit` and the frontend re-fetches the same set every poll tick.
     """
-    _conversation_or_403(conversation_id, caller_id)
+    _require_participant(conversation_id, caller_id)
     res = (
         service_client.table("messages")
         .select("id, sender_id, body, created_at")
@@ -217,7 +228,7 @@ def list_messages(*, conversation_id: str, caller_id: str, limit: int = 50) -> l
 
 def mark_read(*, conversation_id: str, caller_id: str) -> None:
     """Upsert caller's read marker to now()."""
-    _conversation_or_403(conversation_id, caller_id)
+    _require_participant(conversation_id, caller_id)
     from datetime import datetime, timezone
     service_client.table("conversation_reads").upsert({
         "conversation_id": conversation_id,
@@ -243,7 +254,7 @@ def delete_conversation_for_user(*, conversation_id: str, caller_id: str) -> Non
     Other party is unaffected. The conversation reappears in caller's inbox
     if the other party sends a new message after this delete.
     """
-    _conversation_or_403(conversation_id, caller_id)
+    _require_participant(conversation_id, caller_id)
     from datetime import datetime, timezone
     service_client.table("conversation_deletes").upsert({
         "conversation_id": conversation_id,
