@@ -33,9 +33,14 @@ def send_message(
 def list_messages(
     conversation_id: str,
     user_id: str = Depends(require_user),
+    before: str | None = None,
+    limit: int = 50,
 ) -> MessagesListResponse:
-    msgs = controller.list_messages(conversation_id=conversation_id, caller_id=user_id)
-    return MessagesListResponse(messages=msgs)
+    page = controller.list_messages(
+        conversation_id=conversation_id, caller_id=user_id,
+        before=before, limit=limit,
+    )
+    return MessagesListResponse(**page)
 
 
 def mark_conversation_read(

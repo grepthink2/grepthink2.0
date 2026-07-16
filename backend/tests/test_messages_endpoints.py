@@ -165,12 +165,16 @@ def test_post_message_propagates_403(send, client, auth_header):
 
 @patch("app.messages.views.controller.list_messages")
 def test_get_messages_returns_list(lst, client, auth_header):
-    lst.return_value = [
-        {"id": "m1", "sender_id": "bob", "body": "hi", "created_at": "t1"}
-    ]
+    lst.return_value = {
+        "messages": [
+            {"id": "m1", "sender_id": "bob", "body": "hi", "created_at": "t1"}
+        ],
+        "next_cursor": None,
+    }
     res = client.get("/api/messages/conversations/c1/messages", headers=auth_header)
     assert res.status_code == 200
     assert res.json()["messages"][0]["body"] == "hi"
+    assert res.json()["next_cursor"] is None
 
 
 @patch("app.messages.views.controller.list_messages",

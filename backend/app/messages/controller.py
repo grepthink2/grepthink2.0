@@ -214,22 +214,57 @@ def _require_participant(conversation_id: str, caller_id: str) -> dict:
     return conv
 
 
-def list_messages(*, conversation_id: str, caller_id: str, limit: int = 50) -> list[dict]:
-    """Latest `limit` messages for a conversation, newest first.
+def list_messages(
+    *,
+    conversation_id: str,
+    caller_id: str,
+    limit: int = 50,
+    before: str | None = None,
+) -> dict:
+    """A page of messages, newest first, with keyset pagination.
 
-    Spec Q9=A: no scroll-up pagination in v1; we always return the latest
-    `limit` and the frontend re-fetches the same set every poll tick.
+    `before` is an opaque cursor "<created_at>|<id>" from a previous page.
+    Returns {"messages": [...], "next_cursor": str | None} — next_cursor is
+    None when there is no older history.
     """
     _require_participant(conversation_id, caller_id)
-    res = (
+    limit = max(1, min(limit, 100))
+
+    # Validate the cursor before touching the DB client: fail fast on bad
+    # input rather than depend on a service_client that may be unset.
+    before_created_at: str | None = None
+    before_id: str | None = None
+    if before is not None:
+        try:
+            before_created_at, before_id = before.split("|", 1)
+            if not before_created_at or not before_id:
+                raise ValueError
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Malformed cursor")
+
+    query = (
         service_client.table("messages")
         .select("id, sender_id, body, created_at")
         .eq("conversation_id", conversation_id)
+    )
+    if before_created_at is not None:
+        query = query.or_(
+            f"created_at.lt.{before_created_at},"
+            f"and(created_at.eq.{before_created_at},id.lt.{before_id})"
+        )
+    res = (
+        query
         .order("created_at", desc=True)
+        .order("id", desc=True)
         .limit(limit)
         .execute()
     )
-    return res.data or []
+    messages = res.data or []
+    next_cursor = None
+    if len(messages) == limit:
+        tail = messages[-1]
+        next_cursor = f"{tail['created_at']}|{tail['id']}"
+    return {"messages": messages, "next_cursor": next_cursor}
 
 
 def mark_read(*, conversation_id: str, caller_id: str) -> None:
