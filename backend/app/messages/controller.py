@@ -274,6 +274,9 @@ def list_inbox(*, caller_id: str) -> list[dict]:
     old bulk pull of up to 5,000 messages into Python memory. Must be
     called via the service-role client: under an RLS'd role the
     participants array would collapse to the caller's own row.
+
+    HARD DEPENDENCY: the messages_inbox() SQL function exists only after
+    the 2026-07-14 migration (Task R1, gated).
     """
     res = service_client.rpc("messages_inbox", {"p_user": caller_id}).execute()
     rows = res.data or []
@@ -284,6 +287,8 @@ def list_inbox(*, caller_id: str) -> list[dict]:
         other_last_read = None
         if r["type"] == "dm":
             others = [p for p in parts if p["id"] != caller_id]
+            # Peer absent from participants should be unreachable (DM
+            # user_a/user_b FKs have no cascade), but fail soft rather than 500.
             if others:
                 o = others[0]
                 first = (o.get("first_name") or "").strip()
