@@ -3,7 +3,6 @@ import { useAuth } from '@/lib/auth';
 import { api, type ApiConversationSummary } from '@/lib/api';
 import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { useConversationMessages } from '../hooks/useConversationMessages';
-import { useConversations } from '../hooks/useConversations';
 import { MessageBubble } from './MessageBubble';
 import { MessageComposer } from './MessageComposer';
 import { InitialsAvatar } from './InitialsAvatar';
@@ -39,8 +38,8 @@ export const ConversationThread: React.FC<Props> = ({
   hideHeader = false,
 }) => {
   const { user } = useAuth();
-  const { messages, loading, refetch, addOptimisticMessage } = useConversationMessages(conversation.id);
-  const { refetch: refetchInbox } = useConversations();
+  const { messages, loading, addOptimisticMessage, confirmOptimistic, dropOptimistic } =
+    useConversationMessages(conversation.id);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Mark read on mount and on every poll tick where new messages arrived.
@@ -95,11 +94,11 @@ export const ConversationThread: React.FC<Props> = ({
       created_at: new Date().toISOString(),
     });
     try {
-      await api.sendMessage({ toUserId: otherUserId, body });
-      await Promise.all([refetch(), refetchInbox()]);
+      const res = await api.sendMessage({ toUserId: otherUserId, body });
+      confirmOptimistic(tempId, res.message);
     } catch (err) {
       // Strip the optimistic message on failure so the thread reflects truth.
-      await refetch();
+      dropOptimistic(tempId);
       throw err;
     }
   };
