@@ -1,97 +1,77 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LuPencilLine, LuSearch, LuX } from 'react-icons/lu';
 import { api } from '@/lib/api';
-import type { ApiClass } from '@/lib/api';
-import { useUser } from '@/lib/auth';
+import type { ApiContact } from '@/lib/api';
 import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { InitialsAvatar } from './InitialsAvatar';
 
-interface Classmate {
-  id: string;
-  email: string;
-  displayName: string;
-  classNames: string[];
-}
-
 /**
  * Button + dropdown in the messages left-pane header that lets the user
- * find and start a conversation with any classmate (across all enrolled classes).
+ * find and start a conversation with anyone they're allowed to message
+ * (peers across their enrolled/owned classes).
  *
- * Clicking the pencil icon opens a search panel. Results are drawn from
- * GET /api/classes and GET /api/classes/{id}/students for each class.
- * The current user is excluded. Clicking a result navigates to
- * /app/messages/compose?to={userId}&name={displayName}.
+ * Clicking the pencil icon opens a search panel. Results come from a
+ * debounced GET /api/messages/contacts?q= call — the backend already
+ * excludes the caller and enforces messaging eligibility (e.g.
+ * instructor<->instructor pairs), so no client-side filtering is needed.
+ * Clicking a result navigates to /app/messages/compose?to={userId}&name={displayName}.
  */
 export const NewConversationSearch: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [classmates, setClassmates] = useState<Classmate[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [contacts, setContacts] = useState<ApiContact[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load all classmates once when the panel opens.
-  const loadClassmates = useCallback(async () => {
-    if (classmates.length > 0) return; // already loaded
-    setLoading(true);
-    setError(null);
-    try {
-      const { classes } = await api.getClasses();
-      const byId = new Map<string, Classmate>();
-
-      await Promise.all(
-        classes.map(async (cls: ApiClass) => {
-          try {
-            const { students } = await api.getClassStudents(cls.id);
-            for (const s of students) {
-              const uid = s.user_id ?? s.id;
-              if (!uid || uid === user?.id) continue;
-              if (byId.has(uid)) {
-                byId.get(uid)!.classNames.push(cls.name);
-              } else {
-                const first = s.first_name?.trim() ?? '';
-                const last = s.last_name?.trim() ?? '';
-                const full = `${first} ${last}`.trim();
-                byId.set(uid, {
-                  id: uid,
-                  email: s.email,
-                  displayName: full || emailToDisplayName(s.email),
-                  classNames: [cls.name],
-                });
-              }
-            }
-          } catch {
-            // skip classes we can't fetch students for
-          }
-        }),
-      );
-
-      setClassmates(
-        [...byId.values()].sort((a, b) =>
-          a.displayName.localeCompare(b.displayName),
-        ),
-      );
-    } catch {
-      setError('Could not load classmates.');
-    } finally {
-      setLoading(false);
-    }
-  }, [classmates.length, user?.id]);
+  // Debounced server-side search. Only runs while the panel is open, and
+  // re-fetches whenever the query changes (including the empty-query fetch
+  // that shows the full contact list right after opening). `loading` is
+  // flipped on synchronously by the triggering event handlers below
+  // (handleOpen / handleQueryChange), not here — setting state directly in
+  // an effect body causes an extra cascading render.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.getContacts(query);
+        if (!cancelled) {
+          setContacts(res.contacts);
+          setError(null);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError((err as Error).message);
+          setLoading(false);
+        }
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [open, query]);
 
   const handleOpen = () => {
     setOpen(true);
-    loadClassmates();
+    setLoading(true);
   };
 
   const handleClose = () => {
     setOpen(false);
     setQuery('');
+  };
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    setLoading(true);
   };
 
   // Close on outside click.
@@ -109,18 +89,12 @@ export const NewConversationSearch: React.FC = () => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50);
   }, [open]);
 
-  const filtered = query.trim()
-    ? classmates.filter(
-        (c) =>
-          c.displayName.toLowerCase().includes(query.toLowerCase()) ||
-          c.email.toLowerCase().includes(query.toLowerCase()),
-      )
-    : classmates;
+  const contactName = (c: ApiContact) => c.name || emailToDisplayName(c.email ?? undefined);
 
-  const handleSelect = (cm: Classmate) => {
+  const handleSelect = (c: ApiContact) => {
     handleClose();
     navigate(
-      `/app/messages/compose?to=${cm.id}&name=${encodeURIComponent(cm.displayName)}`,
+      `/app/messages/compose?to=${c.id}&name=${encodeURIComponent(contactName(c))}`,
     );
   };
 
@@ -145,11 +119,11 @@ export const NewConversationSearch: React.FC = () => {
               className="new-conv-search__input"
               placeholder="Search classmates…"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') handleClose();
-                if (e.key === 'Enter' && filtered.length === 1)
-                  handleSelect(filtered[0]);
+                if (e.key === 'Enter' && !loading && contacts.length === 1)
+                  handleSelect(contacts[0]);
               }}
             />
           </div>
@@ -163,30 +137,33 @@ export const NewConversationSearch: React.FC = () => {
                 {error}
               </li>
             )}
-            {!loading && !error && filtered.length === 0 && (
+            {!loading && !error && contacts.length === 0 && (
               <li className="new-conv-search__status">
                 {query ? 'No results.' : 'No classmates found.'}
               </li>
             )}
-            {filtered.map((cm) => (
-              <li key={cm.id}>
-                <button
-                  type="button"
-                  className="new-conv-search__result"
-                  onClick={() => handleSelect(cm)}
-                >
-                  <InitialsAvatar email={cm.email} name={cm.displayName} size={36} />
-                  <div className="new-conv-search__result-text">
-                    <span className="new-conv-search__result-name">
-                      {cm.displayName}
-                    </span>
-                    <span className="new-conv-search__result-classes">
-                      {cm.classNames.join(', ')}
-                    </span>
-                  </div>
-                </button>
-              </li>
-            ))}
+            {!loading &&
+              contacts.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    className="new-conv-search__result"
+                    onClick={() => handleSelect(c)}
+                  >
+                    <InitialsAvatar
+                      email={c.email}
+                      name={contactName(c)}
+                      imageUrl={c.image_url}
+                      size={36}
+                    />
+                    <div className="new-conv-search__result-text">
+                      <span className="new-conv-search__result-name">
+                        {contactName(c)}
+                      </span>
+                    </div>
+                  </button>
+                </li>
+              ))}
           </ul>
         </div>
       )}
