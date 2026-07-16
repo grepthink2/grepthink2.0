@@ -275,7 +275,7 @@
   // Polled every 15s via the ConversationsProvider.
   &__badge {
     margin-left: auto;
-    background: #ff3b30;
+    background: #ff3b30; // legacy badge red — kept verbatim per design spec
     color: #ffffff;
     font-size: 0.7rem;
     font-weight: 700;
