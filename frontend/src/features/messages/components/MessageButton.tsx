@@ -30,7 +30,7 @@ export const MessageButton: React.FC<Props> = ({
   const { conversations } = useConversations();
 
   const handleClick = () => {
-    const existing = conversations.find(c => c.other_user.id === toUserId);
+    const existing = conversations.find(c => c.other_user?.id === toUserId);
     if (existing) {
       navigate(`/app/messages/${existing.id}`);
       return;

@@ -26,7 +26,7 @@ export const NewConversationCompose: React.FC = () => {
   }
 
   const handleSend = async (body: string) => {
-    const res = await api.sendMessage(toUserId, body);
+    const res = await api.sendMessage({ toUserId, body });
     await refetchInbox();
     navigate(`/app/messages/${res.conversation_id}`, { replace: true });
   };

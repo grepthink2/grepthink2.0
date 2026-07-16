@@ -39,11 +39,11 @@ export const MessageWidget: React.FC = () => {
 
   const otherName = selected
     ? (() => {
-        const first = selected.other_user.first_name?.trim() ?? '';
-        const last = selected.other_user.last_name?.trim() ?? '';
+        const first = selected.other_user?.first_name?.trim() ?? '';
+        const last = selected.other_user?.last_name?.trim() ?? '';
         const full = `${first} ${last}`.trim();
         return full ||
-          (selected.other_user.email ? emailToDisplayName(selected.other_user.email) : 'Unknown');
+          (selected.other_user?.email ? emailToDisplayName(selected.other_user.email) : 'Unknown');
       })()
     : '';
 
@@ -83,9 +83,9 @@ export const MessageWidget: React.FC = () => {
               <LuChevronLeft size={20} aria-hidden="true" />
             </button>
             <InitialsAvatar
-              email={selected.other_user.email}
+              email={selected.other_user?.email}
               name={otherName}
-              imageUrl={selected.other_user.image_url}
+              imageUrl={selected.other_user?.image_url}
               size={32}
             />
             <span className="message-widget__title">{otherName}</span>

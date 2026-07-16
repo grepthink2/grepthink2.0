@@ -74,15 +74,19 @@ export const ConversationThread: React.FC<Props> = ({
       ? new Date(conversation.other_user_last_read_at)
       : null;
 
-  const otherFirst = conversation.other_user.first_name?.trim() ?? '';
-  const otherLast = conversation.other_user.last_name?.trim() ?? '';
+  const otherFirst = conversation.other_user?.first_name?.trim() ?? '';
+  const otherLast = conversation.other_user?.last_name?.trim() ?? '';
   const otherName =
     `${otherFirst} ${otherLast}`.trim() ||
-    (conversation.other_user.email
+    (conversation.other_user?.email
       ? emailToDisplayName(conversation.other_user.email)
       : 'Unknown');
 
   const handleSend = async (body: string) => {
+    // DM-only for now (F1 keeps runtime behavior unchanged for DMs; team
+    // channel send goes through conversationId in a later task).
+    const otherUserId = conversation.other_user?.id;
+    if (!otherUserId) return;
     const tempId = `temp-${Date.now()}`;
     addOptimisticMessage({
       id: tempId,
@@ -91,7 +95,7 @@ export const ConversationThread: React.FC<Props> = ({
       created_at: new Date().toISOString(),
     });
     try {
-      await api.sendMessage(conversation.other_user.id, body);
+      await api.sendMessage({ toUserId: otherUserId, body });
       await Promise.all([refetch(), refetchInbox()]);
     } catch (err) {
       // Strip the optimistic message on failure so the thread reflects truth.
@@ -106,9 +110,9 @@ export const ConversationThread: React.FC<Props> = ({
         <header className="messages-thread__header">
           <div className="messages-thread__header-left">
             <InitialsAvatar
-              email={conversation.other_user.email}
+              email={conversation.other_user?.email}
               name={otherName}
-              imageUrl={conversation.other_user.image_url}
+              imageUrl={conversation.other_user?.image_url}
               size={headerAvatarSize}
             />
             <h2 className="messages-thread__title">{otherName}</h2>
