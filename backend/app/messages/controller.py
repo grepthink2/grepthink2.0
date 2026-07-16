@@ -125,12 +125,20 @@ def notify_recipients(
     """Fan out the new-message notification to every other participant."""
     from app.notifications.controller import notify_new_message
     for recipient_id in recipient_ids:
-        notify_new_message(
-            recipient_id=recipient_id,
-            sender_id=sender_id,
-            conversation_id=conversation_id,
-            body=body,
-        )
+        try:
+            notify_new_message(
+                recipient_id=recipient_id,
+                sender_id=sender_id,
+                conversation_id=conversation_id,
+                body=body,
+            )
+        except Exception:
+            # Notifications are best-effort: never fail a persisted send,
+            # never let one recipient's failure starve the rest.
+            logger.exception(
+                "notify_recipients: failed | recipient=%s conv=%s",
+                recipient_id, conversation_id,
+            )
 
 
 def send_message(
@@ -163,7 +171,7 @@ def send_message(
             detail=f"Message exceeds {MAX_MESSAGE_CODEPOINTS} character limit",
         )
 
-    if conversation_id is not None:
+    if conversation_id:
         conv = _require_participant(conversation_id, sender_id)
         participant_ids = _participant_ids(conversation_id)
         if conv["type"] == "dm":

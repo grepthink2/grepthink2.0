@@ -62,3 +62,42 @@ def test_legacy_to_user_id_path_still_works(client, _can, _goc, notify):
     assert result["conversation_id"] == "conv-x"
     _, kwargs = notify.call_args
     assert kwargs["recipient_ids"] == ["bob"]
+
+
+@patch("app.messages.controller.service_client")
+def test_send_403_for_non_participant_wired(client):
+    """Core security property: non-participant cannot send via conversation_id."""
+    from app.messages.controller import send_message
+    (client.table.return_value.select.return_value.eq.return_value
+     .maybe_single.return_value.execute.return_value) = MagicMock(
+        data={"id": "conv-t", "type": "team_members",
+              "user_a": None, "user_b": None, "project_id": "p1"})
+    (client.table.return_value.select.return_value.eq.return_value
+     .execute.return_value) = MagicMock(
+        data=[{"user_id": "alice", "role": "member"},
+              {"user_id": "bob", "role": "member"}])
+    with pytest.raises(HTTPException) as exc:
+        send_message(sender_id="mallory", conversation_id="conv-t", body="hi")
+    assert exc.value.status_code == 403
+
+
+@patch("app.messages.controller._participant_ids",
+       return_value=["alice", "bob", "carol"])
+@patch("app.messages.controller._require_participant",
+       return_value={"id": "conv-t", "type": "team_members",
+                     "user_a": None, "user_b": None})
+@patch("app.messages.controller.service_client")
+def test_notify_failure_does_not_fail_send(client, _conv, _ids):
+    """One recipient's notify blowing up must not 500 the send or starve the rest."""
+    from app.messages import controller
+    _wire_insert(client)
+    calls = []
+    def flaky(*, recipient_id, **kw):
+        calls.append(recipient_id)
+        if recipient_id == "bob":
+            raise RuntimeError("boom")
+    with patch("app.notifications.controller.notify_new_message", side_effect=flaky):
+        result = controller.send_message(
+            sender_id="alice", conversation_id="conv-t", body="hi")
+    assert result["conversation_id"] == "conv-t"
+    assert calls == ["bob", "carol"]
