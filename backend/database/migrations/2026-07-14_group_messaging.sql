@@ -193,6 +193,12 @@ ON CONFLICT DO NOTHING;
 SELECT provision_team_channels(id) FROM projects;
 
 -- ============ 6) RLS (SELECT-only; writes stay service-role) ============
+-- Belt-and-suspenders: policies are inert unless RLS is ENABLED on the table.
+-- The live DB has these enabled already (advisor-verified), but the migration
+-- must be self-sufficient — the frontend's unfiltered realtime subscription
+-- relies on these policies scoping delivery per participant.
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS conversation_participants_select_own ON conversation_participants;
 -- NOTE: keep this policy self-reference-free (plain user_id check) —
