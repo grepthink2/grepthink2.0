@@ -4,6 +4,7 @@ from app.messages import views
 
 router = APIRouter(prefix="/api/messages", tags=["messages"])
 
+router.get('/contacts')(views.list_contacts)
 router.get('/conversations')(views.list_conversations)
 router.post('')(views.send_message)
 router.get('/conversations/{conversation_id}/messages')(views.list_messages)

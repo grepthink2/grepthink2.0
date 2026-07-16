@@ -7,11 +7,19 @@ from app.dependencies import require_user
 from app.limiter import limiter
 from app.messages import controller
 from app.messages.models import (
+    ContactsListResponse,
     ConversationsListResponse,
     MessagesListResponse,
     SendMessageRequest,
     SendMessageResponse,
 )
+
+
+def list_contacts(
+    user_id: str = Depends(require_user),
+    q: str | None = None,
+) -> ContactsListResponse:
+    return ContactsListResponse(contacts=controller.list_contacts(caller_id=user_id, query=q))
 
 
 def list_conversations(

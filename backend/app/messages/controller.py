@@ -411,3 +411,85 @@ def list_inbox(*, caller_id: str) -> list[dict]:
             "last_message_at": r.get("last_message_at"),
         })
     return out
+
+
+def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
+    """Everyone the caller may DM: peers across the caller's classes
+    (enrolled students/TAs + class owners), minus self and minus
+    instructor↔instructor pairs. Optional case-insensitive name/email filter.
+
+    Replaces the frontend's per-class getClassStudents() fan-out.
+    """
+    owned = (
+        service_client.table("classes")
+        .select("id, created_by")
+        .eq("created_by", caller_id)
+        .execute()
+    )
+    enrolled = (
+        service_client.table("class_enrollments")
+        .select("class_id")
+        .eq("user_id", caller_id)
+        .execute()
+    )
+    class_ids = sorted(
+        {r["id"] for r in (owned.data or [])}
+        | {r["class_id"] for r in (enrolled.data or [])}
+    )
+    if not class_ids:
+        return []
+
+    peers_enrolled = (
+        service_client.table("class_enrollments")
+        .select("class_id, user_id")
+        .in_("class_id", class_ids)
+        .execute()
+    )
+    peers_owning = (
+        service_client.table("classes")
+        .select("id, created_by")
+        .in_("id", class_ids)
+        .execute()
+    )
+    peer_ids = (
+        {r["user_id"] for r in (peers_enrolled.data or [])}
+        | {r["created_by"] for r in (peers_owning.data or [])}
+    ) - {caller_id}
+    if not peer_ids:
+        return []
+
+    profiles_res = (
+        service_client.table("profiles")
+        .select("id, email, role, first_name, last_name, image_url")
+        .in_("id", sorted(peer_ids | {caller_id}))
+        .execute()
+    )
+    profiles = {p["id"]: p for p in (profiles_res.data or [])}
+    caller_role = (profiles.get(caller_id) or {}).get("role")
+
+    needle = (query or "").strip().lower()
+    out: list[dict] = []
+    for uid in sorted(peer_ids):
+        p = profiles.get(uid)
+        if not p:
+            continue
+        if caller_role == "instructor" and p.get("role") == "instructor":
+            continue
+        first = (p.get("first_name") or "").strip()
+        last = (p.get("last_name") or "").strip()
+        name = f"{first} {last}".strip() or None
+        if needle:
+            haystack = f"{name or ''} {p.get('email') or ''}".lower()
+            if needle not in haystack:
+                continue
+        out.append({
+            "id": uid,
+            "name": name,
+            "first_name": p.get("first_name"),
+            "last_name": p.get("last_name"),
+            "email": p.get("email"),
+            "image_url": p.get("image_url"),
+            "role": p.get("role"),
+        })
+    out.sort(key=lambda c: (c["name"] or c["email"] or "").lower())
+    return out[:500]
