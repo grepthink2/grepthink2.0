@@ -172,7 +172,13 @@ def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
 
 
 def _participant_ids(conversation_id: str) -> list[str]:
-    """All participant user ids for a conversation."""
+    """All participant user ids for a conversation.
+
+    HARD DEPENDENCY: conversation_participants exists only after the
+    2026-07-14_group_messaging.sql migration is applied (Task R1, gated).
+    Do not deploy or preview this code against an unmigrated database —
+    every conversation endpoint would 500, including existing DMs.
+    """
     res = (
         service_client.table("conversation_participants")
         .select("user_id, role")
