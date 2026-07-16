@@ -2,8 +2,8 @@
 
 /* Shared pill used for inbox-list and floating-widget unread counts. */
 %unread-pill {
-  background: $primary-color;
-  color: $white;
+  background: var(--gt-primary);
+  color: var(--gt-text-inverse);
   font-size: 0.7rem;
   font-weight: 700;
   line-height: 1;
@@ -21,12 +21,14 @@
   display: grid;
   grid-template-columns: 320px 1fr;
   height: calc(100vh - 64px);
-  background: $background;
-  color: $text-primary;
+  background: var(--gt-canvas);
+  color: var(--gt-text-primary);
 
   &__list {
-    border-right: 1px solid $border-color;
-    background: $white;
+    border-right: 1px solid var(--gt-border);
+    background: var(--gt-surface);
+    border-radius: var(--gt-radius-md);
+    box-shadow: var(--gt-shadow-card);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -37,7 +39,9 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    background: $white;
+    background: var(--gt-surface);
+    border-radius: var(--gt-radius-md);
+    box-shadow: var(--gt-shadow-card);
   }
 
   &__back-btn {
@@ -78,17 +82,18 @@
       gap: $spacing-xs;
       background: transparent;
       border: none;
-      border-bottom: 1px solid $border-color;
-      color: $primary-color;
+      border-bottom: 1px solid var(--gt-border);
+      color: var(--gt-primary);
       font-size: 0.9rem;
       font-weight: 600;
       padding: $spacing-sm $spacing-md;
       cursor: pointer;
       width: 100%;
       flex-shrink: 0;
+      @include gt-transition(background-color);
 
       &:hover {
-        background: $background;
+        background: var(--gt-surface-muted);
       }
     }
 
@@ -112,8 +117,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: $background;
-  color: $text-secondary;
+  background: var(--gt-canvas);
+  color: var(--gt-text-secondary);
   font-weight: 600;
   letter-spacing: 0.02em;
   flex-shrink: 0;
@@ -133,14 +138,14 @@
     align-items: center;
     justify-content: space-between;
     padding: $spacing-md $spacing-lg;
-    border-bottom: 1px solid $border-color;
+    border-bottom: 1px solid var(--gt-border);
     flex-shrink: 0;
   }
 
   &__title {
     font-size: 1.125rem; /* 18px */
     font-weight: 600;
-    color: $text-primary;
+    color: var(--gt-text-primary);
   }
 
   &__search {
@@ -150,17 +155,18 @@
     background: transparent;
     border: none;
     padding: $spacing-xs;
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     cursor: pointer;
     border-radius: 50%;
     font-size: inherit;
     width: 32px;
     height: 32px;
     flex-shrink: 0;
+    @include gt-transition(background-color);
 
     &:hover,
     &:focus-visible {
-      background: $background;
+      background: var(--gt-surface-muted);
       border-color: transparent;
     }
   }
@@ -168,27 +174,29 @@
   &__search-input {
     flex: 1;
     min-width: 0;
-    border: 1px solid $border-color;
+    border: 1px solid var(--gt-border);
     border-radius: $border-radius-lg;
     padding: $spacing-xs $spacing-md;
     font-family: inherit;
     font-size: 0.9rem;
-    color: $text-primary;
-    background: $white;
+    color: var(--gt-text-primary);
+    background: var(--gt-surface);
+    @include gt-transition(border-color, box-shadow);
 
     &::placeholder {
-      color: $text-tertiary;
+      color: var(--gt-text-tertiary);
     }
 
     &:focus {
       outline: none;
-      border-color: $primary-color;
+      border-color: var(--gt-accent);
+      box-shadow: var(--gt-focus-ring-tight);
     }
   }
 
   &__empty {
     padding: $spacing-xl $spacing-md;
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     font-size: 0.95rem;
     text-align: center;
   }
@@ -207,15 +215,15 @@
     align-items: center;
     gap: $spacing-md;
     padding: $spacing-md $spacing-lg;
-    border-bottom: 1px solid $border-color;
+    border-bottom: 1px solid var(--gt-border);
     cursor: pointer;
-    transition: background $transition-fast;
+    @include gt-transition(background-color);
     position: relative;
     outline: none;
 
     &:hover,
     &:focus-visible {
-      background: $background;
+      background: var(--gt-surface-muted);
     }
 
     /* Reveal the three-dot menu only on hover/focus (keyboard accessible). */
@@ -225,9 +233,24 @@
     }
 
     &--active {
-      background: rgba($primary-color, 0.08);
-      border-left: 3px solid $primary-color;
+      background: var(--gt-green-50);
+      border-left: 3px solid var(--gt-primary);
       padding-left: calc(#{$spacing-lg} - 3px);
+    }
+
+    /* Unread rows get a heavier name + a darker, heavier preview line. Keyed
+       off the unread pill's presence (rather than a --unread row modifier,
+       which ConversationList doesn't emit) since it's only rendered when
+       unread_count > 0. */
+    &:has(.messages-list__unread) {
+      .messages-list__name {
+        font-weight: var(--gt-weight-semibold);
+      }
+
+      .messages-list__preview {
+        color: var(--gt-text-secondary);
+        font-weight: var(--gt-weight-medium);
+      }
     }
   }
 
@@ -247,8 +270,8 @@
   }
 
   &__name {
-    font-weight: 600;
-    color: $text-primary;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
     font-size: 0.95rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -258,13 +281,13 @@
   }
 
   &__time {
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     font-size: 0.8rem;
     flex-shrink: 0;
   }
 
   &__preview {
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     font-size: 0.85rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -277,6 +300,21 @@
     @extend %unread-pill;
     flex-shrink: 0;
   }
+}
+
+/* Conversation-type chip shown beside a channel row's name (TA/Instructor/Team). */
+.gt-convo__chip {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: var(--gt-weight-semibold);
+  letter-spacing: var(--gt-tracking-wide);
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: var(--gt-radius-lg);
+
+  &--team_ta { background: var(--gt-info-soft); color: var(--gt-info-text); }
+  &--team_instructor { background: var(--gt-warning-soft); color: var(--gt-warning-text); }
+  &--team_members { background: var(--gt-success-soft); color: var(--gt-success-text); }
 }
 
 /* ---------- Conversation menu (three-dot dropdown) ---------- */
@@ -292,17 +330,17 @@
     background: transparent;
     border: none;
     padding: 0;
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     width: 28px;
     height: 28px;
     border-radius: 50%;
     cursor: pointer;
     opacity: 0;
-    transition: opacity $transition-fast, background $transition-fast;
+    @include gt-transition(opacity, background-color);
 
     &:hover,
     &:focus-visible {
-      background: rgba($text-primary, 0.08);
+      background: var(--gt-surface-muted);
       border-color: transparent;
       opacity: 1;
     }
@@ -317,8 +355,8 @@
     top: calc(100% + 4px);
     right: 0;
     min-width: 140px;
-    background: $white;
-    border: 1px solid $border-color;
+    background: var(--gt-surface);
+    border: 1px solid var(--gt-border);
     border-radius: $border-radius-sm;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     z-index: $z-index-dropdown;
@@ -334,13 +372,14 @@
     text-align: left;
     padding: $spacing-sm $spacing-md;
     font-size: 0.9rem;
-    color: $text-primary;
+    color: var(--gt-text-primary);
     cursor: pointer;
     font-family: inherit;
+    @include gt-transition(background-color);
 
     &:hover:not(:disabled),
     &:focus-visible:not(:disabled) {
-      background: $background;
+      background: var(--gt-surface-muted);
       border-color: transparent;
     }
 
@@ -370,7 +409,7 @@
   &--empty {
     align-items: center;
     justify-content: center;
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     font-size: 0.95rem;
     padding: $spacing-xl;
     text-align: center;
@@ -381,7 +420,7 @@
     align-items: center;
     justify-content: space-between;
     padding: $spacing-md $spacing-lg;
-    border-bottom: 1px solid $border-color;
+    border-bottom: 1px solid var(--gt-border);
     height: 76px;
     flex-shrink: 0;
   }
@@ -395,7 +434,7 @@
 
   &__title {
     margin: 0;
-    color: $text-primary;
+    color: var(--gt-text-primary);
     font-size: 1.125rem; /* 18px */
     font-weight: 600;
     overflow: hidden;
@@ -415,7 +454,7 @@
 
   &__loading,
   &__empty {
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     font-size: 0.9rem;
     text-align: center;
     padding: $spacing-lg;
@@ -429,91 +468,107 @@
 
   &__seen {
     align-self: flex-end;
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     font-size: 0.75rem;
     margin-top: $spacing-xs;
   }
 }
 
+.messages-thread__header-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.messages-thread__subtitle {
+  font-size: var(--gt-text-caption);
+  color: var(--gt-text-tertiary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.messages-thread__day {
+  align-self: center;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-text-tertiary);
+  background: var(--gt-surface-sunken);
+  border-radius: var(--gt-radius-lg);
+  padding: 2px 10px;
+  margin: var(--gt-space-sm) 0;
+}
+.messages-thread__older {
+  align-self: center;
+  min-height: 20px;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-text-tertiary);
+}
+
 /* ---------- Bubbles ---------- */
 
 .messages-bubble {
-  max-width: 70%;
-  padding: $spacing-sm $spacing-md;
-  border-radius: $border-radius-md;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  word-wrap: break-word;
+  max-width: 72%;
+  padding: 8px 12px;
+  border-radius: var(--gt-radius-md);
+  animation: gt-rise-in 0.2s ease both;
 
   &--mine {
     align-self: flex-end;
-    background: $primary-color;
-    color: $white;
-
-    .messages-bubble__time {
-      color: rgba($white, 0.85);
-    }
+    background: var(--gt-primary);
+    color: var(--gt-text-inverse);
+    .messages-bubble__time { color: rgba(255, 255, 255, 0.75); }
   }
-
   &--theirs {
     align-self: flex-start;
-    background: $background;
-    color: $text-primary;
-
-    .messages-bubble__time {
-      color: $text-tertiary;
-    }
+    background: var(--gt-surface);
+    border: 1px solid var(--gt-border);
+    color: var(--gt-text-primary);
   }
+  &--pending { opacity: 0.6; }
 
-  &__body {
-    white-space: pre-wrap;
-    line-height: 1.4;
-    font-size: 0.95rem;
+  &__author {
+    font-size: var(--gt-text-caption);
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-tertiary);
+    margin-bottom: 2px;
   }
-
-  &__time {
-    font-size: 0.7rem;
-    align-self: flex-end;
-  }
+  &__body { font-size: var(--gt-text-body); line-height: var(--gt-leading-snug); white-space: pre-wrap; word-break: break-word; }
+  &__time { font-size: 11px; color: var(--gt-text-tertiary); margin-top: 2px; text-align: right; }
 }
 
 /* ---------- Composer ---------- */
 
 .messages-composer {
-  border-top: 1px solid $border-color;
+  border-top: 1px solid var(--gt-border);
   padding: $spacing-md $spacing-lg;
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
-  background: $white;
+  background: var(--gt-surface);
 
   &--disabled {
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     font-size: 0.9rem;
     text-align: center;
     padding: $spacing-md $spacing-lg;
   }
 
   &__input {
-    border: 1px solid $border-color;
+    border: 1px solid var(--gt-border);
     border-radius: $border-radius-lg;
     padding: $spacing-sm $spacing-md;
     font-family: inherit;
     font-size: 0.95rem;
-    color: $text-primary;
-    background: $white;
+    color: var(--gt-text-primary);
+    background: var(--gt-surface);
     resize: none;
     min-height: 48px;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color, box-shadow);
 
     &::placeholder {
-      color: $text-tertiary;
+      color: var(--gt-text-tertiary);
     }
 
     &:focus {
       outline: none;
-      border-color: $primary-color;
+      border-color: var(--gt-accent);
+      box-shadow: var(--gt-focus-ring-tight);
     }
   }
 
@@ -526,7 +581,7 @@
 
   &__counter {
     margin-right: auto;
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     font-size: 0.8rem;
 
     &--over {
@@ -541,22 +596,23 @@
   }
 
   &__send {
-    background: $primary-color;
-    color: $white;
+    background: var(--gt-primary);
+    color: var(--gt-text-inverse);
     border: none;
     padding: $spacing-sm $spacing-lg;
     border-radius: $border-radius-sm;
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
-    transition: background $transition-fast;
+    @include gt-transition(background-color);
+    @include gt-press;
 
     &:hover:not(:disabled) {
-      background: $primary-hover;
+      background: var(--gt-primary-hover);
     }
 
     &:disabled {
-      background: $disabled-bg;
+      opacity: 0.45;
       cursor: not-allowed;
     }
   }
@@ -565,19 +621,19 @@
 /* ---------- MessageButton (used on project pages) ---------- */
 
 .message-btn {
-  background: $white;
-  color: $primary-color;
-  border: 1px solid $primary-color;
+  background: var(--gt-surface);
+  color: var(--gt-primary);
+  border: 1px solid var(--gt-primary);
   padding: $spacing-xs $spacing-md;
   border-radius: $border-radius-sm;
   font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: background $transition-fast, color $transition-fast;
+  @include gt-transition(background-color, color);
 
   &:hover {
-    background: $primary-color;
-    color: $white;
+    background: var(--gt-primary);
+    color: var(--gt-text-inverse);
   }
 }
 
@@ -588,8 +644,8 @@
   bottom: 0;
   right: 24px;
   z-index: $z-index-dropdown;
-  background: $white;
-  color: $text-primary;
+  background: var(--gt-surface);
+  color: var(--gt-text-primary);
   font-family: inherit;
 
   /* Visual language inspired by the inbox card on the Messages Figma:
@@ -608,11 +664,11 @@
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 600;
-    color: $text-primary;
-    transition: background $transition-fast;
+    color: var(--gt-text-primary);
+    @include gt-transition(background-color);
 
     &:hover {
-      background: $background;
+      background: var(--gt-surface-muted);
     }
 
     &:focus-visible {
@@ -631,8 +687,8 @@
     height: 480px;
     display: flex;
     flex-direction: column;
-    border-radius: $border-radius-md $border-radius-md 0 0;
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+    border-radius: var(--gt-radius-md) var(--gt-radius-md) 0 0;
+    box-shadow: var(--gt-shadow-card);
     overflow: hidden;
   }
 
@@ -642,7 +698,7 @@
     gap: $spacing-sm;
     height: 56px;
     padding: $spacing-sm $spacing-md;
-    border-bottom: 1px solid $border-color;
+    border-bottom: 1px solid var(--gt-border);
     flex-shrink: 0;
   }
 
@@ -650,7 +706,7 @@
     flex: 1;
     font-size: 1rem;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--gt-text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -664,16 +720,16 @@
     background: transparent;
     border: none;
     padding: 0;
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     width: 32px;
     height: 32px;
     border-radius: 50%;
     cursor: pointer;
-    transition: background $transition-fast;
+    @include gt-transition(background-color);
 
     &:hover,
     &:focus-visible {
-      background: $background;
+      background: var(--gt-surface-muted);
     }
   }
 
@@ -707,18 +763,18 @@
     background: transparent;
     border: none;
     padding: $spacing-xs;
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     cursor: pointer;
     border-radius: 50%;
     width: 32px;
     height: 32px;
     flex-shrink: 0;
-    transition: background $transition-fast, color $transition-fast;
+    @include gt-transition(background-color, color);
 
     &:hover,
     &:focus-visible {
-      background: $background;
-      color: $primary-color;
+      background: var(--gt-surface-muted);
+      color: var(--gt-primary);
     }
   }
 
@@ -727,8 +783,8 @@
     top: calc(100% + 6px);
     right: 0;
     width: 300px;
-    background: $white;
-    border: 1px solid $border-color;
+    background: var(--gt-surface);
+    border: 1px solid var(--gt-border);
     border-radius: $border-radius-lg;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     z-index: 200;
@@ -742,11 +798,11 @@
     align-items: center;
     gap: $spacing-sm;
     padding: $spacing-sm $spacing-md;
-    border-bottom: 1px solid $border-color;
+    border-bottom: 1px solid var(--gt-border);
   }
 
   &__icon {
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     flex-shrink: 0;
   }
 
@@ -756,11 +812,11 @@
     outline: none;
     font-family: inherit;
     font-size: 0.9rem;
-    color: $text-primary;
+    color: var(--gt-text-primary);
     background: transparent;
 
     &::placeholder {
-      color: $text-tertiary;
+      color: var(--gt-text-tertiary);
     }
   }
 
@@ -774,7 +830,7 @@
 
   &__status {
     padding: $spacing-md $spacing-lg;
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     font-size: 0.875rem;
     text-align: center;
 
@@ -793,11 +849,11 @@
     border: none;
     cursor: pointer;
     text-align: left;
-    transition: background $transition-fast;
+    @include gt-transition(background-color);
 
     &:hover,
     &:focus-visible {
-      background: $background;
+      background: var(--gt-surface-muted);
       outline: none;
     }
   }
@@ -813,7 +869,7 @@
   &__result-name {
     font-size: 0.9rem;
     font-weight: 500;
-    color: $text-primary;
+    color: var(--gt-text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -821,7 +877,7 @@
 
   &__result-classes {
     font-size: 0.78rem;
-    color: $text-tertiary;
+    color: var(--gt-text-tertiary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
