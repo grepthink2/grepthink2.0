@@ -25,11 +25,17 @@ export function useConversationMessages(conversationId: string | null) {
   });
   const cursor = useRef<string | null>(null);
   const cancelled = useRef(false);
+  // Monotonic ticket per request: only the latest-issued request may commit
+  // (state or cursor). The cancelled ref only covers unmount — it is reset
+  // by the next effect run, so a stale response from a previous conversation
+  // would otherwise leak into the new one's state.
+  const requestSeq = useRef(0);
 
   const loadInitial = useCallback(async (id: string) => {
+    const seq = ++requestSeq.current;
     try {
       const res = await api.getMessages(id);
-      if (cancelled.current) return;
+      if (cancelled.current || seq !== requestSeq.current) return;
       cursor.current = res.next_cursor;
       setState({
         messages: [...res.messages].reverse(), // newest-first → chronological
@@ -37,7 +43,7 @@ export function useConversationMessages(conversationId: string | null) {
         hasMore: res.next_cursor != null, error: null,
       });
     } catch (err) {
-      if (cancelled.current) return;
+      if (cancelled.current || seq !== requestSeq.current) return;
       setState(prev => ({ ...prev, loading: false, error: (err as Error).message }));
     }
   }, []);
@@ -45,10 +51,11 @@ export function useConversationMessages(conversationId: string | null) {
   const loadOlder = useCallback(async () => {
     const before = cursor.current;
     if (!conversationId || !before) return;
+    const seq = ++requestSeq.current;
     setState(prev => prev.loadingOlder ? prev : { ...prev, loadingOlder: true });
     try {
       const res = await api.getMessages(conversationId, { before });
-      if (cancelled.current) return;
+      if (cancelled.current || seq !== requestSeq.current) return;
       cursor.current = res.next_cursor;
       setState(prev => ({
         ...prev,
@@ -57,20 +64,23 @@ export function useConversationMessages(conversationId: string | null) {
         hasMore: res.next_cursor != null,
       }));
     } catch {
-      if (!cancelled.current) {
-        setState(prev => ({ ...prev, loadingOlder: false }));
-      }
+      if (cancelled.current || seq !== requestSeq.current) return;
+      setState(prev => ({ ...prev, loadingOlder: false }));
     }
   }, [conversationId]);
 
   useEffect(() => {
     cancelled.current = false;
     cursor.current = null;
+    // Invalidate any in-flight request from the previous conversation —
+    // before the null branch, so closing a thread also invalidates them.
+    requestSeq.current += 1;
     if (!conversationId) {
       setState({ messages: [], loading: false, loadingOlder: false, hasMore: false, error: null });
       return;
     }
-    setState(prev => ({ ...prev, loading: true }));
+    // Full reset — no stale bubbles from the previous thread while loading.
+    setState({ messages: [], loading: true, loadingOlder: false, hasMore: false, error: null });
     loadInitial(conversationId);
     const channel = supabase
       .channel(`messages:${conversationId}`)
