@@ -1,4 +1,5 @@
 """Teaching Assistant (TA) request models."""
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel
@@ -21,3 +22,13 @@ class SetReviewTaRequest(BaseModel):
     supplies the TA to appoint (override).
     """
     user_id: Optional[UUID] = None
+
+
+class SetReviewZoomRequest(BaseModel):
+    """Set (null/blank clears) the class's shared final-review Zoom room."""
+    zoom_url: Optional[str] = None
+
+
+class SetFinalReviewTimeRequest(BaseModel):
+    """Set (null clears) a team's single final-review slot."""
+    scheduled_at: Optional[datetime] = None

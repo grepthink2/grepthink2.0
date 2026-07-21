@@ -22,3 +22,9 @@ router.post('/classes/{class_id}/review-window')(views.set_review_window)
 router.get('/projects/{project_id}/review-tas')(views.list_project_review_tas)
 router.post('/projects/{project_id}/review-tas')(views.set_review_ta)
 router.delete('/projects/{project_id}/review-tas/{target_user_id}')(views.release_review_ta)
+
+# Final Reviews schedule: the class-wide shared Zoom room + one review slot per
+# team (both instructor-set); the schedule read is for the instructor + class TAs.
+router.get('/classes/{class_id}/final-reviews')(views.get_final_review_schedule)
+router.post('/classes/{class_id}/review-zoom')(views.set_review_zoom)
+router.post('/projects/{project_id}/review-time')(views.set_final_review_time)

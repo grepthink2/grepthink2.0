@@ -15,14 +15,21 @@ Separately, the end-of-quarter review activity gives each team a second reviewer
 open, or set by the instructor; owner-or-instructor release). Reviewer #1 is
 always the assigned TA above and is not stored in that table.
 
+The final-review schedule layers WHEN/WHERE onto that model: each team gets one
+review slot (``projects.final_review_at``) and the class shares one Zoom room
+(``classes.review_zoom_url``) — both instructor-set, no attendance taken.
+
 Who can call what:
     * Promote / demote / list-class-TAs        → class instructor.
     * my-role / review targets                 → the TA themselves.
     * list-project-TAs / list-review-TAs       → instructor or any class member.
     * claim / release additional reviewer      → the TA (self) or instructor.
-    * toggle review window                      → class instructor.
+    * toggle review window / set review Zoom /
+      set per-team review time                 → class instructor.
+    * final-review schedule (read)             → instructor or any class TA.
 """
 import logging
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -505,6 +512,166 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
     except Exception:
         logger.exception("Error setting review TA | project_id=%s", project_id)
         raise HTTPException(status_code=500, detail="Failed to set review TA")
+
+
+def set_review_zoom(instructor_id: str, class_id: UUID, zoom_url: str | None) -> dict:
+    """Set or clear the class's ONE shared final-review Zoom room (instructor only).
+
+    Every team's final review happens in this room; a null/blank URL clears it.
+    """
+    try:
+        client = _client()
+        _require_class_instructor(client, instructor_id, class_id)
+        url = (zoom_url or "").strip() or None
+        client.table("classes").update(
+            {"review_zoom_url": url}
+        ).eq("id", str(class_id)).execute()
+        logger.info(
+            "Review Zoom %s | class_id=%s by=%s",
+            "set" if url else "cleared", class_id, instructor_id,
+        )
+        return {
+            "message": "Review Zoom updated",
+            "class_id": str(class_id),
+            "review_zoom_url": url,
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error setting review Zoom | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to update review Zoom")
+
+
+def set_final_review_time(instructor_id: str, project_id: UUID, scheduled_at: datetime | None) -> dict:
+    """Set or clear a team's single final-review slot (instructor only).
+
+    One timestamptz per team (``projects.final_review_at``); no attendance is
+    taken for final reviews, so this deliberately does not create a ``meetings``
+    row.
+    """
+    try:
+        client = _client()
+        project = _load_project(client, project_id)
+        _require_class_instructor(client, instructor_id, project["class_id"])
+        value = scheduled_at.isoformat() if scheduled_at else None
+        client.table("projects").update(
+            {"final_review_at": value}
+        ).eq("id", str(project_id)).execute()
+        logger.info(
+            "Final review time %s | project_id=%s at=%s by=%s",
+            "set" if value else "cleared", project_id, value, instructor_id,
+        )
+        return {
+            "message": "Final review time updated",
+            "project_id": str(project_id),
+            "final_review_at": value,
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error setting final review time | project_id=%s", project_id)
+        raise HTTPException(status_code=500, detail="Failed to update final review time")
+
+
+def _parse_review_ts(value) -> datetime | None:
+    """Parse a stored final_review_at into an aware datetime (None if absent/bad)."""
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def get_final_review_schedule(user_id: str, class_id: UUID) -> dict:
+    """The class's full final-review schedule (instructor or any class TA).
+
+    Per team: name, review slot, Home TA (assigned_ta_id) and Review TA
+    (additional reviewer, null = open slot) — ordered by slot time with
+    unscheduled teams last. Class-level: the shared Zoom room, the review-window
+    state, and how many teams the viewer reviews (their Review-TA claims).
+    """
+    try:
+        client = _client()
+        class_res = (
+            client.table("classes")
+            .select("id, created_by, review_period_open, review_zoom_url")
+            .eq("id", str(class_id))
+            .execute()
+        )
+        if not class_res.data:
+            raise HTTPException(status_code=404, detail="Class not found")
+        cls = class_res.data[0]
+
+        if cls.get("created_by") != user_id \
+                and get_enrollment_role(client, class_id, user_id) != ENROLLMENT_ROLE_TA:
+            raise HTTPException(
+                status_code=403,
+                detail="Only the instructor or class TAs can view the final-review schedule",
+            )
+
+        projects = (
+            client.table("projects")
+            .select("id, name, assigned_ta_id, final_review_at")
+            .eq("class_id", str(class_id))
+            .execute()
+        ).data or []
+        review_rows = (
+            client.table(REVIEW_TA_TABLE)
+            .select("project_id, user_id, claimed_at")
+            .eq("class_id", str(class_id))
+            .execute()
+        ).data or []
+        review_by_project = {r["project_id"]: r for r in review_rows if r.get("project_id")}
+
+        ta_ids = {p.get("assigned_ta_id") for p in projects} | {r.get("user_id") for r in review_rows}
+        ta_ids.discard(None)
+        profile_map: dict[str, dict] = {}
+        if ta_ids:
+            profs = client.table("profiles").select(PROFILE_SELECT).in_("id", list(ta_ids)).execute()
+            profile_map = {p["id"]: p for p in (profs.data or [])}
+
+        def _person(uid, **extra):
+            if not uid:
+                return None
+            p = profile_map.get(uid, {})
+            return {
+                "user_id": uid,
+                "name": profile_display_name(p),
+                "email": (p or {}).get("email"),
+                **extra,
+            }
+
+        teams = []
+        for p in projects:
+            claim = review_by_project.get(p["id"])
+            teams.append({
+                "project_id": p["id"],
+                "name": p.get("name"),
+                "final_review_at": p.get("final_review_at"),
+                "home_ta": _person(p.get("assigned_ta_id")),
+                "review_ta": _person(claim.get("user_id"), claimed_at=claim.get("claimed_at")) if claim else None,
+            })
+
+        far_future = datetime.max.replace(tzinfo=timezone.utc)
+        teams.sort(key=lambda t: (
+            _parse_review_ts(t["final_review_at"]) or far_future,
+            (t["name"] or "").lower(),
+        ))
+
+        return {
+            "class_id": str(class_id),
+            "review_zoom_url": cls.get("review_zoom_url"),
+            "review_period_open": bool(cls.get("review_period_open")),
+            "my_review_count": sum(1 for r in review_rows if str(r.get("user_id")) == str(user_id)),
+            "teams": teams,
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error fetching final-review schedule | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch the final-review schedule")
 
 
 def release_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID) -> dict:

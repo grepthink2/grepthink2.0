@@ -278,7 +278,8 @@ CREATE TABLE IF NOT EXISTS "public"."classes" (
     "can_students_make_project" boolean,
     "image_url" "text",
     "status" "text" NOT NULL,
-    "review_period_open" boolean DEFAULT false NOT NULL
+    "review_period_open" boolean DEFAULT false NOT NULL,
+    "review_zoom_url" "text"
 );
 
 
@@ -495,6 +496,7 @@ CREATE TABLE IF NOT EXISTS "public"."projects" (
     "sponsor_description" "text",
     "image_url" "text",
     "assigned_ta_id" "uuid",
+    "final_review_at" timestamp with time zone,
     "zoom_url" "text",
     "meeting_day" "text",
     "meeting_time" "text",

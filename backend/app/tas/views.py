@@ -2,7 +2,13 @@
 from uuid import UUID
 from fastapi import Depends
 from app.dependencies import require_user, require_instructor
-from app.tas.models import TaUserRequest, SetReviewWindowRequest, SetReviewTaRequest
+from app.tas.models import (
+    TaUserRequest,
+    SetReviewWindowRequest,
+    SetReviewTaRequest,
+    SetReviewZoomRequest,
+    SetFinalReviewTimeRequest,
+)
 from app.tas import controller
 
 
@@ -81,3 +87,28 @@ def release_review_ta(
     user_id: str = Depends(require_user),
 ):
     return controller.release_review_ta(user_id, project_id, target_user_id)
+
+
+# ----- Final Reviews: schedule + shared Zoom --------------------------------
+
+def set_review_zoom(
+    class_id: UUID,
+    data: SetReviewZoomRequest,
+    user_id: str = Depends(require_instructor),
+):
+    return controller.set_review_zoom(user_id, class_id, data.zoom_url)
+
+
+def set_final_review_time(
+    project_id: UUID,
+    data: SetFinalReviewTimeRequest,
+    user_id: str = Depends(require_instructor),
+):
+    return controller.set_final_review_time(user_id, project_id, data.scheduled_at)
+
+
+def get_final_review_schedule(
+    class_id: UUID,
+    user_id: str = Depends(require_user),
+):
+    return controller.get_final_review_schedule(user_id, class_id)
