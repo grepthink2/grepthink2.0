@@ -1,0 +1,334 @@
+@use '@styles/index.scss' as *;
+
+// Final Reviews — schedule grouped by day. Shares the .ta-page shell
+// (components/TAManagement/TAManagement.scss) and mirrors the TeamMeetingCard
+// look for rows: white cards, labeled columns, initials avatars.
+
+.final-reviews .ta-page__title {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  svg { color: $primary-color; }
+}
+
+// ── Viewer badge + window state ─────────────────────────────────
+.fr-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba($primary-color, 0.1);
+  color: $primary-color;
+  font-size: 0.75rem;
+  font-weight: $font-weight-semibold;
+  white-space: nowrap;
+}
+
+.fr-window {
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  color: $text-tertiary;
+
+  &--open { color: $primary-color; }
+}
+
+// ── Shared Zoom room bar ────────────────────────────────────────
+.fr-zoom {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+  margin-bottom: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  font-size: 0.8125rem;
+}
+
+.fr-zoom__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: $font-weight-semibold;
+  color: $text-secondary;
+  white-space: nowrap;
+
+  svg { color: $primary-color; }
+}
+
+.fr-zoom__link {
+  color: $accent-color;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+
+  &:hover { text-decoration: underline; }
+}
+
+.fr-zoom__edit {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex: 1;
+  min-width: 240px;
+  flex-wrap: wrap;
+}
+
+.fr-zoom__input {
+  flex: 1;
+  min-width: 200px;
+  padding: 6px 10px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  color: $text-primary;
+  font-family: $primary-font;
+  font-size: 0.8125rem;
+
+  &:focus { outline: none; border-color: $accent-color; }
+}
+
+// ── Action-failure banner ───────────────────────────────────────
+.fr-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid rgba($error-color, 0.4);
+  border-radius: $border-radius-md;
+  background: rgba($error-color, 0.08);
+  color: $error-color;
+  font-size: 0.8125rem;
+}
+
+.fr-error__close {
+  display: inline-flex;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px;
+}
+
+// ── Day sections ────────────────────────────────────────────────
+.fr-day {
+  margin-bottom: $spacing-lg;
+}
+
+.fr-day__head {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.fr-day__title {
+  font-size: 1rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.fr-day__zoom {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: $border-radius-sm;
+  background: $primary-color;
+  color: $white;
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  text-decoration: none;
+
+  &:hover { background: $primary-hover; color: $white; }
+}
+
+.fr-day__list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+// ── One team's row ──────────────────────────────────────────────
+.fr-row {
+  display: grid;
+  grid-template-columns: 170px minmax(160px, 1.2fr) minmax(140px, 1fr) minmax(200px, 1.2fr);
+  gap: $spacing-md;
+  align-items: center;
+  padding: $spacing-sm $spacing-md;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+}
+
+.fr-row__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.fr-row__label {
+  font-size: 0.65rem;
+  font-weight: $font-weight-semibold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: $text-tertiary;
+}
+
+.fr-row__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: $text-primary;
+  min-width: 0;
+}
+
+.fr-row__team {
+  font-weight: $font-weight-semibold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.fr-row__icon { color: $text-tertiary; flex-shrink: 0; }
+
+.fr-row__hint {
+  font-size: 0.8125rem;
+  color: $text-tertiary;
+}
+
+.fr-row__you { color: $primary-color; font-weight: $font-weight-medium; }
+
+.fr-row__open {
+  font-size: 0.875rem;
+  color: $text-tertiary;
+  font-style: italic;
+}
+
+.fr-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: $primary-color;
+  color: $white;
+  font-size: 0.6rem;
+  font-weight: $font-weight-semibold;
+  flex-shrink: 0;
+}
+
+.fr-row__reviewer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: $text-primary;
+  flex-wrap: wrap;
+}
+
+.fr-row__reviewer-name { min-width: 0; }
+
+.fr-row__signup-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
+// ── Buttons ─────────────────────────────────────────────────────
+.fr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  color: $text-secondary;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: $background; }
+  &:disabled { opacity: 0.55; cursor: default; }
+}
+
+.fr-btn--primary,
+.fr-btn--signup {
+  background: $primary-color;
+  border-color: $primary-color;
+  color: $white;
+
+  &:hover:not(:disabled) { background: $primary-hover; }
+}
+
+.fr-btn--release {
+  color: $error-color;
+  border-color: rgba($error-color, 0.45);
+
+  &:hover:not(:disabled) { background: rgba($error-color, 0.07); }
+}
+
+// ── Instructor editors ──────────────────────────────────────────
+.fr-row__ta-select,
+.fr-row__time-input {
+  font-family: $primary-font;
+  font-size: 0.8125rem;
+  padding: 6px 8px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  color: $text-primary;
+  color-scheme: light; // Keep the native picker legible under a dark OS theme.
+  max-width: 100%;
+
+  &:focus { outline: none; border-color: $accent-color; }
+  &:disabled { opacity: 0.6; }
+}
+
+.fr-row__time-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fr-row__time-clear {
+  display: inline-flex;
+  border: none;
+  background: none;
+  color: $text-tertiary;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: $border-radius-sm;
+
+  &:hover:not(:disabled) { color: $error-color; background: $background; }
+  &:disabled { opacity: 0.55; cursor: default; }
+}
+
+// ── Mobile ──────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .fr-row {
+    grid-template-columns: 1fr 1fr;
+    row-gap: $spacing-sm;
+  }
+
+  .fr-row__cell--team { order: -1; }
+  .fr-row__cell--time { order: -1; }
+  .fr-row__cell--reviewer { grid-column: 1 / -1; }
+
+  .fr-day__zoom { margin-left: auto; }
+}
+
+@media (max-width: 480px) {
+  .fr-row { grid-template-columns: 1fr; }
+}
