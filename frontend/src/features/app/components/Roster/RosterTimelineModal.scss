@@ -1,0 +1,203 @@
+@use '@styles/index.scss' as *;
+
+.roster-timeline-modal {
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: $z-index-modal;
+    padding: $spacing-md;
+  }
+
+  background: $white;
+  border-radius: $border-radius-md;
+  width: 100%;
+  max-width: 960px;
+  max-height: min(85vh, 720px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-md;
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-family: $primary-font;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 4px;
+  }
+
+  &__subtitle {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    color: $text-secondary;
+    margin: 0;
+    line-height: 1.4;
+    max-width: 640px;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: $text-tertiary;
+    display: flex;
+    align-items: center;
+    padding: $spacing-xs;
+    border-radius: $border-radius-sm;
+    transition: color $transition-fast, background $transition-fast;
+    flex-shrink: 0;
+
+    &:hover {
+      color: $text-primary;
+      background: $background;
+    }
+  }
+
+  &__body {
+    padding: $spacing-lg;
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+  }
+
+  &__state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    padding: $spacing-xl 0;
+    color: $text-secondary;
+    font-family: $primary-font;
+    font-size: 0.875rem;
+  }
+
+  &__error {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    color: $error-color;
+    background: rgba($error-color, 0.06);
+    border: 1px solid rgba($error-color, 0.2);
+    border-radius: $border-radius-sm;
+    padding: $spacing-sm $spacing-md;
+    margin: 0;
+  }
+
+  &__empty {
+    font-family: $primary-font;
+    font-size: 0.875rem;
+    color: $text-secondary;
+    text-align: center;
+    padding: $spacing-xl 0;
+    margin: 0;
+  }
+
+  &__table-wrap {
+    overflow-x: auto;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+
+    th,
+    td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid $border-color;
+      vertical-align: top;
+    }
+
+    th {
+      background: $background;
+      color: $text-primary;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      color: $text-primary;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover td {
+      background: rgba($background, 0.6);
+    }
+  }
+
+  &__name {
+    display: block;
+    color: $text-primary;
+    font-weight: 500;
+  }
+
+  &__email {
+    display: block;
+    color: $text-tertiary;
+    font-size: 0.75rem;
+    margin-top: 2px;
+  }
+
+  &__project {
+    display: block;
+    color: $text-tertiary;
+    font-size: 0.75rem;
+    margin-top: 2px;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: $spacing-md $spacing-lg;
+    border-top: 1px solid $border-color;
+    flex-shrink: 0;
+  }
+
+  &__btn {
+    font-family: $primary-font;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: $border-radius-sm;
+    padding: 8px $spacing-md;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background $transition-fast;
+
+    &--close {
+      background: $white;
+      border-color: $border-color;
+      color: $text-primary;
+
+      &:hover {
+        background: $background;
+      }
+    }
+  }
+
+  &__spinner {
+    animation: roster-timeline-modal-spin 0.75s linear infinite;
+  }
+}
+
+@keyframes roster-timeline-modal-spin {
+  to { transform: rotate(360deg); }
+}

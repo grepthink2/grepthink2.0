@@ -168,6 +168,16 @@
         background-color: $background;
       }
     }
+
+    &--timeline {
+      background-color: $white;
+      color: $text-secondary;
+      border-color: $border-color;
+
+      &:hover {
+        background-color: $background;
+      }
+    }
   }
 
   &__badge {

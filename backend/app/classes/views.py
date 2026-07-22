@@ -74,6 +74,14 @@ def get_class_roster(class_id: UUID, user_id: str = Depends(require_user)):
     return controller.get_class_roster(class_id, user_id, role)
 
 
+def get_class_roster_timeline(
+    class_id: UUID,
+    user_id: str = Depends(require_instructor),
+):
+    """Enrollment, team-join, and drop dates for each roster student (instructor only)."""
+    return controller.get_class_roster_timeline(class_id, user_id)
+
+
 async def upload_class_roster(
     class_id: UUID,
     file: UploadFile = File(...),

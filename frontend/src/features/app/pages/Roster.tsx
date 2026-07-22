@@ -7,6 +7,7 @@ import RosterList from '@features/app/components/Roster/RosterList';
 import PieCharts from '@features/app/components/Roster/PieCharts';
 import InviteModal, { type InvitePayload } from '@features/app/components/Roster/InviteModal';
 import AddStudentModal, { type AddStudentPayload } from '@features/app/components/Roster/AddStudentModal';
+import RosterTimelineModal from '@features/app/components/Roster/RosterTimelineModal';
 import {
   applyFilter,
   isBulkInviteCandidate,
@@ -42,6 +43,7 @@ const Roster: React.FC = () => {
   const [addStudentModalOpen, setAddStudentModalOpen] = useState(false);
   const [isAddingStudent, setIsAddingStudent] = useState(false);
   const [addStudentError, setAddStudentError] = useState<string | null>(null);
+  const [timelineOpen, setTimelineOpen] = useState(false);
   const [unsendJob, setUnsendJob] = useState<UnsendJob | null>(null);
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unsendIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -275,6 +277,7 @@ const Roster: React.FC = () => {
         notRegisteredCount={notRegisteredCount}
         onInviteAll={handleInviteAll}
         onRosterFileSelected={handleUploadRoster}
+        onShowTimeline={() => setTimelineOpen(true)}
         inviteAllLoading={false}
       />
       {actionMessage && (
@@ -345,6 +348,12 @@ const Roster: React.FC = () => {
         onSubmit={handleAddStudent}
         isSubmitting={isAddingStudent}
         errorMessage={addStudentError}
+      />
+
+      <RosterTimelineModal
+        isOpen={timelineOpen}
+        onClose={() => setTimelineOpen(false)}
+        classId={selectedClass.id}
       />
     </div>
   );

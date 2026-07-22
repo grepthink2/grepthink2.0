@@ -92,6 +92,35 @@ export interface ApiTAMeetingSchedule {
   teams: ApiTeamMeeting[];
 }
 
+/** A TA on the final-review schedule (Home TA, or the claimed Review TA). */
+export interface ApiFinalReviewTa {
+  user_id: string;
+  name: string | null;
+  email?: string | null;
+  claimed_at?: string | null;
+}
+
+/** One team's row on the final-review schedule. */
+export interface ApiFinalReviewTeam {
+  project_id: string;
+  name: string | null;
+  /** ISO timestamptz of the team's review slot; null = unscheduled. */
+  final_review_at: string | null;
+  home_ta: ApiFinalReviewTa | null;
+  /** The additional reviewer; null = open slot. */
+  review_ta: ApiFinalReviewTa | null;
+}
+
+export interface ApiFinalReviewSchedule {
+  class_id: string;
+  /** The ONE shared Zoom room every final review happens in. */
+  review_zoom_url: string | null;
+  review_period_open: boolean;
+  /** Teams where the current viewer is the Review TA. */
+  my_review_count: number;
+  teams: ApiFinalReviewTeam[];
+}
+
 export interface ApiAttendanceEntry {
   person_id: string;
   name: string | null;
@@ -140,6 +169,17 @@ export interface ApiRosterStudent {
   projects: string[];
   /** roster_entries.id — present only for manually added rows; used to delete them. */
   roster_entry_id?: string | null;
+}
+
+export interface ApiRosterTimelineStudent {
+  id: string;
+  name: string;
+  email: string;
+  class_status: ApiRosterStudent['class_status'];
+  enrolled_at: string | null;
+  team_joined_at: string | null;
+  project_name: string | null;
+  dropped_at: string | null;
 }
 
 export interface ApiRosterUploadResult {
@@ -410,7 +450,7 @@ export interface ApiConversationSummary {
 
 export interface ApiNotification {
   id: string;
-  type: 'join_request' | 'join_rejected' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster';
+  type: 'join_request' | 'join_rejected' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster' | 'member_removed';
   title: string;
   body: string;
   entity_type: string | null;
@@ -602,10 +642,12 @@ export async function apiUpload<T = unknown>(
 }
 
 /** Build the ?week=&meeting= query for the TA-schedule endpoints. */
-function scheduleQuery(week?: number, meeting = 1): string {
+function scheduleQuery(week?: number, meeting?: number): string {
   const p = new URLSearchParams();
   if (week != null) p.set('week', String(week));
-  if (meeting && meeting !== 1) p.set('meeting', String(meeting));
+  // Send meeting only when explicitly chosen; omit it so the server defaults to
+  // the current/next meeting for the week.
+  if (meeting != null) p.set('meeting', String(meeting));
   const q = p.toString();
   return q ? `?${q}` : '';
 }
@@ -696,6 +738,13 @@ export const api = {
   getClassRoster: async (classId: string) => {
     return apiRequest<{ students: ApiRosterStudent[]; uploaded_at: string | null }>(
       `/api/classes/${classId}/roster`,
+    );
+  },
+
+  /** Enrollment, team-join, and drop timestamps (instructor only). */
+  getClassRosterTimeline: async (classId: string) => {
+    return apiRequest<{ students: ApiRosterTimelineStudent[] }>(
+      `/api/classes/${classId}/roster/timeline`,
     );
   },
 
@@ -978,7 +1027,7 @@ export const api = {
     });
   },
 
-  /** Assign the 'admin' role to a member (POST /api/projects/:id/assign-admin). */
+  /** Assign the 'admin' role to a member (instructor or class TA only). */
   assignAdmin: async (projectId: string, userId: string) => {
     return apiRequest<{ message: string }>(`/api/projects/${projectId}/assign-admin`, {
       method: 'POST',
@@ -1123,17 +1172,17 @@ export const api = {
   // ----- TA meeting schedule + attendance (app/attendance backend) ----------
 
   /** Instructor: weekly schedule of every team's meeting slot + attendance. */
-  getTAMeetingSchedule: async (classId: string, week?: number, meeting = 1) => {
+  getTAMeetingSchedule: async (classId: string, week?: number, meeting?: number) => {
     return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule${scheduleQuery(week, meeting)}`);
   },
 
   /** TA: only the teams assigned to me in this class + week. */
-  getMyAssignedTeams: async (classId: string, week?: number, meeting = 1) => {
+  getMyAssignedTeams: async (classId: string, week?: number, meeting?: number) => {
     return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/mine${scheduleQuery(week, meeting)}`);
   },
 
   /** Student: my own team's meeting slot + my own attendance for the week. */
-  getMyTeamSchedule: async (classId: string, week?: number, meeting = 1) => {
+  getMyTeamSchedule: async (classId: string, week?: number, meeting?: number) => {
     return apiRequest<ApiTAMeetingSchedule>(`/api/classes/${classId}/ta-schedule/my-team${scheduleQuery(week, meeting)}`);
   },
 
@@ -1223,18 +1272,49 @@ export const api = {
     return apiRequest<{ tas: ApiProjectTA[] }>(`/api/tas/projects/${projectId}`);
   },
 
-  /** Instructor: assign a class TA to oversee a project. */
-  assignTAToProject: async (projectId: string, userId: string) => {
-    return apiRequest<{ message: string; user_id: string }>(
-      `/api/tas/projects/${projectId}/assign`,
-      { method: 'POST', body: JSON.stringify({ user_id: userId }) },
+  // ----- Final Reviews (end-of-quarter review schedule) ---------------------
+
+  /** Instructor/TA: the class's full final-review schedule + viewer's count. */
+  getFinalReviewSchedule: async (classId: string) => {
+    return apiRequest<ApiFinalReviewSchedule>(`/api/tas/classes/${classId}/final-reviews`);
+  },
+
+  /** Instructor: open or close the class's review sign-up window. */
+  setReviewWindow: async (classId: string, open: boolean) => {
+    return apiRequest<{ message: string; class_id: string; review_period_open: boolean }>(
+      `/api/tas/classes/${classId}/review-window`,
+      { method: 'POST', body: JSON.stringify({ open }) },
     );
   },
 
-  /** Instructor: remove a TA's assignment from a project. */
-  removeTAFromProject: async (projectId: string, userId: string) => {
-    return apiRequest<{ message: string; user_id: string }>(
-      `/api/tas/projects/${projectId}/tas/${userId}`,
+  /** Instructor: set (or clear, with null) the class's shared review Zoom room. */
+  setReviewZoom: async (classId: string, zoomUrl: string | null) => {
+    return apiRequest<{ message: string; class_id: string; review_zoom_url: string | null }>(
+      `/api/tas/classes/${classId}/review-zoom`,
+      { method: 'POST', body: JSON.stringify({ zoom_url: zoomUrl }) },
+    );
+  },
+
+  /** Instructor: set (or clear, with null) a team's final-review slot (ISO time). */
+  setFinalReviewTime: async (projectId: string, scheduledAt: string | null) => {
+    return apiRequest<{ message: string; project_id: string; final_review_at: string | null }>(
+      `/api/tas/projects/${projectId}/review-time`,
+      { method: 'POST', body: JSON.stringify({ scheduled_at: scheduledAt }) },
+    );
+  },
+
+  /** Claim a team's Review-TA slot: TA self-appoints (omit userId); instructor appoints anyone. */
+  setReviewTA: async (projectId: string, userId?: string) => {
+    return apiRequest<{ message: string; project_id: string; user_id: string }>(
+      `/api/tas/projects/${projectId}/review-tas`,
+      { method: 'POST', body: JSON.stringify({ user_id: userId ?? null }) },
+    );
+  },
+
+  /** Release a team's Review-TA slot (the reviewer themselves, or the instructor). */
+  releaseReviewTA: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string; project_id: string; user_id: string }>(
+      `/api/tas/projects/${projectId}/review-tas/${userId}`,
       { method: 'DELETE' },
     );
   },

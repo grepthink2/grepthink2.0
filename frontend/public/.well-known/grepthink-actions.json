@@ -52,6 +52,10 @@
       "params": {"file": "CSV multipart!"}, "uiRoute": "/app/roster", "multiStep": true
     },
     {
+      "id": "roster_timeline", "title": "Enrollment and team-join timeline for roster students", "role": "instructor",
+      "method": "GET", "endpoint": "/api/classes/{class_id}/roster/timeline", "uiRoute": "/app/roster"
+    },
+    {
       "id": "invite_student", "title": "Invite/enroll one student by email", "role": "instructor",
       "method": "POST", "endpoint": "/api/classes/{class_id}/invite",
       "params": {"student_email": "string!"}, "uiRoute": "/app/roster"
@@ -125,7 +129,7 @@
       "method": "POST", "endpoint": "/api/projects/{project_id}/assign-scrum-master", "params": {"user_id": "uuid!"}
     },
     {
-      "id": "assign_admin", "title": "Assign admin", "role": "owner|product owner|admin|instructor",
+      "id": "assign_admin", "title": "Assign admin", "role": "instructor|ta",
       "method": "POST", "endpoint": "/api/projects/{project_id}/assign-admin", "params": {"user_id": "uuid!"}
     },
 

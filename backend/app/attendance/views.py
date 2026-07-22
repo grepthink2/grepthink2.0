@@ -63,7 +63,7 @@ def set_meeting_cadence(class_id: UUID, data: SetMeetingCadenceRequest, user_id:
 def get_ta_schedule(
     class_id: UUID,
     week: Optional[int] = Query(None, description="Term week number (1..N)"),
-    meeting: int = Query(1, description="Meeting index within the week (1..meetings_per_week)"),
+    meeting: Optional[int] = Query(None, description="Meeting index within the week; omit for the current/next meeting"),
     user_id: str = Depends(require_user),
 ):
     role = get_user_role(user_id)
@@ -73,7 +73,7 @@ def get_ta_schedule(
 def get_my_assigned_teams(
     class_id: UUID,
     week: Optional[int] = Query(None),
-    meeting: int = Query(1),
+    meeting: Optional[int] = Query(None),
     user_id: str = Depends(require_user),
 ):
     role = get_user_role(user_id)
@@ -83,7 +83,7 @@ def get_my_assigned_teams(
 def get_my_team_schedule(
     class_id: UUID,
     week: Optional[int] = Query(None),
-    meeting: int = Query(1),
+    meeting: Optional[int] = Query(None),
     user_id: str = Depends(require_user),
 ):
     role = get_user_role(user_id)

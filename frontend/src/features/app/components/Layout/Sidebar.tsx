@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { TbLayoutSidebar } from "react-icons/tb";
 import { ChevronDown } from 'lucide-react';
-import { instructorSidebarConfig, studentSidebarConfig, type SidebarSection, type UserRole } from '../../config/sidebar';
+import { instructorSidebarConfig, studentSidebarConfig, type SidebarItem, type SidebarSection, type UserRole } from '../../config/sidebar';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import { useUnreadTotal } from '@features/messages/hooks/useUnreadTotal';
@@ -65,12 +65,38 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
             ...section,
             items: [
               ...section.items,
-              { label: 'TA Review', path: '/app/ta-review', iconSvg: ModulesIcon },
+              {
+                label: 'TA Review',
+                path: '/app/ta-review',
+                iconSvg: ModulesIcon,
+                children: [
+                  { label: 'TSRs', path: '/app/ta-review' },
+                  { label: 'Final Reviews', path: '/app/ta-review/final-reviews' },
+                ],
+              },
             ],
           }
         : section,
     );
   }, [role, isTaForClass]);
+
+  // Expandable items (those with children): open/closed state, keyed by path.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const toggleGroup = (path: string) =>
+    setOpenGroups((prev) => ({ ...prev, [path]: !(prev[path] ?? false) }));
+
+  // A child link is active on an exact match, except the group's own path
+  // (e.g. "TSRs" → /app/ta-review) which also owns its deeper routes — minus
+  // any routes claimed by a sibling child (e.g. /app/ta-review/final-reviews).
+  const isChildActive = (item: SidebarItem, child: SidebarItem) => {
+    const path = location.pathname;
+    if (path === child.path) return true;
+    if (child.path !== item.path) return false;
+    return (
+      path.startsWith(`${item.path}/`) &&
+      !(item.children ?? []).some((c) => c.path !== item.path && path.startsWith(c.path))
+    );
+  };
 
   // Track the mobile breakpoint so the desktop collapse affordance never
   // applies to the off-canvas drawer (which would hide its labels/logo).
@@ -191,13 +217,49 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
             )}
             <ul className="section-items">
               {section.items.map((item) => {
+                // Expandable item: a chevron toggle revealing nested child links.
+                if (item.children?.length) {
+                  const anyChildActive = item.children.some((c) => isChildActive(item, c));
+                  const open = openGroups[item.path] ?? anyChildActive;
+                  return (
+                    <li key={item.path}>
+                      <button
+                        className={`sidebar-item sidebar-item--group ${collapsed && anyChildActive ? 'active' : ''}`}
+                        // Collapsed rail has nowhere to show children — go to the first one.
+                        onClick={() => (collapsed ? handleNavigation(item.children![0].path) : toggleGroup(item.path))}
+                        title={collapsed ? item.label : undefined}
+                        aria-expanded={collapsed ? undefined : open}
+                      >
+                        {item.icon ? (
+                          React.createElement(item.icon, { size: 18 })
+                        ) : item.iconSvg ? (
+                          <img src={item.iconSvg} alt={item.label} className="icon-svg" />
+                        ) : null}
+                        {!collapsed && <span>{item.label}</span>}
+                        {!collapsed && (
+                          <ChevronDown size={16} className={`sidebar-item__chevron ${open ? 'rotated' : ''}`} />
+                        )}
+                      </button>
+                      {!collapsed && open && (
+                        <ul className="sidebar-subitems">
+                          {item.children.map((child) => (
+                            <li key={child.path}>
+                              <button
+                                className={`sidebar-item sidebar-item--child ${isChildActive(item, child) ? 'active' : ''}`}
+                                onClick={() => handleNavigation(child.path)}
+                              >
+                                <span>{child.label}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                }
+
                 const isProjectsItem = item.path === '/app/projects';
                 let isActive = location.pathname === item.path;
-
-                // Keep "TA Review" highlighted on its nested assignment routes.
-                if (item.path === '/app/ta-review' && location.pathname.startsWith('/app/ta-review')) {
-                  isActive = true;
-                }
 
                 // For instructors, keep "Projects" highlighted when viewing
                 // project details or create-project flows under the class.

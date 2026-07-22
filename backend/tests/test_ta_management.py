@@ -124,18 +124,18 @@ def test_designate_requires_instructor(db):
     assert exc.value.status_code == 403
 
 
-def test_undesignate_clears_project_assignment(db):
-    # TA1 oversees P1 both as meeting TA (projects.assigned_ta_id) and as a
-    # review TA (project_ta_assignments). Removing TA1 as a class TA flips
-    # enrollment_role back to student and clears BOTH project-level roles.
-    db.rows("project_ta_assignments").append(
-        {"id": "pta-1", "class_id": CLASS, "project_id": P1, "user_id": TA1}
+def test_undesignate_clears_assigned_and_review(db):
+    # TA1 is P1's assigned TA (meeting + attendance + TSR review) and also holds
+    # an end-of-quarter review claim on P2. Removing TA1 as a class TA flips
+    # enrollment_role back to student and clears BOTH roles.
+    db.rows("project_review_tas").append(
+        {"id": "prt-1", "class_id": CLASS, "project_id": P2, "user_id": TA1}
     )
     controller.set_class_ta(CLASS, INSTR, TA1, False)
     assert controller.is_class_ta(TA1, CLASS) is False
     p1 = next(p for p in db.rows("projects") if p["id"] == P1)
     assert p1["assigned_ta_id"] is None
-    assert not [r for r in db.rows("project_ta_assignments") if r["user_id"] == TA1]
+    assert not [r for r in db.rows("project_review_tas") if r["user_id"] == TA1]
 
 
 # --------------------------------------------------------------------------
@@ -367,3 +367,28 @@ def test_set_meeting_cadence_rejects_bad_value(db):
     with pytest.raises(HTTPException) as exc:
         controller.set_meeting_cadence(CLASS, INSTR, meetings_per_week=9)
     assert exc.value.status_code == 400
+
+
+def test_current_meeting_in_week_advances_with_time(db):
+    """Auto meeting-in-week tracks the clock: M1 early week, in-progress M1 wins,
+    M2 mid-week, then rolls back to next week's M1 once both are done."""
+    controller.upsert_meeting(P1, INSTR, meeting_in_week=1, meeting_day="tuesday", meeting_time="9:00 AM")
+    controller.upsert_meeting(P1, INSTR, meeting_in_week=2, meeting_day="friday", meeting_time="3:00 PM")
+
+    # Snap to a Monday 08:00 so weekday math is deterministic regardless of run date.
+    base = datetime.datetime(2026, 7, 6, 8, 0)
+    monday = base - datetime.timedelta(days=base.weekday())
+
+    def at(days, hour, minute=0):
+        return monday + datetime.timedelta(days=days, hours=hour - 8, minutes=minute)
+
+    assert controller._current_meeting_in_week(db, [P1], 2, now=monday) == 1          # Mon → next is Tue M1
+    assert controller._current_meeting_in_week(db, [P1], 2, now=at(1, 9, 10)) == 1     # Tue 09:10 → M1 in progress
+    assert controller._current_meeting_in_week(db, [P1], 2, now=at(2, 12)) == 2        # Wed → Fri M2 upcoming
+    assert controller._current_meeting_in_week(db, [P1], 2, now=at(4, 16)) == 1        # Fri late → rolls to next Tue M1
+
+
+def test_current_meeting_in_week_edge_cases(db):
+    controller.upsert_meeting(P1, INSTR, meeting_in_week=1, meeting_day="tuesday", meeting_time="9:00 AM")
+    assert controller._current_meeting_in_week(db, [P1], 1) == 1   # single cadence → always 1
+    assert controller._current_meeting_in_week(db, [], 2) == 1     # no teams → 1
