@@ -325,3 +325,31 @@
   }
 }
 
+/* Expandable item (chevron + nested children, e.g. TA Review → TSRs / Final Reviews) */
+.sidebar-item--group .sidebar-item__chevron {
+  margin-left: auto;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+
+  &.rotated {
+    transform: rotate(180deg);
+  }
+}
+
+.sidebar-subitems {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1.65rem; // Indent children under the parent's label
+
+  .sidebar-item--child {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+
+    // Children reuse the half-pill indicator; the list's extra left padding
+    // shifts it, so pull it back to the sidebar edge.
+    &.active::before {
+      left: -2.85rem;
+    }
+  }
+}
+

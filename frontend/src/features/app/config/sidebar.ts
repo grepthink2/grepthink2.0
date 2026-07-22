@@ -6,7 +6,7 @@ import { TiThList } from "react-icons/ti";
 import { FaFolder, FaListUl } from "react-icons/fa6";
 import { TbSettingsFilled } from "react-icons/tb";
 import { IoHelpCircle } from "react-icons/io5";
-import { MdAssignment, MdGroups } from "react-icons/md";
+import { MdAssignment, MdFactCheck, MdGroups } from "react-icons/md";
 import type { IconType } from 'react-icons';
 
 // Custom SVG icons
@@ -23,6 +23,8 @@ export interface SidebarItem {
   path: string;
   icon?: IconType;
   iconSvg?: string; // For custom SVG icons
+  /** Expandable item: chevron + nested child links (children have no icons). */
+  children?: SidebarItem[];
 }
 
 export interface SidebarSection {
@@ -49,6 +51,7 @@ export const instructorSidebarConfig: SidebarSection[] = [
       { label: 'Modules', path: '/app/modules', iconSvg: ModulesIcon },
       { label: 'TA Management', path: '/app/ta-management', iconSvg: TaManagementIcon },
       { label: 'TA Meetings', path: '/app/ta-meetings', icon: MdGroups },
+      { label: 'Final Reviews', path: '/app/ta-review/final-reviews', icon: MdFactCheck },
     ],
   },
   {

@@ -92,6 +92,35 @@ export interface ApiTAMeetingSchedule {
   teams: ApiTeamMeeting[];
 }
 
+/** A TA on the final-review schedule (Home TA, or the claimed Review TA). */
+export interface ApiFinalReviewTa {
+  user_id: string;
+  name: string | null;
+  email?: string | null;
+  claimed_at?: string | null;
+}
+
+/** One team's row on the final-review schedule. */
+export interface ApiFinalReviewTeam {
+  project_id: string;
+  name: string | null;
+  /** ISO timestamptz of the team's review slot; null = unscheduled. */
+  final_review_at: string | null;
+  home_ta: ApiFinalReviewTa | null;
+  /** The additional reviewer; null = open slot. */
+  review_ta: ApiFinalReviewTa | null;
+}
+
+export interface ApiFinalReviewSchedule {
+  class_id: string;
+  /** The ONE shared Zoom room every final review happens in. */
+  review_zoom_url: string | null;
+  review_period_open: boolean;
+  /** Teams where the current viewer is the Review TA. */
+  my_review_count: number;
+  teams: ApiFinalReviewTeam[];
+}
+
 export interface ApiAttendanceEntry {
   person_id: string;
   name: string | null;
@@ -1243,18 +1272,49 @@ export const api = {
     return apiRequest<{ tas: ApiProjectTA[] }>(`/api/tas/projects/${projectId}`);
   },
 
-  /** Instructor: assign a class TA to oversee a project. */
-  assignTAToProject: async (projectId: string, userId: string) => {
-    return apiRequest<{ message: string; user_id: string }>(
-      `/api/tas/projects/${projectId}/assign`,
-      { method: 'POST', body: JSON.stringify({ user_id: userId }) },
+  // ----- Final Reviews (end-of-quarter review schedule) ---------------------
+
+  /** Instructor/TA: the class's full final-review schedule + viewer's count. */
+  getFinalReviewSchedule: async (classId: string) => {
+    return apiRequest<ApiFinalReviewSchedule>(`/api/tas/classes/${classId}/final-reviews`);
+  },
+
+  /** Instructor: open or close the class's review sign-up window. */
+  setReviewWindow: async (classId: string, open: boolean) => {
+    return apiRequest<{ message: string; class_id: string; review_period_open: boolean }>(
+      `/api/tas/classes/${classId}/review-window`,
+      { method: 'POST', body: JSON.stringify({ open }) },
     );
   },
 
-  /** Instructor: remove a TA's assignment from a project. */
-  removeTAFromProject: async (projectId: string, userId: string) => {
-    return apiRequest<{ message: string; user_id: string }>(
-      `/api/tas/projects/${projectId}/tas/${userId}`,
+  /** Instructor: set (or clear, with null) the class's shared review Zoom room. */
+  setReviewZoom: async (classId: string, zoomUrl: string | null) => {
+    return apiRequest<{ message: string; class_id: string; review_zoom_url: string | null }>(
+      `/api/tas/classes/${classId}/review-zoom`,
+      { method: 'POST', body: JSON.stringify({ zoom_url: zoomUrl }) },
+    );
+  },
+
+  /** Instructor: set (or clear, with null) a team's final-review slot (ISO time). */
+  setFinalReviewTime: async (projectId: string, scheduledAt: string | null) => {
+    return apiRequest<{ message: string; project_id: string; final_review_at: string | null }>(
+      `/api/tas/projects/${projectId}/review-time`,
+      { method: 'POST', body: JSON.stringify({ scheduled_at: scheduledAt }) },
+    );
+  },
+
+  /** Claim a team's Review-TA slot: TA self-appoints (omit userId); instructor appoints anyone. */
+  setReviewTA: async (projectId: string, userId?: string) => {
+    return apiRequest<{ message: string; project_id: string; user_id: string }>(
+      `/api/tas/projects/${projectId}/review-tas`,
+      { method: 'POST', body: JSON.stringify({ user_id: userId ?? null }) },
+    );
+  },
+
+  /** Release a team's Review-TA slot (the reviewer themselves, or the instructor). */
+  releaseReviewTA: async (projectId: string, userId: string) => {
+    return apiRequest<{ message: string; project_id: string; user_id: string }>(
+      `/api/tas/projects/${projectId}/review-tas/${userId}`,
       { method: 'DELETE' },
     );
   },
