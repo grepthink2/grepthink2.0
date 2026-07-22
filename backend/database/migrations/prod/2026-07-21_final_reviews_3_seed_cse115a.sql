@@ -17,8 +17,7 @@
 --
 -- All wall-clock times are America/Los_Angeles (PDT, UTC-7 on these dates).
 -- Idempotent: re-running refreshes times and reviewer appointments. It never
--- DELETEs, so "Fengshui Rater" stays OPEN only until someone claims it — a
--- later legitimate claim is preserved by a re-run (its row simply isn't here).
+-- DELETEs, so a later hand-made claim survives a re-run (upsert on project_id).
 -- The review window (classes.review_period_open) is left untouched.
 
 BEGIN;
@@ -54,7 +53,7 @@ UPDATE public.projects AS p
  WHERE p.id = v.project_id
    AND p.class_id = 'ca9b1627-bb0c-4a88-8e61-32341863033f';
 
--- ── Review-TA appointments (instructor-appointed; Fengshui Rater left OPEN) ─
+-- ── Review-TA appointments (instructor-appointed; all 15 teams) ─────────────
 INSERT INTO public.project_review_tas (class_id, project_id, user_id, assigned_by)
 VALUES
   -- Wednesday, July 22
@@ -68,9 +67,10 @@ VALUES
   ('ca9b1627-bb0c-4a88-8e61-32341863033f', '8763e71f-e1aa-4d5d-85f0-62bc9d578df2', '268467ce-54d8-4629-beec-1111ca04c01a', '005adfbb-e43a-44f1-a3f7-94a99f952d2b'),  -- SuperMogBattle→ Scott
   ('ca9b1627-bb0c-4a88-8e61-32341863033f', '2b36b2ba-ea43-4766-a18b-223078f43e2f', '268467ce-54d8-4629-beec-1111ca04c01a', '005adfbb-e43a-44f1-a3f7-94a99f952d2b'),  -- TaskFlask     → Scott
   ('ca9b1627-bb0c-4a88-8e61-32341863033f', '19d014d3-8512-4e89-9fec-b4f9d87f74c0', '268467ce-54d8-4629-beec-1111ca04c01a', '005adfbb-e43a-44f1-a3f7-94a99f952d2b'),  -- AI Stock      → Scott
-  -- Friday, July 24  (Fengshui Rater 38ea537b-… deliberately absent = OPEN)
+  -- Friday, July 24
   ('ca9b1627-bb0c-4a88-8e61-32341863033f', '92717921-d88b-4fb5-8abe-5cc93922a9ea', '1a3d536d-b12c-4784-bc63-63c984e20977', '005adfbb-e43a-44f1-a3f7-94a99f952d2b'),  -- Amblyopia     → Farzaneh
   ('ca9b1627-bb0c-4a88-8e61-32341863033f', '451b877a-d0ff-4cfe-ac34-8a328d5a0820', 'adfa5354-8933-4f30-a4b8-73718f553f5c', '005adfbb-e43a-44f1-a3f7-94a99f952d2b'),  -- alexandria    → Pranay
+  ('ca9b1627-bb0c-4a88-8e61-32341863033f', '38ea537b-bd8d-4f43-b9e9-4759f0c5dabb', '1a3d536d-b12c-4784-bc63-63c984e20977', '005adfbb-e43a-44f1-a3f7-94a99f952d2b'),  -- Fengshui Rater→ Farzaneh (added 2026-07-22 from schedule sheet)
   ('ca9b1627-bb0c-4a88-8e61-32341863033f', 'aa261f9f-94a0-40d8-8dfc-6ffe3ee173b6', '1a3d536d-b12c-4784-bc63-63c984e20977', '005adfbb-e43a-44f1-a3f7-94a99f952d2b'),  -- LENS          → Farzaneh
   ('ca9b1627-bb0c-4a88-8e61-32341863033f', 'a7d1898e-4c52-4764-bb3b-4765a5048077', 'adfa5354-8933-4f30-a4b8-73718f553f5c', '005adfbb-e43a-44f1-a3f7-94a99f952d2b'),  -- StudyPet+     → Pranay
   ('ca9b1627-bb0c-4a88-8e61-32341863033f', '07fedcf3-4aad-4e57-b037-bc32ed74fa90', 'adfa5354-8933-4f30-a4b8-73718f553f5c', '005adfbb-e43a-44f1-a3f7-94a99f952d2b')   -- Grooveboxd    → Pranay
@@ -82,8 +82,8 @@ DO UPDATE SET user_id = EXCLUDED.user_id,
 COMMIT;
 
 -- ── Post-run verification (read-only) ───────────────────────────────────────
--- Expect 15 rows ordered Wed 1pm → Fri 5pm; review_ta NULL only for
--- "Fengshui Rater"; zoom set on every row.
+-- Expect 15 rows ordered Wed 1pm → Fri 5pm; review_ta set on all 15;
+-- zoom set on every row.
 --
 -- SELECT p.name,
 --        p.final_review_at AT TIME ZONE 'America/Los_Angeles' AS slot_pt,
