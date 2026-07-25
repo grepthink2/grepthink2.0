@@ -1,5 +1,14 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- PROD data op — reopen "TSR 4" for 2026Su cse115a            ⚠ NOT YET APPLIED
+-- ⛔ SUPERSEDED — NEVER APPLIED — DO NOT RUN
+--    Superseded by 2026-07-25_reopen_tsr4_cse115a_all_1day.sql (applied
+--    2026-07-25, close_date = 2026-07-26).
+--
+--    This file was merged to git (PR #169 → beta, PR #170 → main) but was
+--    never executed against prod, which is exactly why the reopen it describes
+--    never took effect. Running it NOW would set close_date back to
+--    2026-07-25 and close TSR 4 a day early. Kept only as a record.
+--
+-- PROD data op — reopen "TSR 4" for 2026Su cse115a
 -- Target: GrepThink2-PROD (yfezwtoeoexfksvbpxmi)
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Why: student Dhaathri Vijay (dhvijay@ucsc.edu,
