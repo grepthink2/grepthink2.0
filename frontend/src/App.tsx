@@ -28,6 +28,7 @@ import Modules from '@features/app/pages/Modules';
 import TAManagement from '@features/app/pages/TAManagement';
 import TAReview from '@features/app/pages/TAReview';
 import FinalReviews from '@features/app/pages/FinalReviews';
+import FinalReviewDetail from '@features/app/pages/FinalReviewDetail';
 import TAMeetings from '@features/app/pages/TAMeetings';
 import TSRViewPage from '@features/app/pages/TSRViewPage';
 import FeedbackViewPage from '@features/app/pages/FeedbackViewPage';
@@ -97,6 +98,7 @@ function App() {
             <Route path="ta-meetings" element={<TAMeetings />} />
             <Route path="ta-review" element={<TAReview />} />
             <Route path="ta-review/final-reviews" element={<FinalReviews />} />
+            <Route path="ta-review/final-reviews/:projectId" element={<FinalReviewDetail />} />
             <Route path="ta-review/:assignmentId" element={<TAReview />} />
             <Route path="create-project" element={<CreateProject />} />
             <Route path="assign-projects" element={<Assign />} />
