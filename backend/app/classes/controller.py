@@ -654,9 +654,12 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
         raise HTTPException(status_code=500, detail="Failed to invite student")
 
 
-def get_class_students(class_id: UUID) -> list:
+def get_class_students(class_id: UUID, user_id: str, role: str) -> list:
     """
     Get all students enrolled in a class, enriched with their project affiliation.
+
+    Access is limited to the class owner (instructor) or an enrolled user
+    (student or TA), matching ``get_class_roster``.
 
     Returns a list of dicts with: id, email, role, first_name, last_name,
     project_id, project_name.
@@ -671,9 +674,11 @@ def get_class_students(class_id: UUID) -> list:
         client = service_client if service_client else supabase
         cid = str(class_id)
 
-        # Stage 1: independent reads fanned out in parallel.
+        # Stage 1: independent reads fanned out in parallel. The class row
+        # carries created_by for the access check, and the enrollment list
+        # doubles as both the access check and the student data.
         class_future = query_pool.submit(
-            lambda: client.table('classes').select('id').eq('id', cid).execute()
+            lambda: client.table('classes').select('id, created_by').eq('id', cid).execute()
         )
         enrollments_future = query_pool.submit(
             lambda: client.table('class_enrollments')
@@ -688,17 +693,27 @@ def get_class_students(class_id: UUID) -> list:
             .execute()
         )
 
-        if not class_future.result().data:
+        class_result = class_future.result()
+        if not class_result.data:
             raise HTTPException(status_code=404, detail="Class not found")
+        class_row = class_result.data[0]
 
-        enrollments = enrollments_future.result()
-        if not enrollments.data:
+        enrollments_data = enrollments_future.result().data or []
+
+        # Access: the class owner (instructor) or any enrolled user. Checked
+        # before the empty-enrollment return below so a class with no students
+        # can't be probed by a non-member.
+        is_owner = role == 'instructor' and class_row.get('created_by') == user_id
+        if not is_owner and user_id not in {e['user_id'] for e in enrollments_data}:
+            raise HTTPException(status_code=403, detail="You do not have access to this class roster")
+
+        if not enrollments_data:
             return []
 
-        user_ids = [e['user_id'] for e in enrollments.data]
+        user_ids = [e['user_id'] for e in enrollments_data]
         enrollment_role_map = {
             e['user_id']: (e.get('enrollment_role') or 'student')
-            for e in enrollments.data
+            for e in enrollments_data
         }
 
         projects = projects_future.result().data or []

@@ -64,7 +64,8 @@ def invite_student(
 
 
 def get_class_students(class_id: UUID, user_id: str = Depends(require_user)):
-    students = controller.get_class_students(class_id)
+    role = get_user_role(user_id)
+    students = controller.get_class_students(class_id, user_id, role)
     return {"students": students}
 
 
