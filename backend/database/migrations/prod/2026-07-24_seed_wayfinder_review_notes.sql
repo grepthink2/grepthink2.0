@@ -1,5 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- PROD STAGING — Wayfinder review-notes import          ⚠ NOT YET APPLIED
+-- ⛔ DO NOT RUN — SKIPPED by maintainer decision (2026-07-25). Kept only as a
+-- record of the doc→template key mapping. Pranay will (re)enter the Wayfinder
+-- notes through the app UI instead.
+-- (Was: PROD STAGING — Wayfinder review-notes import, never applied.)
 -- Target: GrepThink2-PROD (yfezwtoeoexfksvbpxmi)
 -- Prereq: 2026-07-24_final_review_scoring.sql (the final_review_notes table).
 -- ═══════════════════════════════════════════════════════════════════════════
