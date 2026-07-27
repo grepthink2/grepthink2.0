@@ -121,6 +121,60 @@ export interface ApiFinalReviewSchedule {
   teams: ApiFinalReviewTeam[];
 }
 
+/** Who entered a final-review score row: the team's Home TA (3 category
+ * scores), its Review TA (one overall), or the instructor (one overall). */
+export type FinalReviewScoreRole = 'home' | 'review' | 'instructor';
+
+/** One student's saved scores for one scorer role (1.0–5.0, 0.1 steps). */
+export interface ApiFinalReviewScoreRow {
+  student_id: string;
+  role: FinalReviewScoreRole;
+  product: number | null;
+  team: number | null;
+  scrum: number | null;
+  overall: number | null;
+  notes: string | null;
+  scored_by?: string | null;
+  updated_at?: string | null;
+}
+
+/** The Review TA's structured notes worksheet for a team. */
+export interface ApiFinalReviewNotes {
+  content: Record<string, unknown>;
+  template_version: number;
+  updated_by?: string | null;
+  updated_at?: string | null;
+}
+
+export interface ApiFinalReviewMember {
+  user_id: string;
+  name: string | null;
+  email?: string | null;
+}
+
+export interface ApiFinalReviewDetail {
+  project: { project_id: string; name: string | null; final_review_at: string | null };
+  review_zoom_url: string | null;
+  review_period_open: boolean;
+  home_ta: ApiFinalReviewTa | null;
+  review_ta: ApiFinalReviewTa | null;
+  members: ApiFinalReviewMember[];
+  scores: ApiFinalReviewScoreRow[];
+  notes: ApiFinalReviewNotes | null;
+  /** The viewer's relationship to THIS team (drives which columns are editable). */
+  viewer_role: 'instructor' | 'home' | 'review' | 'ta';
+}
+
+/** Editable score fields for one student (role decides which apply). */
+export interface FinalReviewScoreEntry {
+  student_id: string;
+  product?: number | null;
+  team?: number | null;
+  scrum?: number | null;
+  overall?: number | null;
+  notes?: string | null;
+}
+
 export interface ApiAttendanceEntry {
   person_id: string;
   name: string | null;
@@ -1316,6 +1370,35 @@ export const api = {
     return apiRequest<{ message: string; project_id: string; user_id: string }>(
       `/api/tas/projects/${projectId}/review-tas/${userId}`,
       { method: 'DELETE' },
+    );
+  },
+
+  /** One team's full review workspace: members, all scores, notes (staff only). */
+  getFinalReviewDetail: async (projectId: string) => {
+    return apiRequest<ApiFinalReviewDetail>(`/api/tas/projects/${projectId}/final-review`);
+  },
+
+  /** Bulk-upsert one scorer role's rows (Home TA / Review TA / instructor). */
+  saveFinalReviewScores: async (
+    projectId: string,
+    role: FinalReviewScoreRole,
+    scores: FinalReviewScoreEntry[],
+  ) => {
+    return apiRequest<{ message: string; project_id: string; role: string; saved: number }>(
+      `/api/tas/projects/${projectId}/final-review/scores`,
+      { method: 'PUT', body: JSON.stringify({ role, scores }) },
+    );
+  },
+
+  /** Replace the team's structured review-notes worksheet (Review TA / instructor). */
+  saveFinalReviewNotes: async (
+    projectId: string,
+    content: Record<string, unknown>,
+    templateVersion: number,
+  ) => {
+    return apiRequest<{ message: string; project_id: string; notes: ApiFinalReviewNotes }>(
+      `/api/tas/projects/${projectId}/final-review/notes`,
+      { method: 'PUT', body: JSON.stringify({ content, template_version: templateVersion }) },
     );
   },
 

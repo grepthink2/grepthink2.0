@@ -1,21 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarCheck, Clock, Video, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CalendarCheck, ChevronRight, Clock, Video, X } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { api, type ApiClassTA, type ApiFinalReviewSchedule, type ApiFinalReviewTeam } from '@/lib/api';
 import { getInitials } from '@features/app/utils/memberUtils';
+import { formatReviewDay as formatDay, formatReviewTime as formatTime } from './finalReviewTemplate';
 import '../components/TAManagement/TAManagement.scss';
 import './FinalReviews.scss';
 
 type ViewerRole = 'instructor' | 'ta' | 'student' | null;
-
-/** "Wednesday, July 22" (viewer's locale/timezone). */
-const formatDay = (d: Date) =>
-  d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-
-/** "1:00 PM" (viewer's locale/timezone). */
-const formatTime = (d: Date) =>
-  d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 
 /** ISO timestamptz → value for <input type="datetime-local"> (local wall clock). */
 const toInputValue = (iso: string | null): string => {
@@ -57,6 +51,7 @@ const groupByDay = (teams: ApiFinalReviewTeam[]): DayGroup[] => {
 const FinalReviews: React.FC = () => {
   const { selectedClass } = useClass();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const classId = selectedClass?.id ?? null;
   const viewerId = user?.id ?? null;
 
@@ -450,6 +445,14 @@ const FinalReviews: React.FC = () => {
                       <span className="fr-row__label">Review TA</span>
                       {renderReviewTaCell(team)}
                     </div>
+                    <button
+                      type="button"
+                      className="fr-row__open-btn"
+                      title="Open scores & review notes"
+                      onClick={() => navigate(`/app/ta-review/final-reviews/${team.project_id}`)}
+                    >
+                      Review <ChevronRight size={15} />
+                    </button>
                   </div>
                 );
               })}

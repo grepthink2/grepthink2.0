@@ -28,3 +28,9 @@ router.delete('/projects/{project_id}/review-tas/{target_user_id}')(views.releas
 router.get('/classes/{class_id}/final-reviews')(views.get_final_review_schedule)
 router.post('/classes/{class_id}/review-zoom')(views.set_review_zoom)
 router.post('/projects/{project_id}/review-time')(views.set_final_review_time)
+
+# Final Reviews workspace: per-team scores (Home TA categories, Review TA +
+# instructor overalls) and the Review-TA structured notes form.
+router.get('/projects/{project_id}/final-review')(views.get_final_review_detail)
+router.put('/projects/{project_id}/final-review/scores')(views.save_final_review_scores)
+router.put('/projects/{project_id}/final-review/notes')(views.save_final_review_notes)

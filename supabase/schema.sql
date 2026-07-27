@@ -477,6 +477,60 @@ CREATE TABLE IF NOT EXISTS "public"."project_review_tas" (
 ALTER TABLE "public"."project_review_tas" OWNER TO "postgres";
 
 
+-- Final-review scoring + Review-TA notes (2026-07-24 migration). Constraints
+-- consolidated inline for readability.
+
+CREATE TABLE IF NOT EXISTS "public"."final_review_scores" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "class_id" "uuid" NOT NULL REFERENCES "public"."classes"("id") ON DELETE CASCADE,
+    "project_id" "uuid" NOT NULL REFERENCES "public"."projects"("id") ON DELETE CASCADE,
+    "student_id" "uuid" NOT NULL REFERENCES "public"."profiles"("id") ON DELETE CASCADE,
+    "role" "text" NOT NULL,
+    "product" numeric(2,1),
+    "team" numeric(2,1),
+    "scrum" numeric(2,1),
+    "overall" numeric(2,1),
+    "notes" "text",
+    "scored_by" "uuid" REFERENCES "public"."profiles"("id"),
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "final_review_scores_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "final_review_scores_uniq" UNIQUE ("project_id", "student_id", "role"),
+    CONSTRAINT "final_review_scores_role_valid" CHECK ("role" IN ('home', 'review', 'instructor')),
+    CONSTRAINT "final_review_scores_bounds" CHECK (
+        ("product" IS NULL OR ("product" BETWEEN 1.0 AND 5.0)) AND
+        ("team"    IS NULL OR ("team"    BETWEEN 1.0 AND 5.0)) AND
+        ("scrum"   IS NULL OR ("scrum"   BETWEEN 1.0 AND 5.0)) AND
+        ("overall" IS NULL OR ("overall" BETWEEN 1.0 AND 5.0))
+    ),
+    CONSTRAINT "final_review_scores_shape" CHECK (
+        ("role" = 'home' AND "overall" IS NULL
+             AND "product" IS NOT NULL AND "team" IS NOT NULL AND "scrum" IS NOT NULL)
+        OR
+        ("role" <> 'home' AND "overall" IS NOT NULL
+             AND "product" IS NULL AND "team" IS NULL AND "scrum" IS NULL)
+    )
+);
+
+
+ALTER TABLE "public"."final_review_scores" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."final_review_notes" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "class_id" "uuid" NOT NULL REFERENCES "public"."classes"("id") ON DELETE CASCADE,
+    "project_id" "uuid" NOT NULL REFERENCES "public"."projects"("id") ON DELETE CASCADE,
+    "content" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "template_version" integer DEFAULT 1 NOT NULL,
+    "updated_by" "uuid" REFERENCES "public"."profiles"("id"),
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "final_review_notes_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "final_review_notes_project_unique" UNIQUE ("project_id")
+);
+
+
+ALTER TABLE "public"."final_review_notes" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."projects" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "class_id" "uuid" NOT NULL,
@@ -738,6 +792,22 @@ CREATE INDEX "idx_feedback_submissions_assignment" ON "public"."feedback_submiss
 
 
 CREATE INDEX "idx_profiles_id" ON "public"."profiles" USING "btree" ("id");
+
+
+
+CREATE INDEX "idx_final_review_notes_class" ON "public"."final_review_notes" USING "btree" ("class_id");
+
+
+
+CREATE INDEX "idx_final_review_scores_class" ON "public"."final_review_scores" USING "btree" ("class_id");
+
+
+
+CREATE INDEX "idx_final_review_scores_project" ON "public"."final_review_scores" USING "btree" ("project_id");
+
+
+
+CREATE INDEX "idx_final_review_scores_student" ON "public"."final_review_scores" USING "btree" ("student_id");
 
 
 
@@ -1127,6 +1197,12 @@ ALTER TABLE "public"."project_join_requests" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."project_members" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."final_review_notes" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."final_review_scores" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."project_review_tas" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1275,6 +1351,18 @@ GRANT ALL ON TABLE "public"."project_join_requests" TO "service_role";
 GRANT ALL ON TABLE "public"."project_members" TO "anon";
 GRANT ALL ON TABLE "public"."project_members" TO "authenticated";
 GRANT ALL ON TABLE "public"."project_members" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."final_review_notes" TO "anon";
+GRANT ALL ON TABLE "public"."final_review_notes" TO "authenticated";
+GRANT ALL ON TABLE "public"."final_review_notes" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."final_review_scores" TO "anon";
+GRANT ALL ON TABLE "public"."final_review_scores" TO "authenticated";
+GRANT ALL ON TABLE "public"."final_review_scores" TO "service_role";
 
 
 
