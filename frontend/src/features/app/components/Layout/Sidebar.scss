@@ -192,13 +192,14 @@
 /* Navigation */
 .sidebar-nav {
   flex: 1;
+  min-height: 0; // flex children default to min-height:auto — without this the
+                 // nav can't shrink below its content and overflow never engages
   padding: 0.375rem 0;
   padding-top: 0;
-
-  /* Only enable scrolling for instructor role */
-  .sidebar.instructor & {
-    overflow-y: auto;
-  }
+  // Scroll for every role: expandable sections (e.g. TA review) can exceed the
+  // fixed-position sidebar's viewport height regardless of who is logged in.
+  overflow-y: auto;
+  overscroll-behavior: contain;
 
   /* Hide scrollbar for Chrome, Safari and Opera */
   &::-webkit-scrollbar {
