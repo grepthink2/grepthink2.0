@@ -85,13 +85,13 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   const toggleGroup = (path: string) =>
     setOpenGroups((prev) => ({ ...prev, [path]: !(prev[path] ?? false) }));
 
-  // A child link is active on an exact match, except the group's own path
-  // (e.g. "TSRs" → /app/ta-review) which also owns its deeper routes — minus
-  // any routes claimed by a sibling child (e.g. /app/ta-review/final-reviews).
+  // A child link is active on its path and any deeper route under it. The
+  // group's own path (e.g. "TSRs" → /app/ta-review) also owns its nested
+  // routes — minus any claimed by a sibling child (…/final-reviews).
   const isChildActive = (item: SidebarItem, child: SidebarItem) => {
     const path = location.pathname;
     if (path === child.path) return true;
-    if (child.path !== item.path) return false;
+    if (child.path !== item.path) return path.startsWith(`${child.path}/`);
     return (
       path.startsWith(`${item.path}/`) &&
       !(item.children ?? []).some((c) => c.path !== item.path && path.startsWith(c.path))
@@ -259,7 +259,11 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
                 }
 
                 const isProjectsItem = item.path === '/app/projects';
-                let isActive = location.pathname === item.path;
+                // Flat items own their nested routes too (e.g. the instructor's
+                // "Final Reviews" item stays lit on a team's review page).
+                let isActive =
+                  location.pathname === item.path ||
+                  location.pathname.startsWith(`${item.path}/`);
 
                 // For instructors, keep "Projects" highlighted when viewing
                 // project details or create-project flows under the class.

@@ -8,6 +8,8 @@ from app.tas.models import (
     SetReviewTaRequest,
     SetReviewZoomRequest,
     SetFinalReviewTimeRequest,
+    SaveFinalReviewScoresRequest,
+    SaveFinalReviewNotesRequest,
 )
 from app.tas import controller
 
@@ -112,3 +114,34 @@ def get_final_review_schedule(
     user_id: str = Depends(require_user),
 ):
     return controller.get_final_review_schedule(user_id, class_id)
+
+
+# ----- Final Reviews: per-team scoring + Review-TA notes ---------------------
+# Role-specific authz (Home TA / Review TA / instructor) lives in the
+# controller — these callers are class TAs, not platform instructors.
+
+def get_final_review_detail(
+    project_id: UUID,
+    user_id: str = Depends(require_user),
+):
+    return controller.get_final_review_detail(user_id, project_id)
+
+
+def save_final_review_scores(
+    project_id: UUID,
+    data: SaveFinalReviewScoresRequest,
+    user_id: str = Depends(require_user),
+):
+    entries = [
+        {**e.model_dump(), "student_id": str(e.student_id)}
+        for e in data.scores
+    ]
+    return controller.save_final_review_scores(user_id, project_id, data.role, entries)
+
+
+def save_final_review_notes(
+    project_id: UUID,
+    data: SaveFinalReviewNotesRequest,
+    user_id: str = Depends(require_user),
+):
+    return controller.save_final_review_notes(user_id, project_id, data.content, data.template_version)

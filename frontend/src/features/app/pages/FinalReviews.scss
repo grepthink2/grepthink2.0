@@ -156,13 +156,32 @@
 // ── One team's row ──────────────────────────────────────────────
 .fr-row {
   display: grid;
-  grid-template-columns: 170px minmax(160px, 1.2fr) minmax(140px, 1fr) minmax(200px, 1.2fr);
+  grid-template-columns: 170px minmax(160px, 1.2fr) minmax(140px, 1fr) minmax(200px, 1.2fr) auto;
   gap: $spacing-md;
   align-items: center;
   padding: $spacing-sm $spacing-md;
   background: $white;
   border: 1px solid $border-color;
   border-radius: $border-radius-md;
+}
+
+// Opens the team's scoring + notes workspace.
+.fr-row__open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 10px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  color: $text-secondary;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover { background: $background; color: $text-primary; }
 }
 
 .fr-row__cell {
@@ -325,6 +344,7 @@
   .fr-row__cell--team { order: -1; }
   .fr-row__cell--time { order: -1; }
   .fr-row__cell--reviewer { grid-column: 1 / -1; }
+  .fr-row__open-btn { grid-column: 1 / -1; justify-content: center; }
 
   .fr-day__zoom { margin-left: auto; }
 }
