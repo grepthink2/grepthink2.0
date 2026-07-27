@@ -1,7 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- PROD STAGING — Final-review scoring EXPAND      ⚠ NOT YET APPLIED TO PROD
--- Target: GrepThink2-PROD (yfezwtoeoexfksvbpxmi). Additive + idempotent;
--- safe to run before or after the feat/final-review-scoring deploy.
+-- PROD STAGING — Final-review scoring EXPAND      ✅ APPLIED TO PROD 2026-07-25
+-- Target: GrepThink2-PROD (yfezwtoeoexfksvbpxmi). Applied via MCP before the
+-- deploy (additive + idempotent — re-running is a no-op).
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Final-review scoring + the Review-TA notes form (digitizes the staff score
 -- sheet and the per-team review-notes Google Doc).
