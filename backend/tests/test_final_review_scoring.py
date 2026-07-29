@@ -18,6 +18,7 @@ import pytest
 from fastapi import HTTPException
 
 import app.tas.controller as tas
+from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
 
 
@@ -183,16 +184,18 @@ def test_instructor_overall_gating(db):
 # --------------------------------------------------------------------------
 
 def test_score_bounds_and_shape_validation(db):
-    # NOTE: a bare {"student_id": S1} for 'review'/'instructor' (no "overall"
-    # key at all) is deliberately NOT a bad case here — a missing/null overall
-    # is now a valid "clear this row" request (see
-    # test_clearing_a_never_scored_student_is_a_noop), not a shape error.
+    # NOTE: a bare {"student_id": S1} (no "overall" key AT ALL — absent, not
+    # explicit null) is a bad case again: clearing requires the key to be
+    # PRESENT with an explicit null (see test_clearing_a_never_scored_student
+    # _is_a_noop for that), so a genuinely missing key still 400s exactly
+    # like it always did.
     bad_cases = [
         ("home", {"student_id": S1, "product": 5.5, "team": 4.0, "scrum": 4.0}),   # out of range
         ("home", {"student_id": S1, "product": 0.9, "team": 4.0, "scrum": 4.0}),   # out of range
         ("home", {"student_id": S1, "product": 4.0, "team": 4.0}),                  # partial null — missing scrum
         ("home", {"student_id": S1, "product": 4.0, "team": 4.0, "scrum": 4.0, "overall": 4.0}),  # overall not allowed
         ("review", {"student_id": S1, "overall": 4.0, "product": 4.0}),             # category not allowed
+        ("review", {"student_id": S1}),                                             # overall key absent entirely
     ]
     for role, entry in bad_cases:
         caller = TA1 if role == "home" else TA2
@@ -263,6 +266,41 @@ def test_home_scores_partial_null_still_rejected(db):
         ])
     assert exc.value.status_code == 400
     assert _score_rows(db, "home") == []
+
+
+def test_review_overall_key_absent_400s_and_preserves_existing_row(db):
+    """The risky case the absent-vs-null distinction exists to prevent: an
+    entry that never mentions "overall" at all (as opposed to sending it as
+    an explicit null) must still 400 — and, critically, must NOT touch an
+    existing saved row. A bug collapsing "absent" into "null" here would
+    silently delete a student's score the moment a caller forgot a field."""
+    tas.save_final_review_scores(TA2, P1, "review", [{"student_id": S1, "overall": 4.2}])
+    assert _score_rows(db, "review")[0]["overall"] == 4.2
+
+    with pytest.raises(HTTPException) as exc:
+        tas.save_final_review_scores(TA2, P1, "review", [{"student_id": S1}])
+    assert exc.value.status_code == 400
+    rows = _score_rows(db, "review")
+    assert len(rows) == 1
+    assert rows[0]["overall"] == 4.2  # untouched
+
+
+def test_home_scores_key_absent_400s_and_preserves_existing_row(db):
+    """Same risk on the Home TA triple: one key present-and-null plus two
+    entirely absent is still a shape error (clearing needs all three
+    PRESENT), and must not touch the existing row."""
+    tas.save_final_review_scores(TA1, P1, "home", [
+        {"student_id": S1, "product": 4.0, "team": 4.0, "scrum": 4.0, "notes": "ok"},
+    ])
+    assert _score_rows(db, "home")[0]["product"] == 4.0
+
+    with pytest.raises(HTTPException) as exc:
+        tas.save_final_review_scores(TA1, P1, "home", [{"student_id": S1, "product": None}])
+    assert exc.value.status_code == 400
+    rows = _score_rows(db, "home")
+    assert len(rows) == 1
+    assert (rows[0]["product"], rows[0]["team"], rows[0]["scrum"]) == (4.0, 4.0, 4.0)  # untouched
+    assert rows[0]["notes"] == "ok"
 
 
 def test_scores_require_project_membership(db):
@@ -347,3 +385,60 @@ def test_notes_endpoint_routes(mock_fn, client, auth_header):
     )
     assert r.status_code == 200
     mock_fn.assert_called_once()
+
+
+# --------------------------------------------------------------------------
+# Endpoint wiring — real controller (NOT mocked), so the views.py
+# exclude_unset fix is exercised through actual JSON→Pydantic parsing rather
+# than a hand-built dict. Needs real UUIDs (unlike the direct-controller
+# tests above) since requests go through FastAPI's own path/body validation.
+# --------------------------------------------------------------------------
+
+WIRE_CLASS = "eeeeeeee-0000-0000-0000-000000000001"
+WIRE_TA = "eeeeeeee-0000-0000-0000-000000000002"
+WIRE_PROJECT = "eeeeeeee-0000-0000-0000-000000000003"
+WIRE_STUDENT = "eeeeeeee-0000-0000-0000-000000000004"
+
+
+@pytest.fixture
+def wire_db(db):
+    """Seeds a second, UUID-shaped project into the same fake client `db`
+    already patches into app.tas.controller."""
+    db.store.setdefault("classes", []).append({
+        "id": WIRE_CLASS, "created_by": "someone-else", "review_period_open": True,
+        "review_zoom_url": None,
+    })
+    db.store.setdefault("class_enrollments", []).append({
+        "id": "enr-wire-ta", "class_id": WIRE_CLASS, "user_id": WIRE_TA, "enrollment_role": "ta",
+    })
+    db.store.setdefault("projects", []).append({
+        "id": WIRE_PROJECT, "class_id": WIRE_CLASS, "name": "Wire", "assigned_ta_id": WIRE_TA,
+    })
+    db.store.setdefault("project_members", []).append({
+        "project_id": WIRE_PROJECT, "user_id": WIRE_STUDENT, "role": "member",
+    })
+    return db
+
+
+def test_endpoint_absent_key_400s_through_real_request_parsing(client, wire_db):
+    """Exercises the real PUT route (controller NOT mocked) so the views.py
+    exclude_unset wiring is verified through actual JSON parsing, not just a
+    hand-built dict: a payload that omits "overall"/a home field entirely
+    must 400 — and must not touch the existing row — through the full
+    request cycle. A regression here (e.g. reverting to plain model_dump())
+    would make an absent key indistinguishable from an explicit null and
+    silently delete the score instead of rejecting the request."""
+    tas.save_final_review_scores(WIRE_TA, WIRE_PROJECT, "home", [
+        {"student_id": WIRE_STUDENT, "product": 4.0, "team": 4.0, "scrum": 4.0},
+    ])
+
+    r = client.put(
+        f"/api/tas/projects/{WIRE_PROJECT}/final-review/scores",
+        headers={"Authorization": f"Bearer {make_token(sub=WIRE_TA)}"},
+        json={"role": "home", "scores": [{"student_id": WIRE_STUDENT, "product": None}]},
+    )
+    assert r.status_code == 400
+
+    rows = [row for row in wire_db.rows("final_review_scores") if row["project_id"] == WIRE_PROJECT]
+    assert len(rows) == 1
+    assert (rows[0]["product"], rows[0]["team"], rows[0]["scrum"]) == (4.0, 4.0, 4.0)  # untouched

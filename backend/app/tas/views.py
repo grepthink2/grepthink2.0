@@ -132,8 +132,14 @@ def save_final_review_scores(
     data: SaveFinalReviewScoresRequest,
     user_id: str = Depends(require_user),
 ):
+    # exclude_unset preserves the "was this key even sent" distinction the
+    # controller relies on to tell an explicit null (clear this score) apart
+    # from a field the client never mentioned (400, same as always) — the
+    # default model_dump() fills in every Optional field's None default and
+    # erases that distinction, which would make an absent key look identical
+    # to an explicit clear.
     entries = [
-        {**e.model_dump(), "student_id": str(e.student_id)}
+        {**e.model_dump(exclude_unset=True), "student_id": str(e.student_id)}
         for e in data.scores
     ]
     return controller.save_final_review_scores(user_id, project_id, data.role, entries)
