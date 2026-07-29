@@ -359,7 +359,7 @@
     background: var(--gt-surface);
     border: 1px solid var(--gt-border);
     border-radius: $border-radius-sm;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--gt-shadow-pop);
     z-index: $z-index-dropdown;
     padding: $spacing-xs 0;
   }
@@ -661,6 +661,10 @@
     padding: 0 $spacing-md;
     border: none;
     border-radius: $border-radius-md $border-radius-md 0 0;
+    // Casts upward — the tab is pinned to the viewport bottom — at roughly
+    // the magnitude of --gt-shadow-hover (0 2px 12px .1) mirrored vertically.
+    // No --gt-shadow-* token has a negative/upward offset, so this is kept
+    // literal rather than force a downward-facing token onto an upward shadow.
     box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
     cursor: pointer;
     font-size: 0.9rem;
@@ -674,6 +678,8 @@
 
     &:focus-visible {
       outline: none;
+      // Same bespoke upward shadow as the resting state above, layered
+      // under the focus ring (A3's layered-ring-over-resting-shadow idiom).
       box-shadow: var(--gt-focus-ring), 0 -2px 12px rgba(0, 0, 0, 0.08);
     }
   }
@@ -787,6 +793,11 @@
     background: var(--gt-surface);
     border: 1px solid var(--gt-border);
     border-radius: $border-radius-lg;
+    // Same offset:blur ratio as --gt-shadow-pop (0 4px 12px .15) but scaled
+    // 2x for this wider scrollable flyout (300px, search input + result
+    // list) — shrinking it to the token would flatten a panel meant to read
+    // as more elevated than the three-dot dropdown menu above; kept literal
+    // rather than force a near-miss.
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     z-index: 200;
     display: flex;
