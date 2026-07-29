@@ -81,7 +81,7 @@
     color: $text-primary;
     font-family: $primary-font;
     font-size: 14px;
-    transition: all 0.3s ease;
+    @include gt-transition-medium(border-color);
 
     &:focus {
       outline: none;
@@ -110,7 +110,7 @@
   width: 22px;
   height: 22px;
   opacity: 0.7;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  @include gt-transition(opacity, transform);
   animation: iconFade 0.2s ease;
 
   &:hover {
@@ -150,7 +150,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 500;
-  transition: background-color 0.3s ease;
+  @include gt-transition-medium(background-color);
 
   &:hover {
     background-color: $primary-hover;
@@ -180,7 +180,7 @@
   justify-content: center;
   gap: 8px;
   font-weight: 500;
-  transition: background-color 0.3s ease;
+  @include gt-transition-medium(background-color);
 
   &:hover {
     background-color: $button-secondary-hover;
@@ -257,6 +257,9 @@
 .arrowIcon {
   width: 16px;
   height: 16px;
+  // 0.2s duration matches gt-transition's fast timing, but ease-in-out is a
+  // different timing function than the mixin's fixed ease — left as a
+  // literal rather than silently changing the easing curve.
   transition: transform 0.2s ease-in-out;
 }
 
@@ -264,7 +267,7 @@
 .error {
   font-family: $primary-font;
   color: $error-color;
-  background-color: rgba($error-color, 0.1);
+  background-color: var(--gt-error-soft);
   padding: 10px;
   border-radius: 8px;
   font-size: 14px;

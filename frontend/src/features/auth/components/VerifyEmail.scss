@@ -63,12 +63,12 @@
   border-radius: 7px;
   background: $white;
   color: $text-primary;
-  transition: all 0.3s ease;
+  @include gt-transition-medium(border-color, box-shadow, background-color, opacity);
 
   &:focus {
     outline: none;
     border-color: $accent-color;
-    box-shadow: 0 0 0 2px rgba($accent-color, 0.1);
+    box-shadow: 0 0 0 2px var(--gt-info-soft);
   }
 
   &:disabled {
@@ -96,7 +96,7 @@
   justify-content: center;
   gap: 8px;
   font-weight: 500;
-  transition: background-color 0.3s ease;
+  @include gt-transition-medium(background-color);
 
   &:hover {
     background-color: $button-secondary-hover;
@@ -145,6 +145,9 @@
 .arrowIcon {
   width: 16px;
   height: 16px;
+  // 0.2s duration matches gt-transition's fast timing, but ease-in-out is a
+  // different timing function than the mixin's fixed ease — left as a
+  // literal rather than silently changing the easing curve.
   transition: transform 0.2s ease-in-out;
 }
 
@@ -152,7 +155,7 @@
 .error {
   font-family: $primary-font;
   color: $error-color;
-  background-color: rgba($error-color, 0.1);
+  background-color: var(--gt-error-soft);
   padding: 10px;
   border-radius: 8px;
   font-size: 14px;

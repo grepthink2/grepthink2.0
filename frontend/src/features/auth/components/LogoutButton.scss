@@ -1,5 +1,6 @@
 @use '@styles/colors' as colors;
 @use '@styles/fonts' as fonts;
+@use '@styles/motion' as motion;
 
 .logout-button {
   background-color: transparent;
@@ -10,7 +11,7 @@
   cursor: pointer;
   font-family: fonts.$primary-font;
   font-weight: 500;
-  transition: all 0.2s ease;
+  @include motion.gt-transition(background-color, color);
 
   &:hover {
     background-color: colors.$button-secondary;
