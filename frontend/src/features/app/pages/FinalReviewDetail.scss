@@ -3,6 +3,13 @@
 // Final Review detail — one team's scoring grid + the Review-TA notes form.
 // Shares .ta-page / fr-* vocabulary (FinalReviews.scss); frd-* is page-specific.
 
+.frd {
+  // .ta-page already sets padding: $spacing-lg (all sides) — pass it through
+  // so the floating Messages tab (>=768px) gets clearance ON TOP OF that
+  // gutter instead of replacing it (matches FinalReviews.scss's call).
+  @include bottom-clearance-for-message-widget($spacing-lg);
+}
+
 .frd__heading {
   align-items: center;
   gap: $spacing-sm;
@@ -11,16 +18,40 @@
 .frd__back {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--gt-space-xs);
   border: none;
   background: none;
   padding: 4px 8px 4px 0;
   color: $text-tertiary;
   font-family: $primary-font;
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step (nearest of caption/body).
+  font-size: var(--gt-text-caption);
   cursor: pointer;
+  @include gt-transition(color);
+  @include gt-press;
 
   &:hover { color: $text-primary; }
+}
+
+// ── Loading skeleton ──────────────────────────────────────────────
+// A heading-bar block, then two card stubs — a table-ish scores block and a
+// worksheet block — sized/bordered like the real .frd__card so nothing
+// jumps once the real workspace arrives.
+.frd-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-lg);
+  padding-top: var(--gt-space-xs);
+}
+
+.frd-skeleton__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-sm);
+  padding: $spacing-md;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
 }
 
 .frd__meta {
@@ -28,7 +59,8 @@
   flex-wrap: wrap;
   gap: $spacing-sm $spacing-lg;
   margin-bottom: $spacing-md;
-  font-size: 0.8438rem;
+  // 13.5px rounds up to the 14px body step (nearest of caption/body).
+  font-size: var(--gt-text-body);
   color: $text-secondary;
 
   strong { font-weight: $font-weight-semibold; color: $text-primary; }
@@ -54,9 +86,12 @@
 .frd__card-title {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  // 7px sits equidistant between the xs/sm steps; rounded up to match the
+  // $spacing-sm gap already dominant elsewhere in this file.
+  gap: var(--gt-space-sm);
   margin: 0;
-  font-size: 1.0625rem;
+  // 17px rounds down to the 16px body-lg step (nearest of body-lg/h3).
+  font-size: var(--gt-text-body-lg);
   font-weight: $font-weight-semibold;
   color: $text-primary;
 
@@ -64,33 +99,40 @@
 }
 
 .frd__card-hint {
-  font-size: 0.7813rem;
+  // 12.5px rounds down to the 12px caption step (nearest of caption/body).
+  font-size: var(--gt-text-caption);
   color: $text-tertiary;
 }
 
-.frd__card-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: $spacing-sm;
-  margin-top: $spacing-md;
-}
-
-.frd__saved {
-  font-size: 0.8125rem;
-  color: $primary-color;
-  font-weight: $font-weight-medium;
-}
-
 // ── Score grid ──────────────────────────────────────────────────
+.frd__grid-wrap {
+  // Anchors the always-visible right-edge fade below; the fade overlays the
+  // scroll container without scrolling with it.
+  position: relative;
+}
+
 .frd__grid-scroll {
   overflow-x: auto;
+}
+
+// Static hint that the table scrolls horizontally — a right-edge fade over
+// the scroll container (not a mask-image on it, which would also wash out
+// the opaque sticky student column at the left edge).
+.frd__grid-fade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), var(--gt-surface));
+  pointer-events: none;
 }
 
 .frd__grid {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8438rem;
+  // 13.5px rounds up to the 14px body step (nearest of caption/body).
+  font-size: var(--gt-text-body);
 
   th, td {
     padding: 6px 8px;
@@ -100,11 +142,23 @@
   }
 
   thead th {
-    font-size: 0.6875rem;
+    // 11px rounds up to the 12px caption step (nearest available; there's
+    // no smaller token).
+    font-size: var(--gt-text-caption);
     font-weight: $font-weight-semibold;
     letter-spacing: 0.4px;
     text-transform: uppercase;
     color: $text-tertiary;
+  }
+
+  // Sticky first (student) column — every row's first cell, header through
+  // footer, so it stays visible while the rest of a wide grid scrolls.
+  th:first-child,
+  td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: var(--gt-z-base);
+    background: var(--gt-surface);
   }
 }
 
@@ -126,18 +180,47 @@
 .frd__setall th {
   background: $background;
 
+  // Ties the sticky first-column background (see .frd__grid th:first-child)
+  // back to this row's own grey — same specificity, later in the cascade.
+  &:first-child { background: $background; }
+
   &.frd__setall-label {
-    font-size: 0.6875rem;
+    // 11px rounds up to the 12px caption step (nearest available; there's
+    // no smaller token).
+    font-size: var(--gt-text-caption);
     color: $text-tertiary;
     text-transform: none;
     letter-spacing: 0;
   }
 }
 
+.frd__setall-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gt-space-xs);
+}
+
+.frd__setall-apply {
+  display: inline-flex;
+  border: none;
+  background: none;
+  color: $text-tertiary;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: $border-radius-sm;
+  @include gt-transition(background-color, color, border-color);
+  @include gt-press;
+
+  &:hover:not(:disabled) { color: var(--gt-primary); background: var(--gt-primary-soft); }
+  &:disabled { opacity: 0.55; cursor: default; }
+}
+
 .frd__student {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  // 7px sits equidistant between the xs/sm steps; rounded up to match the
+  // $spacing-sm gap already dominant elsewhere in this file.
+  gap: var(--gt-space-sm);
 }
 
 .frd__student-name {
@@ -153,7 +236,8 @@
 
 .frd__other-note {
   display: block;
-  font-size: 0.7188rem;
+  // 11.5px rounds up to the 12px caption step (nearest of caption/body).
+  font-size: var(--gt-text-caption);
   color: $text-tertiary;
 }
 
@@ -166,11 +250,24 @@
   color: $text-primary;
   color-scheme: light;
   font-family: $primary-font;
-  font-size: 0.8438rem;
+  // 13.5px rounds up to the 14px body step (nearest of caption/body).
+  font-size: var(--gt-text-body);
   text-align: center;
+  @include gt-transition(border-color, background-color);
 
-  &:focus { outline: none; border-color: $accent-color; }
+  &:focus-visible {
+    border-color: var(--gt-accent);
+    box-shadow: var(--gt-focus-ring-tight);
+  }
   &:disabled { opacity: 0.6; }
+
+  // A partial Home TA row (1–2 of product/team/scrum filled) — its empty
+  // cells are flagged the instant the row becomes incomplete, not after a
+  // failed save.
+  &[aria-invalid='true'] {
+    border-color: var(--gt-error);
+    background: var(--gt-error-soft);
+  }
 }
 
 .frd__note-input {
@@ -183,9 +280,14 @@
   color: $text-primary;
   color-scheme: light;
   font-family: $primary-font;
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step (nearest of caption/body).
+  font-size: var(--gt-text-caption);
+  @include gt-transition(border-color, background-color);
 
-  &:focus { outline: none; border-color: $accent-color; }
+  &:focus-visible {
+    border-color: var(--gt-accent);
+    box-shadow: var(--gt-focus-ring-tight);
+  }
   &:disabled { opacity: 0.6; }
 }
 
@@ -196,6 +298,10 @@
   font-weight: $font-weight-semibold;
   color: $text-secondary;
   background: $background;
+
+  // Ties the sticky first-column background (see .frd__grid th:first-child)
+  // back to this row's own grey — same specificity, later in the cascade.
+  &:first-child { background: $background; }
 }
 
 // ── Notes form ──────────────────────────────────────────────────
@@ -208,14 +314,17 @@
 
 .frd__section-title {
   margin: 0 0 4px;
-  font-size: 0.9375rem;
+  // 15px sits equidistant between the body/body-lg steps; rounded up to keep
+  // it visually heavier than the 14px body copy in the fields below it.
+  font-size: var(--gt-text-body-lg);
   font-weight: $font-weight-semibold;
   color: $text-primary;
 }
 
 .frd__section-hint {
   margin: 0 0 $spacing-sm;
-  font-size: 0.7813rem;
+  // 12.5px rounds down to the 12px caption step (nearest of caption/body).
+  font-size: var(--gt-text-caption);
   color: $text-tertiary;
 }
 
@@ -229,8 +338,11 @@
 .frd__field-label {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 0.8125rem;
+  // 7px sits equidistant between the xs/sm steps; rounded up to match the
+  // $spacing-sm gap already dominant elsewhere in this file.
+  gap: var(--gt-space-sm);
+  // 13px rounded down to the 12px caption step (nearest of caption/body).
+  font-size: var(--gt-text-caption);
   font-weight: $font-weight-medium;
   color: $text-secondary;
 }
@@ -244,16 +356,22 @@
   color: $text-primary;
   color-scheme: light;
   font-family: $primary-font;
-  font-size: 0.8438rem;
+  // 13.5px rounds up to the 14px body step (nearest of caption/body).
+  font-size: var(--gt-text-body);
   line-height: 1.45;
   resize: vertical;
+  @include gt-transition(border-color, background-color);
 
-  &:focus { outline: none; border-color: $accent-color; }
+  &:focus-visible {
+    border-color: var(--gt-accent);
+    box-shadow: var(--gt-focus-ring-tight);
+  }
   &:disabled { opacity: 0.6; }
 }
 
 .frd__field-read {
-  font-size: 0.8438rem;
+  // 13.5px rounds up to the 14px body step (nearest of caption/body).
+  font-size: var(--gt-text-body);
   color: $text-primary;
   white-space: pre-wrap;
   line-height: 1.45;
@@ -261,7 +379,7 @@
   &:empty::before { content: '—'; color: $text-tertiary; }
 }
 
-// ── Sticky unsaved-changes bar ──────────────────────────────────
+// ── Sticky save bar — the ONLY save surface (no more per-card buttons) ───
 .frd__savebar {
   position: sticky;
   bottom: $spacing-md;
@@ -273,15 +391,50 @@
   background: $white;
   border: 1px solid $border-color;
   border-radius: $border-radius-md;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--gt-shadow-pop);
   z-index: 5;
+  @include gt-popover-enter;
+
+  // The floating Messages tab (Messages.scss .message-widget--tab) is
+  // position: fixed; bottom: 0; right: 24px; 48px tall on >=768px viewports
+  // (hidden below that). Raising the sticky offset by its full height keeps
+  // this bar's flex-end buttons entirely above its footprint — precise
+  // regardless of the tab's own (text-dependent) width, unlike a horizontal
+  // margin guess.
+  @media (min-width: 768px) {
+    bottom: calc(#{$spacing-md} + #{$message-widget-clearance});
+  }
 }
 
 .frd__savebar-msg {
   margin-right: auto;
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step (nearest of caption/body).
+  font-size: var(--gt-text-caption);
   font-weight: $font-weight-medium;
   color: $text-secondary;
+}
+
+.frd__savebar-undo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gt-space-xs);
+  font-size: var(--gt-text-caption);
+  color: $text-tertiary;
+}
+
+.frd__undo-btn {
+  border: none;
+  background: none;
+  padding: 2px 6px;
+  color: var(--gt-accent);
+  font-weight: $font-weight-medium;
+  font-size: var(--gt-text-caption);
+  font-family: $primary-font;
+  cursor: pointer;
+  border-radius: $border-radius-sm;
+  @include gt-transition(background-color, color);
+
+  &:hover { background: var(--gt-info-soft); text-decoration: underline; }
 }
 
 @media (max-width: 768px) {
