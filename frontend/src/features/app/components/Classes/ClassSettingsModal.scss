@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--gt-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,13 +38,13 @@
 }
 
 .class-settings-modal {
-  background-color: #eeeeee;
+  background-color: var(--gt-canvas);
   border-radius: $border-radius-md;
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--gt-shadow-modal);
   animation: classSettingsSlideIn 0.2s ease-out;
 
   &.closing {
@@ -76,10 +76,10 @@
     color: $text-secondary;
     cursor: pointer;
     border-radius: $border-radius-sm;
-    transition: background-color $transition-fast, color $transition-fast;
+    @include gt-transition(background-color, color);
 
     &:hover {
-      background-color: rgba(0, 0, 0, 0.06);
+      background-color: var(--gt-gray-200);
       color: $text-primary;
     }
   }
@@ -106,7 +106,7 @@
 
     &--danger {
       padding-top: $spacing-md;
-      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      border-top: 1px solid var(--gt-border);
     }
   }
 
@@ -156,7 +156,7 @@
     color: $text-secondary;
     background: transparent;
     cursor: pointer;
-    transition: background-color $transition-fast, color $transition-fast;
+    @include gt-transition(background-color, color);
 
     &.active {
       background-color: $primary-color;
@@ -183,7 +183,7 @@
     font-weight: $font-weight-medium;
     font-family: $primary-font;
     cursor: pointer;
-    transition: background-color $transition-fast, border-color $transition-fast;
+    @include gt-transition(background-color, border-color);
 
     &:hover:not(:disabled) {
       background: $background;
@@ -205,7 +205,7 @@
   &__export-error {
     margin: 0;
     font-size: 0.8125rem;
-    color: #b91c1c;
+    color: var(--gt-error-text);
     font-family: $primary-font;
   }
 
@@ -215,15 +215,19 @@
     gap: $spacing-sm;
     align-self: flex-start;
     padding: 10px 16px;
+    // border/bg/hover-bg/hover-border form a deliberate Tailwind-red ramp
+    // (red-200/red-50/red-100/red-300) with a resting->hover progression;
+    // our single --gt-error/--gt-error-soft pair can't represent that
+    // without erasing the hover distinction, so left as raw hex.
     border: 1px solid #fecaca;
     border-radius: $border-radius-sm;
     background: #fef2f2;
-    color: #b91c1c;
+    color: var(--gt-error-text);
     font-size: 0.875rem;
     font-weight: $font-weight-medium;
     font-family: $primary-font;
     cursor: pointer;
-    transition: background-color $transition-fast, border-color $transition-fast;
+    @include gt-transition(background-color, border-color);
 
     &:hover {
       background: #fee2e2;

@@ -7,7 +7,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--gt-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,13 +40,13 @@
 
 // Modal Container
 .create-class-modal {
-  background-color: #eeeeee;
+  background-color: var(--gt-canvas);
   border-radius: $border-radius-md;
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--gt-shadow-modal);
   animation: slideIn 0.2s ease-out;
 
   &.closing {
@@ -108,16 +108,15 @@
   border-radius: $border-radius-sm;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--gt-canvas);
   }
 
   &:focus {
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-  }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 }
 
 // Modal Content
@@ -198,6 +197,7 @@
 
   &:hover {
     border-color: $primary-color;
+    // Much lighter than --gt-primary-soft (~10%); left as a bespoke wash.
     background-color: rgba($primary-color, 0.05);
   }
 
@@ -211,9 +211,8 @@
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-  }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 }
 
 // Upload Area
@@ -227,6 +226,7 @@
 
   &:hover {
     border-color: $primary-color;
+    // Much lighter than --gt-primary-soft (~10%); left as a bespoke wash.
     background-color: rgba($primary-color, 0.02);
   }
 
@@ -234,8 +234,12 @@
     outline: none;
   }
 
+  // NOT dead like the other legacy blocks in this file: the real
+  // <input type="file"> is display:none (below), so the global
+  // :focus-visible rule paints its ring on an invisible element. This
+  // :has() forwards a real ring onto the visible label instead.
   &:has(.create-class-modal__file-input:focus-visible) {
-    outline: 4px auto -webkit-focus-ring-color;
+    box-shadow: var(--gt-focus-ring);
   }
 }
 
@@ -304,9 +308,8 @@
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-  }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 }
 
 // Action Buttons Container
@@ -337,9 +340,8 @@
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-  }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 }
 
 // Submit Button
@@ -362,9 +364,8 @@
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-  }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 
   &:disabled {
     background-color: $disabled-bg;
@@ -377,10 +378,10 @@
 // Error Message
 .create-class-modal__error {
   padding: 12px;
-  background-color: #fee;
-  border: 1px solid #fcc;
+  background-color: var(--gt-error-soft);
+  border: 1px solid var(--gt-error);
   border-radius: $border-radius-sm;
-  color: #c33;
+  color: var(--gt-error);
   font-size: $font-size-sm;
   margin-bottom: 16px;
 }
