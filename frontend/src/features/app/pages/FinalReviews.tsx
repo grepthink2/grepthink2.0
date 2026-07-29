@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarCheck, ChevronRight, Clock, Video, X } from 'lucide-react';
+import { CalendarCheck, Check, ChevronRight, Clock, Video, X } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { api, type ApiClassTA, type ApiFinalReviewSchedule, type ApiFinalReviewTeam } from '@/lib/api';
 import { getInitials } from '@features/app/utils/memberUtils';
-import { formatReviewDay as formatDay, formatReviewTime as formatTime } from './finalReviewTemplate';
+import { formatReviewTime as formatTime } from './finalReviewTemplate';
+import { groupByDay } from './finalReviewsGrouping';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import '../components/TAManagement/TAManagement.scss';
 import './FinalReviews.scss';
 
@@ -24,29 +26,26 @@ const Avatar: React.FC<{ name: string; email?: string | null }> = ({ name, email
   <span className="fr-avatar" aria-hidden="true">{getInitials(name || '', email || '')}</span>
 );
 
-interface DayGroup {
-  key: string;
-  /** Heading — a formatted day, or null for the trailing "Unscheduled" bucket. */
-  label: string | null;
-  teams: ApiFinalReviewTeam[];
-}
-
-const groupByDay = (teams: ApiFinalReviewTeam[]): DayGroup[] => {
-  const groups = new Map<string, DayGroup>();
-  for (const t of teams) {
-    const d = t.final_review_at ? new Date(t.final_review_at) : null;
-    const valid = d && !Number.isNaN(d.getTime());
-    const key = valid ? d!.toDateString() : 'unscheduled';
-    let group = groups.get(key);
-    if (!group) {
-      group = { key, label: valid ? formatDay(d!) : null, teams: [] };
-      groups.set(key, group);
-    }
-    group.teams.push(t);
-  }
-  // Server order is by time with unscheduled last, so insertion order is right.
-  return [...groups.values()];
-};
+/**
+ * Page-shaped loading placeholder: a title-bar block plus three day-section
+ * stubs (a day-label block + three row-shaped blocks each), so the page
+ * doesn't jump once the real schedule arrives.
+ */
+const FinalReviewsSkeleton: React.FC = () => (
+  <div className="ta-page final-reviews">
+    <div className="fr-skeleton" aria-busy="true">
+      <Skeleton width={240} height={28} radius={6} />
+      {Array.from({ length: 3 }).map((_, dayIdx) => (
+        <div key={dayIdx} className="fr-skeleton__day">
+          <Skeleton width={150} height={16} radius={4} />
+          {Array.from({ length: 3 }).map((_, rowIdx) => (
+            <Skeleton key={rowIdx} height={60} radius={10} />
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 const FinalReviews: React.FC = () => {
   const { selectedClass } = useClass();
@@ -67,8 +66,15 @@ const FinalReviews: React.FC = () => {
   const [taOptions, setTaOptions] = useState<ApiClassTA[]>([]);
   const [zoomEditing, setZoomEditing] = useState(false);
   const [zoomDraft, setZoomDraft] = useState('');
-  /** Per-row datetime-local drafts (instructor), committed on blur. */
+  /**
+   * Per-row datetime-local drafts (instructor). Committed explicitly — on
+   * Enter or the row's confirm button — never on blur; a plain blur (tabbing
+   * or clicking away without confirming) reverts the draft to the saved
+   * value instead, so a stray click can't silently commit a half-typed time.
+   */
   const [timeDrafts, setTimeDrafts] = useState<Record<string, string>>({});
+  /** project_id → true while its time draft fails to parse as a date. */
+  const [timeInvalid, setTimeInvalid] = useState<Record<string, boolean>>({});
 
   const isInstructor = role === 'instructor';
   const isTa = role === 'ta';
@@ -84,6 +90,8 @@ const FinalReviews: React.FC = () => {
     setTimeDrafts(Object.fromEntries(
       scheduleRes.teams.map((t) => [t.project_id, toInputValue(t.final_review_at)]),
     ));
+    // Fresh server data supersedes any stale per-row validation state.
+    setTimeInvalid({});
   }, [classId]);
 
   useEffect(() => {
@@ -165,15 +173,43 @@ const FinalReviews: React.FC = () => {
       .then((ok) => { if (ok) setZoomEditing(false); });
   };
 
+  /** Parse a datetime-local draft: '' → clear (null), invalid → undefined. */
+  const parseTimeDraft = (draft: string): string | null | undefined => {
+    if (!draft) return null;
+    const d = new Date(draft);
+    if (Number.isNaN(d.getTime())) return undefined;
+    return d.toISOString();
+  };
+
+  /** Enter or the row's ✓ button — the only ways a time edit reaches the API. */
   const commitTime = (team: ApiFinalReviewTeam) => {
     const draft = timeDrafts[team.project_id] ?? '';
-    if (draft === toInputValue(team.final_review_at)) return; // unchanged
-    const iso = draft ? new Date(draft).toISOString() : null;
+    if (draft === toInputValue(team.final_review_at)) {
+      setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
+      return; // unchanged
+    }
+    const iso = parseTimeDraft(draft);
+    if (iso === undefined) {
+      // Unparseable — flag it and stop; never send a bad value to the API.
+      setTimeInvalid((prev) => ({ ...prev, [team.project_id]: true }));
+      return;
+    }
+    setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
     void mutate(team.project_id, () => api.setFinalReviewTime(team.project_id, iso));
+  };
+
+  /** Plain blur (no Enter/✓) discards an uncommitted edit. */
+  const revertTime = (team: ApiFinalReviewTeam) => {
+    // A commit for this row is in flight (or just landed) — don't fight it;
+    // the row will re-sync from the authoritative server response either way.
+    if (busy === team.project_id) return;
+    setTimeDrafts((prev) => ({ ...prev, [team.project_id]: toInputValue(team.final_review_at) }));
+    setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
   };
 
   const clearTime = (team: ApiFinalReviewTeam) => {
     if (!team.final_review_at) return;
+    setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
     void mutate(team.project_id, () => api.setFinalReviewTime(team.project_id, null));
   };
 
@@ -270,7 +306,7 @@ const FinalReviews: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="ta-page final-reviews"><div className="ta-page__empty"><p>Loading…</p></div></div>;
+    return <FinalReviewsSkeleton />;
   }
 
   if (error || !schedule) {
@@ -401,10 +437,34 @@ const FinalReviews: React.FC = () => {
                             className="fr-row__time-input"
                             value={timeDrafts[team.project_id] ?? ''}
                             disabled={busy === team.project_id}
-                            onChange={(e) => setTimeDrafts((prev) => ({ ...prev, [team.project_id]: e.target.value }))}
-                            onBlur={() => commitTime(team)}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setTimeDrafts((prev) => ({ ...prev, [team.project_id]: value }));
+                              setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                commitTime(team);
+                              }
+                            }}
+                            onBlur={() => revertTime(team)}
+                            aria-invalid={timeInvalid[team.project_id] ? 'true' : undefined}
                             aria-label={`Review time for ${team.name ?? 'team'}`}
                           />
+                          <button
+                            type="button"
+                            className="fr-row__time-confirm"
+                            title="Confirm time"
+                            aria-label={`Confirm review time for ${team.name ?? 'team'}`}
+                            disabled={busy === team.project_id}
+                            // Keeps focus on the input on click so the blur-revert
+                            // handler above never fires ahead of the commit.
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => commitTime(team)}
+                          >
+                            <Check size={14} />
+                          </button>
                           {team.final_review_at && (
                             <button
                               type="button"
