@@ -13,7 +13,7 @@
   font-size: $font-size-base;
   font-weight: $font-weight-semibold;
   cursor: pointer;
-  transition: background-color $transition-fast;
+  @include gt-transition(background-color);
   align-self: flex-start;
 
   &:hover {
@@ -24,7 +24,6 @@
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-  }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 }

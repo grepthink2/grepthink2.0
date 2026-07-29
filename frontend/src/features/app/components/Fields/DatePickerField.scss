@@ -33,11 +33,15 @@
   cursor: pointer;
   text-align: left;
   box-sizing: border-box;
-  transition: border-color $transition-fast;
+  @include gt-transition(border-color);
 
-  &:hover { border-color: color.adjust(#DADADA, $lightness: -12%); }
+  // color.adjust() runs at Sass compile time, so it needs an actual Sass
+  // color value here — $border-color (not a var(--gt-*) token) is the
+  // pre-existing scss variable for this exact hex.
+  &:hover { border-color: color.adjust($border-color, $lightness: -12%); }
   &:focus { outline: none; border-color: $accent-color; }
-  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with, so nothing to add.
 
   &--open   { border-color: $primary-color; }
   &--filled { color: $text-primary; }
@@ -52,6 +56,9 @@
   max-width: calc(100vw - 24px);
   background: $white;
   border-radius: $border-radius-md;
+  // Two-layer elevated-popover shadow — no --gt-shadow-* token is visually
+  // indistinguishable from this (more elevated than --gt-shadow-pop, softer
+  // than --gt-shadow-modal); left as-is rather than force a near-miss.
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 12px;
   box-sizing: border-box;
@@ -122,10 +129,10 @@
     font-family: $primary-font;
     font-size: 0.85rem;
     color: $text-primary;
-    transition: background-color $transition-fast, color $transition-fast;
+    @include gt-transition(background-color, color);
 
     &:hover:not([disabled]) {
-      background-color: rgba($primary-color, 0.1);
+      background-color: var(--gt-primary-soft);
       color: $primary-color;
     }
   }
@@ -148,7 +155,8 @@
 
   .rdp-day_button {
     &:focus { outline: none; }
-    &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+    // Dead: the global :focus-visible rule (index.css) already forces a
+    // ring; no resting box-shadow here to layer with.
     &:hover {
       border: none;
       border-color: transparent;
