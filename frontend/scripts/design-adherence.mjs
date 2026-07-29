@@ -2,6 +2,16 @@
 /**
  * Design-system adherence check: non-token color literals.
  *
+ * SCOPE (read before trusting a clean run): this scanner matches only bare
+ * `#hex`/`#rrggbb`/`#rrggbbaa` literals. It does NOT scan `rgba()`/`rgb()`/
+ * `hsl()`/`hsla()` literals — as of this writing 51 files under src/ contain
+ * at least one. Extending coverage to those is real, separate work: it needs
+ * its own ledger sweep (most `rgba($sass-var, alpha)` calls are legitimate
+ * soft-fill math on an already-tokenized color and shouldn't be flagged, but
+ * plenty of literal `rgba(r, g, b, a)` calls are exactly the same kind of
+ * non-token color this script exists to catch) — tracked as a possible
+ * follow-up, not attempted here.
+ *
  * Origin: the GrepThink Design System export ships `_adherence.oxlintrc.json`,
  * an oxlint config whose real substance — a `no-restricted-syntax` block with
  * ~88 selectors (raw hex/px/font-family literals, plus per-component JSX
@@ -73,6 +83,15 @@ const DEFINITION_FILES = new Set([
 // the "token sweep" commits) to document a deliberately-kept non-token
 // color inline. Anything matching one of these, anywhere in a file's
 // comments, marks that file as having a reviewed ledger.
+//
+// NOTE on 'pinned': deliberately NOT a bare word. "pinned" shows up in
+// plenty of innocent, color-unrelated prose (position/scheduling language
+// like "pinned to the top" in Header.tsx, "pinned to the viewport bottom"
+// in Messages.scss, "Pinned to America/Los_Angeles" in reviewDates.ts,
+// "pinned to 11:59 PM PST" in StudentHomeDashboard.tsx) — and since
+// allowlisting is file-scoped, a bare 'pinned' match would clear every hex
+// literal in a file for a reason that has nothing to do with color. Only
+// the specific phrases below count.
 const LEDGER_MARKERS = [
   'bespoke',
   'legacy palette',
@@ -83,8 +102,9 @@ const LEDGER_MARKERS = [
   'no close --gt-*',
   'no gt-* equivalent',
   'predates the design-token',
-  'pinned',
-  'verbatim',
+  'pinned literal',
+  'pinned hex',
+  'verbatim', // covers "kept verbatim" too
   'kept literal',
   'stay local',
 ];
