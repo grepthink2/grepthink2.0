@@ -1,11 +1,12 @@
 @use '@styles/index.scss' as *;
 
-// Header-specific text/icon color (darker, more visible)
-$app-header-text: #424242;
+// Header-specific text/icon color (darker, more visible) — mirrors
+// --gt-text-secondary (frontend/src/styles/tokens/colors.css)
+$app-header-text: var(--gt-text-secondary);
 
 .app-header {
   display: flex;
-  background: #ffffff;
+  background: var(--gt-surface);
   align-items: center;
   justify-content: space-between;
   padding: $spacing-md $spacing-lg;
@@ -77,19 +78,19 @@ $app-header-text: #424242;
 .app-header__class-term {
   font-size: 0.8rem;
   font-weight: $font-weight-medium;
-  color: $text-tertiary;
+  color: var(--gt-text-tertiary);
   font-family: $primary-font;
 }
 
 .app-header__meta-dot {
   font-size: 0.8rem;
-  color: $text-tertiary;
+  color: var(--gt-text-tertiary);
 }
 
 .app-header__meta-label {
   font-size: 0.8rem;
   font-weight: $font-weight-medium;
-  color: $text-tertiary;
+  color: var(--gt-text-tertiary);
   font-family: $primary-font;
 }
 
@@ -100,11 +101,16 @@ $app-header-text: #424242;
   gap: 6px;
   padding: 2px 10px 2px 12px;
   border-radius: 5px;
+  // Brand-green alpha ladder (rest 0.18 / hover 0.22 / copied 0.26) gives
+  // three distinct, meaningfully-different pill states; flattening to the
+  // flat --gt-primary-soft swatch would collapse hover and copied into the
+  // same color, so this stays an alpha blend over $primary-color (mirrors
+  // --gt-primary — see _colors.scss).
   background-color: rgba($primary-color, 0.18);
-  color: $primary-color;
+  color: var(--gt-primary);
   border: none;
   cursor: pointer;
-  transition: background-color $transition-fast, box-shadow $transition-fast;
+  @include gt-transition(background-color, box-shadow);
 
   &:hover {
     background-color: rgba($primary-color, 0.22);
@@ -128,7 +134,7 @@ $app-header-text: #424242;
 .app-header__access-code {
   font-size: 0.8rem;
   font-weight: $font-weight-semibold;
-  color: $primary-color;
+  color: var(--gt-primary);
   font-family: $primary-font;
 }
 
@@ -141,13 +147,12 @@ $app-header-text: #424242;
   padding: 0;
   background: none;
   border-radius: 50%;
-  color: $primary-color;
-  transition: transform $transition-fast, opacity $transition-fast, color $transition-fast,
-    background-color $transition-fast;
+  color: var(--gt-primary);
+  @include gt-transition(transform, opacity, color, background-color);
 }
 
 .app-header__copy-btn--copied {
-  color: $primary-hover;
+  color: var(--gt-primary-hover);
   transform: translateY(-1px);
 }
 
@@ -168,20 +173,23 @@ $app-header-text: #424242;
   .app-header__search-input {
     width: 100%;
     padding: 8px 12px 8px 40px;
-    background-color: #ffffff;
-    box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+    background-color: var(--gt-surface);
+    box-shadow: var(--gt-shadow-card);
     border: 1px solid transparent;
     border-radius: $border-radius-sm;
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     font-family: $primary-font;
     color: $app-header-text;
-    transition: all $transition-fast;
+    @include gt-transition(all);
 
     &::placeholder {
-      color: $text-secondary;
+      color: var(--gt-text-secondary);
     }
 
+    // A3-calibrated focus treatment — untouched except the byte-equal
+    // shadow token swap below (var(--gt-shadow-card) serializes to the
+    // exact same `0 0 2.61px rgba(0, 0, 0, 0.25)` this shipped with).
     &:focus {
       outline: none;
       border-color: $accent-color;
@@ -190,7 +198,7 @@ $app-header-text: #424242;
 
     &:focus-visible {
       outline: none;
-      box-shadow: var(--gt-focus-ring), 0 0 2.61px rgba(0, 0, 0, 0.25);
+      box-shadow: var(--gt-focus-ring), var(--gt-shadow-card);
     }
   }
 }
@@ -203,14 +211,14 @@ $app-header-text: #424242;
   justify-content: center;
   width: 40px;
   height: 40px;
-  background-color: $white;
-  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  background-color: var(--gt-surface);
+  box-shadow: var(--gt-shadow-card);
   border-radius: $border-radius-sm;
   cursor: pointer;
   color: $app-header-text;
 
   img {
-    // Bell icon (SVG as img) - darken to match $app-header-text (#424242)
+    // Bell icon (SVG as img) - darken to match $app-header-text (--gt-text-secondary)
     filter: brightness(0.68);
   }
 
@@ -219,17 +227,19 @@ $app-header-text: #424242;
   }
 
   &:hover {
-    background-color: $background;
-    border-color: $text-secondary;
+    background-color: var(--gt-canvas);
+    border-color: var(--gt-text-secondary);
   }
 
+  // A3-calibrated focus treatment — untouched except the byte-equal
+  // shadow token swap below.
   &:focus {
     outline: none;
   }
 
   &:focus-visible {
     outline: none;
-    box-shadow: var(--gt-focus-ring), 0 0 2.61px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--gt-focus-ring), var(--gt-shadow-card);
   }
 }
 
@@ -254,7 +264,7 @@ $app-header-text: #424242;
   }
 
   &:hover {
-    background-color: $background;
+    background-color: var(--gt-canvas);
   }
 }
 
@@ -266,14 +276,17 @@ $app-header-text: #424242;
   min-width: 24px;
   height: 24px;
   padding: 0 6px;
-  background-color: $error-color;
-  color: $white;
+  background-color: var(--gt-error);
+  color: var(--gt-text-inverse);
   font-size: 12px;
   font-weight: $font-weight-semibold;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  // No exact --gt-shadow-* match (closest is --gt-shadow-pop at 0 4px 12px
+  // .15 — different blur/spread); kept literal rather than resizing the
+  // badge's shadow footprint.
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
@@ -288,24 +301,26 @@ $app-header-text: #424242;
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  background-color: #ffffff;
-  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  background-color: var(--gt-surface);
+  box-shadow: var(--gt-shadow-card);
   border-radius: $border-radius-sm;
   cursor: pointer;
   font-family: $primary-font;
 
   &:hover {
-    background-color: $background;
-    border-color: $text-secondary;
+    background-color: var(--gt-canvas);
+    border-color: var(--gt-text-secondary);
   }
 
+  // A3-calibrated focus treatment — untouched except the byte-equal
+  // shadow token swap below.
   &:focus {
     outline: none;
   }
 
   &:focus-visible {
     outline: none;
-    box-shadow: var(--gt-focus-ring), 0 0 2.61px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--gt-focus-ring), var(--gt-shadow-card);
   }
 
   .app-header__profile-icon {
@@ -314,7 +329,7 @@ $app-header-text: #424242;
     justify-content: center;
     width: 28px;
     height: 28px;
-    background-color: $background;
+    background-color: var(--gt-canvas);
     border-radius: 50%;
     color: $app-header-text;
     overflow: hidden;
@@ -342,10 +357,10 @@ $app-header-text: #424242;
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background-color: $white;
+  background-color: var(--gt-surface);
   border: none;
   border-radius: $border-radius-md;
-  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--gt-shadow-card);
   z-index: $z-index-dropdown + 1;
   animation: appHeaderDropdownFadeIn 0.2s ease;
 }
@@ -368,7 +383,7 @@ $app-header-text: #424242;
 
   .app-header__dropdown-header {
     padding: $spacing-md $spacing-md $spacing-sm;
-    border-bottom: 1px solid $border-color;
+    border-bottom: 1px solid var(--gt-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -390,7 +405,7 @@ $app-header-text: #424242;
     cursor: pointer;
     font-size: 12px;
     font-family: $primary-font;
-    color: $accent-color;
+    color: var(--gt-accent);
     white-space: nowrap;
 
     &:hover {
@@ -406,7 +421,7 @@ $app-header-text: #424242;
   .app-header__empty-state {
     padding: $spacing-xl;
     text-align: center;
-    color: $text-secondary;
+    color: var(--gt-text-secondary);
     font-size: $font-size-base;
     font-family: $primary-font;
   }
@@ -414,19 +429,19 @@ $app-header-text: #424242;
   .app-header__notification-item {
     display: flex;
     align-items: flex-start;
-    border-bottom: 1px solid $border-color;
-    transition: background-color $transition-fast;
+    border-bottom: 1px solid var(--gt-border);
+    @include gt-transition(background-color);
 
     &:last-child {
       border-bottom: none;
     }
 
     &:hover {
-      background-color: $background;
+      background-color: var(--gt-canvas);
     }
 
     &.unread {
-      background-color: rgba($accent-color, 0.05);
+      background-color: var(--gt-info-soft);
     }
   }
 
@@ -471,16 +486,16 @@ $app-header-text: #424242;
     padding: $spacing-sm;
     margin: $spacing-sm $spacing-sm 0 0;
     cursor: pointer;
-    color: $text-secondary;
+    color: var(--gt-text-secondary);
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color $transition-fast, color $transition-fast;
+    @include gt-transition(background-color, color);
 
     &:hover {
-      background-color: rgba($accent-color, 0.1);
-      color: $accent-color;
+      background-color: var(--gt-info-soft);
+      color: var(--gt-accent);
     }
   }
 }
@@ -499,7 +514,7 @@ $app-header-text: #424242;
     border: none;
     text-align: left;
     cursor: pointer;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     font-family: $primary-font;
@@ -514,12 +529,12 @@ $app-header-text: #424242;
     }
 
     &:hover {
-      background-color: $background;
+      background-color: var(--gt-canvas);
     }
 
     &:focus {
       outline: none;
-      background-color: $background;
+      background-color: var(--gt-canvas);
     }
 
     svg {
@@ -531,10 +546,10 @@ $app-header-text: #424242;
     }
 
     &.app-header__dropdown-item--logout {
-      color: $error-color;
+      color: var(--gt-error);
 
       svg {
-        color: $error-color;
+        color: var(--gt-error);
       }
     }
   }
