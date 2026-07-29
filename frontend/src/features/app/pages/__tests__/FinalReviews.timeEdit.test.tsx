@@ -131,4 +131,71 @@ describe('FinalReviews — instructor time-edit keyboard path', () => {
     expect(api.setFinalReviewTime).not.toHaveBeenCalled();
     await waitFor(() => expect(input).toHaveAttribute('aria-invalid', 'true'));
   });
+
+  it('a real pointer click on ✓ never blurs the input at all (onMouseDown preventDefault)', async () => {
+    // Composes with the relatedTarget-aware onBlur above: user-event's click()
+    // faithfully simulates the browser's mousedown -> [conditional focus
+    // shift] -> click sequence, so this is the one assertion that actually
+    // depends on the button's onMouseDown={e => e.preventDefault()} — remove
+    // it and jsdom's default (Chromium-like: a plain <button> DOES take
+    // focus on click) kicks in, moving focus off the input and firing a real
+    // blur. That blur happens to carry relatedTarget === the button, which
+    // the relatedTarget guard on its own already recognizes and skips
+    // reverting for (confirmed empirically) — so checking only "the value
+    // committed correctly" would NOT catch onMouseDown being removed in
+    // jsdom. Asserting activeElement stays on the input is what does: on
+    // real Safari/Firefox, a plain <button> never takes focus on click
+    // regardless, so without onMouseDown the input would still blur there —
+    // only now with relatedTarget === null, which the guard can't recognize,
+    // reverting the draft and disabling ✓ mid-click (see the next test).
+    const user = userEvent.setup();
+    renderPage();
+    const input = await screen.findByLabelText<HTMLInputElement>('Review time for Team Alpha');
+    const confirmBtn = screen.getByLabelText('Confirm review time for Team Alpha');
+
+    await user.click(input);
+    await user.clear(input);
+    await user.type(input, '2030-01-15T09:30');
+
+    await user.click(confirmBtn);
+
+    expect(document.activeElement).toBe(input);
+    await waitFor(() => expect(api.setFinalReviewTime).toHaveBeenCalledTimes(1));
+    const [, calledIso] = vi.mocked(api.setFinalReviewTime).mock.calls[0];
+    expect(new Date(calledIso as string).getFullYear()).toBe(2030);
+  });
+
+  it('a forced null-relatedTarget blur (the pre-fix Safari/Firefox failure mode) degrades safely instead of committing garbage', async () => {
+    // Verified empirically (see the review that produced this test): a
+    // directly-fired blur with relatedTarget: null cannot be distinguished
+    // from an abandoned edit by anything short of the browser never having
+    // blurred the input in the first place — which is exactly what
+    // onMouseDown's preventDefault achieves for every REAL pointer-driven
+    // click (previous test). This test pins the fallback for the residual
+    // case (a blur reaches the input with no recognizable relatedTarget
+    // regardless of cause): the draft reverts to the saved value, ✓
+    // correctly disables itself (nothing left to confirm), and a subsequent
+    // click is inert — a disabled button never dispatches click, so the
+    // system fails SAFE (no call at all) rather than silently sending a
+    // stale or wrong value. This holds no matter which onBlur/onMouseDown
+    // guards exist; what the OTHER two tests in this file pin is that a
+    // well-behaved focus transfer (Tab, or a real click with onMouseDown
+    // present) never reaches this fallback path to begin with.
+    const { fireEvent } = await import('@testing-library/react');
+    const user = userEvent.setup();
+    renderPage();
+    const input = await screen.findByLabelText<HTMLInputElement>('Review time for Team Alpha');
+    const confirmBtn = screen.getByLabelText<HTMLButtonElement>('Confirm review time for Team Alpha');
+
+    await user.click(input);
+    await user.clear(input);
+    await user.type(input, '2030-01-15T09:30');
+
+    fireEvent.blur(input, { relatedTarget: null });
+    await waitFor(() => expect(input.value).not.toBe('2030-01-15T09:30'));
+    expect(confirmBtn).toBeDisabled();
+
+    await user.click(confirmBtn);
+    expect(api.setFinalReviewTime).not.toHaveBeenCalled();
+  });
 });

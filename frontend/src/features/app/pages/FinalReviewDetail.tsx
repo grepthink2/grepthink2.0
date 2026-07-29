@@ -35,6 +35,17 @@ const COLUMN_LABELS: Record<SetAllColumn, string> = {
   instructor: 'Instructor overall',
 };
 
+/** Honest copy for a note-blocked row on a role OTHER than the viewer's own
+ * noteRole (e.g. an instructor blocked from clearing a Home TA's row over
+ * the Home TA's own note) — that note isn't rendered as an editable input
+ * for this viewer at all, so "remove or save the note first" would point at
+ * a control that doesn't exist for them. Says what's blocking it instead. */
+const OTHER_ROLE_NOTE_BLOCK_MESSAGE: Record<FinalReviewScoreRole, string> = {
+  home: "A Home TA note exists on this row — its scores can't be cleared from here.",
+  review: "A Review TA note exists on this row — its scores can't be cleared from here.",
+  instructor: "An instructor note exists on this row — its scores can't be cleared from here.",
+};
+
 const num = (v: number | null | undefined): string => (v == null ? '' : String(v));
 
 /** '' → null; else a valid 1.0–5.0 number rounded to 0.1, or NaN when invalid. */
@@ -261,10 +272,13 @@ const FinalReviewDetail: React.FC = () => {
 
   /** "Apply to column" — the only way a "Set all" draft reaches every
    * student's row. Snapshots the pre-apply values first so undo can restore
-   * them. */
+   * them. A no-op on an empty draft — guarded here (rather than at each
+   * call site) so both the ✓ button's `disabled` and the header input's
+   * Enter key stay in lockstep with the same rule automatically. */
   const applyColumn = (col: SetAllColumn) => {
     if (!detail) return;
     const value = setAllDraft[col] ?? '';
+    if (!value.trim()) return;
     const snapshot: Record<string, string> = {};
 
     if (col === 'review' || col === 'instructor') {
@@ -593,15 +607,20 @@ const FinalReviewDetail: React.FC = () => {
   // A student whose score(s) are blanked-for-clear but whose note (draft or
   // saved) is still non-empty — clearing would delete that note along with
   // the row, so the clear is blocked (and the scores save disabled) instead
-  // of silently dropping it. Checked per editable role.
+  // of silently dropping it. Checked per editable role — a viewer with
+  // instructor access can trigger this on home/review too, not only their
+  // own noteRole (see the per-row message below for why that distinction
+  // matters).
+  const noteBlockedRoles = (sid: string): FinalReviewScoreRole[] =>
+    (['home', 'review', 'instructor'] as const).filter((role) => {
+      if (role === 'home' && !canEditHome) return false;
+      if (role === 'review' && !canEditReview) return false;
+      if (role === 'instructor' && !canEditInstructor) return false;
+      return clearBlockedByNote(role, sid);
+    });
+
   const noteBlockedMembers = new Set(
-    detail.members
-      .filter((m) => (
-        (canEditHome && clearBlockedByNote('home', m.user_id))
-        || (canEditReview && clearBlockedByNote('review', m.user_id))
-        || (canEditInstructor && clearBlockedByNote('instructor', m.user_id))
-      ))
-      .map((m) => m.user_id),
+    detail.members.filter((m) => noteBlockedRoles(m.user_id).length > 0).map((m) => m.user_id),
   );
   const noteBlockedCount = noteBlockedMembers.size;
   const scoresBlocked = incompleteHomeCount > 0 || noteBlockedCount > 0;
@@ -778,7 +797,7 @@ const FinalReviewDetail: React.FC = () => {
                   const extraNotes = otherRoleNotes(m.user_id);
                   const noteDraftValue = noteRole === 'home' ? h.notes : noteRole === 'review' ? r.notes : p.notes;
                   const homeRowIncomplete = homeIncompleteMembers.has(m.user_id);
-                  const rowClearBlocked = noteBlockedMembers.has(m.user_id);
+                  const rowNoteBlockedRoles = noteBlockedRoles(m.user_id);
                   return (
                     <tr key={m.user_id}>
                       <td className="frd__col-student">
@@ -793,9 +812,13 @@ const FinalReviewDetail: React.FC = () => {
                             ))}
                           </span>
                         )}
-                        {rowClearBlocked && (
-                          <span className="frd__clear-blocked">Clear blocked: remove or save the note first</span>
-                        )}
+                        {rowNoteBlockedRoles.map((role) => (
+                          <span key={role} className="frd__clear-blocked">
+                            {role === noteRole
+                              ? 'Clear blocked: remove or save the note first'
+                              : OTHER_ROLE_NOTE_BLOCK_MESSAGE[role]}
+                          </span>
+                        ))}
                       </td>
                       {(['product', 'team', 'scrum'] as const).map((f) => (
                         <td key={f}>

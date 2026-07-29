@@ -26,6 +26,14 @@ const Avatar: React.FC<{ name: string; email?: string | null }> = ({ name, email
   <span className="fr-avatar" aria-hidden="true">{getInitials(name || '', email || '')}</span>
 );
 
+/** Visually hidden but screen-reader-visible — no existing sr-only utility
+ * class in this codebase, so this is inlined for the one aria-errormessage
+ * target below rather than adding a new global class for a single use. */
+const srOnlyStyle: React.CSSProperties = {
+  position: 'absolute', width: 1, height: 1, padding: 0, margin: -1,
+  overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0,
+};
+
 /**
  * Page-shaped loading placeholder: a title-bar block plus three day-section
  * stubs (a day-label block + three row-shaped blocks each), so the page
@@ -473,8 +481,14 @@ const FinalReviews: React.FC = () => {
                               revertTime(team);
                             }}
                             aria-invalid={timeInvalid[team.project_id] ? 'true' : undefined}
+                            aria-errormessage={timeInvalid[team.project_id] ? `time-error-${team.project_id}` : undefined}
                             aria-label={`Review time for ${team.name ?? 'team'}`}
                           />
+                          {timeInvalid[team.project_id] && (
+                            <span id={`time-error-${team.project_id}`} style={srOnlyStyle}>
+                              Invalid or unconfirmable time — use ✕ to clear the schedule instead.
+                            </span>
+                          )}
                           <button
                             ref={(el) => { confirmBtnRefs.current[team.project_id] = el; }}
                             type="button"
@@ -483,6 +497,26 @@ const FinalReviews: React.FC = () => {
                             aria-label={`Confirm review time for ${team.name ?? 'team'}`}
                             disabled={busy === team.project_id
                               || (timeDrafts[team.project_id] ?? '') === toInputValue(team.final_review_at)}
+                            // Composes with the input's relatedTarget-aware
+                            // onBlur above, covering the two ways focus can
+                            // leave the input on a click: on browsers where a
+                            // <button> takes focus on click (jsdom's default,
+                            // Chromium), the resulting blur's relatedTarget IS
+                            // this button, which onBlur already recognizes and
+                            // skips reverting for. But on macOS Safari/Firefox
+                            // — where a plain <button> does NOT take focus on
+                            // click — the input would still blur (its default
+                            // "unfocus" action, since focus isn't moving
+                            // anywhere focusable), only now with
+                            // relatedTarget === null, which onBlur can't
+                            // recognize, so it would revert; the disabled
+                            // check above would then grey the button out
+                            // mid-gesture, killing the click before it fires.
+                            // preventDefault() here stops that default
+                            // "unfocus" action outright, so the input never
+                            // blurs at all for a pointer-driven click, on any
+                            // browser.
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => commitTime(team)}
                           >
                             <Check size={14} />
