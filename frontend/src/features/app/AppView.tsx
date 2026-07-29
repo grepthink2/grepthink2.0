@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import Sidebar from '@features/app/components/Layout/Sidebar';
@@ -7,6 +7,7 @@ import PreviewBanner from '@features/app/components/Layout/PreviewBanner';
 import CreateClassModal from '@/features/app/components/Classes/CreateClassModal';
 import JoinClassModal from '@/features/app/components/Classes/JoinClassModal';
 import Settings from '@features/app/pages/Settings';
+import PageFallback from '@features/app/components/PageFallback';
 import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/routePermissions';
@@ -95,11 +96,18 @@ const AppView: React.FC = () => {
             onOpenSettings={() => setIsSettingsOpen(true)}
             onToggleNav={() => setMobileNavOpen((open) => !open)}
           />
-          <Outlet
-            context={
-              { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
-            }
-          />
+          {/* Single shared boundary for every lazily-loaded leaf route (see
+              App.tsx). Scoped to the Outlet only — Sidebar/Header/modals
+              above are siblings, not descendants, so they stay mounted and
+              visible while a page chunk loads instead of being replaced by
+              the fallback. */}
+          <Suspense fallback={<PageFallback />}>
+            <Outlet
+              context={
+                { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
+              }
+            />
+          </Suspense>
         </main>
 
         {/* Create Class Modal */}
