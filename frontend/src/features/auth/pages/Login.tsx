@@ -136,9 +136,13 @@ const Login: React.FC = () => {
             <div className="formGroup">
               <div className="passwordHeader">
                 <label htmlFor="password">Password</label>
-                <span className="forgotPassword" onClick={() => navigate('/forgot-password')}>
+                <button
+                  type="button"
+                  className="forgotPassword"
+                  onClick={() => navigate('/forgot-password')}
+                >
                   Forgot Password?
-                </span>
+                </button>
               </div>
               <div className="passwordInputContainer">
                 <input
@@ -149,12 +153,19 @@ const Login: React.FC = () => {
                   onChange={handleChange}
                   required
                 />
-                <img
-                  src={showPassword ? eyeSlashIcon : eyeIcon}
-                  alt="toggle password visibility"
-                  className="eyeIcon"
+                <button
+                  type="button"
+                  className="eyeToggle"
                   onClick={() => setShowPassword(!showPassword)}
-                />
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                >
+                  <img
+                    src={showPassword ? eyeSlashIcon : eyeIcon}
+                    alt=""
+                    className="eyeIcon"
+                  />
+                </button>
               </div>
             </div>
 
@@ -188,10 +199,10 @@ const Login: React.FC = () => {
           {/* Sign Up Section */}
           <div className="signupSection">
             <span className="signupText">New to Grepthink?</span>
-            <div className="signupLink" onClick={handleSignUp}>
+            <button type="button" className="signupLink" onClick={handleSignUp}>
               Sign Up
-              <img src={arrowIcon} alt="arrow" className="arrowIcon" />
-            </div>
+              <img src={arrowIcon} alt="" className="arrowIcon" />
+            </button>
           </div>
         </div>
       </div>
