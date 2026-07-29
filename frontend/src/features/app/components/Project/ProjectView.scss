@@ -9,7 +9,7 @@
     border-radius: $border-radius-md;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--gt-shadow-card);
   }
 
   &__header-content {
@@ -110,7 +110,7 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
     font-family: inherit;
 
     &:hover {
@@ -118,14 +118,14 @@
     }
 
     &--requested {
-      background: #018156;
+      background: var(--gt-primary);
       color: white;
       cursor: pointer;
-      transition: background-color $transition-fast, color $transition-fast;
+      @include gt-transition(background-color, color);
 
       &:hover {
-        background: #fdecea;
-        color: #c62828;
+        background: var(--gt-error-soft);
+        color: var(--gt-error);
       }
 
       &:disabled {
@@ -135,8 +135,8 @@
     }
 
     &--unsend {
-      background: #fdecea;
-      color: #c62828;
+      background: var(--gt-error-soft);
+      color: var(--gt-error);
     }
 
     svg {
@@ -162,7 +162,7 @@
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
 
     &:hover {
       background: $primary-hover;
@@ -181,7 +181,7 @@
     background: $white;
     border: 1px solid $border-color;
     border-radius: $border-radius-sm;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--gt-shadow-pop);
     z-index: 20;
     min-width: 150px;
     overflow: hidden;
@@ -201,17 +201,17 @@
     cursor: pointer;
     text-align: left;
     white-space: nowrap;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
+      background: var(--gt-gray-50);
     }
 
     &--danger {
-      color: #dc2626;
+      color: var(--gt-error);
 
       &:hover {
-        background: rgba(220, 38, 38, 0.06);
+        background: var(--gt-error-soft);
       }
     }
   }
@@ -230,11 +230,11 @@
   }
 
   &__left-column {
-    background: #eeeeee;
+    background: var(--gt-canvas);
     border: 1px solid $border-color;
     border-radius: $border-radius-md;
     padding: 2rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--gt-shadow-hairline);
   }
 
   &__markdown {
@@ -336,7 +336,7 @@
     background: $background;
     border-radius: $border-radius-md;
     padding: 1.5rem;
-    box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--gt-shadow-card);
   }
 
   &__section-title {
@@ -372,7 +372,7 @@
     font-weight: $font-weight-medium;
     cursor: pointer;
     white-space: nowrap;
-    transition: background-color $transition-fast, border-color $transition-fast, color $transition-fast;
+    @include gt-transition(background-color, border-color, color);
 
     &:hover {
       border-color: $primary-color;
@@ -399,15 +399,15 @@
     padding: 0.75rem 0.9rem;
     border-radius: $border-radius-md;
     background: white;
-    border: 1px solid rgba($border-color, 0.9);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-    transition: box-shadow $transition-fast, transform $transition-fast, border-color $transition-fast,
-      background-color $transition-fast;
+    // 90% of $border-color is imperceptibly different from the solid color.
+    border: 1px solid var(--gt-border);
+    box-shadow: var(--gt-shadow-hairline);
+    @include gt-transition(box-shadow, transform, border-color, background-color);
 
     &:hover {
       background-color: color.adjust($background, $lightness: 2%);
       border-color: $primary-color;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      box-shadow: var(--gt-shadow-hover);
       transform: translateY(-1px);
     }
   }
@@ -475,7 +475,7 @@
     height: 18px;
     opacity: 0.6;
     cursor: pointer;
-    transition: opacity $transition-fast;
+    @include gt-transition(opacity);
 
     .project-view__link-icon-wrap:hover & {
       opacity: 1;
@@ -622,6 +622,12 @@
   }
 }
 
+// ── Sponsor card ────────────────────────────────────────────────────────────
+// This card renders on its own dark surface (parented elsewhere), so its
+// palette is white-on-dark at several opacities plus a bespoke indigo link
+// color (#7c8aff) — none of it maps to this (light-only) token system, which
+// has no dark-surface equivalents. Left as-is, same treatment as the pinned
+// dev-mode widget cluster / access-pill ladder elsewhere in this sweep.
 .project-view {
   &__sponsor-card {
     display: flex;
