@@ -16,6 +16,14 @@
   -moz-osx-font-smoothing: grayscale;
 } */
 
+/* The rest of this block down through the `prefers-color-scheme: light`
+   media query is unmodified create-vite scaffold, predating both the
+   --gt-* design-token system and this app's own component-scoped styles.
+   The bare a/button tag selectors are low-specificity and normally
+   overridden by real component classes, but recoloring them (or the
+   light/dark color-scheme block) is a global, hard-to-fully-verify
+   behavior change and dark-mode handling is explicitly out of scope for
+   this token sweep — left as-is rather than churned here. */
 :root {
   font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.5;

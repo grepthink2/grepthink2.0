@@ -1,5 +1,13 @@
 @use '@styles/index.scss' as *;
 
+// This file predates the --gt-* design-token system: the quick-action accent
+// colors below and the various status/priority accents scattered through the
+// rest of the file (reds, ambers, blues, greens, grays used for banners,
+// badges, and cards) are raw hex left over from before the token sweep, not
+// a reviewed bespoke choice. Left as-is (not part of this token sweep's
+// touched scope) rather than churned as a side effect of wiring the
+// adherence lint — a real value sweep is follow-up work.
+
 // Quick actions: solid fills (same pattern as .add-assignment-btn)
 $quick-accent-hover: #1f5cd6;
 $quick-purple: #7d3c98;

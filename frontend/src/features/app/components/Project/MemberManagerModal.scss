@@ -1,5 +1,9 @@
 @use '@styles/index.scss' as *;
 
+// The `&--invited`/`&--unsend` green/red pairs further down predate the
+// --gt-* design-token system; left as-is rather than churned as a side
+// effect of wiring the adherence lint.
+
 .member-manager-backdrop {
   position: fixed;
   top: 0;

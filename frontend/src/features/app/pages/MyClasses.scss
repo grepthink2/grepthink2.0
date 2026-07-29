@@ -2,6 +2,14 @@
 @use '../components/Modules/AddAssignmentButton.scss' as *;
 @use '../components/Project/AddProjectButton.scss' as *;
 
+// This file predates the --gt-* design-token system: the success-banner
+// colors (#ecfdf5/#a7f3d0/#047857) and the active/complete status-pill pair
+// further down (#d4f5ee+#018156, #dce8f5+#2771ff — the same pill palette
+// used across several Home/roster files) are raw hex left over from before
+// the token sweep, not a reviewed bespoke choice. Left as-is (not part of
+// this token sweep's touched scope) rather than churned as a side effect of
+// wiring the adherence lint — a real value sweep is follow-up work.
+
 // Match Browse Projects / ProjectGrid card system (ProjectGrid.scss)
 $my-classes-banner-min-height: 120px;
 $my-classes-app-header-height: 64px;

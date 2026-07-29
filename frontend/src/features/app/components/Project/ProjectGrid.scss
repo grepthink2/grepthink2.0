@@ -1,5 +1,8 @@
 @use '@styles/index.scss' as *;
 
+// $tag-closed-* and the banner placeholder gray further down predate the
+// --gt-* design-token system; left as-is rather than churned as a side
+// effect of wiring the adherence lint.
 $tag-closed-bg: #dce8f5;
 $tag-closed-text: #2771ff;
 

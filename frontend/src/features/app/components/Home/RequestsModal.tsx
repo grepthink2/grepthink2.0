@@ -64,6 +64,11 @@ function displayNameFromEmail(email: string | undefined): string {
     .join(' ');
 }
 
+// Predates the --gt-* design-token system: the no-email fallback below
+// happens to match --gt-primary but is a literal left over from before the
+// token sweep (this function otherwise returns a computed `hsl(...)` string,
+// not a token reference). Left as-is rather than churned as a side effect
+// of wiring the adherence lint.
 function avatarBgFromEmail(email: string | undefined): string {
   if (!email) return '#018156';
   let h = 0;

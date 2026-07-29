@@ -1,5 +1,14 @@
 @use '@styles/index.scss' as *;
 
+// Landing-only marketing surface, same self-contained-palette treatment as
+// Solutions.scss/Header.scss/Footer.scss: the mask-image `#000` stops only
+// need full opacity (mask alpha, not hue — any color reads identically
+// there, black is just the convention), the `&__title-accent` gradient needs
+// two distinct greens for a visible clip-text gradient (one is --gt-primary,
+// the other a bespoke lighter green with no token equivalent), and the
+// remaining grays predate the --gt-* design-token system. Left as-is rather
+// than churned as a side effect of wiring the adherence lint.
+
 .hero {
   position: relative;
   overflow: hidden;

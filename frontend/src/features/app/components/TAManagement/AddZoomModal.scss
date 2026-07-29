@@ -1,5 +1,7 @@
 @use '@styles/index.scss' as *;
 
+// Predates the --gt-* design-token system; left as-is rather than churned
+// as a side effect of wiring the adherence lint.
 $ta-placeholder: #9a9a9a;
 
 .zoom-modal-backdrop {

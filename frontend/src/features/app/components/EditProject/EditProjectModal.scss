@@ -1,5 +1,9 @@
 @use '@styles/index.scss' as *;
 
+// The owner role-icon/role-badge amber (#f59e0b, #b45309) further down
+// predates the --gt-* design-token system; left as-is rather than churned as
+// a side effect of wiring the adherence lint.
+
 .edit-project-backdrop {
   position: fixed;
   top: 0;

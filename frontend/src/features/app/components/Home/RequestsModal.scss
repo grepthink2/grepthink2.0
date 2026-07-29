@@ -1,5 +1,11 @@
 @use '@styles/index.scss' as *;
 
+// This file predates the --gt-* design-token system: the `&--purple`/`&--denied`
+// badge colors (#7d3c98, #c0392b) further down are raw hex left over from
+// before the token sweep, not a reviewed bespoke choice. Left as-is (not part
+// of this token sweep's touched scope) rather than churned as a side effect
+// of wiring the adherence lint — a real value sweep is follow-up work.
+
 .requests-modal-backdrop {
   position: fixed;
   inset: 0;
