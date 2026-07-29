@@ -6,7 +6,7 @@
   justify-content: center;
   background: $background;
   border-radius: $border-radius-md;
-  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--gt-shadow-card);
   padding: 10px $spacing-lg;
   gap: 0;
 }
@@ -17,7 +17,7 @@
   height: 1px;
   background-color: $border-color;
   margin: 0 $spacing-xs;
-  transition: background-color $transition-fast;
+  @include gt-transition(background-color);
 
   &--complete {
     background-color: $primary-color;
@@ -52,7 +52,7 @@
   border-radius: 50%;
   background-color: $white;
   color: $text-tertiary;
-  transition: background-color $transition-fast, color $transition-fast;
+  @include gt-transition(background-color, color);
 
   &--active {
     background-color: $primary-color;
@@ -71,7 +71,7 @@
   color: $text-tertiary;
   letter-spacing: 0.04em;
   white-space: nowrap;
-  transition: color $transition-fast;
+  @include gt-transition(color);
 }
 
 .tsrs-stepper__step--completed .tsrs-stepper__label {

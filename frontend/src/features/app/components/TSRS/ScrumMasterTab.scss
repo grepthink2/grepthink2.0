@@ -9,7 +9,7 @@
 .scrum-master-tab__card {
   background: $background;
   border-radius: $border-radius-md;
-  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--gt-shadow-card);
   overflow: hidden;
 }
 
@@ -75,7 +75,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: rgba($primary-color, 0.12);
+  background-color: var(--gt-primary-soft);
   color: $primary-color;
   flex-shrink: 0;
 }
@@ -132,7 +132,7 @@
   color: $text-primary;
   resize: vertical;
   outline: none;
-  transition: border-color $transition-fast;
+  @include gt-transition(border-color);
   box-sizing: border-box;
   line-height: 1.5;
 
@@ -144,7 +144,7 @@
   &:focus {
     outline: none;
     border-color: $primary-color;
-    box-shadow: 0 0 0 2px rgba($primary-color, 0.08);
+    box-shadow: 0 0 0 2px var(--gt-primary-soft);
   }
 
   &--mono {
@@ -154,11 +154,13 @@
 
   &--error {
     border-color: $error-color;
-    background-color: rgba($error-color, 0.06);
+    background-color: var(--gt-error-soft);
     animation: scrum-master-tab__shake 0.4s ease-in-out;
 
     &:focus {
       border-color: $error-color;
+      // Deliberately stronger than the default .08 ring above; see the
+      // identical comment in TeamFeedbackTab.scss.
       box-shadow: 0 0 0 2px rgba($error-color, 0.2);
     }
   }
