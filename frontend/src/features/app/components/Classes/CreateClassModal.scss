@@ -234,10 +234,19 @@
     outline: none;
   }
 
-  // NOT dead like the other legacy blocks in this file: the real
-  // <input type="file"> is display:none (below), so the global
-  // :focus-visible rule paints its ring on an invisible element. This
-  // :has() forwards a real ring onto the visible label instead.
+  // Correction verified via static-harness: this :has() selector can never
+  // actually match. The real <input type="file"> below is display:none, and
+  // a display:none element is removed from the focus order entirely — it
+  // can never become :focus-visible in the first place (unlike a merely
+  // visually-hidden-but-focusable input). So this rule is unreachable, same
+  // as the other legacy blocks in this file, just for a different reason
+  // (display:none prevents focus at all, rather than the global rule's
+  // !important suppressing a redundant outline). The box-shadow value here
+  // is at least correct/harmless, but the underlying fix — making the file
+  // input focusable (swap display:none for a visually-hidden-but-focusable
+  // technique) — is a structural CSS change out of scope for this sweep;
+  // the same pattern also exists in Profile.scss, ControlBar.scss, and
+  // Settings.scss's own hidden file inputs (flagged separately).
   &:has(.create-class-modal__file-input:focus-visible) {
     box-shadow: var(--gt-focus-ring);
   }
