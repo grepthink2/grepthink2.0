@@ -11,6 +11,7 @@ import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/routePermissions';
 import { MessageWidget } from '@features/messages/components/MessageWidget';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './AppView.scss';
 
 const AppView: React.FC = () => {
@@ -46,8 +47,14 @@ const AppView: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="app-view-loading">
-        <div className="loading-spinner">Loading...</div>
+      <div
+        className="app-view-loading"
+        aria-busy="true"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}
+      >
+        <div className="loading-spinner">
+          <Skeleton width={160} height={16} />
+        </div>
       </div>
     );
   }

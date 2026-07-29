@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './ClassManagement.scss';
 
 // Dev: relative path so the Vite proxy routes /api to the backend.
@@ -310,12 +311,18 @@ const ClassManagement: React.FC = () => {
 
           <div className="classes-list-section">
             <h2>My Classes</h2>
-            {loading && <p>Loading classes...</p>}
             {classes.length === 0 && !loading && (
               <p className="no-classes">No classes found.</p>
             )}
-            <div className="classes-list">
-              {classes.map((cls) => (
+            <div className="classes-list" aria-busy={loading}>
+              {loading &&
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div className="class-card" key={i}>
+                    <Skeleton width="50%" height={16} />
+                    <Skeleton width="80%" height={13} style={{ marginTop: 8 }} />
+                  </div>
+                ))}
+              {!loading && classes.map((cls) => (
                 <div
                   key={cls.id}
                   className={`class-card ${selectedClass?.id === cls.id ? 'selected' : ''}`}

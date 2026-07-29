@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import type { ApiContact } from '@/lib/api';
 import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { InitialsAvatar } from './InitialsAvatar';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 
 /**
  * Button + dropdown in the messages left-pane header that lets the user
@@ -129,10 +130,14 @@ export const NewConversationSearch: React.FC = () => {
             />
           </div>
 
-          <ul className="new-conv-search__results">
-            {loading && (
-              <li className="new-conv-search__status">Loading classmates…</li>
-            )}
+          <ul className="new-conv-search__results" aria-busy={loading}>
+            {loading &&
+              Array.from({ length: 3 }).map((_, i) => (
+                <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px' }}>
+                  <Skeleton circle height={36} />
+                  <Skeleton width="55%" height={13} />
+                </li>
+              ))}
             {error && !loading && (
               <li className="new-conv-search__status new-conv-search__status--error">
                 {error}

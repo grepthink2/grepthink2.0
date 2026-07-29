@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { SubmitFeedbackPayload } from '@/lib/api';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './FeedbackForm.scss';
 
 export interface FeedbackFormAssignment {
@@ -108,7 +109,24 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   };
 
   if (loading) {
-    return <div className="feedback-form feedback-form--loading">Loading…</div>;
+    return (
+      <div className="feedback-form" aria-busy="true">
+        <div className="feedback-form__card">
+          <div className="feedback-form__header">
+            <Skeleton width={220} height={22} />
+            <Skeleton width={120} height={13} style={{ marginTop: 8 }} />
+          </div>
+          <div className="feedback-form__questions">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div className="feedback-form__question" key={i}>
+                <Skeleton width="60%" height={13} />
+                <Skeleton height={72} radius={8} style={{ marginTop: 8 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (justSubmitted) {

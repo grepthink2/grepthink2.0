@@ -8,6 +8,7 @@ import { ChevronDown, Search, Shield, Users } from 'lucide-react';
 import { api, type ApiAssignmentTsrEntry } from '@/lib/api';
 import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
 import NonSubmittersList from '@features/app/components/NonSubmittersList/NonSubmittersList';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './TSRView.scss';
 
 export type TsrViewMode = 'about' | 'from';
@@ -404,7 +405,27 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
     [members],
   );
 
-  if (loading) return <div className="tsr-view tsr-view--loading">Loading TSR responses…</div>;
+  if (loading) {
+    return (
+      <div className="tsr-view" aria-busy="true">
+        <div className="tsr-view__controls">
+          <div className="tsr-view__control">
+            <Skeleton width={60} height={11} />
+            <Skeleton height={38} radius={7} style={{ marginTop: 6 }} />
+          </div>
+          <div className="tsr-view__control">
+            <Skeleton width={70} height={11} />
+            <Skeleton height={38} radius={7} style={{ marginTop: 6 }} />
+          </div>
+        </div>
+        <div className="tsr-view__table-card" style={{ marginTop: 16, padding: 16 }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} height={44} radius={6} style={{ marginTop: i === 0 ? 0 : 8 }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className="tsr-view tsr-view--error"><p>{error}</p></div>;
 
   const focalName = focalMember?.name ?? 'this member';

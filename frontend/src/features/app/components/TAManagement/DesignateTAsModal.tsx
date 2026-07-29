@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { api, type ApiClassTa } from '@/lib/api';
 import { getInitials } from '@features/app/utils/memberUtils';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './DesignateTAsModal.scss';
 
 interface DesignateTAsModalProps {
@@ -86,9 +87,20 @@ const DesignateTAsModal: React.FC<DesignateTAsModalProps> = ({ isOpen, classId, 
         </div>
         <p className="designate-modal__hint">Designate enrolled students as TAs for this class. TAs can run meetings and take attendance for teams they're assigned to.</p>
 
-        <div className="designate-modal__list">
+        <div className="designate-modal__list" aria-busy={loading}>
           {loading ? (
-            <p className="designate-modal__empty">Loading students…</p>
+            Array.from({ length: 4 }).map((_, i) => (
+              <div className="designate-modal__row" key={i}>
+                <span className="designate-modal__avatar" aria-hidden="true">
+                  <Skeleton circle height={32} />
+                </span>
+                <div className="designate-modal__person">
+                  <Skeleton width="50%" height={13} />
+                  <Skeleton width="70%" height={11} style={{ marginTop: 4 }} />
+                </div>
+                <Skeleton width={72} height={28} radius={6} />
+              </div>
+            ))
           ) : rows.length === 0 ? (
             <p className="designate-modal__empty">No enrolled students yet.</p>
           ) : (

@@ -5,6 +5,7 @@ import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import type { ApiAssignment } from '@/lib/api';
 import TSRView from '@features/app/components/TSRS/TSRView';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './TAReview.scss';
 
 const TAReview: React.FC = () => {
@@ -68,7 +69,14 @@ const TAReview: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="ta-review"><p className="ta-review__hint">Loading…</p></div>;
+    return (
+      <div className="ta-review" aria-busy="true">
+        <header className="ta-review__intro">
+          <Skeleton width={160} height={20} />
+          <Skeleton width={280} height={13} style={{ marginTop: 8 }} />
+        </header>
+      </div>
+    );
   }
 
   if (error) {

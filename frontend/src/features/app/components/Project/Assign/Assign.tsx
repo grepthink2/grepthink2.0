@@ -13,6 +13,7 @@ import StudentsPanel from './StudentsPanel';
 import ProjectAssignmentPanel from './ProjectAssignmentPanel';
 import type { AssignProject, ProjectPreference, Student } from './assignTypes';
 import { buildWorkWithGroups, compareStudentDisplayName } from './workWithGroups';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './Assign.scss';
 
 type Assignments = Record<string, (string | null)[]>;
@@ -475,7 +476,30 @@ const Assign: React.FC = () => {
       />
 
       {loading ? (
-        <p>Loading staffing data…</p>
+        <div className="assign-page__columns" aria-busy="true">
+          {[0, 1].map((col) => (
+            <div
+              key={col}
+              style={{
+                border: '1px solid var(--gt-border)',
+                borderRadius: 'var(--gt-radius-md)',
+                background: 'var(--gt-surface)',
+                padding: 'var(--gt-space-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--gt-space-sm)',
+              }}
+            >
+              <Skeleton width="50%" height={16} />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                  <Skeleton circle height={28} />
+                  <Skeleton width="55%" height={13} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="assign-page__columns">
           <StudentsPanel

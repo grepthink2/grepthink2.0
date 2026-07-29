@@ -7,6 +7,7 @@ import type { ApiStaffingProjectRank } from '@/lib/api';
 import AssignSummaryBar from './AssignSummaryBar';
 import StaffingTable from './StaffingTable';
 import type { RankedStaffingProject } from './assignTypes';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './Staffing.scss';
 
 /**
@@ -158,7 +159,21 @@ const Staffing: React.FC = () => {
       />
 
       {loading ? (
-        <p>Loading project rankings…</p>
+        <div className="staffing-table" aria-busy="true">
+          <table>
+            <tbody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr className="staffing-table__row" key={i}>
+                  <td className="staffing-table__td staffing-table__td--name"><Skeleton width="60%" height={13} /></td>
+                  <td className="staffing-table__td staffing-table__td--seats"><Skeleton width={48} height={13} style={{ margin: '0 auto' }} /></td>
+                  <td className="staffing-table__td staffing-table__td--center"><Skeleton width={36} height={13} style={{ margin: '0 auto' }} /></td>
+                  <td className="staffing-table__td staffing-table__td--center"><Skeleton width={36} height={13} style={{ margin: '0 auto' }} /></td>
+                  <td className="staffing-table__td staffing-table__td--center"><Skeleton width={36} height={13} style={{ margin: '0 auto' }} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : error ? (
         <p className="staffing-page__error">{error}</p>
       ) : (
