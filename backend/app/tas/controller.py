@@ -844,6 +844,17 @@ def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries:
     role='instructor' → single overall, by the instructor.
     Rows are replaced per (student, role); students not in the payload keep
     their existing rows.
+
+    Explicitly clearing a role's defining score(s) — all of product/team/scrum
+    together for 'home', or 'overall' for 'review'/'instructor' — deletes that
+    student's row for this role instead of upserting an all-null placeholder.
+    An all-null row would be indistinguishable from "never scored" everywhere
+    else that reads this table (the detail view, team averages), so there is
+    no reason to keep it around; deleting also makes a clear idempotent (no
+    row to delete is a no-op, not an error). A partial null combination within
+    the Home TA triple (some filled, some blank) is still rejected — clearing
+    is all-three-or-nothing, matching the same "need all three" rule saving
+    already enforces.
     """
     try:
         if role not in SCORE_ROLES:
@@ -882,16 +893,28 @@ def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries:
             if role == "home":
                 if entry.get("overall") is not None:
                     raise HTTPException(status_code=400, detail="Home TA rows carry category scores, not an overall")
-                values = {f: _round_score(entry.get(f), f) if entry.get(f) is not None else None
-                          for f in _HOME_FIELDS}
-                if any(values[f] is None for f in _HOME_FIELDS):
+                raw = {f: entry.get(f) for f in _HOME_FIELDS}
+                if all(raw[f] is None for f in _HOME_FIELDS):
+                    # Explicit clear: product/team/scrum blanked together.
+                    client.table(SCORE_TABLE).delete().eq(
+                        "project_id", str(project_id)
+                    ).eq("student_id", student_id).eq("role", role).execute()
+                    saved += 1
+                    continue
+                if any(raw[f] is None for f in _HOME_FIELDS):
                     raise HTTPException(status_code=400, detail="Home TA scores need product, team, and scrum")
+                values = {f: _round_score(raw[f], f) for f in _HOME_FIELDS}
                 values["overall"] = None
             else:
                 if any(entry.get(f) is not None for f in _HOME_FIELDS):
                     raise HTTPException(status_code=400, detail="Only the Home TA enters category scores")
                 if entry.get("overall") is None:
-                    raise HTTPException(status_code=400, detail="An overall score is required")
+                    # Explicit clear.
+                    client.table(SCORE_TABLE).delete().eq(
+                        "project_id", str(project_id)
+                    ).eq("student_id", student_id).eq("role", role).execute()
+                    saved += 1
+                    continue
                 values = {f: None for f in _HOME_FIELDS}
                 values["overall"] = _round_score(entry.get("overall"), "overall")
 

@@ -183,13 +183,16 @@ def test_instructor_overall_gating(db):
 # --------------------------------------------------------------------------
 
 def test_score_bounds_and_shape_validation(db):
+    # NOTE: a bare {"student_id": S1} for 'review'/'instructor' (no "overall"
+    # key at all) is deliberately NOT a bad case here — a missing/null overall
+    # is now a valid "clear this row" request (see
+    # test_clearing_a_never_scored_student_is_a_noop), not a shape error.
     bad_cases = [
         ("home", {"student_id": S1, "product": 5.5, "team": 4.0, "scrum": 4.0}),   # out of range
         ("home", {"student_id": S1, "product": 0.9, "team": 4.0, "scrum": 4.0}),   # out of range
-        ("home", {"student_id": S1, "product": 4.0, "team": 4.0}),                  # missing scrum
+        ("home", {"student_id": S1, "product": 4.0, "team": 4.0}),                  # partial null — missing scrum
         ("home", {"student_id": S1, "product": 4.0, "team": 4.0, "scrum": 4.0, "overall": 4.0}),  # overall not allowed
         ("review", {"student_id": S1, "overall": 4.0, "product": 4.0}),             # category not allowed
-        ("review", {"student_id": S1}),                                             # missing overall
     ]
     for role, entry in bad_cases:
         caller = TA1 if role == "home" else TA2
@@ -205,6 +208,61 @@ def test_score_bounds_and_shape_validation(db):
 def test_scores_rounded_to_tenths(db):
     tas.save_final_review_scores(TA2, P1, "review", [{"student_id": S1, "overall": 4.26}])
     assert _score_rows(db, "review")[0]["overall"] == 4.3
+
+
+def test_home_scores_clear_deletes_row(db):
+    """Blanking a previously-saved Home TA row (all three fields null) must
+    delete that row server-side, not silently keep the old values."""
+    tas.save_final_review_scores(TA1, P1, "home", [
+        {"student_id": S1, "product": 4.5, "team": 4.0, "scrum": 3.5, "notes": "solid"},
+    ])
+    assert len(_score_rows(db, "home")) == 1
+
+    out = tas.save_final_review_scores(TA1, P1, "home", [
+        {"student_id": S1, "product": None, "team": None, "scrum": None},
+    ])
+    assert out["saved"] == 1
+    assert _score_rows(db, "home") == []
+
+
+def test_review_and_instructor_overall_clear_deletes_row(db):
+    """Blanking a previously-saved overall (review or instructor) must delete
+    that role's row, not silently keep the old value."""
+    tas.save_final_review_scores(TA2, P1, "review", [{"student_id": S1, "overall": 4.2}])
+    assert len(_score_rows(db, "review")) == 1
+    tas.save_final_review_scores(TA2, P1, "review", [{"student_id": S1, "overall": None}])
+    assert _score_rows(db, "review") == []
+
+    tas.save_final_review_scores(INSTR, P1, "instructor", [{"student_id": S1, "overall": 3.9}])
+    assert len(_score_rows(db, "instructor")) == 1
+    tas.save_final_review_scores(INSTR, P1, "instructor", [{"student_id": S1, "overall": None}])
+    assert _score_rows(db, "instructor") == []
+
+
+def test_clearing_a_never_scored_student_is_a_noop(db):
+    """An all-null entry for a student with no existing row is a harmless
+    no-op, not a validation error — clearing is idempotent."""
+    out = tas.save_final_review_scores(TA1, P1, "home", [
+        {"student_id": S1, "product": None, "team": None, "scrum": None},
+    ])
+    assert out["saved"] == 1
+    assert _score_rows(db, "home") == []
+
+    out = tas.save_final_review_scores(TA2, P1, "review", [{"student_id": S1, "overall": None}])
+    assert out["saved"] == 1
+    assert _score_rows(db, "review") == []
+
+
+def test_home_scores_partial_null_still_rejected(db):
+    """Clearing is all-three-or-nothing for Home TA rows — a partial null
+    combination (some filled, some blank) is still a validation error, not a
+    silent partial clear."""
+    with pytest.raises(HTTPException) as exc:
+        tas.save_final_review_scores(TA1, P1, "home", [
+            {"student_id": S1, "product": 4.0, "team": None, "scrum": None},
+        ])
+    assert exc.value.status_code == 400
+    assert _score_rows(db, "home") == []
 
 
 def test_scores_require_project_membership(db):
