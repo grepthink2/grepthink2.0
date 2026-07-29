@@ -36,7 +36,7 @@
     font-family: $primary-font;
     font-size: 14px;
     color: $error-color;
-    background-color: rgba($error-color, 0.1);
+    background-color: var(--gt-error-soft);
     padding: 12px;
     border-radius: 8px;
     margin: 16px 0 0;

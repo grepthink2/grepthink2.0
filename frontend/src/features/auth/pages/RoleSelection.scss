@@ -44,8 +44,10 @@
 }
 
 .error {
-  background-color: rgba(220, 38, 38, 0.08);
-  color: #b91c1c;
+  background-color: var(--gt-error-soft);
+  color: var(--gt-error-text);
+  // Border alpha (.2) sits below the 0.35 solid-conversion threshold and
+  // isn't a background fill either — left as a bespoke literal.
   border: 1px solid rgba(220, 38, 38, 0.2);
   border-radius: $border-radius-sm;
   padding: 10px 12px;
@@ -71,19 +73,22 @@
   justify-content: center;
   gap: 10px;
   font-weight: $font-weight-medium;
+  // 0.25s doesn't match either gt-transition mixin's duration (0.2s/0.3s) —
+  // left as a literal rather than nudging the timing.
   transition: all 0.25s ease;
 
   svg {
     flex-shrink: 0;
     stroke-width: 2;
     color: $text-primary;
+    // 0.25s doesn't match either gt-transition mixin's duration.
     transition: all 0.25s ease;
   }
 
   &:hover {
     background-color: $button-secondary-hover;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--gt-shadow-hover);
 
     svg {
       color: $text-dark;
@@ -93,6 +98,9 @@
 
   &:active {
     transform: translateY(0);
+    // Deliberately smaller than the :hover shadow above (a "press down"
+    // pair); no single --gt-shadow-* token sits this close, and matching it
+    // to --gt-shadow-hover would erase the hover/active depth distinction.
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   }
 }
@@ -158,5 +166,5 @@
 .arrow-icon {
   width: 16px;
   height: 16px;
-  transition: transform $transition-fast;
+  @include gt-transition(transform);
 }

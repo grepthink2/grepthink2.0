@@ -87,7 +87,7 @@
     color: $text-primary;
     font-family: $primary-font;
     font-size: 14px;
-    transition: all $transition-medium;
+    @include gt-transition-medium(border-color);
     width: 100%;
     box-sizing: border-box;
 
@@ -99,6 +99,8 @@
 }
 
 .inputReadonly {
+  // Gray tint — grays have no --gt-*-soft pair, and 0.35 is well above the
+  // fill-conversion band anyway; left as a bespoke rgba on the scss var.
   background: rgba($border-color, 0.35);
   cursor: default;
 
@@ -123,7 +125,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 500;
-  transition: background-color $transition-medium;
+  @include gt-transition-medium(background-color);
 
   &:hover {
     background-color: $primary-hover;
@@ -139,7 +141,7 @@
 .error {
   font-family: $primary-font;
   color: $error-color;
-  background-color: rgba($error-color, 0.1);
+  background-color: var(--gt-error-soft);
   padding: 10px;
   border-radius: 8px;
   font-size: 14px;
