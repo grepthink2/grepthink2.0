@@ -55,10 +55,8 @@ $quick-purple-hover: #6a3382;
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-    outline-offset: 2px;
-  }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 
   &--join {
     background-color: $accent-color;
