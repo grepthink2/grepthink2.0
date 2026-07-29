@@ -12,6 +12,14 @@
  * non-token color this script exists to catch) — tracked as a possible
  * follow-up, not attempted here.
  *
+ * This script is the ENTIRE `lint:design` gate. An oxlint half was vendored
+ * briefly and removed by the final branch review: the only rules oxlint could
+ * actually run (`no-restricted-imports` on DS-component paths, an empty
+ * `forbid-elements`) matched zero files in this repo — the globs referenced a
+ * component layout (`components/primitives/**` etc.) that doesn't exist here.
+ * If/when the DS component package is vendored in, resurrect that half from
+ * commit 26083fb with real paths.
+ *
  * Origin: the GrepThink Design System export ships `_adherence.oxlintrc.json`,
  * an oxlint config whose real substance — a `no-restricted-syntax` block with
  * ~88 selectors (raw hex/px/font-family literals, plus per-component JSX
