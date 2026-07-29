@@ -130,6 +130,17 @@ export const FINAL_REVIEW_SECTIONS: NotesSection[] = [
   },
 ];
 
+// NOT delegated to `reviewDates.ts`'s `formatPacificTimestamp`, even though
+// that formatter exists specifically to unify date idioms elsewhere
+// (RosterTimelineModal): the output shapes differ (day-only / time-only
+// fragments here vs. one fused "date, time PT" string there) and, more
+// importantly, the semantics differ. A final review is a meeting the
+// viewer has to show up to, so it must render in the *viewer's own*
+// timezone (unlabeled) — pinning it to Pacific would show the wrong wall
+// clock time to a non-Pacific viewer. `formatPacificTimestamp` is for
+// historical roster records where the opposite is true. Forking would be
+// wrong here; delegating would also be wrong. Left as-is intentionally.
+
 /** "Wednesday, July 22" (viewer's locale/timezone). */
 export const formatReviewDay = (d: Date) =>
   d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
