@@ -1,11 +1,11 @@
 @use '@styles/index.scss' as *;
 
 .sidebar {
-  background-color: #018156;
+  background-color: var(--gt-primary);
   width: 256px;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  @include gt-transition-medium(width);
   position: fixed;
   top: 0;
   bottom: 0;
@@ -34,7 +34,7 @@
   .sidebar {
     width: 264px;
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
+    @include gt-transition-medium(transform);
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.35);
 
     &.mobile-open {
@@ -78,14 +78,14 @@
 .collapse-button {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--gt-text-inverse);
   cursor: pointer;
   padding: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  transition: background-color 0.2s;
+  @include gt-transition(background-color);
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.1);
@@ -103,21 +103,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #eeeeee;
+  background-color: var(--gt-canvas);
   border-radius: 8px;
   padding: 0.625rem 0.875rem;
   cursor: pointer;
-  transition: background-color 0.2s;
+  @include gt-transition(background-color);
   border: none;
-  color: #000000;
+  color: var(--gt-text-primary);
 
   &:hover {
-    background-color: #e0e0e0;
+    background-color: var(--gt-gray-200);
   }
 
   .rotated {
     transform: rotate(180deg);
-    transition: transform 0.2s;
+    @include gt-transition(transform);
   }
 }
 
@@ -133,7 +133,7 @@
   left: 0;
   right: 0;
   margin-top: 0.5rem;
-  background-color: #ffffff;
+  background-color: var(--gt-surface);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
@@ -144,7 +144,7 @@
 .class-selector-empty {
   padding: 1rem;
   text-align: center;
-  color: #666;
+  color: var(--gt-text-tertiary);
   font-size: 0.875rem;
 }
 
@@ -159,14 +159,14 @@
   background: transparent;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.2s;
+  @include gt-transition(background-color);
 
   &:hover {
-    background-color: #f5f5f5;
+    background-color: var(--gt-gray-50);
   }
 
   &.active {
-    background-color: #e8f5e9;
+    background-color: var(--gt-green-50);
   }
 
   &:first-child {
@@ -181,12 +181,12 @@
 .class-item-name {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #000000;
+  color: var(--gt-text-primary);
 }
 
 .class-item-code {
   font-size: 0.75rem;
-  color: #666666;
+  color: var(--gt-text-tertiary);
 }
 
 /* Navigation */
@@ -201,14 +201,28 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 
-  /* Hide scrollbar for Chrome, Safari and Opera */
+  // Scroll affordance: keep the rail calm at rest, but stop hiding that it
+  // scrolls entirely — a thin thumb fades in on hover instead of the
+  // previous blanket hide.
   &::-webkit-scrollbar {
-    display: none;
+    width: 4px;
   }
 
-  /* Hide scrollbar for IE, Edge and Firefox */
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 2px;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  &:hover {
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  }
 }
 
 .sidebar-section {
@@ -220,7 +234,7 @@
 }
 
 .section-title {
-  color: #ffffff;
+  color: var(--gt-text-inverse);
   font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -253,10 +267,10 @@
   padding: 0.75rem 0.75rem;
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--gt-text-inverse);
   font-size: 0.8125rem;
   cursor: pointer;
-  transition: all 0.2s;
+  @include gt-transition(background-color, color);
   text-align: left;
   border-radius: 8px; // Rounded corners for the button
   white-space: nowrap;
@@ -277,7 +291,7 @@
   &__badge {
     margin-left: auto;
     background: #ff3b30; // legacy badge red — kept verbatim per design spec
-    color: #ffffff;
+    color: var(--gt-text-inverse);
     font-size: 0.7rem;
     font-weight: 700;
     padding: 1px 6px;
@@ -292,8 +306,8 @@
   }
 
   &.active {
-    background-color: #eeeeee;
-    color: #000000;
+    background-color: var(--gt-canvas);
+    color: var(--gt-text-primary);
     font-weight: 500;
 
     .icon-svg {
@@ -309,7 +323,7 @@
       transform: translateY(-50%);
       width: 6px;
       height: 95%; // Height of the half pill
-      background-color: #eeeeee; // Same as button background
+      background-color: var(--gt-canvas); // Same as button background
       border-radius: 0 8px 8px 0; // Rounded on the right side (facing the button)
       z-index: 1;
     }
@@ -329,7 +343,7 @@
 /* Expandable item (chevron + nested children, e.g. TA Review → TSRs / Final Reviews) */
 .sidebar-item--group .sidebar-item__chevron {
   margin-left: auto;
-  transition: transform 0.2s;
+  @include gt-transition(transform);
   flex-shrink: 0;
 
   &.rotated {
@@ -337,19 +351,46 @@
   }
 }
 
+// Animated expand/collapse: the grid-rows technique (0fr closed → 1fr open)
+// transitions height without knowing the content's height up front. The
+// wrapper is always mounted (while the sidebar itself isn't collapsed) so
+// there's something to animate between — React never unmounts the child
+// list on toggle, only the CSS state changes.
+.sidebar-subitems-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  @include gt-transition-medium(grid-template-rows);
+
+  &.open {
+    grid-template-rows: 1fr;
+  }
+}
+
 .sidebar-subitems {
   list-style: none;
   margin: 0;
   padding: 0 0 0 1.65rem; // Indent children under the parent's label
+  // Required by the grid-rows technique above: this is the grid item whose
+  // track actually shrinks to 0, so it must clip its own content (otherwise
+  // the "collapsed" list would just render in full, un-clipped) and must be
+  // allowed to shrink past its content's intrinsic height (grid items default
+  // to a content-based min-height, same footgun as flex items).
+  overflow: hidden;
+  min-height: 0;
 
   .sidebar-item--child {
     padding: 0.5rem 0.75rem;
     font-size: 0.8125rem;
 
-    // Children reuse the half-pill indicator; the list's extra left padding
-    // shifts it, so pull it back to the sidebar edge.
+    // Children reuse the half-pill indicator, but unlike the top-level pill
+    // (which escapes all the way past the sidebar's own edge) this one can't
+    // — the overflow:hidden above (needed for the collapse animation) clips
+    // anything crossing this ul's own left border edge. -1.5rem is the
+    // deepest safe reach within the ul's 1.65rem left padding: a bit short of
+    // flush with the rail edge like the top-level pill, but still rendered
+    // fully over the dark rail background instead of getting clipped away.
     &.active::before {
-      left: -2.85rem;
+      left: -1.5rem;
     }
   }
 }
