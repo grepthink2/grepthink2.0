@@ -384,13 +384,12 @@
 
     // Children reuse the half-pill indicator, but unlike the top-level pill
     // (which escapes all the way past the sidebar's own edge) this one can't
-    // — the overflow:hidden above (needed for the collapse animation) clips
-    // anything crossing this ul's own left border edge. -1.5rem is the
-    // deepest safe reach within the ul's 1.65rem left padding: a bit short of
-    // flush with the rail edge like the top-level pill, but still rendered
-    // fully over the dark rail background instead of getting clipped away.
+    // cross the ul's border edge — the overflow:hidden above (needed for the
+    // collapse animation) clips anything past it. -1.65rem lands exactly ON
+    // that edge (overflow clips past the edge, not at it), which is the same
+    // rail-flush position as the top-level pill.
     &.active::before {
-      left: -1.5rem;
+      left: -1.65rem;
     }
   }
 }

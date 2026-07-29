@@ -41,8 +41,9 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
     const classId = role === 'student' ? selectedClass?.id : undefined;
     void (async () => {
       if (!classId) {
-        // Resolved in the async tick (not the effect body) so the lint-guarded
-        // cascading-render pattern is avoided; net behavior is identical.
+        // Inside the IIFE so it's no longer syntactically the effect body
+        // (satisfies react-hooks/set-state-in-effect); this branch still runs
+        // before any await, so timing is unchanged.
         if (!cancelled) setIsTaForClass(false);
         return;
       }
@@ -235,7 +236,14 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
                       <button
                         className={`sidebar-item sidebar-item--group ${collapsed && anyChildActive ? 'active' : ''}`}
                         // Collapsed rail has nowhere to show children — go to the first one.
-                        onClick={() => (collapsed ? handleNavigation(item.children![0].path) : toggleGroup(item.path))}
+                        onClick={() => {
+                          if (collapsed) return handleNavigation(item.children![0].path);
+                          // Forced open while a child is active — a toggle here can't
+                          // change anything now, but the stored flip would wrongly keep
+                          // the group expanded after navigating away. No-op instead.
+                          if (anyChildActive) return;
+                          toggleGroup(item.path);
+                        }}
                         title={collapsed ? item.label : undefined}
                         aria-expanded={collapsed ? undefined : open}
                         aria-controls={collapsed ? undefined : groupId}
