@@ -29,10 +29,14 @@ const RosterTimelineModal: React.FC<RosterTimelineModalProps> = ({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  // Deliberately does NOT gate on `loading`: the fetch effect below already
+  // guards against a post-close state update via its `cancelled` flag, so
+  // closing mid-load is safe. Gating here made Escape/the close button a
+  // no-op while a request was in flight — a WCAG 2.1.2 keyboard trap (with
+  // the focus trap above, Tab couldn't escape the dialog either).
   const handleClose = useCallback(() => {
-    if (loading) return;
     onClose();
-  }, [loading, onClose]);
+  }, [onClose]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

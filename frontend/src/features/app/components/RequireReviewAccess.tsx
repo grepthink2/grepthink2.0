@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
@@ -16,8 +16,17 @@ type GuardStatus = 'checking' | 'allow' | 'deny';
  * it, a plain student who navigates (or has an old link) straight to the
  * route reaches the page and gets a raw backend error instead of a friendly
  * bounce.
+ *
+ * A pathless layout route (`<Route element={<RequireReviewAccess />}>`
+ * wrapping both final-reviews routes, rendering `<Outlet />` on allow) —
+ * NOT a per-route wrapper around `{children}`. Wrapping each route
+ * individually would mount a fresh RequireReviewAccess (and re-run its
+ * enrollment-role fetch) on every navigation between the list and detail
+ * pages, even though both share the exact same access verdict; as a layout
+ * route it stays mounted across that navigation so only the nested
+ * `<Outlet />` content changes.
  */
-export const RequireReviewAccess: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const RequireReviewAccess: React.FC = () => {
   const { role } = useAuth();
   const { selectedClass, loading: classesLoading } = useClass();
   const [status, setStatus] = useState<GuardStatus>(role === 'instructor' ? 'allow' : 'checking');
@@ -71,7 +80,7 @@ export const RequireReviewAccess: React.FC<{ children: React.ReactNode }> = ({ c
   if (status === 'deny') {
     return <Navigate to="/app" replace />;
   }
-  return <>{children}</>;
+  return <Outlet />;
 };
 
 export default RequireReviewAccess;

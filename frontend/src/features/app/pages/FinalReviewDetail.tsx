@@ -146,7 +146,11 @@ const FinalReviewDetail: React.FC = () => {
    * something any render reads directly. */
   const columnUndoRef = useRef<Partial<Record<SetAllColumn, Record<string, string>>>>({});
 
-  const seedDrafts = useCallback((d: ApiFinalReviewDetail) => {
+  /** Reseeds ONLY the score-side drafts from fresh server data. Split out
+   * from seedDrafts so a partial save-all failure can refresh whichever
+   * half actually landed without touching the other half's still-unsaved
+   * draft/dirty flag (see handleSaveAll). */
+  const seedScoreDrafts = useCallback((d: ApiFinalReviewDetail) => {
     const byRole = (role: FinalReviewScoreRole, sid: string) =>
       d.scores.find((s) => s.role === role && s.student_id === sid);
 
@@ -165,7 +169,14 @@ const FinalReviewDetail: React.FC = () => {
     setReviewDraft(review);
     setInstrDraft(instr);
     setScoresDirty(false);
+    setSetAllDraft({});
+    setUndoColumn(null);
+    columnUndoRef.current = {};
+  }, []);
 
+  /** Reseeds ONLY the notes-side drafts from fresh server data (see
+   * seedScoreDrafts above). */
+  const seedNoteDrafts = useCallback((d: ApiFinalReviewDetail) => {
     const content = (d.notes?.content ?? {}) as Record<string, unknown>;
     const fields: Record<string, string> = {};
     for (const section of FINAL_REVIEW_SECTIONS) {
@@ -182,10 +193,12 @@ const FinalReviewDetail: React.FC = () => {
     setNotesDraft(fields);
     setMemberDraft(members);
     setNotesDirty(false);
-    setSetAllDraft({});
-    setUndoColumn(null);
-    columnUndoRef.current = {};
   }, []);
+
+  const seedDrafts = useCallback((d: ApiFinalReviewDetail) => {
+    seedScoreDrafts(d);
+    seedNoteDrafts(d);
+  }, [seedScoreDrafts, seedNoteDrafts]);
 
   const loadDetail = useCallback(async () => {
     if (!projectId) return;
@@ -209,6 +222,16 @@ const FinalReviewDetail: React.FC = () => {
       cancelled = true;
     };
   }, [loadDetail]);
+
+  // Auto-dismiss the savebar's "Saved" confirmation ~2.5s after it appears.
+  // Re-running the effect (a new savedFlash value, e.g. one save's flash
+  // replaced by the next) cleans up the previous timer before arming a new
+  // one; unmount cleans it up too.
+  useEffect(() => {
+    if (!savedFlash) return;
+    const id = window.setTimeout(() => setSavedFlash(null), 2500);
+    return () => window.clearTimeout(id);
+  }, [savedFlash]);
 
   const viewerRole = detail?.viewer_role ?? 'ta';
   const canEditHome = viewerRole === 'home' || viewerRole === 'instructor';
@@ -304,11 +327,36 @@ const FinalReviewDetail: React.FC = () => {
   const savedRow = (role: FinalReviewScoreRole, sid: string) =>
     detail?.scores.find((s) => s.role === role && s.student_id === sid);
 
+  /** True when a student's role-defining score(s) are fully blanked, there's
+   * a saved score to clear, AND that role's note (the draft, which is
+   * seeded from the saved value unless the viewer has edited it) is
+   * non-empty. Clearing deletes the WHOLE backend row — including its
+   * `notes` column — so a clear that would silently drop a note is blocked
+   * instead of sent (see the docstring on the backend's
+   * save_final_review_scores). */
+  const clearBlockedByNote = (role: FinalReviewScoreRole, sid: string): boolean => {
+    const saved = savedRow(role, sid);
+    if (role === 'home') {
+      const d = homeDraft[sid];
+      if (!d) return false;
+      const filled = [d.product, d.team, d.scrum].filter((v) => v.trim() !== '').length;
+      const hadSavedScore = !!saved && (saved.product != null || saved.team != null || saved.scrum != null);
+      return filled === 0 && hadSavedScore && d.notes.trim() !== '';
+    }
+    const draft = role === 'review' ? reviewDraft[sid] : instrDraft[sid];
+    if (!draft) return false;
+    return draft.overall.trim() === '' && saved?.overall != null && draft.notes.trim() !== '';
+  };
+
   /** Builds the score-save jobs from current drafts. Returns null (and sets
    * actionError) on a validation failure; otherwise an array — possibly
    * empty — of per-role upserts. Blanking a previously-saved Home TA triple
    * or overall sends explicit nulls so the backend clears that row instead
-   * of silently keeping the old value. */
+   * of silently keeping the old value — UNLESS that would also drop a
+   * non-empty note (clearBlockedByNote), in which case the student is left
+   * out of the entries entirely (their saved row survives unchanged). The
+   * scores save is disabled from the UI while any row is note-blocked
+   * (see scoresBlocked below); this is defense in depth. */
   const buildScoreJobs = (): { role: FinalReviewScoreRole; entries: FinalReviewScoreEntry[] }[] | null => {
     if (!detail) return null;
     const jobs: { role: FinalReviewScoreRole; entries: FinalReviewScoreEntry[] }[] = [];
@@ -322,11 +370,12 @@ const FinalReviewDetail: React.FC = () => {
         const filled = [d.product, d.team, d.scrum].filter((v) => v.trim() !== '').length;
         if (filled === 0) {
           // All three blank — only worth an entry if there's a saved score
-          // to clear (explicit null tells the backend to delete the row).
+          // to clear (explicit null tells the backend to delete the row),
+          // and only if that wouldn't also silently drop a non-empty note.
           const saved = savedRow('home', m.user_id);
           const hadSavedScore = !!saved && (saved.product != null || saved.team != null || saved.scrum != null);
-          if (hadSavedScore) {
-            entries.push({ student_id: m.user_id, product: null, team: null, scrum: null, notes: d.notes.trim() || null });
+          if (hadSavedScore && d.notes.trim() === '') {
+            entries.push({ student_id: m.user_id, product: null, team: null, scrum: null, notes: null });
           }
           continue;
         }
@@ -354,8 +403,8 @@ const FinalReviewDetail: React.FC = () => {
         if (!d) continue;
         if (d.overall.trim() === '') {
           const saved = savedRow(role, m.user_id);
-          if (saved?.overall != null) {
-            entries.push({ student_id: m.user_id, overall: null, notes: d.notes.trim() || null });
+          if (saved?.overall != null && d.notes.trim() === '') {
+            entries.push({ student_id: m.user_id, overall: null, notes: null });
           }
           continue;
         }
@@ -438,17 +487,48 @@ const FinalReviewDetail: React.FC = () => {
     const jobs = buildScoreJobs();
     if (jobs === null) return;
     setSaving(true);
+    // Tracks which half actually reached the server, so a failure partway
+    // through only refreshes/resets what's true — never the half that's
+    // still just a local draft.
+    let scoresSaved = false;
     try {
-      if (jobs.length) await runScoreJobs(jobs);
+      if (jobs.length) {
+        await runScoreJobs(jobs);
+        scoresSaved = true;
+      }
       await api.saveFinalReviewNotes(projectId, buildNotesContent(), FINAL_REVIEW_TEMPLATE_VERSION);
       await loadDetail();
-      setSavedFlash('All changes saved');
+      if (scoresSaved) {
+        setSavedFlash('All changes saved');
+      } else {
+        // scoresDirty was true (that's the only way "Save all" shows at
+        // all) but there was nothing meaningful to actually send — say so
+        // instead of implying the score edits were part of "All changes
+        // saved" when nothing scores-related was ever persisted.
+        setSavedFlash('Notes saved');
+        setActionError('Scores: nothing to save yet — enter at least one score.');
+      }
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Failed to save changes');
-      // Whichever half landed before the failure is already persisted —
-      // resync so drafts/dirty flags reflect the server instead of risking
-      // a duplicate re-save of the part that already went through.
-      await loadDetail().catch(() => undefined);
+      if (scoresSaved) {
+        // Scores landed server-side, notes didn't — refresh ONLY the
+        // scores half so it reflects what actually saved, but leave the
+        // notes draft/dirty flag exactly as the user left them. A full
+        // loadDetail()/seedDrafts() here would reseed notes too, silently
+        // discarding whatever the user had drafted there.
+        try {
+          const d = await api.getFinalReviewDetail(projectId);
+          setDetail(d);
+          seedScoreDrafts(d);
+        } catch {
+          // Best-effort resync only — scores are already saved server-side
+          // regardless of whether this particular refetch succeeds.
+        }
+      }
+      // If scores themselves never landed (scoresSaved === false), nothing
+      // reached the server at all — leave every draft/dirty flag exactly as
+      // the user left them, matching handleSaveScores'/handleSaveNotes' own
+      // failure paths (no loadDetail() call on failure).
     } finally {
       setSaving(false);
     }
@@ -509,15 +589,37 @@ const FinalReviewDetail: React.FC = () => {
       : [],
   );
   const incompleteHomeCount = homeIncompleteMembers.size;
-  const scoresBlocked = incompleteHomeCount > 0;
+
+  // A student whose score(s) are blanked-for-clear but whose note (draft or
+  // saved) is still non-empty — clearing would delete that note along with
+  // the row, so the clear is blocked (and the scores save disabled) instead
+  // of silently dropping it. Checked per editable role.
+  const noteBlockedMembers = new Set(
+    detail.members
+      .filter((m) => (
+        (canEditHome && clearBlockedByNote('home', m.user_id))
+        || (canEditReview && clearBlockedByNote('review', m.user_id))
+        || (canEditInstructor && clearBlockedByNote('instructor', m.user_id))
+      ))
+      .map((m) => m.user_id),
+  );
+  const noteBlockedCount = noteBlockedMembers.size;
+  const scoresBlocked = incompleteHomeCount > 0 || noteBlockedCount > 0;
 
   const canSaveScores = canEditHome || canEditReview || canEditInstructor;
   const showScoresBtn = scoresDirty && canSaveScores;
   const showNotesBtn = notesDirty && canEditNotes;
   const showCombined = showScoresBtn && showNotesBtn && !scoresBlocked;
   const showSavebar = scoresDirty || notesDirty || !!savedFlash;
+  const blockReasons: string[] = [];
+  if (incompleteHomeCount > 0) {
+    blockReasons.push(`${incompleteHomeCount} ${incompleteHomeCount === 1 ? 'student' : 'students'} incomplete`);
+  }
+  if (noteBlockedCount > 0) {
+    blockReasons.push(`${noteBlockedCount} ${noteBlockedCount === 1 ? 'student' : 'students'} blocked by a note`);
+  }
   const savebarMessage = scoresBlocked
-    ? `${incompleteHomeCount} ${incompleteHomeCount === 1 ? 'student' : 'students'} incomplete`
+    ? blockReasons.join(' · ')
     : (scoresDirty || notesDirty) ? 'Unsaved changes' : savedFlash;
 
   return (
@@ -608,7 +710,7 @@ const FinalReviewDetail: React.FC = () => {
                                 className="frd__setall-apply"
                                 title={`Apply to ${f} column`}
                                 aria-label={`Apply to ${f} column`}
-                                disabled={saving}
+                                disabled={saving || !(setAllDraft[col] ?? '').trim()}
                                 onClick={() => applyColumn(col)}
                               >
                                 <Check size={13} />
@@ -633,7 +735,7 @@ const FinalReviewDetail: React.FC = () => {
                             className="frd__setall-apply"
                             title="Apply to review overall column"
                             aria-label="Apply to review overall column"
-                            disabled={saving}
+                            disabled={saving || !(setAllDraft.review ?? '').trim()}
                             onClick={() => applyColumn('review')}
                           >
                             <Check size={13} />
@@ -656,7 +758,7 @@ const FinalReviewDetail: React.FC = () => {
                             className="frd__setall-apply"
                             title="Apply to instructor overall column"
                             aria-label="Apply to instructor overall column"
-                            disabled={saving}
+                            disabled={saving || !(setAllDraft.instructor ?? '').trim()}
                             onClick={() => applyColumn('instructor')}
                           >
                             <Check size={13} />
@@ -676,6 +778,7 @@ const FinalReviewDetail: React.FC = () => {
                   const extraNotes = otherRoleNotes(m.user_id);
                   const noteDraftValue = noteRole === 'home' ? h.notes : noteRole === 'review' ? r.notes : p.notes;
                   const homeRowIncomplete = homeIncompleteMembers.has(m.user_id);
+                  const rowClearBlocked = noteBlockedMembers.has(m.user_id);
                   return (
                     <tr key={m.user_id}>
                       <td className="frd__col-student">
@@ -689,6 +792,9 @@ const FinalReviewDetail: React.FC = () => {
                               <span key={n.label} className="frd__other-note">{n.label}: {n.text}</span>
                             ))}
                           </span>
+                        )}
+                        {rowClearBlocked && (
+                          <span className="frd__clear-blocked">Clear blocked: remove or save the note first</span>
                         )}
                       </td>
                       {(['product', 'team', 'scrum'] as const).map((f) => (

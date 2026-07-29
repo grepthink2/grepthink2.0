@@ -98,14 +98,10 @@ function App() {
             <Route path="ta-management" element={<TAManagement />} />
             <Route path="ta-meetings" element={<TAMeetings />} />
             <Route path="ta-review" element={<TAReview />} />
-            <Route
-              path="ta-review/final-reviews"
-              element={<RequireReviewAccess><FinalReviews /></RequireReviewAccess>}
-            />
-            <Route
-              path="ta-review/final-reviews/:projectId"
-              element={<RequireReviewAccess><FinalReviewDetail /></RequireReviewAccess>}
-            />
+            <Route element={<RequireReviewAccess />}>
+              <Route path="ta-review/final-reviews" element={<FinalReviews />} />
+              <Route path="ta-review/final-reviews/:projectId" element={<FinalReviewDetail />} />
+            </Route>
             <Route path="ta-review/:assignmentId" element={<TAReview />} />
             <Route path="create-project" element={<CreateProject />} />
             <Route path="assign-projects" element={<Assign />} />

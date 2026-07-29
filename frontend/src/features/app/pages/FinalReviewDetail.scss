@@ -241,6 +241,16 @@
   color: $text-tertiary;
 }
 
+// Clearing a role's score(s) deletes the whole backend row, including its
+// notes column — surfaced here instead of silently dropping the note.
+.frd__clear-blocked {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--gt-text-caption);
+  color: var(--gt-error-text);
+  white-space: normal;
+}
+
 .frd__score-input {
   width: 64px;
   padding: 5px 6px;

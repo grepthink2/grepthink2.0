@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarCheck, Check, ChevronRight, Clock, Video, X } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
@@ -75,6 +75,11 @@ const FinalReviews: React.FC = () => {
   const [timeDrafts, setTimeDrafts] = useState<Record<string, string>>({});
   /** project_id → true while its time draft fails to parse as a date. */
   const [timeInvalid, setTimeInvalid] = useState<Record<string, boolean>>({});
+  /** project_id → that row's confirm-✓ button element, so the time input's
+   * onBlur can tell "focus is moving to ✓" apart from "focus is leaving the
+   * row" via e.relatedTarget (works for both mouse and keyboard — Tabbing
+   * to ✓ fires a real blur before any click/keypress on the button would). */
+  const confirmBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const isInstructor = role === 'instructor';
   const isTa = role === 'ta';
@@ -187,6 +192,15 @@ const FinalReviews: React.FC = () => {
     if (draft === toInputValue(team.final_review_at)) {
       setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
       return; // unchanged
+    }
+    // An emptied draft against a previously-scheduled time is NOT a valid
+    // confirm-to-clear — the dedicated ✕ Clear button owns intentional
+    // clears. Without this, selecting-all-and-deleting the input then
+    // pressing Enter/✓ would silently wipe the schedule via parseTimeDraft's
+    // '' → null. Flag it instead.
+    if (draft === '' && team.final_review_at) {
+      setTimeInvalid((prev) => ({ ...prev, [team.project_id]: true }));
+      return;
     }
     const iso = parseTimeDraft(draft);
     if (iso === undefined) {
@@ -448,19 +462,27 @@ const FinalReviews: React.FC = () => {
                                 commitTime(team);
                               }
                             }}
-                            onBlur={() => revertTime(team)}
+                            onBlur={(e) => {
+                              // Focus moving to this row's own ✓ button is not
+                              // an abandoned edit — skip the revert so a
+                              // keyboard user Tabbing to ✓ (a real blur, with
+                              // no mouse event to intercept) still gets to
+                              // commit what they typed instead of it being
+                              // silently reverted first.
+                              if (e.relatedTarget === confirmBtnRefs.current[team.project_id]) return;
+                              revertTime(team);
+                            }}
                             aria-invalid={timeInvalid[team.project_id] ? 'true' : undefined}
                             aria-label={`Review time for ${team.name ?? 'team'}`}
                           />
                           <button
+                            ref={(el) => { confirmBtnRefs.current[team.project_id] = el; }}
                             type="button"
                             className="fr-row__time-confirm"
                             title="Confirm time"
                             aria-label={`Confirm review time for ${team.name ?? 'team'}`}
-                            disabled={busy === team.project_id}
-                            // Keeps focus on the input on click so the blur-revert
-                            // handler above never fires ahead of the commit.
-                            onMouseDown={(e) => e.preventDefault()}
+                            disabled={busy === team.project_id
+                              || (timeDrafts[team.project_id] ?? '') === toInputValue(team.final_review_at)}
                             onClick={() => commitTime(team)}
                           >
                             <Check size={14} />
