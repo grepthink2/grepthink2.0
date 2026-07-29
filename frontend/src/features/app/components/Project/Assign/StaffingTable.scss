@@ -33,6 +33,9 @@
 
     &--sortable {
       cursor: pointer;
+      // Same color as $assign-surface-bg (now var(--gt-gray-50)), but
+      // darken() needs a real Sass color to compute against, not a CSS
+      // custom property — left as the raw hex.
       &:hover { background: darken(#f7f8fa, 3%); }
     }
 
@@ -62,7 +65,7 @@
   // ── Rows ────────────────────────────────────────────────────────
   &__row {
     border-bottom: 1px solid $assign-muted-border;
-    transition: background $transition-fast;
+    @include gt-transition(background);
 
     &:last-child { border-bottom: none; }
     &:hover { background: $assign-surface-bg; }
@@ -111,9 +114,12 @@
     font-size: 1rem;
     line-height: 1;
     color: $text-secondary;
-    transition: background $transition-fast, border-color $transition-fast;
+    @include gt-transition(background, border-color);
 
     &:hover {
+      // Same color as $assign-card-border (now var(--gt-gray-200)); left as
+      // the raw hex — darken() needs a real Sass color, not a CSS custom
+      // property.
       border-color: darken(#e5e7eb, 10%);
       background: $assign-surface-bg;
     }
