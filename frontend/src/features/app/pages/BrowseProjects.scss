@@ -52,7 +52,7 @@
   font-weight: $font-weight-semibold;
   text-decoration: none;
   border-radius: $border-radius-md;
-  transition: filter $transition-fast, box-shadow $transition-fast;
+  @include gt-transition(filter, box-shadow);
 
   &:hover,
   &:visited,
@@ -62,7 +62,7 @@
 
   &:hover {
     filter: brightness(1.05);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--gt-shadow-hover);
   }
 
   &:focus-visible {

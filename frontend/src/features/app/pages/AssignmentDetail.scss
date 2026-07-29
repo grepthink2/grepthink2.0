@@ -51,7 +51,7 @@
 }
 
 .assignment-detail__due {
-  background-color: rgba($accent-color, 0.08);
+  background-color: var(--gt-info-soft);
   color: $accent-color;
 }
 
