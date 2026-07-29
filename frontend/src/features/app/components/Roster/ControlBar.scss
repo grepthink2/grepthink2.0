@@ -32,7 +32,7 @@
     color: $text-primary;
     background: $white;
     outline: none;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color);
 
     &:focus {
       border-color: $primary-color;
@@ -61,11 +61,11 @@
     background: $white;
     cursor: pointer;
     white-space: nowrap;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color);
     outline: none;
 
     &:hover {
-      border-color: darken(#DADADA, 10%);
+      border-color: darken($border-color, 10%);
     }
 
     &--open {
@@ -75,7 +75,7 @@
 
   &__filter-chevron {
     color: $text-tertiary;
-    transition: transform $transition-fast;
+    @include gt-transition(transform);
     flex-shrink: 0;
 
     &--open {
@@ -91,6 +91,8 @@
     background: $white;
     border: 1px solid $border-color;
     border-radius: $border-radius-sm;
+    // Navy-tinted shadow color (16,24,40, not neutral black); left as-is —
+    // see the identical value in RosterList.scss.
     box-shadow: 0 8px 24px rgba(16, 24, 40, 0.1);
     z-index: $z-index-dropdown;
     padding: 4px;
@@ -112,7 +114,7 @@
     color: $text-primary;
     cursor: pointer;
     text-align: left;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
 
     &:hover {
       background: $background;
@@ -142,7 +144,7 @@
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     cursor: pointer;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
     white-space: nowrap;
 
     &--invite {
