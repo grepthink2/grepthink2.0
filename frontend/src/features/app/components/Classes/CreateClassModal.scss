@@ -218,6 +218,7 @@
 // Upload Area
 .create-class-modal__upload-area {
   display: block;
+  position: relative; // containing block for the sr-only file input below
   padding: $spacing-lg;
   background-color: $white;
   border: 2px dashed $border-color;
@@ -234,26 +235,29 @@
     outline: none;
   }
 
-  // Correction verified via static-harness: this :has() selector can never
-  // actually match. The real <input type="file"> below is display:none, and
-  // a display:none element is removed from the focus order entirely — it
-  // can never become :focus-visible in the first place (unlike a merely
-  // visually-hidden-but-focusable input). So this rule is unreachable, same
-  // as the other legacy blocks in this file, just for a different reason
-  // (display:none prevents focus at all, rather than the global rule's
-  // !important suppressing a redundant outline). The box-shadow value here
-  // is at least correct/harmless, but the underlying fix — making the file
-  // input focusable (swap display:none for a visually-hidden-but-focusable
-  // technique) — is a structural CSS change out of scope for this sweep;
-  // the same pattern also exists in Profile.scss, ControlBar.scss, and
-  // Settings.scss's own hidden file inputs (flagged separately).
+  // The file input below is visually hidden but FOCUSABLE (sr-only
+  // technique, not display:none) — this label is the input's only trigger
+  // (no adjacent button), so the input must stay in the tab order for
+  // keyboard users. When it takes keyboard focus, ring the whole label:
   &:has(.create-class-modal__file-input:focus-visible) {
     box-shadow: var(--gt-focus-ring);
   }
 }
 
 .create-class-modal__file-input {
-  display: none;
+  // Visually hidden but focusable — display:none would remove the input
+  // from the tab order entirely, leaving keyboard users no way to open
+  // the picker (this label-wrapped input has no companion button, unlike
+  // the ref-click pattern in Profile/ControlBar/Settings).
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .create-class-modal__upload-content {
