@@ -151,14 +151,17 @@
   pointer-events: none; // clicks go to .eyeToggle
 }
 
+// translateY removed: positioning moved to .eyeToggle when the icon became
+// a button child — keeping it here made the icon ride 11px high for the
+// mount animation, then snap down.
 @keyframes iconFade {
   0% {
     opacity: 0;
-    transform: translateY(-50%) scale(0.95);
+    transform: scale(0.95);
   }
   100% {
     opacity: 0.7;
-    transform: translateY(-50%) scale(1);
+    transform: scale(1);
   }
 }
 
