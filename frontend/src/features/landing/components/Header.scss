@@ -53,8 +53,7 @@ $morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(255, 255, 255, 0.7);
-      outline-offset: 4px;
+      // dead outline removed (global !important ring); radius rounds the ring
       border-radius: 4px;
     }
   }
@@ -79,8 +78,7 @@ $morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(255, 255, 255, 0.7);
-      outline-offset: 2px;
+      // dead outline removed (global !important ring); radius rounds the ring
       border-radius: 4px;
     }
   }
@@ -99,10 +97,6 @@ $morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     @include gt-transition(background, transform, border-color);
 
-    &:focus-visible {
-      outline: 2px solid rgba(255, 255, 255, 0.7);
-      outline-offset: 2px;
-    }
 
     &--ghost {
       color: $white;

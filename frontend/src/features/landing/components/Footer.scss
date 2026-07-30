@@ -66,8 +66,7 @@ $footer-dark: #0c1f18;
       }
 
       &:focus-visible {
-        outline: 2px solid rgba(255, 255, 255, 0.6);
-        outline-offset: 3px;
+        // dead outline removed (global !important ring); radius rounds the ring
         border-radius: 3px;
       }
     }

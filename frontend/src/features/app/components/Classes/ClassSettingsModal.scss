@@ -163,10 +163,6 @@
       color: $white;
     }
 
-    &:focus-visible {
-      outline: 2px solid $accent-color;
-      outline-offset: 2px;
-    }
   }
 
   &__export-button {
@@ -196,10 +192,6 @@
       opacity: 0.7;
     }
 
-    &:focus-visible {
-      outline: 2px solid $accent-color;
-      outline-offset: 2px;
-    }
   }
 
   &__export-error {
@@ -234,10 +226,6 @@
       border-color: #fca5a5;
     }
 
-    &:focus-visible {
-      outline: 2px solid $accent-color;
-      outline-offset: 2px;
-    }
   }
 }
 

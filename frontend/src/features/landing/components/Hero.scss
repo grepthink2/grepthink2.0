@@ -153,8 +153,8 @@
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(1, 129, 86, 0.5);
-      outline-offset: 3px;
+      // outline lines removed: dead under the global !important focus ring
+      // (index.css); border-radius stays — it rounds that ring's corners.
       border-radius: 4px;
     }
   }

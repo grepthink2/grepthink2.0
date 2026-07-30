@@ -66,8 +66,10 @@
   }
 
   &:focus-visible {
-    outline: 2px solid $primary-color;
-    outline-offset: 2px;
+    // Layered ring (A3 idiom): the :hover box-shadow above ties on
+    // specificity and would eclipse the global ring while hovered+focused;
+    // this later-in-source rule keeps the ring painted over the elevation.
+    box-shadow: var(--gt-focus-ring), var(--gt-shadow-hover);
   }
 }
 

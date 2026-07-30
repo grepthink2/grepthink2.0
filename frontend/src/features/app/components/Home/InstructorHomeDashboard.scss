@@ -229,10 +229,6 @@
     color: $error-color;
   }
 
-  &:focus-visible {
-    outline: 2px solid $accent-color;
-    outline-offset: 1px;
-  }
 }
 
 // ── Recent activity (placeholder) ──

@@ -161,10 +161,6 @@ $quick-purple-hover: #6a3382;
     text-decoration: underline;
   }
 
-  &:focus-visible {
-    outline: 3px solid rgba($primary-color, 0.35);
-    outline-offset: 2px;
-  }
 }
 
 .student-home__team-project {
@@ -198,10 +194,6 @@ $quick-purple-hover: #6a3382;
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 3px solid rgba($primary-color, 0.35);
-    outline-offset: 2px;
-  }
 }
 
 // —— Deadlines table ——
@@ -565,10 +557,6 @@ $quick-purple-hover: #6a3382;
     opacity: 0.85;
   }
 
-  &:focus-visible {
-    outline: 3px solid rgba($primary-color, 0.4);
-    outline-offset: 2px;
-  }
 }
 
 .student-home__btn-deny {
@@ -596,10 +584,6 @@ $quick-purple-hover: #6a3382;
     opacity: 0.85;
   }
 
-  &:focus-visible {
-    outline: 3px solid rgba($error-color, 0.45);
-    outline-offset: 2px;
-  }
 }
 
 .student-home__btn-spinner {
@@ -811,7 +795,8 @@ $quick-purple-hover: #6a3382;
   }
 
   &:focus-visible {
-    outline: 3px solid rgba($accent-color, 0.5);
-    outline-offset: 3px;
+    // Layered ring (A3 idiom): keep the resting elevation under the global
+    // ring so the shadow doesn't eclipse it (dead outline removed).
+    box-shadow: var(--gt-focus-ring), 0 4px 14px rgba(0, 0, 0, 0.2);
   }
 }

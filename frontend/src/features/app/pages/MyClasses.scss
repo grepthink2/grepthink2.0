@@ -189,10 +189,6 @@ $my-classes-app-header-height: 64px;
     transform: scale(0.98);
   }
 
-  &:focus-visible {
-    outline: 2px solid $accent-color;
-    outline-offset: 2px;
-  }
 
   &--copied {
     background-color: $primary-hover;
@@ -352,9 +348,7 @@ $my-classes-app-header-height: 64px;
   }
 
   &:focus-visible {
-    outline: 2px solid $accent-color;
-    outline-offset: 2px;
-
+    // dead outline removed (global !important ring covers this card)
     .my-classes-select-cta {
       opacity: 1;
     }

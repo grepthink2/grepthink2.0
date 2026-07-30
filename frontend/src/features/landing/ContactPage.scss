@@ -162,10 +162,6 @@
       transform: none;
     }
 
-    &:focus-visible {
-      outline: 3px solid var(--gt-primary);
-      outline-offset: 3px;
-    }
   }
 }
 

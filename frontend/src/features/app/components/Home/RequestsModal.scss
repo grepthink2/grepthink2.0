@@ -299,10 +299,6 @@
         background: $primary-hover;
       }
 
-      &:focus-visible {
-        outline: 3px solid rgba($primary-color, 0.4);
-        outline-offset: 2px;
-      }
     }
 
     &--decline {
@@ -313,10 +309,6 @@
         opacity: 0.92;
       }
 
-      &:focus-visible {
-        outline: 3px solid rgba($error-color, 0.45);
-        outline-offset: 2px;
-      }
     }
   }
 }
