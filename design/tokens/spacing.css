@@ -1,0 +1,43 @@
+/* ============================================================
+   GrepThink · Spacing, radius, elevation, motion, z-index
+   Values verbatim from frontend/src/styles/_variables.scss
+   ============================================================ */
+
+:root {
+  /* Spacing (4pt-ish scale) */
+  --gt-space-xs:  4px;
+  --gt-space-sm:  8px;
+  --gt-space-md:  16px;
+  --gt-space-lg:  24px;
+  --gt-space-xl:  32px;
+  --gt-space-xxl: 60px;
+
+  /* Radius */
+  --gt-radius-sm: 7px;
+  --gt-radius-md: 10px;
+  --gt-radius-lg: 20px;
+  --gt-radius-pill: 999px;
+
+  /* Elevation — flat & calm; shadows are whisper-soft.
+     The codebase's signature card shadow is the oddly-specific 2.61px blur. */
+  --gt-shadow-card:    0 0 2.61px rgba(0, 0, 0, 0.25);
+  --gt-shadow-hairline: 0 0 4px rgba(0, 0, 0, 0.08);
+  --gt-shadow-hover:   0 2px 12px rgba(0, 0, 0, 0.1);
+  --gt-shadow-pop:     0 4px 12px rgba(0, 0, 0, 0.15);
+  --gt-shadow-modal:   0 20px 60px rgba(0, 0, 0, 0.3);
+
+  /* Motion */
+  --gt-transition-fast:   0.2s ease; /* @kind other */
+  --gt-transition-medium: 0.3s ease; /* @kind other */
+
+  /* Z-index layers */
+  --gt-z-base:     1;    /* @kind other */
+  --gt-z-dropdown: 10;   /* @kind other */
+  --gt-z-modal:    100;  /* @kind other */
+  --gt-z-tooltip:  1000; /* @kind other */
+
+  /* Layout */
+  --gt-container:  543px;
+  --gt-sidebar-w:  256px;
+  --gt-sidebar-collapsed-w: 64px;
+}

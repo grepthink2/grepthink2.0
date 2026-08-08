@@ -1,0 +1,17 @@
+<!-- @dsCard group="Spacing" viewport="700x140" name="Motion & focus" subtitle="0.2s / 0.3s ease · 2px accent-blue focus ring" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+body{margin:0;padding:18px;font-family:var(--gt-font-sans);background:#fff;display:flex;gap:22px;align-items:center}
+.demo{display:flex;flex-direction:column;gap:6px;align-items:center}
+.demo span{font-size:9px;color:var(--gt-gray-600);font-family:var(--gt-font-mono)}
+.btn{padding:10px 24px;border:none;border-radius:7px;background:var(--gt-green-500);color:#fff;font-family:var(--gt-font-sans);font-size:13px;font-weight:500;cursor:pointer;transition:background-color .2s ease}
+.btn:hover{background:var(--gt-green-700)}
+.focused{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--gt-blue-500)}
+.inputf{padding:9px 13px;border-radius:7px;font-size:13px;font-family:var(--gt-font-sans);border:1px solid var(--gt-blue-500);box-shadow:0 0 0 2px var(--gt-blue-500);outline:none;color:var(--gt-gray-800)}
+.cap{font-size:11px;color:var(--gt-gray-600);max-width:200px;line-height:1.5}
+</style></head><body>
+<div class="demo"><button class="btn">Hover me</button><span>0.2s ease</span></div>
+<div class="demo"><button class="btn focused">Focused</button><span>ring: white gap + blue</span></div>
+<div class="demo"><input class="inputf" value="Focused field" readonly><span>fields: tight 2px blue</span></div>
+<p class="cap">Focus is always visible and always accent blue — never green.</p>
+</body></html>

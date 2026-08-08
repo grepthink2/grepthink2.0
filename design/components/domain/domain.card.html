@@ -1,0 +1,101 @@
+<!-- @dsCard group="Components" viewport="700x980" name="Domain — GrepThink composites" subtitle="RosterRow, ProjectCard, TeamMemberCard, JoinRequest, Assignment, TSR, RankedSlot, Messaging, MeetingCard, Charts" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 18px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { RosterRow, ProjectCard, TeamMemberCard, RoleSelect, JoinRequestCard, AssignmentCard,
+        TSRSummaryCard, RankedProjectSlot, ConversationListItem, MessageBubble, MessageComposer,
+        MeetingCard, PieChartCard, BarChartCard, Card, IconButton, Button } = NS;
+
+const More = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>;
+
+function Demo() {
+  const [draft, setDraft] = React.useState('');
+  return (
+    <div>
+      <p className="lbl">RosterRow (in a flush Card)</p>
+      <Card padded={false} shadow="hairline">
+        <RosterRow name="Ashton Liu" email="aliu@ucsc.edu" role="product_owner" team="Team 1" status="Enrolled" statusTone="success" actions={<IconButton ariaLabel="More" size="sm"><More /></IconButton>} />
+        <RosterRow name="Tony Wu" email="twu@ucsc.edu" role="scrum_master" team="Team 1" actions={<IconButton ariaLabel="More" size="sm"><More /></IconButton>} />
+        <RosterRow name="Landon Ngo" email="lngo@ucsc.edu" role="member" team="Team 2" status="Invited" statusTone="info" actions={<IconButton ariaLabel="More" size="sm"><More /></IconButton>} />
+      </Card>
+
+      <p className="lbl">ProjectCard · TeamMemberCard</p>
+      <div className="cols">
+        <div style={{maxWidth: 260}}>
+          <ProjectCard name="Grepthink 2.0" team="Team 1" memberCount={4} status="Active" onView={() => {}} />
+        </div>
+        <TeamMemberCard name="Ashton Liu" email="aliu@ucsc.edu" role="product_owner" skills={['React','Supabase','Figma']}
+          actions={<React.Fragment><RoleSelect value="product_owner" onChange={() => {}} /><Button variant="danger" size="sm">Remove</Button></React.Fragment>} />
+      </div>
+
+      <p className="lbl">JoinRequestCard · AssignmentCard</p>
+      <div className="stack">
+        <JoinRequestCard name="Priya Raman" project="Grepthink 2.0" timestamp="2h ago" message="I built the roster importer in 115A and would love to keep going." onApprove={() => {}} onDeny={() => {}} />
+        <AssignmentCard name="TSR 3" due="Feb 01, 2026" project="GrepThink 2.0" status="in_progress" onAction={() => {}} />
+        <AssignmentCard name="Interest Form" due="Jan 12, 2026" status="submitted" onAction={() => {}} />
+      </div>
+
+      <p className="lbl">TSRSummaryCard · RankedProjectSlot</p>
+      <div className="cols">
+        <TSRSummaryCard submitter="Ashton Liu" sprint="Sprint 3" submittedAt="Jan 17" status="submitted"
+          rows={[{name:'Tony Wu',percent:25},{name:'Landon Ngo',percent:30},{name:'Joshua Cruz',percent:20},{name:'Ashton Liu',percent:25}]} onOpen={() => {}} />
+        <div className="stack">
+          <RankedProjectSlot rank={1} project="Grepthink 2.0" team="Team 1" onMoveDown={() => {}} onRemove={() => {}} />
+          <RankedProjectSlot rank={2} project="Slug Dining" team="Team 4" onMoveUp={() => {}} onMoveDown={() => {}} onRemove={() => {}} />
+          <RankedProjectSlot rank={3} />
+        </div>
+      </div>
+
+      <p className="lbl">Messaging — list, thread, composer</p>
+      <div className="cols">
+        <Card padded={false} shadow="hairline">
+          <ConversationListItem name="Team 1" preview="standup at 4?" time="2m" unread={3} online onClick={() => {}} />
+          <ConversationListItem name="Sam the TA" preview="Zoom link for tomorrow ↓" time="1h" active onClick={() => {}} />
+          <ConversationListItem name="Joshua Cruz" preview="pushed the fix" time="Mon" onClick={() => {}} />
+        </Card>
+        <Card padded={false} shadow="hairline">
+          <div style={{display:'flex', flexDirection:'column', gap:8, padding:14}}>
+            <MessageBubble author="Tony Wu" time="3:42 PM">standup at 4?</MessageBubble>
+            <MessageBubble own time="3:43 PM">works for me 👍</MessageBubble>
+          </div>
+          <MessageComposer value={draft} onChange={setDraft} onSend={() => setDraft('')} />
+        </Card>
+      </div>
+
+      <p className="lbl">MeetingCard · Chart wrappers</p>
+      <div className="cols">
+        <MeetingCard team="Team 3 — weekly sync" time="Tue Jan 20 · 3:00 PM" zoomUrl="#"
+          attendees={['Ashton Liu','Tony Wu','Landon Ngo','Joshua Cruz']} attendance={{present:3,total:4}}
+          status="upcoming" onMarkAttendance={() => {}} />
+        <Card shadow="hairline">
+          <div style={{display:'flex', gap:24, alignItems:'center', flexWrap:'wrap'}}>
+            <PieChartCard size={110} data={[{name:'Submitted',value:24},{name:'In progress',value:5},{name:'Missing',value:2}]} />
+            <BarChartCard height={100} data={[{name:'T1',value:4},{name:'T2',value:5},{name:'T3',value:3},{name:'T4',value:4}]} />
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>
