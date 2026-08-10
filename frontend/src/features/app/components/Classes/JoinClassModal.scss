@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--gt-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,7 +21,7 @@
   max-width: 500px;
   width: 90%;
   position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--gt-shadow-modal);
 
   &__close {
     position: absolute;
@@ -36,7 +36,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    @include gt-transition(background-color);
 
     &:hover:not(:disabled) {
       background-color: $background;
@@ -74,10 +74,10 @@
   &__error {
     width: 100%;
     padding: 0.75rem;
-    background-color: #fee;
-    border: 1px solid #fcc;
+    background-color: var(--gt-error-soft);
+    border: 1px solid var(--gt-error);
     border-radius: 6px;
-    color: #c33;
+    color: var(--gt-error);
     font-size: $font-size-sm;
     text-align: center;
     font-family: $primary-font;
@@ -86,7 +86,9 @@
   &__success {
     width: 100%;
     padding: 0.75rem;
-    background-color: #e8f5e9;
+    background-color: var(--gt-success-soft);
+    // border/text are a generic Material green, not our brand green
+    // (--gt-success is #018156); visually distinct enough to leave as-is.
     border: 1px solid #4caf50;
     border-radius: 6px;
     color: #2e7d32;
@@ -113,13 +115,13 @@
     font-weight: 600;
     font-family: $primary-font;
     color: $text-primary;
-    transition: all 0.2s;
+    @include gt-transition(border-color, box-shadow);
     background: white;
 
     &:focus {
       outline: none;
       border-color: $primary-color;
-      box-shadow: 0 0 0 3px rgba(1, 129, 86, 0.1);
+      box-shadow: 0 0 0 3px var(--gt-primary-soft);
     }
 
     &:disabled {

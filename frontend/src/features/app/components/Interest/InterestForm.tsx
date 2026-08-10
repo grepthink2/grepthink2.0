@@ -15,6 +15,7 @@ import { clearDraft, loadDraft, saveDraft } from './draftStorage';
 import ProjectInterestsSection from './sections/ProjectInterestsSection';
 import PreviousProjectSection from './sections/PreviousProjectSection';
 import TeamPreferencesSection from './sections/TeamPreferencesSection';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import NotesSection from './sections/NotesSection';
 import SubmittedConfirmation from './SubmittedConfirmation';
 import './InterestForm.scss';
@@ -255,7 +256,20 @@ const InterestForm: React.FC<InterestFormProps> = ({ assignment }) => {
     return (
       <div className="interest-form">
         <div className="if-shell">
-          <p>Loading interest form…</p>
+          <div className="if-section" aria-busy="true">
+            <div className="if-section__header">
+              <Skeleton width={200} height={20} />
+              <Skeleton width={280} height={13} style={{ marginTop: 8 }} />
+            </div>
+            <div className="if-section__body">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div className="if-field" key={i}>
+                  <Skeleton width={120} height={12} />
+                  <Skeleton height={40} radius={7} style={{ marginTop: 6 }} />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );

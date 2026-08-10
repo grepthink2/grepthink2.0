@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { UserCog } from 'lucide-react';
 import { api, type ApiTAMeetingSchedule, type ApiAttendanceEntry } from '@/lib/api';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { useClass } from '@/lib/classContext';
 import TeamMeetingCard from './TeamMeetingCard';
 import WeekNavigator from './WeekNavigator';
@@ -299,7 +300,28 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
       <div className="ta-page__divider" />
 
       {loading ? (
-        <div className="ta-page__empty"><p>Loading…</p></div>
+        <div className="ta-page__list" aria-busy="true">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div className="ta-card" key={i}>
+              <div className="ta-card__header">
+                <div className="ta-card__name-block">
+                  <Skeleton width={140} height={14} />
+                  <Skeleton width={80} height={11} style={{ marginTop: 6 }} />
+                </div>
+              </div>
+              <div className="ta-card__meta">
+                <div className="ta-card__col">
+                  <Skeleton width={90} height={10} />
+                  <Skeleton width={110} height={13} style={{ marginTop: 6 }} />
+                </div>
+                <div className="ta-card__col">
+                  <Skeleton width={90} height={10} />
+                  <Skeleton width={110} height={13} style={{ marginTop: 6 }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : error ? (
         <div className="ta-page__empty"><p>Error: {error}</p></div>
       ) : teams.length === 0 ? (

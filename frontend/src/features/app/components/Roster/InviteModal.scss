@@ -4,7 +4,7 @@
   &__overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--gt-scrim);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -19,7 +19,7 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--gt-shadow-modal);
 
   &__header {
     display: flex;
@@ -47,7 +47,7 @@
     align-items: center;
     padding: $spacing-xs;
     border-radius: $border-radius-sm;
-    transition: color $transition-fast, background $transition-fast;
+    @include gt-transition(color, background);
 
     &:hover {
       color: $text-primary;
@@ -60,6 +60,11 @@
     align-items: center;
     gap: $spacing-xs;
     padding: $spacing-xs $spacing-lg;
+    // Draft-banner group (this + restore/discard below) deliberately uses
+    // four different accent-blue intensities (.06/.18/.4/.1) for four
+    // different sub-elements; none is close enough to a single --gt-*
+    // token to convert without erasing that gradation, so left as rgba on
+    // the existing $accent-color scss var.
     background: rgba($accent-color, 0.06);
     border-bottom: 1px solid rgba($accent-color, 0.18);
     font-family: $primary-font;
@@ -83,7 +88,7 @@
     color: $accent-color;
     cursor: pointer;
     white-space: nowrap;
-    transition: background $transition-fast;
+    @include gt-transition(background);
 
     &:hover {
       background: rgba($accent-color, 0.1);
@@ -99,7 +104,7 @@
     display: flex;
     align-items: center;
     padding: 2px;
-    transition: opacity $transition-fast;
+    @include gt-transition(opacity);
 
     &:hover {
       opacity: 1;
@@ -179,13 +184,17 @@
     color: $text-tertiary;
     cursor: pointer;
     letter-spacing: 0.04em;
-    transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+    @include gt-transition(background, border-color, color);
 
     &:hover {
       background: $background;
       color: $text-primary;
     }
 
+    // --active/hover form a deliberate 2-step primary-tint ladder (.08/.12)
+    // plus a .3 border; left as rgba on $primary-color rather than
+    // flattened onto one --gt-primary-soft token, which would erase the
+    // hover step.
     &--active {
       background: rgba($primary-color, 0.08);
       border-color: rgba($primary-color, 0.3);
@@ -247,8 +256,11 @@
     font-size: 0.75rem;
     color: $text-primary;
     cursor: pointer;
-    transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+    @include gt-transition(background, border-color, color);
 
+    // Hover-only fill/border tint (.06/.35 on $error-color); no resting
+    // counterpart to collapse it with, and neither alpha is close enough
+    // to --gt-error-soft's ~10% to substitute without a visible shift.
     &:hover {
       background: rgba($error-color, 0.06);
       border-color: rgba($error-color, 0.35);
@@ -263,7 +275,7 @@
   &__chip-x {
     color: $text-tertiary;
     flex-shrink: 0;
-    transition: color $transition-fast;
+    @include gt-transition(color);
   }
 
   &__add-row {
@@ -279,11 +291,11 @@
     font-family: $primary-font;
     font-size: 0.8125rem;
     outline: none;
-    transition: border-color $transition-fast, box-shadow $transition-fast;
+    @include gt-transition(border-color, box-shadow);
 
     &:focus {
       border-color: $primary-color;
-      box-shadow: 0 0 0 2px rgba($primary-color, 0.12);
+      box-shadow: 0 0 0 2px var(--gt-primary-soft);
     }
   }
 
@@ -296,7 +308,7 @@
       border-color: $error-color;
 
       &:focus {
-        box-shadow: 0 0 0 2px rgba($error-color, 0.12);
+        box-shadow: 0 0 0 2px var(--gt-error-soft);
       }
     }
   }
@@ -312,7 +324,7 @@
     color: $text-primary;
     cursor: pointer;
     white-space: nowrap;
-    transition: background $transition-fast, border-color $transition-fast;
+    @include gt-transition(background, border-color);
 
     &:hover {
       background: $background;
@@ -374,7 +386,7 @@
     border-radius: 4px;
     color: $text-secondary;
     cursor: pointer;
-    transition: background $transition-fast, color $transition-fast, border-color $transition-fast;
+    @include gt-transition(background, color, border-color);
 
     // Chromium shrinks lucide SVGs to ~0 width inside flex containers without this
     svg {
@@ -391,7 +403,10 @@
     }
 
     &--active {
-      background: rgba($primary-color, 0.1);
+      background: var(--gt-primary-soft);
+      // .25 border has no clean token: too light for solid --gt-primary,
+      // and mapping it to --gt-primary-soft too would make it disappear
+      // against the fill above. Left as rgba on the existing scss var.
       border-color: rgba($primary-color, 0.25);
       color: $primary-color;
     }
@@ -419,7 +434,7 @@
     background: $white;
     border: 1px solid $border-color;
     border-radius: $border-radius-sm;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.13);
+    box-shadow: var(--gt-shadow-pop);
   }
 
   &__link-panel-header {
@@ -484,10 +499,10 @@
     font-weight: 500;
     color: $error-color;
     cursor: pointer;
-    transition: background $transition-fast;
+    @include gt-transition(background);
 
     &:hover {
-      background: rgba($error-color, 0.08);
+      background: var(--gt-error-soft);
     }
   }
 
@@ -502,7 +517,7 @@
     color: $white;
     cursor: pointer;
     white-space: nowrap;
-    transition: background $transition-fast;
+    @include gt-transition(background);
 
     &:hover {
       background: $primary-hover;
@@ -519,7 +534,7 @@
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
-    transition: color $transition-fast, background $transition-fast;
+    @include gt-transition(color, background);
 
     &:hover {
       color: $text-primary;
@@ -537,7 +552,7 @@
 
     &:focus-within {
       border-color: $primary-color;
-      box-shadow: 0 0 0 2px rgba($primary-color, 0.12);
+      box-shadow: 0 0 0 2px var(--gt-primary-soft);
     }
   }
 
@@ -592,10 +607,10 @@
       text-decoration: underline;
       cursor: pointer;
       border-radius: 2px;
-      transition: background $transition-fast;
+      @include gt-transition(background);
 
       &:hover {
-        background: rgba($primary-color, 0.1);
+        background: var(--gt-primary-soft);
       }
     }
   }
@@ -609,7 +624,7 @@
     height: 18px;
     cursor: nwse-resize;
     opacity: 0.35;
-    transition: opacity $transition-fast;
+    @include gt-transition(opacity);
 
     // Draw the classic 3-line grip using a SVG-like repeating gradient
     background-image:
@@ -627,7 +642,9 @@
   &__token {
     display: inline-flex;
     align-items: center;
-    background: rgba($primary-color, 0.08);
+    background: var(--gt-primary-soft);
+    // .25 border has no clean token (too light for solid, would vanish
+    // against the fill above if also mapped to --gt-primary-soft).
     border: 1px solid rgba($primary-color, 0.25);
     border-radius: 4px;
     color: $primary-color;
@@ -660,6 +677,9 @@
     align-items: center;
     gap: 4px;
     background: none;
+    // Dashed border goes .4 -> solid $primary-color on hover below; that's
+    // a deliberate 2-step progression, left as rgba rather than collapsed
+    // onto one token (which would erase the hover step).
     border: 1px dashed rgba($primary-color, 0.4);
     border-radius: 4px;
     padding: 2px $spacing-xs;
@@ -668,7 +688,7 @@
     font-weight: 500;
     color: $primary-color;
     cursor: pointer;
-    transition: background $transition-fast, border-color $transition-fast;
+    @include gt-transition(background, border-color);
 
     &:hover {
       background: rgba($primary-color, 0.06);
@@ -680,6 +700,9 @@
     font-family: $primary-font;
     font-size: 0.8125rem;
     color: $error-color;
+    // Fill (.06)/border (.2) sit below the soft-token intensity and above
+    // "leave as fully bespoke"; kept as rgba on $error-color to preserve
+    // this modal's deliberately muted tone rather than darkening it.
     background: rgba($error-color, 0.06);
     border: 1px solid rgba($error-color, 0.2);
     border-radius: $border-radius-sm;
@@ -704,7 +727,7 @@
     padding: 8px $spacing-md;
     cursor: pointer;
     border: 1px solid transparent;
-    transition: background $transition-fast, opacity $transition-fast;
+    @include gt-transition(background, opacity);
     display: inline-flex;
     align-items: center;
     gap: $spacing-xs;

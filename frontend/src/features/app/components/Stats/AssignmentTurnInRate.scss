@@ -1,10 +1,12 @@
 @use '@styles/index.scss' as *;
 
-$bar-green: #018156;
+$bar-green: var(--gt-primary);
+// Same bespoke amber as AssignmentList.scss's $bar-orange / ProjectList.scss's
+// --neutral sentiment color — no close --gt-* equivalent.
 $bar-orange: #e6a817;
 
 .turn-in-card {
-  background: #eeeeee;
+  background: var(--gt-canvas);
   border-radius: $border-radius-md;
   padding: $spacing-lg;
 }
@@ -68,7 +70,7 @@ $bar-orange: #e6a817;
 
 .turn-in-bar {
   height: 6px;
-  background-color: #d4d4d4;
+  background-color: var(--gt-gray-300);
   border-radius: 10px;
   overflow: hidden;
   margin-top: 4px;
@@ -85,11 +87,13 @@ $bar-orange: #e6a817;
 .turn-in-bar__fill {
   height: 100%;
   border-radius: 10px;
-  transition: width $transition-medium;
+  @include gt-transition-medium(width);
 }
 
 .turn-in-card__divider {
   height: 1px;
+  // ~15 units off --gt-gray-400 on every channel — outside this sweep's
+  // imperceptible band; left as bespoke.
   background-color: #cccccc;
   margin: $spacing-md 0;
 }

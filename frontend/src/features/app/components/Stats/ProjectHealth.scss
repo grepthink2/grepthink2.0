@@ -1,7 +1,10 @@
 @use '@styles/index.scss' as *;
 
-$health-green: #018156;
-$health-green-light: #e6f5ef;
+$health-green: var(--gt-primary);
+$health-green-light: var(--gt-primary-soft);
+// Bespoke amber pair (same amber as AssignmentTurnInRate.scss's $bar-orange)
+// — neither is close enough to --gt-warning/--gt-warning-soft to substitute
+// without shifting the "warning" tier's hue relative to "excellent"/"poor".
 $health-orange: #e6a817;
 $health-orange-light: #fdf3dc;
 
@@ -21,7 +24,7 @@ $health-orange-light: #fdf3dc;
 
 // ── Scrollable container ───────────────────────────────────────
 .project-health__container {
-  background-color: #eeeeee;
+  background-color: var(--gt-canvas);
   border-radius: $border-radius-md;
   padding: $spacing-md;
   display: flex;
@@ -39,6 +42,8 @@ $health-orange-light: #fdf3dc;
     background: transparent;
   }
 
+  // ~15 units off --gt-gray-400 on every channel — outside this sweep's
+  // imperceptible band; left as bespoke (both occurrences).
   &::-webkit-scrollbar-thumb {
     background-color: #cccccc;
     border-radius: 4px;
@@ -74,12 +79,15 @@ $health-orange-light: #fdf3dc;
     .health-card__description { color: $text-secondary; }
   }
 
+  // #c0392b is a distinctly different, more brick-toned red than
+  // --gt-error/--gt-error-text (deltas ~20-29 on the G/B channels); left as
+  // bespoke so the trio's warning/poor tiers keep their intended relationship.
   &--poor {
     background-color: #c0392b;
     color: $white;
 
     .health-card__header  { background-color: #c0392b; }
-    .health-card__body    { background-color: #fdecea; color: $text-primary; }
+    .health-card__body    { background-color: var(--gt-error-soft); color: $text-primary; }
     .health-card__via,
     .health-card__description { color: $text-secondary; }
   }
@@ -148,7 +156,7 @@ $health-orange-light: #fdf3dc;
   color: $text-secondary;
   cursor: pointer;
   padding: 0;
-  transition: color $transition-fast;
+  @include gt-transition(color);
 
   &:hover  { color: $text-primary; }
   &:focus  { outline: none; }
@@ -156,7 +164,7 @@ $health-orange-light: #fdf3dc;
 
 // ── Coming soon placeholder ────────────────────────────────────
 .project-health__coming-soon {
-  background-color: #eeeeee;
+  background-color: var(--gt-canvas);
   border-radius: $border-radius-md;
   padding: $spacing-md;
   min-height: 80px;

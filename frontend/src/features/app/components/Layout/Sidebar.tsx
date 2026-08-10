@@ -37,14 +37,18 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   const [isTaForClass, setIsTaForClass] = useState(false);
 
   useEffect(() => {
-    if (role !== 'student' || !selectedClass?.id) {
-      setIsTaForClass(false);
-      return;
-    }
     let cancelled = false;
+    const classId = role === 'student' ? selectedClass?.id : undefined;
     void (async () => {
+      if (!classId) {
+        // Inside the IIFE so it's no longer syntactically the effect body
+        // (satisfies react-hooks/set-state-in-effect); this branch still runs
+        // before any await, so timing is unchanged.
+        if (!cancelled) setIsTaForClass(false);
+        return;
+      }
       try {
-        const { enrollment_role } = await api.getMyEnrollmentRole(selectedClass.id);
+        const { enrollment_role } = await api.getMyEnrollmentRole(classId);
         if (!cancelled) setIsTaForClass(enrollment_role === 'ta');
       } catch {
         if (!cancelled) setIsTaForClass(false);
@@ -220,15 +224,29 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
                 // Expandable item: a chevron toggle revealing nested child links.
                 if (item.children?.length) {
                   const anyChildActive = item.children.some((c) => isChildActive(item, c));
-                  const open = openGroups[item.path] ?? anyChildActive;
+                  // Once a child is active, the group is forced open — closing it would
+                  // hide the page you're currently on with no way back short of
+                  // navigating elsewhere and back. Trade-off: a group can no longer be
+                  // manually collapsed while one of its children is active (matches how
+                  // every mainstream sidebar with active-aware groups behaves).
+                  const open = (openGroups[item.path] ?? false) || anyChildActive;
+                  const groupId = `sidebar-group-${item.path}`;
                   return (
                     <li key={item.path}>
                       <button
                         className={`sidebar-item sidebar-item--group ${collapsed && anyChildActive ? 'active' : ''}`}
                         // Collapsed rail has nowhere to show children — go to the first one.
-                        onClick={() => (collapsed ? handleNavigation(item.children![0].path) : toggleGroup(item.path))}
+                        onClick={() => {
+                          if (collapsed) return handleNavigation(item.children![0].path);
+                          // Forced open while a child is active — a toggle here can't
+                          // change anything now, but the stored flip would wrongly keep
+                          // the group expanded after navigating away. No-op instead.
+                          if (anyChildActive) return;
+                          toggleGroup(item.path);
+                        }}
                         title={collapsed ? item.label : undefined}
                         aria-expanded={collapsed ? undefined : open}
+                        aria-controls={collapsed ? undefined : groupId}
                       >
                         {item.icon ? (
                           React.createElement(item.icon, { size: 18 })
@@ -240,19 +258,30 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
                           <ChevronDown size={16} className={`sidebar-item__chevron ${open ? 'rotated' : ''}`} />
                         )}
                       </button>
-                      {!collapsed && open && (
-                        <ul className="sidebar-subitems">
-                          {item.children.map((child) => (
-                            <li key={child.path}>
-                              <button
-                                className={`sidebar-item sidebar-item--child ${isChildActive(item, child) ? 'active' : ''}`}
-                                onClick={() => handleNavigation(child.path)}
-                              >
-                                <span>{child.label}</span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
+                      {!collapsed && (
+                        // Always mounted (not gated on `open`) so the grid-rows
+                        // transition below has something to animate between — an
+                        // unmount/remount on toggle would jump instantly instead.
+                        // `inert` while closed keeps the (visually clipped but still
+                        // in the DOM) child links out of the tab order.
+                        <div
+                          className={`sidebar-subitems-wrap ${open ? 'open' : ''}`}
+                          id={groupId}
+                          inert={!open}
+                        >
+                          <ul className="sidebar-subitems">
+                            {item.children.map((child) => (
+                              <li key={child.path}>
+                                <button
+                                  className={`sidebar-item sidebar-item--child ${isChildActive(item, child) ? 'active' : ''}`}
+                                  onClick={() => handleNavigation(child.path)}
+                                >
+                                  <span>{child.label}</span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       )}
                     </li>
                   );

@@ -37,7 +37,7 @@
     outline: none;
     border-color: $primary-color;
     background: $white;
-    box-shadow: 0 0 0 3px rgba(1, 129, 86, 0.12);
+    box-shadow: 0 0 0 3px var(--gt-primary-soft);
   }
 }
 
@@ -52,6 +52,8 @@
   background: $white;
   border: 1px solid $assign-muted-border;
   border-radius: $border-radius-sm;
+  // Navy-tinted shadow color (16,24,40, not neutral black); left as-is —
+  // see the identical value in RosterList.scss/ControlBar.scss.
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
   max-height: 320px;
   overflow-y: auto;
@@ -76,7 +78,7 @@
   border-radius: 6px;
   cursor: pointer;
   text-align: left;
-  transition: background-color $transition-fast;
+  @include gt-transition(background-color);
 
   &:hover,
   &--highlighted {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import Sidebar from '@features/app/components/Layout/Sidebar';
@@ -7,10 +7,12 @@ import PreviewBanner from '@features/app/components/Layout/PreviewBanner';
 import CreateClassModal from '@/features/app/components/Classes/CreateClassModal';
 import JoinClassModal from '@/features/app/components/Classes/JoinClassModal';
 import Settings from '@features/app/pages/Settings';
+import PageFallback from '@features/app/components/PageFallback';
 import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/routePermissions';
 import { MessageWidget } from '@features/messages/components/MessageWidget';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './AppView.scss';
 
 const AppView: React.FC = () => {
@@ -46,8 +48,14 @@ const AppView: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="app-view-loading">
-        <div className="loading-spinner">Loading...</div>
+      <div
+        className="app-view-loading"
+        aria-busy="true"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}
+      >
+        <div className="loading-spinner">
+          <Skeleton width={160} height={16} />
+        </div>
       </div>
     );
   }
@@ -88,11 +96,18 @@ const AppView: React.FC = () => {
             onOpenSettings={() => setIsSettingsOpen(true)}
             onToggleNav={() => setMobileNavOpen((open) => !open)}
           />
-          <Outlet
-            context={
-              { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
-            }
-          />
+          {/* Single shared boundary for every lazily-loaded leaf route (see
+              App.tsx). Scoped to the Outlet only — Sidebar/Header/modals
+              above are siblings, not descendants, so they stay mounted and
+              visible while a page chunk loads instead of being replaced by
+              the fallback. */}
+          <Suspense fallback={<PageFallback />}>
+            <Outlet
+              context={
+                { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
+              }
+            />
+          </Suspense>
         </main>
 
         {/* Create Class Modal */}

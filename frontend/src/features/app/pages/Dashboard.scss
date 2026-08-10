@@ -28,8 +28,8 @@
   }
 
   &__inline-error {
-    background: rgba($error-color, 0.1);
-    color: #b3261e;
+    background: var(--gt-error-soft);
+    color: var(--gt-error-text);
     border-radius: $border-radius-sm;
     padding: $spacing-sm $spacing-md;
     margin-bottom: $spacing-lg;
@@ -80,7 +80,7 @@
     border: 1px solid $border-color;
     border-radius: $border-radius-md;
     padding: $spacing-lg;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--gt-shadow-hairline);
   }
 
   &__card-header {
@@ -117,10 +117,10 @@
     color: $primary-color;
     padding: 4px 6px;
     border-radius: $border-radius-sm;
-    transition: background-color $transition-fast, color $transition-fast;
+    @include gt-transition(background-color, color);
 
     &:hover {
-      background: rgba($primary-color, 0.1);
+      background: var(--gt-primary-soft);
       color: $primary-hover;
     }
   }
@@ -230,18 +230,21 @@
     font-weight: $font-weight-semibold;
     white-space: nowrap;
 
+    // No gray --gt-*-soft pair exists; left as rgba on the scss var.
     &--draft {
       background: rgba($text-tertiary, 0.12);
       color: $text-secondary;
     }
 
     &--active {
-      background: rgba(39, 113, 255, 0.12);
+      background: var(--gt-info-soft);
+      // #1e5bb8 is a notably darker/more saturated blue than --gt-accent
+      // (#2771FF) — a deliberate "pressed" shade, not a --gt-* candidate.
       color: #1e5bb8;
     }
 
     &--closed {
-      background: rgba(1, 129, 86, 0.14);
+      background: var(--gt-primary-soft);
       color: $primary-hover;
     }
   }
@@ -281,7 +284,7 @@
     height: 100%;
     border-radius: 999px;
     background: $primary-color;
-    transition: width $transition-medium;
+    @include gt-transition-medium(width);
   }
 
   &__tsr-meta {

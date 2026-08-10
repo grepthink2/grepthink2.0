@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import { api, type ApiConversationSummary } from '@/lib/api';
-import { emailToDisplayName } from '@features/app/utils/memberUtils';
 import { useConversationMessages } from '../hooks/useConversationMessages';
 import { useConversations } from '../hooks/useConversations';
+import { conversationTitle } from '../conversationTitle';
 import { MessageBubble } from './MessageBubble';
 import { MessageComposer } from './MessageComposer';
 import { InitialsAvatar } from './InitialsAvatar';
@@ -39,16 +39,54 @@ export const ConversationThread: React.FC<Props> = ({
   hideHeader = false,
 }) => {
   const { user } = useAuth();
-  const { messages, loading, refetch, addOptimisticMessage } = useConversationMessages(conversation.id);
-  const { refetch: refetchInbox } = useConversations();
+  const {
+    messages,
+    loading,
+    loadingOlder,
+    hasMore,
+    loadOlder,
+    addOptimisticMessage,
+    confirmOptimistic,
+    dropOptimistic,
+  } = useConversationMessages(conversation.id);
+  const { refetch: refetchInbox, optimisticMarkRead } = useConversations();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
 
-  // Mark read on mount and on every poll tick where new messages arrived.
+  // Scroll bookkeeping: initial open lands at the newest message; prepends
+  // stay anchored; bottom appends are handled by the nearBottom effect.
+  const prevFirstId = useRef<string | null>(null);
+  const prevScrollHeight = useRef(0);
+  const didInitialScroll = useRef(false);
+
+  useEffect(() => {
+    didInitialScroll.current = false;
+    prevFirstId.current = null;
+    prevScrollHeight.current = 0;
+  }, [conversation.id]);
+
+  const isGroup = conversation.type !== 'dm';
+  const senderNames = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of conversation.participants) {
+      const name = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || p.email || 'Unknown';
+      map.set(p.id, name);
+    }
+    return map;
+  }, [conversation.participants]);
+
+  const title = conversationTitle(conversation);
+
+  // Mark read on mount and whenever new messages arrive; also clears the
+  // sidebar unread badge immediately instead of waiting on the next inbox
+  // refetch. The server call stays unconditional (idempotent); the local
+  // clear is gated so it only fires when there is a badge to clear.
   useEffect(() => {
     api.markConversationRead(conversation.id).catch(() => {
       // Non-fatal — next mount will retry.
     });
-  }, [conversation.id, messages.length]);
+    if (conversation.unread_count > 0) optimisticMarkRead(conversation.id);
+  }, [conversation.id, messages.length, conversation.unread_count, optimisticMarkRead]);
 
   // Auto-scroll to bottom when new messages arrive (only if user is near bottom).
   useEffect(() => {
@@ -59,6 +97,44 @@ export const ConversationThread: React.FC<Props> = ({
       el.scrollTop = el.scrollHeight;
     }
   }, [messages.length]);
+
+  // Load older history when the top sentinel scrolls into view.
+  useEffect(() => {
+    const sentinel = topSentinelRef.current;
+    const scroller = scrollRef.current;
+    if (!sentinel || !scroller || !hasMore) return;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !loadingOlder) void loadOlder();
+    }, { root: scroller, rootMargin: '120px' });
+    obs.observe(sentinel);
+    return () => obs.disconnect();
+  }, [hasMore, loadingOlder, loadOlder]);
+
+  useLayoutEffect(() => {
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    const firstId = messages[0]?.id ?? null;
+    const prevId = prevFirstId.current;
+
+    if (!didInitialScroll.current && !loading && messages.length > 0) {
+      // First page landed: open at the newest message. Also keeps the top
+      // sentinel out of view so it can't self-trigger a page fetch on open.
+      scroller.scrollTop = scroller.scrollHeight;
+      didInitialScroll.current = true;
+    } else if (
+      prevId !== null && firstId !== null && firstId !== prevId &&
+      messages.some(m => m.id === prevId)
+    ) {
+      // Older page prepended (previous first message still present, deeper):
+      // keep the viewport anchored. A bottom append never changes the first
+      // id, so realtime arrivals can't consume the anchor (the race the
+      // review found), and a reconnect reload (prevId absent) skips anchoring.
+      scroller.scrollTop += scroller.scrollHeight - prevScrollHeight.current;
+    }
+
+    prevFirstId.current = firstId;
+    prevScrollHeight.current = scroller.scrollHeight;
+  }, [messages, loading]);
 
   const myLatestSent = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -74,14 +150,6 @@ export const ConversationThread: React.FC<Props> = ({
       ? new Date(conversation.other_user_last_read_at)
       : null;
 
-  const otherFirst = conversation.other_user.first_name?.trim() ?? '';
-  const otherLast = conversation.other_user.last_name?.trim() ?? '';
-  const otherName =
-    `${otherFirst} ${otherLast}`.trim() ||
-    (conversation.other_user.email
-      ? emailToDisplayName(conversation.other_user.email)
-      : 'Unknown');
-
   const handleSend = async (body: string) => {
     const tempId = `temp-${Date.now()}`;
     addOptimisticMessage({
@@ -91,11 +159,14 @@ export const ConversationThread: React.FC<Props> = ({
       created_at: new Date().toISOString(),
     });
     try {
-      await api.sendMessage(conversation.other_user.id, body);
-      await Promise.all([refetch(), refetchInbox()]);
+      const res = await api.sendMessage({ conversationId: conversation.id, body });
+      confirmOptimistic(tempId, res.message);
+      // one refetch per send (not per received event): refreshes seen-at/can_send,
+      // no realtime path for reads pre-R1
+      void refetchInbox();
     } catch (err) {
       // Strip the optimistic message on failure so the thread reflects truth.
-      await refetch();
+      dropOptimistic(tempId);
       throw err;
     }
   };
@@ -106,12 +177,19 @@ export const ConversationThread: React.FC<Props> = ({
         <header className="messages-thread__header">
           <div className="messages-thread__header-left">
             <InitialsAvatar
-              email={conversation.other_user.email}
-              name={otherName}
-              imageUrl={conversation.other_user.image_url}
+              email={isGroup ? undefined : conversation.other_user?.email}
+              name={title}
+              imageUrl={isGroup ? undefined : conversation.other_user?.image_url}
               size={headerAvatarSize}
             />
-            <h2 className="messages-thread__title">{otherName}</h2>
+            <div className="messages-thread__header-text">
+              <h2 className="messages-thread__title">{title}</h2>
+              {isGroup && (
+                <div className="messages-thread__subtitle">
+                  {Array.from(senderNames.values()).join(', ')}
+                </div>
+              )}
+            </div>
           </div>
           <ConversationMenu
             conversationId={conversation.id}
@@ -122,6 +200,11 @@ export const ConversationThread: React.FC<Props> = ({
       )}
 
       <div className="messages-thread__scroll" ref={scrollRef}>
+        {hasMore && (
+          <div ref={topSentinelRef} className="messages-thread__older">
+            {loadingOlder ? 'Loading earlier messages…' : ''}
+          </div>
+        )}
         {loading && messages.length === 0 ? (
           <div className="messages-thread__skeleton" aria-busy="true">
             {THREAD_SKELETON_BUBBLES.map((b, i) => (
@@ -139,11 +222,29 @@ export const ConversationThread: React.FC<Props> = ({
             No messages yet. Send the first one below.
           </div>
         ) : (
-          messages.map(m => (
-            <MessageBubble key={m.id} message={m} isMine={m.sender_id === user?.id} />
-          ))
+          messages.map((m, i) => {
+            const day = new Date(m.created_at).toDateString();
+            const prevDay = i > 0 ? new Date(messages[i - 1].created_at).toDateString() : null;
+            return (
+              <React.Fragment key={m.id}>
+                {day !== prevDay && (
+                  <div className="messages-thread__day">
+                    {new Date(m.created_at).toLocaleDateString([], {
+                      month: 'short', day: 'numeric', year: 'numeric',
+                    })}
+                  </div>
+                )}
+                <MessageBubble
+                  message={m}
+                  isMine={m.sender_id === user?.id}
+                  author={isGroup ? senderNames.get(m.sender_id) ?? 'Unknown' : null}
+                  pending={m.id.startsWith('temp-')}
+                />
+              </React.Fragment>
+            );
+          })
         )}
-        {seenAt && (
+        {conversation.type === 'dm' && seenAt && (
           <div className="messages-thread__seen">
             Seen{' '}
             {seenAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
@@ -153,7 +254,9 @@ export const ConversationThread: React.FC<Props> = ({
 
       <MessageComposer
         disabled={!conversation.can_send}
-        disabledReason={`You and ${otherName} don't currently share a class. Conversation is read-only.`}
+        disabledReason={isGroup
+          ? "You're no longer in this team channel."
+          : `You and ${title} don't currently share a class. Conversation is read-only.`}
         onSend={handleSend}
       />
     </div>

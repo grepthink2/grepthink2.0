@@ -1,5 +1,13 @@
 @use '@styles/index.scss' as *;
 
+// This file predates the --gt-* design-token system: the count-badge/alert-icon
+// colors (#b3261e, #d08700) and the active/complete status-pill pairs
+// (#d4f5ee+#018156, #dce8f5+#2771ff — the same pill palette copy-pasted across
+// several Home/roster files) are raw hex left over from before the token
+// sweep, not a reviewed bespoke choice. Left as-is (not part of this token
+// sweep's touched scope) rather than churned as a side effect of wiring the
+// adherence lint — a real value sweep is follow-up work.
+
 .instructor-home {
   min-height: calc(100vh - 64px);
   padding: $spacing-lg $spacing-lg $spacing-xxl;
@@ -152,8 +160,8 @@
   }
 
   &:focus-visible {
-    outline: 2px solid $accent-color;
-    outline-offset: -2px;
+    outline: none;
+    box-shadow: inset var(--gt-focus-ring-tight);
   }
 }
 
@@ -221,10 +229,6 @@
     color: $error-color;
   }
 
-  &:focus-visible {
-    outline: 2px solid $accent-color;
-    outline-offset: 1px;
-  }
 }
 
 // ── Recent activity (placeholder) ──
@@ -291,8 +295,8 @@
   }
 
   &:focus-visible {
-    outline: 2px solid $primary-color;
-    outline-offset: -2px;
+    outline: none;
+    box-shadow: inset var(--gt-focus-ring-tight);
   }
 }
 

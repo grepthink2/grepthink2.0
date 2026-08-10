@@ -3,6 +3,7 @@ import { GraduationCap, Plus, X, UserMinus, Search } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import type { ApiClassTA, ApiProject, ApiStudent } from '@/lib/api';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './TAManagement.scss';
 
 function studentName(s: ApiStudent): string {
@@ -144,7 +145,18 @@ const TAManagement: React.FC = () => {
           </div>
 
           {loading ? (
-            <p className="ta-management__hint">Loading…</p>
+            <ul className="ta-management__list" aria-busy="true">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <li key={i} className="ta-card">
+                  <div className="ta-card__top">
+                    <div className="ta-card__identity">
+                      <Skeleton width={120} height={13} />
+                      <Skeleton width={150} height={11} style={{ marginTop: 4 }} />
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
           ) : tas.length === 0 ? (
             <p className="ta-management__hint">
               No TAs yet. Promote a student from the list on the right.
@@ -236,7 +248,16 @@ const TAManagement: React.FC = () => {
           </div>
 
           {loading ? (
-            <p className="ta-management__hint">Loading…</p>
+            <ul className="ta-management__list" aria-busy="true">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="student-row">
+                  <div className="student-row__identity">
+                    <Skeleton width={120} height={13} />
+                    <Skeleton width={150} height={11} style={{ marginTop: 4 }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
           ) : eligibleStudents.length === 0 ? (
             <p className="ta-management__hint">No eligible students found.</p>
           ) : (

@@ -1,11 +1,13 @@
 @use '@styles/index.scss' as *;
 
+// Predates the --gt-* design-token system; left as-is rather than churned
+// as a side effect of wiring the adherence lint.
 $ta-placeholder: #9a9a9a;
 
 .zoom-modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.45);
+  background-color: var(--gt-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,7 +27,7 @@ $ta-placeholder: #9a9a9a;
   background: $white;
   border-radius: 14px;
   padding: 22px 24px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22);
+  box-shadow: var(--gt-shadow-modal);
   font-family: $primary-font;
   display: flex;
   flex-direction: column;
@@ -107,10 +109,10 @@ $ta-placeholder: #9a9a9a;
 
 .zoom-modal__error {
   padding: 10px 12px;
-  background: #fee;
-  border: 1px solid #fcc;
+  background: var(--gt-error-soft);
+  border: 1px solid var(--gt-error);
   border-radius: $border-radius-sm;
-  color: #c33;
+  color: var(--gt-error);
   font-size: 0.75rem;
 }
 

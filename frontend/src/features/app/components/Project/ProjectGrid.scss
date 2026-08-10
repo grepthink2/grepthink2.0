@@ -1,5 +1,8 @@
 @use '@styles/index.scss' as *;
 
+// $tag-closed-* and the banner placeholder gray further down predate the
+// --gt-* design-token system; left as-is rather than churned as a side
+// effect of wiring the adherence lint.
 $tag-closed-bg: #dce8f5;
 $tag-closed-text: #2771ff;
 
@@ -28,6 +31,11 @@ $tag-closed-text: #2771ff;
     .project-grid__see-all {
       opacity: 1;
     }
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--gt-focus-ring), 0 0 4px rgba(0, 0, 0, 0.08);
   }
 }
 

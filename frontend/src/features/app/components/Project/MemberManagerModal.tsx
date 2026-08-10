@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import './MemberManagerModal.scss';
 
 import { emailToDisplayName, getInitials } from '@/features/app/utils/memberUtils';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { MessageButton } from '@features/messages/components/MessageButton';
 
 function projectRoleLabel(role: string): string {
@@ -434,7 +435,19 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                 />
               </div>
               {loadingStudents ? (
-                <p className="member-manager__muted">Loading class members...</p>
+                <ul className="member-manager__list" aria-busy="true">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <li key={i} className="member-manager__card">
+                      <div className="member-manager__avatar member-manager__avatar--grey">
+                        <Skeleton circle height={40} />
+                      </div>
+                      <div className="member-manager__card-main">
+                        <Skeleton width="45%" height={13} />
+                        <Skeleton width="60%" height={11} style={{ marginTop: 4 }} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               ) : (
                 <ul className="member-manager__list">
                   {filteredStudents.length === 0 ? (

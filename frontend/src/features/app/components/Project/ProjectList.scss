@@ -19,7 +19,7 @@
 }
 
 .projects-table__person-email {
-  color: #2771ff;
+  color: var(--gt-text-link);
   font-size: 0.78rem;
   text-decoration: none;
 
@@ -36,15 +36,17 @@
   font-weight: $font-weight-medium;
 
   &--positive {
-    color: #018156;
+    color: var(--gt-primary);
   }
 
+  // Same bespoke amber as AssignmentList.scss's $bar-orange — no close
+  // --gt-* equivalent, left as raw hex.
   &--neutral {
     color: #e6a817;
   }
 
   &--negative {
-    color: #d32f2f;
+    color: var(--gt-error);
   }
 }
 
@@ -58,7 +60,7 @@
   text-align: right;
   color: $primary-color;
   opacity: 0;
-  transition: opacity $transition-fast;
+  @include gt-transition(opacity);
 
   svg {
     vertical-align: middle;
@@ -77,10 +79,10 @@
   color: $primary-color;
   cursor: pointer;
   vertical-align: middle;
-  transition: background $transition-fast;
+  @include gt-transition(background);
 
   &:hover {
-    background: rgba($primary-color, 0.12);
+    background: var(--gt-primary-soft);
   }
 }
 
@@ -121,7 +123,7 @@
     cursor: pointer;
     touch-action: manipulation;
 
-    &:active { background-color: #f5f5f5; }
+    &:active { background-color: var(--gt-gray-50); }
 
     &-top {
       display: flex;

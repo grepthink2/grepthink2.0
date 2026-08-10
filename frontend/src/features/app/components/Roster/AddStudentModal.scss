@@ -4,7 +4,7 @@
   &__overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--gt-scrim);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -18,7 +18,7 @@
   max-width: 420px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--gt-shadow-modal);
 
   &__header {
     display: flex;
@@ -46,7 +46,7 @@
     align-items: center;
     padding: $spacing-xs;
     border-radius: $border-radius-sm;
-    transition: color $transition-fast, background $transition-fast;
+    @include gt-transition(color, background);
 
     &:hover {
       color: $text-primary;
@@ -93,18 +93,18 @@
     width: 100%;
     padding: 8px 12px;
     box-sizing: border-box;
-    transition: border-color $transition-fast, box-shadow $transition-fast;
+    @include gt-transition(border-color, box-shadow);
 
     &:focus {
       border-color: $primary-color;
-      box-shadow: 0 0 0 2px rgba($primary-color, 0.12);
+      box-shadow: 0 0 0 2px var(--gt-primary-soft);
     }
 
     &--error {
       border-color: $error-color;
 
       &:focus {
-        box-shadow: 0 0 0 2px rgba($error-color, 0.12);
+        box-shadow: 0 0 0 2px var(--gt-error-soft);
       }
     }
   }
@@ -113,6 +113,9 @@
     font-family: $primary-font;
     font-size: 0.8125rem;
     color: $error-color;
+    // Fill (.06)/border (.2) sit below the soft-token intensity; kept as
+    // rgba on $error-color to preserve this modal's muted tone (matches
+    // InviteModal.scss's identical error box).
     background: rgba($error-color, 0.06);
     border: 1px solid rgba($error-color, 0.2);
     border-radius: $border-radius-sm;
@@ -137,7 +140,7 @@
     padding: 8px $spacing-md;
     cursor: pointer;
     border: 1px solid transparent;
-    transition: background $transition-fast, opacity $transition-fast;
+    @include gt-transition(background, opacity);
     display: inline-flex;
     align-items: center;
     gap: $spacing-xs;

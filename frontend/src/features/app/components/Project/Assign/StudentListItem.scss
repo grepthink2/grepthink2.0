@@ -11,12 +11,13 @@
   border: 1px solid $assign-muted-border;
   border-radius: $border-radius-sm;
   background: $white;
-  transition: border-color $transition-fast, box-shadow $transition-fast,
-    opacity $transition-fast;
+  @include gt-transition(border-color, box-shadow, opacity);
   min-height: $assign-row-min-height;
 
   &--open {
     border-color: $primary-color;
+    // Deliberately stronger than --gt-primary-soft's ~10% (this is a 1px
+    // solid-reading emphasis ring, not a routine soft tint); left as-is.
     box-shadow: 0 0 0 1px rgba(1, 129, 86, 0.2);
   }
 
@@ -84,7 +85,7 @@
   font-weight: $font-weight-semibold;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background-color $transition-fast, color $transition-fast;
+  @include gt-transition(background-color, color);
 
   &:hover {
     background: $primary-color;
@@ -95,7 +96,7 @@
 .student-item__chevron {
   color: $text-tertiary;
   flex-shrink: 0;
-  transition: transform $transition-fast;
+  @include gt-transition(transform);
   // Restore pointer cursor just for the arrow area so it signals "expand".
   cursor: pointer;
 

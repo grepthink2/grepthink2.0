@@ -1,6 +1,14 @@
 /* "View as Student" preview chrome.
    The banner is fixed across the top; AppView pads the shell down by
-   --preview-banner-h while previewing (see AppView.scss). */
+   --preview-banner-h while previewing (see AppView.scss).
+
+   Deliberately themed apart from the rest of the app (violet/indigo
+   gradient + a cool dark-slate toast) so "you are previewing" reads as
+   unmistakably different chrome. That gradient, the toast's #1f2937, and
+   both this file's box-shadows are bespoke to this banner and left as-is —
+   no --gt-* token models this palette. Plain white text/overlays still use
+   --gt-text-inverse / raw rgba(255,255,255,...) per the sweep's usual
+   treatment. */
 
 .preview-banner {
   --preview-banner-h: 44px;
@@ -17,7 +25,7 @@
   gap: 1rem;
   padding: 0 1rem;
 
-  color: #fff;
+  color: var(--gt-text-inverse);
   font-size: 0.875rem;
   font-weight: 600;
   background: linear-gradient(90deg, #6d28d9, #4f46e5);
@@ -57,10 +65,11 @@
     border: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: 6px;
     background: transparent;
-    color: #fff;
+    color: var(--gt-text-inverse);
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
+    // 0.15s doesn't match either gt-transition mixin's duration (0.2s/0.3s).
     transition: background 0.15s ease;
 
     &:hover {
@@ -81,7 +90,7 @@
     padding: 0.625rem 1rem;
     border-radius: 8px;
 
-    color: #fff;
+    color: var(--gt-text-inverse);
     font-size: 0.8125rem;
     font-weight: 600;
     background: #1f2937;

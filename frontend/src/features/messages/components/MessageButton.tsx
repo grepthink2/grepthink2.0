@@ -30,14 +30,16 @@ export const MessageButton: React.FC<Props> = ({
   const { conversations } = useConversations();
 
   const handleClick = () => {
-    const existing = conversations.find(c => c.other_user.id === toUserId);
+    // DM-only affordance by design: other_user is null on team channels, so
+    // they can never match here — do not "fix" this to scan participants.
+    const existing = conversations.find(c => c.other_user?.id === toUserId);
     if (existing) {
-      navigate(`/app/messages/${existing.id}`);
+      navigate(`/app/messages/${existing.id}`, { viewTransition: true });
       return;
     }
     const params = new URLSearchParams({ to: toUserId });
     if (toUserName) params.set('name', toUserName);
-    navigate(`/app/messages/compose?${params.toString()}`);
+    navigate(`/app/messages/compose?${params.toString()}`, { viewTransition: true });
   };
 
   return (

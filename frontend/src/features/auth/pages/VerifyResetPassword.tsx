@@ -51,9 +51,9 @@ const VerifyResetPassword: React.FC = () => {
               </button>
               <div className="signupSection">
                 <span className="signupText">Wrong email?</span>
-                <div className="signupLink" onClick={handleBack}>
+                <button type="button" className="signupLink" onClick={handleBack}>
                   Back to Forgot Password
-                </div>
+                </button>
               </div>
             </div>
           </div>

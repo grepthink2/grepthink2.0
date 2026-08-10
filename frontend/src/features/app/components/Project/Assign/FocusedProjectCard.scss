@@ -95,8 +95,7 @@
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
   cursor: pointer;
-  transition: background-color $transition-fast, color $transition-fast,
-    border-color $transition-fast;
+  @include gt-transition(background-color, color, border-color);
 
   &:hover:not(:disabled) {
     background: $assign-surface-bg;

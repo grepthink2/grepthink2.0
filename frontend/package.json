@@ -9,6 +9,7 @@
     "dev:prod": "vite --mode prod",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "lint:design": "node scripts/design-adherence.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

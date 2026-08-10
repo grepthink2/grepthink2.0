@@ -1,6 +1,10 @@
 @use 'sass:color';
 @use '@styles/index.scss' as *;
 
+// The `&--purple`/`&--amber` accent colors near the bottom of this file
+// predate the --gt-* design-token system; left as-is rather than churned as
+// a side effect of wiring the adherence lint.
+
 .metric-card {
   display: flex;
   flex-direction: column;
@@ -62,8 +66,8 @@
     }
 
     &:focus-visible {
-      outline: 4px auto -webkit-focus-ring-color;
-      outline-offset: 2px;
+      outline: none;
+      box-shadow: var(--gt-focus-ring), 0 0 4px rgba(0, 0, 0, 0.08);
     }
   }
 

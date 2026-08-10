@@ -57,7 +57,7 @@
     font-weight: $font-weight-medium;
     color: $text-primary;
     cursor: pointer;
-    transition: background $transition-fast, border-color $transition-fast;
+    @include gt-transition(background, border-color);
 
     &:hover {
       background: $background;
@@ -80,6 +80,12 @@
   }
 
   &__file-input {
+    // Intentionally display:none (NOT the sr-only technique): this input is
+    // pure plumbing — the adjacent visible <button> triggers it via
+    // fileInputRef.current.click() and is the keyboard-accessible control.
+    // Making this focusable would add an invisible tab stop with no ring
+    // target. Contrast CreateClassModal.scss, whose label-wrapped input has
+    // no companion button and therefore must stay focusable.
     display: none;
   }
 
@@ -119,7 +125,7 @@
     font-family: $primary-font;
     color: $text-primary;
     background: $white;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color);
 
     &:focus {
       outline: none;
@@ -164,7 +170,7 @@
     font-family: $primary-font;
     font-weight: $font-weight-medium;
     cursor: pointer;
-    transition: background $transition-fast;
+    @include gt-transition(background);
     margin-left: auto;
 
     &:hover:not(:disabled) {

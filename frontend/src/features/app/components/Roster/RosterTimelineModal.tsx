@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { format, parseISO } from 'date-fns';
-import { X, Loader2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { api, type ApiRosterTimelineStudent } from '@/lib/api';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { formatPacificTimestamp } from '@features/app/utils/reviewDates';
 import './RosterTimelineModal.scss';
 
 interface RosterTimelineModalProps {
@@ -11,14 +12,9 @@ interface RosterTimelineModalProps {
   classId: string;
 }
 
-function formatTimestamp(iso: string | null): string {
-  if (!iso) return '—';
-  try {
-    return format(parseISO(iso), 'MMM d, yyyy h:mm a');
-  } catch {
-    return iso;
-  }
-}
+/** Descendants the hand-rolled focus trap below cycles Tab/Shift+Tab through. */
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const RosterTimelineModal: React.FC<RosterTimelineModalProps> = ({
   isOpen,
@@ -29,13 +25,45 @@ const RosterTimelineModal: React.FC<RosterTimelineModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+
+  // Deliberately does NOT gate on `loading`: the fetch effect below already
+  // guards against a post-close state update via its `cancelled` flag, so
+  // closing mid-load is safe. Gating here made Escape/the close button a
+  // no-op while a request was in flight — a WCAG 2.1.2 keyboard trap (with
+  // the focus trap above, Tab couldn't escape the dialog either).
   const handleClose = useCallback(() => {
-    if (loading) return;
     onClose();
-  }, [loading, onClose]);
+  }, [onClose]);
 
   const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); },
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+        return;
+      }
+
+      // Hand-rolled Tab trap — reference implementation for later gt modals.
+      // As of this writing no existing modal in the codebase traps focus
+      // (InviteModal/AddStudentModal manage open- and close-focus but let
+      // Tab walk out of the dialog into the page behind it), so this is the
+      // pattern later modals should copy.
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      const focusable = panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const withinPanel = panelRef.current.contains(document.activeElement);
+      const atEdge = e.shiftKey
+        ? document.activeElement === first || !withinPanel
+        : document.activeElement === last || !withinPanel;
+      if (atEdge) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      }
+    },
     [handleClose],
   );
 
@@ -45,13 +73,33 @@ const RosterTimelineModal: React.FC<RosterTimelineModalProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleKeyDown]);
 
+  // Move focus into the dialog on open (to the close button) and give it
+  // back to whatever triggered the modal (the roster's "Timeline" button)
+  // on close.
+  useEffect(() => {
+    if (isOpen) {
+      triggerRef.current = document.activeElement as HTMLElement | null;
+      const id = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
+      return () => window.clearTimeout(id);
+    }
+    triggerRef.current?.focus();
+    triggerRef.current = null;
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen || !classId) return;
 
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setRows([]);
+    // Inside the async IIFE so these aren't lexically direct statements of
+    // the effect body (satisfies react-hooks/set-state-in-effect) — same
+    // pattern as Sidebar.tsx's isTaForClass check. Still runs synchronously
+    // before the fetch kicks off below, so timing is unchanged.
+    void (async () => {
+      if (cancelled) return;
+      setLoading(true);
+      setError(null);
+      setRows([]);
+    })();
 
     api.getClassRosterTimeline(classId)
       .then(({ students }) => {
@@ -81,7 +129,7 @@ const RosterTimelineModal: React.FC<RosterTimelineModalProps> = ({
       aria-modal="true"
       aria-labelledby="roster-timeline-title"
     >
-      <div className="roster-timeline-modal">
+      <div className="roster-timeline-modal" ref={panelRef}>
         <header className="roster-timeline-modal__header">
           <div>
             <h2 id="roster-timeline-title" className="roster-timeline-modal__title">
@@ -96,6 +144,7 @@ const RosterTimelineModal: React.FC<RosterTimelineModalProps> = ({
             className="roster-timeline-modal__close"
             onClick={handleClose}
             aria-label="Close"
+            ref={closeButtonRef}
           >
             <X size={18} />
           </button>
@@ -103,9 +152,10 @@ const RosterTimelineModal: React.FC<RosterTimelineModalProps> = ({
 
         <div className="roster-timeline-modal__body">
           {loading && (
-            <div className="roster-timeline-modal__state">
-              <Loader2 size={20} className="roster-timeline-modal__spinner" />
-              <span>Loading timeline…</span>
+            <div className="roster-timeline-modal__skeleton" aria-busy="true">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} height={40} radius={8} />
+              ))}
             </div>
           )}
 
@@ -122,10 +172,10 @@ const RosterTimelineModal: React.FC<RosterTimelineModalProps> = ({
               <table className="roster-timeline-modal__table">
                 <thead>
                   <tr>
-                    <th>Student</th>
-                    <th>Joined course</th>
-                    <th>Joined team</th>
-                    <th>Dropped</th>
+                    <th scope="col">Student</th>
+                    <th scope="col">Joined course</th>
+                    <th scope="col">Joined team</th>
+                    <th scope="col">Dropped</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -135,11 +185,11 @@ const RosterTimelineModal: React.FC<RosterTimelineModalProps> = ({
                         <span className="roster-timeline-modal__name">{row.name}</span>
                         <span className="roster-timeline-modal__email">{row.email}</span>
                       </td>
-                      <td>{formatTimestamp(row.enrolled_at)}</td>
+                      <td>{formatPacificTimestamp(row.enrolled_at)}</td>
                       <td>
                         {row.team_joined_at ? (
                           <>
-                            {formatTimestamp(row.team_joined_at)}
+                            {formatPacificTimestamp(row.team_joined_at)}
                             {row.project_name && (
                               <span className="roster-timeline-modal__project">
                                 {row.project_name}
@@ -150,7 +200,7 @@ const RosterTimelineModal: React.FC<RosterTimelineModalProps> = ({
                           '—'
                         )}
                       </td>
-                      <td>{formatTimestamp(row.dropped_at)}</td>
+                      <td>{formatPacificTimestamp(row.dropped_at)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy } from 'react';
 import './App.scss';
 
 function ScrollToTop() {
@@ -22,30 +22,47 @@ import ForgetPassword from '@features/auth/pages/ForgotPassword';
 import VerifyResetPassword from '@features/auth/pages/VerifyResetPassword';
 import ResetPassword from '@features/auth/pages/ResetPassword';
 import ClassManagement from '@features/classes/pages/ClassManagement';
-import Projects from '@features/app/pages/Projects';
-import Roster from '@features/app/pages/Roster';
 import Modules from '@features/app/pages/Modules';
 import TAManagement from '@features/app/pages/TAManagement';
-import TAReview from '@features/app/pages/TAReview';
-import FinalReviews from '@features/app/pages/FinalReviews';
-import FinalReviewDetail from '@features/app/pages/FinalReviewDetail';
+import { RequireReviewAccess } from '@features/app/components/RequireReviewAccess';
 import TAMeetings from '@features/app/pages/TAMeetings';
-import TSRViewPage from '@features/app/pages/TSRViewPage';
-import FeedbackViewPage from '@features/app/pages/FeedbackViewPage';
 import Dashboard from '@features/app/pages/Dashboard';
-import ProjectDetails from '@features/app/pages/ProjectDetails';
-import CreateProject from '@features/app/pages/CreateProject';
-import Assign from '@features/app/components/Project/Assign/Assign';
-import Staffing from '@features/app/components/Project/Assign/Staffing';
 import MyClasses from '@features/app/pages/MyClasses';
 import Assignments from '@features/app/pages/Assignments';
-import AssignmentDetail from '@features/app/pages/AssignmentDetail';
 import BrowseProjects from '@features/app/pages/BrowseProjects';
 import MyProject from '@features/app/pages/MyProject';
-import Messages from '@features/messages/pages/Messages';
 import { ConversationsProvider } from '@features/messages/hooks/useConversations';
 import { NotificationsProvider } from '@features/notifications/hooks/useNotifications';
 import { PreviewProvider } from '@/lib/previewContext';
+
+// Heavy leaf routes — code-split with React.lazy so recharts, the big
+// review/roster/assignment forms, and long tables aren't part of the
+// initial bundle. They render under the single shared <Suspense> boundary
+// in AppView (wrapping its route Outlet), so the shell keeps rendering
+// while a chunk loads. Do NOT lazy the RequireReviewAccess guard itself —
+// only the two routes it wraps.
+const Messages = lazy(() => import('@features/messages/pages/Messages'));
+const Projects = lazy(() => import('@features/app/pages/Projects'));
+const Roster = lazy(() => import('@features/app/pages/Roster'));
+// TAReview shares the same heavy TSRS/TSRView subtree as TSRViewPage below
+// (both statically import '@features/app/components/TSRS/TSRView'); lazily
+// loading only one of them would leave that subtree in the main chunk via
+// the other, so both move together.
+const TAReview = lazy(() => import('@features/app/pages/TAReview'));
+const FinalReviews = lazy(() => import('@features/app/pages/FinalReviews'));
+const FinalReviewDetail = lazy(() => import('@features/app/pages/FinalReviewDetail'));
+const TSRViewPage = lazy(() => import('@features/app/pages/TSRViewPage'));
+const FeedbackViewPage = lazy(() => import('@features/app/pages/FeedbackViewPage'));
+const ProjectDetails = lazy(() => import('@features/app/pages/ProjectDetails'));
+const CreateProject = lazy(() => import('@features/app/pages/CreateProject'));
+// Assign is Staffing's sibling in the same folder/pattern — same size
+// profile, fully isolated component subtree (no other route imports it).
+const Assign = lazy(() => import('@features/app/components/Project/Assign/Assign'));
+const Staffing = lazy(() => import('@features/app/components/Project/Assign/Staffing'));
+// AssignmentDetail pulls in TSRS.tsx (recharts via ContributionsTab),
+// InterestForm, and FeedbackForm depending on assignment type — the
+// heaviest single leaf in the app after FinalReviewDetail.
+const AssignmentDetail = lazy(() => import('@features/app/pages/AssignmentDetail'));
 function App() {
   return (
     <Router>
@@ -97,8 +114,10 @@ function App() {
             <Route path="ta-management" element={<TAManagement />} />
             <Route path="ta-meetings" element={<TAMeetings />} />
             <Route path="ta-review" element={<TAReview />} />
-            <Route path="ta-review/final-reviews" element={<FinalReviews />} />
-            <Route path="ta-review/final-reviews/:projectId" element={<FinalReviewDetail />} />
+            <Route element={<RequireReviewAccess />}>
+              <Route path="ta-review/final-reviews" element={<FinalReviews />} />
+              <Route path="ta-review/final-reviews/:projectId" element={<FinalReviewDetail />} />
+            </Route>
             <Route path="ta-review/:assignmentId" element={<TAReview />} />
             <Route path="create-project" element={<CreateProject />} />
             <Route path="assign-projects" element={<Assign />} />

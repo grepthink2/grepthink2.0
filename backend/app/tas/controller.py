@@ -844,6 +844,27 @@ def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries:
     role='instructor' → single overall, by the instructor.
     Rows are replaced per (student, role); students not in the payload keep
     their existing rows.
+
+    Explicitly clearing a role's defining score(s) requires ALL of its
+    defining keys to be PRESENT in the entry with an explicit null — all
+    three of product/team/scrum for 'home', or 'overall' for
+    'review'/'instructor' — and then deletes that student's row for this
+    role instead of upserting an all-null placeholder. A key that is simply
+    ABSENT from the entry (never sent, as opposed to sent as an explicit
+    null — the view layer preserves this distinction via
+    ``model_dump(exclude_unset=True)``) is NOT a clear signal: it 400s
+    exactly like before, so a payload that's missing a field (a typo'd name,
+    a stale client) can never silently delete data instead of failing loudly.
+    An all-null row would be indistinguishable from "never scored" everywhere
+    else that reads this table (the detail view, team averages), so there is
+    no reason to keep it around; deleting also makes a clear idempotent (no
+    row to delete is a no-op, not an error). A partial combination within the
+    Home TA triple (some filled, some blank, or some keys simply missing) is
+    still rejected — clearing is all-three-or-nothing, matching the same
+    "need all three" rule saving already enforces. Clearing removes the
+    WHOLE row, including its `notes` value — callers must not request a
+    clear while a note draft/value exists for that student/role (see
+    FinalReviewDetail.tsx's entry-time guard on the frontend).
     """
     try:
         if role not in SCORE_ROLES:
@@ -882,18 +903,40 @@ def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries:
             if role == "home":
                 if entry.get("overall") is not None:
                     raise HTTPException(status_code=400, detail="Home TA rows carry category scores, not an overall")
-                values = {f: _round_score(entry.get(f), f) if entry.get(f) is not None else None
-                          for f in _HOME_FIELDS}
-                if any(values[f] is None for f in _HOME_FIELDS):
+                # A field the client never sent is absent from `entry`
+                # entirely (views.py dumps with exclude_unset=True) — only
+                # treat this as a clear when all three keys were explicitly
+                # sent (any value, including null); a merely-missing key
+                # must fail the same way it always has, below.
+                fields_present = all(f in entry for f in _HOME_FIELDS)
+                raw = {f: entry.get(f) for f in _HOME_FIELDS}
+                if fields_present and all(raw[f] is None for f in _HOME_FIELDS):
+                    # Explicit clear: product/team/scrum blanked together.
+                    client.table(SCORE_TABLE).delete().eq(
+                        "project_id", str(project_id)
+                    ).eq("student_id", student_id).eq("role", role).execute()
+                    saved += 1
+                    continue
+                if any(raw[f] is None for f in _HOME_FIELDS):
                     raise HTTPException(status_code=400, detail="Home TA scores need product, team, and scrum")
+                values = {f: _round_score(raw[f], f) for f in _HOME_FIELDS}
                 values["overall"] = None
             else:
                 if any(entry.get(f) is not None for f in _HOME_FIELDS):
                     raise HTTPException(status_code=400, detail="Only the Home TA enters category scores")
-                if entry.get("overall") is None:
+                if "overall" not in entry:
+                    # Never sent at all — 400, same message as always. Only
+                    # an explicit null (key present) below is a clear signal.
                     raise HTTPException(status_code=400, detail="An overall score is required")
+                if entry["overall"] is None:
+                    # Explicit clear.
+                    client.table(SCORE_TABLE).delete().eq(
+                        "project_id", str(project_id)
+                    ).eq("student_id", student_id).eq("role", role).execute()
+                    saved += 1
+                    continue
                 values = {f: None for f in _HOME_FIELDS}
-                values["overall"] = _round_score(entry.get("overall"), "overall")
+                values["overall"] = _round_score(entry["overall"], "overall")
 
             values["notes"] = (entry.get("notes") or "").strip() or None
             values["scored_by"] = user_id

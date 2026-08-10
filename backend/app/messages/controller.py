@@ -7,6 +7,7 @@ for the full design.
 from __future__ import annotations
 
 import logging
+import re
 
 from fastapi import HTTPException
 
@@ -15,6 +16,14 @@ from app.database.client import service_client
 logger = logging.getLogger(__name__)
 
 MAX_MESSAGE_CODEPOINTS = 1024
+
+# Cursor-half shapes for list_messages' keyset cursor. The point is to
+# exclude PostgREST filter metacharacters (dots, commas, parens) so cursor
+# values can't smuggle extra OR terms into the or= filter — not to enforce
+# a strict timestamp/UUID grammar. The id half is deliberately
+# alphanumeric-and-dashes (not hex-only): looser than UUID, still inert.
+_CURSOR_TS_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.+\-]+")
+_CURSOR_ID_RE = re.compile(r"[0-9a-zA-Z\-]{1,64}")
 
 
 def get_profile_roles(user_ids: list[str]) -> dict[str, str | None]:
@@ -110,14 +119,48 @@ def _get_or_create_conversation(a_id: str, b_id: str) -> str:
     return created.data[0]["id"]
 
 
-def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
+def notify_recipients(
+    *, recipient_ids: list[str], sender_id: str, conversation_id: str, body: str,
+) -> None:
+    """Fan out the new-message notification to every other participant."""
+    from app.notifications.controller import notify_new_message
+    for recipient_id in recipient_ids:
+        try:
+            notify_new_message(
+                recipient_id=recipient_id,
+                sender_id=sender_id,
+                conversation_id=conversation_id,
+                body=body,
+            )
+        except Exception:
+            # Notifications are best-effort: never fail a persisted send,
+            # never let one recipient's failure starve the rest.
+            logger.exception(
+                "notify_recipients: failed | recipient=%s conv=%s",
+                recipient_id, conversation_id,
+            )
+
+
+def send_message(
+    *,
+    sender_id: str,
+    body: str,
+    to_user_id: str | None = None,
+    conversation_id: str | None = None,
+) -> dict:
     """Validate, persist, and mark sender as read-up-to-now.
 
+    Targets exactly one of:
+      - to_user_id: DM shortcut (creates the conversation on first send);
+      - conversation_id: an existing conversation — DM or team channel.
     Returns: {"conversation_id": "...", "message": {...row...}}.
-    Raises HTTPException(400|403) on validation/eligibility failures.
+    Raises HTTPException(400|403|404) on validation/eligibility failures.
     """
-    if to_user_id == sender_id:
-        raise HTTPException(status_code=400, detail="Cannot message yourself")
+    if bool(to_user_id) == bool(conversation_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Provide exactly one of to_user_id or conversation_id",
+        )
 
     cleaned = body.strip()
     if not cleaned:
@@ -128,14 +171,29 @@ def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
             detail=f"Message exceeds {MAX_MESSAGE_CODEPOINTS} character limit",
         )
 
-    if not can_message(sender_id, to_user_id):
-        logger.info(
-            "send_message: blocked | sender=%s target=%s reason=ineligible",
-            sender_id, to_user_id,
-        )
-        raise HTTPException(status_code=403, detail="Cannot message this user")
-
-    conversation_id = _get_or_create_conversation(sender_id, to_user_id)
+    if conversation_id:
+        conv = _require_participant(conversation_id, sender_id)
+        participant_ids = _participant_ids(conversation_id)
+        if conv["type"] == "dm":
+            other_id = conv["user_b"] if conv["user_a"] == sender_id else conv["user_a"]
+            if not can_message(sender_id, other_id):
+                logger.info(
+                    "send_message: blocked | sender=%s conv=%s reason=dm-ineligible",
+                    sender_id, conversation_id,
+                )
+                raise HTTPException(status_code=403, detail="Cannot message this user")
+        recipient_ids = [uid for uid in participant_ids if uid != sender_id]
+    else:
+        if to_user_id == sender_id:
+            raise HTTPException(status_code=400, detail="Cannot message yourself")
+        if not can_message(sender_id, to_user_id):
+            logger.info(
+                "send_message: blocked | sender=%s target=%s reason=ineligible",
+                sender_id, to_user_id,
+            )
+            raise HTTPException(status_code=403, detail="Cannot message this user")
+        conversation_id = _get_or_create_conversation(sender_id, to_user_id)
+        recipient_ids = [to_user_id]
 
     inserted = (
         service_client.table("messages")
@@ -160,9 +218,8 @@ def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
         sender_id, conversation_id, message_row["id"],
     )
 
-    from app.notifications.controller import notify_new_message
-    notify_new_message(
-        recipient_id=to_user_id,
+    notify_recipients(
+        recipient_ids=recipient_ids,
         sender_id=sender_id,
         conversation_id=conversation_id,
         body=body,
@@ -171,15 +228,32 @@ def send_message(*, sender_id: str, to_user_id: str, body: str) -> dict:
     return {"conversation_id": conversation_id, "message": message_row}
 
 
-def _conversation_or_403(conversation_id: str, caller_id: str) -> dict:
-    """Load conversation, ensuring caller is one of its two participants.
+def _participant_ids(conversation_id: str) -> list[str]:
+    """All participant user ids for a conversation.
 
-    Raises 404 if the conversation doesn't exist, 403 if caller isn't a participant.
-    Honors Q4=A: read-only conversations stay readable by their participants.
+    HARD DEPENDENCY: conversation_participants exists only after the
+    2026-07-14_group_messaging.sql migration is applied (Task R1, gated).
+    Do not deploy or preview this code against an unmigrated database —
+    every conversation endpoint would 500, including existing DMs.
+    """
+    res = (
+        service_client.table("conversation_participants")
+        .select("user_id, role")
+        .eq("conversation_id", conversation_id)
+        .execute()
+    )
+    return [r["user_id"] for r in (res.data or [])]
+
+
+def _require_participant(conversation_id: str, caller_id: str) -> dict:
+    """Load conversation, ensuring caller is a participant.
+
+    Raises 404 if the conversation doesn't exist, 403 if caller isn't a
+    participant. Read-only conversations stay readable by participants.
     """
     res = (
         service_client.table("conversations")
-        .select("id, user_a, user_b")
+        .select("id, type, user_a, user_b, project_id")
         .eq("id", conversation_id)
         .maybe_single()
         .execute()
@@ -188,7 +262,7 @@ def _conversation_or_403(conversation_id: str, caller_id: str) -> dict:
     conv = res.data if res is not None else None
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    if caller_id not in (conv["user_a"], conv["user_b"]):
+    if caller_id not in _participant_ids(conversation_id):
         logger.warning(
             "messages: participant check failed | caller=%s conv=%s",
             caller_id, conversation_id,
@@ -197,27 +271,65 @@ def _conversation_or_403(conversation_id: str, caller_id: str) -> dict:
     return conv
 
 
-def list_messages(*, conversation_id: str, caller_id: str, limit: int = 50) -> list[dict]:
-    """Latest `limit` messages for a conversation, newest first.
+def list_messages(
+    *,
+    conversation_id: str,
+    caller_id: str,
+    limit: int = 50,
+    before: str | None = None,
+) -> dict:
+    """A page of messages, newest first, with keyset pagination.
 
-    Spec Q9=A: no scroll-up pagination in v1; we always return the latest
-    `limit` and the frontend re-fetches the same set every poll tick.
+    `before` is an opaque cursor "<created_at>|<id>" from a previous page.
+    Returns {"messages": [...], "next_cursor": str | None} — next_cursor is
+    None when there is no older history.
     """
-    _conversation_or_403(conversation_id, caller_id)
-    res = (
+    _require_participant(conversation_id, caller_id)
+    limit = max(1, min(limit, 100))
+
+    # Validate the cursor before touching the DB client: fail fast on bad
+    # input rather than depend on a service_client that may be unset.
+    before_created_at: str | None = None
+    before_id: str | None = None
+    if before is not None:
+        try:
+            before_created_at, before_id = before.split("|", 1)
+            if not before_created_at or not before_id:
+                raise ValueError
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Malformed cursor")
+        if not (_CURSOR_TS_RE.fullmatch(before_created_at)
+                and _CURSOR_ID_RE.fullmatch(before_id)):
+            raise HTTPException(status_code=400, detail="Malformed cursor")
+
+    query = (
         service_client.table("messages")
         .select("id, sender_id, body, created_at")
         .eq("conversation_id", conversation_id)
+    )
+    if before_created_at is not None:
+        query = query.or_(
+            f"created_at.lt.{before_created_at},"
+            f"and(created_at.eq.{before_created_at},id.lt.{before_id})"
+        )
+    res = (
+        query
         .order("created_at", desc=True)
+        .order("id", desc=True)
         .limit(limit)
         .execute()
     )
-    return res.data or []
+    messages = res.data or []
+    next_cursor = None
+    if len(messages) == limit:
+        tail = messages[-1]
+        next_cursor = f"{tail['created_at']}|{tail['id']}"
+    return {"messages": messages, "next_cursor": next_cursor}
 
 
 def mark_read(*, conversation_id: str, caller_id: str) -> None:
     """Upsert caller's read marker to now()."""
-    _conversation_or_403(conversation_id, caller_id)
+    _require_participant(conversation_id, caller_id)
     from datetime import datetime, timezone
     service_client.table("conversation_reads").upsert({
         "conversation_id": conversation_id,
@@ -229,21 +341,13 @@ def mark_read(*, conversation_id: str, caller_id: str) -> None:
     dismiss_message_notifications(caller_id, conversation_id)
 
 
-# Soft cap on how many messages we pull when computing the inbox in bulk.
-# 5_000 covers every realistic class (≈50 conversations × ≈100 messages) and
-# keeps the JSON payload small. Conversations whose last message falls
-# outside this window are detected in code and patched up via a single
-# fallback query each (almost always 0).
-_INBOX_BULK_MESSAGE_LIMIT = 5_000
-
-
 def delete_conversation_for_user(*, conversation_id: str, caller_id: str) -> None:
     """Hide the conversation from the caller's inbox (idempotent).
 
     Other party is unaffected. The conversation reappears in caller's inbox
     if the other party sends a new message after this delete.
     """
-    _conversation_or_403(conversation_id, caller_id)
+    _require_participant(conversation_id, caller_id)
     from datetime import datetime, timezone
     service_client.table("conversation_deletes").upsert({
         "conversation_id": conversation_id,
@@ -257,188 +361,142 @@ def delete_conversation_for_user(*, conversation_id: str, caller_id: str) -> Non
 
 
 def list_inbox(*, caller_id: str) -> list[dict]:
-    """Return all conversations the caller participates in, hydrated with
-    other_user, last_message, unread_count, other_user_last_read_at, can_send.
+    """Caller's conversations (DMs + team channels), hydrated and sorted.
 
-    Filters out conversations with no messages (last_message_at IS NULL).
-    Sorted by last_message_at DESC.
+    One SQL round trip: the messages_inbox() Postgres function computes
+    last-message previews, unread counts (bounded, index-backed), the
+    participant list, per-user hide state, and DM can_send — replacing the
+    old bulk pull of up to 5,000 messages into Python memory. Must be
+    called via the service-role client: under an RLS'd role the
+    participants array would collapse to the caller's own row.
 
-    Performance: this used to be O(N) per-conversation queries (last
-    message, unread count, plus 5 ``can_message`` queries each). It is now
-    O(1) bulk queries regardless of conversation count: one for the
-    conversations themselves, one for profiles+roles, one for read marks,
-    one for messages (which feeds both last-message-preview and unread
-    counts), and two for shared-class lookups across all peers. With ~10
-    conversations the difference is roughly 70 round-trips → 6.
+    HARD DEPENDENCY: the messages_inbox() SQL function exists only after
+    the 2026-07-14 migration (Task R1, gated).
     """
-    convs = (
-        service_client.table("conversations")
-        .select("id, user_a, user_b, last_message_at")
-        .or_(f"user_a.eq.{caller_id},user_b.eq.{caller_id}")
-        .not_.is_("last_message_at", "null")
-        .order("last_message_at", desc=True)
+    res = service_client.rpc("messages_inbox", {"p_user": caller_id}).execute()
+    rows = res.data or []
+    out: list[dict] = []
+    for r in rows:
+        parts = r.get("participants") or []  # `or []`: RPC emits null, not missing key
+        other = None
+        other_last_read = None
+        if r["type"] == "dm":
+            others = [p for p in parts if p["id"] != caller_id]
+            # Peer absent from participants should be unreachable (DM
+            # user_a/user_b FKs have no cascade), but fail soft rather than 500.
+            if others:
+                o = others[0]
+                first = (o.get("first_name") or "").strip()
+                last = (o.get("last_name") or "").strip()
+                other = {
+                    "id": o["id"],
+                    "email": o.get("email"),
+                    "name": f"{first} {last}".strip() or None,
+                    "first_name": o.get("first_name"),
+                    "last_name": o.get("last_name"),
+                    "image_url": o.get("image_url"),
+                }
+                other_last_read = o.get("last_read_at")
+        out.append({
+            "id": r["id"],
+            "type": r["type"],
+            "project_id": r.get("project_id"),
+            "team_name": r.get("team_name"),
+            "participants": parts,
+            "other_user": other,
+            "last_message": r.get("last_message"),
+            "unread_count": r.get("unread_count") or 0,
+            "other_user_last_read_at": other_last_read,
+            "can_send": bool(r.get("can_send")),
+            "last_message_at": r.get("last_message_at"),
+        })
+    return out
+
+
+def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
+    """Everyone the caller may DM: peers across the caller's classes
+    (enrolled students/TAs + class owners), minus self and minus
+    instructor↔instructor pairs. Optional case-insensitive name/email filter.
+
+    Mirrors can_message() eligibility — keep the two in sync (same
+    convention as the messages_inbox RPC).
+
+    Replaces the frontend's per-class getClassStudents() fan-out.
+    """
+    owned = (
+        service_client.table("classes")
+        .select("id, created_by")
+        .eq("created_by", caller_id)
         .execute()
     )
-    rows = convs.data or []
-    if not rows:
-        return []
-
-    conv_ids = [r["id"] for r in rows]
-
-    # Per-user delete: a conversation is hidden from the caller iff
-    # they have a conversation_deletes row AND last_message_at hasn't
-    # advanced past their deleted_at. New activity reopens the conv.
-    deletes_res = (
-        service_client.table("conversation_deletes")
-        .select("conversation_id, deleted_at")
+    enrolled = (
+        service_client.table("class_enrollments")
+        .select("class_id")
         .eq("user_id", caller_id)
-        .in_("conversation_id", conv_ids)
         .execute()
     )
-    deleted_at_by_conv = {
-        d["conversation_id"]: d["deleted_at"] for d in (deletes_res.data or [])
-    }
-    rows = [
-        r for r in rows
-        if r["id"] not in deleted_at_by_conv
-        or (r["last_message_at"] and r["last_message_at"] > deleted_at_by_conv[r["id"]])
-    ]
-    if not rows:
+    class_ids = sorted(
+        {r["id"] for r in (owned.data or [])}
+        | {r["class_id"] for r in (enrolled.data or [])}
+    )
+    if not class_ids:
         return []
-    conv_ids = [r["id"] for r in rows]
 
-    other_ids = [
-        (r["user_b"] if r["user_a"] == caller_id else r["user_a"])
-        for r in rows
-    ]
-    # Caller is included so we can look up the caller's role + classes in
-    # the same bulk queries we use for every peer.
-    all_user_ids = list({*other_ids, caller_id})
+    peers_enrolled = (
+        service_client.table("class_enrollments")
+        .select("class_id, user_id")
+        .in_("class_id", class_ids)
+        .execute()
+    )
+    peers_owning = (
+        service_client.table("classes")
+        .select("id, created_by")
+        .in_("id", class_ids)
+        .execute()
+    )
+    peer_ids = (
+        {r["user_id"] for r in (peers_enrolled.data or [])}
+        | {r["created_by"] for r in (peers_owning.data or [])}
+    ) - {caller_id}
+    if not peer_ids:
+        return []
 
-    # ----- bulk read 1: profiles for everyone ----------------------------
-    # Only select columns that exist on every deployment. Some schemas have
-    # no ``profiles.name`` (display name is derived from email in the API).
     profiles_res = (
         service_client.table("profiles")
         .select("id, email, role, first_name, last_name, image_url")
-        .in_("id", all_user_ids)
+        .in_("id", sorted(peer_ids | {caller_id}))
         .execute()
     )
-    profiles_by_id: dict[str, dict] = {
-        p["id"]: p for p in (profiles_res.data or [])
-    }
+    profiles = {p["id"]: p for p in (profiles_res.data or [])}
+    caller_role = (profiles.get(caller_id) or {}).get("role")
 
-    # ----- bulk read 2: read markers across all caller-relevant convs ---
-    reads_res = (
-        service_client.table("conversation_reads")
-        .select("conversation_id, user_id, last_read_at")
-        .in_("conversation_id", conv_ids)
-        .execute()
-    )
-    # reads_by_conv: {conv_id: {user_id: last_read_at}}
-    reads_by_conv: dict[str, dict[str, str]] = {}
-    for r in (reads_res.data or []):
-        reads_by_conv.setdefault(r["conversation_id"], {})[r["user_id"]] = r["last_read_at"]
-
-    # ----- bulk read 3: messages for every conversation ----------------
-    # Used twice: (a) latest message preview per conversation,
-    # (b) per-conversation unread counts. Capped to keep the payload
-    # bounded — see _INBOX_BULK_MESSAGE_LIMIT.
-    msgs_res = (
-        service_client.table("messages")
-        .select("id, conversation_id, sender_id, body, created_at")
-        .in_("conversation_id", conv_ids)
-        .order("created_at", desc=True)
-        .limit(_INBOX_BULK_MESSAGE_LIMIT)
-        .execute()
-    )
-    last_msg_by_conv: dict[str, dict] = {}
-    unread_by_conv: dict[str, int] = {cid: 0 for cid in conv_ids}
-    for m in (msgs_res.data or []):
-        cid = m["conversation_id"]
-        # First time we hit a conversation in desc order = its latest msg.
-        if cid not in last_msg_by_conv:
-            last_msg_by_conv[cid] = {
-                "id": m["id"],
-                "sender_id": m["sender_id"],
-                "body": m["body"],
-                "created_at": m["created_at"],
-            }
-        if m["sender_id"] == caller_id:
-            continue
-        caller_last_read = reads_by_conv.get(cid, {}).get(caller_id)
-        if caller_last_read is None or m["created_at"] > caller_last_read:
-            unread_by_conv[cid] = unread_by_conv.get(cid, 0) + 1
-
-    # Fallback: any conversation whose last message wasn't in the bulk
-    # window (extremely large histories). Each missing conv costs one
-    # tiny query; in practice this loop is empty.
-    missing_last = [cid for cid in conv_ids if cid not in last_msg_by_conv]
-    for cid in missing_last:
-        fallback = (
-            service_client.table("messages")
-            .select("id, sender_id, body, created_at")
-            .eq("conversation_id", cid)
-            .order("created_at", desc=True)
-            .limit(1)
-            .execute()
-        )
-        if fallback.data:
-            last_msg_by_conv[cid] = fallback.data[0]
-
-    # ----- bulk reads 4 & 5: shared-class lookup for can_send ---------
-    owned_res = (
-        service_client.table("classes")
-        .select("id, created_by")
-        .in_("created_by", all_user_ids)
-        .execute()
-    )
-    enrolled_res = (
-        service_client.table("class_enrollments")
-        .select("class_id, user_id")
-        .in_("user_id", all_user_ids)
-        .execute()
-    )
-    user_to_classes: dict[str, set[str]] = {uid: set() for uid in all_user_ids}
-    for r in (owned_res.data or []):
-        user_to_classes.setdefault(r["created_by"], set()).add(r["id"])
-    for r in (enrolled_res.data or []):
-        user_to_classes.setdefault(r["user_id"], set()).add(r["class_id"])
-
-    caller_role = (profiles_by_id.get(caller_id) or {}).get("role")
-    caller_classes = user_to_classes.get(caller_id, set())
-
-    def _can_send_to(other_id: str) -> bool:
-        if other_id == caller_id:
-            return False
-        other_role = (profiles_by_id.get(other_id) or {}).get("role")
-        # Spec: no instructor↔instructor messaging.
-        if caller_role == "instructor" and other_role == "instructor":
-            return False
-        return bool(caller_classes & user_to_classes.get(other_id, set()))
-
+    needle = (query or "").strip().lower()[:100]
     out: list[dict] = []
-    for row in rows:
-        cid = row["id"]
-        other_id = row["user_b"] if row["user_a"] == caller_id else row["user_a"]
-        peer_profile = profiles_by_id.get(other_id) or {}
-        first = (peer_profile.get("first_name") or "").strip()
-        last = (peer_profile.get("last_name") or "").strip()
-        display_name = f"{first} {last}".strip() or None
+    for uid in sorted(peer_ids):
+        p = profiles.get(uid)
+        if not p:
+            # Deliberate: enrollments whose profiles row is missing (orphaned
+            # enrollment / auth-glue gap) are omitted — an unnameable contact
+            # is worse than an absent one. can_message stays permissive, so
+            # such users remain messageable via direct sends.
+            continue
+        if caller_role == "instructor" and p.get("role") == "instructor":
+            continue
+        first = (p.get("first_name") or "").strip()
+        last = (p.get("last_name") or "").strip()
+        name = f"{first} {last}".strip() or None
+        if needle:
+            haystack = f"{name or ''} {p.get('email') or ''}".lower()
+            if needle not in haystack:
+                continue
         out.append({
-            "id": cid,
-            "other_user": {
-                "id": other_id,
-                "email": peer_profile.get("email"),
-                "name": display_name,
-                "first_name": peer_profile.get("first_name"),
-                "last_name": peer_profile.get("last_name"),
-                "image_url": peer_profile.get("image_url"),
-            },
-            "last_message": last_msg_by_conv.get(cid),
-            "unread_count": unread_by_conv.get(cid, 0),
-            "other_user_last_read_at": reads_by_conv.get(cid, {}).get(other_id),
-            "can_send": _can_send_to(other_id),
-            "last_message_at": row["last_message_at"],
+            "id": uid,
+            "name": name,
+            "first_name": p.get("first_name"),
+            "last_name": p.get("last_name"),
+            "email": p.get("email"),
+            "image_url": p.get("image_url"),
+            "role": p.get("role"),
         })
-    return out
+    out.sort(key=lambda c: (c["name"] or c["email"] or "").lower())
+    return out[:500]  # accepted cap: course-scale peers ≪ 500; no has_more contract (see plan B7)

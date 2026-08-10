@@ -18,6 +18,7 @@ import GradientBackgroundWrapper from '@features/auth/components/GradientBackGro
 import arrowIcon from '@assets/Arrow.svg?url';
 import { useUser } from '@/lib/auth';
 import { api } from '@/lib/api';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './RoleSelection.scss';
 
 type Role = 'instructor' | 'student';
@@ -106,8 +107,8 @@ const RoleSelection: React.FC = () => {
       <>
         <GradientBackgroundWrapper />
         <div className="pageWrapper">
-          <div className="container">
-            <p className="subtext">Loading...</p>
+          <div className="container" aria-busy="true">
+            <Skeleton width={180} height={16} />
           </div>
         </div>
       </>

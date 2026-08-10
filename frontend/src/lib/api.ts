@@ -469,6 +469,8 @@ export interface ApiFeedbackOverview {
 
 // ----- Messages ------------------------------------------------------------
 
+export type ConversationType = 'dm' | 'team_ta' | 'team_instructor' | 'team_members';
+
 export interface ApiMessageOtherUser {
   id: string;
   email: string | null;
@@ -476,6 +478,16 @@ export interface ApiMessageOtherUser {
   first_name?: string | null;
   last_name?: string | null;
   image_url?: string | null;
+}
+
+export interface ApiParticipant {
+  id: string;
+  role: 'member' | 'ta' | 'instructor';
+  email: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  image_url?: string | null;
+  last_read_at?: string | null;
 }
 
 export interface ApiMessagePreview {
@@ -494,12 +506,27 @@ export interface ApiMessage {
 
 export interface ApiConversationSummary {
   id: string;
-  other_user: ApiMessageOtherUser;
+  type: ConversationType;
+  project_id: string | null;
+  team_name: string | null;
+  participants: ApiParticipant[];
+  /** Populated for type='dm' only. */
+  other_user: ApiMessageOtherUser | null;
   last_message: ApiMessagePreview | null;
   unread_count: number;
   other_user_last_read_at: string | null;
   can_send: boolean;
   last_message_at: string | null;
+}
+
+export interface ApiContact {
+  id: string;
+  name: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  email: string | null;
+  image_url?: string | null;
+  role?: string | null;
 }
 
 export interface ApiNotification {
@@ -1404,22 +1431,38 @@ export const api = {
 
   // ----- Messages ----------------------------------------------------------
 
-  /** Inbox: caller's conversations sorted by latest activity. */
+  /** Inbox: caller's conversations (DMs + team channels) by latest activity. */
   getConversations: async () => {
     return apiRequest<{ conversations: ApiConversationSummary[] }>('/api/messages/conversations');
   },
 
-  /** Send a message — creates the conversation on first send to this user. */
-  sendMessage: async (toUserId: string, body: string) => {
+  /** Send a message. Exactly one target: an existing conversation (DM or
+   *  team channel) via conversationId, or a new DM via toUserId. */
+  sendMessage: async (args: { conversationId?: string; toUserId?: string; body: string }) => {
     return apiRequest<{ conversation_id: string; message: ApiMessage }>('/api/messages', {
       method: 'POST',
-      body: JSON.stringify({ to_user_id: toUserId, body }),
+      body: JSON.stringify({
+        conversation_id: args.conversationId,
+        to_user_id: args.toUserId,
+        body: args.body,
+      }),
     });
   },
 
-  /** Latest 50 messages in a conversation (newest first). */
-  getMessages: async (conversationId: string) => {
-    return apiRequest<{ messages: ApiMessage[] }>(`/api/messages/conversations/${conversationId}/messages`);
+  /** A page of messages (newest first). Pass `before` (next_cursor from the
+   *  previous page) to load older history. The cursor is OPAQUE — echo it
+   *  byte-for-byte; never parse or re-serialize it (backend 400s otherwise). */
+  getMessages: async (conversationId: string, opts?: { before?: string }) => {
+    const params = opts?.before ? `?before=${encodeURIComponent(opts.before)}` : '';
+    return apiRequest<{ messages: ApiMessage[]; next_cursor: string | null }>(
+      `/api/messages/conversations/${conversationId}/messages${params}`,
+    );
+  },
+
+  /** Server-side messageable-users list (replaces per-class fan-out). */
+  getContacts: async (q?: string) => {
+    const params = q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+    return apiRequest<{ contacts: ApiContact[] }>(`/api/messages/contacts${params}`);
   },
 
   /** Mark conversation as read through now(). 204 on success. */

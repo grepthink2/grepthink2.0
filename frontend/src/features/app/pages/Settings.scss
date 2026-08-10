@@ -4,7 +4,7 @@
   &__overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: var(--gt-scrim);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -21,7 +21,7 @@
   background: $white;
   border-radius: $border-radius-md;
   overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--gt-shadow-modal);
   font-family: $primary-font;
 
   // ── Left nav ─────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@
   &__nav {
     width: 200px;
     flex-shrink: 0;
-    background: #f7f7f7;
+    background: var(--gt-gray-50);
     border-right: 1px solid $border-color;
     padding: $spacing-lg $spacing-md;
     display: flex;
@@ -68,20 +68,20 @@
     font-family: $primary-font;
     color: $text-secondary;
     cursor: pointer;
-    transition: background $transition-fast, color $transition-fast;
+    @include gt-transition(background, color);
 
     svg {
       flex-shrink: 0;
-      transition: color $transition-fast;
+      @include gt-transition(color);
     }
 
     &:hover {
-      background: rgba(0, 0, 0, 0.05);
+      background: var(--gt-gray-100);
       color: $text-primary;
     }
 
     &--active {
-      background: rgba($primary-color, 0.1);
+      background: var(--gt-primary-soft);
       color: $primary-color;
       font-weight: $font-weight-medium;
 
@@ -115,7 +115,7 @@
     border-radius: $border-radius-sm;
     color: $text-tertiary;
     cursor: pointer;
-    transition: background $transition-fast, color $transition-fast;
+    @include gt-transition(background, color);
     z-index: 2;
 
     &:hover {
@@ -193,7 +193,7 @@
     font-weight: $font-weight-medium;
     color: $text-primary;
     cursor: pointer;
-    transition: background $transition-fast;
+    @include gt-transition(background);
 
     &:hover {
       background: $background;
@@ -216,6 +216,12 @@
   }
 
   &__file-input {
+    // Intentionally display:none (NOT the sr-only technique): this input is
+    // pure plumbing — the adjacent visible <button> triggers it via
+    // fileInputRef.current.click() and is the keyboard-accessible control.
+    // Making this focusable would add an invisible tab stop with no ring
+    // target. Contrast CreateClassModal.scss, whose label-wrapped input has
+    // no companion button and therefore must stay focusable.
     display: none;
   }
 
@@ -247,7 +253,7 @@
     font-family: $primary-font;
     color: $text-primary;
     background: $white;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color);
 
     &:focus {
       outline: none;
@@ -277,7 +283,7 @@
     border: 1px solid $border-color;
     border-radius: $border-radius-sm;
     overflow: hidden;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color);
 
     &:focus-within {
       border-color: $primary-color;
@@ -383,7 +389,7 @@
     font-family: $primary-font;
     font-weight: $font-weight-medium;
     cursor: pointer;
-    transition: background $transition-fast;
+    @include gt-transition(background);
 
     &:hover:not(:disabled) {
       background: $primary-hover;

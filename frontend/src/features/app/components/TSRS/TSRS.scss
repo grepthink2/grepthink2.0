@@ -20,7 +20,7 @@
   padding: $spacing-xxl $spacing-lg;
   background: $background;
   border-radius: $border-radius-md;
-  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--gt-shadow-card);
   text-align: center;
 }
 
@@ -31,7 +31,7 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background-color: rgba($primary-color, 0.12);
+  background-color: var(--gt-primary-soft);
   color: $primary-color;
   font-size: 2rem;
   font-weight: $font-weight-semibold;

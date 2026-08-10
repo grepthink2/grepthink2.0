@@ -2,7 +2,8 @@ import React, { useRef, useState } from 'react';
 import { LuSearch, LuX } from 'react-icons/lu';
 import type { ApiConversationSummary } from '@/lib/api';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
-import { emailToDisplayName } from '@features/app/utils/memberUtils';
+import { useAuth } from '@/lib/auth';
+import { conversationTitle, conversationBadge } from '../conversationTitle';
 import { formatRelativeTime } from '../utils/relativeTime';
 import { InitialsAvatar } from './InitialsAvatar';
 import { ConversationMenu } from './ConversationMenu';
@@ -34,20 +35,15 @@ export const ConversationList: React.FC<Props> = ({
   avatarSize = 51,
   showHeader = true,
 }) => {
+  const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const filtered = searchQuery
-    ? conversations.filter(c => {
-        const first = c.other_user.first_name?.trim() ?? '';
-        const last = c.other_user.last_name?.trim() ?? '';
-        const fullName = `${first} ${last}`.trim();
-        const name =
-          fullName ||
-          (c.other_user.email ? emailToDisplayName(c.other_user.email) : '');
-        return name.toLowerCase().includes(searchQuery.toLowerCase());
-      })
+    ? conversations.filter(c =>
+        conversationTitle(c).toLowerCase().includes(searchQuery.toLowerCase()),
+      )
     : conversations;
 
   const renderHeader = () =>
@@ -138,13 +134,10 @@ export const ConversationList: React.FC<Props> = ({
       <ul className="messages-list__items">
         {filtered.map(c => {
           const isActive = c.id === activeId;
-          const first = c.other_user.first_name?.trim() ?? '';
-          const last = c.other_user.last_name?.trim() ?? '';
-          const fullName = `${first} ${last}`.trim();
-          const name =
-            fullName ||
-            (c.other_user.email ? emailToDisplayName(c.other_user.email) : 'Unknown user');
-          const preview = c.last_message?.body ?? '';
+          const isChannel = c.type !== 'dm';
+          const name = conversationTitle(c);
+          const mine = c.last_message?.sender_id === user?.id;
+          const preview = c.last_message ? `${mine ? 'You: ' : ''}${c.last_message.body}` : '';
           const time = formatRelativeTime(c.last_message_at);
           const unread = c.unread_count;
           const unreadLabel = unread > 99 ? '99+' : String(unread);
@@ -163,14 +156,19 @@ export const ConversationList: React.FC<Props> = ({
               }}
             >
               <InitialsAvatar
-                email={c.other_user.email}
+                email={isChannel ? undefined : c.other_user?.email}
                 name={name}
-                imageUrl={c.other_user.image_url}
+                imageUrl={isChannel ? undefined : c.other_user?.image_url}
                 size={avatarSize}
               />
               <div className="messages-list__body">
                 <div className="messages-list__row">
                   <span className="messages-list__name">{name}</span>
+                  {conversationBadge(c.type) && (
+                    <span className={`gt-convo__chip gt-convo__chip--${c.type}`}>
+                      {conversationBadge(c.type)}
+                    </span>
+                  )}
                   <span className="messages-list__time">{time}</span>
                 </div>
                 <div className="messages-list__row">

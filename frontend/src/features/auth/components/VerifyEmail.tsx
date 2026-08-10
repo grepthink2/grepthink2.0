@@ -126,10 +126,10 @@ const VerifyEmail: React.FC<VerifyEmailProps> = ({
         </button>
         <div className="signupSection">
           <span className="signupText">{backText}</span>
-          <div className="signupLink" onClick={onBack}>
+          <button type="button" className="signupLink" onClick={onBack}>
             {backLabel}
-            <img src={arrowIcon} alt="arrow" className="arrowIcon" />
-          </div>
+            <img src={arrowIcon} alt="" className="arrowIcon" />
+          </button>
         </div>
       </div>
     </div>

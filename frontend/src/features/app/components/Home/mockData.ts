@@ -57,6 +57,9 @@ export const MOCK_OUTGOING_JOIN_REQUESTS: MockJoinRequest[] = [
     id: 'out-r1',
     projectName: 'Anylog',
     avatarInitials: 'A',
+    // Predates the --gt-* design-token system; a demo-fixture avatar color,
+    // left as-is rather than churned as a side effect of wiring the
+    // adherence lint.
     avatarBg: '#2771FF',
     subtext: '2026 CSE 115B',
     badges: [

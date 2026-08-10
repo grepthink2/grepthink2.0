@@ -73,7 +73,7 @@
     color: $text-primary;
     font-family: $primary-font;
     font-size: 14px;
-    transition: all 0.3s ease;
+    @include gt-transition-medium(border-color);
 
     &:focus {
       outline: none;
@@ -90,6 +90,13 @@
 }
 
 .forgotPassword {
+  // Button reset — this used to be a <span onClick>; kept visually
+  // identical now that it's a real, focusable <button type="button">.
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
   color: $accent-color;
   font-family: $primary-font;
   font-size: 14px;
@@ -110,35 +117,51 @@
   }
 }
 
-.eyeIcon {
+// Wraps .eyeIcon — this used to be a bare <img onClick>; the button carries
+// the same absolute position the img used to have, so the icon itself
+// doesn't move.
+.eyeToggle {
   position: absolute;
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  line-height: 0;
   cursor: pointer;
-  width: 22px;
-  height: 22px;
-  opacity: 0.7;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  animation: iconFade 0.2s ease;
 
-  &:hover {
-    opacity: 1;
+  &:active .eyeIcon {
+    transform: scale(0.95);
   }
 
-  &:active {
-    transform: translateY(-50%) scale(0.95);
+  &:hover .eyeIcon {
+    opacity: 1;
   }
 }
 
+.eyeIcon {
+  width: 22px;
+  height: 22px;
+  opacity: 0.7;
+  @include gt-transition(opacity, transform);
+  animation: iconFade 0.2s ease;
+  pointer-events: none; // clicks go to .eyeToggle
+}
+
+// translateY removed: positioning moved to .eyeToggle when the icon became
+// a button child — keeping it here made the icon ride 11px high for the
+// mount animation, then snap down.
 @keyframes iconFade {
   0% {
     opacity: 0;
-    transform: translateY(-50%) scale(0.95);
+    transform: scale(0.95);
   }
   100% {
     opacity: 0.7;
-    transform: translateY(-50%) scale(1);
+    transform: scale(1);
   }
 }
 
@@ -159,7 +182,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 500;
-  transition: background-color 0.3s ease;
+  @include gt-transition-medium(background-color);
 
   &:hover {
     background-color: $primary-hover;
@@ -189,7 +212,7 @@
   justify-content: center;
   gap: 8px;
   font-weight: 500;
-  transition: background-color 0.3s ease;
+  @include gt-transition-medium(background-color);
 
   &:hover {
     background-color: $button-secondary-hover;
@@ -246,6 +269,13 @@
 }
 
 .signupLink {
+  // Button reset — this used to be a <div onClick>; kept visually identical
+  // now that it's a real, focusable <button type="button">.
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
   font-family: $primary-font;
   color: $accent-color;
   font-size: 14px;
@@ -266,6 +296,10 @@
 .arrowIcon {
   width: 16px;
   height: 16px;
+  // 0.2s matches gt-transition's duration, but the timing function here is
+  // ease-in-out, not the plain ease the mixin hardcodes — left as a literal
+  // rather than silently changing the easing curve (same call made for the
+  // identical pattern in SignUp.scss/VerifyEmail.scss's .arrowIcon).
   transition: transform 0.2s ease-in-out;
 }
 
@@ -273,9 +307,9 @@
 .error {
   font-family: $primary-font;
   color: $error-color;
-  background-color: rgba($error-color, 0.1);
+  background-color: var(--gt-error-soft);
   padding: 10px;
   border-radius: 8px;
   font-size: 14px;
   text-align: center;
-} 
+}

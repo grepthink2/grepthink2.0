@@ -18,7 +18,7 @@
   border: none;
   color: $text-tertiary;
   cursor: pointer;
-  transition: background-color $transition-fast, color $transition-fast;
+  @include gt-transition(background-color, color);
 
   &:hover {
     color: $text-primary;

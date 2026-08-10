@@ -137,12 +137,19 @@ const ResetPassword: React.FC = () => {
                   required
                   disabled={isLoading || !canReset || checkingSession}
                 />
-                <img
-                  src={showPassword ? eyeSlashIcon : eyeIcon}
-                  alt="toggle password visibility"
-                  className="eyeIcon"
+                <button
+                  type="button"
+                  className="eyeToggle"
                   onClick={() => setShowPassword(!showPassword)}
-                />
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                >
+                  <img
+                    src={showPassword ? eyeSlashIcon : eyeIcon}
+                    alt=""
+                    className="eyeIcon"
+                  />
+                </button>
               </div>
             </div>
 
@@ -159,12 +166,19 @@ const ResetPassword: React.FC = () => {
                   required
                   disabled={isLoading || !canReset || checkingSession}
                 />
-                <img
-                  src={showPassword ? eyeSlashIcon : eyeIcon}
-                  alt="toggle password visibility"
-                  className="eyeIcon"
+                <button
+                  type="button"
+                  className="eyeToggle"
                   onClick={() => setShowPassword(!showPassword)}
-                />
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                >
+                  <img
+                    src={showPassword ? eyeSlashIcon : eyeIcon}
+                    alt=""
+                    className="eyeIcon"
+                  />
+                </button>
               </div>
             </div>
 
@@ -179,9 +193,9 @@ const ResetPassword: React.FC = () => {
 
           {/* Return to Login Section */}
           <div className="loginSection">
-            <div className="loginLink" onClick={handleLogin}>
+            <button type="button" className="loginLink" onClick={handleLogin}>
               Return to Login
-            </div>
+            </button>
           </div>
         </div>
       </div>

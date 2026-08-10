@@ -26,16 +26,18 @@ export const NewConversationCompose: React.FC = () => {
   }
 
   const handleSend = async (body: string) => {
-    const res = await api.sendMessage(toUserId, body);
+    const res = await api.sendMessage({ toUserId, body });
     await refetchInbox();
-    navigate(`/app/messages/${res.conversation_id}`, { replace: true });
+    navigate(`/app/messages/${res.conversation_id}`, { replace: true, viewTransition: true });
   };
 
   return (
     <div className="messages-thread">
       <header className="messages-thread__header">
-        <h2 className="messages-thread__title">{toUserName}</h2>
-        <p className="messages-thread__subtitle">Starting a new conversation</p>
+        <div className="messages-thread__header-text">
+          <h2 className="messages-thread__title">{toUserName}</h2>
+          <p className="messages-thread__subtitle">Starting a new conversation</p>
+        </div>
       </header>
       <div className="messages-thread__scroll messages-thread__empty">
         Send the first message below.
