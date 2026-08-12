@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { api, type ApiMessage } from '@/lib/api';
 import { supabase } from '@/lib/supabaseClient';
-import { appendMessage, prependOlder, reconcileOptimistic } from '../threadReducer';
+import { useAuth } from '@/lib/auth';
+import { applyIncoming, prependOlder, reconcileOptimistic } from '../threadReducer';
 import { normalizeTimestamp, type IncomingMessageRow } from '../inboxReducer';
 
 interface State {
@@ -20,9 +21,12 @@ interface State {
  * byte-for-byte; never parse or re-serialize it.
  */
 export function useConversationMessages(conversationId: string | null) {
+  const { user } = useAuth();
   const [state, setState] = useState<State>({
     messages: [], loading: true, loadingOlder: false, hasMore: false, error: null,
   });
+  const meIdRef = useRef<string | undefined>(undefined);
+  meIdRef.current = user?.id;
   const cursor = useRef<string | null>(null);
   const cancelled = useRef(false);
   // Monotonic ticket per request: only the latest-issued request may commit
@@ -94,7 +98,9 @@ export function useConversationMessages(conversationId: string | null) {
             created_at: normalizeTimestamp(row.created_at),
           };
           setState(prev => {
-            const next = appendMessage(prev.messages, msg);
+            // meIdRef (not `user`) so the subscription doesn't need to re-bind
+            // whenever the auth object identity changes.
+            const next = applyIncoming(prev.messages, msg, meIdRef.current);
             return next === prev.messages ? prev : { ...prev, messages: next };
           });
         },
