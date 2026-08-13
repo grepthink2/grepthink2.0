@@ -25,10 +25,12 @@
   color: var(--gt-text-primary);
 
   &__list {
+    // Full-bleed layout pane, NOT a floating card: it fills its grid cell edge
+    // to edge, so a radius would notch against the thread pane and the viewport
+    // while --gt-shadow-card (a 2.61px whisper) has nowhere to fall. The 1px
+    // divider is the intended separator.
     border-right: 1px solid var(--gt-border);
     background: var(--gt-surface);
-    border-radius: var(--gt-radius-md);
-    box-shadow: var(--gt-shadow-card);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -36,13 +38,14 @@
   }
 
   &__thread {
+    // Same as __list: a full-bleed pane, not a card. (No radius means the
+    // composer can no longer punch square corners through a rounded edge, so
+    // the overflow clip that guarded that is gone too — it was clipping the
+    // conversation menu's dropdown for no benefit.)
     display: flex;
     flex-direction: column;
     min-height: 0;
     background: var(--gt-surface);
-    border-radius: var(--gt-radius-md);
-    box-shadow: var(--gt-shadow-card);
-    overflow: hidden; /* keeps the flush composer from punching square corners through the rounded card */
   }
 
   &__back-btn {
