@@ -38,8 +38,8 @@ Stories**, stories contain **tasks**. Requirements 1–12 from the handoff:
 | D6 | Move atomicity + audit | `POST …/move {to_status}` inserts **one** `task_moves` row; a `BEFORE INSERT` trigger fills `from_status` from the task and updates `tasks.status/moved_by/moved_at` | Single INSERT = atomic without transactions; mirrors the `bump_conversation_last_message` trigger idiom. Same-status moves are a controller no-op (no audit row) |
 | D7 ⚑ | Burnup computation | Lazy daily snapshots in `sprint_burnup_days`, upserted on board GET and on scrum mutations; "today" always recomputed exactly; gaps carry forward server-side. Day bucketing in `America/Los_Angeles` | Serverless-safe (no cron: Vercel Hobby crons are daily-only and the repo has none). Completed series is derived exactly from `task_moves`; scope (sum of story points in the sprint) is the lossy part that needs snapshotting. Units per handoff: **scope = story points, completed = done-task points** — the gap between them shows estimation error, which is honest; flagging since it can read as "chart doesn't add up" |
 | D8 ⚑ | PR/MR state refresh | Batch endpoint `POST …/pr-refresh`: refresh tasks whose `pr_checked_at` > 10 min old, fanned out on the existing `query_pool` thread pool, 3 s timeout per call, ≤ 20 per invocation; frontend fires it once after board load and applies deltas | Serverless request budget (~6 s worst case). Unauthenticated GitHub is 60 req/h **per IP and Vercel egress IPs are shared** → provision `GITHUB_TOKEN`; git.ucsc.edu needs `GITLAB_UCSC_TOKEN` (`read_api`) and may be VPN-gated → degrade to stored state / `draft` gray, per handoff |
-| D9 ⚑ | Mention encoding | Markdown-link token `[@Tony Wu](mention:<user_id>)`, inserted by a composer autocomplete popover; rendered as a chip via a `components` override in the shared markdown renderer; server extracts `mention:` UUIDs after saving | Unambiguous across renames/duplicate names, needs no new parser (react-markdown already in deps), plain typed `@word` stays plain text. Alt (a): bare `@FirstLast` name-matching like the design demo — fragile, rejected. **Note: no mention/markdown pipeline exists anywhere in the codebase — the handoff's "reuse existing semantics" premise is false; this feature creates the first one** |
-| D10 | Comment scope in v1 | Schema + API support story **and** task comments; v1 UI ships the story-modal thread only. `TaskCard.commentCount` = that task's own count (0 until task-thread UI lands) | The design shows one modal with one thread; task threads are a UI follow-up, not a schema change |
+| D9 ⚑ | Mention encoding | Markdown-link token `[@Tony Wu](mention:<user_id>)`, inserted by a composer autocomplete popover; rendered as a chip via a `components` override in the shared markdown renderer; server extracts `mention:` UUIDs after saving. **Designed as a repo-wide capability — see `docs/superpowers/plans/2026-08-13-mentions-system.md`** (generic `mention` notification type, shared frontend components, per-surface allowed-sets) | Unambiguous across renames/duplicate names, needs no new parser (react-markdown already in deps), plain typed `@word` stays plain text. Alt (a): bare `@FirstLast` name-matching like the design demo — fragile, rejected. **Note: no mention/markdown pipeline exists anywhere in the codebase — the handoff's "reuse existing semantics" premise is false; this feature creates the first one** |
+| D10 | Comment scope in v1 | Schema + API support story **and** task comments; **v1 UI ships task threads** (maintainer direction 2026-08-13: "mentions are only needed for comments on tasks") — the story modal's task section carries the thread. Story-thread UI is a follow-up; `StoryOut.comment_count` stays in the payload | Task comments are where mentions matter now; story comments share the same table/API/seam so nothing is redone later |
 | D11 | Realtime | None in v1. Refetch after each mutation + on window focus. RLS **enabled with no policies** (service-role-only, the `final_review_scoring` precedent) | Board is a ≤ 6-person surface. The realtime upgrade path (REPLICA IDENTITY FULL + SELECT policies + dashboard publication toggle) is documented in the migration header as a checklist |
 | D12 ⚑ | CSS class names | Keep the design's `.gt-*` BEM classes verbatim (`.gt-task`, `.gt-board__col`…) in `frontend/src/features/scrum/**.scss` | 1:1 diffable against `design/components/scrum/scrum.css` → pixel fidelity for free. Deviates from the codebase's no-`gt-`-prefix BEM habit (`.messages-bubble`), but matches PORTING.md's "same class names" rule. Alt: rename to `.scrum-*` — mechanical but invites drift |
 | D13 | Burnup chart tech | Port the design's tiny hand-rolled SVG `BurnupChart` (~60 lines), not recharts | The reference JSX is explicitly production-shaped; SVG classes take colors from tokens (passes `lint:design` with no ledger comments). Recharts (pie-only in repo today) buys nothing here. The handoff's "recharts for charts" line is a general codebase note, not a requirement |
@@ -368,11 +368,14 @@ values for the current one), labels `S1…Sn`.
 
 ### Mentions + notifications
 
-After a comment insert: `re.findall(r'\(mention:([0-9a-f-]{36})\)', body_md)` →
-dedupe → intersect with project members ∪ staff participants → drop self → for each,
-`notify_scrum_mention(...)` (new wrapper in `app/notifications/controller.py`; add
-`'scrum_mention'` to `NOTIFICATION_TYPES`; `entity_type='scrum_story'|'scrum_task'`,
-`entity_id=str(parent_id)`, body = 120-char preview). Best-effort loop, messages-style.
+Owned by the standalone mentions plan (`docs/superpowers/plans/2026-08-13-mentions-system.md`):
+`app/utils/mentions.py::extract_mention_ids` → intersect with project members ∪ staff
+seats → drop self → per recipient, the **generic** `notify_mention(...)` wrapper (type
+`mention` in `NOTIFICATION_TYPES`; `entity_type='scrum_task'|'scrum_story'`,
+`entity_id=f"{project_id}:{parent_id}"` so `notificationPath()` can deep-link to
+`/app/projects/{pid}/board?task={tid}`; body = 120-char preview). Best-effort loop,
+messages-style. The scrum controller ships comment CRUD with a no-op `_fanout_mentions`
+seam (Part 1 Task B10); mentions Tasks M1–M3 activate it.
 
 ### Models + tests
 
@@ -415,9 +418,12 @@ Porting rules (from the design refs in `design/components/scrum/`):
   `components` overrides — `a` intercepts `mention:` hrefs → `.gt-mention` chip (and
   external links get `target="_blank" rel="noreferrer"`), `code` → `.gt-md__code`.
   CommonMark semantics (single newlines don't hard-break; document in the composer hint).
-- `MentionTextarea`: textarea + popover autocomplete on `@` (250 ms debounce-free — the
-  member list is already local; filter client-side; `useClickOutside`), inserts
-  `[@Name](mention:uuid)`; ⌘/Ctrl+Enter submits. Used by CommentThread + description editors.
+- `MentionTextarea` and the markdown renderer are **shared components**
+  (`frontend/src/components/Mentions/`, `frontend/src/components/Markdown/`), built by
+  mentions-plan Tasks M4–M5 so messages and other surfaces can adopt them later without
+  refactor; the scrum CommentThread consumes them. Popover autocomplete on `@` (no
+  debounce — the member list is local; `useClickOutside`), inserts `[@Name](mention:uuid)`;
+  ⌘/Ctrl+Enter submits.
 - DnD stays HTML5 per the reference + Assign precedent (`text/plain` id payload,
   `useGlobalDragEnd`); keyboard fallback = the status `<select>` on task rows in the modal.
 - Optimistic move: apply locally, POST, reconcile with server task on success, roll back
