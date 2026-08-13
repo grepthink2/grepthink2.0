@@ -1728,29 +1728,31 @@ git commit -m "feat(scrum): PR/MR linking — host-allowlisted parse, cached sta
 
 ---
 
-## Task B10: Comments + @mention notifications
+## Task B10: Comments CRUD + mention fan-out seam
+
+> Mention behavior itself (extraction util, generic `mention` notification type,
+> recipient filtering, deep links) is owned by the standalone mentions plan —
+> `docs/superpowers/plans/2026-08-13-mentions-system.md`, Tasks M1–M3 — which replaces
+> the no-op seam below. This task ships comment CRUD only.
 
 **Files:**
 - Modify: `backend/app/scrum/controller.py`, `backend/app/scrum/views.py`
-- Modify: `backend/app/notifications/controller.py` (`NOTIFICATION_TYPES` + `notify_scrum_mention`)
 - Test: `backend/tests/test_scrum_comments.py`
 
 - [ ] **Step 1: Failing tests** `backend/tests/test_scrum_comments.py`:
 
 ```python
-"""Comments: staff may post, mention fan-out filters to participants, self excluded."""
+"""Comments: staff may post, parent routing, and the mention seam is invoked."""
 from unittest.mock import MagicMock, patch
 
 PID = "00000000-0000-0000-0000-0000000000aa"
 UID = "00000000-0000-0000-0000-0000000000bb"
-M1 = "00000000-0000-0000-0000-000000000001"
-M2 = "00000000-0000-0000-0000-000000000002"
 
 
-def _wire(mock_client, story):
+def _wire(mock_client, parent):
     client = MagicMock()
     mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(data=story)
+    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(data=parent)
     client.table.return_value.insert.return_value.execute.return_value = MagicMock(
         data=[{"id": "c1", "author_id": UID, "body_md": "x", "created_at": "2026-08-12T00:00:00Z"}])
     return client
@@ -1761,103 +1763,34 @@ def _wire(mock_client, story):
 @patch("app.scrum.controller._client")
 def test_staff_can_comment(mock_client, _access, _fan):
     from app.scrum.controller import create_comment
-    _wire(mock_client, {"id": "st1", "project_id": PID})
+    _wire(mock_client, {"id": "st1", "project_id": PID, "key": "US-3"})
     out = create_comment(parent_kind="story", parent_id="st1", user_id=UID, body_md="hello")
     assert out["id"] == "c1"
 
 
-@patch("app.scrum.controller._mention_recipients", return_value={M1})
+@patch("app.scrum.controller._fanout_mentions")
 @patch("app.scrum.controller._board_access", return_value="member")
 @patch("app.scrum.controller._client")
-def test_mentions_notify_each_recipient(mock_client, _access, _rec):
-    from app.scrum import controller
-    _wire(mock_client, {"id": "st1", "project_id": PID})
-    with patch.object(controller, "_notify_mention_safe") as notify:
-        controller.create_comment(parent_kind="story", parent_id="st1", user_id=UID,
-                                  body_md=f"see [@A](mention:{M1}) and [@Me](mention:{UID})")
-        assert notify.call_count == 1  # self excluded by _mention_recipients contract
-
-
-def test_mention_extraction_regex():
-    from app.scrum.controller import _extract_mention_ids
-    body = f"ping [@A B](mention:{M1}) + [@C](mention:{M2}) + plain @word + (mention:not-a-uuid)"
-    assert _extract_mention_ids(body) == {M1, M2}
+def test_create_comment_routes_task_parent_and_invokes_seam(mock_client, _access, fan):
+    from app.scrum.controller import create_comment
+    client = _wire(mock_client, {"id": "t1", "project_id": PID, "key": "GT-12"})
+    create_comment(parent_kind="task", parent_id="t1", user_id=UID, body_md="hello")
+    inserted = client.table.return_value.insert.call_args.args[0]
+    assert inserted["task_id"] == "t1" and "story_id" not in inserted
+    assert fan.call_count == 1
+    assert fan.call_args.kwargs["parent_key"] == "GT-12"
+    assert fan.call_args.kwargs["parent_kind"] == "task"
 ```
 
-- [ ] **Step 2: Run** → FAIL. **Step 3: Notifications plumbing** in `backend/app/notifications/controller.py` — add `"scrum_mention"` to `NOTIFICATION_TYPES` and this wrapper next to the other `notify_*` helpers:
+- [ ] **Step 2: Run** → FAIL. **Step 3: Add to `backend/app/scrum/controller.py`** — the no-op seam plus comment CRUD:
 
 ```python
-def notify_scrum_mention(*, user_id: str, author_name: str, parent_kind: str,
-                         parent_key: str, project_name: str, preview: str,
-                         parent_id: str) -> None:
-    _insert_notification(
-        user_id=user_id,
-        type="scrum_mention",
-        title=f"{author_name} mentioned you on {parent_key}",
-        body=f"{project_name}: {preview}",
-        entity_type=f"scrum_{parent_kind}",
-        entity_id=str(parent_id),
-    )
-```
-
-- [ ] **Step 4: Add to `backend/app/scrum/controller.py`**:
-
-```python
-MENTION_RE = re.compile(r"\(mention:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)")
-
-
-def _extract_mention_ids(body_md: str) -> set[str]:
-    return set(MENTION_RE.findall(body_md or ""))
-
-
-def _mention_recipients(client, *, project_id: str, body_md: str, author_id: str) -> set[str]:
-    """Mentioned UUIDs ∩ (team members ∪ staff seats), minus the author."""
-    mentioned = _extract_mention_ids(body_md)
-    if not mentioned:
-        return set()
-    members = (client.table("project_members").select("user_id")
-               .eq("project_id", str(project_id)).execute()).data or []
-    allowed = {m["user_id"] for m in members}
-    proj_res = (client.table("projects").select("class_id, assigned_ta_id")
-                .eq("id", str(project_id)).maybe_single().execute())
-    proj = proj_res.data if proj_res else None
-    if proj:
-        if proj.get("assigned_ta_id"):
-            allowed.add(proj["assigned_ta_id"])
-        cls = (client.table("classes").select("created_by")
-               .eq("id", proj["class_id"]).maybe_single().execute())
-        if cls and cls.data:
-            allowed.add(cls.data["created_by"])
-        tas = (client.table("class_enrollments").select("user_id")
-               .eq("class_id", proj["class_id"]).eq("enrollment_role", "ta").execute()).data or []
-        allowed |= {t["user_id"] for t in tas}
-    return (mentioned & allowed) - {str(author_id)}
-
-
-def _notify_mention_safe(*, recipient_id: str, author_id: str, parent_kind: str,
-                         parent_key: str, project_id: str, body_md: str, parent_id: str) -> None:
-    # Notifications are best-effort: never fail a persisted comment,
-    # never let one recipient's failure starve the rest.
-    try:
-        from app.notifications.controller import notify_scrum_mention
-        from app.utils.profiles import profile_display_name, _get_profile
-        author = profile_display_name(_get_profile(author_id))
-        proj = _client().table("projects").select("name").eq("id", str(project_id)).maybe_single().execute()
-        project_name = (proj.data or {}).get("name", "") if proj else ""
-        preview = body_md if len(body_md) <= 120 else body_md[:117] + "..."
-        notify_scrum_mention(user_id=recipient_id, author_name=author,
-                             parent_kind=parent_kind, parent_key=parent_key,
-                             project_name=project_name, preview=preview, parent_id=parent_id)
-    except Exception:
-        logger.exception("scrum: mention notify failed | recipient=%s", recipient_id)
-
-
 def _fanout_mentions(client, *, project_id: str, parent_kind: str, parent_id: str,
                      parent_key: str, author_id: str, body_md: str) -> None:
-    for rid in _mention_recipients(client, project_id=project_id, body_md=body_md, author_id=author_id):
-        _notify_mention_safe(recipient_id=rid, author_id=author_id, parent_kind=parent_kind,
-                             parent_key=parent_key, project_id=project_id,
-                             body_md=body_md, parent_id=parent_id)
+    """No-op seam. Activated by the mentions plan
+    (docs/superpowers/plans/2026-08-13-mentions-system.md, Task M3): extract mention
+    UUIDs, intersect with team ∪ staff, notify via the generic `mention` type."""
+    return None
 
 
 def _get_comment_parent(client, parent_kind: str, parent_id: str) -> dict:
@@ -1897,7 +1830,7 @@ def list_comments(*, parent_kind: str, parent_id: str, user_id: str) -> list[dic
     return [{**r, "author_name": names.get(r["author_id"], "Unknown")} for r in rows]
 ```
 
-- [ ] **Step 5: Replace the four comment stubs in `views.py`**:
+- [ ] **Step 4: Replace the four comment stubs in `views.py`**:
 
 ```python
 def list_story_comments(story_id: str, user_id: str = Depends(require_user)) -> CommentsListResponse:
@@ -1926,11 +1859,11 @@ def create_task_comment(task_id: str, body: CreateCommentRequest,
                            comment=CommentOut(**row, author_name=""))
 ```
 
-- [ ] **Step 6: Run** `.venv/bin/python -m pytest tests/ -k scrum -v` → all pass. Also run the notifications suite: `.venv/bin/python -m pytest tests/ -k notification -v` → no regressions. **Commit:**
+- [ ] **Step 5: Run** `.venv/bin/python -m pytest tests/ -k scrum -v` → all pass. **Commit:**
 
 ```bash
-git add backend/app/scrum backend/app/notifications/controller.py backend/tests/test_scrum_comments.py
-git commit -m "feat(scrum): comments with @mention notifications (best-effort fan-out)"
+git add backend/app/scrum backend/tests/test_scrum_comments.py
+git commit -m "feat(scrum): comments CRUD with mention fan-out seam"
 ```
 
 ---
@@ -2202,7 +2135,7 @@ git commit -m "feat(scrum): typed api.ts methods + actions catalog + AGENTS.md s
 
 ## Plan self-review (done at write time)
 
-- **Spec coverage:** D1/D12/D13 + spec Part 3 are Part 2 (frontend) scope; D2–D11, D14, D15 map to B1–B12 above. Requirement 6's audit → B6; 2 → B7/B8; 7 → B9; 9 → B10; 10 → B11; 11 → B4 + B11 snap; 12 → B5 (`archived`/`sprint_id`); 3/4/5 → B1/B5 columns.
+- **Spec coverage:** D1/D12/D13 + spec Part 3 are Part 2 (frontend) scope; D2–D11, D14, D15 map to B1–B12 above. Requirement 6's audit → B6; 2 → B7/B8; 7 → B9; 9 → B10 (CRUD + seam) + mentions plan M1–M5; 10 → B11; 11 → B4 + B11 snap; 12 → B5 (`archived`/`sprint_id`); 3/4/5 → B1/B5 columns.
 - **Type consistency:** view shapers `_task_out`/`_story_out` (B5) are used by B6; `_snapshot_burnup_safe` stub (B5) is replaced in B7 with the same signature; `_pr_fields` stub (B5) replaced in B9 with the same signature.
 - **Known deliberate roughness:** MagicMock chains assert call shape, not SQL truth — the DB-side trigger/RPC behavior is verified manually on dev after the migration applies (B12 gate).
 
