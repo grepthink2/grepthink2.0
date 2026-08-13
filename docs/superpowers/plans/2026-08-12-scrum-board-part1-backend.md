@@ -4,7 +4,7 @@
 
 **Goal:** The complete server side of the per-project scrum board — schema, `app/scrum` module (sprints/stories/tasks CRUD, move audit, burnup series, comments with @mention notifications, PR/MR state caching, AI drafting), plus the typed `api.ts` contract methods.
 
-**Architecture:** One additive idempotent migration (7 tables + trigger + RPC + a `projects` column). A new `backend/app/scrum/` module in the house `{url,views,controller,models}` shape, with `pr_links.py` and `ai_draft.py` satellites for the two outbound-HTTP integrations. All authorization in Python (service role bypasses RLS): members write, class staff read+comment, everyone else 404. Atomicity without transactions via a `BEFORE INSERT` trigger on `task_moves` and a `scrum_next_key` RPC.
+**Architecture:** One additive idempotent migration (8 tables + trigger + RPC + a `projects` column). A new `backend/app/scrum/` module in the house `{url,views,controller,models}` shape, with `pr_links.py` and `ai_draft.py` satellites for the two outbound-HTTP integrations. All authorization in Python (service role bypasses RLS): members write, class staff read+comment, everyone else 404. Atomicity without transactions via a `BEFORE INSERT` trigger on `task_moves` and a `scrum_next_key` RPC.
 
 **Tech Stack:** FastAPI + supabase-py (service role), Postgres/Supabase, httpx (GitHub/GitLab/LLM calls), slowapi, pytest (TestClient + MagicMock).
 
@@ -205,7 +205,7 @@ GRANT ALL ON TABLE ai_draft_usage TO anon, authenticated, service_role;
 
 - [ ] **Step 2: Mirror into `supabase/schema.sql`** — append the same objects (the CREATE TABLE / FUNCTION / TRIGGER statements plus the `projects.estimate_scale` column on the existing `projects` definition) under a banner comment `-- ===== Scrum board (2026-08-12_scrum_board.sql) =====`. Note in the banner that `schema.sql` already has known drift (missing `conversation_participants` etc.) — do not fix unrelated drift in this task.
 
-- [ ] **Step 3: Sanity-check the SQL parses** (no DB): `python3 -c "print(open('backend/database/migrations/2026-08-12_scrum_board.sql').read().count('CREATE TABLE IF NOT EXISTS'))"` → Expected: `7`.
+- [ ] **Step 3: Sanity-check the SQL parses** (no DB): `python3 -c "print(open('backend/database/migrations/2026-08-12_scrum_board.sql').read().count('CREATE TABLE IF NOT EXISTS'))"` → Expected: `8` (sprints, user_stories, tasks, task_moves, scrum_comments, scrum_counters, sprint_burnup_days, ai_draft_usage).
 
 - [ ] **Step 4: Commit**
 
