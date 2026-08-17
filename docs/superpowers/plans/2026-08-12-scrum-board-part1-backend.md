@@ -224,6 +224,7 @@ git commit -m "feat(scrum): schema — sprints/stories/tasks/moves/comments + ke
 - Create: `backend/app/scrum/__init__.py` (empty)
 - Create: `backend/app/scrum/models.py`
 - Create: `backend/app/scrum/url.py`
+- Create: `backend/app/scrum/views.py` (501 stubs, filled in by B4–B11)
 - Modify: `backend/app/main.py` (register router)
 - Test: `backend/tests/test_scrum_endpoints.py` (auth smoke)
 
@@ -704,7 +705,7 @@ def _today_la() -> date:
     return (datetime.now(timezone.utc) - timedelta(hours=LA_UTC_OFFSET_HOURS)).date()
 ```
 
-- [ ] **Step 4: Run** `.venv/bin/python -m pytest tests/test_scrum_authz.py -v` → Expected: 5 passed.
+- [ ] **Step 4: Run** `.venv/bin/python -m pytest tests/test_scrum_authz.py -v` → Expected: 4 passed.
 
 - [ ] **Step 5: Commit**
 
