@@ -825,7 +825,7 @@ def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
     return res.data[0]
 ```
 
-- [ ] **Step 4: Replace the four stubs in `views.py`** (keep the rest of the stub file):
+- [ ] **Step 4: Replace the three settings/sprint stubs in `views.py`** (keep the rest of the stub file):
 
 ```python
 from fastapi import Depends, HTTPException, Response, status
