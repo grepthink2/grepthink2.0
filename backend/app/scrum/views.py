@@ -4,10 +4,11 @@ from fastapi import Depends, HTTPException, Response, status
 from app.dependencies import require_user
 from app.scrum import controller
 from app.scrum.models import (CreateSprintRequest, CreateStoryRequest,
-                              CreateTaskRequest, SprintOut, SprintResponse,
-                              StoryOut, StoryResponse, TaskOut, TaskResponse,
-                              UpdateSettingsRequest, UpdateSprintRequest,
-                              UpdateStoryRequest, UpdateTaskRequest)
+                              CreateTaskRequest, MoveTaskRequest, SprintOut,
+                              SprintResponse, StoryOut, StoryResponse, TaskOut,
+                              TaskResponse, UpdateSettingsRequest,
+                              UpdateSprintRequest, UpdateStoryRequest,
+                              UpdateTaskRequest)
 
 
 def _todo(*_args, **_kwargs):
@@ -84,7 +85,12 @@ def delete_task(task_id: str, user_id: str = Depends(require_user)) -> Response:
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def move_task(task_id: str, user_id: str = Depends(require_user)): _todo()
+def move_task(task_id: str, body: MoveTaskRequest,
+              user_id: str = Depends(require_user)) -> TaskResponse:
+    out = controller.move_task(task_id=task_id, user_id=user_id, to_status=body.to_status)
+    return TaskResponse(message="Task moved successfully", task=_task_out(out["task"]))
+
+
 def list_story_comments(story_id: str, user_id: str = Depends(require_user)): _todo()
 def create_story_comment(story_id: str, user_id: str = Depends(require_user)): _todo()
 def list_task_comments(task_id: str, user_id: str = Depends(require_user)): _todo()

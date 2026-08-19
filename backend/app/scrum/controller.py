@@ -242,3 +242,24 @@ def delete_task(*, task_id: str, user_id: str) -> None:
 def _snapshot_burnup_safe(sprint_id: str) -> None:
     """Replaced in Task B7. Best-effort no-op until then."""
     return None
+
+
+def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
+    if to_status not in ("todo", "in_progress", "done"):
+        raise HTTPException(status_code=422, detail="Unknown status")
+    client = _client()
+    task = _get_task_or_404(client, task_id)
+    _require_writer(project_id=task["project_id"], user_id=user_id)
+    if task["status"] == to_status:
+        return {"task": task, "move": None}
+    res = client.table("task_moves").insert(
+        {"task_id": str(task_id), "to_status": to_status, "moved_by": str(user_id)}
+    ).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to move task")
+    move = res.data[0]
+    task = {**task, "status": to_status, "moved_by": str(user_id), "moved_at": move["moved_at"]}
+    story = _get_story_or_404(client, task["story_id"])
+    if story.get("sprint_id"):
+        _snapshot_burnup_safe(story["sprint_id"])
+    return {"task": task, "move": move}
