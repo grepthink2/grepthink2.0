@@ -441,3 +441,48 @@ def refresh_pr_states(*, project_id: str, user_id: str) -> dict:
         except Exception:
             logger.exception("scrum: pr refresh write failed | task=%s", task_id)
     return {"updated": updated}
+
+
+def _fanout_mentions(client, *, project_id: str, parent_kind: str, parent_id: str,
+                     parent_key: str, author_id: str, body_md: str) -> None:
+    """No-op seam. Activated by the mentions plan
+    (docs/superpowers/plans/2026-08-13-mentions-system.md, Task M3): extract mention
+    UUIDs, intersect with team ∪ staff, notify via the generic `mention` type."""
+    return None
+
+
+def _get_comment_parent(client, parent_kind: str, parent_id: str) -> dict:
+    if parent_kind == "story":
+        return _get_story_or_404(client, parent_id)
+    return _get_task_or_404(client, parent_id)
+
+
+def create_comment(*, parent_kind: str, parent_id: str, user_id: str, body_md: str) -> dict:
+    client = _client()
+    parent = _get_comment_parent(client, parent_kind, parent_id)
+    _board_access(project_id=parent["project_id"], user_id=user_id)  # staff may comment (D2)
+    row = {"author_id": str(user_id), "body_md": body_md,
+           ("story_id" if parent_kind == "story" else "task_id"): str(parent_id)}
+    res = client.table("scrum_comments").insert(row).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to create comment")
+    _fanout_mentions(client, project_id=parent["project_id"], parent_kind=parent_kind,
+                     parent_id=parent_id, parent_key=parent.get("key", ""),
+                     author_id=user_id, body_md=body_md)
+    return res.data[0]
+
+
+def list_comments(*, parent_kind: str, parent_id: str, user_id: str) -> list[dict]:
+    client = _client()
+    parent = _get_comment_parent(client, parent_kind, parent_id)
+    _board_access(project_id=parent["project_id"], user_id=user_id)
+    col = "story_id" if parent_kind == "story" else "task_id"
+    rows = (client.table("scrum_comments").select("id, author_id, body_md, created_at")
+            .eq(col, str(parent_id)).order("created_at").execute()).data or []
+    author_ids = list({r["author_id"] for r in rows})
+    names: dict[str, str] = {}
+    if author_ids:
+        profs = (client.table("profiles").select("id, first_name, last_name, email")
+                 .in_("id", author_ids).execute()).data or []
+        names = {p["id"]: _display_name(p) for p in profs}
+    return [{**r, "author_name": names.get(r["author_id"], "Unknown")} for r in rows]
