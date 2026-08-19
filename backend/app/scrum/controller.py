@@ -110,3 +110,135 @@ def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update sprint")
     return res.data[0]
+
+
+def _next_key(client, project_id: str, kind: str) -> str:
+    res = client.rpc("scrum_next_key", {"p_project_id": str(project_id), "p_kind": kind}).execute()
+    n = res.data if isinstance(res.data, int) else (res.data or [{}])[0]
+    if not isinstance(n, int):
+        raise HTTPException(status_code=500, detail="Failed to allocate key")
+    return f"{'US' if kind == 'story' else 'GT'}-{n}"
+
+
+def _validate_tags(tags: list[str]) -> None:
+    bad = [t for t in tags if t not in TASK_TAGS]
+    if bad:
+        raise HTTPException(status_code=422, detail="Unknown tag")
+
+
+def _get_story_or_404(client, story_id: str) -> dict:
+    res = (client.table("user_stories").select("*")
+           .eq("id", str(story_id)).maybe_single().execute())
+    row = res.data if res else None
+    if not row:
+        raise HTTPException(status_code=404, detail="Story not found")
+    return row
+
+
+def _get_task_or_404(client, task_id: str) -> dict:
+    res = (client.table("tasks").select("*")
+           .eq("id", str(task_id)).maybe_single().execute())
+    row = res.data if res else None
+    if not row:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return row
+
+
+def create_story(*, project_id: str, user_id: str, fields: dict) -> dict:
+    _require_writer(project_id=project_id, user_id=user_id)
+    client = _client()
+    key = _next_key(client, project_id, "story")
+    row = {"project_id": str(project_id), "key": key, "reporter_id": str(user_id)}
+    for k in ("title", "description_md", "points", "time_estimate", "assignee_id", "sprint_id"):
+        if fields.get(k) is not None:
+            row[k] = fields[k]
+    res = client.table("user_stories").insert(row).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to create story")
+    story = res.data[0]
+    if story.get("sprint_id"):
+        _snapshot_burnup_safe(story["sprint_id"])
+    return story
+
+
+def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
+    client = _client()
+    story = _get_story_or_404(client, story_id)
+    _require_writer(project_id=story["project_id"], user_id=user_id)
+    payload: dict = {}
+    for k in ("title", "description_md", "points", "time_estimate", "assignee_id"):
+        if k in fields:
+            payload[k] = fields[k]
+    if "sprint_id" in fields:
+        payload["sprint_id"] = fields["sprint_id"]      # None ⇒ backlog
+    if "archived" in fields and fields["archived"] is not None:
+        payload["archived_at"] = datetime.now(timezone.utc).isoformat() if fields["archived"] else None
+    if not payload:
+        return story
+    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    res = client.table("user_stories").update(payload).eq("id", str(story_id)).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to update story")
+    for sid in {story.get("sprint_id"), res.data[0].get("sprint_id")}:
+        if sid:
+            _snapshot_burnup_safe(sid)
+    return res.data[0]
+
+
+def create_task(*, story_id: str, user_id: str, fields: dict) -> dict:
+    client = _client()
+    story = _get_story_or_404(client, story_id)
+    _require_writer(project_id=story["project_id"], user_id=user_id)
+    _validate_tags(fields.get("tags") or [])
+    key = _next_key(client, story["project_id"], "task")
+    row = {"story_id": str(story_id), "project_id": str(story["project_id"]),
+           "key": key, "reporter_id": str(user_id)}
+    for k in ("title", "description_md", "points", "time_estimate", "assignee_id", "tags"):
+        if fields.get(k) is not None:
+            row[k] = fields[k]
+    res = client.table("tasks").insert(row).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to create task")
+    if story.get("sprint_id"):
+        _snapshot_burnup_safe(story["sprint_id"])
+    return res.data[0]
+
+
+def update_task(*, task_id: str, user_id: str, fields: dict) -> dict:
+    client = _client()
+    task = _get_task_or_404(client, task_id)
+    _require_writer(project_id=task["project_id"], user_id=user_id)
+    if fields.get("tags") is not None:
+        _validate_tags(fields["tags"])
+    payload: dict = {}
+    for k in ("title", "description_md", "points", "time_estimate", "assignee_id", "tags"):
+        if k in fields:
+            payload[k] = fields[k]
+    if "pr_url" in fields:
+        payload.update(_pr_fields(fields["pr_url"]))    # Task B9; stub below until then
+    if not payload:
+        return task
+    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    res = client.table("tasks").update(payload).eq("id", str(task_id)).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to update task")
+    return res.data[0]
+
+
+def _pr_fields(pr_url):
+    """Replaced in Task B9 with real parsing + a state fetch."""
+    if pr_url is None:
+        return {"pr_url": None, "pr_provider": None, "pr_state": None, "pr_checked_at": None}
+    raise HTTPException(status_code=422, detail="PR linking lands in Task B9")
+
+
+def delete_task(*, task_id: str, user_id: str) -> None:
+    client = _client()
+    task = _get_task_or_404(client, task_id)
+    _require_writer(project_id=task["project_id"], user_id=user_id)
+    client.table("tasks").delete().eq("id", str(task_id)).execute()
+
+
+def _snapshot_burnup_safe(sprint_id: str) -> None:
+    """Replaced in Task B7. Best-effort no-op until then."""
+    return None
