@@ -32,7 +32,7 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes institutions projects assignments tsr staffing
-  messages profiles contact notifications tas attendance stats outbox
+  messages profiles contact notifications tas attendance stats outbox scrum
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
@@ -129,7 +129,8 @@ Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `log
 `create-user`, `check-email`), `/api/classes`, `/api/institutions`, `/api/projects`, `/api/assignments`,
 `/api/tsrs`, `/api/staffing`, `/api/messages`, `/api/profiles`, `/api/contact`,
 `/api/notifications`, `/api/tas`, `/api/stats`, `/api/email` (outbox dispatch, Maileroo webhook,
-unsubscribe, email preferences), plus attendance routes under `/api`.
+unsubscribe, email preferences), `/api/scrum` + `/api/projects/{id}/scrum` (scrum board), plus
+attendance routes under `/api`.
 The full agent-facing action catalog (method, params, role) lives at
 `frontend/public/.well-known/grepthink-actions.json`.
 
