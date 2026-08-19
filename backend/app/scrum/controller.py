@@ -486,3 +486,60 @@ def list_comments(*, parent_kind: str, parent_id: str, user_id: str) -> list[dic
                  .in_("id", author_ids).execute()).data or []
         names = {p["id"]: _display_name(p) for p in profs}
     return [{**r, "author_name": names.get(r["author_id"], "Unknown")} for r in rows]
+
+
+AI_DAILY_LIMIT = 10
+
+
+def ai_draft(*, project_id: str, user_id: str, kind: str, prompt: str,
+             story_id: str | None) -> dict:
+    _require_writer(project_id=project_id, user_id=user_id)
+    from app.config import settings
+    if not settings.AI_API_KEY or not settings.AI_BASE_URL:
+        raise HTTPException(status_code=503, detail="AI drafting is not configured")
+    client = _client()
+
+    today = _today_la().isoformat()
+    usage_res = (client.table("ai_draft_usage").select("count")
+                 .eq("user_id", str(user_id)).eq("used_on", today).maybe_single().execute())
+    used = (usage_res.data or {}).get("count", 0) if usage_res else 0
+    if used >= AI_DAILY_LIMIT:
+        raise HTTPException(status_code=429, detail="Daily AI draft limit reached (10/day)")
+
+    proj = (client.table("projects").select("estimate_scale")
+            .eq("id", str(project_id)).maybe_single().execute())
+    scale = ESTIMATE_SCALES[(proj.data or {}).get("estimate_scale", "fibonacci") if proj else "fibonacci"]
+
+    story_context = None
+    if story_id:
+        story = _get_story_or_404(client, story_id)
+        if story["project_id"] != str(project_id):
+            raise HTTPException(status_code=404, detail="Story not found")
+        story_context = f"{story['key']} {story['title']}: {(story.get('description_md') or '')[:500]}"
+
+    from app.scrum.ai_draft import request_draft, snap_points
+    try:
+        raw = request_draft(kind=kind, prompt=prompt, scale_values=scale,
+                            tags=TASK_TAGS, story_context=story_context)
+    except Exception:
+        logger.exception("scrum: ai draft failed | project=%s", project_id)
+        raise HTTPException(status_code=502, detail="Draft failed — try again")
+
+    draft = {
+        "title": raw.get("title"),
+        "description_md": raw.get("description_md"),
+        "points": snap_points(raw.get("points"), scale),
+        "time_estimate": raw.get("time_estimate"),
+        "tasks": [{
+            "title": str(t.get("title") or "")[:200],
+            "tags": [tag for tag in (t.get("tags") or []) if tag in TASK_TAGS],
+            "points": snap_points(t.get("points"), scale),
+            "time_estimate": t.get("time_estimate"),
+        } for t in (raw.get("tasks") or []) if t.get("title")],
+    }
+
+    # Courtesy quota: read-modify-write race can miscount by one; acceptable (spec D14).
+    client.table("ai_draft_usage").upsert(
+        {"user_id": str(user_id), "used_on": today, "count": used + 1},
+        on_conflict="user_id,used_on").execute()
+    return {"draft": draft}
