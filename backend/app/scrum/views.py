@@ -1,9 +1,11 @@
 """Request/response layer for the scrum board feature (filled in by Tasks B4-B10)."""
-from fastapi import Depends, HTTPException, Response, status
+from fastapi import Depends, Request, Response, status
 
 from app.dependencies import require_user
+from app.limiter import limiter
 from app.scrum import controller
-from app.scrum.models import (BoardResponse, CommentOut, CommentResponse,
+from app.scrum.models import (AiDraftRequest, AiDraftResponse, BoardResponse,
+                              CommentOut, CommentResponse,
                               CommentsListResponse, CreateCommentRequest,
                               CreateSprintRequest, CreateStoryRequest,
                               CreateTaskRequest, MoveTaskRequest, PrRefreshResponse,
@@ -11,10 +13,6 @@ from app.scrum.models import (BoardResponse, CommentOut, CommentResponse,
                               TaskOut, TaskResponse, UpdateSettingsRequest,
                               UpdateSprintRequest, UpdateStoryRequest,
                               UpdateTaskRequest)
-
-
-def _todo(*_args, **_kwargs):
-    raise HTTPException(status_code=501, detail="Not implemented")
 
 
 def _task_out(row: dict) -> TaskOut:
@@ -125,4 +123,11 @@ def create_task_comment(task_id: str, body: CreateCommentRequest,
 
 def refresh_pr_states(project_id: str, user_id: str = Depends(require_user)) -> PrRefreshResponse:
     return PrRefreshResponse(**controller.refresh_pr_states(project_id=project_id, user_id=user_id))
-def ai_draft(project_id: str, user_id: str = Depends(require_user)): _todo()
+
+
+@limiter.limit("5/minute")
+def ai_draft(request: Request, project_id: str, body: AiDraftRequest,
+             user_id: str = Depends(require_user)) -> AiDraftResponse:
+    out = controller.ai_draft(project_id=project_id, user_id=user_id, kind=body.kind,
+                              prompt=body.prompt, story_id=body.story_id)
+    return AiDraftResponse(**out)
