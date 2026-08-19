@@ -1134,6 +1134,10 @@ git commit -m "feat(scrum): story/task CRUD with US-n/GT-n key RPC"
 **Files:**
 - Modify: `backend/app/scrum/controller.py`, `backend/app/scrum/views.py`
 - Test: `backend/tests/test_scrum_moves.py`
+- Modify: `backend/tests/test_scrum_endpoints.py` — `test_move_route_exists` asserted the
+  stub's 501; rename it to `test_move_route_wired`: patch
+  `app.scrum.views.controller.move_task` to return `{"task": <minimal TaskOut dict>,
+  "move": None}` and assert 200 + `task.status` round-trips.
 
 - [ ] **Step 1: Failing tests** `backend/tests/test_scrum_moves.py`:
 
