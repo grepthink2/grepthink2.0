@@ -16,15 +16,18 @@ from datetime import datetime, timedelta, timezone, date
 
 from fastapi import HTTPException
 
-from app.database.client import service_client
+from app.database.client import service_client, query_pool
 # Sanctioned cross-module reuse (attendance/tas do the same):
 from app.projects.controller import _is_instructor
 from app.tas.controller import get_enrollment_role
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
+from app.scrum.pr_links import parse_pr_url, fetch_pr_state
 
 logger = logging.getLogger(__name__)
 
 LA_UTC_OFFSET_HOURS = 8  # see _today_la()
+PR_REFRESH_MAX = 20
+PR_STALE_AFTER = timedelta(minutes=10)
 
 
 def _client():
@@ -215,7 +218,7 @@ def update_task(*, task_id: str, user_id: str, fields: dict) -> dict:
         if k in fields:
             payload[k] = fields[k]
     if "pr_url" in fields:
-        payload.update(_pr_fields(fields["pr_url"]))    # Task B9; stub below until then
+        payload.update(_pr_fields(fields["pr_url"]))    # parse + state fetch via pr_links
     if not payload:
         return task
     payload["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -225,11 +228,16 @@ def update_task(*, task_id: str, user_id: str, fields: dict) -> dict:
     return res.data[0]
 
 
-def _pr_fields(pr_url):
-    """Replaced in Task B9 with real parsing + a state fetch."""
+def _pr_fields(pr_url) -> dict:
     if pr_url is None:
         return {"pr_url": None, "pr_provider": None, "pr_state": None, "pr_checked_at": None}
-    raise HTTPException(status_code=422, detail="PR linking lands in Task B9")
+    parsed = parse_pr_url(pr_url)
+    if not parsed:
+        raise HTTPException(status_code=422,
+                            detail="PR URL must be a github.com pull or git.ucsc.edu merge request")
+    state = fetch_pr_state(parsed) or "draft"   # degrade: unreachable ⇒ gray chip
+    return {"pr_url": pr_url, "pr_provider": parsed["provider"], "pr_state": state,
+            "pr_checked_at": datetime.now(timezone.utc).isoformat()}
 
 
 def delete_task(*, task_id: str, user_id: str) -> None:
@@ -399,3 +407,37 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
             "stories": stories, "backlog": backlog,
             "burnup": {"sprint": sprint_series, "cumulative": cumulative},
             "members": members, "access": access}
+
+
+def refresh_pr_states(*, project_id: str, user_id: str) -> dict:
+    _board_access(project_id=project_id, user_id=user_id)
+    client = _client()
+    rows = (client.table("tasks").select("id, pr_url, pr_state, pr_checked_at")
+            .eq("project_id", str(project_id)).neq("pr_url", "null").execute()).data or []
+    cutoff = datetime.now(timezone.utc) - PR_STALE_AFTER
+    stale = []
+    for t in rows:
+        if not t.get("pr_url"):
+            continue
+        checked = t.get("pr_checked_at")
+        if not checked or datetime.fromisoformat(checked.replace("Z", "+00:00")) < cutoff:
+            stale.append(t)
+    stale = stale[:PR_REFRESH_MAX]
+
+    def _one(t: dict) -> tuple[str, str | None]:
+        parsed = parse_pr_url(t["pr_url"])
+        return t["id"], (fetch_pr_state(parsed) if parsed else None)
+
+    updated: dict[str, str] = {}
+    now = datetime.now(timezone.utc).isoformat()
+    for task_id, state in query_pool.map(_one, stale):
+        if state and state != next(t["pr_state"] for t in stale if t["id"] == task_id):
+            updated[task_id] = state
+        payload = {"pr_checked_at": now}
+        if state:
+            payload["pr_state"] = state
+        try:
+            client.table("tasks").update(payload).eq("id", str(task_id)).execute()
+        except Exception:
+            logger.exception("scrum: pr refresh write failed | task=%s", task_id)
+    return {"updated": updated}
