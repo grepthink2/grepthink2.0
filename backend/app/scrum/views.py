@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException, Response, status
 
 from app.dependencies import require_user
 from app.scrum import controller
-from app.scrum.models import (CreateSprintRequest, CreateStoryRequest,
+from app.scrum.models import (BoardResponse, CreateSprintRequest, CreateStoryRequest,
                               CreateTaskRequest, MoveTaskRequest, SprintOut,
                               SprintResponse, StoryOut, StoryResponse, TaskOut,
                               TaskResponse, UpdateSettingsRequest,
@@ -26,7 +26,10 @@ def _story_out(row: dict) -> StoryOut:
                      "tasks": [_task_out(t) for t in row.get("tasks", [])]})
 
 
-def get_board(project_id: str, user_id: str = Depends(require_user)): _todo()
+def get_board(project_id: str, sprint_id: str | None = None,
+              user_id: str = Depends(require_user)) -> BoardResponse:
+    board = controller.get_board(project_id=project_id, user_id=user_id, sprint_id=sprint_id)
+    return BoardResponse(**board)
 
 
 def update_settings(project_id: str, body: UpdateSettingsRequest,
