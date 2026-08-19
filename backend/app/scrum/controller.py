@@ -285,3 +285,117 @@ def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
     if story.get("sprint_id"):
         _snapshot_burnup_safe(story["sprint_id"])
     return {"task": task, "move": move}
+
+
+def _display_name(profile: dict | None) -> str:
+    if not profile:
+        return "Unknown"
+    name = f"{profile.get('first_name') or ''} {profile.get('last_name') or ''}".strip()
+    return name or (profile.get("email") or "Unknown")
+
+
+def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
+    access = _board_access(project_id=project_id, user_id=user_id)
+    client = _client()
+    proj = (client.table("projects").select("id, name, estimate_scale")
+            .eq("id", str(project_id)).maybe_single().execute())
+    project = proj.data if proj else None
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    sprints = (client.table("sprints").select("id, name, starts_at, ends_at, status")
+               .eq("project_id", str(project_id)).order("starts_at").execute()).data or []
+
+    selected = None
+    if sprint_id:
+        selected = next((s for s in sprints if s["id"] == str(sprint_id)), None)
+        if not selected:
+            raise HTTPException(status_code=404, detail="Sprint not found")
+    else:
+        active = [s for s in sprints if s["status"] == "active"]
+        selected = (sorted(active, key=lambda s: s["starts_at"])[-1] if active
+                    else (sprints[-1] if sprints else None))
+
+    all_stories = (client.table("user_stories").select("*")
+                   .eq("project_id", str(project_id)).order("created_at").execute()).data or []
+    story_ids = [s["id"] for s in all_stories]
+    tasks = []
+    if story_ids:
+        tasks = (client.table("tasks").select("*")
+                 .in_("story_id", story_ids).order("created_at").execute()).data or []
+
+    comments = []
+    if story_ids:
+        comments = (client.table("scrum_comments").select("story_id, task_id")
+                    .in_("story_id", story_ids).execute()).data or []
+        task_ids = [t["id"] for t in tasks]
+        if task_ids:
+            comments += (client.table("scrum_comments").select("story_id, task_id")
+                         .in_("task_id", task_ids).execute()).data or []
+    story_counts: dict[str, int] = {}
+    task_counts: dict[str, int] = {}
+    for c in comments:
+        if c.get("story_id"):
+            story_counts[c["story_id"]] = story_counts.get(c["story_id"], 0) + 1
+        if c.get("task_id"):
+            task_counts[c["task_id"]] = task_counts.get(c["task_id"], 0) + 1
+
+    member_rows = (client.table("project_members").select("user_id, role")
+                   .eq("project_id", str(project_id)).execute()).data or []
+    profile_ids = ({m["user_id"] for m in member_rows}
+                   | {t["moved_by"] for t in tasks if t.get("moved_by")})
+    profiles: dict[str, dict] = {}
+    if profile_ids:
+        rows = (client.table("profiles").select("id, first_name, last_name, email, image_url")
+                .in_("id", list(profile_ids)).execute()).data or []
+        profiles = {r["id"]: r for r in rows}
+    members = [{"user_id": m["user_id"], "name": _display_name(profiles.get(m["user_id"])),
+                "image_url": (profiles.get(m["user_id"]) or {}).get("image_url"),
+                "project_role": m.get("role")} for m in member_rows]
+
+    tasks_by_story: dict[str, list] = {}
+    for t in tasks:
+        t["comment_count"] = task_counts.get(t["id"], 0)
+        t["moved_by_name"] = _display_name(profiles.get(t["moved_by"])) if t.get("moved_by") else None
+        tasks_by_story.setdefault(t["story_id"], []).append(t)
+    for s in all_stories:
+        s["comment_count"] = story_counts.get(s["id"], 0)
+        s["tasks"] = tasks_by_story.get(s["id"], [])
+
+    sel_id = selected["id"] if selected else None
+    stories = [s for s in all_stories
+               if s.get("sprint_id") == sel_id and not s.get("archived_at")] if sel_id else []
+    backlog = [s for s in all_stories if s.get("sprint_id") is None or s.get("archived_at")]
+
+    from datetime import date as _date
+    sprint_series = None
+    if selected:
+        _snapshot_burnup_safe(selected["id"])
+        snaps = (client.table("sprint_burnup_days").select("day, scope_points, completed_points")
+                 .eq("sprint_id", selected["id"]).order("day").execute()).data or []
+        live_scope, live_completed = _live_burnup_totals(client, selected["id"])
+        from app.scrum.burnup import build_sprint_series
+        sprint_series = build_sprint_series(
+            snapshots=snaps, starts_at=_date.fromisoformat(str(selected["starts_at"])),
+            ends_at=_date.fromisoformat(str(selected["ends_at"])), today=_today_la(),
+            live_scope=live_scope, live_completed=live_completed)
+        sprint_series["subtitle"] = f"{selected['starts_at']} – {selected['ends_at']}"
+
+    from app.scrum.burnup import build_cumulative_series
+    cumulative_input = []
+    for s in sprints:
+        snaps = (client.table("sprint_burnup_days").select("day, scope_points, completed_points")
+                 .eq("sprint_id", s["id"]).order("day", desc=True).limit(1).execute()).data or []
+        final = snaps[0] if snaps else None
+        if s["id"] == sel_id or final is None:
+            sc, co = _live_burnup_totals(client, s["id"])
+            final = {"scope_points": sc, "completed_points": co}
+        cumulative_input.append({"id": s["id"], "name": s["name"], "final": final})
+    cumulative = build_cumulative_series(cumulative_input)
+
+    from app.config import settings
+    return {"project": project, "ai_enabled": bool(settings.AI_API_KEY),
+            "sprints": sprints, "sprint_id": sel_id,
+            "stories": stories, "backlog": backlog,
+            "burnup": {"sprint": sprint_series, "cumulative": cumulative},
+            "members": members, "access": access}
