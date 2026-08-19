@@ -1919,6 +1919,7 @@ def test_draft_503_when_unconfigured(mock_client, _w, monkeypatch):
 def test_draft_429_over_quota(mock_client, _w, monkeypatch):
     from app.config import settings
     monkeypatch.setattr(settings, "AI_API_KEY", "k")
+    monkeypatch.setattr(settings, "AI_BASE_URL", "http://ai.test")  # controller gates on both
     client = MagicMock()
     mock_client.return_value = client
     client.table.return_value.select.return_value.eq.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
