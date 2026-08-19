@@ -644,6 +644,153 @@ export interface ApiStaffingPlacement {
   interest_value: number;
 }
 
+// ----- Scrum board (app/scrum backend) --------------------------------------
+
+export type ApiEstimateScale = 'linear' | 'exponential' | 'fibonacci';
+export type ApiBoardStatus = 'todo' | 'in_progress' | 'done';
+
+export interface ApiScrumMember {
+  user_id: string;
+  name: string;
+  image_url: string | null;
+  project_role: string | null;
+}
+
+export interface ApiScrumSprint {
+  id: string;
+  name: string;
+  /** ISO date "YYYY-MM-DD". */
+  starts_at: string;
+  ends_at: string;
+  status: 'planned' | 'active' | 'completed';
+}
+
+export interface ApiScrumTask {
+  id: string;
+  story_id: string;
+  /** Per-project human key, e.g. "T-12". */
+  key: string;
+  title: string;
+  description_md: string | null;
+  points: number | null;
+  time_estimate: string | null;
+  status: ApiBoardStatus;
+  reporter_id: string;
+  assignee_id: string | null;
+  tags: string[];
+  pr_url: string | null;
+  pr_provider: string | null;
+  pr_state: string | null;
+  moved_by: string | null;
+  moved_by_name: string | null;
+  moved_at: string | null;
+  comment_count: number;
+}
+
+export interface ApiScrumStory {
+  id: string;
+  /** null = backlog. */
+  sprint_id: string | null;
+  /** Per-project human key, e.g. "US-3". */
+  key: string;
+  title: string;
+  description_md: string | null;
+  points: number | null;
+  time_estimate: string | null;
+  reporter_id: string;
+  assignee_id: string | null;
+  /** Set = story lives in the archive view. */
+  archived_at: string | null;
+  comment_count: number;
+  tasks: ApiScrumTask[];
+}
+
+export interface ApiBurnupSeries {
+  labels: string[];
+  scope: number[];
+  completed: number[];
+  subtitle: string | null;
+}
+
+export interface ApiScrumBoard {
+  project: { id: string; name: string; estimate_scale: ApiEstimateScale };
+  ai_enabled: boolean;
+  sprints: ApiScrumSprint[];
+  /** Sprint being viewed (null = no sprints yet / backlog only). */
+  sprint_id: string | null;
+  stories: ApiScrumStory[];
+  backlog: ApiScrumStory[];
+  burnup: { sprint: ApiBurnupSeries | null; cumulative: ApiBurnupSeries };
+  members: ApiScrumMember[];
+  /** 'member' = full read/write; 'staff' = read + comments. */
+  access: 'member' | 'staff';
+}
+
+export interface ApiScrumComment {
+  id: string;
+  author_id: string;
+  author_name: string;
+  body_md: string;
+  created_at: string;
+}
+
+export interface ApiAiDraftTask {
+  title: string;
+  tags: string[];
+  points: number | null;
+  time_estimate: string | null;
+}
+
+export interface ApiAiDraft {
+  title: string | null;
+  description_md: string | null;
+  points: number | null;
+  time_estimate: string | null;
+  tasks: ApiAiDraftTask[];
+}
+
+export interface ApiCreateStoryBody {
+  title: string;
+  description_md?: string;
+  points?: number;
+  time_estimate?: string;
+  assignee_id?: string;
+  /** Omit for backlog. */
+  sprint_id?: string;
+}
+
+export interface ApiUpdateStoryBody {
+  title?: string;
+  description_md?: string;
+  points?: number;
+  time_estimate?: string;
+  assignee_id?: string;
+  /** Explicit null moves the story to the backlog. */
+  sprint_id?: string | null;
+  /** true sets archived_at, false clears it. */
+  archived?: boolean;
+}
+
+export interface ApiCreateTaskBody {
+  title: string;
+  description_md?: string;
+  points?: number;
+  time_estimate?: string;
+  assignee_id?: string;
+  tags?: string[];
+}
+
+export interface ApiUpdateTaskBody {
+  title?: string;
+  description_md?: string;
+  points?: number;
+  time_estimate?: string;
+  assignee_id?: string;
+  tags?: string[];
+  /** Explicit null unlinks the PR. */
+  pr_url?: string | null;
+}
+
 /**
  * Make an authenticated API request to the backend
  */
@@ -1583,4 +1730,34 @@ export const api = {
       { method: 'POST' },
     );
   },
+
+  // --- Scrum board ---
+  getScrumBoard: (projectId: string, sprintId?: string) =>
+    apiRequest<ApiScrumBoard>(`/api/projects/${projectId}/scrum/board${sprintId ? `?sprint_id=${sprintId}` : ''}`),
+  updateScrumSettings: (projectId: string, estimateScale: ApiEstimateScale) =>
+    apiRequest<void>(`/api/projects/${projectId}/scrum/settings`, { method: 'PATCH', body: JSON.stringify({ estimate_scale: estimateScale }) }),
+  createSprint: (projectId: string, body: { name: string; starts_at: string; ends_at: string }) =>
+    apiRequest<{ message: string; sprint: ApiScrumSprint }>(`/api/projects/${projectId}/scrum/sprints`, { method: 'POST', body: JSON.stringify(body) }),
+  updateSprint: (sprintId: string, body: Partial<Pick<ApiScrumSprint, 'name' | 'starts_at' | 'ends_at' | 'status'>>) =>
+    apiRequest<{ message: string; sprint: ApiScrumSprint }>(`/api/scrum/sprints/${sprintId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  createStory: (projectId: string, body: ApiCreateStoryBody) =>
+    apiRequest<{ message: string; story: ApiScrumStory }>(`/api/projects/${projectId}/scrum/stories`, { method: 'POST', body: JSON.stringify(body) }),
+  updateStory: (storyId: string, body: ApiUpdateStoryBody) =>
+    apiRequest<{ message: string; story: ApiScrumStory }>(`/api/scrum/stories/${storyId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  createScrumTask: (storyId: string, body: ApiCreateTaskBody) =>
+    apiRequest<{ message: string; task: ApiScrumTask }>(`/api/scrum/stories/${storyId}/tasks`, { method: 'POST', body: JSON.stringify(body) }),
+  updateScrumTask: (taskId: string, body: ApiUpdateTaskBody) =>
+    apiRequest<{ message: string; task: ApiScrumTask }>(`/api/scrum/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteScrumTask: (taskId: string) =>
+    apiRequest<void>(`/api/scrum/tasks/${taskId}`, { method: 'DELETE' }),
+  moveScrumTask: (taskId: string, toStatus: ApiBoardStatus) =>
+    apiRequest<{ message: string; task: ApiScrumTask }>(`/api/scrum/tasks/${taskId}/move`, { method: 'POST', body: JSON.stringify({ to_status: toStatus }) }),
+  getScrumComments: (parent: 'stories' | 'tasks', id: string) =>
+    apiRequest<{ comments: ApiScrumComment[] }>(`/api/scrum/${parent}/${id}/comments`),
+  createScrumComment: (parent: 'stories' | 'tasks', id: string, bodyMd: string) =>
+    apiRequest<{ message: string; comment: ApiScrumComment }>(`/api/scrum/${parent}/${id}/comments`, { method: 'POST', body: JSON.stringify({ body_md: bodyMd }) }),
+  refreshScrumPrStates: (projectId: string) =>
+    apiRequest<{ updated: Record<string, string> }>(`/api/projects/${projectId}/scrum/pr-refresh`, { method: 'POST' }),
+  aiDraftScrum: (projectId: string, body: { kind: 'story' | 'tasks'; prompt: string; story_id?: string }) =>
+    apiRequest<{ draft: ApiAiDraft }>(`/api/projects/${projectId}/scrum/ai-draft`, { method: 'POST', body: JSON.stringify(body) }),
 };

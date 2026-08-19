@@ -232,6 +232,84 @@
       "id": "update_profile", "title": "Update my profile", "role": "any",
       "method": "PATCH", "endpoint": "/api/profiles/me",
       "params": {"first_name": "string", "last_name": "string", "linkedin": "string", "github": "string", "image_url": "string"}, "uiRoute": "/app/settings", "multiStep": true
+    },
+
+    {
+      "id": "view_scrum_board", "title": "View the scrum board (sprints, stories, tasks, burnup)", "role": "any",
+      "method": "GET", "endpoint": "/api/projects/{project_id}/scrum/board",
+      "params": {"sprint_id": "uuid (query — defaults to the active sprint)"}, "uiRoute": "/app/projects/{projectId}/board",
+      "note": "Team members get full read/write; class staff (instructor, class TAs, meeting TA) get read + comments; everyone else 404."
+    },
+    {
+      "id": "update_scrum_settings", "title": "Set the board's estimate scale", "role": "project-member",
+      "method": "PATCH", "endpoint": "/api/projects/{project_id}/scrum/settings",
+      "params": {"estimate_scale": "enum(linear|exponential|fibonacci)!"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "create_sprint", "title": "Create a sprint", "role": "project-member",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/scrum/sprints",
+      "params": {"name": "string!", "starts_at": "date!", "ends_at": "date!"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "update_sprint", "title": "Update a sprint (rename, dates, status)", "role": "project-member",
+      "method": "PATCH", "endpoint": "/api/scrum/sprints/{sprint_id}",
+      "params": {"name": "string", "starts_at": "date", "ends_at": "date", "status": "enum(planned|active|completed)"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "create_story", "title": "Create a user story", "role": "project-member",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/scrum/stories",
+      "params": {"title": "string!", "description_md": "string (markdown)", "points": "int", "time_estimate": "string", "assignee_id": "uuid", "sprint_id": "uuid (omit for backlog)"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "update_story", "title": "Update or archive a user story", "role": "project-member",
+      "method": "PATCH", "endpoint": "/api/scrum/stories/{story_id}",
+      "params": {"title": "string", "description_md": "string (markdown)", "points": "int", "time_estimate": "string", "assignee_id": "uuid", "sprint_id": "uuid (explicit null moves to backlog)", "archived": "bool"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "create_scrum_task", "title": "Add a task to a story", "role": "project-member",
+      "method": "POST", "endpoint": "/api/scrum/stories/{story_id}/tasks",
+      "params": {"title": "string!", "description_md": "string (markdown)", "points": "int", "time_estimate": "string", "assignee_id": "uuid", "tags": "string[]"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "update_scrum_task", "title": "Update a task", "role": "project-member",
+      "method": "PATCH", "endpoint": "/api/scrum/tasks/{task_id}",
+      "params": {"title": "string", "description_md": "string (markdown)", "points": "int", "time_estimate": "string", "assignee_id": "uuid", "tags": "string[]", "pr_url": "string (explicit null unlinks the PR)"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "delete_scrum_task", "title": "Delete a task", "role": "project-member",
+      "method": "DELETE", "endpoint": "/api/scrum/tasks/{task_id}", "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "move_scrum_task", "title": "Move a task between board columns", "role": "project-member",
+      "method": "POST", "endpoint": "/api/scrum/tasks/{task_id}/move",
+      "params": {"to_status": "enum(todo|in_progress|done)!"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "list_story_comments", "title": "List comments on a story", "role": "any",
+      "method": "GET", "endpoint": "/api/scrum/stories/{story_id}/comments", "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "create_story_comment", "title": "Comment on a story (@mentions notify)", "role": "any",
+      "method": "POST", "endpoint": "/api/scrum/stories/{story_id}/comments",
+      "params": {"body_md": "string!"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "list_task_comments", "title": "List comments on a task", "role": "any",
+      "method": "GET", "endpoint": "/api/scrum/tasks/{task_id}/comments", "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "create_task_comment", "title": "Comment on a task (@mentions notify)", "role": "any",
+      "method": "POST", "endpoint": "/api/scrum/tasks/{task_id}/comments",
+      "params": {"body_md": "string!"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "refresh_scrum_pr_states", "title": "Refresh cached PR/MR states for board tasks", "role": "any",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/scrum/pr-refresh", "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "ai_draft_scrum", "title": "AI-draft a story or a task breakdown", "role": "project-member",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/scrum/ai-draft", "rateLimit": "5/min",
+      "params": {"kind": "enum(story|tasks)!", "prompt": "string!", "story_id": "uuid (story context when kind=tasks)"}, "uiRoute": "/app/projects/{projectId}/board"
     }
   ]
 }
