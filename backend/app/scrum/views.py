@@ -4,9 +4,9 @@ from fastapi import Depends, HTTPException, Response, status
 from app.dependencies import require_user
 from app.scrum import controller
 from app.scrum.models import (BoardResponse, CreateSprintRequest, CreateStoryRequest,
-                              CreateTaskRequest, MoveTaskRequest, SprintOut,
-                              SprintResponse, StoryOut, StoryResponse, TaskOut,
-                              TaskResponse, UpdateSettingsRequest,
+                              CreateTaskRequest, MoveTaskRequest, PrRefreshResponse,
+                              SprintOut, SprintResponse, StoryOut, StoryResponse,
+                              TaskOut, TaskResponse, UpdateSettingsRequest,
                               UpdateSprintRequest, UpdateStoryRequest,
                               UpdateTaskRequest)
 
@@ -98,5 +98,6 @@ def list_story_comments(story_id: str, user_id: str = Depends(require_user)): _t
 def create_story_comment(story_id: str, user_id: str = Depends(require_user)): _todo()
 def list_task_comments(task_id: str, user_id: str = Depends(require_user)): _todo()
 def create_task_comment(task_id: str, user_id: str = Depends(require_user)): _todo()
-def refresh_pr_states(project_id: str, user_id: str = Depends(require_user)): _todo()
+def refresh_pr_states(project_id: str, user_id: str = Depends(require_user)) -> PrRefreshResponse:
+    return PrRefreshResponse(**controller.refresh_pr_states(project_id=project_id, user_id=user_id))
 def ai_draft(project_id: str, user_id: str = Depends(require_user)): _todo()
