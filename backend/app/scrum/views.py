@@ -3,12 +3,27 @@ from fastapi import Depends, HTTPException, Response, status
 
 from app.dependencies import require_user
 from app.scrum import controller
-from app.scrum.models import (CreateSprintRequest, SprintOut, SprintResponse,
-                              UpdateSettingsRequest, UpdateSprintRequest)
+from app.scrum.models import (CreateSprintRequest, CreateStoryRequest,
+                              CreateTaskRequest, SprintOut, SprintResponse,
+                              StoryOut, StoryResponse, TaskOut, TaskResponse,
+                              UpdateSettingsRequest, UpdateSprintRequest,
+                              UpdateStoryRequest, UpdateTaskRequest)
 
 
 def _todo(*_args, **_kwargs):
     raise HTTPException(status_code=501, detail="Not implemented")
+
+
+def _task_out(row: dict) -> TaskOut:
+    return TaskOut(**{k: row.get(k) for k in TaskOut.model_fields if k in row} |
+                   {"comment_count": row.get("comment_count", 0)})
+
+
+def _story_out(row: dict) -> StoryOut:
+    return StoryOut(**{k: row.get(k) for k in StoryOut.model_fields if k in row} |
+                    {"comment_count": row.get("comment_count", 0),
+                     "tasks": [_task_out(t) for t in row.get("tasks", [])]})
+
 
 def get_board(project_id: str, user_id: str = Depends(require_user)): _todo()
 
@@ -36,11 +51,39 @@ def update_sprint(sprint_id: str, body: UpdateSprintRequest,
         k: row[k] for k in ("id", "name", "starts_at", "ends_at", "status")}))
 
 
-def create_story(project_id: str, user_id: str = Depends(require_user)): _todo()
-def update_story(story_id: str, user_id: str = Depends(require_user)): _todo()
-def create_task(story_id: str, user_id: str = Depends(require_user)): _todo()
-def update_task(task_id: str, user_id: str = Depends(require_user)): _todo()
-def delete_task(task_id: str, user_id: str = Depends(require_user)): _todo()
+def create_story(project_id: str, body: CreateStoryRequest,
+                 user_id: str = Depends(require_user)) -> StoryResponse:
+    row = controller.create_story(project_id=project_id, user_id=user_id,
+                                  fields=body.model_dump(exclude_unset=True))
+    return StoryResponse(message="Story created successfully", story=_story_out(row))
+
+
+def update_story(story_id: str, body: UpdateStoryRequest,
+                 user_id: str = Depends(require_user)) -> StoryResponse:
+    row = controller.update_story(story_id=story_id, user_id=user_id,
+                                  fields=body.model_dump(exclude_unset=True))
+    return StoryResponse(message="Story updated successfully", story=_story_out(row))
+
+
+def create_task(story_id: str, body: CreateTaskRequest,
+                user_id: str = Depends(require_user)) -> TaskResponse:
+    row = controller.create_task(story_id=story_id, user_id=user_id,
+                                 fields=body.model_dump(exclude_unset=True))
+    return TaskResponse(message="Task created successfully", task=_task_out(row))
+
+
+def update_task(task_id: str, body: UpdateTaskRequest,
+                user_id: str = Depends(require_user)) -> TaskResponse:
+    row = controller.update_task(task_id=task_id, user_id=user_id,
+                                 fields=body.model_dump(exclude_unset=True))
+    return TaskResponse(message="Task updated successfully", task=_task_out(row))
+
+
+def delete_task(task_id: str, user_id: str = Depends(require_user)) -> Response:
+    controller.delete_task(task_id=task_id, user_id=user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 def move_task(task_id: str, user_id: str = Depends(require_user)): _todo()
 def list_story_comments(story_id: str, user_id: str = Depends(require_user)): _todo()
 def create_story_comment(story_id: str, user_id: str = Depends(require_user)): _todo()
