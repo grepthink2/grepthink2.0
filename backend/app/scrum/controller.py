@@ -239,9 +239,31 @@ def delete_task(*, task_id: str, user_id: str) -> None:
     client.table("tasks").delete().eq("id", str(task_id)).execute()
 
 
+def _live_burnup_totals(client, sprint_id: str) -> tuple[int, int]:
+    stories = (client.table("user_stories").select("id, points")
+               .eq("sprint_id", str(sprint_id)).is_("archived_at", "null").execute())
+    story_rows = stories.data or []
+    scope = sum(s["points"] or 0 for s in story_rows)
+    completed = 0
+    ids = [s["id"] for s in story_rows]
+    if ids:
+        tasks = (client.table("tasks").select("points, status")
+                 .in_("story_id", ids).eq("status", "done").execute())
+        completed = sum(t["points"] or 0 for t in (tasks.data or []))
+    return scope, completed
+
+
 def _snapshot_burnup_safe(sprint_id: str) -> None:
-    """Replaced in Task B7. Best-effort no-op until then."""
-    return None
+    """Best-effort daily snapshot; never fails the triggering write."""
+    try:
+        client = _client()
+        scope, completed = _live_burnup_totals(client, sprint_id)
+        client.table("sprint_burnup_days").upsert(
+            {"sprint_id": str(sprint_id), "day": _today_la().isoformat(),
+             "scope_points": scope, "completed_points": completed},
+            on_conflict="sprint_id,day").execute()
+    except Exception:
+        logger.exception("scrum: burnup snapshot failed | sprint=%s", sprint_id)
 
 
 def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
