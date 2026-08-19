@@ -3,7 +3,9 @@ from fastapi import Depends, HTTPException, Response, status
 
 from app.dependencies import require_user
 from app.scrum import controller
-from app.scrum.models import (BoardResponse, CreateSprintRequest, CreateStoryRequest,
+from app.scrum.models import (BoardResponse, CommentOut, CommentResponse,
+                              CommentsListResponse, CreateCommentRequest,
+                              CreateSprintRequest, CreateStoryRequest,
                               CreateTaskRequest, MoveTaskRequest, PrRefreshResponse,
                               SprintOut, SprintResponse, StoryOut, StoryResponse,
                               TaskOut, TaskResponse, UpdateSettingsRequest,
@@ -94,10 +96,33 @@ def move_task(task_id: str, body: MoveTaskRequest,
     return TaskResponse(message="Task moved successfully", task=_task_out(out["task"]))
 
 
-def list_story_comments(story_id: str, user_id: str = Depends(require_user)): _todo()
-def create_story_comment(story_id: str, user_id: str = Depends(require_user)): _todo()
-def list_task_comments(task_id: str, user_id: str = Depends(require_user)): _todo()
-def create_task_comment(task_id: str, user_id: str = Depends(require_user)): _todo()
+def list_story_comments(story_id: str, user_id: str = Depends(require_user)) -> CommentsListResponse:
+    rows = controller.list_comments(parent_kind="story", parent_id=story_id, user_id=user_id)
+    return CommentsListResponse(comments=[CommentOut(**r) for r in rows])
+
+
+def create_story_comment(story_id: str, body: CreateCommentRequest,
+                         user_id: str = Depends(require_user)) -> CommentResponse:
+    row = controller.create_comment(parent_kind="story", parent_id=story_id,
+                                    user_id=user_id, body_md=body.body_md)
+    return CommentResponse(message="Comment added successfully",
+                           comment=CommentOut(**row, author_name=""))
+
+
+def list_task_comments(task_id: str, user_id: str = Depends(require_user)) -> CommentsListResponse:
+    rows = controller.list_comments(parent_kind="task", parent_id=task_id, user_id=user_id)
+    return CommentsListResponse(comments=[CommentOut(**r) for r in rows])
+
+
+def create_task_comment(task_id: str, body: CreateCommentRequest,
+                        user_id: str = Depends(require_user)) -> CommentResponse:
+    row = controller.create_comment(parent_kind="task", parent_id=task_id,
+                                    user_id=user_id, body_md=body.body_md)
+    return CommentResponse(message="Comment added successfully",
+                           comment=CommentOut(**row, author_name=""))
+
+
+
 def refresh_pr_states(project_id: str, user_id: str = Depends(require_user)) -> PrRefreshResponse:
     return PrRefreshResponse(**controller.refresh_pr_states(project_id=project_id, user_id=user_id))
 def ai_draft(project_id: str, user_id: str = Depends(require_user)): _todo()
