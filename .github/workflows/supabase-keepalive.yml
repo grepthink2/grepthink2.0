@@ -1,0 +1,50 @@
+name: Supabase keep-alive
+
+# Supabase free-tier projects pause after ~7 days without activity. The DEV
+# project only sees traffic when someone runs the local dev server, so during
+# quiet weeks it drifts into the pause window and Supabase emails a shutdown
+# notice. This pings it on a schedule to keep it awake.
+#
+# Setup (repo → Settings → Secrets and variables → Actions):
+#   SUPABASE_KEEPALIVE_URL       https://<dev-project-ref>.supabase.co
+#   SUPABASE_KEEPALIVE_ANON_KEY  the dev anon key (already public — it ships
+#                                in the client bundle — but kept as a secret
+#                                so it is not duplicated in git)
+# Without both secrets the job logs a notice and exits 0, so an un-configured
+# fork never shows red CI.
+
+on:
+  schedule:
+    # Every 3 days at 06:17 UTC — two pings per 7-day window, and an
+    # off-the-hour minute to avoid GitHub's top-of-hour scheduling backlog.
+    - cron: '17 6 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping dev database
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query PostgREST
+        env:
+          URL: ${{ secrets.SUPABASE_KEEPALIVE_URL }}
+          KEY: ${{ secrets.SUPABASE_KEEPALIVE_ANON_KEY }}
+        run: |
+          set -uo pipefail
+          if [ -z "${URL:-}" ] || [ -z "${KEY:-}" ]; then
+            echo "::notice::Keep-alive secrets not configured — skipping."
+            exit 0
+          fi
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 \
+            -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+            "$URL/rest/v1/profiles?select=id&limit=1") || {
+              echo "::error::Could not reach the project (network/DNS)."; exit 1; }
+          echo "PostgREST responded $code"
+          # This deliberately queries a real table so the request reaches
+          # Postgres. RLS is enabled with no policies, so anon gets an empty
+          # result — that is expected and still a database round trip. Any
+          # 2xx/4xx proves the project answered; 5xx or no response does not.
+          case "$code" in
+            2*|4*) echo "Project is awake." ;;
+            *) echo "::error::Unexpected status $code"; exit 1 ;;
+          esac
