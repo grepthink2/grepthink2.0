@@ -29,3 +29,21 @@ def test_cumulative_one_point_per_sprint():
     out = build_cumulative_series(sprints)
     assert out["labels"] == ["S1", "S2"]
     assert out["scope"] == [10, 18] and out["completed"] == [9, 12]
+
+
+def test_reconstruction_fills_snapshotless_days():
+    out = build_sprint_series(
+        snapshots=[], starts_at=date(2026, 8, 10), ends_at=date(2026, 8, 14),
+        today=date(2026, 8, 12), live_scope=13, live_completed=8,
+        completed_by_day={"2026-08-10": 3, "2026-08-11": 5})
+    assert out["completed"] == [3, 5, 8]      # reconstructed, reconstructed, live today
+    assert out["scope"] == [0, 0, 13]         # scope still carries forward to live
+
+
+def test_snapshot_wins_over_reconstruction():
+    snaps = [{"day": "2026-08-11", "scope_points": 10, "completed_points": 4}]
+    out = build_sprint_series(
+        snapshots=snaps, starts_at=date(2026, 8, 10), ends_at=date(2026, 8, 14),
+        today=date(2026, 8, 12), live_scope=10, live_completed=6,
+        completed_by_day={"2026-08-10": 3, "2026-08-11": 99})
+    assert out["completed"] == [3, 4, 6]      # day2 snapshot beats reconstruction
