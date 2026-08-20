@@ -1,0 +1,227 @@
+@use '@styles/index.scss' as *;
+
+// ── Page wrapper ──────────────────────────────────────────────────────────────
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+
+  &--loading {
+    color: $text-secondary;
+    padding: $spacing-xl;
+    text-align: center;
+  }
+}
+
+// ── Back link ─────────────────────────────────────────────────────────────────
+.feedback-form__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $primary-color;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  padding: 0;
+  margin-bottom: $spacing-sm;
+
+  &:hover { text-decoration: underline; }
+}
+
+// ── Card shell (matches InterestForm / TSRS style) ────────────────────────────
+.feedback-form__card {
+  background: $white;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+// ── Card header ───────────────────────────────────────────────────────────────
+.feedback-form__header {
+  padding: $spacing-xl $spacing-xl $spacing-lg;
+  border-bottom: 1px solid $border-color;
+}
+
+.feedback-form__title {
+  margin: 0 0 4px;
+  font-size: 1.35rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  letter-spacing: -0.01em;
+}
+
+.feedback-form__due {
+  margin: 0;
+  font-size: $font-size-sm;
+  color: $text-tertiary;
+}
+
+// ── Edit banner ───────────────────────────────────────────────────────────────
+.feedback-form__banner {
+  margin: $spacing-lg $spacing-xl 0;
+  padding: 10px 16px;
+  background: rgba($primary-color, 0.08);
+  color: $primary-color;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+}
+
+// ── Questions list ────────────────────────────────────────────────────────────
+.feedback-form__questions {
+  display: flex;
+  flex-direction: column;
+  padding: $spacing-lg $spacing-xl;
+  gap: $spacing-lg;
+}
+
+// ── Single question ───────────────────────────────────────────────────────────
+.feedback-form__question {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.feedback-form__label {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  font-family: $primary-font;
+}
+
+.feedback-form__textarea {
+  width: 100%;
+  padding: 9px 13px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  background: $white;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  color: $text-primary;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color $transition-fast, box-shadow $transition-fast;
+  line-height: 1.5;
+  min-height: 90px;
+
+  &::placeholder { color: $text-tertiary; }
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+}
+
+// ── Error message ─────────────────────────────────────────────────────────────
+.feedback-form__error {
+  margin: 0 $spacing-xl;
+  font-size: $font-size-sm;
+  color: $error-color;
+  font-weight: $font-weight-medium;
+}
+
+// ── Submitted success screen (mirrors .tsrs__submitted) ──────────────────────
+.feedback-form__submitted {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-md;
+  padding: $spacing-xxl $spacing-lg;
+  background: $background;
+  border-radius: $border-radius-md;
+  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.feedback-form__submitted-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: rgba($primary-color, 0.12);
+  color: $primary-color;
+  font-size: 2rem;
+  font-weight: $font-weight-semibold;
+}
+
+.feedback-form__submitted-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+}
+
+.feedback-form__submitted-sub {
+  margin: 0;
+  font-size: $font-size-base;
+  color: $text-secondary;
+  max-width: 400px;
+}
+
+.feedback-form__submitted-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+// ── Shared button (mirrors .tsrs-btn) ─────────────────────────────────────────
+.feedback-form__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 28px;
+  border-radius: $border-radius-sm;
+  border: none;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: background-color $transition-fast, opacity $transition-fast;
+
+  &--primary {
+    background-color: $primary-color;
+    color: $white;
+    &:hover { background-color: $primary-hover; }
+  }
+
+  &--secondary {
+    background-color: $background;
+    color: $text-secondary;
+    &:hover { background-color: $border-color; }
+  }
+}
+
+// ── Footer / submit ───────────────────────────────────────────────────────────
+.feedback-form__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: $spacing-md $spacing-xl;
+  border-top: 1px solid $border-color;
+}
+
+.feedback-form__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 28px;
+  background: $primary-color;
+  color: $white;
+  border: none;
+  border-radius: $border-radius-sm;
+  font-family: $primary-font;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: background-color $transition-fast, opacity $transition-fast;
+
+  &:hover:not(:disabled) { background-color: $primary-hover; }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}

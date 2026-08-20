@@ -66,3 +66,9 @@ supabase/.temp/
 # ---- Repo-specific artifacts (should never be committed) ----
 *.xlsx
 backend/requirements-dev.txt
+
+# ---- Local tooling output / scratch archives (never committed) ----
+# Firecrawl CLI scrape cache (site markdown, screenshots, sitemap).
+.firecrawl/
+# Ad-hoc archives parked at the repo root, e.g. interview.zip (see README).
+/*.zip

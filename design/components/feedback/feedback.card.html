@@ -1,0 +1,78 @@
+<!-- @dsCard group="Components" viewport="700x540" name="Feedback — Alerts, Toasts, Modal & Empty" subtitle="Alert, Toast, Modal, EmptyState, Skeleton" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); }
+  .stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 0 0 6px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Alert, Toast, Modal, EmptyState, Skeleton, Button } = window.GrepThinkDesignSystem_36e7e3;
+
+function Demo() {
+  return (
+    <div>
+      <p className="lbl">Inline alerts — semantic soft pairs</p>
+      <div className="stack">
+        <Alert tone="success" title="TSR submitted">Your Team Status Report was recorded for Sprint 3.</Alert>
+        <Alert tone="warning" title="TSR due in 2 days">Submit before Jan 18, 11:59 PM.</Alert>
+        <Alert tone="error" title="Couldn't join class" onDismiss={() => {}}>That code doesn't match an open class.</Alert>
+        <Alert tone="info">Your instructor moved the staffing deadline to Friday.</Alert>
+      </div>
+
+      <div className="cols">
+        <div>
+          <p className="lbl">Toast (floating visual)</p>
+          <Toast tone="success" title="Join request sent" onDismiss={() => {}}>The project owner was notified.</Toast>
+          <p className="lbl" style={{marginTop:16}}>Skeleton</p>
+          <div className="stack" style={{background:'#fff', borderRadius:10, padding:16}}>
+            <Skeleton width="60%" height={16} />
+            <Skeleton width="90%" />
+            <Skeleton width="75%" />
+          </div>
+        </div>
+        <div>
+          <p className="lbl">Empty state</p>
+          <div style={{background:'#fff', borderRadius:10}}>
+            <EmptyState
+              compact
+              icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              title="No projects yet"
+              description="Browse open projects in your class or create your own."
+              action={<Button size="sm">Browse projects</Button>}
+            />
+          </div>
+        </div>
+      </div>
+
+      <p className="lbl">Modal (statically embedded)</p>
+      <div style={{position:'relative', height:230, borderRadius:10, overflow:'hidden'}}>
+        <div style={{position:'absolute', inset:0, transform:'scale(1)'}}>
+          <Modal open onClose={() => {}} title="Join a Class" subtitle="Enter the 6-digit code from your instructor"
+            footer={<><Button variant="secondary">Cancel</Button><Button>Join class</Button></>}>
+            <div style={{display:'flex', gap:8, justifyContent:'center'}}>
+              {['C','S','E','1','1','5'].map((c, i) => (
+                <span key={i} style={{width:40, height:48, border:'2px solid var(--gt-border)', borderRadius:8, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:'1.25rem', fontWeight:600, color:'var(--gt-text-primary)'}}>{c}</span>
+              ))}
+            </div>
+          </Modal>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

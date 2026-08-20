@@ -1,0 +1,92 @@
+/* ============================================================
+   GrepThink · Color tokens
+   Source of truth: grepthink2.0 codebase design-token layer
+   (frontend/src/styles/_colors.scss) + the written token spec.
+   All values are verbatim from those sources — do not round.
+   ============================================================ */
+
+:root {
+  /* ---- Brand green ramp (primary) ---- */
+  --gt-green-50:  #E6F4EF;
+  --gt-green-100: #C2E5D8;
+  --gt-green-200: #8FD0BB;
+  --gt-green-300: #54B999;
+  --gt-green-400: #1F9E77;
+  --gt-green-500: #018156;  /* primary / CTA */
+  --gt-green-600: #017049;
+  --gt-green-700: #016547;  /* primary hover */
+  --gt-green-800: #014A34;
+  --gt-green-900: #013525;
+
+  /* ---- Accent blue (links, selection, focus, info) ---- */
+  --gt-blue-500: #2771FF;
+
+  /* ---- Neutral gray ramp ---- */
+  --gt-gray-0:   #FFFFFF;
+  --gt-gray-50:  #FAFAFA;
+  --gt-gray-100: #EEEEEE;  /* app canvas */
+  --gt-gray-200: #E0E0E0;
+  --gt-gray-300: #DADADA;  /* border */
+  --gt-gray-400: #BDBDBD;
+  --gt-gray-500: #8A8A8A;
+  --gt-gray-600: #616161;  /* tertiary text */
+  --gt-gray-700: #424242;  /* secondary text */
+  --gt-gray-800: #303030;  /* primary text */
+  --gt-gray-900: #1C1C1C;
+
+  /* ---- Semantic: solid / soft-bg / text ---- */
+  --gt-success:      #018156;
+  --gt-success-soft: #E6F4EF;
+  --gt-success-text: #016547;
+
+  --gt-warning:      #B26A00;
+  --gt-warning-soft: #FEF3C7;
+  --gt-warning-text: #8A5200;
+
+  --gt-error:        #DC2626;
+  --gt-error-soft:   #FDECEA;
+  --gt-error-text:   #B91C1C;
+
+  --gt-info:         #2771FF;
+  --gt-info-soft:    #EAF1FF;
+  --gt-info-text:    #1543A8;
+
+  /* ---- UCSC institutional accents (reserved use) ---- */
+  --gt-gold:      #FDC700;   /* achievements, stars, "team set" only */
+  --gt-ucsc-blue: #003C6C;   /* optional institutional blue */
+
+  /* ============================================================
+     Semantic aliases — reference these in components, not the ramps
+     ============================================================ */
+
+  /* Surfaces */
+  --gt-canvas:        var(--gt-gray-100);   /* app background */
+  --gt-surface:       var(--gt-gray-0);     /* cards, sheets */
+  --gt-surface-muted: var(--gt-gray-50);    /* subtle fills, hover rows */
+  --gt-surface-sunken: var(--gt-gray-100);  /* inset wells, table head */
+
+  /* Text */
+  --gt-text-primary:   var(--gt-gray-800);
+  --gt-text-secondary: var(--gt-gray-700);
+  --gt-text-tertiary:  var(--gt-gray-600);
+  --gt-text-inverse:   var(--gt-gray-0);
+  --gt-text-link:      var(--gt-blue-500);
+
+  /* Borders */
+  --gt-border:        var(--gt-gray-300);
+  --gt-border-strong: var(--gt-gray-400);
+  --gt-border-subtle: var(--gt-gray-200);
+
+  /* Brand / interactive */
+  --gt-primary:        var(--gt-green-500);
+  --gt-primary-hover:  var(--gt-green-700);
+  --gt-primary-soft:   var(--gt-green-50);
+  --gt-accent:         var(--gt-blue-500);
+
+  /* Focus ring — standardized on accent blue, 2px (see readme conflict note) */
+  --gt-focus-ring: 0 0 0 2px var(--gt-gray-0), 0 0 0 4px var(--gt-blue-500);
+  --gt-focus-ring-tight: 0 0 0 2px var(--gt-blue-500);
+
+  /* Overlay / scrim */
+  --gt-scrim: rgba(0, 0, 0, 0.5);
+}

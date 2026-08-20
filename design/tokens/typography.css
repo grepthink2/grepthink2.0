@@ -1,0 +1,38 @@
+/* ============================================================
+   GrepThink · Typography tokens
+   Poppins (400/500/600/700) primary; Fira Code for IDs & code.
+   Type scale from the codebase spec — px values verbatim.
+   ============================================================ */
+
+:root {
+  /* Families */
+  --gt-font-sans: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --gt-font-mono: 'Fira Code', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Weights */
+  --gt-weight-regular:  400;
+  --gt-weight-medium:   500;
+  --gt-weight-semibold: 600;
+  --gt-weight-bold:     700;
+
+  /* Type scale (px) */
+  --gt-text-caption:    12px;  /* captions, meta, code chips */
+  --gt-text-body:       14px;  /* default body */
+  --gt-text-body-lg:    16px;  /* emphasized body / h3 body */
+  --gt-text-h3:         20px;  /* section subheads */
+  --gt-text-h2:         24px;  /* card / page subtitles */
+  --gt-text-h1:         32px;  /* page titles */
+  --gt-text-display:    40px;  /* hero / welcome */
+
+  /* Line-heights */
+  --gt-leading-tight:   1.2;
+  --gt-leading-snug:    1.4;
+  --gt-leading-normal:  1.5;
+  --gt-leading-loose:   1.7;
+
+  /* Letter-spacing */
+  --gt-tracking-tight:  -0.01em;
+  --gt-tracking-normal: 0;
+  --gt-tracking-wide:   0.03em;   /* uppercase labels */
+  --gt-tracking-caps:   0.5px;    /* sidebar section titles */
+}
