@@ -104,7 +104,7 @@ def create_story_comment(story_id: str, body: CreateCommentRequest,
     row = controller.create_comment(parent_kind="story", parent_id=story_id,
                                     user_id=user_id, body_md=body.body_md)
     return CommentResponse(message="Comment added successfully",
-                           comment=CommentOut(**row, author_name=""))
+                           comment=CommentOut(**row))
 
 
 def list_task_comments(task_id: str, user_id: str = Depends(require_user)) -> CommentsListResponse:
@@ -117,11 +117,13 @@ def create_task_comment(task_id: str, body: CreateCommentRequest,
     row = controller.create_comment(parent_kind="task", parent_id=task_id,
                                     user_id=user_id, body_md=body.body_md)
     return CommentResponse(message="Comment added successfully",
-                           comment=CommentOut(**row, author_name=""))
+                           comment=CommentOut(**row))
 
 
 
-def refresh_pr_states(project_id: str, user_id: str = Depends(require_user)) -> PrRefreshResponse:
+@limiter.limit("10/minute")
+def refresh_pr_states(request: Request, project_id: str,
+                      user_id: str = Depends(require_user)) -> PrRefreshResponse:
     return PrRefreshResponse(**controller.refresh_pr_states(project_id=project_id, user_id=user_id))
 
 

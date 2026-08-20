@@ -14,18 +14,26 @@ import logging
 import re
 from datetime import datetime, timedelta, timezone, date
 
+try:  # tzdata may be absent on minimal images; degrade like attendance does
+    from zoneinfo import ZoneInfo
+except Exception:  # pragma: no cover
+    ZoneInfo = None
+
 from fastapi import HTTPException
 
+from app.config import settings
 from app.database.client import service_client, query_pool
 # Sanctioned cross-module reuse (attendance/tas do the same):
 from app.projects.controller import _is_instructor
 from app.tas.controller import get_enrollment_role
+from app.utils.profiles import profile_display_name
+from app.scrum.burnup import build_cumulative_series, build_sprint_series
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
 from app.scrum.pr_links import parse_pr_url, fetch_pr_state
 
 logger = logging.getLogger(__name__)
 
-LA_UTC_OFFSET_HOURS = 8  # see _today_la()
+_LA_TZ = ZoneInfo("America/Los_Angeles") if ZoneInfo else None  # same rule as attendance
 PR_REFRESH_MAX = 20
 PR_STALE_AFTER = timedelta(minutes=10)
 
@@ -64,9 +72,16 @@ def _require_writer(*, project_id: str, user_id: str) -> None:
 
 
 def _today_la() -> date:
-    """Calendar day in America/Los_Angeles (fixed -8h: a DST-hour drift in a burnup
-    day bucket is acceptable; avoids a zoneinfo dependency on the serverless image)."""
-    return (datetime.now(timezone.utc) - timedelta(hours=LA_UTC_OFFSET_HOURS)).date()
+    """Calendar day in America/Los_Angeles (attendance uses the same rule)."""
+    if _LA_TZ:
+        return datetime.now(_LA_TZ).date()
+    return (datetime.now(timezone.utc) - timedelta(hours=8)).date()  # tzdata-less fallback
+
+
+def _la_day(ts: str) -> date:
+    """LA calendar day of a Supabase timestamptz string."""
+    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    return dt.astimezone(_LA_TZ).date() if _LA_TZ else (dt - timedelta(hours=8)).date()
 
 
 def update_settings(*, project_id: str, user_id: str, estimate_scale: str) -> None:
@@ -81,6 +96,8 @@ def update_settings(*, project_id: str, user_id: str, estimate_scale: str) -> No
 
 def create_sprint(*, project_id: str, user_id: str, name: str, starts_at, ends_at) -> dict:
     _require_writer(project_id=project_id, user_id=user_id)
+    if ends_at < starts_at:
+        raise HTTPException(status_code=422, detail="ends_at must be on or after starts_at")
     client = _client()
     res = client.table("sprints").insert({
         "project_id": str(project_id), "name": name,
@@ -100,6 +117,12 @@ def _get_sprint_or_404(client, sprint_id: str) -> dict:
     return row
 
 
+def _require_sprint_in_project(client, sprint_id: str, project_id: str) -> None:
+    sprint = _get_sprint_or_404(client, sprint_id)
+    if str(sprint["project_id"]) != str(project_id):
+        raise HTTPException(status_code=404, detail="Sprint not found")
+
+
 def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
     client = _client()
     sprint = _get_sprint_or_404(client, sprint_id)
@@ -109,6 +132,10 @@ def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
                if k in ("name", "starts_at", "ends_at", "status") and v is not None}
     if not allowed:
         return sprint
+    eff_start = date.fromisoformat(allowed.get("starts_at", str(sprint["starts_at"])))
+    eff_end = date.fromisoformat(allowed.get("ends_at", str(sprint["ends_at"])))
+    if eff_end < eff_start:
+        raise HTTPException(status_code=422, detail="ends_at must be on or after starts_at")
     res = client.table("sprints").update(allowed).eq("id", str(sprint_id)).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update sprint")
@@ -150,6 +177,8 @@ def _get_task_or_404(client, task_id: str) -> dict:
 def create_story(*, project_id: str, user_id: str, fields: dict) -> dict:
     _require_writer(project_id=project_id, user_id=user_id)
     client = _client()
+    if fields.get("sprint_id"):
+        _require_sprint_in_project(client, fields["sprint_id"], project_id)
     key = _next_key(client, project_id, "story")
     row = {"project_id": str(project_id), "key": key, "reporter_id": str(user_id)}
     for k in ("title", "description_md", "points", "time_estimate", "assignee_id", "sprint_id"):
@@ -168,11 +197,15 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     client = _client()
     story = _get_story_or_404(client, story_id)
     _require_writer(project_id=story["project_id"], user_id=user_id)
+    if "title" in fields and fields["title"] is None:
+        raise HTTPException(status_code=422, detail="title cannot be null")
     payload: dict = {}
     for k in ("title", "description_md", "points", "time_estimate", "assignee_id"):
         if k in fields:
             payload[k] = fields[k]
     if "sprint_id" in fields:
+        if fields["sprint_id"] is not None:
+            _require_sprint_in_project(client, fields["sprint_id"], story["project_id"])
         payload["sprint_id"] = fields["sprint_id"]      # None ⇒ backlog
     if "archived" in fields and fields["archived"] is not None:
         payload["archived_at"] = datetime.now(timezone.utc).isoformat() if fields["archived"] else None
@@ -211,13 +244,17 @@ def update_task(*, task_id: str, user_id: str, fields: dict) -> dict:
     client = _client()
     task = _get_task_or_404(client, task_id)
     _require_writer(project_id=task["project_id"], user_id=user_id)
+    if "title" in fields and fields["title"] is None:
+        raise HTTPException(status_code=422, detail="title cannot be null")
+    if "tags" in fields and fields["tags"] is None:
+        raise HTTPException(status_code=422, detail="tags cannot be null")
     if fields.get("tags") is not None:
         _validate_tags(fields["tags"])
     payload: dict = {}
     for k in ("title", "description_md", "points", "time_estimate", "assignee_id", "tags"):
         if k in fields:
             payload[k] = fields[k]
-    if "pr_url" in fields:
+    if "pr_url" in fields and fields["pr_url"] != task.get("pr_url"):
         payload.update(_pr_fields(fields["pr_url"]))    # parse + state fetch via pr_links
     if not payload:
         return task
@@ -235,9 +272,11 @@ def _pr_fields(pr_url) -> dict:
     if not parsed:
         raise HTTPException(status_code=422,
                             detail="PR URL must be a github.com pull or git.ucsc.edu merge request")
-    state = fetch_pr_state(parsed) or "draft"   # degrade: unreachable ⇒ gray chip
+    # Store the truth: on fetch failure pr_state stays NULL (never a fabricated
+    # 'draft') and pr_checked_at stays NULL so refresh retries immediately.
+    state = fetch_pr_state(parsed)
     return {"pr_url": pr_url, "pr_provider": parsed["provider"], "pr_state": state,
-            "pr_checked_at": datetime.now(timezone.utc).isoformat()}
+            "pr_checked_at": datetime.now(timezone.utc).isoformat() if state else None}
 
 
 def delete_task(*, task_id: str, user_id: str) -> None:
@@ -261,17 +300,49 @@ def _live_burnup_totals(client, sprint_id: str) -> tuple[int, int]:
     return scope, completed
 
 
-def _snapshot_burnup_safe(sprint_id: str) -> None:
-    """Best-effort daily snapshot; never fails the triggering write."""
+def _snapshot_burnup_safe(sprint_id: str, totals: tuple[int, int] | None = None) -> None:
+    """Best-effort daily snapshot; never fails the triggering write.
+    Pass precomputed (scope, completed) via `totals` to skip the recompute."""
     try:
         client = _client()
-        scope, completed = _live_burnup_totals(client, sprint_id)
+        scope, completed = totals if totals is not None else _live_burnup_totals(client, sprint_id)
         client.table("sprint_burnup_days").upsert(
             {"sprint_id": str(sprint_id), "day": _today_la().isoformat(),
              "scope_points": scope, "completed_points": completed},
             on_conflict="sprint_id,day").execute()
     except Exception:
         logger.exception("scrum: burnup snapshot failed | sprint=%s", sprint_id)
+
+
+def _completed_by_day_from_moves(client, sprint_id: str, starts_at: date, ends_at: date) -> dict[str, int]:
+    """Exact completed points per LA day, reconstructed from the task_moves audit
+    (spec D7: fills past days that predate the lazy snapshots)."""
+    stories = (client.table("user_stories").select("id")
+               .eq("sprint_id", str(sprint_id)).is_("archived_at", "null").execute())
+    story_ids = [s["id"] for s in (stories.data or [])]
+    if not story_ids:
+        return {}
+    tasks = (client.table("tasks").select("id, points")
+             .in_("story_id", story_ids).execute()).data or []
+    if not tasks:
+        return {}
+    points = {t["id"]: t["points"] or 0 for t in tasks}
+    moves = (client.table("task_moves").select("task_id, to_status, moved_at")
+             .in_("task_id", list(points)).order("moved_at").execute()).data or []
+    if not moves:
+        return {}
+    status: dict[str, str] = {}
+    out: dict[str, int] = {}
+    i = 0
+    d = starts_at
+    end = min(ends_at, _today_la())
+    while d <= end:
+        while i < len(moves) and _la_day(moves[i]["moved_at"]) <= d:
+            status[moves[i]["task_id"]] = moves[i]["to_status"]
+            i += 1
+        out[d.isoformat()] = sum(points[tid] for tid, st in status.items() if st == "done")
+        d += timedelta(days=1)
+    return out
 
 
 def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
@@ -296,10 +367,7 @@ def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
 
 
 def _display_name(profile: dict | None) -> str:
-    if not profile:
-        return "Unknown"
-    name = f"{profile.get('first_name') or ''} {profile.get('last_name') or ''}".strip()
-    return name or (profile.get("email") or "Unknown")
+    return profile_display_name(profile) or "Unknown"
 
 
 def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
@@ -334,12 +402,13 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
 
     comments = []
     if story_ids:
-        comments = (client.table("scrum_comments").select("story_id, task_id")
-                    .in_("story_id", story_ids).execute()).data or []
+        # One query for both parent kinds; ids are DB-sourced UUIDs (PostgREST-safe).
         task_ids = [t["id"] for t in tasks]
+        or_filter = f"story_id.in.({','.join(story_ids)})"
         if task_ids:
-            comments += (client.table("scrum_comments").select("story_id, task_id")
-                         .in_("task_id", task_ids).execute()).data or []
+            or_filter += f",task_id.in.({','.join(task_ids)})"
+        comments = (client.table("scrum_comments").select("story_id, task_id")
+                    .or_(or_filter).execute()).data or []
     story_counts: dict[str, int] = {}
     task_counts: dict[str, int] = {}
     for c in comments:
@@ -375,34 +444,55 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
                if s.get("sprint_id") == sel_id and not s.get("archived_at")] if sel_id else []
     backlog = [s for s in all_stories if s.get("sprint_id") is None or s.get("archived_at")]
 
-    from datetime import date as _date
+    # One snapshot query covers both charts; the selected sprint's live totals are
+    # computed once and reused (snapshot upsert, sprint series, cumulative point).
+    snaps_by_sprint: dict[str, list[dict]] = {}
+    if sprints:
+        all_snaps = (client.table("sprint_burnup_days")
+                     .select("sprint_id, day, scope_points, completed_points")
+                     .in_("sprint_id", [s["id"] for s in sprints]).order("day").execute()).data or []
+        for row in all_snaps:
+            snaps_by_sprint.setdefault(row["sprint_id"], []).append(row)
+
     sprint_series = None
+    live_totals: tuple[int, int] | None = None
+    today = _today_la()
     if selected:
-        _snapshot_burnup_safe(selected["id"])
-        snaps = (client.table("sprint_burnup_days").select("day, scope_points, completed_points")
-                 .eq("sprint_id", selected["id"]).order("day").execute()).data or []
-        live_scope, live_completed = _live_burnup_totals(client, selected["id"])
-        from app.scrum.burnup import build_sprint_series
+        live_totals = _live_burnup_totals(client, selected["id"])
+        _snapshot_burnup_safe(selected["id"], totals=live_totals)
+        starts = date.fromisoformat(str(selected["starts_at"]))
+        ends = date.fromisoformat(str(selected["ends_at"]))
+        snaps = snaps_by_sprint.get(selected["id"], [])
+        if today >= starts:
+            day_key = today.isoformat()
+            if not any(s["day"] == day_key for s in snaps):
+                snaps = snaps + [{"day": day_key, "scope_points": live_totals[0],
+                                  "completed_points": live_totals[1]}]
+        elapsed = (min(today, ends) - starts).days + 1 if today >= starts else 0
+        completed_by_day = None
+        if elapsed > len(snaps):  # snapshots started late — reconstruct from the audit
+            completed_by_day = _completed_by_day_from_moves(client, selected["id"], starts, ends)
         sprint_series = build_sprint_series(
-            snapshots=snaps, starts_at=_date.fromisoformat(str(selected["starts_at"])),
-            ends_at=_date.fromisoformat(str(selected["ends_at"])), today=_today_la(),
-            live_scope=live_scope, live_completed=live_completed)
+            snapshots=snaps, starts_at=starts, ends_at=ends, today=today,
+            live_scope=live_totals[0], live_completed=live_totals[1],
+            completed_by_day=completed_by_day)
         sprint_series["subtitle"] = f"{selected['starts_at']} – {selected['ends_at']}"
 
-    from app.scrum.burnup import build_cumulative_series
     cumulative_input = []
     for s in sprints:
-        snaps = (client.table("sprint_burnup_days").select("day, scope_points, completed_points")
-                 .eq("sprint_id", s["id"]).order("day", desc=True).limit(1).execute()).data or []
-        final = snaps[0] if snaps else None
-        if s["id"] == sel_id or final is None:
-            sc, co = _live_burnup_totals(client, s["id"])
-            final = {"scope_points": sc, "completed_points": co}
+        if s["id"] == sel_id and live_totals is not None:
+            final = {"scope_points": live_totals[0], "completed_points": live_totals[1]}
+        else:
+            sprint_snaps = snaps_by_sprint.get(s["id"], [])
+            if sprint_snaps:
+                final = sprint_snaps[-1]  # ordered by day ascending
+            else:
+                sc, co = _live_burnup_totals(client, s["id"])
+                final = {"scope_points": sc, "completed_points": co}
         cumulative_input.append({"id": s["id"], "name": s["name"], "final": final})
     cumulative = build_cumulative_series(cumulative_input)
 
-    from app.config import settings
-    return {"project": project, "ai_enabled": bool(settings.AI_API_KEY),
+    return {"project": project, "ai_enabled": bool(settings.AI_API_KEY and settings.AI_BASE_URL),
             "sprints": sprints, "sprint_id": sel_id,
             "stories": stories, "backlog": backlog,
             "burnup": {"sprint": sprint_series, "cumulative": cumulative},
@@ -413,7 +503,7 @@ def refresh_pr_states(*, project_id: str, user_id: str) -> dict:
     _board_access(project_id=project_id, user_id=user_id)
     client = _client()
     rows = (client.table("tasks").select("id, pr_url, pr_state, pr_checked_at")
-            .eq("project_id", str(project_id)).neq("pr_url", "null").execute()).data or []
+            .eq("project_id", str(project_id)).not_.is_("pr_url", "null").execute()).data or []
     cutoff = datetime.now(timezone.utc) - PR_STALE_AFTER
     stale = []
     for t in rows:
@@ -428,10 +518,11 @@ def refresh_pr_states(*, project_id: str, user_id: str) -> dict:
         parsed = parse_pr_url(t["pr_url"])
         return t["id"], (fetch_pr_state(parsed) if parsed else None)
 
+    old_state = {t["id"]: t.get("pr_state") for t in stale}
     updated: dict[str, str] = {}
     now = datetime.now(timezone.utc).isoformat()
     for task_id, state in query_pool.map(_one, stale):
-        if state and state != next(t["pr_state"] for t in stale if t["id"] == task_id):
+        if state and state != old_state.get(task_id):
             updated[task_id] = state
         payload = {"pr_checked_at": now}
         if state:
@@ -469,7 +560,10 @@ def create_comment(*, parent_kind: str, parent_id: str, user_id: str, body_md: s
     _fanout_mentions(client, project_id=parent["project_id"], parent_kind=parent_kind,
                      parent_id=parent_id, parent_key=parent.get("key", ""),
                      author_id=user_id, body_md=body_md)
-    return res.data[0]
+    prof = (client.table("profiles").select("id, first_name, last_name, email")
+            .eq("id", str(user_id)).maybe_single().execute())
+    author_name = _display_name(prof.data if prof else None)
+    return {**res.data[0], "author_name": author_name}
 
 
 def list_comments(*, parent_kind: str, parent_id: str, user_id: str) -> list[dict]:
@@ -494,7 +588,6 @@ AI_DAILY_LIMIT = 10
 def ai_draft(*, project_id: str, user_id: str, kind: str, prompt: str,
              story_id: str | None) -> dict:
     _require_writer(project_id=project_id, user_id=user_id)
-    from app.config import settings
     if not settings.AI_API_KEY or not settings.AI_BASE_URL:
         raise HTTPException(status_code=503, detail="AI drafting is not configured")
     client = _client()
