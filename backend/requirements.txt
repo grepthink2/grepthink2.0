@@ -7,7 +7,7 @@ watchfiles  # Native-event reload backend; required for run.py reload_excludes t
 pydantic
 PyJWT
 slowapi
+httpx
 
 # Test-only
 pytest
-httpx
