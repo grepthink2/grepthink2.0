@@ -310,6 +310,20 @@
       "id": "ai_draft_scrum", "title": "AI-draft a story or a task breakdown", "role": "project-member",
       "method": "POST", "endpoint": "/api/projects/{project_id}/scrum/ai-draft", "rateLimit": "5/min",
       "params": {"kind": "enum(story|tasks)!", "prompt": "string!", "story_id": "uuid (story context when kind=tasks)"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "list_scrum_repos", "title": "List the team's registered repos", "role": "any",
+      "method": "GET", "endpoint": "/api/projects/{project_id}/scrum/repos", "uiRoute": "/app/projects/{projectId}/board",
+      "note": "Tokens are write-only; responses expose has_token booleans, never credentials."
+    },
+    {
+      "id": "add_scrum_repo", "title": "Register a team repo (optional PR-state token)", "role": "project-member",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/scrum/repos",
+      "params": {"repo_url": "string! (github.com or git.ucsc.edu repository URL)", "access_token": "string (write-only; re-adding the same repo rotates it)"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "delete_scrum_repo", "title": "Remove a registered team repo", "role": "project-member",
+      "method": "DELETE", "endpoint": "/api/scrum/repos/{repo_id}", "uiRoute": "/app/projects/{projectId}/board"
     }
   ]
 }

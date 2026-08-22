@@ -749,6 +749,13 @@ export interface ApiAiDraft {
   tasks: ApiAiDraftTask[];
 }
 
+export interface ApiScrumRepo {
+  id: string;
+  repo_url: string;
+  provider: 'github' | 'gitlab';
+  has_token: boolean;   // tokens are write-only; the API never returns them
+}
+
 export interface ApiCreateStoryBody {
   title: string;
   description_md?: string;
@@ -1760,4 +1767,10 @@ export const api = {
     apiRequest<{ updated: Record<string, string> }>(`/api/projects/${projectId}/scrum/pr-refresh`, { method: 'POST' }),
   aiDraftScrum: (projectId: string, body: { kind: 'story' | 'tasks'; prompt: string; story_id?: string }) =>
     apiRequest<{ draft: ApiAiDraft }>(`/api/projects/${projectId}/scrum/ai-draft`, { method: 'POST', body: JSON.stringify(body) }),
+  getScrumRepos: (projectId: string) =>
+    apiRequest<{ repos: ApiScrumRepo[] }>(`/api/projects/${projectId}/scrum/repos`),
+  addScrumRepo: (projectId: string, body: { repo_url: string; access_token?: string }) =>
+    apiRequest<{ message: string; repo: ApiScrumRepo }>(`/api/projects/${projectId}/scrum/repos`, { method: 'POST', body: JSON.stringify(body) }),
+  deleteScrumRepo: (repoId: string) =>
+    apiRequest<void>(`/api/scrum/repos/${repoId}`, { method: 'DELETE' }),
 };

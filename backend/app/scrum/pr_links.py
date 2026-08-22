@@ -17,7 +17,28 @@ logger = logging.getLogger(__name__)
 
 GITHUB_RE = re.compile(r"^https://github\.com/([\w.-]+)/([\w.-]+)/pull/(\d+)/?$")
 GITLAB_RE = re.compile(r"^https://git\.ucsc\.edu/((?:[\w.-]+/)+[\w.-]+)/-/merge_requests/(\d+)/?$")
+GITHUB_REPO_RE = re.compile(r"^https://github\.com/([\w.-]+)/([\w.-]+?)(?:\.git)?/?$")
+GITLAB_REPO_RE = re.compile(r"^https://git\.ucsc\.edu/((?:[\w.-]+/)+[\w.-]+?)(?:\.git)?/?$")
 FETCH_TIMEOUT_S = 3.0
+
+
+def parse_repo_url(url: str) -> dict | None:
+    """Normalize a team repo URL (D8: per-project repo registry). Same two hosts
+    as PR links; returns {'provider', 'repo_url'} with the canonical prefix."""
+    m = GITHUB_REPO_RE.match(url or "")
+    if m:
+        return {"provider": "github", "repo_url": f"https://github.com/{m.group(1)}/{m.group(2)}"}
+    m = GITLAB_REPO_RE.match(url or "")
+    if m:
+        return {"provider": "gitlab", "repo_url": f"https://git.ucsc.edu/{m.group(1)}"}
+    return None
+
+
+def pr_repo_prefix(parsed: dict) -> str:
+    """Canonical repo prefix of a parsed PR/MR reference (matches parse_repo_url output)."""
+    if parsed["provider"] == "github":
+        return f"https://github.com/{parsed['owner']}/{parsed['repo']}"
+    return f"https://git.ucsc.edu/{parsed['path']}"
 
 
 def parse_pr_url(url: str) -> dict | None:
@@ -47,22 +68,25 @@ def map_gitlab_state(mr: dict) -> str:
     return "draft" if mr.get("draft") or mr.get("work_in_progress") else "open"
 
 
-def fetch_pr_state(parsed: dict) -> str | None:
-    """Return 'open'|'merged'|'closed'|'draft', or None on any failure."""
+def fetch_pr_state(parsed: dict, token: str | None = None) -> str | None:
+    """Return 'open'|'merged'|'closed'|'draft', or None on any failure.
+    `token` (a team's per-repo credential, D8) overrides the env token."""
     try:
         with httpx.Client(timeout=FETCH_TIMEOUT_S) as http:
             if parsed["provider"] == "github":
                 headers = {"Accept": "application/vnd.github+json"}
-                if settings.GITHUB_TOKEN:
-                    headers["Authorization"] = f"Bearer {settings.GITHUB_TOKEN}"
+                auth = token or settings.GITHUB_TOKEN
+                if auth:
+                    headers["Authorization"] = f"Bearer {auth}"
                 r = http.get(f"https://api.github.com/repos/{parsed['owner']}/{parsed['repo']}/pulls/{parsed['number']}",
                              headers=headers)
                 if r.status_code != 200:
                     return None
                 return map_github_state(r.json())
             headers = {}
-            if settings.GITLAB_UCSC_TOKEN:
-                headers["PRIVATE-TOKEN"] = settings.GITLAB_UCSC_TOKEN
+            auth = token or settings.GITLAB_UCSC_TOKEN
+            if auth:
+                headers["PRIVATE-TOKEN"] = auth
             r = http.get(f"https://git.ucsc.edu/api/v4/projects/{quote(parsed['path'], safe='')}/merge_requests/{parsed['iid']}",
                          headers=headers)
             if r.status_code != 200:
