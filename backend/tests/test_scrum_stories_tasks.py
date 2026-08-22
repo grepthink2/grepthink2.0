@@ -95,18 +95,22 @@ def test_update_story_rejects_null_title(mock_client, _writer):
     assert e.value.status_code == 422
 
 
+@patch("app.scrum.controller._project_repo_rows", return_value=[])
+@patch("app.scrum.controller._client")
 @patch("app.scrum.controller.fetch_pr_state", return_value=None)
-def test_pr_fields_fetch_failure_stores_null_state(_fetch):
+def test_pr_fields_fetch_failure_stores_null_state(_fetch, _client, _repos):
     from app.scrum.controller import _pr_fields
-    out = _pr_fields("https://github.com/o/r/pull/42")
+    out = _pr_fields("https://github.com/o/r/pull/42", project_id=PID)
     assert out["pr_provider"] == "github"
     assert out["pr_state"] is None and out["pr_checked_at"] is None
 
 
+@patch("app.scrum.controller._project_repo_rows", return_value=[])
+@patch("app.scrum.controller._client")
 @patch("app.scrum.controller.fetch_pr_state", return_value="merged")
-def test_pr_fields_fetch_success_stamps_state(_fetch):
+def test_pr_fields_fetch_success_stamps_state(_fetch, _client, _repos):
     from app.scrum.controller import _pr_fields
-    out = _pr_fields("https://github.com/o/r/pull/42")
+    out = _pr_fields("https://github.com/o/r/pull/42", project_id=PID)
     assert out["pr_state"] == "merged" and out["pr_checked_at"] is not None
 
 

@@ -2139,6 +2139,19 @@ git commit -m "feat(scrum): typed api.ts methods + actions catalog + AGENTS.md s
 
 ---
 
+## Addendum B13 (2026-08-21, post-review): per-project repo registry (D8 revision)
+
+Maintainer decision: PR-integration config is **per team project** — teams register repo
+URL(s) with an optional **write-only** access token. Landed directly (not
+subagent-executed): migration `backend/database/migrations/2026-08-21_scrum_repos.sql`
+(+ `supabase/schema.sql` mirror), `parse_repo_url`/`pr_repo_prefix` + `token` kwarg in
+`pr_links.py`, `_match_repo_token`/`_project_repo_rows` + repo CRUD in `controller.py`
+(`_pr_fields` and `refresh_pr_states` now resolve team tokens first), 3 routes
+(`GET/POST /projects/{id}/scrum/repos`, `DELETE /scrum/repos/{id}`), models, views,
+`api.ts` methods (`getScrumRepos`/`addScrumRepo`/`deleteScrumRepo` + `ApiScrumRepo`),
+actions-catalog entries, and `backend/tests/test_scrum_repos.py` (13 cases). AI drafting
+is feature-gated **off** (env keys unset; no v1 UI) per the same decision round.
+
 ## Plan self-review (done at write time)
 
 - **Spec coverage:** D1/D12/D13 + spec Part 3 are Part 2 (frontend) scope; D2–D11, D14, D15 map to B1–B12 above. Requirement 6's audit → B6; 2 → B7/B8; 7 → B9; 9 → B10 (CRUD + seam) + mentions plan M1–M5; 10 → B11; 11 → B4 + B11 snap; 12 → B5 (`archived`/`sprint_id`); 3/4/5 → B1/B5 columns.
