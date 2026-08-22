@@ -4,11 +4,12 @@ from fastapi import Depends, Request, Response, status
 from app.dependencies import require_user
 from app.limiter import limiter
 from app.scrum import controller
-from app.scrum.models import (AiDraftRequest, AiDraftResponse, BoardResponse,
-                              CommentOut, CommentResponse,
+from app.scrum.models import (AddScrumRepoRequest, AiDraftRequest, AiDraftResponse,
+                              BoardResponse, CommentOut, CommentResponse,
                               CommentsListResponse, CreateCommentRequest,
                               CreateSprintRequest, CreateStoryRequest,
                               CreateTaskRequest, MoveTaskRequest, PrRefreshResponse,
+                              ScrumRepoOut, ScrumRepoResponse, ScrumReposListResponse,
                               SprintOut, SprintResponse, StoryOut, StoryResponse,
                               TaskOut, TaskResponse, UpdateSettingsRequest,
                               UpdateSprintRequest, UpdateStoryRequest,
@@ -133,3 +134,20 @@ def ai_draft(request: Request, project_id: str, body: AiDraftRequest,
     out = controller.ai_draft(project_id=project_id, user_id=user_id, kind=body.kind,
                               prompt=body.prompt, story_id=body.story_id)
     return AiDraftResponse(**out)
+
+
+def list_repos(project_id: str, user_id: str = Depends(require_user)) -> ScrumReposListResponse:
+    rows = controller.list_repos(project_id=project_id, user_id=user_id)
+    return ScrumReposListResponse(repos=[ScrumRepoOut(**r) for r in rows])
+
+
+def add_repo(project_id: str, body: AddScrumRepoRequest,
+             user_id: str = Depends(require_user)) -> ScrumRepoResponse:
+    row = controller.add_repo(project_id=project_id, user_id=user_id,
+                              repo_url=body.repo_url, access_token=body.access_token)
+    return ScrumRepoResponse(message="Repo saved successfully", repo=ScrumRepoOut(**row))
+
+
+def delete_repo(repo_id: str, user_id: str = Depends(require_user)) -> Response:
+    controller.delete_repo(repo_id=repo_id, user_id=user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

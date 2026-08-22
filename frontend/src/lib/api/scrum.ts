@@ -8,6 +8,7 @@ import type {
   ApiEstimateScale,
   ApiScrumBoard,
   ApiScrumComment,
+  ApiScrumRepo,
   ApiScrumSprint,
   ApiScrumStory,
   ApiScrumTask,
@@ -116,5 +117,20 @@ export const scrumApi = {
       `/api/projects/${projectId}/scrum/ai-draft`,
       { method: 'POST', body: JSON.stringify(body) },
     );
+  },
+
+  getScrumRepos: async (projectId: string) => {
+    return apiRequest<{ repos: ApiScrumRepo[] }>(`/api/projects/${projectId}/scrum/repos`);
+  },
+
+  addScrumRepo: async (projectId: string, body: { repo_url: string; access_token?: string }) => {
+    return apiRequest<{ message: string; repo: ApiScrumRepo }>(
+      `/api/projects/${projectId}/scrum/repos`,
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  },
+
+  deleteScrumRepo: async (repoId: string) => {
+    return apiRequest<void>(`/api/scrum/repos/${repoId}`, { method: 'DELETE' });
   },
 };

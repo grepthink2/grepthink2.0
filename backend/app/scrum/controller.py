@@ -29,7 +29,7 @@ from app.tas.controller import get_enrollment_role
 from app.utils.profiles import profile_display_name
 from app.scrum.burnup import build_cumulative_series, build_sprint_series
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
-from app.scrum.pr_links import parse_pr_url, fetch_pr_state
+from app.scrum.pr_links import parse_pr_url, parse_repo_url, pr_repo_prefix, fetch_pr_state
 
 logger = logging.getLogger(__name__)
 
@@ -255,7 +255,7 @@ def update_task(*, task_id: str, user_id: str, fields: dict) -> dict:
         if k in fields:
             payload[k] = fields[k]
     if "pr_url" in fields and fields["pr_url"] != task.get("pr_url"):
-        payload.update(_pr_fields(fields["pr_url"]))    # parse + state fetch via pr_links
+        payload.update(_pr_fields(fields["pr_url"], project_id=task["project_id"]))
     if not payload:
         return task
     payload["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -265,16 +265,35 @@ def update_task(*, task_id: str, user_id: str, fields: dict) -> dict:
     return res.data[0]
 
 
-def _pr_fields(pr_url) -> dict:
+def _match_repo_token(repo_rows: list[dict], parsed: dict) -> str | None:
+    """Team token for a parsed PR ref (D8): exact repo-prefix match first, then any
+    same-provider repo with a token, else None (caller falls back to env/anonymous)."""
+    prefix = pr_repo_prefix(parsed)
+    for r in repo_rows:
+        if r.get("access_token") and r.get("provider") == parsed["provider"] and r.get("repo_url") == prefix:
+            return r["access_token"]
+    for r in repo_rows:
+        if r.get("access_token") and r.get("provider") == parsed["provider"]:
+            return r["access_token"]
+    return None
+
+
+def _project_repo_rows(client, project_id: str) -> list[dict]:
+    return (client.table("scrum_repos").select("repo_url, provider, access_token")
+            .eq("project_id", str(project_id)).execute()).data or []
+
+
+def _pr_fields(pr_url, *, project_id: str) -> dict:
     if pr_url is None:
         return {"pr_url": None, "pr_provider": None, "pr_state": None, "pr_checked_at": None}
     parsed = parse_pr_url(pr_url)
     if not parsed:
         raise HTTPException(status_code=422,
                             detail="PR URL must be a github.com pull or git.ucsc.edu merge request")
+    token = _match_repo_token(_project_repo_rows(_client(), project_id), parsed)
     # Store the truth: on fetch failure pr_state stays NULL (never a fabricated
     # 'draft') and pr_checked_at stays NULL so refresh retries immediately.
-    state = fetch_pr_state(parsed)
+    state = fetch_pr_state(parsed, token=token)
     return {"pr_url": pr_url, "pr_provider": parsed["provider"], "pr_state": state,
             "pr_checked_at": datetime.now(timezone.utc).isoformat() if state else None}
 
@@ -514,9 +533,13 @@ def refresh_pr_states(*, project_id: str, user_id: str) -> dict:
             stale.append(t)
     stale = stale[:PR_REFRESH_MAX]
 
+    repo_rows = _project_repo_rows(client, project_id)
+
     def _one(t: dict) -> tuple[str, str | None]:
         parsed = parse_pr_url(t["pr_url"])
-        return t["id"], (fetch_pr_state(parsed) if parsed else None)
+        if not parsed:
+            return t["id"], None
+        return t["id"], fetch_pr_state(parsed, token=_match_repo_token(repo_rows, parsed))
 
     old_state = {t["id"]: t.get("pr_state") for t in stale}
     updated: dict[str, str] = {}
@@ -532,6 +555,48 @@ def refresh_pr_states(*, project_id: str, user_id: str) -> dict:
         except Exception:
             logger.exception("scrum: pr refresh write failed | task=%s", task_id)
     return {"updated": updated}
+
+
+def list_repos(*, project_id: str, user_id: str) -> list[dict]:
+    """Repo registry rows for the settings UI. Tokens are write-only: the API
+    exposes only has_token, never the credential (D8)."""
+    _board_access(project_id=project_id, user_id=user_id)
+    client = _client()
+    rows = (client.table("scrum_repos").select("id, repo_url, provider, access_token, created_at")
+            .eq("project_id", str(project_id)).order("created_at").execute()).data or []
+    return [{"id": r["id"], "repo_url": r["repo_url"], "provider": r["provider"],
+             "has_token": bool(r.get("access_token"))} for r in rows]
+
+
+def add_repo(*, project_id: str, user_id: str, repo_url: str, access_token: str | None) -> dict:
+    _require_writer(project_id=project_id, user_id=user_id)
+    parsed = parse_repo_url(repo_url)
+    if not parsed:
+        raise HTTPException(status_code=422,
+                            detail="Repo URL must be a github.com or git.ucsc.edu repository")
+    client = _client()
+    row = {"project_id": str(project_id), "repo_url": parsed["repo_url"],
+           "provider": parsed["provider"]}
+    if access_token:
+        row["access_token"] = access_token
+    # Re-adding the same repo rotates (or clears) its token.
+    res = client.table("scrum_repos").upsert(row, on_conflict="project_id,repo_url").execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to save repo")
+    saved = res.data[0]
+    return {"id": saved["id"], "repo_url": saved["repo_url"], "provider": saved["provider"],
+            "has_token": bool(saved.get("access_token"))}
+
+
+def delete_repo(*, repo_id: str, user_id: str) -> None:
+    client = _client()
+    res = (client.table("scrum_repos").select("id, project_id")
+           .eq("id", str(repo_id)).maybe_single().execute())
+    row = res.data if res else None
+    if not row:
+        raise HTTPException(status_code=404, detail="Repo not found")
+    _require_writer(project_id=row["project_id"], user_id=user_id)
+    client.table("scrum_repos").delete().eq("id", str(repo_id)).execute()
 
 
 def _fanout_mentions(client, *, project_id: str, parent_kind: str, parent_id: str,

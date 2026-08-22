@@ -766,6 +766,13 @@ export interface ApiAiDraft {
   tasks: ApiAiDraftTask[];
 }
 
+export interface ApiScrumRepo {
+  id: string;
+  repo_url: string;
+  provider: 'github' | 'gitlab';
+  has_token: boolean;   // tokens are write-only; the API never returns them
+}
+
 export interface ApiCreateStoryBody {
   title: string;
   description_md?: string;

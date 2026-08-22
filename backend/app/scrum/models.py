@@ -202,3 +202,20 @@ class PrRefreshResponse(BaseModel):
 
 class AiDraftResponse(BaseModel):
     draft: AiDraft
+
+class ScrumRepoOut(BaseModel):
+    id: str
+    repo_url: str
+    provider: Literal["github", "gitlab"]
+    has_token: bool = False    # tokens are write-only; never echoed back
+
+class AddScrumRepoRequest(BaseModel):
+    repo_url: str = Field(..., min_length=1, max_length=500)
+    access_token: Optional[str] = Field(None, max_length=200)
+
+class ScrumReposListResponse(BaseModel):
+    repos: list[ScrumRepoOut]
+
+class ScrumRepoResponse(BaseModel):
+    message: str
+    repo: ScrumRepoOut
