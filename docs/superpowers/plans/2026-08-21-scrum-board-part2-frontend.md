@@ -19,7 +19,7 @@ Shortcut" target. Each row: what the design doc says → the lean call this plan
 
 | # | Handoff design | Lean call in this plan | Cost of the lean call |
 |---|---|---|---|
-| L1 ⚑ | 3-across `StoryCard` grid above the board (~3 rows of cards for 7 stories; duplicates info the task cards' `storyKey` chips already carry) | **One-line story rail**: horizontally scrollable slim pills (mono key · truncated title · `n/n` rollup · 3px progress bar), click = filter the board to that story (active ring), click again = clear | Needs a new design (⚑M3). **Fallback if not approved:** port the 3-across grid as designed — zero new design |
+| L1 | 3-across `StoryCard` grid above the board | **DECIDED 2026-08-21 (maintainer): keep the design-doc 3-across grid** — the slim-rail idea is dropped; DnD polish (todo → in-progress → done) is the priority. Story-click still filters the board (active ring per `.gt-story--active`) | — |
 | L2 ⚑ | Right rail (300px) permanently stacking sprint burnup + cumulative burnup + backlog panel | **One burnup panel** with a `SegmentedControl` toggle **Sprint \| Cumulative** (design system has SegmentedControl ✓); **backlog leaves the rail** and becomes a board-page sub-view: `[Board \| Backlog]` segmented switch in the page header (BacklogRow list with restore/open) | Pure recomposition of existing designed pieces — no new design. Deviates from handoff layout only |
 | L3 | `ScalePicker` as a permanent full-width row above the story strip (a settings control occupying prime board space on every visit) | Move it into a **Board settings modal** (gear `IconButton` in the board header) together with the D8 **repo manager**. Modal exists in the design system ✓. Upgrade path: settings *popover* later (needs ⚑M1) | None now; popover polish gated on M1 |
 | L4 | Task-card audit line (dashed top border) on every moved card | **Kept as designed** — requirement 6 wants the audit visible; it's one 9.5px line. (A tooltip-only variant is possible later if cards still feel tall) | — |
@@ -35,7 +35,7 @@ grammar, story modal at 640px, PR chips, tag palette, burnup visual language.
 |---|---|---|---|
 | M1 ⚑ | **Popover / Menu primitive** | Mention autocomplete listbox (mentions plan M4), settings-popover upgrade (L3 polish), future card overflow menus | Anchored floating panel: white, `border 1px --gt-border`, radius 7–10, `--gt-shadow-pop`, `gt-popover-enter` motion (6px slide + fade 0.15s), listbox rows (hover/active/`aria-activedescendant` states), placement above/below |
 | M2 ⚑ | **Toast / Snackbar** | Optimistic-move rollback ("Couldn't move GT-12 — put back"), repo saved/deleted, read-only-preview notice | Semantic variants (error / success / neutral) on the token pairs, auto-dismiss timing, optional action slot, stacking, reduced-motion behavior. **Interim in 2A:** inline `Alert` (exists) in the board header region |
-| M3 ⚑ | **Slim story pill** (only if L1 approved) | The one-line story rail | ~32–36px row: mono key (green), 13px title ellipsis, 10px `n/n` rollup, 3px progress bar footer or inline; states: default / hover / active-filter (1px + ring `--gt-primary`) / archived (muted) |
+| ~~M3~~ | ~~Slim story pill~~ | **Dropped 2026-08-21** with L1 — the design-doc StoryCard grid ships instead | — |
 | M4 | Mention listbox row | Mentions plan M4 composer | Covered by M1 + one row spec (InitialsAvatar 18px + name); no separate component needed |
 | M5 (opt.) | Board skeleton reference | Loading state | Non-blocking — codebase `Skeleton` exists; a design-side reference keeps parity |
 | M6 (opt.) | Drawer / side panel | Possible future Shortcut-style story detail replacing the modal | Only if wanted later; the 640px Modal ships in v1 |
@@ -106,10 +106,10 @@ Port from `design/components/scrum/` to typed TSX, one commit per cluster:
 - **F11 Popover** (M1): settings gear → popover (retire the settings modal or keep for repos), mention listbox styling for mentions-plan M4, card overflow menu (edit/delete/copy link).
 - **F12 (optional) Drawer** (M6): story detail as side panel — only on explicit request.
 
-## Sign-off needed before F6 starts
+## Sign-off status (updated 2026-08-21)
 
-1. **L1**: slim story rail (then design M3 first) — or the design-doc 3-across grid?
-2. **L2**: backlog as `[Board | Backlog]` switch + single toggled burnup panel — ok?
-3. **M1/M2**: create Popover + Toast in the design system whenever ready — only 2B blocks on them.
+1. **L1**: ✅ decided — design-doc 3-across StoryCard grid (slim rail dropped); F6 builds the grid + click-to-filter.
+2. **L2**: ⚑ still open — backlog as `[Board | Backlog]` switch + single toggled burnup panel.
+3. **M1/M2**: Claude Design prompt delivered (`docs/design-prompts/2026-08-21-popover-menu-toast.md`) — Popover/Menu family (incl. async-first MentionListbox, settings-popover + overflow-menu compositions) and Toast/ToastStack. Only Phase 2B blocks on the results.
 
-F1–F5 + F7–F8 are decision-independent and can start immediately.
+F1–F5 + F7–F8 are decision-independent and can start immediately; F6 needs only L2.
