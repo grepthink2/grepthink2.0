@@ -84,7 +84,7 @@ Port from `design/components/scrum/` to typed TSX, one commit per cluster:
 ### F6 — Page composition (applies L1/L2/L5)
 - Header row: page title 20/600 · sprint `<select>` (styled native, primitives/Select look) · gear `IconButton` (opens F7) · primary "New Story".
 - `[Board | Backlog]` segmented switch (SegmentedControl port): Board = story rail + ScrumBoard; Backlog = `BacklogRow` list (archived + unscheduled; restore = `updateStory({sprint_id})` picker, open = StoryModal).
-- Story rail per L1 decision: **slim pills** (needs M3 design first) or **fallback 3-across StoryCard grid** — build whichever is signed off; the rail filters `tasks` client-side by `story_id`.
+- Story strip (L1 decided): **3-across `StoryCard` grid** as designed, gap 10; clicking a card filters the board to that story (`.gt-story--active` ring), clicking again clears the filter.
 - Right rail: single white panel — `BurnupChart` + SegmentedControl **Sprint | Cumulative** (labels/series straight from `board.burnup`), header stat "n/m pts".
 - Empty states: no sprints → EmptyState-style panel with "Create sprint" (opens a small create-sprint modal: name + two `DatePickerField`s); empty columns per design.
 
