@@ -57,12 +57,15 @@ Built and committed, gates green (`npm run build`, `npx vitest run`, `npm run li
 - **F3** — `utils/boardReducer.ts` (pure) + `hooks/useScrumBoard.ts`: aggregate load,
   sprint selection, focus refetch, stale-response guard, optimistic move with rollback,
   background PR-state patch, CRUD wrappers, and a `notice` seam F9 turns into toasts.
+- **F4** — `components/ScrumBoard.tsx`: the three columns, HTML5 DnD (ghost, drag-over
+  highlight, empty drop target, stuck-state clearing), same-column no-op, read-only
+  staff mode. Not yet mounted — F6 composes it.
 
-**Not built yet — do not report these as gaps:** F4 board columns + DnD, F5 story modal, F6 page composition (the tabs
+**Not built yet — do not report these as gaps:** F5 story modal, F6 page composition (the tabs
 still render a placeholder), F7 settings + repo manager, F8 comments, F9 toasts + polish.
-Sections of this prompt that target unbuilt tasks (the drag-and-drop half of §2, parts of
-§3–§5) simply do not apply yet — say so rather than speculating. §2's optimistic-move
-rules *are* reviewable now against the hook and its tests, just not visually.
+Sections of this prompt that target unbuilt tasks (parts of §3–§5) do not apply yet — say
+so rather than speculating. §2 is now reviewable against `ScrumBoard.tsx` and the hook,
+though not visually until F6 mounts them.
 
 **Intentional deltas — do not report as defects** (in addition to the plan's ⚑L table):
 
