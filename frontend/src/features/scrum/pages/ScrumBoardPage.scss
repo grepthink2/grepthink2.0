@@ -1,0 +1,103 @@
+@use '@styles/index.scss' as *;
+
+// Per-project scrum board shell. L2: no right rail — every sub-view is
+// full width, which gives the three DnD columns maximum room.
+.scrum-board {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  min-height: 100%;
+  font-family: $primary-font;
+  @include bottom-clearance-for-message-widget(20px);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gt-text-primary);
+  }
+
+  // Sub-view switch — Board | Backlog | Burnup
+  &__views {
+    display: inline-flex;
+    gap: 4px;
+    padding: 3px;
+    background: var(--gt-gray-100);
+    border-radius: var(--gt-radius-sm);
+    align-self: flex-start;
+  }
+
+  &__view {
+    padding: 5px 14px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    font-family: $primary-font;
+    font-size: 12.5px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-secondary);
+    cursor: pointer;
+    transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
+
+    &:hover { color: var(--gt-text-primary); }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring);
+    }
+
+    &--active {
+      background: var(--gt-gray-0);
+      color: var(--gt-text-primary);
+      box-shadow: var(--gt-shadow-hairline);
+    }
+  }
+
+  // 3-across story strip (L1 — design-doc grid)
+  &__stories {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gt-space-md);
+    align-items: start;
+  }
+
+  &__panel {
+    min-height: 220px;
+  }
+
+  &__placeholder {
+    margin: 0;
+    padding: 24px;
+    background: var(--gt-gray-0);
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-md);
+    box-shadow: var(--gt-shadow-hairline);
+    color: var(--gt-text-tertiary);
+    font-size: 13px;
+  }
+}
