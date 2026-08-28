@@ -1,0 +1,243 @@
+@use '@styles/index.scss' as *;
+
+// Story detail overlay — 640px per the design handoff, on the app's existing
+// backdrop idiom (ConfirmModal). Values follow the scrum layer's scale.
+.story-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--gt-z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--gt-scrim);
+}
+
+.story-modal {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 24px;
+  background: var(--gt-gray-0);
+  border-radius: var(--gt-radius-md);
+  box-shadow: var(--gt-shadow-modal);
+  font-family: $primary-font;
+
+  &__close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    padding: 4px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background: transparent;
+    color: var(--gt-text-tertiary);
+    cursor: pointer;
+    @include gt-transition(background-color, color);
+
+    &:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__head { display: flex; flex-direction: column; gap: 4px; padding-right: 32px; }
+  &__key {
+    font-family: var(--gt-font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gt-primary);
+  }
+  &__title { margin: 0; font-size: 17px; font-weight: 600; color: var(--gt-text-primary); line-height: 1.3; }
+
+  &__meta { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+  &__rollup { font-size: 11px; color: var(--gt-text-tertiary); font-variant-numeric: tabular-nums; }
+
+  &__label {
+    font-size: 10.5px;
+    font-weight: var(--gt-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--gt-tracking-wide);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__points { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  &__description {
+    padding: 12px 14px;
+    background: var(--gt-gray-50);
+    border-radius: var(--gt-radius-sm);
+  }
+
+  &__section-title {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-secondary);
+  }
+
+  &__empty { margin: 0 0 8px; font-size: 12.5px; color: var(--gt-text-tertiary); }
+
+  &__task-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+
+  &__task {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--gt-border-subtle);
+    @include gt-transition(background-color);
+
+    &:last-child { border-bottom: none; }
+    &--focused { background: var(--gt-info-soft); border-radius: var(--gt-radius-sm); }
+  }
+  &__task-key {
+    font-family: var(--gt-font-mono);
+    font-size: 10.5px;
+    color: var(--gt-text-tertiary);
+    flex-shrink: 0;
+  }
+  &__task-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 12.5px;
+    color: var(--gt-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  &__task-tags { display: inline-flex; gap: 4px; flex-shrink: 0; }
+
+  &__task-status select,
+  &__sprint select {
+    padding: 4px 8px;
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+    font-family: $primary-font;
+    font-size: 11.5px;
+    color: var(--gt-text-primary);
+    cursor: pointer;
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+    &:disabled { color: var(--gt-text-tertiary); cursor: not-allowed; }
+  }
+
+  &__task-delete {
+    display: inline-flex;
+    padding: 4px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background: transparent;
+    color: var(--gt-text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    @include gt-transition(background-color, color);
+
+    &:hover { background: var(--gt-error-soft); color: var(--gt-error-text); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__add-task {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+
+    input {
+      flex: 1;
+      padding: 7px 12px;
+      border: 1px solid var(--gt-border);
+      border-radius: var(--gt-radius-sm);
+      font-family: $primary-font;
+      font-size: 12.5px;
+      color: var(--gt-text-primary);
+
+      &::placeholder { color: var(--gt-text-tertiary); }
+      &:focus { outline: none; border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      border: none;
+      border-radius: var(--gt-radius-sm);
+      background: var(--gt-primary);
+      color: var(--gt-gray-0);
+      font-family: $primary-font;
+      font-size: 12px;
+      font-weight: var(--gt-weight-medium);
+      cursor: pointer;
+      @include gt-transition(background-color, opacity);
+
+      &:hover:not(:disabled) { background: var(--gt-primary-hover); }
+      &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+      &:disabled { opacity: 0.45; cursor: not-allowed; }
+    }
+  }
+
+  &__foot {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--gt-border);
+  }
+  &__sprint { display: flex; flex-direction: column; gap: 4px; }
+
+  &__archive {
+    padding: 6px 14px;
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+    font-family: $primary-font;
+    font-size: 11.5px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-secondary);
+    cursor: pointer;
+    @include gt-transition(border-color, color);
+
+    &:hover { border-color: var(--gt-primary); color: var(--gt-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__confirm {
+    position: sticky;
+    bottom: 0;
+    padding: 12px 14px;
+    background: var(--gt-error-soft);
+    border-radius: var(--gt-radius-sm);
+    font-size: 12.5px;
+    color: var(--gt-error-text);
+
+    p { margin: 0 0 10px; }
+  }
+  &__confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+
+    button {
+      padding: 5px 12px;
+      border: 1px solid var(--gt-border);
+      border-radius: var(--gt-radius-sm);
+      background: var(--gt-gray-0);
+      font-family: $primary-font;
+      font-size: 11.5px;
+      cursor: pointer;
+
+      &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+    }
+  }
+  &__confirm-delete {
+    background: var(--gt-error) !important;
+    border-color: var(--gt-error) !important;
+    color: var(--gt-gray-0);
+  }
+}
