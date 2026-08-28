@@ -59,13 +59,16 @@ Built and committed, gates green (`npm run build`, `npx vitest run`, `npm run li
   background PR-state patch, CRUD wrappers, and a `notice` seam F9 turns into toasts.
 - **F4** — `components/ScrumBoard.tsx`: the three columns, HTML5 DnD (ghost, drag-over
   highlight, empty drop target, stuck-state clearing), same-column no-op, read-only
-  staff mode. Not yet mounted — F6 composes it.
+  staff mode.
+- **F5** — `components/StoryModal.tsx` + `components/Markdown/MarkdownText.tsx` (shared).
+- **F6** — the composed page: header, three tabs wired to real data, story strip with
+  click-to-filter, backlog list, the two burnup charts, empty/error states.
 
-**Not built yet — do not report these as gaps:** F5 story modal, F6 page composition (the tabs
-still render a placeholder), F7 settings + repo manager, F8 comments, F9 toasts + polish.
-Sections of this prompt that target unbuilt tasks (parts of §3–§5) do not apply yet — say
-so rather than speculating. §2 is now reviewable against `ScrumBoard.tsx` and the hook,
-though not visually until F6 mounts them.
+**Not built yet — do not report these as gaps:** F7 settings + repo manager (the gear is
+rendered but disabled), F8 comments, F9 toasts (notices render inline meanwhile) + polish.
+The board now renders end to end, so §§1–8 all apply — except toasts (§4's error surface
+is an inline notice until F9) and the settings/repo UI (§6 copy, F7). Note the board has
+not yet had an authenticated visual pass; flag anything that needs one.
 
 **Intentional deltas — do not report as defects** (in addition to the plan's ⚑L table):
 
