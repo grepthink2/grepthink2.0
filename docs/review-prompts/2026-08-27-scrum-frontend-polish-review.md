@@ -54,12 +54,15 @@ Built and committed, gates green (`npm run build`, `npx vitest run`, `npm run li
   components: `TagBadge`, `Chips` (Points/Estimate/PRLink/UserPair), `TaskCard`,
   `StoryCard`, `BacklogRow`, `BurnupChart`, `ScalePicker`/`PointPicker`, plus the pure
   utils `rollups` / `prLabel` / `relativeTime` and 26 tests.
+- **F3** — `utils/boardReducer.ts` (pure) + `hooks/useScrumBoard.ts`: aggregate load,
+  sprint selection, focus refetch, stale-response guard, optimistic move with rollback,
+  background PR-state patch, CRUD wrappers, and a `notice` seam F9 turns into toasts.
 
-**Not built yet — do not report these as gaps:** F3 data layer (`useScrumBoard`,
-optimistic move), F4 board columns + DnD, F5 story modal, F6 page composition (the tabs
+**Not built yet — do not report these as gaps:** F4 board columns + DnD, F5 story modal, F6 page composition (the tabs
 still render a placeholder), F7 settings + repo manager, F8 comments, F9 toasts + polish.
-Sections of this prompt that target unbuilt tasks (most of §2, parts of §3–§5) simply do
-not apply yet — say so rather than speculating.
+Sections of this prompt that target unbuilt tasks (the drag-and-drop half of §2, parts of
+§3–§5) simply do not apply yet — say so rather than speculating. §2's optimistic-move
+rules *are* reviewable now against the hook and its tests, just not visually.
 
 **Intentional deltas — do not report as defects** (in addition to the plan's ⚑L table):
 
@@ -71,8 +74,8 @@ not apply yet — say so rather than speculating.
   merged PR chip; `#8A6D00` on the design tag). Per `design/PORTING.md` the repo's styles
   layer is the token source of truth, so the design side is what needs to sync back here.
   Flagging the *values* as wrong is fair game; flagging the tokens' existence is not.
-- Components are ported but not yet mounted anywhere (F6 composes them) — that is sequencing,
-  not dead code, until F6 lands.
+- Components and the data hook are built but not yet mounted anywhere (F6 composes them) —
+  that is sequencing, not dead code, until F6 lands.
 
 ## What to review
 
