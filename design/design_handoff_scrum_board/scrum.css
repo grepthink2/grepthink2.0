@@ -2,7 +2,7 @@
    GrepThink · Scrum layer (.gt-tagbadge, .gt-points, .gt-estimate,
    .gt-prchip, .gt-userpair, .gt-story, .gt-task, .gt-board,
    .gt-burnup, .gt-scalepicker, .gt-pointpicker, .gt-md,
-   .gt-comments, .gt-aidraft, .gt-backlog-row, .gt-mentionbox)
+   .gt-comments, .gt-aidraft, .gt-backlog-row)
    ============================================================ */
 
 /* ── TagBadge (10 work-type presets) ────────────────────── */
@@ -436,83 +436,3 @@
 }
 .gt-backlog-row__restore:hover { border-color: var(--gt-primary); color: var(--gt-primary); }
 .gt-backlog-row__restore:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
-
-/* ── MentionListbox (Popover-family; anchors to a composer) ─ */
-.gt-mentionbox {
-  position: absolute;
-  left: 0;
-  min-width: 220px;
-  max-width: 280px;
-  max-height: 248px; /* ~6 rows — scroll beyond */
-  overflow-y: auto;
-  background: var(--gt-gray-0);
-  border: 1px solid var(--gt-border);
-  border-radius: var(--gt-radius-sm);
-  box-shadow: var(--gt-shadow-pop);
-  padding: 4px;
-  font-family: var(--gt-font-sans);
-  z-index: var(--gt-z-dropdown);
-  box-sizing: border-box;
-}
-.gt-mentionbox--below { top: calc(100% + 4px); animation: gt-pop-down 0.15s ease-out; }
-.gt-mentionbox--above { bottom: calc(100% + 4px); animation: gt-pop-up 0.15s ease-out; }
-.gt-mentionbox__row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: var(--gt-radius-sm);
-  cursor: pointer;
-}
-.gt-mentionbox__row:hover { background: var(--gt-surface-muted); }
-.gt-mentionbox__row--active,
-.gt-mentionbox__row--active:hover { background: var(--gt-info-soft); }
-.gt-mentionbox__avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--gt-green-100);
-  color: var(--gt-green-900);
-  font-size: 8px;
-  font-weight: var(--gt-weight-semibold);
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
-}
-.gt-mentionbox__id { display: flex; flex-direction: column; min-width: 0; }
-.gt-mentionbox__name { font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gt-mentionbox__sub { font-size: 10.5px; color: var(--gt-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gt-mentionbox__hint {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px;
-  font-size: 11px;
-  color: var(--gt-text-tertiary);
-}
-.gt-mentionbox__spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: gt-spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-.gt-mentionbox__retry {
-  border: none;
-  background: none;
-  padding: 0;
-  font-family: var(--gt-font-sans);
-  font-size: 11px;
-  font-weight: var(--gt-weight-medium);
-  color: var(--gt-text-link);
-  cursor: pointer;
-}
-.gt-mentionbox__retry:hover { text-decoration: underline; }
-.gt-mentionbox__retry:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
-@media (prefers-reduced-motion: reduce) {
-  .gt-mentionbox--below, .gt-mentionbox--above { animation: gt-fade-in 0.15s ease-out; }
-}
