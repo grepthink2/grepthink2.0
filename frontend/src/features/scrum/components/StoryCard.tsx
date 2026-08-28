@@ -1,6 +1,6 @@
 import type { ApiScrumStory } from '@/lib/api';
 import type { MemberMap } from '../scrumTypes';
-import { personOf } from '../scrumTypes';
+import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
 import { storyRollup } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
 
@@ -15,7 +15,7 @@ interface Props {
 /** User Story card with the derived task rollup + progress bar. */
 export default function StoryCard({ story, members, active = false, onSelect }: Props) {
   const { tasksDone, tasksTotal, pointsDone, points, percent } = storyRollup(story);
-  const reporter = personOf(members, story.reporter_id, 'Unknown');
+  const reporter = personOf(members, story.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, story.assignee_id);
   return (
     <button

@@ -2,23 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   applyOptimisticMove, applyPrStates, confirmMove, findTask, mapTask, rollbackMove,
 } from '../utils/boardReducer';
-import type { ApiScrumStory, ApiScrumTask } from '@/lib/api';
+import { makeStory, makeTask } from './fixtures';
 
-const task = (over: Partial<ApiScrumTask>): ApiScrumTask => ({
-  id: 't1', story_id: 's1', key: 'T-1', title: 'Task', description_md: null,
-  points: null, time_estimate: null, status: 'todo', reporter_id: 'u1',
-  assignee_id: null, tags: [], pr_url: null, pr_provider: null, pr_state: null,
-  moved_by: null, moved_by_name: null, moved_at: null, comment_count: 0, ...over,
-});
-const story = (id: string, tasks: ApiScrumTask[]): ApiScrumStory => ({
-  id, sprint_id: 'sp1', key: `US-${id}`, title: 'Story', description_md: null,
-  points: null, time_estimate: null, reporter_id: 'u1', assignee_id: null,
-  archived_at: null, comment_count: 0, tasks,
-});
+const story = (id: string, tasks: ReturnType<typeof makeTask>[]) =>
+  makeStory({ id, key: `US-${id}`, tasks });
+
 
 const stories = () => [
-  story('s1', [task({ id: 'a' }), task({ id: 'b', status: 'done' })]),
-  story('s2', [task({ id: 'c', story_id: 's2' })]),
+  story('s1', [makeTask({ id: 'a' }), makeTask({ id: 'b', status: 'done' })]),
+  story('s2', [makeTask({ id: 'c', story_id: 's2' })]),
 ];
 
 describe('findTask / mapTask', () => {
@@ -56,7 +48,7 @@ describe('optimistic move lifecycle', () => {
 
   it('confirm replaces the task with the server row', () => {
     const moved = applyOptimisticMove(stories(), 'a', 'done', 'Tony Wu');
-    const serverTask = task({ id: 'a', status: 'done', moved_by_name: 'Tony W.', moved_at: '2026-08-28T12:00:00Z' });
+    const serverTask = makeTask({ id: 'a', status: 'done', moved_by_name: 'Tony W.', moved_at: '2026-08-28T12:00:00Z' });
     const after = confirmMove(moved, 'a', serverTask);
     expect(after[0].tasks[0]).toBe(serverTask);
   });
@@ -73,7 +65,7 @@ describe('optimistic move lifecycle', () => {
 
 describe('applyPrStates', () => {
   it('patches only the listed tasks', () => {
-    const before = [story('s1', [task({ id: 'a', pr_state: null }), task({ id: 'b', pr_state: 'open' })])];
+    const before = [story('s1', [makeTask({ id: 'a', pr_state: null }), makeTask({ id: 'b', pr_state: 'open' })])];
     const after = applyPrStates(before, { a: 'merged' });
     expect(after[0].tasks[0].pr_state).toBe('merged');
     expect(after[0].tasks[1].pr_state).toBe('open');

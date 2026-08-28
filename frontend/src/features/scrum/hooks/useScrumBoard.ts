@@ -34,6 +34,11 @@ export function useScrumBoard(projectId: string | undefined, viewerName: string)
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<BoardNotice | null>(null);
 
+  /** Mirrors `board` so callbacks can read it without depending on it —
+   *  a changing `moveTask` identity would re-render every card on every drop. */
+  const boardRef = useRef<ApiScrumBoard | null>(null);
+  useEffect(() => { boardRef.current = board; }, [board]);
+
   const requestSeq = useRef(0);
   const committedSeq = useRef(0);
   const prRefreshedFor = useRef<string | null>(null);
@@ -106,7 +111,8 @@ export function useScrumBoard(projectId: string | undefined, viewerName: string)
   /** Optimistic status change; rolls the card back and explains if the write fails. */
   const moveTask = useCallback(
     async (taskId: string, to: ApiBoardStatus) => {
-      const snapshot = board ? findTask(board.stories, taskId) : null;
+      const current = boardRef.current;
+      const snapshot = current ? findTask(current.stories, taskId) : null;
       if (!snapshot || snapshot.status === to) return;
 
       setBoard((prev) =>
@@ -120,7 +126,7 @@ export function useScrumBoard(projectId: string | undefined, viewerName: string)
         setNotice(noticeFor(err, `Couldn't move ${snapshot.key}`));
       }
     },
-    [board, viewerName],
+    [viewerName],
   );
 
   /** Run a write, refresh on success, and turn any failure into a notice. */

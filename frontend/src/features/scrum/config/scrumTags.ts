@@ -24,6 +24,12 @@ export const BOARD_COLUMNS: { id: BoardStatus; label: string }[] = [
   { id: 'done', label: 'Done' },
 ];
 
+/** Human label for a status — same source as the column headers, so the task
+ *  audit line and the board header can never disagree. */
+export function statusLabel(status: BoardStatus): string {
+  return BOARD_COLUMNS.find((c) => c.id === status)?.label ?? status;
+}
+
 /** `ui/ux` has no slash in its class name: .gt-tagbadge--uiux */
 export function tagSlug(tag: string): string {
   return tag.toLowerCase().replace('/', '');
