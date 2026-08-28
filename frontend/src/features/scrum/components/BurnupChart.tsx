@@ -67,7 +67,7 @@ export default function BurnupChart({ labels, scope, completed, height = 150, ti
       </svg>
 
       <div className="gt-burnup__axis">
-        {labels.map((l) => <span key={l}>{l}</span>)}
+        {labels.map((l, i) => <span key={`${i}-${l}`}>{l}</span>)}
       </div>
       <div className="gt-burnup__legend">
         <span><i className="gt-burnup__swatch gt-burnup__swatch--done" /> Completed</span>

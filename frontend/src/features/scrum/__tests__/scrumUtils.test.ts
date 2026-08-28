@@ -4,30 +4,17 @@ import { prLabel, prState } from '../utils/prLabel';
 import { relativeTime } from '../utils/relativeTime';
 import { tagSlug, ESTIMATE_SCALES, TASK_TAGS, BOARD_COLUMNS } from '../config/scrumTags';
 import { buildMemberMap, personOf } from '../scrumTypes';
-import type { ApiScrumStory, ApiScrumTask } from '@/lib/api';
-
-const task = (over: Partial<ApiScrumTask>): ApiScrumTask => ({
-  id: 't1', story_id: 's1', key: 'T-1', title: 'Task', description_md: null,
-  points: null, time_estimate: null, status: 'todo', reporter_id: 'u1',
-  assignee_id: null, tags: [], pr_url: null, pr_provider: null, pr_state: null,
-  moved_by: null, moved_by_name: null, moved_at: null, comment_count: 0, ...over,
-});
-
-const story = (over: Partial<ApiScrumStory>): ApiScrumStory => ({
-  id: 's1', sprint_id: 'sp1', key: 'US-1', title: 'Story', description_md: null,
-  points: null, time_estimate: null, reporter_id: 'u1', assignee_id: null,
-  archived_at: null, comment_count: 0, tasks: [], ...over,
-});
+import { makeStory, makeTask } from './fixtures';
 
 describe('storyRollup', () => {
   it('derives task/point progress from children', () => {
-    const s = story({
+    const s = makeStory({
       points: 8,
       tasks: [
-        task({ id: 'a', status: 'done', points: 3 }),
-        task({ id: 'b', status: 'done', points: 2 }),
-        task({ id: 'c', status: 'todo', points: 5 }),
-        task({ id: 'd', status: 'in_progress', points: null }),
+        makeTask({ id: 'a', status: 'done', points: 3 }),
+        makeTask({ id: 'b', status: 'done', points: 2 }),
+        makeTask({ id: 'c', status: 'todo', points: 5 }),
+        makeTask({ id: 'd', status: 'in_progress', points: null }),
       ],
     });
     expect(storyRollup(s)).toEqual({
@@ -36,7 +23,7 @@ describe('storyRollup', () => {
   });
 
   it('is safe for a story with no tasks or no estimate', () => {
-    expect(storyRollup(story({}))).toEqual({
+    expect(storyRollup(makeStory())).toEqual({
       tasksDone: 0, tasksTotal: 0, pointsDone: 0, points: 0, percent: 0,
     });
   });
@@ -44,9 +31,9 @@ describe('storyRollup', () => {
 
 describe('column helpers', () => {
   const tasks = [
-    task({ id: 'a', status: 'todo', points: 3 }),
-    task({ id: 'b', status: 'done', points: 5 }),
-    task({ id: 'c', status: 'todo', points: null }),
+    makeTask({ id: 'a', status: 'todo', points: 3 }),
+    makeTask({ id: 'b', status: 'done', points: 5 }),
+    makeTask({ id: 'c', status: 'todo', points: null }),
   ];
   it('sums points per column, treating null as 0', () => {
     expect(columnPoints(tasks, 'todo')).toBe(3);
@@ -58,8 +45,8 @@ describe('column helpers', () => {
   });
   it('collects across stories and narrows to one story', () => {
     const stories = [
-      story({ id: 's1', tasks: [task({ id: 'a' })] }),
-      story({ id: 's2', tasks: [task({ id: 'b' })] }),
+      makeStory({ id: 's1', tasks: [makeTask({ id: 'a' })] }),
+      makeStory({ id: 's2', tasks: [makeTask({ id: 'b' })] }),
     ];
     expect(collectTasks(stories).map((t) => t.id)).toEqual(['a', 'b']);
     expect(collectTasks(stories, 's2').map((t) => t.id)).toEqual(['b']);

@@ -2,7 +2,7 @@ import { RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import type { ApiScrumStory } from '@/lib/api';
 import type { MemberMap } from '../scrumTypes';
-import { personOf } from '../scrumTypes';
+import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
 
 interface Props {
@@ -15,7 +15,7 @@ interface Props {
 
 /** Dense archive/backlog row — the backlog doubles as the story archive (req 12). */
 export default function BacklogRow({ story, members, onOpen, onRestore }: Props) {
-  const reporter = personOf(members, story.reporter_id, 'Unknown');
+  const reporter = personOf(members, story.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, story.assignee_id);
   const archived = story.archived_at ? format(new Date(story.archived_at), 'MMM d') : null;
   return (

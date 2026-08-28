@@ -1,7 +1,8 @@
 import { MessageSquare, Repeat } from 'lucide-react';
 import type { ApiScrumTask } from '@/lib/api';
 import type { MemberMap } from '../scrumTypes';
-import { personOf } from '../scrumTypes';
+import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
+import { statusLabel } from '../config/scrumTags';
 import { relativeTime } from '../utils/relativeTime';
 import { EstimateChip, PointsChip, PRLinkChip, UserPair } from './Chips';
 import TagBadge from './TagBadge';
@@ -16,7 +17,7 @@ interface Props {
 
 /** The draggable unit on the board: key row, title, tags, people, PR, audit line. */
 export default function TaskCard({ task, members, storyKey, onOpen }: Props) {
-  const reporter = personOf(members, task.reporter_id, 'Unknown');
+  const reporter = personOf(members, task.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, task.assignee_id);
   return (
     <div
@@ -61,8 +62,8 @@ export default function TaskCard({ task, members, storyKey, onOpen }: Props) {
       {task.moved_at && (
         <div className="gt-task__audit" title="Last move">
           <Repeat size={10} aria-hidden="true" />
-          {task.status === 'in_progress' ? 'In Progress' : task.status === 'done' ? 'Done' : 'TODO'}
-          {' · '}{task.moved_by_name ?? 'Unknown'}{' · '}{relativeTime(task.moved_at)}
+          {statusLabel(task.status)}
+          {' · '}{task.moved_by_name ?? UNKNOWN_PERSON}{' · '}{relativeTime(task.moved_at)}
         </div>
       )}
     </div>
