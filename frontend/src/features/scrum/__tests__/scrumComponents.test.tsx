@@ -6,11 +6,9 @@ import StoryCard from '../components/StoryCard';
 import BurnupChart, { seriesPoints } from '../components/BurnupChart';
 import { PointPicker } from '../components/ScalePicker';
 import { buildMemberMap } from '../scrumTypes';
-import type { ApiScrumStory } from '@/lib/api';
+import { makeMembers, makeStory, makeTask } from './fixtures';
 
-const members = buildMemberMap([
-  { user_id: 'u1', name: 'Tony Wu', image_url: null, project_role: 'owner' },
-]);
+const members = buildMemberMap(makeMembers());
 
 describe('TagBadge', () => {
   it('applies the preset modifier class, slashes stripped', () => {
@@ -28,21 +26,13 @@ describe('TagBadge', () => {
 });
 
 describe('StoryCard', () => {
-  const story: ApiScrumStory = {
-    id: 's1', sprint_id: 'sp1', key: 'US-3', title: 'Login flow',
-    description_md: null, points: 8, time_estimate: '2d', reporter_id: 'u1',
-    assignee_id: 'u1', archived_at: null, comment_count: 0,
+  const story = makeStory({
+    key: 'US-3', title: 'Login flow', points: 8, time_estimate: '2d', assignee_id: 'u1',
     tasks: [
-      { id: 'a', story_id: 's1', key: 'T-1', title: 'x', description_md: null, points: 3,
-        time_estimate: null, status: 'done', reporter_id: 'u1', assignee_id: null, tags: [],
-        pr_url: null, pr_provider: null, pr_state: null, moved_by: null, moved_by_name: null,
-        moved_at: null, comment_count: 0 },
-      { id: 'b', story_id: 's1', key: 'T-2', title: 'y', description_md: null, points: 5,
-        time_estimate: null, status: 'todo', reporter_id: 'u1', assignee_id: null, tags: [],
-        pr_url: null, pr_provider: null, pr_state: null, moved_by: null, moved_by_name: null,
-        moved_at: null, comment_count: 0 },
+      makeTask({ id: 'a', key: 'T-1', points: 3, status: 'done' }),
+      makeTask({ id: 'b', key: 'T-2', points: 5, status: 'todo' }),
     ],
-  };
+  });
 
   it('shows the derived rollup and marks the active filter', () => {
     const { container } = render(<StoryCard story={story} members={members} active />);

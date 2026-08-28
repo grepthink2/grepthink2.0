@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { useScrumBoard } from '../hooks/useScrumBoard';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
 import type { ApiScrumBoard, ApiScrumTask } from '@/lib/api';
+import { makeBoard, makeTask } from './fixtures';
 
 vi.mock('@/lib/api', () => ({
   api: {
@@ -14,32 +15,9 @@ vi.mock('@/lib/api', () => ({
 }));
 const { api } = await import('@/lib/api');
 
-const task = (over: Partial<ApiScrumTask> = {}): ApiScrumTask => ({
-  id: 'a', story_id: 's1', key: 'T-1', title: 'Task', description_md: null,
-  points: null, time_estimate: null, status: 'todo', reporter_id: 'u1',
-  assignee_id: null, tags: [], pr_url: null, pr_provider: null, pr_state: null,
-  moved_by: null, moved_by_name: null, moved_at: null, comment_count: 0, ...over,
-});
-
-const boardWith = (over: Partial<ApiScrumBoard> = {}): ApiScrumBoard => ({
-  project: { id: 'p1', name: 'GrepThink', estimate_scale: 'fibonacci' },
-  ai_enabled: false,
-  sprints: [{ id: 'sp1', name: 'Sprint 1', starts_at: '2026-08-10', ends_at: '2026-08-23', status: 'active' }],
-  sprint_id: 'sp1',
-  stories: [{
-    id: 's1', sprint_id: 'sp1', key: 'US-1', title: 'Story', description_md: null,
-    points: 8, time_estimate: null, reporter_id: 'u1', assignee_id: null,
-    archived_at: null, comment_count: 0, tasks: [task()],
-  }],
-  backlog: [],
-  burnup: { sprint: null, cumulative: { labels: [], scope: [], completed: [], subtitle: null } },
-  members: [{ user_id: 'u1', name: 'Tony Wu', image_url: null, project_role: 'owner' }],
-  access: 'member',
-  ...over,
-});
 
 beforeEach(() => {
-  vi.mocked(api.getScrumBoard).mockReset().mockResolvedValue(boardWith());
+  vi.mocked(api.getScrumBoard).mockReset().mockResolvedValue(makeBoard());
   vi.mocked(api.moveScrumTask).mockReset();
   vi.mocked(api.refreshScrumPrStates).mockReset().mockResolvedValue({ updated: {} });
 });
@@ -53,14 +31,14 @@ describe('useScrumBoard', () => {
   });
 
   it('denies write access to staff viewers', async () => {
-    vi.mocked(api.getScrumBoard).mockResolvedValue(boardWith({ access: 'staff' }));
+    vi.mocked(api.getScrumBoard).mockResolvedValue(makeBoard({ access: 'staff' }));
     const { result } = renderHook(() => useScrumBoard('p1', 'TA'));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.canWrite).toBe(false);
   });
 
   it('moves optimistically then reconciles with the server row', async () => {
-    const serverTask = task({ status: 'done', moved_by_name: 'Tony W.', moved_at: '2026-08-28T12:00:00Z' });
+    const serverTask = makeTask({ status: 'done', moved_by_name: 'Tony W.', moved_at: '2026-08-28T12:00:00Z' });
     let resolveMove: (v: { message: string; task: ApiScrumTask }) => void = () => {};
     vi.mocked(api.moveScrumTask).mockReturnValue(
       new Promise((res) => { resolveMove = res; }) as ReturnType<typeof api.moveScrumTask>,
@@ -104,8 +82,8 @@ describe('useScrumBoard', () => {
   });
 
   it('ignores a stale load that resolves after a newer one', async () => {
-    const slow = boardWith({ project: { id: 'p1', name: 'STALE', estimate_scale: 'fibonacci' } });
-    const fresh = boardWith({ project: { id: 'p1', name: 'FRESH', estimate_scale: 'fibonacci' } });
+    const slow = makeBoard({ project: { id: 'p1', name: 'STALE', estimate_scale: 'fibonacci' } });
+    const fresh = makeBoard({ project: { id: 'p1', name: 'FRESH', estimate_scale: 'fibonacci' } });
     let resolveSlow: (b: ApiScrumBoard) => void = () => {};
     vi.mocked(api.getScrumBoard)
       .mockReturnValueOnce(new Promise((res) => { resolveSlow = res; }))
