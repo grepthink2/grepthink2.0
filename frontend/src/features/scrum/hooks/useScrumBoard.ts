@@ -1,0 +1,202 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { api } from '@/lib/api';
+import type {
+  ApiBoardStatus, ApiCreateStoryBody, ApiCreateTaskBody, ApiEstimateScale,
+  ApiScrumBoard, ApiUpdateStoryBody, ApiUpdateTaskBody,
+} from '@/lib/api';
+import { ReadOnlyPreviewError } from '@/lib/previewGuard';
+import {
+  applyOptimisticMove, applyPrStates, confirmMove, findTask, rollbackMove,
+} from '../utils/boardReducer';
+
+/** Transient user-facing message. F9 renders these as toasts. */
+export interface BoardNotice {
+  kind: 'error' | 'success' | 'info';
+  message: string;
+}
+
+function noticeFor(err: unknown, fallback: string): BoardNotice {
+  // Preview blocks are expected, not failures — calm tone, and the copy stays
+  // owned by ReadOnlyPreviewError so it can't drift from the rest of the app.
+  if (err instanceof ReadOnlyPreviewError) return { kind: 'info', message: err.message };
+  return { kind: 'error', message: err instanceof Error ? err.message : fallback };
+}
+
+/**
+ * Board data layer: one aggregate GET, optimistic moves, and thin CRUD wrappers
+ * that refetch on success. A monotonic request counter means only the newest
+ * load may commit, so fast sprint switching can't resurrect stale data
+ * (the pattern `useConversationMessages` established for message threads).
+ */
+export function useScrumBoard(projectId: string | undefined, viewerName: string) {
+  const [board, setBoard] = useState<ApiScrumBoard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<BoardNotice | null>(null);
+
+  const requestSeq = useRef(0);
+  const committedSeq = useRef(0);
+  const prRefreshedFor = useRef<string | null>(null);
+  /** Sprint currently being viewed; null = let the server pick the active one. */
+  const sprintRef = useRef<string | null>(null);
+
+  const load = useCallback(
+    async (sprintId: string | null, opts: { quiet?: boolean } = {}) => {
+      if (!projectId) return;
+      const seq = ++requestSeq.current;
+      if (!opts.quiet) setLoading(true);
+      try {
+        const next = await api.getScrumBoard(projectId, sprintId ?? undefined);
+        if (seq < committedSeq.current) return; // a newer load already won
+        committedSeq.current = seq;
+        sprintRef.current = next.sprint_id;
+        setBoard(next);
+        setError(null);
+      } catch (err) {
+        if (seq < committedSeq.current) return;
+        setError(err instanceof Error ? err.message : 'Failed to load the board');
+      } finally {
+        if (seq === requestSeq.current && !opts.quiet) setLoading(false);
+      }
+    },
+    [projectId],
+  );
+
+  useEffect(() => {
+    void load(null);
+  }, [load]);
+
+  /** Refresh cached PR/MR states once per project, after the board is on screen. */
+  useEffect(() => {
+    if (!projectId || !board || prRefreshedFor.current === projectId) return;
+    prRefreshedFor.current = projectId;
+    void api
+      .refreshScrumPrStates(projectId)
+      .then(({ updated }) => {
+        if (!updated || Object.keys(updated).length === 0) return;
+        setBoard((prev) =>
+          prev
+            ? {
+                ...prev,
+                stories: applyPrStates(prev.stories, updated),
+                backlog: applyPrStates(prev.backlog, updated),
+              }
+            : prev,
+        );
+      })
+      .catch(() => {
+        /* Cached states stay as they are — never surfaced as a board error. */
+      });
+  }, [projectId, board]);
+
+  /** Pick up teammates' changes when the tab regains focus (no realtime in v1, D11). */
+  useEffect(() => {
+    const onFocus = () => void load(sprintRef.current, { quiet: true });
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [load]);
+
+  const refresh = useCallback(
+    () => load(sprintRef.current, { quiet: true }),
+    [load],
+  );
+
+  const selectSprint = useCallback((sprintId: string) => load(sprintId), [load]);
+
+  /** Optimistic status change; rolls the card back and explains if the write fails. */
+  const moveTask = useCallback(
+    async (taskId: string, to: ApiBoardStatus) => {
+      const snapshot = board ? findTask(board.stories, taskId) : null;
+      if (!snapshot || snapshot.status === to) return;
+
+      setBoard((prev) =>
+        prev ? { ...prev, stories: applyOptimisticMove(prev.stories, taskId, to, viewerName) } : prev,
+      );
+      try {
+        const { task } = await api.moveScrumTask(taskId, to);
+        setBoard((prev) => (prev ? { ...prev, stories: confirmMove(prev.stories, taskId, task) } : prev));
+      } catch (err) {
+        setBoard((prev) => (prev ? { ...prev, stories: rollbackMove(prev.stories, snapshot) } : prev));
+        setNotice(noticeFor(err, `Couldn't move ${snapshot.key}`));
+      }
+    },
+    [board, viewerName],
+  );
+
+  /** Run a write, refresh on success, and turn any failure into a notice. */
+  const mutate = useCallback(
+    async <T>(action: () => Promise<T>, failure: string, success?: string): Promise<T | null> => {
+      try {
+        const result = await action();
+        await refresh();
+        if (success) setNotice({ kind: 'success', message: success });
+        return result;
+      } catch (err) {
+        setNotice(noticeFor(err, failure));
+        return null;
+      }
+    },
+    [refresh],
+  );
+
+  const createStory = useCallback(
+    (body: ApiCreateStoryBody) =>
+      projectId ? mutate(() => api.createStory(projectId, body), 'Couldn’t create the story') : Promise.resolve(null),
+    [mutate, projectId],
+  );
+  const updateStory = useCallback(
+    (storyId: string, body: ApiUpdateStoryBody) =>
+      mutate(() => api.updateStory(storyId, body), 'Couldn’t save the story'),
+    [mutate],
+  );
+  const createTask = useCallback(
+    (storyId: string, body: ApiCreateTaskBody) =>
+      mutate(() => api.createScrumTask(storyId, body), 'Couldn’t create the task'),
+    [mutate],
+  );
+  const updateTask = useCallback(
+    (taskId: string, body: ApiUpdateTaskBody) =>
+      mutate(() => api.updateScrumTask(taskId, body), 'Couldn’t save the task'),
+    [mutate],
+  );
+  const deleteTask = useCallback(
+    (taskId: string) => mutate(() => api.deleteScrumTask(taskId), 'Couldn’t delete the task', 'Task deleted'),
+    [mutate],
+  );
+  const createSprint = useCallback(
+    (body: { name: string; starts_at: string; ends_at: string }) =>
+      projectId ? mutate(() => api.createSprint(projectId, body), 'Couldn’t create the sprint', 'Sprint created') : Promise.resolve(null),
+    [mutate, projectId],
+  );
+  const updateSprint = useCallback(
+    (sprintId: string, body: Parameters<typeof api.updateSprint>[1]) =>
+      mutate(() => api.updateSprint(sprintId, body), 'Couldn’t save the sprint'),
+    [mutate],
+  );
+  const updateSettings = useCallback(
+    (scale: ApiEstimateScale) =>
+      projectId ? mutate(() => api.updateScrumSettings(projectId, scale), 'Couldn’t change the estimate scale') : Promise.resolve(null),
+    [mutate, projectId],
+  );
+
+  return {
+    board,
+    loading,
+    error,
+    notice,
+    clearNotice: useCallback(() => setNotice(null), []),
+    /** Staff (instructors/TAs) read and comment but never mutate the board (D2). */
+    canWrite: board?.access === 'member',
+    refresh,
+    selectSprint,
+    moveTask,
+    createStory,
+    updateStory,
+    createTask,
+    updateTask,
+    deleteTask,
+    createSprint,
+    updateSprint,
+    updateSettings,
+  };
+}
