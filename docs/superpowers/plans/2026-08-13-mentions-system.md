@@ -399,7 +399,9 @@ interface Props {
   ariaLabel?: string;
 }
 ```
-Popover markup: `role="listbox"` with `role="option"` children; keep focus in the textarea (`aria-activedescendant`). Styles: `.gt-comments__input` textarea rules from the design CSS + a popover reusing the app's dropdown look (border, radius 7, `--gt-shadow-pop`).
+Popover markup: `role="listbox"` with `role="option"` children; keep focus in the textarea (`aria-activedescendant`).
+
+**Use the delivered design component (2026-08-27 bundle):** port `design/components/scrum/MentionListbox.jsx` (+ `.gt-mentionbox*` rules already in `design/components/scrum/scrum.css`) rather than hand-rolling the listbox — it ships all five states (idle / loading / results / empty / error), above-or-below positioning, and both sources. `MentionTextarea` owns the caret detection, `@`-fragment parsing, keyboard handling and token insertion; `MentionListbox` owns presentation. Map this repo's `{user_id, name, image_url}` onto the design's `MentionMember` (`{id, name, secondary}` — `secondary` carries role or email).
 
 - [ ] **Step 5: Run** the vitest file → 3 passed. Then `npm run build` and `npm run lint:design` → clean.
 

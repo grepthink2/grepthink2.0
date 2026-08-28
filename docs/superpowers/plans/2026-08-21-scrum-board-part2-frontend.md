@@ -4,7 +4,7 @@
 
 **Goal:** The per-project scrum board UI at `/app/projects/:projectId/board` — lean, dense, Shortcut-like in feel but built from GrepThink's own design language, against the live Part-1 API (PR #177).
 
-**Architecture:** A lazy route rendering inside the existing `/app` shell. Leaf components port near-verbatim from `design/components/scrum/` (token-exact `scrum.css`); the **page composition deliberately deviates from the handoff layout** where it's clunky — every deviation is flagged (⚑L) for maintainer sign-off below, each with a design-doc-faithful fallback. Components the design system doesn't have yet are flagged (⚑M) for the maintainer to design first; nothing in Phase 2A depends on them.
+**Architecture:** A lazy route rendering inside the existing `/app` shell. Leaf components port near-verbatim from `design/components/scrum/` (token-exact `scrum.css`); the **page composition deliberately deviates from the handoff layout** where it's clunky — each deviation is recorded in the ⚑L table below (all now decided by the maintainer). The ⚑M design-system gaps were filled by the 2026-08-27 bundle refresh, so no task here is design-gated.
 
 **Tech Stack:** React 19 + TS + SCSS (`.gt-*` classes kept verbatim per D12), HTML5 DnD (Assign-board precedent), hand-rolled SVG burnup (D13), `api.ts` scrum methods, plain `useState`/`useEffect` + optimistic reducer (messages pattern). **No AI UI anywhere** (feature off per maintainer 2026-08-21).
 
@@ -20,8 +20,8 @@ Shortcut" target. Each row: what the design doc says → the lean call this plan
 | # | Handoff design | Lean call in this plan | Cost of the lean call |
 |---|---|---|---|
 | L1 | 3-across `StoryCard` grid above the board | **DECIDED 2026-08-21 (maintainer): keep the design-doc 3-across grid** — the slim-rail idea is dropped; DnD polish (todo → in-progress → done) is the priority. Story-click still filters the board (active ring per `.gt-story--active`) | — |
-| L2 ⚑ | Right rail (300px) permanently stacking sprint burnup + cumulative burnup + backlog panel | **One burnup panel** with a `SegmentedControl` toggle **Sprint \| Cumulative** (design system has SegmentedControl ✓); **backlog leaves the rail** and becomes a board-page sub-view: `[Board \| Backlog]` segmented switch in the page header (BacklogRow list with restore/open) | Pure recomposition of existing designed pieces — no new design. Deviates from handoff layout only |
-| L3 | `ScalePicker` as a permanent full-width row above the story strip (a settings control occupying prime board space on every visit) | Move it into a **Board settings modal** (gear `IconButton` in the board header) together with the D8 **repo manager**. Modal exists in the design system ✓. Upgrade path: settings *popover* later (needs ⚑M1) | None now; popover polish gated on M1 |
+| L2 | Right rail (300px) permanently stacking sprint burnup + cumulative burnup + backlog panel | **DECIDED 2026-08-27 (maintainer): the right rail is removed entirely.** The page becomes a three-tab view — `[Board \| Backlog \| Burnup]` segmented switch in the header. **Board** = story grid + the 3 DnD columns at **full width** (more room per column — the DnD polish priority from L1); **Backlog** = BacklogRow list; **Burnup** = its own tab showing *both* charts (sprint + cumulative side by side, which the full width now affords) | Charts are one click away instead of always-on. Pure recomposition — no new design |
+| L3 | `ScalePicker` as a permanent full-width row above the story strip (a settings control occupying prime board space on every visit) | Move it into a **Board settings modal** (gear `IconButton` in the board header) together with the D8 **repo manager**. Modal exists ✓, and **Popover now ships too (M1)** — F7 may build straight to the popover composition from `popover.card.html` | None |
 | L4 | Task-card audit line (dashed top border) on every moved card | **Kept as designed** — requirement 6 wants the audit visible; it's one 9.5px line. (A tooltip-only variant is possible later if cards still feel tall) | — |
 | L5 | Header carries a "Grepthink 2.0 · Team 1" badge | **Dropped** — the app shell + breadcrumb already state project context. Header = title · sprint `<select>` · settings gear · primary "New Story" | — |
 | L6 | `AIDraftButton` in header + "Suggest tasks" in modal | **Removed entirely** (feature off). No conditional rendering, no dead UI | Re-adding later = small isolated diff |
@@ -33,8 +33,8 @@ grammar, story modal at 640px, PR chips, tag palette, burnup visual language.
 
 | # | Component | Needed by | What the design should cover |
 |---|---|---|---|
-| M1 ⚑ | **Popover / Menu primitive** | Mention autocomplete listbox (mentions plan M4), settings-popover upgrade (L3 polish), future card overflow menus | Anchored floating panel: white, `border 1px --gt-border`, radius 7–10, `--gt-shadow-pop`, `gt-popover-enter` motion (6px slide + fade 0.15s), listbox rows (hover/active/`aria-activedescendant` states), placement above/below |
-| M2 ⚑ | **Toast / Snackbar** | Optimistic-move rollback ("Couldn't move GT-12 — put back"), repo saved/deleted, read-only-preview notice | Semantic variants (error / success / neutral) on the token pairs, auto-dismiss timing, optional action slot, stacking, reduced-motion behavior. **Interim in 2A:** inline `Alert` (exists) in the board header region |
+| M1 ✅ | **Popover / Menu primitive** | Mention autocomplete, settings popover, card overflow menus | **DELIVERED 2026-08-27** — `design/components/feedback/{Popover,Menu}.{jsx,d.ts}` + `feedback.css`, plus `design/components/scrum/MentionListbox.*` (async-first: local `members` OR `onSearch`, five states, `.gt-mentionbox`) |
+| M2 ✅ | **Toast / Snackbar** | Move-rollback, repo saved/deleted, read-only-preview notice | **DELIVERED 2026-08-27** — `design/components/feedback/Toast.{jsx,d.ts}` (`Toast` + `ToastStack`: variants success/error/info/neutral, error+action = sticky, max 3, bottom-right). No interim `Alert` seam needed — F9 ports the real thing |
 | ~~M3~~ | ~~Slim story pill~~ | **Dropped 2026-08-21** with L1 — the design-doc StoryCard grid ships instead | — |
 | M4 | Mention listbox row | Mentions plan M4 composer | Covered by M1 + one row spec (InitialsAvatar 18px + name); no separate component needed |
 | M5 (opt.) | Board skeleton reference | Loading state | Non-blocking — codebase `Skeleton` exists; a design-side reference keeps parity |
@@ -51,7 +51,7 @@ Conventions: frontend commands from `frontend/` (`npm run build`, `npx vitest ru
 
 ### F1 — Route, scaffold, tabs, breadcrumb
 - `App.tsx`: lazy `<Route path="projects/:projectId/board" element={<ScrumBoardPage />} />` inside the `/app` tree (charts justify lazy, precedent `App.tsx:38-65`). Not added to `routePermissions` lists.
-- `features/scrum/pages/ScrumBoardPage.tsx` + `.scss`: shell-page skeleton (`ScrumBoardSkeleton` exported alongside, page-per-skeleton convention), `bottom-clearance-for-message-widget` mixin, grid `minmax(0,1fr) 300px` gap 20.
+- `features/scrum/pages/ScrumBoardPage.tsx` + `.scss`: shell-page skeleton (`ScrumBoardSkeleton` exported alongside, page-per-skeleton convention), `bottom-clearance-for-message-widget` mixin, **full-width content column** (L2 removed the 300px rail), padding 20/24 on the `--gt-canvas` background.
 - `ProjectView.tsx`: tab strip **Overview | Scrum Board** (port design-system `navigation/Tabs` pattern as scrum-local BEM or reuse `TsrsStepper` idiom — smallest diff wins); board tab navigates with `location.state.projectName` for the breadcrumb.
 - `Header.tsx` `buildBreadcrumbs`: case for `/app/projects/:id/board` → `Projects / {name} / Scrum Board`.
 - Test: route renders skeleton; breadcrumb unit case.
@@ -83,10 +83,12 @@ Port from `design/components/scrum/` to typed TSX, one commit per cluster:
 
 ### F6 — Page composition (applies L1/L2/L5)
 - Header row: page title 20/600 · sprint `<select>` (styled native, primitives/Select look) · gear `IconButton` (opens F7) · primary "New Story".
-- `[Board | Backlog]` segmented switch (SegmentedControl port): Board = story rail + ScrumBoard; Backlog = `BacklogRow` list (archived + unscheduled; restore = `updateStory({sprint_id})` picker, open = StoryModal).
-- Story strip (L1 decided): **3-across `StoryCard` grid** as designed, gap 10; clicking a card filters the board to that story (`.gt-story--active` ring), clicking again clears the filter.
-- Right rail: single white panel — `BurnupChart` + SegmentedControl **Sprint | Cumulative** (labels/series straight from `board.burnup`), header stat "n/m pts".
-- Empty states: no sprints → EmptyState-style panel with "Create sprint" (opens a small create-sprint modal: name + two `DatePickerField`s); empty columns per design.
+- **Three-tab sub-view** (L2, SegmentedControl port) — the page has no right rail; every tab is full width:
+  - **Board** — 3-across `StoryCard` grid (L1, gap 10; click filters the columns to that story via `.gt-story--active`, click again clears) followed by `ScrumBoard`'s three DnD columns across the full content width.
+  - **Backlog** — `BacklogRow` list (archived + unscheduled): restore = `updateStory({sprint_id})` sprint picker, title click = StoryModal.
+  - **Burnup** — both charts side by side in one panel row (`grid-template-columns: repeat(auto-fit, minmax(320px, 1fr))`, stacking under ~700px): "Sprint N burnup" (`board.burnup.sprint`, subtitle = date range) and "Cumulative" (`board.burnup.cumulative`, labels S1…Sn), each with its own `n/m pts` header stat.
+- Tab state lives in the URL (`?view=board|backlog|burnup`, default board) so a reload/deep link keeps the tab; `?task=` still opens the StoryModal (F5) regardless of tab.
+- Empty states: no sprints → EmptyState-style panel with "Create sprint" (opens a small create-sprint modal: name + two `DatePickerField`s); empty columns per design; Burnup tab with no sprint shows the same create-sprint prompt.
 
 ### F7 — Board settings modal (Scale + D8 repos)
 - Sections: **Estimate scale** (`ScalePicker` → `api.updateScrumSettings`; hint "changing the scale only changes offered values") and **Repositories** (D8): `api.getScrumRepos` on open → rows (provider icon · repo_url · `has_token` chip "token set" · delete IconButton w/ confirm) + add form (URL `Input` + optional token `Input type="password"` + hint "write-only — re-add to rotate; git.ucsc.edu state-checks may be unreachable for now") → `api.addScrumRepo`.
@@ -97,19 +99,22 @@ Port from `design/components/scrum/` to typed TSX, one commit per cluster:
 - Mounted in StoryModal's focused-task section (`api.getScrumComments('tasks', id)` / `createScrumComment`); story-level thread hidden in v1 (D10-revised: task comments are the surface) — API stays ready.
 - `comment_count` chips update from responses.
 
-### F9 — Polish + gates
-- Skeletons (board grid ghost via `Skeleton`), inline `Alert` seam for move-rollback/preview-blocked (upgraded to Toasts in F10), focus-visible audit, `npm run lint:design` clean, `npm run build` + full vitest green, spec Part 3 checklist walk.
+### F9 — Toasts + polish + gates
+- Port `design/components/feedback/Toast.jsx` → `frontend/src/components/Toast/` (`Toast` + `ToastStack`, `.gt-toast*` classes from `feedback.css`) — shared, not scrum-local, since messages/settings will reuse it. A tiny `useToasts()` hook (array state + `push`/`dismiss`) feeds the stack; mount `ToastStack` once in `ScrumBoardPage`.
+- Wire the F3 seams to real toasts: move-rollback → `error` + "Undo"-style retry action (sticky per the contract), `ReadOnlyPreviewError` → `neutral` "Read-only preview — changes are disabled", repo saved/deleted (F7) → `success`.
+- Skeletons (board grid ghost via `Skeleton`), focus-visible audit, `npm run lint:design` clean, `npm run build` + full vitest green, spec Part 3 checklist walk.
 
-## Phase 2B — design-gated (after ⚑M items exist)
+## Phase 2B — follow-ons (no longer design-gated; M1/M2 delivered 2026-08-27)
 
-- **F10 Toasts** (M2): replace the inline-alert seam app-consistently.
-- **F11 Popover** (M1): settings gear → popover (retire the settings modal or keep for repos), mention listbox styling for mentions-plan M4, card overflow menu (edit/delete/copy link).
+- ~~F10 Toasts~~ — **folded into F9**, which now ports the real `Toast`/`ToastStack`.
+- **F11 Popover/Menu** (M1 available): port `Popover` + `Menu` to `frontend/src/components/Popover/`; task-card overflow menu (Edit · Copy link · ─ · Delete) and, optionally, the F7 settings modal re-hosted as a popover. Independent of F1–F9.
 - **F12 (optional) Drawer** (M6): story detail as side panel — only on explicit request.
+- **Mentions M4–M5** (mentions plan): `MentionTextarea` composes the delivered `MentionListbox`; scrum passes the board payload's `members` (local source), a future messages-scale consumer passes `onSearch`. Design's `MentionMember` is `{id?, name, secondary?}` — map `user_id → id`, role/email → `secondary`.
 
-## Sign-off status (updated 2026-08-21)
+## Sign-off status (updated 2026-08-27) — **all decisions closed**
 
-1. **L1**: ✅ decided — design-doc 3-across StoryCard grid (slim rail dropped); F6 builds the grid + click-to-filter.
-2. **L2**: ⚑ still open — backlog as `[Board | Backlog]` switch + single toggled burnup panel.
-3. **M1/M2**: Claude Design prompt delivered (`docs/design-prompts/2026-08-21-popover-menu-toast.md`) — Popover/Menu family (incl. async-first MentionListbox, settings-popover + overflow-menu compositions) and Toast/ToastStack. Only Phase 2B blocks on the results.
+1. **L1** ✅ design-doc 3-across StoryCard grid (slim rail dropped); click-to-filter.
+2. **L2** ✅ right rail removed; three full-width tabs `[Board | Backlog | Burnup]`, both charts living in the Burnup tab.
+3. **M1/M2** ✅ delivered in the 2026-08-27 design bundle (`Popover`, `Menu`, `Toast`/`ToastStack`, `MentionListbox`) — nothing in this plan is design-gated any more.
 
-F1–F5 + F7–F8 are decision-independent and can start immediately; F6 needs only L2.
+**F1–F9 are all unblocked and can run in order.** F11 (Popover/Menu port) is an independent follow-on.
