@@ -100,4 +100,138 @@
     color: var(--gt-text-tertiary);
     font-size: 13px;
   }
+
+  &__subtitle {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: var(--gt-text-tertiary);
+  }
+
+  // 3-across story strip (L1) — collapses before the columns do.
+  &__stories {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  &__clear-filter {
+    align-self: flex-start;
+    margin-bottom: 10px;
+    padding: 4px 10px;
+    border: 1px solid var(--gt-primary);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-green-50);
+    font-family: $primary-font;
+    font-size: 11px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-green-700);
+    cursor: pointer;
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__sprint-select select,
+  &__icon-button,
+  &__primary {
+    height: 34px;
+    border-radius: var(--gt-radius-sm);
+    font-family: $primary-font;
+    font-size: 12.5px;
+    cursor: pointer;
+    @include gt-transition(background-color, border-color, color, opacity);
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__sprint-select select {
+    padding: 0 10px;
+    border: 1px solid var(--gt-border);
+    background: var(--gt-gray-0);
+    color: var(--gt-text-primary);
+  }
+
+  &__icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    border: 1px solid var(--gt-border);
+    background: var(--gt-gray-0);
+    color: var(--gt-text-secondary);
+
+    &:hover:not(:disabled) { border-color: var(--gt-primary); color: var(--gt-primary); }
+  }
+
+  &__primary {
+    padding: 0 16px;
+    border: none;
+    background: var(--gt-primary);
+    color: var(--gt-gray-0);
+    font-weight: var(--gt-weight-medium);
+
+    &:hover:not(:disabled) { background: var(--gt-primary-hover); }
+  }
+
+  // Transient hook notices — F9 replaces this with the design-system ToastStack.
+  &__notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 14px;
+    border-radius: var(--gt-radius-sm);
+    font-size: 12.5px;
+
+    &--error { background: var(--gt-error-soft); color: var(--gt-error-text); }
+    &--success { background: var(--gt-success-soft); color: var(--gt-success-text); }
+    &--info { background: var(--gt-info-soft); color: var(--gt-info-text); }
+
+    button {
+      border: none;
+      background: none;
+      font-size: 16px;
+      line-height: 1;
+      color: inherit;
+      cursor: pointer;
+
+      &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+    }
+  }
+
+  &__backlog {
+    background: var(--gt-gray-0);
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-md);
+    box-shadow: var(--gt-shadow-hairline);
+    overflow: hidden;
+  }
+
+  // Burnup tab (L2): both charts share the full width the rail used to take.
+  &__charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  &__chart-panel {
+    padding: 14px;
+    background: var(--gt-gray-0);
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-md);
+    box-shadow: var(--gt-shadow-hairline);
+  }
+
+  &__empty-state,
+  &__error {
+    padding: 40px 24px;
+    text-align: center;
+    background: var(--gt-gray-0);
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-md);
+
+    h2 { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--gt-text-primary); }
+    p { margin: 0; font-size: 12.5px; color: var(--gt-text-tertiary); }
+  }
 }
