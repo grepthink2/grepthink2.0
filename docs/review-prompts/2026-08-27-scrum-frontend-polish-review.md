@@ -1,9 +1,12 @@
 # Fable 5 polish review — Scrum Board frontend (Part 2)
 
-Run this **once F1–F9 are complete and all gates are green**, on the branch that
-carries the scrum frontend (`feat/scrum-board-part1` or its successor). It is a
+Run this on the branch that carries the scrum frontend (`feat/scrum-board-part1`
+or its successor) — either at a checkpoint or once F1–F9 are complete. It is a
 *polish and fidelity* review — correctness bugs are the job of `/code-review`,
 which should be run separately (and was run on the Part-1 backend already).
+
+**Before running it, refresh the "Current state" block below** so the reviewer knows
+which tasks exist; otherwise it reports unbuilt work as missing.
 
 Paste everything below the line into a fresh Fable 5 session at the repo root.
 
@@ -40,13 +43,51 @@ BEM SCSS co-located with components, tokens only — `npm run lint:design` fails
 hex outside token files, lucide-react for icons, no new dependencies without a strong
 reason, Vitest + Testing Library.
 
+## Current state (as of 2026-08-28 — update before each run)
+
+Built and committed, gates green (`npm run build`, `npx vitest run`, `npm run lint:design`):
+
+- **F1** — the route (`/app/projects/:projectId/board`, lazy), `ScrumBoardPage` shell +
+  `ScrumBoardSkeleton`, the three-tab `[Board | Backlog | Burnup]` switch with `?view=`
+  URL state, the project tab strip, and the breadcrumb case.
+- **F2** — `scrum.scss` (the ported design layer), two palette tokens, and the leaf
+  components: `TagBadge`, `Chips` (Points/Estimate/PRLink/UserPair), `TaskCard`,
+  `StoryCard`, `BacklogRow`, `BurnupChart`, `ScalePicker`/`PointPicker`, plus the pure
+  utils `rollups` / `prLabel` / `relativeTime` and 26 tests.
+
+**Not built yet — do not report these as gaps:** F3 data layer (`useScrumBoard`,
+optimistic move), F4 board columns + DnD, F5 story modal, F6 page composition (the tabs
+still render a placeholder), F7 settings + repo manager, F8 comments, F9 toasts + polish.
+Sections of this prompt that target unbuilt tasks (most of §2, parts of §3–§5) simply do
+not apply yet — say so rather than speculating.
+
+**Intentional deltas — do not report as defects** (in addition to the plan's ⚑L table):
+
+- `frontend/src/features/scrum/scrum.scss` omits the `.gt-aidraft` block that exists in
+  `design/components/scrum/scrum.css` — AI drafting is off for this release (L6), so
+  shipping its CSS would be dead weight.
+- `--gt-purple` and `--gt-gold-text` were **added** to `frontend/src/styles/tokens/colors.css`
+  to replace the two literals `scrum.css` carries inline (`#7D3C98` on the ui/ux tag and the
+  merged PR chip; `#8A6D00` on the design tag). Per `design/PORTING.md` the repo's styles
+  layer is the token source of truth, so the design side is what needs to sync back here.
+  Flagging the *values* as wrong is fair game; flagging the tokens' existence is not.
+- Components are ported but not yet mounted anywhere (F6 composes them) — that is sequencing,
+  not dead code, until F6 lands.
+
 ## What to review
 
-**1. Token and pixel fidelity.** Diff the ported SCSS against `design/components/scrum/scrum.css`
-and `design/components/feedback/feedback.css` class by class. Flag any value that drifted
-(padding, radius, font-size, weight, line-height, shadow, border), any hardcoded color that
-should be a `--gt-*` token, and any design class that was dropped or renamed (D12 says the
-`.gt-*` names are kept verbatim).
+**1. Token and pixel fidelity.** `frontend/src/features/scrum/scrum.scss` is meant to be a
+1:1 port of `design/components/scrum/scrum.css` (minus the sanctioned `.gt-aidraft` omission
+and the two tokenised literals). Verify that mechanically — e.g. strip both files to
+`selector { prop: value }` pairs and compare sets — rather than by eye, and report any
+drifted value (padding, radius, font-size, weight, line-height, shadow, border), any class
+dropped or renamed (D12 keeps `.gt-*` verbatim), and any colour that should be a `--gt-*`
+token. Do the same for `feedback.css` once F9/F11 port Toast and Popover.
+
+Then check the **component** ports against `design/components/scrum/*.jsx` + `.d.ts`: same DOM
+structure and class placement, same conditional-render rules (e.g. the audit line only when the
+task has moved; the story chip only when a parent key is passed), and prop contracts that match
+the `.d.ts` intent even though the TSX takes API objects instead of flat strings.
 
 **2. Interaction polish.** The maintainer's stated bar is "lean like a minified Shortcut,
 with real polish on dragging cards todo → in-progress → done". Assess:
@@ -79,13 +120,19 @@ inside its own container, never the body)?
 active voice, says what will happen. Flag jargon leaking from the schema (e.g. "archived_at",
 "sprint_id") and any error text that doesn't tell the user what to do next.
 
-**7. Dead weight.** AI drafting is deliberately OFF for this release (maintainer decision) —
+**7. Derived-not-stored discipline.** The spec requires story rollups, column point sums and
+PR chip labels to be *derived* at render, never persisted or duplicated in state
+(`utils/rollups.ts`, `utils/prLabel.ts`). Flag any place that caches or recomputes them
+inconsistently, any `points ?? 0` coercion that hides a real null, and any spot where a task
+with an unknown `pr_state` renders as something other than the gray draft chip.
+
+**8. Dead weight.** AI drafting is deliberately OFF for this release (maintainer decision) —
 flag any leftover AI UI, unused imports, dead props, `console.log`, commented-out blocks, or
 components ported but never mounted.
 
 ## Output
 
-A markdown report grouped by the seven headings above. For each finding:
+A markdown report grouped by the headings above (skip any that do not apply yet). For each finding:
 `file:line` · what's wrong · **the concrete fix** (exact value/snippet where it's a token or
 px drift) · severity **P1** (breaks the experience or the design contract) / **P2** (visible
 polish gap) / **P3** (nit).
