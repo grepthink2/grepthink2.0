@@ -1,12 +1,12 @@
 # Fable 5 polish review — Scrum Board frontend (Part 2)
 
-Run this on the branch that carries the scrum frontend (`feat/scrum-board-part1`
-or its successor) — either at a checkpoint or once F1–F9 are complete. It is a
-*polish and fidelity* review — correctness bugs are the job of `/code-review`,
-which should be run separately (and was run on the Part-1 backend already).
+Phase 2A (F1–F9) is complete, so this is ready to run as-is on
+`feat/scrum-board-part1`. It is a *polish and fidelity* review — correctness bugs are
+the job of `/code-review`, which should be run separately (and was run on the Part-1
+backend already).
 
-**Before running it, refresh the "Current state" block below** so the reviewer knows
-which tasks exist; otherwise it reports unbuilt work as missing.
+If you run it again after further work, refresh the "Current state" block first so the
+reviewer isn't told that finished work is missing.
 
 Paste everything below the line into a fresh Fable 5 session at the repo root.
 
@@ -43,45 +43,51 @@ BEM SCSS co-located with components, tokens only — `npm run lint:design` fails
 hex outside token files, lucide-react for icons, no new dependencies without a strong
 reason, Vitest + Testing Library.
 
-## Current state (as of 2026-08-28 — update before each run)
+## Current state (2026-08-28 — Phase 2A complete)
 
-Built and committed, gates green (`npm run build`, `npx vitest run`, `npm run lint:design`):
+All of F1–F9 is built and committed on `feat/scrum-board-part1`, gates green
+(`npm run build`, `npx vitest run` — 182 tests, `npm run lint:design` — 0 violations):
 
-- **F1** — the route (`/app/projects/:projectId/board`, lazy), `ScrumBoardPage` shell +
-  `ScrumBoardSkeleton`, the three-tab `[Board | Backlog | Burnup]` switch with `?view=`
-  URL state, the project tab strip, and the breadcrumb case.
-- **F2** — `scrum.scss` (the ported design layer), two palette tokens, and the leaf
-  components: `TagBadge`, `Chips` (Points/Estimate/PRLink/UserPair), `TaskCard`,
-  `StoryCard`, `BacklogRow`, `BurnupChart`, `ScalePicker`/`PointPicker`, plus the pure
-  utils `rollups` / `prLabel` / `relativeTime` and 26 tests.
-- **F3** — `utils/boardReducer.ts` (pure) + `hooks/useScrumBoard.ts`: aggregate load,
-  sprint selection, focus refetch, stale-response guard, optimistic move with rollback,
-  background PR-state patch, CRUD wrappers, and a `notice` seam F9 turns into toasts.
-- **F4** — `components/ScrumBoard.tsx`: the three columns, HTML5 DnD (ghost, drag-over
-  highlight, empty drop target, stuck-state clearing), same-column no-op, read-only
-  staff mode.
-- **F5** — `components/StoryModal.tsx` + `components/Markdown/MarkdownText.tsx` (shared).
-- **F6** — the composed page: header, three tabs wired to real data, story strip with
-  click-to-filter, backlog list, the two burnup charts, empty/error states.
+| | |
+|---|---|
+| F1 | Route `/app/projects/:projectId/board` (lazy), page shell + skeleton, `[Board \| Backlog \| Burnup]` tabs with `?view=` state, project tab strip, breadcrumb |
+| F2 | `scrum.scss` (ported design layer), `--gt-purple`/`--gt-gold-text` tokens, leaf components (TagBadge, Chips, TaskCard, StoryCard, BacklogRow, BurnupChart, ScalePicker/PointPicker), pure utils |
+| F3 | `boardReducer` + `useScrumBoard`: aggregate load, sprint switching, focus refetch, stale-response guard, optimistic move + rollback, background PR-state patch, CRUD wrappers |
+| F4 | `ScrumBoard`: three columns, HTML5 DnD, ghost/highlight/empty target, same-column no-op, read-only staff mode |
+| F5 | `StoryModal` (640px) + shared `components/Markdown/MarkdownText` |
+| F6 | Composed page: header, three tabs on live data, story filter, backlog, both burnup charts, empty/error states |
+| F7 | `BoardSettingsModal`: estimate scale + D8 repo registry (write-only tokens) |
+| F8 | `CommentThread` on task threads |
+| F9 | `components/Toast/` (Toast + ToastStack + `useToasts`), replacing the inline notice seam |
 
-**Not built yet — do not report these as gaps:** F7 settings + repo manager (the gear is
-rendered but disabled), F8 comments, F9 toasts (notices render inline meanwhile) + polish.
-The board now renders end to end, so §§1–8 all apply — except toasts (§4's error surface
-is an inline notice until F9) and the settings/repo UI (§6 copy, F7). Note the board has
-not yet had an authenticated visual pass; flag anything that needs one.
+**Deliberately not built — do not report as gaps:**
 
-**Intentional deltas — do not report as defects** (in addition to the plan's ⚑L table):
+- **AI drafting UI** — the feature is off for this release (L6). There should be no
+  AIDraftButton, no "Suggest tasks", and no dead conditional for them anywhere.
+- **@mentions** — the mentions plan (`docs/superpowers/plans/2026-08-13-mentions-system.md`)
+  is approved-pending, not built. `MarkdownText` has no mention override and the comment
+  composer is a plain textarea; both are documented seams. The design system's
+  `MentionListbox` exists but is intentionally unported.
+- **Story-level comment threads** — D10 makes task threads the v1 surface; the API supports
+  story comments and the board payload still carries `comment_count` on stories.
+- **Realtime** — D11: v1 refetches on mutation and window focus; there is no subscription.
+- **Popover/Menu port (F11)** — the design components landed but the settings surface is a
+  modal for now, and there is no card overflow menu yet.
 
-- `frontend/src/features/scrum/scrum.scss` omits the `.gt-aidraft` block that exists in
-  `design/components/scrum/scrum.css` — AI drafting is off for this release (L6), so
-  shipping its CSS would be dead weight.
-- `--gt-purple` and `--gt-gold-text` were **added** to `frontend/src/styles/tokens/colors.css`
-  to replace the two literals `scrum.css` carries inline (`#7D3C98` on the ui/ux tag and the
-  merged PR chip; `#8A6D00` on the design tag). Per `design/PORTING.md` the repo's styles
-  layer is the token source of truth, so the design side is what needs to sync back here.
-  Flagging the *values* as wrong is fair game; flagging the tokens' existence is not.
-- Components and the data hook are built but not yet mounted anywhere (F6 composes them) —
-  that is sequencing, not dead code, until F6 lands.
+**Intentional deltas — do not report as defects** (beyond the plan's ⚑L table):
+
+- `scrum.scss` omits the `.gt-aidraft` block from `design/components/scrum/scrum.css`
+  (dead CSS with AI off).
+- `--gt-purple` and `--gt-gold-text` were added to `frontend/src/styles/tokens/colors.css`
+  to replace two literals the design file carries inline. Per `design/PORTING.md` the repo's
+  styles layer is the token source of truth, so the design side syncs back — flagging the
+  *values* is fair, flagging the tokens' existence is not.
+- Component ports take API objects (`ApiScrumTask`, member maps) rather than the design
+  `.d.ts` flat string props; the DOM and classes should still match.
+
+**Not yet done — worth your attention:** the board has never had an **authenticated visual
+pass**. Everything below has been verified by tests and by reading, not by looking at a
+populated board in a browser. Call out anything that genuinely needs eyes on a real screen.
 
 ## What to review
 
