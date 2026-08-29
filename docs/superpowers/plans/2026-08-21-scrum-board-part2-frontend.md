@@ -111,6 +111,62 @@ Port from `design/components/scrum/` to typed TSX, one commit per cluster:
 - **F12 (optional) Drawer** (M6): story detail as side panel — only on explicit request.
 - **Mentions M4–M5** (mentions plan): `MentionTextarea` composes the delivered `MentionListbox`; scrum passes the board payload's `members` (local source), a future messages-scale consumer passes `onSearch`. Design's `MentionMember` is `{id?, name, secondary?}` — map `user_id → id`, role/email → `secondary`.
 
+## Phase 2C — maintainer visual-pass findings (2026-08-29)
+
+First authenticated pass (maintainer, on the seeded Trailhead board) surfaced five
+findings. Verified root causes and the fix plan; **F13 is a true gap** — the F5 create
+mode was planned but never implemented (and was mis-reported as shipped).
+
+### F13 — Create Story flow (finding 1: "New Story" does nothing)
+- New `components/StoryEditorModal.tsx` (create-only; 640px, ConfirmModal idiom):
+  **title*** · description (markdown textarea, mono hint) · points (`PointPicker`, active
+  scale) · time estimate · assignee (member `<select>`) · sprint (defaults to the viewed
+  sprint; "Backlog" option). Submit → `createStory` → success toast with the new key →
+  **immediately opens the new story in `StoryModal`** so the flow continues straight into
+  task creation (the maintainer's intended flow: New Story → story popup → add tasks).
+- Wire the header button (`ScrumBoardPage.tsx:172` — currently no onClick); stays
+  disabled for staff.
+- Tests: submit body shape, sprint default, staff-disabled, created story opens.
+
+### F14 — Task editor popup (findings 4 + 5: no tags at creation; points should suggest)
+- Replace the inline title-only add-task row with an **"Add task" button** opening a
+  compact `TaskEditorModal`, rendered inside `StoryModal` — reachable **only** from the
+  story popup, by construction. Fields: **title*** · **tags** (toggleable `TagBadge`
+  chips of all 10 presets, shown in their real colors) · points (`PointPicker`) ·
+  estimate · assignee.
+- **Remaining-budget suggestion** (finding 5): `remaining = story.points − Σ(child task
+  points)`, floored at 0. Hint beside the picker: "N pts unassigned in US-x"; scale
+  values above `remaining` render de-emphasized but stay selectable — a suggestion, not
+  a cap (story points are an estimate, not a contract). No hint when the story has no
+  points. The story card's progress bar already derives from **tasks completed**
+  (`rollups.ts` `tasksDone/tasksTotal`), which is the basis finding 5 asks for — no
+  board-side change.
+- Tests: tag toggling lands in the create body; remaining math incl. over-assignment;
+  de-emphasis class; popup unreachable outside StoryModal (no other import site).
+
+### F15 — Story vs task visual differentiation (finding 3) ⚑ design delta
+- Board: `.gt-story` gains a **3px left accent border** in `--gt-primary` so story cards
+  read as a different species from task cards at a glance.
+- StoryModal: the table-ish task rows become **compact task mini-cards** (bordered,
+  `.gt-task`-derived: key · title · tags · points chip · status select · delete).
+- ⚑ Both deviate from the design bundle. Options: accept as code-first deltas (design
+  side syncs back per `design/PORTING.md`) — the default — or maintainer updates the
+  design first and we port. Recorded in the intentional-deltas list either way.
+
+### F16 — Optimistic story/task field edits (finding 2: point changes are slow)
+- Root cause: `updateStory` runs PATCH + a full board `refresh()` (the ~8–10-query
+  aggregate) before the modal re-renders — ~1s frozen picker.
+- Fix: `applyStoryPatch` / `applyTaskPatch` in `boardReducer.ts`; the hook applies field
+  edits locally first, PATCHes, reconciles with the server row, rolls back with an error
+  toast on failure — the exact `moveTask` lifecycle, generalized. The full `refresh()`
+  stays only for structural changes (sprint move, archive, create, delete).
+- Tests: reducer patch/reconcile/rollback; hook mirrors the existing optimistic-move suite.
+
+**Pass status:** the runtime checklist items in the polish doc (§2 drag feel, §4 states,
+§5 responsive) are still pending eyes-on — Chrome extension wasn't connected for a
+driven pass; the maintainer's manual pass produced the findings above. **Refresh the
+polish prompt's current-state block after F13–F16 before running the Fable review.**
+
 ## Sign-off status (updated 2026-08-27) — **all decisions closed**
 
 1. **L1** ✅ design-doc 3-across StoryCard grid (slim rail dropped); click-to-filter.
