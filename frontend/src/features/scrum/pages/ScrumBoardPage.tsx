@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useSearchParams, useLocation } from 'react-router-dom';
-import { Settings } from 'lucide-react';
+import { Link, useParams, useSearchParams, useLocation } from 'react-router-dom';
+import { ArrowLeft, Settings } from 'lucide-react';
 import Skeleton from '@components/Skeleton/Skeleton';
 import { ToastStack } from '@components/Toast/Toast';
 import { useToasts } from '@components/Toast/useToasts';
 import { useAuth } from '@/lib/auth';
-import type { ApiScrumStory, ApiScrumTask } from '@/lib/api';
+import type { ApiCreateStoryBody, ApiScrumStory, ApiScrumTask } from '@/lib/api';
 import BacklogRow from '../components/BacklogRow';
 import BurnupChart from '../components/BurnupChart';
 import ScrumBoard from '../components/ScrumBoard';
 import StoryCard from '../components/StoryCard';
 import StoryModal from '../components/StoryModal';
 import BoardSettingsModal from '../components/BoardSettingsModal';
+import StoryEditorModal from '../components/StoryEditorModal';
 import { useScrumBoard } from '../hooks/useScrumBoard';
 import { buildMemberMap } from '../scrumTypes';
 import { collectTasks } from '../utils/rollups';
@@ -67,7 +68,8 @@ export default function ScrumBoardPage() {
 
   const {
     board, loading, error, notice, clearNotice, canWrite,
-    selectSprint, moveTask, updateStory, createTask, deleteTask, updateSettings, refresh,
+    selectSprint, moveTask, createStory, updateStory, createTask, deleteTask,
+    updateSettings, refresh,
   } = useScrumBoard(projectId, viewerName);
   const { toasts, push, dismiss } = useToasts();
 
@@ -75,6 +77,8 @@ export default function ScrumBoardPage() {
   const openTaskId = searchParams.get('task');
   const [openStoryId, setOpenStoryId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [creatingStory, setCreatingStory] = useState(false);
+  const [savingStory, setSavingStory] = useState(false);
   const [storyFilter, setStoryFilter] = useState<string | null>(null);
   const projectName = (location.state as { projectName?: string } | null)?.projectName;
 
@@ -123,6 +127,17 @@ export default function ScrumBoardPage() {
     }
   };
 
+  const handleCreateStory = async (body: ApiCreateStoryBody) => {
+    setSavingStory(true);
+    const created = await createStory(body);
+    setSavingStory(false);
+    if (!created) return;              // the hook already raised the error toast
+    setCreatingStory(false);
+    push('success', `${created.story.key} created`);
+    // Continue the flow: land in the new story so its tasks can be added now.
+    setOpenStoryId(created.story.id);
+  };
+
   const openTask = (task: ApiScrumTask) => {
     const params = new URLSearchParams(searchParams);
     params.set('task', task.id);
@@ -149,6 +164,14 @@ export default function ScrumBoardPage() {
     <div className="scrum-board">
       <div className="scrum-board__header">
         <div>
+          <Link
+            to={`/app/projects/${projectId}`}
+            state={projectName ? { projectName } : undefined}
+            className="scrum-board__back"
+          >
+            <ArrowLeft size={14} aria-hidden="true" />
+            {projectName ? `Back to ${projectName}` : 'Back to project'}
+          </Link>
           <h1 className="scrum-board__title">Scrum Board</h1>
           {projectName && <p className="scrum-board__subtitle">{projectName}</p>}
         </div>
@@ -169,7 +192,12 @@ export default function ScrumBoardPage() {
           >
             <Settings size={16} />
           </button>
-          <button type="button" className="scrum-board__primary" disabled={!canWrite}>
+          <button
+            type="button"
+            className="scrum-board__primary"
+            disabled={!canWrite}
+            onClick={() => setCreatingStory(true)}
+          >
             New Story
           </button>
         </div>
@@ -300,6 +328,18 @@ export default function ScrumBoardPage() {
           onMoveTask={moveTask}
           onCommentError={(m) => push('error', m)}
           onCommentPosted={refresh}
+        />
+      )}
+
+      {creatingStory && (
+        <StoryEditorModal
+          members={board.members}
+          sprints={board.sprints}
+          currentSprintId={board.sprint_id}
+          scale={board.project.estimate_scale}
+          saving={savingStory}
+          onClose={() => setCreatingStory(false)}
+          onCreate={handleCreateStory}
         />
       )}
 

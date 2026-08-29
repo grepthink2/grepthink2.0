@@ -3,6 +3,8 @@
 //   * the two literal purple/gold values now read from --gt-purple and
 //     --gt-gold-text (added to tokens/colors.css for lint:design)
 //   * the .gt-aidraft block is omitted — AI drafting is off (L6), dead CSS
+//   * .gt-story--active gains a soft green fill (maintainer 2026-08-29): the
+//     border+ring alone read as focus, not as "this story is filtering the board"
 // Re-port from the design file when it changes; do not hand-edit values.
 
 /* ============================================================
@@ -114,7 +116,12 @@
 }
 .gt-story:hover { box-shadow: var(--gt-shadow-hover); }
 .gt-story:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
-.gt-story--active { border-color: var(--gt-primary); box-shadow: 0 0 0 1px var(--gt-primary); }
+.gt-story--active {
+  border-color: var(--gt-primary);
+  box-shadow: 0 0 0 1px var(--gt-primary);
+  background: var(--gt-green-50);
+}
+.gt-story--active .gt-story__bar { background: var(--gt-gray-0); }
 .gt-story__top { display: flex; align-items: center; gap: 8px; }
 .gt-story__key {
   font-family: var(--gt-font-mono);
