@@ -14,6 +14,7 @@ vi.mock('@/lib/api', () => ({
     moveScrumTask: vi.fn(),
     refreshScrumPrStates: vi.fn(),
     updateStory: vi.fn(),
+    createStory: vi.fn(),
     createScrumTask: vi.fn(),
     deleteScrumTask: vi.fn(),
     getScrumComments: vi.fn(),
@@ -57,6 +58,7 @@ beforeEach(() => {
   vi.mocked(api.moveScrumTask).mockReset();
   vi.mocked(api.updateStory).mockReset();
   vi.mocked(api.createScrumTask).mockReset();
+  vi.mocked(api.createStory).mockReset();
   vi.mocked(api.getScrumComments).mockReset().mockResolvedValue({ comments: [] });
   vi.mocked(api.createScrumComment).mockReset();
   vi.mocked(api.getScrumRepos).mockReset().mockResolvedValue({ repos: [] });
@@ -162,6 +164,45 @@ describe('ScrumBoardPage story detail', () => {
     await userEvent.type(within(dialog).getByLabelText('New task title'), 'Write docs');
     await userEvent.click(within(dialog).getByRole('button', { name: /add/i }));
     expect(api.createScrumTask).toHaveBeenCalledWith('s1', { title: 'Write docs' });
+  });
+});
+
+describe('ScrumBoardPage create story (F13)', () => {
+  it('opens the editor from the header button', async () => {
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'New Story' }));
+    expect(await screen.findByRole('dialog', { name: /new story/i })).toBeInTheDocument();
+  });
+
+  it('creates the story and lands in it so tasks can be added next', async () => {
+    const created = makeStory({ id: 'new1', key: 'US-9', title: 'Weather overlay', tasks: [] });
+    vi.mocked(api.createStory).mockResolvedValue({ message: 'ok', story: created });
+    vi.mocked(api.getScrumBoard).mockResolvedValue({
+      ...boardFixture(), stories: [...boardFixture().stories, created],
+    });
+
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'New Story' }));
+    await userEvent.type(screen.getByLabelText('Title'), 'Weather overlay');
+    await userEvent.click(screen.getByRole('button', { name: 'Create story' }));
+
+    expect(api.createStory).toHaveBeenCalledWith('p1', { title: 'Weather overlay', sprint_id: 'sp1' });
+    // The editor closes and the new story's detail opens — the flow continues.
+    const dialog = await screen.findByRole('dialog', { name: /weather overlay/i });
+    expect(within(dialog).getByLabelText('New task title')).toBeInTheDocument();
+  });
+
+  it('keeps the editor open when creation fails', async () => {
+    vi.mocked(api.createStory).mockRejectedValue(new Error('offline'));
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'New Story' }));
+    await userEvent.type(screen.getByLabelText('Title'), 'Doomed');
+    await userEvent.click(screen.getByRole('button', { name: 'Create story' }));
+
+    expect(await screen.findByRole('dialog', { name: /new story/i })).toBeInTheDocument();
   });
 });
 
