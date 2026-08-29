@@ -16,6 +16,12 @@ vi.mock('@/lib/api', () => ({
     updateStory: vi.fn(),
     createScrumTask: vi.fn(),
     deleteScrumTask: vi.fn(),
+    getScrumComments: vi.fn(),
+    createScrumComment: vi.fn(),
+    getScrumRepos: vi.fn(),
+    addScrumRepo: vi.fn(),
+    deleteScrumRepo: vi.fn(),
+    updateScrumSettings: vi.fn(),
   },
 }));
 const { api } = await import('@/lib/api');
@@ -51,6 +57,10 @@ beforeEach(() => {
   vi.mocked(api.moveScrumTask).mockReset();
   vi.mocked(api.updateStory).mockReset();
   vi.mocked(api.createScrumTask).mockReset();
+  vi.mocked(api.getScrumComments).mockReset().mockResolvedValue({ comments: [] });
+  vi.mocked(api.createScrumComment).mockReset();
+  vi.mocked(api.getScrumRepos).mockReset().mockResolvedValue({ repos: [] });
+  vi.mocked(api.addScrumRepo).mockReset();
 });
 
 describe('ScrumBoardPage tabs', () => {
