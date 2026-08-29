@@ -162,6 +162,52 @@ mode was planned but never implemented (and was mis-reported as shipped).
   stays only for structural changes (sprint move, archive, create, delete).
 - Tests: reducer patch/reconcile/rollback; hook mirrors the existing optimistic-move suite.
 
+### F17 — Driven visual-pass bug batch (2026-08-29, Chrome-connector pass)
+
+Found on a live authenticated board (screenshots in session); all verified against
+running code, none caught by the 182 unit tests:
+
+1. **P1 · `sr-only` labels render visibly** — the app has no global `.sr-only` utility;
+   "Status of GT-n" ghosts over the focused task row (and the sprint-select label sits in
+   the header). Fix: add the standard clipped `.sr-only` utility to `index.css` (or swap
+   those labels to `aria-label`).
+2. **P1 · Dark input fields** — add-task input, comment composer, settings URL/token
+   inputs all render near-black: a global input style wins because neither the design CSS
+   nor the ports set an explicit background. Fix: `background: var(--gt-gray-0)` (+ text
+   color) on `.gt-comments__input` and the scrum form inputs.
+3. **P1 · Settings gear icon invisible** — the header icon-button renders empty (lucide
+   `Settings` collapses); the entry point to F7 is undiscoverable. Inspect the computed
+   size/color; likely a global `svg` rule. (Button itself works — opened via a11y click.)
+4. **P1 · Move audit name chain** — optimistic stamp shows a raw email (viewer name comes
+   from `user_metadata.full_name ?? email`, both poor), then server reconcile wipes it to
+   "Unknown" (`move_task`'s response carries no `moved_by_name`). Fix all three sides:
+   viewer name resolves from the board's members map; backend `move_task` returns
+   `moved_by_name` (it knows the caller); `confirmMove` never overwrites a present name
+   with an absent one.
+5. **P2 · Story-modal task titles truncate early** — ellipsis at ~25 chars with free row
+   space remaining; flex measurement bug in `.story-modal__task`.
+6. **P2 · "UN" avatar for unassigned** — the Unassigned placeholder renders as an
+   initials avatar ("UN"), reading like a real user. Render a hollow/dashed avatar or
+   omit the assignee slot instead.
+7. **P2 · Sprint-burnup leading-scope cliff** — days before the first snapshot carry
+   scope forward from 0, drawing a vertical wall to today. Backfill leading days with the
+   first known scope (snapshot or live) — completed already reconstructs from task_moves.
+8. **P3 · Burnup subtitle is raw ISO** ("2026-08-22 – 2026-09-04") → format "Aug 22 – Sep 4".
+9. **P3 · Breadcrumb says "Project" on deep links** — no `location.state.projectName`
+   when arriving by URL; fall back to the board payload's project name.
+
+**Verified working in the same pass:** auth-gated route, skeleton, three tabs, story
+strip with correct task-based rollups, click-to-filter + clear pill, sprint-scoped
+columns/counts, all tag colors, PR chips incl. null→gray-draft on the git.ucsc MR,
+comment threads with markdown (bold/code), comment counts, focused-task highlight +
+`?task=` deep link, Esc close, settings modal (scale cards + repo empty state),
+backlog both states, optimistic move via the status select (instant, columns recount),
+burnup day-by-day completed line from task_moves reconstruction, and cumulative-chart
+numbers reconciled exactly against DB truth after live maintainer edits. Console clean
+throughout. **Not verified:** pointer drag feel (synthetic drags can't fire native
+HTML5 DnD — needs a human hand) and responsive reflow (extension window resize did not
+propagate to the viewport).
+
 **Pass status:** the runtime checklist items in the polish doc (§2 drag feel, §4 states,
 §5 responsive) are still pending eyes-on — Chrome extension wasn't connected for a
 driven pass; the maintainer's manual pass produced the findings above. **Refresh the
