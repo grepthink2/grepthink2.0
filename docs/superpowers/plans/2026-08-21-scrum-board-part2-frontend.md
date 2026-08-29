@@ -208,6 +208,42 @@ throughout. **Not verified:** pointer drag feel (synthetic drags can't fire nati
 HTML5 DnD — needs a human hand) and responsive reflow (extension window resize did not
 propagate to the viewport).
 
+### F18 — Key allocation is not self-healing (robustness)
+
+**What happens today.** Every story/task key comes from `scrum_next_key(project_id, kind)`,
+a Postgres function that bumps a per-project counter in `scrum_counters` and returns the
+next number; the controller formats it as `US-n` / `GT-n`. `user_stories` and `tasks` each
+carry a `UNIQUE (project_id, key)` constraint, so a stale counter produces a duplicate key
+and Postgres rejects the INSERT with SQLSTATE **23505**. Nothing catches that: it escapes
+`create_story` / `create_task` as a raw `postgrest.APIError`, becomes a 500, and the user
+sees a bare "Request failed" toast with no idea what went wrong or what to do.
+
+**How the counter can go stale.** Only when rows are written around the RPC — exactly what
+happened on the 2026-08-29 dev seed: rows were inserted directly with hand-written keys
+while `scrum_counters` had no row yet, so the seed's `UPDATE` matched nothing and the RPC
+started from 1 and collided with the seeded `US-1`. Normal app traffic can't drift (the RPC
+is the only writer), so this is a **robustness/DX issue, not a live-traffic bug** — it bites
+seeding, restores, imports, and manual SQL fixes, i.e. exactly when someone is already
+debugging something else.
+
+**Fix.** In `backend/app/scrum/controller.py`, wrap the story/task INSERT: on APIError with
+code `23505` **on the key constraint specifically**, resync the counter from the table's own
+max key and retry the insert **once**; if the retry also fails, raise a 409 with an
+actionable message rather than a 500. A tiny SQL helper keeps it one round trip:
+
+```sql
+CREATE OR REPLACE FUNCTION scrum_resync_counter(p_project_id uuid, p_kind text) RETURNS integer ...
+-- SET story_seq/task_seq = GREATEST(current, max(numeric part of existing keys)), RETURN next
+```
+
+Guard the retry so it can only run once per request (no loops), and keep it narrow: match
+the constraint name, never blanket-retry 23505 — a genuine duplicate elsewhere must still
+fail loudly.
+
+**Tests.** Controller-level with the MagicMock pattern: first insert raises 23505 on the key
+constraint → resync called → second insert succeeds; a 23505 on a *different* constraint is
+re-raised untouched; two consecutive failures surface a 409, not a 500.
+
 **Pass status:** the runtime checklist items in the polish doc (§2 drag feel, §4 states,
 §5 responsive) are still pending eyes-on — Chrome extension wasn't connected for a
 driven pass; the maintainer's manual pass produced the findings above. **Refresh the
