@@ -174,32 +174,6 @@
     &:hover:not(:disabled) { background: var(--gt-primary-hover); }
   }
 
-  // Transient hook notices — F9 replaces this with the design-system ToastStack.
-  &__notice {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 9px 14px;
-    border-radius: var(--gt-radius-sm);
-    font-size: 12.5px;
-
-    &--error { background: var(--gt-error-soft); color: var(--gt-error-text); }
-    &--success { background: var(--gt-success-soft); color: var(--gt-success-text); }
-    &--info { background: var(--gt-info-soft); color: var(--gt-info-text); }
-
-    button {
-      border: none;
-      background: none;
-      font-size: 16px;
-      line-height: 1;
-      color: inherit;
-      cursor: pointer;
-
-      &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
-    }
-  }
-
   &__backlog {
     background: var(--gt-gray-0);
     border: 1px solid var(--gt-border);

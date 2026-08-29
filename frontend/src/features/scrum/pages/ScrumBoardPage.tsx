@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { Settings } from 'lucide-react';
 import Skeleton from '@components/Skeleton/Skeleton';
+import { ToastStack } from '@components/Toast/Toast';
+import { useToasts } from '@components/Toast/useToasts';
 import { useAuth } from '@/lib/auth';
 import type { ApiScrumStory, ApiScrumTask } from '@/lib/api';
 import BacklogRow from '../components/BacklogRow';
@@ -9,6 +11,7 @@ import BurnupChart from '../components/BurnupChart';
 import ScrumBoard from '../components/ScrumBoard';
 import StoryCard from '../components/StoryCard';
 import StoryModal from '../components/StoryModal';
+import BoardSettingsModal from '../components/BoardSettingsModal';
 import { useScrumBoard } from '../hooks/useScrumBoard';
 import { buildMemberMap } from '../scrumTypes';
 import { collectTasks } from '../utils/rollups';
@@ -64,12 +67,14 @@ export default function ScrumBoardPage() {
 
   const {
     board, loading, error, notice, clearNotice, canWrite,
-    selectSprint, moveTask, updateStory, createTask, deleteTask,
+    selectSprint, moveTask, updateStory, createTask, deleteTask, updateSettings, refresh,
   } = useScrumBoard(projectId, viewerName);
+  const { toasts, push, dismiss } = useToasts();
 
   const view = parseView(searchParams.get('view'));
   const openTaskId = searchParams.get('task');
   const [openStoryId, setOpenStoryId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [storyFilter, setStoryFilter] = useState<string | null>(null);
   const projectName = (location.state as { projectName?: string } | null)?.projectName;
 
@@ -94,6 +99,13 @@ export default function ScrumBoardPage() {
     if (openTaskId) return allStories.find((s) => s.tasks.some((t) => t.id === openTaskId)) ?? null;
     return null;
   }, [allStories, openStoryId, openTaskId]);
+
+  // The hook reports one notice at a time; hand each to the stack exactly once.
+  useEffect(() => {
+    if (!notice) return;
+    push(notice.kind, notice.message);
+    clearNotice();
+  }, [notice, push, clearNotice]);
 
   const setView = (next: BoardView) => {
     const params = new URLSearchParams(searchParams);
@@ -149,7 +161,12 @@ export default function ScrumBoardPage() {
               </select>
             </label>
           )}
-          <button type="button" className="scrum-board__icon-button" aria-label="Board settings" disabled>
+          <button
+            type="button"
+            className="scrum-board__icon-button"
+            aria-label="Board settings"
+            onClick={() => setSettingsOpen(true)}
+          >
             <Settings size={16} />
           </button>
           <button type="button" className="scrum-board__primary" disabled={!canWrite}>
@@ -157,13 +174,6 @@ export default function ScrumBoardPage() {
           </button>
         </div>
       </div>
-
-      {notice && (
-        <div className={`scrum-board__notice scrum-board__notice--${notice.kind}`} role="status">
-          <span>{notice.message}</span>
-          <button type="button" onClick={clearNotice} aria-label="Dismiss message">×</button>
-        </div>
-      )}
 
       <div className="scrum-board__views" role="tablist" aria-label="Board views">
         {BOARD_VIEWS.map((v) => (
@@ -288,8 +298,23 @@ export default function ScrumBoardPage() {
           onCreateTask={(title) => createTask(openStory.id, { title })}
           onDeleteTask={deleteTask}
           onMoveTask={moveTask}
+          onCommentError={(m) => push('error', m)}
+          onCommentPosted={refresh}
         />
       )}
+
+      {settingsOpen && projectId && (
+        <BoardSettingsModal
+          projectId={projectId}
+          scale={board.project.estimate_scale}
+          canWrite={canWrite}
+          onClose={() => setSettingsOpen(false)}
+          onChangeScale={updateSettings}
+          onNotice={push}
+        />
+      )}
+
+      <ToastStack toasts={toasts} onDismiss={dismiss} />
     </div>
   );
 }
