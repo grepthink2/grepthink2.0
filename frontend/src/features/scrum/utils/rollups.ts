@@ -36,3 +36,16 @@ export function collectTasks(stories: ApiScrumStory[], storyId?: string | null):
   const scoped = storyId ? stories.filter((s) => s.id === storyId) : stories;
   return scoped.flatMap((s) => s.tasks ?? []);
 }
+
+/**
+ * Points on a story not yet carved into tasks — what the task editor suggests
+ * next (F14). Floored at 0: once children exceed the parent estimate there is
+ * nothing left to suggest, and a negative number would read as a penalty.
+ * Returns null when the story carries no estimate, so callers can stay quiet
+ * rather than claim "0 pts unassigned".
+ */
+export function remainingStoryPoints(story: ApiScrumStory): number | null {
+  if (story.points == null) return null;
+  const assigned = (story.tasks ?? []).reduce((sum, t) => sum + (t.points ?? 0), 0);
+  return Math.max(0, story.points - assigned);
+}
