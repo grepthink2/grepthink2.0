@@ -8,6 +8,7 @@ import type { MemberMap } from '../scrumTypes';
 import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
 import { storyRollup } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
+import CommentThread from './CommentThread';
 import { PointPicker } from './ScalePicker';
 import TagBadge from './TagBadge';
 import './StoryModal.scss';
@@ -25,6 +26,9 @@ export interface StoryModalProps {
   onCreateTask: (title: string) => void;
   onDeleteTask: (taskId: string) => void;
   onMoveTask: (taskId: string, to: BoardStatus) => void;
+  onCommentError: (message: string) => void;
+  /** Refresh the board so comment counts on cards stay accurate. */
+  onCommentPosted: () => void;
 }
 
 /**
@@ -37,7 +41,9 @@ export interface StoryModalProps {
 export default function StoryModal({
   story, members, sprints, scale, focusTaskId, canWrite = true,
   onClose, onUpdateStory, onCreateTask, onDeleteTask, onMoveTask,
+  onCommentError, onCommentPosted,
 }: StoryModalProps) {
+  const focusedTask = story.tasks.find((t) => t.id === focusTaskId) ?? null;
   const [newTask, setNewTask] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<ApiScrumTask | null>(null);
   const focusRef = useRef<HTMLLIElement>(null);
@@ -173,6 +179,19 @@ export default function StoryModal({
             </div>
           )}
         </section>
+
+        {focusedTask && (
+          <section className="story-modal__comments">
+            <h3 className="story-modal__section-title">Comments on {focusedTask.key}</h3>
+            <CommentThread
+              taskId={focusedTask.id}
+              taskKey={focusedTask.key}
+              members={members}
+              onError={onCommentError}
+              onPosted={onCommentPosted}
+            />
+          </section>
+        )}
 
         {canWrite && (
           <footer className="story-modal__foot">
