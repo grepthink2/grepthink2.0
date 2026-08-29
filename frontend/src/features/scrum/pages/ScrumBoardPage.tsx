@@ -323,7 +323,8 @@ export default function ScrumBoardPage() {
           canWrite={canWrite}
           onClose={closeStory}
           onUpdateStory={(body) => updateStory(openStory.id, body)}
-          onCreateTask={(title) => createTask(openStory.id, { title })}
+          memberList={board.members}
+          onCreateTask={(body) => createTask(openStory.id, body)}
           onDeleteTask={deleteTask}
           onMoveTask={moveTask}
           onCommentError={(m) => push('error', m)}

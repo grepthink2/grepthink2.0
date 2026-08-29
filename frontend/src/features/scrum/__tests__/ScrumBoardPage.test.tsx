@@ -156,13 +156,16 @@ describe('ScrumBoardPage story detail', () => {
     expect(api.updateStory).toHaveBeenCalledWith('s1', { archived: true });
   });
 
-  it('adds a task to the open story', async () => {
+  it('adds a task to the open story through the task editor', async () => {
     vi.mocked(api.createScrumTask).mockResolvedValue({ message: 'ok', task: makeTask() });
     renderAt('/app/projects/p1/board?task=a');
-    const dialog = await screen.findByRole('dialog');
+    const story = await screen.findByRole('dialog');
 
-    await userEvent.type(within(dialog).getByLabelText('New task title'), 'Write docs');
-    await userEvent.click(within(dialog).getByRole('button', { name: /add/i }));
+    await userEvent.click(within(story).getByRole('button', { name: /add task/i }));
+    const editor = await screen.findByRole('dialog', { name: /new task in US-1/i });
+    await userEvent.type(within(editor).getByLabelText('Title'), 'Write docs');
+    await userEvent.click(within(editor).getByRole('button', { name: 'Add task' }));
+
     expect(api.createScrumTask).toHaveBeenCalledWith('s1', { title: 'Write docs' });
   });
 });
@@ -191,7 +194,7 @@ describe('ScrumBoardPage create story (F13)', () => {
     expect(api.createStory).toHaveBeenCalledWith('p1', { title: 'Weather overlay', sprint_id: 'sp1' });
     // The editor closes and the new story's detail opens — the flow continues.
     const dialog = await screen.findByRole('dialog', { name: /weather overlay/i });
-    expect(within(dialog).getByLabelText('New task title')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /add task/i })).toBeInTheDocument();
   });
 
   it('keeps the editor open when creation fails', async () => {
