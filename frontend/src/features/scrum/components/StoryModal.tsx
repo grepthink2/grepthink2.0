@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import MarkdownText from '@components/Markdown/MarkdownText';
-import type { ApiScrumSprint, ApiScrumStory, ApiScrumTask } from '@/lib/api';
+import type { ApiCreateTaskBody, ApiScrumMember, ApiScrumSprint, ApiScrumStory, ApiScrumTask } from '@/lib/api';
 import { BOARD_COLUMNS } from '../config/scrumTags';
 import type { BoardStatus, EstimateScale } from '../config/scrumTags';
 import type { MemberMap } from '../scrumTypes';
@@ -9,6 +9,7 @@ import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
 import { storyRollup } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
 import CommentThread from './CommentThread';
+import TaskEditorModal from './TaskEditorModal';
 import { PointPicker } from './ScalePicker';
 import TagBadge from './TagBadge';
 import './StoryModal.scss';
@@ -23,7 +24,9 @@ export interface StoryModalProps {
   canWrite?: boolean;
   onClose: () => void;
   onUpdateStory: (body: { points?: number; sprint_id?: string | null; archived?: boolean }) => void;
-  onCreateTask: (title: string) => void;
+  onCreateTask: (body: ApiCreateTaskBody) => void;
+  /** Roster for the task editor's assignee picker. */
+  memberList: ApiScrumMember[];
   onDeleteTask: (taskId: string) => void;
   onMoveTask: (taskId: string, to: BoardStatus) => void;
   onCommentError: (message: string) => void;
@@ -39,12 +42,12 @@ export interface StoryModalProps {
  * from this list.
  */
 export default function StoryModal({
-  story, members, sprints, scale, focusTaskId, canWrite = true,
+  story, members, memberList, sprints, scale, focusTaskId, canWrite = true,
   onClose, onUpdateStory, onCreateTask, onDeleteTask, onMoveTask,
   onCommentError, onCommentPosted,
 }: StoryModalProps) {
   const focusedTask = story.tasks.find((t) => t.id === focusTaskId) ?? null;
-  const [newTask, setNewTask] = useState('');
+  const [addingTask, setAddingTask] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<ApiScrumTask | null>(null);
   const focusRef = useRef<HTMLLIElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -68,13 +71,6 @@ export default function StoryModal({
       closeRef.current?.focus();
     }
   }, [focusTaskId]);
-
-  const addTask = () => {
-    const title = newTask.trim();
-    if (!title) return;
-    onCreateTask(title);
-    setNewTask('');
-  };
 
   return (
     <div className="story-modal-backdrop" onClick={onClose} role="presentation">
@@ -164,19 +160,13 @@ export default function StoryModal({
           </ul>
 
           {canWrite && (
-            <div className="story-modal__add-task">
-              <input
-                type="text"
-                value={newTask}
-                placeholder="Add a task…"
-                aria-label="New task title"
-                onChange={(e) => setNewTask(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') addTask(); }}
-              />
-              <button type="button" onClick={addTask} disabled={!newTask.trim()}>
-                <Plus size={14} aria-hidden="true" /> Add
-              </button>
-            </div>
+            <button
+              type="button"
+              className="story-modal__add-task"
+              onClick={() => setAddingTask(true)}
+            >
+              <Plus size={14} aria-hidden="true" /> Add task
+            </button>
           )}
         </section>
 
@@ -213,6 +203,16 @@ export default function StoryModal({
               {story.archived_at ? 'Restore story' : 'Archive story'}
             </button>
           </footer>
+        )}
+
+        {addingTask && (
+          <TaskEditorModal
+            story={story}
+            members={memberList}
+            scale={scale}
+            onClose={() => setAddingTask(false)}
+            onCreate={(body) => { onCreateTask(body); setAddingTask(false); }}
+          />
         )}
 
         {confirmDelete && (
