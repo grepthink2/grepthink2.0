@@ -101,6 +101,23 @@
     font-size: 13px;
   }
 
+  // The board is its own route (reached from the project page's tab strip),
+  // so it carries an explicit way back rather than relying on browser history.
+  &__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-tertiary);
+    text-decoration: none;
+    @include gt-transition(color);
+
+    &:hover { color: var(--gt-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: 4px; }
+  }
+
   &__subtitle {
     margin: 2px 0 0;
     font-size: 12.5px;
