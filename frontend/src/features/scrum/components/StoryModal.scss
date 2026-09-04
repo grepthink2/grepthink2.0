@@ -101,14 +101,26 @@
     color: var(--gt-text-tertiary);
     flex-shrink: 0;
   }
+  // A button, so it needs an explicit reset — the app's global button styling
+  // otherwise paints it as a dark pill.
   &__task-title {
     flex: 1;
     min-width: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: $primary-font;
     font-size: 12.5px;
+    text-align: left;
     color: var(--gt-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    cursor: pointer;
+    @include gt-transition(color);
+
+    &:hover { color: var(--gt-primary); text-decoration: underline; }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: 3px; }
   }
   &__task-tags { display: inline-flex; gap: 4px; flex-shrink: 0; }
 
