@@ -165,20 +165,39 @@ mode was planned but never implemented (and was mis-reported as shipped).
 ### F17 — Driven visual-pass bug batch (2026-08-29, Chrome-connector pass)
 
 Found on a live authenticated board (screenshots in session); all verified against
-running code, none caught by the 182 unit tests:
+running code, none caught by the 182 unit tests.
 
-1. **P1 · `sr-only` labels render visibly** — the app has no global `.sr-only` utility;
+**Status 2026-09-04: all four P1s fixed and live-verified** (`678d840`, `5c75aba`,
+`4ddf6b4`). Root causes were not what the symptoms suggested in three of the four —
+see the per-item notes. P2/P3 (#5–#9) remain open.
+
+1. ~~**P1 · `sr-only` labels render visibly**~~ **FIXED** `678d840`. The class was
+   never defined anywhere in the codebase — `FinalReviews.tsx` documents the gap and
+   inlines its own style object. Added a `gt-visually-hidden` mixin beside the other
+   shared mixins and emit `.sr-only` once from `ScrumBoardPage.scss` (the shared
+   partials export mixins only; no global utility stylesheet exists). Original note: — the app has no global `.sr-only` utility;
    "Status of GT-n" ghosts over the focused task row (and the sprint-select label sits in
    the header). Fix: add the standard clipped `.sr-only` utility to `index.css` (or swap
    those labels to `aria-label`).
-2. **P1 · Dark input fields** — add-task input, comment composer, settings URL/token
+2. ~~**P1 · Dark input fields**~~ **FIXED** `4ddf6b4`. Only one control was actually
+   affected, not the several first suspected — a probe across board/messages/home/
+   create-project found exactly `textarea.gt-comments__input`. Root cause was global:
+   `:root { color-scheme: light dark }` from the create-vite scaffold, in an app with
+   one light theme, so the UA painted any control lacking its own background dark for
+   dark-mode users. Fixed at the root (`color-scheme: light`) plus an explicit
+   background on the composer, recorded in scrum.scss's delta list. Original note: — add-task input, comment composer, settings URL/token
    inputs all render near-black: a global input style wins because neither the design CSS
    nor the ports set an explicit background. Fix: `background: var(--gt-gray-0)` (+ text
    color) on `.gt-comments__input` and the scrum form inputs.
-3. **P1 · Settings gear icon invisible** — the header icon-button renders empty (lucide
+3. ~~**P1 · Settings gear icon invisible**~~ **FIXED** `5c75aba`. Not invisible —
+   crushed. `&__icon-button` set width/height but never reset the global scaffold's
+   `button { padding: 0.6em 1.2em }`, leaving a 4px content box in a 34px square and
+   squeezing the glyph to a 2px sliver. Original note: — the header icon-button renders empty (lucide
    `Settings` collapses); the entry point to F7 is undiscoverable. Inspect the computed
    size/color; likely a global `svg` rule. (Button itself works — opened via a11y click.)
-4. **P1 · Move audit name chain** — optimistic stamp shows a raw email (viewer name comes
+4. ~~**P1 · Move audit name chain**~~ **FIXED** `5c75aba`, all three sides as
+   diagnosed. Live-verified: the optimistic stamp reads "QA Student" and survives the
+   server reconcile. Original note: — optimistic stamp shows a raw email (viewer name comes
    from `user_metadata.full_name ?? email`, both poor), then server reconcile wipes it to
    "Unknown" (`move_task`'s response carries no `moved_by_name`). Fix all three sides:
    viewer name resolves from the board's members map; backend `move_task` returns
