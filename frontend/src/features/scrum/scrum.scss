@@ -6,6 +6,8 @@
 //   * .gt-pointpicker__chip--blocked marks values the points budget forbids
 //   * .gt-story--active gains a soft green fill (maintainer 2026-08-29): the
 //     border+ring alone read as focus, not as "this story is filtering the board"
+//   * .gt-comments__input gains an explicit background — the design source sets
+//     a color but no background, which left it to the UA. Keep it on re-port.
 // Re-port from the design file when it changes; do not hand-edit values.
 
 /* ============================================================
@@ -362,6 +364,7 @@
   font-family: var(--gt-font-sans);
   font-size: 12.5px;
   color: var(--gt-text-primary);
+  background: var(--gt-gray-0);
   resize: vertical;
   outline: none;
   box-sizing: border-box;

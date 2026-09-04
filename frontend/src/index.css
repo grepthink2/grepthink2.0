@@ -29,7 +29,13 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  /* This app ships a single light theme, so declaring dark support was simply
+     untrue: it told the UA to paint form controls, scrollbars and the default
+     canvas dark for anyone whose OS is in dark mode. Every control that set
+     its own background hid that; the ones that didn't (the scrum comment
+     composer) rendered near-black. The `color` below and the
+     prefers-color-scheme block are left as-is — see the note above. */
+  color-scheme: light;
   color: rgba(255, 255, 255, 0.87);
   background-color: #ffffff;
 
