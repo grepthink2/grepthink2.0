@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  applyOptimisticMove, applyPrStates, confirmMove, findTask, mapTask, rollbackMove,
+  applyOptimisticMove, applyPrStates, applyStoryPatch, applyTaskPatch,
+  confirmMove, findStory, findTask, mapTask, rollbackMove,
 } from '../utils/boardReducer';
 import { makeStory, makeTask } from './fixtures';
 
@@ -75,5 +76,27 @@ describe('applyPrStates', () => {
     const before = stories();
     expect(applyPrStates(before, {})).toBe(before);
     expect(applyPrStates(before, { ghost: 'open' })[0]).toBe(before[0]);
+  });
+});
+
+describe('field patches (F16)', () => {
+  it('merges story fields without touching its tasks or siblings', () => {
+    const before = stories();
+    const after = applyStoryPatch(before, 's1', { points: 13 });
+    expect(after[0].points).toBe(13);
+    expect(after[0].tasks).toBe(before[0].tasks);   // children preserved
+    expect(after[1]).toBe(before[1]);
+  });
+
+  it('merges task fields in place', () => {
+    const before = stories();
+    const after = applyTaskPatch(before, 'a', { title: 'Renamed', points: 5 });
+    expect(after[0].tasks[0]).toMatchObject({ title: 'Renamed', points: 5 });
+    expect(before[0].tasks[0].title).toBe('Task');  // input untouched
+  });
+
+  it('finds a story by id, or null', () => {
+    expect(findStory(stories(), 's2')?.id).toBe('s2');
+    expect(findStory(stories(), 'ghost')).toBeNull();
   });
 });
