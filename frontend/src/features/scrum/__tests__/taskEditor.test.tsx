@@ -73,12 +73,12 @@ describe('TaskEditorModal', () => {
 
   it('says how many points the story has left', () => {
     render(<TaskEditorModal {...props()} />);
-    expect(screen.getByText('3 of 8 pts still unassigned in US-1')).toBeInTheDocument();
+    expect(screen.getByText('3 of 8 pts available in US-1')).toBeInTheDocument();
   });
 
   it('says so plainly when the story is fully assigned', () => {
     render(<TaskEditorModal {...props({ points: 5 })} />);
-    expect(screen.getByText(/fully assigned — anything more grows the story/)).toBeInTheDocument();
+    expect(screen.getByText(/fully assigned — raise the story to add more/)).toBeInTheDocument();
   });
 
   it('stays quiet when the story has no estimate', () => {
@@ -86,19 +86,44 @@ describe('TaskEditorModal', () => {
     expect(screen.queryByText(/unassigned in/)).not.toBeInTheDocument();
   });
 
-  it('de-emphasises points past the remaining budget but still allows them', async () => {
-    const p = props();               // 3 remaining of 8
-    render(<TaskEditorModal {...p} />);
+  it('caps points at what the story has left (maintainer 2026-08-29)', () => {
+    render(<TaskEditorModal {...props()} />);          // 3 of 8 left
+    expect(screen.getByRole('radio', { name: '3' })).toBeEnabled();
     const five = screen.getByRole('radio', { name: '5' });
-    const three = screen.getByRole('radio', { name: '3' });
-    expect(five).toHaveClass('task-editor__point--over');    // suggestion, not a cap
-    expect(three).not.toHaveClass('task-editor__point--over');
-    expect(five).toBeEnabled();
+    expect(five).toBeDisabled();
+    expect(five).toHaveAttribute('title', expect.stringContaining("raise the story's points"));
+  });
 
-    await userEvent.type(screen.getByLabelText('Title'), 'Bigger than planned');
-    await userEvent.click(five);
-    await userEvent.click(screen.getByRole('button', { name: 'Add task' }));
-    expect(p.onCreate).toHaveBeenCalledWith({ title: 'Bigger than planned', points: 5 });
+  it('lets an edited task keep its own points when re-pointing', () => {
+    // GT-a already holds 3 of the 8; editing it should offer up to 3 + the 3 free = 6,
+    // so 5 is reachable even though a *new* task would be capped at 3.
+    const p = props();
+    const own = p.story.tasks[0];
+    render(<TaskEditorModal {...p} task={own} />);
+    expect(screen.getByRole('radio', { name: '5' })).toBeEnabled();
+    expect(screen.getByRole('radio', { name: '8' })).toBeDisabled();
+  });
+
+  it('edits an existing task and sends the full field set', async () => {
+    const p = props();
+    const own = p.story.tasks[0];
+    const onSave = vi.fn();
+    render(<TaskEditorModal {...p} task={own} onSave={onSave} />);
+
+    expect(screen.getByRole('dialog', { name: /edit/i })).toBeInTheDocument();
+    await userEvent.clear(screen.getByLabelText('Title'));
+    await userEvent.type(screen.getByLabelText('Title'), 'Renamed task');
+    await userEvent.click(screen.getByRole('button', { name: 'Save task' }));
+
+    // Full set, so clearing a field actually clears it server-side.
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ title: 'Renamed task' }));
+  });
+
+  it('offers a way back to the parent story', async () => {
+    const p = props();
+    render(<TaskEditorModal {...p} />);
+    await userEvent.click(screen.getByRole('button', { name: /US-1/ }));
+    expect(p.onClose).toHaveBeenCalled();
   });
 
   it('sends estimate and assignee when given', async () => {
