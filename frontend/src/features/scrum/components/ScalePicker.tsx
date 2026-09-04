@@ -44,9 +44,10 @@ export function PointPicker({
   return (
     <div className="gt-pointpicker" role="radiogroup" aria-label="Points">
       {ESTIMATE_SCALES[scale].map((v) => {
-        const blocked =
+        const blocked = v !== value && (
           (disabledBelow != null && v < disabledBelow) ||
-          (disabledAbove != null && v > disabledAbove);
+          (disabledAbove != null && v > disabledAbove)
+        );
         return (
           <button
             key={v}
