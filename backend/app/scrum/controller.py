@@ -371,14 +371,19 @@ def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
     task = _get_task_or_404(client, task_id)
     _require_writer(project_id=task["project_id"], user_id=user_id)
     if task["status"] == to_status:
-        return {"task": task, "move": None}
+        return {"task": {**task, "moved_by_name": _name_for(client, task.get("moved_by"))},
+                "move": None}
     res = client.table("task_moves").insert(
         {"task_id": str(task_id), "to_status": to_status, "moved_by": str(user_id)}
     ).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to move task")
     move = res.data[0]
-    task = {**task, "status": to_status, "moved_by": str(user_id), "moved_at": move["moved_at"]}
+    # The board list resolves moved_by_name from its bulk profile fetch; this
+    # single-row response has to resolve its own, or the client reconciles the
+    # optimistic audit line down to "Unknown".
+    task = {**task, "status": to_status, "moved_by": str(user_id),
+            "moved_at": move["moved_at"], "moved_by_name": _name_for(client, user_id)}
     story = _get_story_or_404(client, task["story_id"])
     if story.get("sprint_id"):
         _snapshot_burnup_safe(story["sprint_id"])
@@ -387,6 +392,17 @@ def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
 
 def _display_name(profile: dict | None) -> str:
     return profile_display_name(profile) or "Unknown"
+
+
+def _name_for(client, user_id: str | None) -> str | None:
+    """Display name for one user id — the single-row counterpart to the bulk
+    profile fetch in get_board. None for an unset id, so callers can tell
+    "nobody has moved this" apart from "moved by someone we can't name"."""
+    if not user_id:
+        return None
+    res = (client.table("profiles").select("id, first_name, last_name, email")
+           .eq("id", str(user_id)).maybe_single().execute())
+    return _display_name(res.data if res else None)
 
 
 def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:

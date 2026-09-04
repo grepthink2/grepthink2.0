@@ -29,7 +29,11 @@ function noticeFor(err: unknown, fallback: string): BoardNotice {
  * load may commit, so fast sprint switching can't resurrect stale data
  * (the pattern `useConversationMessages` established for message threads).
  */
-export function useScrumBoard(projectId: string | undefined, viewerName: string) {
+export function useScrumBoard(
+  projectId: string | undefined,
+  viewerName: string,
+  viewerId?: string,
+) {
   const [board, setBoard] = useState<ApiScrumBoard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,8 +120,14 @@ export function useScrumBoard(projectId: string | undefined, viewerName: string)
       const snapshot = current ? findTask(current.stories, taskId) : null;
       if (!snapshot || snapshot.status === to) return;
 
+      // Prefer the board's own member list: it carries the same display name
+      // the server will reconcile with, whereas the auth token's metadata is
+      // often just an email. Falls back to that when the viewer isn't a member
+      // (an instructor or TA viewing a team's board).
+      const mover = (viewerId && current?.members.find((m) => m.user_id === viewerId)?.name)
+        || viewerName;
       setBoard((prev) =>
-        prev ? { ...prev, stories: applyOptimisticMove(prev.stories, taskId, to, viewerName) } : prev,
+        prev ? { ...prev, stories: applyOptimisticMove(prev.stories, taskId, to, mover) } : prev,
       );
       try {
         const { task } = await api.moveScrumTask(taskId, to);
@@ -127,7 +137,7 @@ export function useScrumBoard(projectId: string | undefined, viewerName: string)
         setNotice(noticeFor(err, `Couldn't move ${snapshot.key}`));
       }
     },
-    [viewerName],
+    [viewerName, viewerId],
   );
 
   /**

@@ -51,7 +51,15 @@ describe('optimistic move lifecycle', () => {
     const moved = applyOptimisticMove(stories(), 'a', 'done', 'Tony Wu');
     const serverTask = makeTask({ id: 'a', status: 'done', moved_by_name: 'Tony W.', moved_at: '2026-08-28T12:00:00Z' });
     const after = confirmMove(moved, 'a', serverTask);
-    expect(after[0].tasks[0]).toBe(serverTask);
+    expect(after[0].tasks[0]).toEqual(serverTask);
+  });
+
+  it('confirm keeps the optimistic mover when the server row omits one', () => {
+    const moved = applyOptimisticMove(stories(), 'a', 'done', 'Tony Wu');
+    const serverTask = makeTask({ id: 'a', status: 'done', moved_by_name: null });
+    const after = confirmMove(moved, 'a', serverTask);
+    expect(after[0].tasks[0].moved_by_name).toBe('Tony Wu'); // not blanked to Unknown
+    expect(after[0].tasks[0].status).toBe('done');           // everything else is the server's
   });
 
   it('rollback restores the pre-move snapshot exactly', () => {
