@@ -226,3 +226,9 @@
     p { margin: 0; font-size: 12.5px; color: var(--gt-text-tertiary); }
   }
 }
+
+// Emitted once here rather than per component sheet: the scrum feature is the
+// only current user, this codebase has no global utility stylesheet (the shared
+// partials export mixins only), and every scrum view mounts beneath this page.
+// Without it the labels render as ordinary visible text.
+.sr-only { @include gt-visually-hidden; }
