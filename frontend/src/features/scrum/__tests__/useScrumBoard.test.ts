@@ -56,6 +56,27 @@ describe('useScrumBoard', () => {
     expect(result.current.board!.stories[0].tasks[0].moved_by_name).toBe('Tony W.');
   });
 
+  it('attributes the optimistic move to the board member name, not the auth fallback', async () => {
+    vi.mocked(api.moveScrumTask).mockReturnValue(new Promise(() => {}) as ReturnType<typeof api.moveScrumTask>);
+    // What the auth token actually carries for a student with no full_name set.
+    const { result } = renderHook(() => useScrumBoard('p1', 'qa.student@grepthink.dev', 'u1'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => { void result.current.moveTask('a', 'done'); });
+    await waitFor(() => expect(result.current.board!.stories[0].tasks[0].status).toBe('done'));
+    expect(result.current.board!.stories[0].tasks[0].moved_by_name).toBe('Tony Wu');
+  });
+
+  it('falls back to the given name when the viewer is not a project member', async () => {
+    vi.mocked(api.moveScrumTask).mockReturnValue(new Promise(() => {}) as ReturnType<typeof api.moveScrumTask>);
+    const { result } = renderHook(() => useScrumBoard('p1', 'Dr. Instructor', 'staff-9'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => { void result.current.moveTask('a', 'done'); });
+    await waitFor(() => expect(result.current.board!.stories[0].tasks[0].status).toBe('done'));
+    expect(result.current.board!.stories[0].tasks[0].moved_by_name).toBe('Dr. Instructor');
+  });
+
   it('rolls the card back and explains when the move fails', async () => {
     vi.mocked(api.moveScrumTask).mockRejectedValue(new Error('network down'));
     const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
