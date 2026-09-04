@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import type {
   ApiBoardStatus, ApiCreateStoryBody, ApiCreateTaskBody, ApiEstimateScale,
-  ApiScrumBoard, ApiUpdateStoryBody, ApiUpdateTaskBody,
+  ApiScrumBoard, ApiScrumStory, ApiScrumTask, ApiUpdateStoryBody, ApiUpdateTaskBody,
 } from '@/lib/api';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
 import {
-  applyOptimisticMove, applyPrStates, confirmMove, findTask, rollbackMove,
+  applyOptimisticMove, applyPrStates, applyStoryPatch, applyTaskPatch,
+  confirmMove, findStory, findTask, rollbackMove,
 } from '../utils/boardReducer';
 
 /** Transient user-facing message. F9 renders these as toasts. */
@@ -129,6 +130,58 @@ export function useScrumBoard(projectId: string | undefined, viewerName: string)
     [viewerName],
   );
 
+  /**
+   * Field edits (points, title, tags…) apply locally first, then PATCH and
+   * reconcile — the same lifecycle as a move. A full refresh here would freeze
+   * the control for as long as the board's aggregate query takes (F16).
+   */
+  const patchStory = useCallback(async (storyId: string, body: ApiUpdateStoryBody) => {
+    const current = boardRef.current;
+    const snapshot = current
+      ? findStory(current.stories, storyId) ?? findStory(current.backlog, storyId)
+      : null;
+    if (!snapshot) return null;
+
+    const local = (patch: Partial<ApiScrumStory>) =>
+      setBoard((prev) => (prev ? {
+        ...prev,
+        stories: applyStoryPatch(prev.stories, storyId, patch),
+        backlog: applyStoryPatch(prev.backlog, storyId, patch),
+      } : prev));
+
+    local(body as Partial<ApiScrumStory>);
+    try {
+      const { story } = await api.updateStory(storyId, body);
+      // The PATCH response carries no children — keep the ones already loaded.
+      local({ ...story, tasks: snapshot.tasks });
+      return story;
+    } catch (err) {
+      local(snapshot);
+      setNotice(noticeFor(err, `Couldn’t save ${snapshot.key}`));
+      return null;
+    }
+  }, []);
+
+  const patchTask = useCallback(async (taskId: string, body: ApiUpdateTaskBody) => {
+    const current = boardRef.current;
+    const snapshot = current ? findTask(current.stories, taskId) : null;
+    if (!snapshot) return null;
+
+    const local = (patch: Partial<ApiScrumTask>) =>
+      setBoard((prev) => (prev ? { ...prev, stories: applyTaskPatch(prev.stories, taskId, patch) } : prev));
+
+    local(body as Partial<ApiScrumTask>);
+    try {
+      const { task } = await api.updateScrumTask(taskId, body);
+      local(task);
+      return task;
+    } catch (err) {
+      local(snapshot);
+      setNotice(noticeFor(err, `Couldn’t save ${snapshot.key}`));
+      return null;
+    }
+  }, []);
+
   /** Run a write, refresh on success, and turn any failure into a notice. */
   const mutate = useCallback(
     async <T>(action: () => Promise<T>, failure: string, success?: string): Promise<T | null> => {
@@ -150,10 +203,13 @@ export function useScrumBoard(projectId: string | undefined, viewerName: string)
       projectId ? mutate(() => api.createStory(projectId, body), 'Couldn’t create the story') : Promise.resolve(null),
     [mutate, projectId],
   );
+  /** Structural edits (sprint move, archive) still refetch — they reshuffle lists. */
   const updateStory = useCallback(
     (storyId: string, body: ApiUpdateStoryBody) =>
-      mutate(() => api.updateStory(storyId, body), 'Couldn’t save the story'),
-    [mutate],
+      ('sprint_id' in body || 'archived' in body)
+        ? mutate(() => api.updateStory(storyId, body), 'Couldn’t save the story')
+        : patchStory(storyId, body),
+    [mutate, patchStory],
   );
   const createTask = useCallback(
     (storyId: string, body: ApiCreateTaskBody) =>
@@ -161,9 +217,8 @@ export function useScrumBoard(projectId: string | undefined, viewerName: string)
     [mutate],
   );
   const updateTask = useCallback(
-    (taskId: string, body: ApiUpdateTaskBody) =>
-      mutate(() => api.updateScrumTask(taskId, body), 'Couldn’t save the task'),
-    [mutate],
+    (taskId: string, body: ApiUpdateTaskBody) => patchTask(taskId, body),
+    [patchTask],
   );
   const deleteTask = useCallback(
     (taskId: string) => mutate(() => api.deleteScrumTask(taskId), 'Couldn’t delete the task', 'Task deleted'),

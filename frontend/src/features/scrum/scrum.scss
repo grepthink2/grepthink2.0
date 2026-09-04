@@ -3,6 +3,7 @@
 //   * the two literal purple/gold values now read from --gt-purple and
 //     --gt-gold-text (added to tokens/colors.css for lint:design)
 //   * the .gt-aidraft block is omitted — AI drafting is off (L6), dead CSS
+//   * .gt-pointpicker__chip--blocked marks values the points budget forbids
 //   * .gt-story--active gains a soft green fill (maintainer 2026-08-29): the
 //     border+ring alone read as focus, not as "this story is filtering the board"
 // Re-port from the design file when it changes; do not hand-edit values.
@@ -306,6 +307,14 @@
 .gt-pointpicker__chip:hover { border-color: var(--gt-border-strong); color: var(--gt-text-primary); }
 .gt-pointpicker__chip:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
 .gt-pointpicker__chip--active { background: var(--gt-primary); border-color: var(--gt-primary); color: var(--gt-gray-0); }
+/* Blocked by the story-points budget — visibly out of reach, with a title
+   explaining why (maintainer 2026-08-29; delta from the design file). */
+.gt-pointpicker__chip--blocked {
+  opacity: 0.35;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.gt-pointpicker__chip--blocked:hover { border-color: var(--gt-border); color: var(--gt-text-secondary); }
 
 /* ── Markdown + mentions ────────────────────────────────── */
 .gt-md { font-family: var(--gt-font-sans); font-size: 12.5px; color: var(--gt-text-primary); line-height: var(--gt-leading-normal); }

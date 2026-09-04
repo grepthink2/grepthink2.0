@@ -68,7 +68,7 @@ export default function ScrumBoardPage() {
 
   const {
     board, loading, error, notice, clearNotice, canWrite,
-    selectSprint, moveTask, createStory, updateStory, createTask, deleteTask,
+    selectSprint, moveTask, createStory, updateStory, createTask, updateTask, deleteTask,
     updateSettings, refresh,
   } = useScrumBoard(projectId, viewerName);
   const { toasts, push, dismiss } = useToasts();
@@ -325,6 +325,7 @@ export default function ScrumBoardPage() {
           onUpdateStory={(body) => updateStory(openStory.id, body)}
           memberList={board.members}
           onCreateTask={(body) => createTask(openStory.id, body)}
+          onUpdateTask={updateTask}
           onDeleteTask={deleteTask}
           onMoveTask={moveTask}
           onCommentError={(m) => push('error', m)}

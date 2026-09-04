@@ -1,42 +1,53 @@
 import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
-import type { ApiCreateTaskBody, ApiScrumMember, ApiScrumStory } from '@/lib/api';
-import { ESTIMATE_SCALES, TASK_TAGS } from '../config/scrumTags';
+import { ArrowLeft, X } from 'lucide-react';
+import type {
+  ApiCreateTaskBody, ApiScrumMember, ApiScrumStory, ApiScrumTask, ApiUpdateTaskBody,
+} from '@/lib/api';
+import { TASK_TAGS } from '../config/scrumTags';
 import type { EstimateScale } from '../config/scrumTags';
-import { remainingStoryPoints } from '../utils/rollups';
+import { assignedTaskPoints } from '../utils/rollups';
+import { PointPicker } from './ScalePicker';
 import TagBadge from './TagBadge';
 import './TaskEditorModal.scss';
 
 interface Props {
-  /** The parent story — this editor is only reachable from its detail (F14). */
+  /** The parent story — this editor is only reachable from its detail. */
   story: ApiScrumStory;
+  /** Present = edit that task; absent = create a new one in the story. */
+  task?: ApiScrumTask | null;
   members: ApiScrumMember[];
   scale: EstimateScale;
   saving?: boolean;
+  /** Returns to the story detail; also what the back arrow calls. */
   onClose: () => void;
-  onCreate: (body: ApiCreateTaskBody) => void;
+  onCreate?: (body: ApiCreateTaskBody) => void;
+  onSave?: (body: ApiUpdateTaskBody) => void;
 }
 
 /**
- * Create a task inside a story. Deliberately has no route or board-level entry
- * point: a task without a parent story has nowhere to live, so the only way in
- * is the story detail's "Add task".
+ * Create or edit a task inside a story. It has no route and one import site
+ * (StoryModal), so a task can never exist without a parent story.
  *
- * Points are *suggested* against what the story has left unassigned rather than
- * capped — story estimates are a forecast, and a team that needs 5 more points
- * of work than they guessed should be able to say so.
+ * Points are capped at what the parent story has left (maintainer 2026-08-29):
+ * the story estimate is a budget in both directions — a story cannot drop below
+ * what its tasks claim, and a task cannot claim more than the story has.
  */
 export default function TaskEditorModal({
-  story, members, scale, saving = false, onClose, onCreate,
+  story, task = null, members, scale, saving = false, onClose, onCreate, onSave,
 }: Props) {
-  const [title, setTitle] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [points, setPoints] = useState<number | undefined>();
-  const [estimate, setEstimate] = useState('');
-  const [assignee, setAssignee] = useState('');
+  const editing = task != null;
+  const [title, setTitle] = useState(task?.title ?? '');
+  const [description, setDescription] = useState(task?.description_md ?? '');
+  const [tags, setTags] = useState<string[]>(task?.tags ?? []);
+  const [points, setPoints] = useState<number | undefined>(task?.points ?? undefined);
+  const [estimate, setEstimate] = useState(task?.time_estimate ?? '');
+  const [assignee, setAssignee] = useState(task?.assignee_id ?? '');
   const titleRef = useRef<HTMLInputElement>(null);
 
-  const remaining = remainingStoryPoints(story);
+  // Budget left for this task: siblings count against the story, but the task's
+  // own current points are its to keep when re-pointing.
+  const siblingPoints = assignedTaskPoints(story) - (task?.points ?? 0);
+  const ceiling = story.points == null ? null : Math.max(0, story.points - siblingPoints);
 
   useEffect(() => {
     const onEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -51,8 +62,22 @@ export default function TaskEditorModal({
   const submit = () => {
     const trimmed = title.trim();
     if (!trimmed || saving) return;
-    onCreate({
+    if (editing) {
+      // Edits send the full field set: clearing a description or unassigning
+      // must persist, which an omit-when-empty body could never express.
+      onSave?.({
+        title: trimmed,
+        description_md: description.trim() || undefined,
+        tags,
+        points,
+        time_estimate: estimate.trim() || undefined,
+        assignee_id: assignee || undefined,
+      });
+      return;
+    }
+    onCreate?.({
       title: trimmed,
+      ...(description.trim() ? { description_md: description.trim() } : {}),
       ...(tags.length ? { tags } : {}),
       ...(points != null ? { points } : {}),
       ...(estimate.trim() ? { time_estimate: estimate.trim() } : {}),
@@ -72,8 +97,16 @@ export default function TaskEditorModal({
         <button className="task-editor__close" onClick={onClose} aria-label="Close">
           <X size={20} />
         </button>
+
+        {/* Back to the story this task belongs to — also the parent reference. */}
+        <button type="button" className="task-editor__back" onClick={onClose}>
+          <ArrowLeft size={13} aria-hidden="true" />
+          <span className="task-editor__back-key">{story.key}</span>
+          <span className="task-editor__back-title">{story.title}</span>
+        </button>
+
         <h2 className="task-editor__title" id="task-editor-title">
-          New task in <span className="task-editor__story-key">{story.key}</span>
+          {editing ? `Edit ${task.key}` : `New task in ${story.key}`}
         </h2>
 
         <div className="task-editor__field">
@@ -91,7 +124,22 @@ export default function TaskEditorModal({
         </div>
 
         <div className="task-editor__field">
-          <span className="task-editor__label" id="task-editor-tags-label">Tags</span>
+          <label className="task-editor__label" htmlFor="task-editor-description">Description</label>
+          <textarea
+            id="task-editor-description"
+            aria-describedby="task-editor-description-hint"
+            rows={3}
+            value={description}
+            placeholder="What does done look like?"
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <span className="task-editor__hint" id="task-editor-description-hint">
+            **bold** · `code` · - lists
+          </span>
+        </div>
+
+        <div className="task-editor__field">
+          <span className="task-editor__label" id="task-editor-tags-label">Labels</span>
           <div className="task-editor__tags" role="group" aria-labelledby="task-editor-tags-label">
             {TASK_TAGS.map((tag) => {
               const on = tags.includes(tag);
@@ -112,33 +160,20 @@ export default function TaskEditorModal({
 
         <div className="task-editor__field">
           <span className="task-editor__label" id="task-editor-points-label">Points</span>
-          <div className="task-editor__points" role="radiogroup" aria-labelledby="task-editor-points-label">
-            {ESTIMATE_SCALES[scale].map((v) => {
-              // Over the story's remaining budget: still offered, just quieter.
-              const over = remaining != null && v > remaining;
-              return (
-                <button
-                  key={v}
-                  type="button"
-                  role="radio"
-                  aria-checked={points === v}
-                  className={[
-                    'task-editor__point',
-                    points === v ? 'task-editor__point--on' : '',
-                    over ? 'task-editor__point--over' : '',
-                  ].filter(Boolean).join(' ')}
-                  onClick={() => setPoints(v)}
-                >
-                  {v}
-                </button>
-              );
-            })}
-          </div>
-          {remaining != null && (
+          <PointPicker
+            scale={scale}
+            value={points}
+            onChange={setPoints}
+            disabledAbove={ceiling}
+            disabledReason={ceiling != null
+              ? `${story.key} has ${ceiling} pts left — raise the story's points to go higher`
+              : undefined}
+          />
+          {ceiling != null && (
             <span className="task-editor__hint">
-              {remaining > 0
-                ? `${remaining} of ${story.points} pts still unassigned in ${story.key}`
-                : `${story.key}'s ${story.points} pts are fully assigned — anything more grows the story`}
+              {ceiling > 0
+                ? `${ceiling} of ${story.points} pts available in ${story.key}`
+                : `${story.key}'s ${story.points} pts are fully assigned — raise the story to add more`}
             </span>
           )}
         </div>
@@ -177,7 +212,7 @@ export default function TaskEditorModal({
             onClick={submit}
             disabled={!title.trim() || saving}
           >
-            {saving ? 'Adding…' : 'Add task'}
+            {saving ? 'Saving…' : editing ? 'Save task' : 'Add task'}
           </button>
         </footer>
       </div>

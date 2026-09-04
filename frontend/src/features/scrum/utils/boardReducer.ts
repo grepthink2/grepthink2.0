@@ -61,6 +61,29 @@ export function rollbackMove(stories: ApiScrumStory[], snapshot: ApiScrumTask): 
   return mapTask(stories, snapshot.id, () => snapshot);
 }
 
+/** Merge fields into one story, leaving its tasks and every sibling untouched. */
+export function applyStoryPatch(
+  stories: ApiScrumStory[],
+  storyId: string,
+  patch: Partial<ApiScrumStory>,
+): ApiScrumStory[] {
+  return stories.map((s) => (s.id === storyId ? { ...s, ...patch } : s));
+}
+
+/** Merge fields into one task (F16: field edits apply locally before the PATCH). */
+export function applyTaskPatch(
+  stories: ApiScrumStory[],
+  taskId: string,
+  patch: Partial<ApiScrumTask>,
+): ApiScrumStory[] {
+  return mapTask(stories, taskId, (t) => ({ ...t, ...patch }));
+}
+
+/** Find a story by id across the sprint and backlog lists. */
+export function findStory(stories: ApiScrumStory[], storyId: string): ApiScrumStory | null {
+  return stories.find((s) => s.id === storyId) ?? null;
+}
+
 /** Patch cached PR states from the throttled batch refresh ({task_id: state}). */
 export function applyPrStates(
   stories: ApiScrumStory[],
