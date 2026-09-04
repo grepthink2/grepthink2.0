@@ -70,7 +70,7 @@ export default function ScrumBoardPage() {
     board, loading, error, notice, clearNotice, canWrite,
     selectSprint, moveTask, createStory, updateStory, createTask, updateTask, deleteTask,
     updateSettings, refresh,
-  } = useScrumBoard(projectId, viewerName);
+  } = useScrumBoard(projectId, viewerName, user?.id);
   const { toasts, push, dismiss } = useToasts();
 
   const view = parseView(searchParams.get('view'));

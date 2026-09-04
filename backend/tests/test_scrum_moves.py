@@ -32,3 +32,30 @@ def test_move_same_status_is_noop(mock_client, _w):
     out = move_task(task_id="t1", user_id=UID, to_status="todo")
     client.table.return_value.insert.assert_not_called()
     assert out["move"] is None
+
+
+@patch("app.scrum.controller._snapshot_burnup_safe")
+@patch("app.scrum.controller._require_writer")
+@patch("app.scrum.controller._client")
+def test_move_returns_mover_display_name(mock_client, _w, _snap):
+    """The board list resolves moved_by_name from a bulk profile fetch; this
+    single-row response must resolve its own, or the client reconciles its
+    optimistic audit line down to "Unknown"."""
+    from app.scrum.controller import move_task
+    client = MagicMock()
+    mock_client.return_value = client
+    tables = {}
+
+    def table(name):
+        tables.setdefault(name, MagicMock())
+        return tables[name]
+
+    client.table.side_effect = table
+    table("tasks").select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(data=dict(TASK))
+    table("task_moves").insert.return_value.execute.return_value = MagicMock(
+        data=[{"id": "mv1", "from_status": "todo", "to_status": "done", "moved_at": "2026-08-12T01:00:00Z"}])
+    table("profiles").select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
+        data={"id": UID, "first_name": "QA", "last_name": "Student", "email": "qa.student@grepthink.dev"})
+
+    out = move_task(task_id="t1", user_id=UID, to_status="done")
+    assert out["task"]["moved_by_name"] == "QA Student"

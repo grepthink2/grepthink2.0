@@ -47,13 +47,23 @@ export function applyOptimisticMove(
   }));
 }
 
-/** Reconcile with the server's task row (authoritative moved_at / moved_by_name). */
+/**
+ * Reconcile with the server's task row (authoritative moved_at / moved_by_name).
+ *
+ * The name is the one field the server may know less about than we do: a
+ * response without `moved_by_name` (an older backend, a no-op move) would
+ * otherwise blank the name the optimistic write just put on screen and the
+ * card would flip to "Unknown" a beat after the drop. Keep what we had.
+ */
 export function confirmMove(
   stories: ApiScrumStory[],
   taskId: string,
   serverTask: ApiScrumTask,
 ): ApiScrumStory[] {
-  return mapTask(stories, taskId, () => serverTask);
+  return mapTask(stories, taskId, (prev) => ({
+    ...serverTask,
+    moved_by_name: serverTask.moved_by_name ?? prev.moved_by_name,
+  }));
 }
 
 /** Undo a failed move by restoring the pre-move snapshot. */
