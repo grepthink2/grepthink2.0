@@ -48,7 +48,6 @@ frontend/src/
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
 
 supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
-deploy/               # VM systemd unit + shared nginx; deploy.sh redeploys
 ```
 
 ## Architecture
