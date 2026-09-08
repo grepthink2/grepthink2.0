@@ -71,7 +71,7 @@ deploy/               # VM systemd unit + shared nginx; deploy.sh redeploys
 ## Run / test
 ```bash
 # Backend (Python 3.11 venv at backend/.venv)
-cd backend && .venv/bin/pip install -r requirements.txt
+cd backend && .venv/bin/pip install -r requirements-dev.txt   # runtime + test/lint tools
 .venv/bin/python -m pytest                 # conftest stubs SUPABASE_* env
 uvicorn app.main:app                        # serve (needs real SUPABASE_* env)
 
