@@ -1,5 +1,9 @@
 """
-FastAPI application initialization and configuration
+FastAPI application wiring: middleware, exception handlers, routers, lifespan.
+
+Business logic lives in ``app/<feature>/controller.py``; shared helpers in
+``app/core``; background work in ``app/jobs``. Nothing here should need to
+change when a feature changes.
 """
 
 import asyncio
@@ -19,7 +23,9 @@ from app.auth.url import router as auth_router
 from app.classes.url import router as classes_router
 from app.config import settings
 from app.contact.url import router as contact_router
+from app.core.errors import install_exception_handlers
 from app.health.url import router as health_router
+from app.jobs.pending_invites import run_forever as run_pending_invites
 from app.limiter import limiter
 from app.messages.url import router as messages_router
 from app.middleware import SecurityHeadersMiddleware
@@ -34,74 +40,9 @@ from app.tsr.url import router as tsr_router
 logger = logging.getLogger(__name__)
 
 
-async def _process_pending_invites() -> None:
-    """Poll pending_invites every 5 s and fire emails whose send_at has passed."""
-    from app.classes.controller import bulk_invite_students
-    from app.database.client import service_client, supabase
-    from app.utils.email import send_email, wrap_editor_html_for_email
-
-    while True:
-        await asyncio.sleep(5)
-        try:
-            import datetime
-
-            client = service_client if service_client else supabase
-            now_iso = datetime.datetime.now(datetime.UTC).isoformat()
-            rows = (
-                client.table("pending_invites")
-                .select(
-                    "id, class_id, instructor_id, emails, cc, bcc, custom_subject, custom_body, custom_body_html"
-                )
-                .lte("send_at", now_iso)
-                .eq("cancelled", False)
-                .eq("sent", False)
-                .execute()
-            )
-            for row in rows.data or []:
-                # Mark sent first to prevent double-delivery on crash
-                client.table("pending_invites").update({"sent": True}).eq("id", row["id"]).execute()
-                try:
-                    if row.get("custom_subject") and row.get("custom_body"):
-                        subject = row["custom_subject"]
-                        body_text = row["custom_body"]
-                        raw_html = row.get("custom_body_html")
-                        body_html = wrap_editor_html_for_email(raw_html) if raw_html else None
-                        cc_list = row.get("cc") or []
-                        bcc_list = row.get("bcc") or []
-                        for email in row["emails"]:
-                            try:
-                                await asyncio.to_thread(
-                                    send_email,
-                                    to=email,
-                                    subject=subject,
-                                    body_text=body_text,
-                                    body_html=body_html,
-                                    cc=cc_list,
-                                    bcc=bcc_list,
-                                )
-                            except Exception:
-                                logger.exception(
-                                    "pending_invite custom email failed: job=%s to=%s",
-                                    row["id"],
-                                    email,
-                                )
-                    else:
-                        await asyncio.to_thread(
-                            bulk_invite_students,
-                            row["class_id"],
-                            row["emails"],
-                            row["instructor_id"],
-                        )
-                    logger.info("pending_invite sent: job=%s", row["id"])
-                except Exception:
-                    logger.exception("pending_invite failed: job=%s", row["id"])
-        except Exception:
-            logger.exception("pending_invite poll error")
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(_process_pending_invites())
+    task = asyncio.create_task(run_pending_invites(settings.PENDING_INVITES_POLL_SECONDS))
     try:
         yield
     finally:
@@ -110,7 +51,6 @@ async def lifespan(app: FastAPI):
             await task
 
 
-# Initialize FastAPI app
 app = FastAPI(
     title="GrepThink 2.0 API",
     description="Backend API for GrepThink 2.0",
@@ -118,10 +58,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Errors: rate-limit responses from slowapi, and a fixed 500 body for anything
+# a route did not translate into an HTTPException (never leaks exception text).
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+install_exception_handlers(app)
 
-# Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -129,23 +71,24 @@ app.add_middleware(
     allow_methods=settings.CORS_METHODS,
     allow_headers=settings.CORS_HEADERS,
 )
-
-# Attach defensive security headers to every response.
+# Defensive security headers on every response.
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIMiddleware)
 
-# Include routers
-app.include_router(health_router)
-app.include_router(auth_router)
-app.include_router(classes_router)
-app.include_router(projects_router)
-app.include_router(assignments_router)
-app.include_router(tsr_router)
-app.include_router(staffing_router)
-app.include_router(messages_router)
-app.include_router(profiles_router)
-app.include_router(contact_router)
-app.include_router(notifications_router)
-app.include_router(tas_router)
-app.include_router(stats_router)
-app.include_router(attendance_router)
+for router in (
+    health_router,
+    auth_router,
+    classes_router,
+    projects_router,
+    assignments_router,
+    tsr_router,
+    staffing_router,
+    messages_router,
+    profiles_router,
+    contact_router,
+    notifications_router,
+    tas_router,
+    stats_router,
+    attendance_router,
+):
+    app.include_router(router)

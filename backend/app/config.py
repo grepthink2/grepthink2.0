@@ -96,6 +96,9 @@ class Settings:
     SMTP_PASSWORD: str = os.environ.get("SMTP_PASSWORD", "")
     SMTP_FROM: str = os.environ.get("SMTP_FROM", "")
 
+    # Scheduled-invite poller interval (app.jobs.pending_invites), seconds.
+    PENDING_INVITES_POLL_SECONDS: float = float(os.environ.get("PENDING_INVITES_POLL_SECONDS", 5))
+
     # Public frontend URL for links in transactional emails (signup, class join).
     # Falls back to the first CORS origin when unset.
     FRONTEND_URL: str = (os.environ.get("FRONTEND_URL") or "").strip().rstrip("/")
