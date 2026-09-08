@@ -10,7 +10,9 @@ Two bugs lived here on the feat/messages branch:
 These tests mock the Supabase client chain and assert the corrected
 query shape so the bugs can't silently regress.
 """
+
 from __future__ import annotations
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -60,8 +62,12 @@ def test_membership_precheck_is_scoped_to_project_id(svc, _is_inst):
     num_update = _chain([{}])
 
     client = _client_with_chains(
-        project_lookup, membership_check, insert_member,
-        scrum_master_check, num_lookup, num_update,
+        project_lookup,
+        membership_check,
+        insert_member,
+        scrum_master_check,
+        num_lookup,
+        num_update,
     )
     svc.table = client.table
 
@@ -117,7 +123,10 @@ def test_owner_demotion_excludes_target_not_requester(svc, _is_inst):
     demote_others = _chain([{}])
 
     client = _client_with_chains(
-        project_lookup, membership_check, role_update, demote_others,
+        project_lookup,
+        membership_check,
+        role_update,
+        demote_others,
     )
     svc.table = client.table
 

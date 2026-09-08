@@ -1,16 +1,19 @@
 """
 Assignment views — parameter handling and HTTP responses
 """
+
 from uuid import UUID
+
 from fastapi import Depends, Query
-from app.dependencies import require_user
+
+from app.assignments import controller
 from app.assignments.models import (
     CreateAssignmentRequest,
+    SubmitFeedbackRequest,
     UpdateAssignmentRequest,
     UpdateTSREntryRequest,
-    SubmitFeedbackRequest,
 )
-from app.assignments import controller
+from app.dependencies import require_user
 
 
 def create_assignment(

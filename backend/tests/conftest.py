@@ -6,6 +6,7 @@ real Supabase project — every test either uses a hand-signed HS256 token
 (so we can verify the JWT codepath without network) or mocks the
 ``app.auth.controller.get_user_role`` lookup.
 """
+
 from __future__ import annotations
 
 import os
@@ -22,7 +23,6 @@ import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app.main import app  # noqa: E402
-
 
 TEST_SECRET = os.environ["SUPABASE_JWT_SECRET"]
 

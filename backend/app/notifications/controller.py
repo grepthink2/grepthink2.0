@@ -1,9 +1,9 @@
 """Business logic for in-app notifications."""
+
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from fastapi import HTTPException
 
@@ -12,21 +12,23 @@ from app.utils.profiles import profile_display_name
 
 logger = logging.getLogger(__name__)
 
-NOTIFICATION_TYPES = frozenset({
-    "join_request",
-    "join_rejected",
-    "message",
-    "project_created",
-    "complete_profile",
-    "upload_roster",
-    "member_removed",
-})
+NOTIFICATION_TYPES = frozenset(
+    {
+        "join_request",
+        "join_rejected",
+        "message",
+        "project_created",
+        "complete_profile",
+        "upload_roster",
+        "member_removed",
+    }
+)
 
 ELEVATED_PROJECT_ROLES = ("owner", "product owner", "admin")
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _client():
@@ -41,24 +43,28 @@ def _insert_notification(
     type: str,
     title: str,
     body: str,
-    entity_type: Optional[str] = None,
-    entity_id: Optional[str] = None,
+    entity_type: str | None = None,
+    entity_id: str | None = None,
 ) -> None:
     if type not in NOTIFICATION_TYPES:
         logger.warning("Unknown notification type %r — skipping", type)
         return
     try:
-        _client().table("notifications").insert({
-            "user_id": user_id,
-            "type": type,
-            "title": title,
-            "body": body,
-            "entity_type": entity_type,
-            "entity_id": entity_id,
-        }).execute()
+        _client().table("notifications").insert(
+            {
+                "user_id": user_id,
+                "type": type,
+                "title": title,
+                "body": body,
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+            }
+        ).execute()
     except Exception:
         logger.exception(
-            "Failed to insert notification | user_id=%s type=%s", user_id, type,
+            "Failed to insert notification | user_id=%s type=%s",
+            user_id,
+            type,
         )
 
 
@@ -68,8 +74,8 @@ def _upsert_unread_notification(
     type: str,
     title: str,
     body: str,
-    entity_type: Optional[str],
-    entity_id: Optional[str],
+    entity_type: str | None,
+    entity_id: str | None,
 ) -> None:
     """Update an existing unread notification for the same entity, or insert."""
     try:
@@ -94,11 +100,13 @@ def _upsert_unread_notification(
             # when the content actually changed.
             if row.get("title") == title and row.get("body") == body:
                 return
-            client.table("notifications").update({
-                "title": title,
-                "body": body,
-                "created_at": _now_iso(),
-            }).eq("id", row["id"]).execute()
+            client.table("notifications").update(
+                {
+                    "title": title,
+                    "body": body,
+                    "created_at": _now_iso(),
+                }
+            ).eq("id", row["id"]).execute()
             return
 
         _insert_notification(
@@ -113,13 +121,16 @@ def _upsert_unread_notification(
         raise
     except Exception:
         logger.exception(
-            "Failed to upsert notification | user_id=%s type=%s", user_id, type,
+            "Failed to upsert notification | user_id=%s type=%s",
+            user_id,
+            type,
         )
 
 
 def _get_profile(user_id: str) -> dict:
     res = (
-        _client().table("profiles")
+        _client()
+        .table("profiles")
         .select("id, email, role, first_name, last_name, edu_email")
         .eq("id", user_id)
         .maybe_single()
@@ -138,9 +149,7 @@ def _profile_needs_completion(profile: dict) -> bool:
     role = profile.get("role")
     email = (profile.get("email") or "").strip().lower()
     edu_email = (profile.get("edu_email") or "").strip()
-    if role == "student" and not email.endswith(".edu") and not edu_email:
-        return True
-    return False
+    return role == "student" and not email.endswith(".edu") and not edu_email
 
 
 _PROFILE_NOTIFICATION_COOLDOWN_SECONDS = 300  # 5 minutes
@@ -194,20 +203,20 @@ def ensure_profile_completion_notification(user_id: str) -> None:
             if read_at_raw:
                 # Dismissed — only re-surface after the cooldown has elapsed.
                 try:
-                    dismissed_at = datetime.fromisoformat(
-                        read_at_raw.replace("Z", "+00:00")
-                    )
-                    elapsed = (datetime.now(timezone.utc) - dismissed_at).total_seconds()
+                    dismissed_at = datetime.fromisoformat(read_at_raw.replace("Z", "+00:00"))
+                    elapsed = (datetime.now(UTC) - dismissed_at).total_seconds()
                 except (ValueError, TypeError):
                     elapsed = _PROFILE_NOTIFICATION_COOLDOWN_SECONDS  # treat as expired
 
                 if elapsed >= _PROFILE_NOTIFICATION_COOLDOWN_SECONDS:
-                    client.table("notifications").update({
-                        "title": title,
-                        "body": body,
-                        "read_at": None,
-                        "created_at": _now_iso(),
-                    }).eq("id", row["id"]).execute()
+                    client.table("notifications").update(
+                        {
+                            "title": title,
+                            "body": body,
+                            "read_at": None,
+                            "created_at": _now_iso(),
+                        }
+                    ).eq("id", row["id"]).execute()
                 # else: still in cooldown; leave it dismissed
             else:
                 # Already unread — refresh only when the content actually
@@ -215,10 +224,12 @@ def ensure_profile_completion_notification(user_id: str) -> None:
                 # this runs on every GET that would loop the client's refetch
                 # endlessly.
                 if row.get("title") != title or row.get("body") != body:
-                    client.table("notifications").update({
-                        "title": title,
-                        "body": body,
-                    }).eq("id", row["id"]).execute()
+                    client.table("notifications").update(
+                        {
+                            "title": title,
+                            "body": body,
+                        }
+                    ).eq("id", row["id"]).execute()
         else:
             _insert_notification(
                 user_id=user_id,
@@ -230,7 +241,8 @@ def ensure_profile_completion_notification(user_id: str) -> None:
             )
     except Exception:
         logger.exception(
-            "ensure_profile_completion_notification failed | user_id=%s", user_id,
+            "ensure_profile_completion_notification failed | user_id=%s",
+            user_id,
         )
 
 
@@ -238,22 +250,18 @@ def dismiss_profile_completion_notification(user_id: str) -> None:
     """Profile is now complete — delete all complete_profile notifications for this user."""
     try:
         _client().table("notifications").delete().eq(
-            "user_id", user_id,
+            "user_id",
+            user_id,
         ).eq("type", "complete_profile").execute()
     except Exception:
         logger.exception(
-            "Failed to dismiss profile notification | user_id=%s", user_id,
+            "Failed to dismiss profile notification | user_id=%s",
+            user_id,
         )
 
 
 def _class_has_roster(client, class_id: str) -> bool:
-    res = (
-        client.table("roster_entries")
-        .select("id")
-        .eq("course_id", class_id)
-        .limit(1)
-        .execute()
-    )
+    res = client.table("roster_entries").select("id").eq("course_id", class_id).limit(1).execute()
     return bool(res.data)
 
 
@@ -264,12 +272,7 @@ def ensure_roster_upload_notifications(user_id: str) -> None:
         return
 
     client = _client()
-    classes_res = (
-        client.table("classes")
-        .select("id, name")
-        .eq("created_by", user_id)
-        .execute()
-    )
+    classes_res = client.table("classes").select("id, name").eq("created_by", user_id).execute()
     for cls in classes_res.data or []:
         class_id = cls["id"]
         class_name = (cls.get("name") or "").strip() or "your class"
@@ -292,15 +295,19 @@ def ensure_roster_upload_notifications(user_id: str) -> None:
 def dismiss_roster_upload_notification(user_id: str, class_id: str) -> None:
     """Remove roster-upload reminder once a roster exists for the class."""
     try:
-        _client().table("notifications").update({
-            "read_at": _now_iso(),
-        }).eq("user_id", user_id).eq("type", "upload_roster").eq(
-            "entity_id", class_id,
+        _client().table("notifications").update(
+            {
+                "read_at": _now_iso(),
+            }
+        ).eq("user_id", user_id).eq("type", "upload_roster").eq(
+            "entity_id",
+            class_id,
         ).is_("read_at", "null").execute()
     except Exception:
         logger.exception(
             "Failed to dismiss roster notification | user_id=%s class_id=%s",
-            user_id, class_id,
+            user_id,
+            class_id,
         )
 
 
@@ -310,7 +317,7 @@ def notify_join_request(
     project_name: str,
     request_id: str,
     requester_id: str,
-    message: Optional[str] = None,
+    message: str | None = None,
 ) -> None:
     """Notify project owners/admins when someone requests to join."""
     try:
@@ -349,7 +356,8 @@ def notify_join_request(
     except Exception:
         logger.exception(
             "notify_join_request failed | project_id=%s request_id=%s",
-            project_id, request_id,
+            project_id,
+            request_id,
         )
 
 
@@ -392,7 +400,7 @@ def notify_project_created_by_student(
         user_id=instructor_id,
         type="project_created",
         title="New student project",
-        body=f"{student_name} created project \"{project_name}\".",
+        body=f'{student_name} created project "{project_name}".',
         entity_type="project",
         entity_id=project_id,
     )
@@ -417,7 +425,8 @@ def notify_join_request_rejected(
     except Exception:
         logger.exception(
             "notify_join_request_rejected failed | project_id=%s requester_id=%s",
-            project_id, requester_id,
+            project_id,
+            requester_id,
         )
 
 
@@ -446,18 +455,14 @@ def notify_team_member_dropped_from_roster(
             ]
         else:
             recipient_ids = [
-                str(uid) for uid in recipient_ids
-                if uid and str(uid) != str(removed_user_id)
+                str(uid) for uid in recipient_ids if uid and str(uid) != str(removed_user_id)
             ]
 
         if not recipient_ids:
             return
 
         title = "Team member removed"
-        body = (
-            f"{removed_user_name} has dropped the course and was removed from "
-            f"\"{project_name}\"."
-        )
+        body = f'{removed_user_name} has dropped the course and was removed from "{project_name}".'
         for user_id in recipient_ids:
             _insert_notification(
                 user_id=user_id,
@@ -470,7 +475,8 @@ def notify_team_member_dropped_from_roster(
     except Exception:
         logger.exception(
             "notify_team_member_dropped_from_roster failed | project_id=%s removed_user=%s",
-            project_id, removed_user_id,
+            project_id,
+            removed_user_id,
         )
 
 
@@ -496,8 +502,10 @@ def list_notifications(user_id: str, *, limit: int = 50) -> dict:
         .is_("read_at", "null")
         .execute()
     )
-    unread = unread_res.count if unread_res.count is not None else sum(
-        1 for r in rows if not r.get("read_at")
+    unread = (
+        unread_res.count
+        if unread_res.count is not None
+        else sum(1 for r in rows if not r.get("read_at"))
     )
 
     return {"notifications": rows, "unread_count": unread}
@@ -505,7 +513,8 @@ def list_notifications(user_id: str, *, limit: int = 50) -> dict:
 
 def mark_notification_read(notification_id: str, user_id: str) -> None:
     res = (
-        _client().table("notifications")
+        _client()
+        .table("notifications")
         .select("id")
         .eq("id", notification_id)
         .eq("user_id", user_id)
@@ -515,27 +524,35 @@ def mark_notification_read(notification_id: str, user_id: str) -> None:
     if not res.data:
         raise HTTPException(status_code=404, detail="Notification not found")
 
-    _client().table("notifications").update({
-        "read_at": _now_iso(),
-    }).eq("id", notification_id).eq("user_id", user_id).execute()
+    _client().table("notifications").update(
+        {
+            "read_at": _now_iso(),
+        }
+    ).eq("id", notification_id).eq("user_id", user_id).execute()
 
 
 def mark_all_read(user_id: str) -> None:
-    _client().table("notifications").update({
-        "read_at": _now_iso(),
-    }).eq("user_id", user_id).is_("read_at", "null").execute()
+    _client().table("notifications").update(
+        {
+            "read_at": _now_iso(),
+        }
+    ).eq("user_id", user_id).is_("read_at", "null").execute()
 
 
 def dismiss_message_notifications(user_id: str, conversation_id: str) -> None:
     """Mark message notifications for a conversation as read."""
     try:
-        _client().table("notifications").update({
-            "read_at": _now_iso(),
-        }).eq("user_id", user_id).eq("type", "message").eq(
-            "entity_id", conversation_id,
+        _client().table("notifications").update(
+            {
+                "read_at": _now_iso(),
+            }
+        ).eq("user_id", user_id).eq("type", "message").eq(
+            "entity_id",
+            conversation_id,
         ).is_("read_at", "null").execute()
     except Exception:
         logger.exception(
             "Failed to dismiss message notifications | user_id=%s conv=%s",
-            user_id, conversation_id,
+            user_id,
+            conversation_id,
         )

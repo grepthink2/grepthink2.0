@@ -4,10 +4,12 @@ Permissions, conversation creation, message insertion, inbox + thread
 reads, and read marks. See docs/superpowers/specs/2026-04-23-messages-design.md
 for the full design.
 """
+
 from __future__ import annotations
 
 import logging
 import re
+from datetime import UTC
 
 from fastapi import HTTPException
 
@@ -30,12 +32,7 @@ def get_profile_roles(user_ids: list[str]) -> dict[str, str | None]:
     """Return {user_id: role} for the given ids. Missing rows → None."""
     if not user_ids:
         return {}
-    res = (
-        service_client.table("profiles")
-        .select("id, role")
-        .in_("id", user_ids)
-        .execute()
-    )
+    res = service_client.table("profiles").select("id, role").in_("id", user_ids).execute()
     found = {row["id"]: row["role"] for row in (res.data or [])}
     return {uid: found.get(uid) for uid in user_ids}
 
@@ -43,13 +40,9 @@ def get_profile_roles(user_ids: list[str]) -> dict[str, str | None]:
 def has_shared_class(a_id: str, b_id: str) -> bool:
     """Two users share a class iff each has a relationship (instructor or
     enrolled student) to at least one common class id."""
+
     def _user_classes(uid: str) -> set[str]:
-        owned = (
-            service_client.table("classes")
-            .select("id")
-            .eq("created_by", uid)
-            .execute()
-        )
+        owned = service_client.table("classes").select("id").eq("created_by", uid).execute()
         enrolled = (
             service_client.table("class_enrollments")
             .select("class_id")
@@ -96,9 +89,7 @@ def _get_or_create_conversation(a_id: str, b_id: str) -> str:
     if existing is not None and existing.data:
         return existing.data["id"]
     created = (
-        service_client.table("conversations")
-        .insert({"user_a": user_a, "user_b": user_b})
-        .execute()
+        service_client.table("conversations").insert({"user_a": user_a, "user_b": user_b}).execute()
     )
     if not created.data:
         # Lost a create race — refetch.
@@ -120,10 +111,15 @@ def _get_or_create_conversation(a_id: str, b_id: str) -> str:
 
 
 def notify_recipients(
-    *, recipient_ids: list[str], sender_id: str, conversation_id: str, body: str,
+    *,
+    recipient_ids: list[str],
+    sender_id: str,
+    conversation_id: str,
+    body: str,
 ) -> None:
     """Fan out the new-message notification to every other participant."""
     from app.notifications.controller import notify_new_message
+
     for recipient_id in recipient_ids:
         try:
             notify_new_message(
@@ -137,7 +133,8 @@ def notify_recipients(
             # never let one recipient's failure starve the rest.
             logger.exception(
                 "notify_recipients: failed | recipient=%s conv=%s",
-                recipient_id, conversation_id,
+                recipient_id,
+                conversation_id,
             )
 
 
@@ -179,7 +176,8 @@ def send_message(
             if not can_message(sender_id, other_id):
                 logger.info(
                     "send_message: blocked | sender=%s conv=%s reason=dm-ineligible",
-                    sender_id, conversation_id,
+                    sender_id,
+                    conversation_id,
                 )
                 raise HTTPException(status_code=403, detail="Cannot message this user")
         recipient_ids = [uid for uid in participant_ids if uid != sender_id]
@@ -189,7 +187,8 @@ def send_message(
         if not can_message(sender_id, to_user_id):
             logger.info(
                 "send_message: blocked | sender=%s target=%s reason=ineligible",
-                sender_id, to_user_id,
+                sender_id,
+                to_user_id,
             )
             raise HTTPException(status_code=403, detail="Cannot message this user")
         conversation_id = _get_or_create_conversation(sender_id, to_user_id)
@@ -197,25 +196,32 @@ def send_message(
 
     inserted = (
         service_client.table("messages")
-        .insert({
-            "conversation_id": conversation_id,
-            "sender_id": sender_id,
-            "body": body,
-        })
+        .insert(
+            {
+                "conversation_id": conversation_id,
+                "sender_id": sender_id,
+                "body": body,
+            }
+        )
         .execute()
     )
     message_row = inserted.data[0]
 
     # Sender is implicitly "read" through their own latest send.
-    service_client.table("conversation_reads").upsert({
-        "conversation_id": conversation_id,
-        "user_id": sender_id,
-        "last_read_at": message_row["created_at"],
-    }, on_conflict="conversation_id,user_id").execute()
+    service_client.table("conversation_reads").upsert(
+        {
+            "conversation_id": conversation_id,
+            "user_id": sender_id,
+            "last_read_at": message_row["created_at"],
+        },
+        on_conflict="conversation_id,user_id",
+    ).execute()
 
     logger.info(
         "send_message: inserted | sender=%s conv=%s msg=%s",
-        sender_id, conversation_id, message_row["id"],
+        sender_id,
+        conversation_id,
+        message_row["id"],
     )
 
     notify_recipients(
@@ -265,7 +271,8 @@ def _require_participant(conversation_id: str, caller_id: str) -> dict:
     if caller_id not in _participant_ids(conversation_id):
         logger.warning(
             "messages: participant check failed | caller=%s conv=%s",
-            caller_id, conversation_id,
+            caller_id,
+            conversation_id,
         )
         raise HTTPException(status_code=403, detail="Not a participant")
     return conv
@@ -298,8 +305,7 @@ def list_messages(
                 raise ValueError
         except ValueError:
             raise HTTPException(status_code=400, detail="Malformed cursor")
-        if not (_CURSOR_TS_RE.fullmatch(before_created_at)
-                and _CURSOR_ID_RE.fullmatch(before_id)):
+        if not (_CURSOR_TS_RE.fullmatch(before_created_at) and _CURSOR_ID_RE.fullmatch(before_id)):
             raise HTTPException(status_code=400, detail="Malformed cursor")
 
     query = (
@@ -312,13 +318,7 @@ def list_messages(
             f"created_at.lt.{before_created_at},"
             f"and(created_at.eq.{before_created_at},id.lt.{before_id})"
         )
-    res = (
-        query
-        .order("created_at", desc=True)
-        .order("id", desc=True)
-        .limit(limit)
-        .execute()
-    )
+    res = query.order("created_at", desc=True).order("id", desc=True).limit(limit).execute()
     messages = res.data or []
     next_cursor = None
     if len(messages) == limit:
@@ -330,14 +330,19 @@ def list_messages(
 def mark_read(*, conversation_id: str, caller_id: str) -> None:
     """Upsert caller's read marker to now()."""
     _require_participant(conversation_id, caller_id)
-    from datetime import datetime, timezone
-    service_client.table("conversation_reads").upsert({
-        "conversation_id": conversation_id,
-        "user_id": caller_id,
-        "last_read_at": datetime.now(timezone.utc).isoformat(),
-    }, on_conflict="conversation_id,user_id").execute()
+    from datetime import datetime
+
+    service_client.table("conversation_reads").upsert(
+        {
+            "conversation_id": conversation_id,
+            "user_id": caller_id,
+            "last_read_at": datetime.now(UTC).isoformat(),
+        },
+        on_conflict="conversation_id,user_id",
+    ).execute()
 
     from app.notifications.controller import dismiss_message_notifications
+
     dismiss_message_notifications(caller_id, conversation_id)
 
 
@@ -348,15 +353,20 @@ def delete_conversation_for_user(*, conversation_id: str, caller_id: str) -> Non
     if the other party sends a new message after this delete.
     """
     _require_participant(conversation_id, caller_id)
-    from datetime import datetime, timezone
-    service_client.table("conversation_deletes").upsert({
-        "conversation_id": conversation_id,
-        "user_id": caller_id,
-        "deleted_at": datetime.now(timezone.utc).isoformat(),
-    }, on_conflict="conversation_id,user_id").execute()
+    from datetime import datetime
+
+    service_client.table("conversation_deletes").upsert(
+        {
+            "conversation_id": conversation_id,
+            "user_id": caller_id,
+            "deleted_at": datetime.now(UTC).isoformat(),
+        },
+        on_conflict="conversation_id,user_id",
+    ).execute()
     logger.info(
         "delete_conversation: caller=%s conv=%s",
-        caller_id, conversation_id,
+        caller_id,
+        conversation_id,
     )
 
 
@@ -397,19 +407,21 @@ def list_inbox(*, caller_id: str) -> list[dict]:
                     "image_url": o.get("image_url"),
                 }
                 other_last_read = o.get("last_read_at")
-        out.append({
-            "id": r["id"],
-            "type": r["type"],
-            "project_id": r.get("project_id"),
-            "team_name": r.get("team_name"),
-            "participants": parts,
-            "other_user": other,
-            "last_message": r.get("last_message"),
-            "unread_count": r.get("unread_count") or 0,
-            "other_user_last_read_at": other_last_read,
-            "can_send": bool(r.get("can_send")),
-            "last_message_at": r.get("last_message_at"),
-        })
+        out.append(
+            {
+                "id": r["id"],
+                "type": r["type"],
+                "project_id": r.get("project_id"),
+                "team_name": r.get("team_name"),
+                "participants": parts,
+                "other_user": other,
+                "last_message": r.get("last_message"),
+                "unread_count": r.get("unread_count") or 0,
+                "other_user_last_read_at": other_last_read,
+                "can_send": bool(r.get("can_send")),
+                "last_message_at": r.get("last_message_at"),
+            }
+        )
     return out
 
 
@@ -436,8 +448,7 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
         .execute()
     )
     class_ids = sorted(
-        {r["id"] for r in (owned.data or [])}
-        | {r["class_id"] for r in (enrolled.data or [])}
+        {r["id"] for r in (owned.data or [])} | {r["class_id"] for r in (enrolled.data or [])}
     )
     if not class_ids:
         return []
@@ -449,10 +460,7 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
         .execute()
     )
     peers_owning = (
-        service_client.table("classes")
-        .select("id, created_by")
-        .in_("id", class_ids)
-        .execute()
+        service_client.table("classes").select("id, created_by").in_("id", class_ids).execute()
     )
     peer_ids = (
         {r["user_id"] for r in (peers_enrolled.data or [])}
@@ -489,14 +497,16 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
             haystack = f"{name or ''} {p.get('email') or ''}".lower()
             if needle not in haystack:
                 continue
-        out.append({
-            "id": uid,
-            "name": name,
-            "first_name": p.get("first_name"),
-            "last_name": p.get("last_name"),
-            "email": p.get("email"),
-            "image_url": p.get("image_url"),
-            "role": p.get("role"),
-        })
+        out.append(
+            {
+                "id": uid,
+                "name": name,
+                "first_name": p.get("first_name"),
+                "last_name": p.get("last_name"),
+                "email": p.get("email"),
+                "image_url": p.get("image_url"),
+                "role": p.get("role"),
+            }
+        )
     out.sort(key=lambda c: (c["name"] or c["email"] or "").lower())
     return out[:500]  # accepted cap: course-scale peers ≪ 500; no has_more contract (see plan B7)

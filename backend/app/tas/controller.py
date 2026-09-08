@@ -28,8 +28,9 @@ Who can call what:
       set per-team review time                 → class instructor.
     * final-review schedule (read)             → instructor or any class TA.
 """
+
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -49,12 +50,7 @@ def _client():
 
 def _require_class_instructor(client, user_id: str, class_id) -> dict:
     """Ensure ``user_id`` owns ``class_id``; return the class row."""
-    res = (
-        client.table("classes")
-        .select("id, created_by")
-        .eq("id", str(class_id))
-        .execute()
-    )
+    res = client.table("classes").select("id, created_by").eq("id", str(class_id)).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Class not found")
     if res.data[0].get("created_by") != user_id:
@@ -89,10 +85,7 @@ def get_my_enrollment_role(user_id: str, class_id: UUID) -> dict:
     try:
         client = _client()
         class_res = (
-            client.table("classes")
-            .select("id, created_by")
-            .eq("id", str(class_id))
-            .execute()
+            client.table("classes").select("id, created_by").eq("id", str(class_id)).execute()
         )
         if not class_res.data:
             raise HTTPException(status_code=404, detail="Class not found")
@@ -106,7 +99,8 @@ def get_my_enrollment_role(user_id: str, class_id: UUID) -> dict:
     except Exception:
         logger.exception(
             "Error fetching enrollment role | class_id=%s user_id=%s",
-            class_id, user_id,
+            class_id,
+            user_id,
         )
         raise HTTPException(status_code=500, detail="Failed to fetch role")
 
@@ -124,21 +118,21 @@ def promote_to_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> d
                 detail="User is not enrolled in this class",
             )
 
-        client.table("class_enrollments").update(
-            {"enrollment_role": ENROLLMENT_ROLE_TA}
-        ).eq("id", enrollment["id"]).execute()
+        client.table("class_enrollments").update({"enrollment_role": ENROLLMENT_ROLE_TA}).eq(
+            "id", enrollment["id"]
+        ).execute()
 
         logger.info(
             "Student promoted to TA | class_id=%s user_id=%s by=%s",
-            class_id, target_user_id, instructor_id,
+            class_id,
+            target_user_id,
+            instructor_id,
         )
         return {"message": "Student promoted to TA", "user_id": str(target_user_id)}
     except HTTPException:
         raise
     except Exception:
-        logger.exception(
-            "Error promoting TA | class_id=%s user_id=%s", class_id, target_user_id
-        )
+        logger.exception("Error promoting TA | class_id=%s user_id=%s", class_id, target_user_id)
         raise HTTPException(status_code=500, detail="Failed to promote TA")
 
 
@@ -155,31 +149,31 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
                 detail="User is not enrolled in this class",
             )
 
-        client.table("class_enrollments").update(
-            {"enrollment_role": ENROLLMENT_ROLE_STUDENT}
-        ).eq("id", enrollment["id"]).execute()
+        client.table("class_enrollments").update({"enrollment_role": ENROLLMENT_ROLE_STUDENT}).eq(
+            "id", enrollment["id"]
+        ).execute()
 
         # A demoted TA no longer oversees any project in this class: clear their
         # assigned-TA (meeting + TSR-review) ownership and drop any end-of-quarter
         # review claims they hold.
-        client.table("projects").update({"assigned_ta_id": None}).eq(
-            "class_id", str(class_id)
-        ).eq("assigned_ta_id", str(target_user_id)).execute()
-        client.table("project_review_tas").delete().eq(
-            "class_id", str(class_id)
-        ).eq("user_id", str(target_user_id)).execute()
+        client.table("projects").update({"assigned_ta_id": None}).eq("class_id", str(class_id)).eq(
+            "assigned_ta_id", str(target_user_id)
+        ).execute()
+        client.table("project_review_tas").delete().eq("class_id", str(class_id)).eq(
+            "user_id", str(target_user_id)
+        ).execute()
 
         logger.info(
             "TA demoted to student | class_id=%s user_id=%s by=%s",
-            class_id, target_user_id, instructor_id,
+            class_id,
+            target_user_id,
+            instructor_id,
         )
         return {"message": "TA demoted to student", "user_id": str(target_user_id)}
     except HTTPException:
         raise
     except Exception:
-        logger.exception(
-            "Error demoting TA | class_id=%s user_id=%s", class_id, target_user_id
-        )
+        logger.exception("Error demoting TA | class_id=%s user_id=%s", class_id, target_user_id)
         raise HTTPException(status_code=500, detail="Failed to demote TA")
 
 
@@ -199,7 +193,7 @@ def _ta_assignments_by_user(client, class_id, user_ids: list[str]) -> dict[str, 
         .execute()
     )
     out: dict[str, list[dict]] = {}
-    for r in (rows.data or []):
+    for r in rows.data or []:
         uid = r.get("assigned_ta_id")
         pid = r.get("id")
         if not uid or not pid:
@@ -227,12 +221,7 @@ def list_class_tas(instructor_id: str, class_id: UUID) -> list[dict]:
         if not ta_ids:
             return []
 
-        profiles = (
-            client.table("profiles")
-            .select(PROFILE_SELECT)
-            .in_("id", ta_ids)
-            .execute()
-        )
+        profiles = client.table("profiles").select(PROFILE_SELECT).in_("id", ta_ids).execute()
         profile_map = {p["id"]: p for p in (profiles.data or [])}
         assignments_map = _ta_assignments_by_user(client, class_id, ta_ids)
 
@@ -285,8 +274,10 @@ def list_project_tas(user_id: str, project_id: UUID) -> list[dict]:
         class_id = project["class_id"]
 
         # Access: class instructor or an enrolled member of the class.
-        if not _is_class_instructor(client, user_id, class_id) \
-                and get_enrollment_role(client, class_id, user_id) is None:
+        if (
+            not _is_class_instructor(client, user_id, class_id)
+            and get_enrollment_role(client, class_id, user_id) is None
+        ):
             raise HTTPException(status_code=403, detail="You do not have access to this class")
 
         assigned_ta_id = project.get("assigned_ta_id")
@@ -297,12 +288,14 @@ def list_project_tas(user_id: str, project_id: UUID) -> list[dict]:
             client.table("profiles").select(PROFILE_SELECT).eq("id", str(assigned_ta_id)).execute()
         )
         prof = (prof_res.data or [{}])[0]
-        return [{
-            "user_id": assigned_ta_id,
-            "name": profile_display_name(prof),
-            "email": (prof or {}).get("email"),
-            "assigned_at": None,
-        }]
+        return [
+            {
+                "user_id": assigned_ta_id,
+                "name": profile_display_name(prof),
+                "email": (prof or {}).get("email"),
+                "assigned_at": None,
+            }
+        ]
     except HTTPException:
         raise
     except Exception:
@@ -340,7 +333,8 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
     except Exception:
         logger.exception(
             "Error fetching TA review targets | class_id=%s user_id=%s",
-            class_id, user_id,
+            class_id,
+            user_id,
         )
         raise HTTPException(status_code=500, detail="Failed to fetch TA review targets")
 
@@ -369,12 +363,14 @@ def set_review_window(instructor_id: str, class_id: UUID, is_open: bool) -> dict
     try:
         client = _client()
         _require_class_instructor(client, instructor_id, class_id)
-        client.table("classes").update(
-            {"review_period_open": bool(is_open)}
-        ).eq("id", str(class_id)).execute()
+        client.table("classes").update({"review_period_open": bool(is_open)}).eq(
+            "id", str(class_id)
+        ).execute()
         logger.info(
             "Review window %s | class_id=%s by=%s",
-            "opened" if is_open else "closed", class_id, instructor_id,
+            "opened" if is_open else "closed",
+            class_id,
+            instructor_id,
         )
         return {
             "message": "Review window updated",
@@ -400,8 +396,10 @@ def list_project_review_tas(user_id: str, project_id: UUID) -> dict:
         project = _load_project(client, project_id)
         class_id = project["class_id"]
 
-        if not _is_class_instructor(client, user_id, class_id) \
-                and get_enrollment_role(client, class_id, user_id) is None:
+        if (
+            not _is_class_instructor(client, user_id, class_id)
+            and get_enrollment_role(client, class_id, user_id) is None
+        ):
             raise HTTPException(status_code=403, detail="You do not have access to this class")
 
         main_id = project.get("assigned_ta_id")
@@ -464,17 +462,25 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
 
         if is_instructor:
             if not target_user_id:
-                raise HTTPException(status_code=400, detail="Specify which TA to assign as reviewer")
+                raise HTTPException(
+                    status_code=400, detail="Specify which TA to assign as reviewer"
+                )
             target = str(target_user_id)
         else:
             if target_user_id and str(target_user_id) != str(caller_id):
-                raise HTTPException(status_code=403, detail="Only the instructor can appoint another TA")
+                raise HTTPException(
+                    status_code=403, detail="Only the instructor can appoint another TA"
+                )
             target = str(caller_id)
             if not _review_window_open(client, class_id):
-                raise HTTPException(status_code=403, detail="The end-of-quarter review window is not open")
+                raise HTTPException(
+                    status_code=403, detail="The end-of-quarter review window is not open"
+                )
 
         if get_enrollment_role(client, class_id, target) != ENROLLMENT_ROLE_TA:
-            raise HTTPException(status_code=400, detail="The reviewer must be a designated TA of this class")
+            raise HTTPException(
+                status_code=400, detail="The reviewer must be a designated TA of this class"
+            )
         if main_id and str(main_id) == target:
             raise HTTPException(
                 status_code=400,
@@ -489,24 +495,38 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
         ).data or []
 
         if any(str(r.get("user_id")) == target for r in existing):
-            return {"message": "Already the additional reviewer", "project_id": str(project_id), "user_id": target}
+            return {
+                "message": "Already the additional reviewer",
+                "project_id": str(project_id),
+                "user_id": target,
+            }
         if existing:
             if not is_instructor:
-                raise HTTPException(status_code=409, detail="This team already has an additional reviewer")
+                raise HTTPException(
+                    status_code=409, detail="This team already has an additional reviewer"
+                )
             # Instructor override replaces the current additional reviewer.
             client.table(REVIEW_TA_TABLE).delete().eq("project_id", str(project_id)).execute()
 
-        client.table(REVIEW_TA_TABLE).insert({
-            "class_id": class_id,
-            "project_id": str(project_id),
-            "user_id": target,
-            "assigned_by": caller_id,
-        }).execute()
+        client.table(REVIEW_TA_TABLE).insert(
+            {
+                "class_id": class_id,
+                "project_id": str(project_id),
+                "user_id": target,
+                "assigned_by": caller_id,
+            }
+        ).execute()
         logger.info(
             "Additional reviewer set | project_id=%s user_id=%s by=%s",
-            project_id, target, caller_id,
+            project_id,
+            target,
+            caller_id,
         )
-        return {"message": "Additional reviewer assigned", "project_id": str(project_id), "user_id": target}
+        return {
+            "message": "Additional reviewer assigned",
+            "project_id": str(project_id),
+            "user_id": target,
+        }
     except HTTPException:
         raise
     except Exception:
@@ -523,12 +543,12 @@ def set_review_zoom(instructor_id: str, class_id: UUID, zoom_url: str | None) ->
         client = _client()
         _require_class_instructor(client, instructor_id, class_id)
         url = (zoom_url or "").strip() or None
-        client.table("classes").update(
-            {"review_zoom_url": url}
-        ).eq("id", str(class_id)).execute()
+        client.table("classes").update({"review_zoom_url": url}).eq("id", str(class_id)).execute()
         logger.info(
             "Review Zoom %s | class_id=%s by=%s",
-            "set" if url else "cleared", class_id, instructor_id,
+            "set" if url else "cleared",
+            class_id,
+            instructor_id,
         )
         return {
             "message": "Review Zoom updated",
@@ -542,7 +562,9 @@ def set_review_zoom(instructor_id: str, class_id: UUID, zoom_url: str | None) ->
         raise HTTPException(status_code=500, detail="Failed to update review Zoom")
 
 
-def set_final_review_time(instructor_id: str, project_id: UUID, scheduled_at: datetime | None) -> dict:
+def set_final_review_time(
+    instructor_id: str, project_id: UUID, scheduled_at: datetime | None
+) -> dict:
     """Set or clear a team's single final-review slot (instructor only).
 
     One timestamptz per team (``projects.final_review_at``); no attendance is
@@ -554,12 +576,15 @@ def set_final_review_time(instructor_id: str, project_id: UUID, scheduled_at: da
         project = _load_project(client, project_id)
         _require_class_instructor(client, instructor_id, project["class_id"])
         value = scheduled_at.isoformat() if scheduled_at else None
-        client.table("projects").update(
-            {"final_review_at": value}
-        ).eq("id", str(project_id)).execute()
+        client.table("projects").update({"final_review_at": value}).eq(
+            "id", str(project_id)
+        ).execute()
         logger.info(
             "Final review time %s | project_id=%s at=%s by=%s",
-            "set" if value else "cleared", project_id, value, instructor_id,
+            "set" if value else "cleared",
+            project_id,
+            value,
+            instructor_id,
         )
         return {
             "message": "Final review time updated",
@@ -581,7 +606,7 @@ def _parse_review_ts(value) -> datetime | None:
         dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except ValueError:
         return None
-    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
 def get_final_review_schedule(user_id: str, class_id: UUID) -> dict:
@@ -604,8 +629,10 @@ def get_final_review_schedule(user_id: str, class_id: UUID) -> dict:
             raise HTTPException(status_code=404, detail="Class not found")
         cls = class_res.data[0]
 
-        if cls.get("created_by") != user_id \
-                and get_enrollment_role(client, class_id, user_id) != ENROLLMENT_ROLE_TA:
+        if (
+            cls.get("created_by") != user_id
+            and get_enrollment_role(client, class_id, user_id) != ENROLLMENT_ROLE_TA
+        ):
             raise HTTPException(
                 status_code=403,
                 detail="Only the instructor or class TAs can view the final-review schedule",
@@ -625,11 +652,15 @@ def get_final_review_schedule(user_id: str, class_id: UUID) -> dict:
         ).data or []
         review_by_project = {r["project_id"]: r for r in review_rows if r.get("project_id")}
 
-        ta_ids = {p.get("assigned_ta_id") for p in projects} | {r.get("user_id") for r in review_rows}
+        ta_ids = {p.get("assigned_ta_id") for p in projects} | {
+            r.get("user_id") for r in review_rows
+        }
         ta_ids.discard(None)
         profile_map: dict[str, dict] = {}
         if ta_ids:
-            profs = client.table("profiles").select(PROFILE_SELECT).in_("id", list(ta_ids)).execute()
+            profs = (
+                client.table("profiles").select(PROFILE_SELECT).in_("id", list(ta_ids)).execute()
+            )
             profile_map = {p["id"]: p for p in (profs.data or [])}
 
         def _person(uid, **extra):
@@ -646,19 +677,25 @@ def get_final_review_schedule(user_id: str, class_id: UUID) -> dict:
         teams = []
         for p in projects:
             claim = review_by_project.get(p["id"])
-            teams.append({
-                "project_id": p["id"],
-                "name": p.get("name"),
-                "final_review_at": p.get("final_review_at"),
-                "home_ta": _person(p.get("assigned_ta_id")),
-                "review_ta": _person(claim.get("user_id"), claimed_at=claim.get("claimed_at")) if claim else None,
-            })
+            teams.append(
+                {
+                    "project_id": p["id"],
+                    "name": p.get("name"),
+                    "final_review_at": p.get("final_review_at"),
+                    "home_ta": _person(p.get("assigned_ta_id")),
+                    "review_ta": _person(claim.get("user_id"), claimed_at=claim.get("claimed_at"))
+                    if claim
+                    else None,
+                }
+            )
 
-        far_future = datetime.max.replace(tzinfo=timezone.utc)
-        teams.sort(key=lambda t: (
-            _parse_review_ts(t["final_review_at"]) or far_future,
-            (t["name"] or "").lower(),
-        ))
+        far_future = datetime.max.replace(tzinfo=UTC)
+        teams.sort(
+            key=lambda t: (
+                _parse_review_ts(t["final_review_at"]) or far_future,
+                (t["name"] or "").lower(),
+            )
+        )
 
         return {
             "class_id": str(class_id),
@@ -692,10 +729,7 @@ _HOME_FIELDS = ("product", "team", "scrum")
 
 def _review_ta_of(client, project_id) -> str | None:
     rows = (
-        client.table(REVIEW_TA_TABLE)
-        .select("user_id")
-        .eq("project_id", str(project_id))
-        .execute()
+        client.table(REVIEW_TA_TABLE).select("user_id").eq("project_id", str(project_id)).execute()
     ).data or []
     return rows[0].get("user_id") if rows else None
 
@@ -725,8 +759,10 @@ def _load_review_context(client, user_id: str, project_id: UUID) -> dict:
     cls = class_res.data[0] if class_res.data else {}
 
     is_instructor = cls.get("created_by") == user_id
-    if not is_instructor and \
-            get_enrollment_role(client, project["class_id"], user_id) != ENROLLMENT_ROLE_TA:
+    if (
+        not is_instructor
+        and get_enrollment_role(client, project["class_id"], user_id) != ENROLLMENT_ROLE_TA
+    ):
         raise HTTPException(
             status_code=403,
             detail="Only the instructor or class TAs can access final-review details",
@@ -775,14 +811,23 @@ def get_final_review_detail(user_id: str, project_id: UUID) -> dict:
         profile_ids.update(i for i in (project.get("assigned_ta_id"), ctx["review_ta_id"]) if i)
         profile_map: dict[str, dict] = {}
         if profile_ids:
-            profs = client.table("profiles").select(PROFILE_SELECT).in_("id", list(profile_ids)).execute()
+            profs = (
+                client.table("profiles")
+                .select(PROFILE_SELECT)
+                .in_("id", list(profile_ids))
+                .execute()
+            )
             profile_map = {p["id"]: p for p in (profs.data or [])}
 
         def _person(uid):
             if not uid:
                 return None
             p = profile_map.get(uid, {})
-            return {"user_id": uid, "name": profile_display_name(p), "email": (p or {}).get("email")}
+            return {
+                "user_id": uid,
+                "name": profile_display_name(p),
+                "email": (p or {}).get("email"),
+            }
 
         members = sorted(
             (_person(uid) for uid in member_ids),
@@ -836,7 +881,9 @@ def _round_score(value, field: str) -> float:
     return num
 
 
-def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries: list[dict]) -> dict:
+def save_final_review_scores(
+    user_id: str, project_id: UUID, role: str, entries: list[dict]
+) -> dict:
     """Bulk-upsert one scorer role's rows for a team.
 
     role='home'       → product/team/scrum, by the team's Home TA (or instructor).
@@ -874,10 +921,10 @@ def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries:
         ctx = _load_review_context(client, user_id, project_id)
         project = ctx["project"]
 
-        allowed = ctx["is_instructor"] or (
-            role == "home" and project.get("assigned_ta_id") == user_id
-        ) or (
-            role == "review" and ctx["review_ta_id"] == user_id
+        allowed = (
+            ctx["is_instructor"]
+            or (role == "home" and project.get("assigned_ta_id") == user_id)
+            or (role == "review" and ctx["review_ta_id"] == user_id)
         )
         if not allowed:
             raise HTTPException(
@@ -893,7 +940,7 @@ def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries:
         ).data or []
         member_ids = {str(m["user_id"]) for m in member_rows if m.get("user_id")}
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         saved = 0
         for entry in entries or []:
             student_id = str(entry.get("student_id") or "")
@@ -902,7 +949,9 @@ def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries:
 
             if role == "home":
                 if entry.get("overall") is not None:
-                    raise HTTPException(status_code=400, detail="Home TA rows carry category scores, not an overall")
+                    raise HTTPException(
+                        status_code=400, detail="Home TA rows carry category scores, not an overall"
+                    )
                 # A field the client never sent is absent from `entry`
                 # entirely (views.py dumps with exclude_unset=True) — only
                 # treat this as a clear when all three keys were explicitly
@@ -912,30 +961,34 @@ def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries:
                 raw = {f: entry.get(f) for f in _HOME_FIELDS}
                 if fields_present and all(raw[f] is None for f in _HOME_FIELDS):
                     # Explicit clear: product/team/scrum blanked together.
-                    client.table(SCORE_TABLE).delete().eq(
-                        "project_id", str(project_id)
-                    ).eq("student_id", student_id).eq("role", role).execute()
+                    client.table(SCORE_TABLE).delete().eq("project_id", str(project_id)).eq(
+                        "student_id", student_id
+                    ).eq("role", role).execute()
                     saved += 1
                     continue
                 if any(raw[f] is None for f in _HOME_FIELDS):
-                    raise HTTPException(status_code=400, detail="Home TA scores need product, team, and scrum")
+                    raise HTTPException(
+                        status_code=400, detail="Home TA scores need product, team, and scrum"
+                    )
                 values = {f: _round_score(raw[f], f) for f in _HOME_FIELDS}
                 values["overall"] = None
             else:
                 if any(entry.get(f) is not None for f in _HOME_FIELDS):
-                    raise HTTPException(status_code=400, detail="Only the Home TA enters category scores")
+                    raise HTTPException(
+                        status_code=400, detail="Only the Home TA enters category scores"
+                    )
                 if "overall" not in entry:
                     # Never sent at all — 400, same message as always. Only
                     # an explicit null (key present) below is a clear signal.
                     raise HTTPException(status_code=400, detail="An overall score is required")
                 if entry["overall"] is None:
                     # Explicit clear.
-                    client.table(SCORE_TABLE).delete().eq(
-                        "project_id", str(project_id)
-                    ).eq("student_id", student_id).eq("role", role).execute()
+                    client.table(SCORE_TABLE).delete().eq("project_id", str(project_id)).eq(
+                        "student_id", student_id
+                    ).eq("role", role).execute()
                     saved += 1
                     continue
-                values = {f: None for f in _HOME_FIELDS}
+                values = dict.fromkeys(_HOME_FIELDS)
                 values["overall"] = _round_score(entry["overall"], "overall")
 
             values["notes"] = (entry.get("notes") or "").strip() or None
@@ -953,20 +1006,30 @@ def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries:
             if existing:
                 client.table(SCORE_TABLE).update(values).eq("id", existing[0]["id"]).execute()
             else:
-                client.table(SCORE_TABLE).insert({
-                    "class_id": project["class_id"],
-                    "project_id": str(project_id),
-                    "student_id": student_id,
-                    "role": role,
-                    **values,
-                }).execute()
+                client.table(SCORE_TABLE).insert(
+                    {
+                        "class_id": project["class_id"],
+                        "project_id": str(project_id),
+                        "student_id": student_id,
+                        "role": role,
+                        **values,
+                    }
+                ).execute()
             saved += 1
 
         logger.info(
             "Final-review scores saved | project_id=%s role=%s rows=%d by=%s",
-            project_id, role, saved, user_id,
+            project_id,
+            role,
+            saved,
+            user_id,
         )
-        return {"message": "Scores saved", "project_id": str(project_id), "role": role, "saved": saved}
+        return {
+            "message": "Scores saved",
+            "project_id": str(project_id),
+            "role": role,
+            "saved": saved,
+        }
     except HTTPException:
         raise
     except Exception:
@@ -974,7 +1037,9 @@ def save_final_review_scores(user_id: str, project_id: UUID, role: str, entries:
         raise HTTPException(status_code=500, detail="Failed to save scores")
 
 
-def save_final_review_notes(user_id: str, project_id: UUID, content: dict, template_version: int = 1) -> dict:
+def save_final_review_notes(
+    user_id: str, project_id: UUID, content: dict, template_version: int = 1
+) -> dict:
     """Replace a team's structured review-notes document.
 
     Writable by the team's Review TA or the instructor; the notes are the
@@ -991,7 +1056,7 @@ def save_final_review_notes(user_id: str, project_id: UUID, content: dict, templ
         if not isinstance(content, dict):
             raise HTTPException(status_code=400, detail="Notes content must be an object")
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         payload = {
             "content": content,
             "template_version": int(template_version or 1),
@@ -999,19 +1064,18 @@ def save_final_review_notes(user_id: str, project_id: UUID, content: dict, templ
             "updated_at": now,
         }
         existing = (
-            client.table(NOTES_TABLE)
-            .select("id")
-            .eq("project_id", str(project_id))
-            .execute()
+            client.table(NOTES_TABLE).select("id").eq("project_id", str(project_id)).execute()
         ).data or []
         if existing:
             client.table(NOTES_TABLE).update(payload).eq("id", existing[0]["id"]).execute()
         else:
-            client.table(NOTES_TABLE).insert({
-                "class_id": ctx["project"]["class_id"],
-                "project_id": str(project_id),
-                **payload,
-            }).execute()
+            client.table(NOTES_TABLE).insert(
+                {
+                    "class_id": ctx["project"]["class_id"],
+                    "project_id": str(project_id),
+                    **payload,
+                }
+            ).execute()
 
         logger.info("Final-review notes saved | project_id=%s by=%s", project_id, user_id)
         return {"message": "Notes saved", "project_id": str(project_id), "notes": payload}
@@ -1036,14 +1100,20 @@ def release_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID) ->
                 detail="Only the reviewer themselves or the instructor can remove this review slot",
             )
 
-        client.table(REVIEW_TA_TABLE).delete().eq(
-            "project_id", str(project_id)
-        ).eq("user_id", target).execute()
+        client.table(REVIEW_TA_TABLE).delete().eq("project_id", str(project_id)).eq(
+            "user_id", target
+        ).execute()
         logger.info(
             "Additional reviewer released | project_id=%s user_id=%s by=%s",
-            project_id, target, caller_id,
+            project_id,
+            target,
+            caller_id,
         )
-        return {"message": "Additional reviewer removed", "project_id": str(project_id), "user_id": target}
+        return {
+            "message": "Additional reviewer removed",
+            "project_id": str(project_id),
+            "user_id": target,
+        }
     except HTTPException:
         raise
     except Exception:

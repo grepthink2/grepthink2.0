@@ -1,9 +1,10 @@
 """
 Authentication business logic
 """
+
 import logging
-import time
 import threading
+import time
 
 from app.database.client import service_client, supabase
 
@@ -75,12 +76,8 @@ def get_user_role(user_id: str) -> str | None:
 
     try:
         client = service_client if service_client else supabase
-        result = client.table('profiles').select('role').eq('id', user_id).execute()
-        role = (
-            result.data[0].get('role')
-            if result.data and len(result.data) > 0
-            else None
-        )
+        result = client.table("profiles").select("role").eq("id", user_id).execute()
+        role = result.data[0].get("role") if result.data and len(result.data) > 0 else None
         if role is None:
             logger.debug("get_user_role: no profile row | user_id=%s", user_id)
         with _role_cache_lock:

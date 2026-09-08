@@ -1,15 +1,17 @@
 """
 Application configuration and environment variables
 """
+
 import logging
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
 # Load .env from project root
-env_path = Path(__file__).resolve().parent.parent.parent / '.env'
+env_path = Path(__file__).resolve().parent.parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 
@@ -51,7 +53,11 @@ class Settings:
 
     # Supabase Configuration
     SUPABASE_URL: str = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
-    SUPABASE_KEY: str = os.environ.get("SUPABASE_KEY") or os.environ.get("VITE_SUPABASE_KEY") or os.environ.get("SUPABASE_SECRET_KEY")
+    SUPABASE_KEY: str = (
+        os.environ.get("SUPABASE_KEY")
+        or os.environ.get("VITE_SUPABASE_KEY")
+        or os.environ.get("SUPABASE_SECRET_KEY")
+    )
     SUPABASE_SERVICE_ROLE_KEY: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     SUPABASE_JWT_SECRET: str = os.environ.get("SUPABASE_JWT_SECRET")
     SUPABASE_JWK_JSON: str = os.environ.get("SUPABASE_JWK_JSON")
@@ -103,16 +109,13 @@ class Settings:
             raise ValueError("SUPABASE_KEY must be set in .env file")
         if not cls.SUPABASE_JWT_SECRET:
             # WARN: HS256 JWTs won't verify without this. RS256 still works via JWKS.
-            logger.warning(
-                "SUPABASE_JWT_SECRET not set in .env — HS256 JWT verification will fail"
-            )
+            logger.warning("SUPABASE_JWT_SECRET not set in .env — HS256 JWT verification will fail")
         if not cls.CORS_ORIGINS:
-            raise ValueError(
-                "CORS_ORIGINS resolved to an empty list — set CORS_ORIGINS in .env"
-            )
+            raise ValueError("CORS_ORIGINS resolved to an empty list — set CORS_ORIGINS in .env")
         logger.info(
             "CORS configured | origins=%s environment=%s",
-            cls.CORS_ORIGINS, cls.ENVIRONMENT,
+            cls.CORS_ORIGINS,
+            cls.ENVIRONMENT,
         )
 
 

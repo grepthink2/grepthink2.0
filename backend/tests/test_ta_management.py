@@ -5,16 +5,16 @@ assignment, meeting metadata, weekly schedule, attendance).
 Runs the real controller logic against an in-memory FakeSupabase (the repo's
 `mem` fixture references a missing module, so these are self-contained).
 """
+
 import datetime
 
 import pytest
 from fastapi import HTTPException
 
-from app.attendance import controller
 import app.projects.controller as projects_controller
 import app.tas.controller as tas_controller
+from app.attendance import controller
 from tests.fake_supabase import FakeSupabase
-
 
 INSTR = "instructor-1"
 TA1 = "ta-1"
@@ -27,7 +27,13 @@ P2 = "proj-2"
 
 
 def _profile(uid, first):
-    return {"id": uid, "email": f"{uid}@ucsc.edu", "first_name": first, "last_name": "X", "image_url": None}
+    return {
+        "id": uid,
+        "email": f"{uid}@ucsc.edu",
+        "first_name": first,
+        "last_name": "X",
+        "image_url": None,
+    }
 
 
 @pytest.fixture
@@ -38,20 +44,53 @@ def db(monkeypatch):
     """
     start = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()  # → week 2
     fake = FakeSupabase(
-        profiles=[_profile(INSTR, "Ina"), _profile(TA1, "Tara"),
-                  _profile(S1, "Sam"), _profile(S2, "Sara"), _profile(S3, "Sid")],
-        classes=[{"id": CLASS, "created_by": INSTR, "term": "fall", "start_date": start,
-                  "meetings_per_week": 2, "meeting_duration_minutes": 30}],
+        profiles=[
+            _profile(INSTR, "Ina"),
+            _profile(TA1, "Tara"),
+            _profile(S1, "Sam"),
+            _profile(S2, "Sara"),
+            _profile(S3, "Sid"),
+        ],
+        classes=[
+            {
+                "id": CLASS,
+                "created_by": INSTR,
+                "term": "fall",
+                "start_date": start,
+                "meetings_per_week": 2,
+                "meeting_duration_minutes": 30,
+            }
+        ],
         class_enrollments=[
-            {"id": f"enr-{u}", "class_id": CLASS, "user_id": u,
-             "enrollment_role": ("ta" if u == TA1 else "student")}
+            {
+                "id": f"enr-{u}",
+                "class_id": CLASS,
+                "user_id": u,
+                "enrollment_role": ("ta" if u == TA1 else "student"),
+            }
             for u in (TA1, S1, S2, S3)
         ],
         projects=[
-            {"id": P1, "class_id": CLASS, "name": "Alpha", "assigned_ta_id": TA1,
-             "zoom_url": None, "meeting_day": "wednesday", "meeting_time": "2:00 PM", "num_members": 2},
-            {"id": P2, "class_id": CLASS, "name": "Beta", "assigned_ta_id": None,
-             "zoom_url": None, "meeting_day": None, "meeting_time": None, "num_members": 2},
+            {
+                "id": P1,
+                "class_id": CLASS,
+                "name": "Alpha",
+                "assigned_ta_id": TA1,
+                "zoom_url": None,
+                "meeting_day": "wednesday",
+                "meeting_time": "2:00 PM",
+                "num_members": 2,
+            },
+            {
+                "id": P2,
+                "class_id": CLASS,
+                "name": "Beta",
+                "assigned_ta_id": None,
+                "zoom_url": None,
+                "meeting_day": None,
+                "meeting_time": None,
+                "num_members": 2,
+            },
         ],
         project_members=[
             {"project_id": P1, "user_id": S1, "role": "member"},
@@ -74,6 +113,7 @@ def db(monkeypatch):
 # Week helpers
 # --------------------------------------------------------------------------
 
+
 def test_term_max_weeks():
     # Meeting weeks follow the class's TSR convention (app.classes.controller):
     # full terms => _FULL_TSR_COUNT, summer/unknown => _SUMMER_TSR_COUNT.
@@ -94,14 +134,20 @@ def test_meeting_weeks():
 def test_current_term_week_clamps():
     today = datetime.date.today()
     assert controller._current_term_week(today.isoformat(), "fall") == 1
-    assert controller._current_term_week((today - datetime.timedelta(days=7)).isoformat(), "fall") == 2
+    assert (
+        controller._current_term_week((today - datetime.timedelta(days=7)).isoformat(), "fall") == 2
+    )
     # Far in the past clamps to the meeting-week count (10 for a full term).
-    assert controller._current_term_week((today - datetime.timedelta(days=400)).isoformat(), "fall") == 10
+    assert (
+        controller._current_term_week((today - datetime.timedelta(days=400)).isoformat(), "fall")
+        == 10
+    )
 
 
 # --------------------------------------------------------------------------
 # Class TA designation
 # --------------------------------------------------------------------------
+
 
 def test_designate_and_list_class_ta(db):
     controller.set_class_ta(CLASS, INSTR, S2, True)
@@ -142,6 +188,7 @@ def test_undesignate_clears_assigned_and_review(db):
 # Project TA assignment
 # --------------------------------------------------------------------------
 
+
 def test_assign_project_ta_requires_designated_ta(db):
     # S1 is enrolled but not a class TA → cannot be assigned.
     with pytest.raises(HTTPException) as exc:
@@ -168,9 +215,16 @@ def test_assign_project_ta_requires_instructor(db):
 # Meeting / Zoom metadata
 # --------------------------------------------------------------------------
 
+
 def test_update_meeting_by_assigned_ta(db):
-    out = controller.upsert_meeting(P1, TA1, meeting_in_week=1,
-                                    zoom_url="https://zoom.us/j/1", meeting_day="tuesday", meeting_time="2:00 PM")
+    out = controller.upsert_meeting(
+        P1,
+        TA1,
+        meeting_in_week=1,
+        zoom_url="https://zoom.us/j/1",
+        meeting_day="tuesday",
+        meeting_time="2:00 PM",
+    )
     assert out["zoom_url"] == "https://zoom.us/j/1"
     assert out["meeting_day"] == "tuesday"
     assert out["meeting_time"] == "2:00 PM"
@@ -196,6 +250,7 @@ def test_update_meeting_rejects_bad_day(db):
 # Attendance
 # --------------------------------------------------------------------------
 
+
 def test_mark_attendance_by_instructor_and_assigned_ta(db):
     controller.upsert_attendance(P1, INSTR, S1, 3, "present")
     controller.upsert_attendance(P1, TA1, S2, 3, "late")
@@ -220,7 +275,11 @@ def test_mark_attendance_rejects_non_member(db):
 def test_mark_attendance_idempotent(db):
     controller.upsert_attendance(P1, INSTR, S1, 3, "present")
     controller.upsert_attendance(P1, INSTR, S1, 3, "absent")  # re-mark same slot
-    rows = [a for a in db.rows("attendance") if a["project_id"] == P1 and a["user_id"] == S1 and a["week_number"] == 3]
+    rows = [
+        a
+        for a in db.rows("attendance")
+        if a["project_id"] == P1 and a["user_id"] == S1 and a["week_number"] == 3
+    ]
     assert len(rows) == 1
     assert rows[0]["status"] == "absent"
 
@@ -252,6 +311,7 @@ def test_mark_all_present(db):
 # --------------------------------------------------------------------------
 # Schedule + attendance reads
 # --------------------------------------------------------------------------
+
 
 def test_schedule_all_for_instructor_with_summary(db):
     controller.upsert_attendance(P1, INSTR, S1, 3, "present")
@@ -310,12 +370,16 @@ def test_team_attendance_non_member_denied(db):
 # Per-meeting cadence (meetings_per_week)
 # --------------------------------------------------------------------------
 
+
 def test_attendance_distinct_per_meeting(db):
     # Same (project, person, week) but different meeting-in-week → independent rows.
     controller.upsert_attendance(P1, INSTR, S1, 3, "present", meeting_in_week=1)
     controller.upsert_attendance(P1, INSTR, S1, 3, "absent", meeting_in_week=2)
-    rows = [a for a in db.rows("attendance")
-            if a["project_id"] == P1 and a["user_id"] == S1 and a["week_number"] == 3]
+    rows = [
+        a
+        for a in db.rows("attendance")
+        if a["project_id"] == P1 and a["user_id"] == S1 and a["week_number"] == 3
+    ]
     assert len(rows) == 2
     # meeting 1 and meeting 2 resolve to distinct meetings -> distinct meeting_ids
     seq_by_mid = {m["id"]: m["sequence"] for m in db.rows("meetings") if m["project_id"] == P1}
@@ -342,8 +406,12 @@ def test_team_attendance_filtered_by_meeting(db):
 
 def test_schedule_summary_is_per_meeting(db):
     controller.upsert_attendance(P1, INSTR, S1, 3, "present", meeting_in_week=2)
-    s1 = controller.get_ta_schedule(CLASS, INSTR, "instructor", week_number=3, scope="all", meeting_in_week=1)
-    s2 = controller.get_ta_schedule(CLASS, INSTR, "instructor", week_number=3, scope="all", meeting_in_week=2)
+    s1 = controller.get_ta_schedule(
+        CLASS, INSTR, "instructor", week_number=3, scope="all", meeting_in_week=1
+    )
+    s2 = controller.get_ta_schedule(
+        CLASS, INSTR, "instructor", week_number=3, scope="all", meeting_in_week=2
+    )
     p1_m1 = next(t for t in s1["teams"] if t["project_id"] == P1)
     p1_m2 = next(t for t in s2["teams"] if t["project_id"] == P1)
     assert p1_m1["attendance_present"] == 0
@@ -372,8 +440,12 @@ def test_set_meeting_cadence_rejects_bad_value(db):
 def test_current_meeting_in_week_advances_with_time(db):
     """Auto meeting-in-week tracks the clock: M1 early week, in-progress M1 wins,
     M2 mid-week, then rolls back to next week's M1 once both are done."""
-    controller.upsert_meeting(P1, INSTR, meeting_in_week=1, meeting_day="tuesday", meeting_time="9:00 AM")
-    controller.upsert_meeting(P1, INSTR, meeting_in_week=2, meeting_day="friday", meeting_time="3:00 PM")
+    controller.upsert_meeting(
+        P1, INSTR, meeting_in_week=1, meeting_day="tuesday", meeting_time="9:00 AM"
+    )
+    controller.upsert_meeting(
+        P1, INSTR, meeting_in_week=2, meeting_day="friday", meeting_time="3:00 PM"
+    )
 
     # Snap to a Monday 08:00 so weekday math is deterministic regardless of run date.
     base = datetime.datetime(2026, 7, 6, 8, 0)
@@ -382,13 +454,21 @@ def test_current_meeting_in_week_advances_with_time(db):
     def at(days, hour, minute=0):
         return monday + datetime.timedelta(days=days, hours=hour - 8, minutes=minute)
 
-    assert controller._current_meeting_in_week(db, [P1], 2, now=monday) == 1          # Mon → next is Tue M1
-    assert controller._current_meeting_in_week(db, [P1], 2, now=at(1, 9, 10)) == 1     # Tue 09:10 → M1 in progress
-    assert controller._current_meeting_in_week(db, [P1], 2, now=at(2, 12)) == 2        # Wed → Fri M2 upcoming
-    assert controller._current_meeting_in_week(db, [P1], 2, now=at(4, 16)) == 1        # Fri late → rolls to next Tue M1
+    assert controller._current_meeting_in_week(db, [P1], 2, now=monday) == 1  # Mon → next is Tue M1
+    assert (
+        controller._current_meeting_in_week(db, [P1], 2, now=at(1, 9, 10)) == 1
+    )  # Tue 09:10 → M1 in progress
+    assert (
+        controller._current_meeting_in_week(db, [P1], 2, now=at(2, 12)) == 2
+    )  # Wed → Fri M2 upcoming
+    assert (
+        controller._current_meeting_in_week(db, [P1], 2, now=at(4, 16)) == 1
+    )  # Fri late → rolls to next Tue M1
 
 
 def test_current_meeting_in_week_edge_cases(db):
-    controller.upsert_meeting(P1, INSTR, meeting_in_week=1, meeting_day="tuesday", meeting_time="9:00 AM")
-    assert controller._current_meeting_in_week(db, [P1], 1) == 1   # single cadence → always 1
-    assert controller._current_meeting_in_week(db, [], 2) == 1     # no teams → 1
+    controller.upsert_meeting(
+        P1, INSTR, meeting_in_week=1, meeting_day="tuesday", meeting_time="9:00 AM"
+    )
+    assert controller._current_meeting_in_week(db, [P1], 1) == 1  # single cadence → always 1
+    assert controller._current_meeting_in_week(db, [], 2) == 1  # no teams → 1

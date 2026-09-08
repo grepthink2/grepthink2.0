@@ -16,9 +16,9 @@ Each feature lives in its own folder under `app/` with four core files:
 **`url.py`** — One line per route. No logic.
 
 ```python
-router.post('')(views.create_project)
-router.get('/{project_id}')(views.get_project)
-router.patch('/{project_id}')(views.update_project)
+router.post("")(views.create_project)
+router.get("/{project_id}")(views.get_project)
+router.patch("/{project_id}")(views.update_project)
 ```
 
 **`views.py`** — Extract params, check auth, delegate to controller, return response.
@@ -55,7 +55,7 @@ Use `Depends(verify_supabase_token)` for protected endpoints. The dependency ret
 def my_view(payload: dict = Depends(verify_supabase_token)):
     if not payload:
         raise HTTPException(status_code=401, detail="Authentication required")
-    user_id = payload.get('sub')
+    user_id = payload.get("sub")
     # ...
 ```
 

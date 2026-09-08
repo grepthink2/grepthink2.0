@@ -1,4 +1,5 @@
 """Transactional emails for class roster invitations."""
+
 from __future__ import annotations
 
 import html
@@ -96,7 +97,9 @@ def send_class_invite_email(
     )
     logger.info(
         "class_invite_email: sent | to=%s class=%r registered=%s",
-        to, class_name, registered,
+        to,
+        class_name,
+        registered,
     )
 
 

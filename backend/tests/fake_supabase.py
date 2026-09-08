@@ -12,6 +12,7 @@ end without a real database. (The repo's `mem` fixture references a
 `memory_supabase` module that does not exist; this is a self-contained
 replacement scoped to these tests.)
 """
+
 from __future__ import annotations
 
 import uuid

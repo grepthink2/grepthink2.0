@@ -25,10 +25,12 @@ unchanged. We always go through ``app.projects.controller`` to mutate
 ``project_members`` so the ``num_members`` counter and the join-request
 machinery stay consistent.
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -50,6 +52,7 @@ def _client():
 
 # --------------------------------------------------------------------------- helpers
 
+
 def _require_class_instructor(user_id: str, class_id: UUID) -> None:
     """
     Raise 404 if the caller is not the instructor (creator) of the class.
@@ -67,11 +70,10 @@ def _require_class_instructor(user_id: str, class_id: UUID) -> None:
     if not result.data:
         logger.info(
             "_require_class_instructor: denied | user_id=%s class_id=%s",
-            user_id, class_id,
+            user_id,
+            class_id,
         )
-        raise HTTPException(
-            status_code=404, detail="Class not found or you don't have permission"
-        )
+        raise HTTPException(status_code=404, detail="Class not found or you don't have permission")
 
 
 def _require_class_member(user_id: str, class_id: UUID) -> None:
@@ -168,10 +170,7 @@ def _list_class_interest_rows(client, class_id: UUID) -> list[dict]:
     """All raw interest_form rows scoped to a class."""
     res = (
         client.table("interest_form")
-        .select(
-            "id, user_id, class_id, project_id, "
-            "interest_value, interest_reason, updated_at"
-        )
+        .select("id, user_id, class_id, project_id, interest_value, interest_reason, updated_at")
         .eq("class_id", str(class_id))
         .execute()
     )
@@ -211,14 +210,10 @@ def _project_members_for_class(
 def _get_projects_user_is_in(client, class_id: UUID, target_user_id: str) -> list[str]:
     """All project ids in this class where the user is a project_members row."""
     members = _project_members_for_class(client, class_id)
-    return [
-        str(m["project_id"])
-        for m in members
-        if str(m.get("user_id")) == str(target_user_id)
-    ]
+    return [str(m["project_id"]) for m in members if str(m.get("user_id")) == str(target_user_id)]
 
 
-def _profile_display_name(profile: Optional[dict]) -> Optional[str]:
+def _profile_display_name(profile: dict | None) -> str | None:
     """Pick the most human-friendly display label for a profile row."""
     if not profile:
         return None
@@ -234,10 +229,7 @@ def _name_lookup(client, user_ids: Iterable[str]) -> dict[str, dict]:
     if not ids:
         return {}
     res = (
-        client.table("profiles")
-        .select("id, email, first_name, last_name")
-        .in_("id", ids)
-        .execute()
+        client.table("profiles").select("id, email, first_name, last_name").in_("id", ids).execute()
     )
     return {str(p["id"]): p for p in (res.data or [])}
 
@@ -258,12 +250,13 @@ def _project_lookup(client, project_ids: Iterable[str]) -> dict[str, dict]:
 
 # --------------------------------------------------------------------------- writes (student)
 
+
 def submit_interest(
     user_id: str,
     class_id: UUID,
     project_id: UUID,
     interest_value: int,
-    interest_reason: Optional[str] = None,
+    interest_reason: str | None = None,
 ) -> dict:
     """
     Upsert a single ranked preference for the current user.
@@ -283,8 +276,7 @@ def submit_interest(
         raise HTTPException(
             status_code=400,
             detail=(
-                f"interest_value must be between "
-                f"{MIN_INTEREST_VALUE} and {MAX_INTEREST_VALUE}"
+                f"interest_value must be between {MIN_INTEREST_VALUE} and {MAX_INTEREST_VALUE}"
             ),
         )
 
@@ -312,23 +304,19 @@ def submit_interest(
     try:
         if existing.data:
             row_id = existing.data[0]["id"]
-            updated = (
-                client.table("interest_form")
-                .update(payload)
-                .eq("id", row_id)
-                .execute()
-            )
+            updated = client.table("interest_form").update(payload).eq("id", row_id).execute()
             row = (updated.data or [{}])[0]
         else:
             inserted = client.table("interest_form").insert(payload).execute()
             if not inserted.data:
-                raise HTTPException(
-                    status_code=500, detail="Failed to record interest"
-                )
+                raise HTTPException(status_code=500, detail="Failed to record interest")
             row = inserted.data[0]
         logger.info(
             "submit_interest | user=%s class=%s project=%s value=%s",
-            user_id, class_id, project_id, interest_value,
+            user_id,
+            class_id,
+            project_id,
+            interest_value,
         )
         return row
     except HTTPException:
@@ -336,7 +324,9 @@ def submit_interest(
     except Exception:
         logger.exception(
             "submit_interest failed | user=%s class=%s project=%s",
-            user_id, class_id, project_id,
+            user_id,
+            class_id,
+            project_id,
         )
         raise HTTPException(status_code=500, detail="Failed to record interest")
 
@@ -345,10 +335,10 @@ def submit_form(
     user_id: str,
     class_id: UUID,
     *,
-    taking_115c: Optional[bool],
-    previous_project_name: Optional[str],
-    previous_project_link: Optional[str],
-    notes: Optional[str],
+    taking_115c: bool | None,
+    previous_project_name: str | None,
+    previous_project_link: str | None,
+    notes: str | None,
     ranked_projects: list[RankedProject],
     work_with: list[UUID],
     dont_work_with: list[UUID],
@@ -375,8 +365,7 @@ def submit_form(
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    f"interest_value must be between "
-                    f"{MIN_INTEREST_VALUE} and {MAX_INTEREST_VALUE}"
+                    f"interest_value must be between {MIN_INTEREST_VALUE} and {MAX_INTEREST_VALUE}"
                 ),
             )
         _project_in_class(client, rp.project_id, class_id)
@@ -393,15 +382,8 @@ def submit_form(
 
     # The peer lists must reference real users in the same class — guarding
     # this here avoids dangling rows pointing at outsiders.
-    enrolled_ids = {
-        str(p["id"]) for p in _list_class_students(client, class_id)
-    }
-    instructor_row = (
-        client.table("classes")
-        .select("created_by")
-        .eq("id", str(class_id))
-        .execute()
-    )
+    enrolled_ids = {str(p["id"]) for p in _list_class_students(client, class_id)}
+    instructor_row = client.table("classes").select("created_by").eq("id", str(class_id)).execute()
     if instructor_row.data:
         enrolled_ids.add(str(instructor_row.data[0].get("created_by")))
 
@@ -435,25 +417,29 @@ def submit_form(
         client.table("interest_form").insert(rows).execute()
 
     # Replace team-preference rows.
-    client.table("interest_team_preferences").delete().eq(
-        "user_id", user_id
-    ).eq("class_id", str(class_id)).execute()
+    client.table("interest_team_preferences").delete().eq("user_id", user_id).eq(
+        "class_id", str(class_id)
+    ).execute()
 
     pref_rows: list[dict] = []
     for peer in work_with:
-        pref_rows.append({
-            "user_id": user_id,
-            "class_id": str(class_id),
-            "peer_user_id": str(peer),
-            "kind": "work_with",
-        })
+        pref_rows.append(
+            {
+                "user_id": user_id,
+                "class_id": str(class_id),
+                "peer_user_id": str(peer),
+                "kind": "work_with",
+            }
+        )
     for peer in dont_work_with:
-        pref_rows.append({
-            "user_id": user_id,
-            "class_id": str(class_id),
-            "peer_user_id": str(peer),
-            "kind": "dont_work_with",
-        })
+        pref_rows.append(
+            {
+                "user_id": user_id,
+                "class_id": str(class_id),
+                "peer_user_id": str(peer),
+                "kind": "dont_work_with",
+            }
+        )
     if pref_rows:
         client.table("interest_team_preferences").insert(pref_rows).execute()
 
@@ -484,21 +470,24 @@ def submit_form(
 
     if existing.data:
         sub_id = existing.data[0]["id"]
-        client.table("interest_submissions").update(sub_payload).eq(
-            "id", sub_id
-        ).execute()
+        client.table("interest_submissions").update(sub_payload).eq("id", sub_id).execute()
     else:
         client.table("interest_submissions").insert(sub_payload).execute()
 
     logger.info(
         "submit_form | user=%s class=%s ranked=%d work_with=%d dont_work_with=%d submitted=%s",
-        user_id, class_id, len(ranked_projects),
-        len(work_with), len(dont_work_with), submitted,
+        user_id,
+        class_id,
+        len(ranked_projects),
+        len(work_with),
+        len(dont_work_with),
+        submitted,
     )
     return get_my_submission(user_id, class_id)
 
 
 # --------------------------------------------------------------------------- reads (self)
+
 
 def get_my_interests(user_id: str, class_id: UUID) -> list[dict]:
     """
@@ -508,10 +497,7 @@ def get_my_interests(user_id: str, class_id: UUID) -> list[dict]:
     client = _client()
     rows = (
         client.table("interest_form")
-        .select(
-            "id, user_id, class_id, project_id, "
-            "interest_value, interest_reason, updated_at"
-        )
+        .select("id, user_id, class_id, project_id, interest_value, interest_reason, updated_at")
         .eq("user_id", user_id)
         .eq("class_id", str(class_id))
         .execute()
@@ -572,9 +558,7 @@ def get_my_submission(user_id: str, class_id: UUID) -> dict:
         }
 
     work_with = [_peer_view(r) for r in pref_rows if r.get("kind") == "work_with"]
-    dont_work_with = [
-        _peer_view(r) for r in pref_rows if r.get("kind") == "dont_work_with"
-    ]
+    dont_work_with = [_peer_view(r) for r in pref_rows if r.get("kind") == "dont_work_with"]
 
     return {
         "user_id": user_id,
@@ -592,6 +576,7 @@ def get_my_submission(user_id: str, class_id: UUID) -> dict:
 
 # --------------------------------------------------------------------------- reads (instructor)
 
+
 def pref_by_student(user_id: str, class_id: UUID) -> list[dict]:
     """
     Instructor view: every enrolled student paired with their ranked
@@ -606,9 +591,7 @@ def pref_by_student(user_id: str, class_id: UUID) -> list[dict]:
     students = fut_students.result()
     interest_rows = fut_interest.result()
     student_lookup = {str(s["id"]): s for s in students}
-    project_map = _project_lookup(
-        client, [r["project_id"] for r in interest_rows]
-    )
+    project_map = _project_lookup(client, [r["project_id"] for r in interest_rows])
 
     grouped: dict[str, list[dict]] = {sid: [] for sid in student_lookup}
     for row in interest_rows:
@@ -619,7 +602,9 @@ def pref_by_student(user_id: str, class_id: UUID) -> list[dict]:
             # data during instructor reviews.
             logger.debug(
                 "pref_by_student: orphan interest row | user=%s class=%s project=%s",
-                uid, class_id, row.get("project_id"),
+                uid,
+                class_id,
+                row.get("project_id"),
             )
             continue
         grouped[uid].append(row)
@@ -633,22 +618,22 @@ def pref_by_student(user_id: str, class_id: UUID) -> list[dict]:
                 (project_map.get(str(r["project_id"])) or {}).get("name") or "",
             ),
         )
-        out.append({
-            "user_id": sid,
-            "user_name": _profile_display_name(profile),
-            "user_email": profile.get("email"),
-            "preferences": [
-                {
-                    "project_id": str(r["project_id"]),
-                    "project_name": (
-                        project_map.get(str(r["project_id"])) or {}
-                    ).get("name"),
-                    "interest_value": int(r.get("interest_value") or 0),
-                    "interest_reason": r.get("interest_reason"),
-                }
-                for r in rows
-            ],
-        })
+        out.append(
+            {
+                "user_id": sid,
+                "user_name": _profile_display_name(profile),
+                "user_email": profile.get("email"),
+                "preferences": [
+                    {
+                        "project_id": str(r["project_id"]),
+                        "project_name": (project_map.get(str(r["project_id"])) or {}).get("name"),
+                        "interest_value": int(r.get("interest_value") or 0),
+                        "interest_reason": r.get("interest_reason"),
+                    }
+                    for r in rows
+                ],
+            }
+        )
 
     out.sort(key=lambda e: (e["user_name"] or "").lower())
     return out
@@ -667,9 +652,7 @@ def pref_by_project(user_id: str, class_id: UUID) -> list[dict]:
     fut_interest = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
     projects = fut_projects.result()
     interest_rows = fut_interest.result()
-    student_lookup = _name_lookup(
-        client, [r["user_id"] for r in interest_rows]
-    )
+    student_lookup = _name_lookup(client, [r["user_id"] for r in interest_rows])
 
     grouped: dict[str, list[dict]] = {str(p["id"]): [] for p in projects}
     for row in interest_rows:
@@ -684,31 +667,27 @@ def pref_by_project(user_id: str, class_id: UUID) -> list[dict]:
             grouped.get(pid, []),
             key=lambda r: (
                 -int(r.get("interest_value") or 0),
-                (
-                    student_lookup.get(str(r["user_id"])) or {}
-                ).get("name") or "",
+                (student_lookup.get(str(r["user_id"])) or {}).get("name") or "",
             ),
         )
-        out.append({
-            "project_id": pid,
-            "project_name": project.get("name"),
-            "team_size": int(project.get("team_size") or 0),
-            "num_members": int(project.get("num_members") or 0),
-            "interested_students": [
-                {
-                    "user_id": str(r["user_id"]),
-                    "user_name": _profile_display_name(
-                        student_lookup.get(str(r["user_id"]))
-                    ),
-                    "user_email": (
-                        student_lookup.get(str(r["user_id"])) or {}
-                    ).get("email"),
-                    "interest_value": int(r.get("interest_value") or 0),
-                    "interest_reason": r.get("interest_reason"),
-                }
-                for r in rows
-            ],
-        })
+        out.append(
+            {
+                "project_id": pid,
+                "project_name": project.get("name"),
+                "team_size": int(project.get("team_size") or 0),
+                "num_members": int(project.get("num_members") or 0),
+                "interested_students": [
+                    {
+                        "user_id": str(r["user_id"]),
+                        "user_name": _profile_display_name(student_lookup.get(str(r["user_id"]))),
+                        "user_email": (student_lookup.get(str(r["user_id"])) or {}).get("email"),
+                        "interest_value": int(r.get("interest_value") or 0),
+                        "interest_reason": r.get("interest_reason"),
+                    }
+                    for r in rows
+                ],
+            }
+        )
 
     out.sort(key=lambda e: (e["project_name"] or "").lower())
     return out
@@ -761,16 +740,18 @@ def project_rank(user_id: str, class_id: UUID) -> list[dict]:
         strength = (depth / breadth) if breadth > 0 else 0.0
         num_staff = member_counts.get(pid, 0)
         team_size = int(project.get("team_size") or 0)
-        summary.append({
-            "project_id": pid,
-            "project_name": project.get("name"),
-            "breadth": breadth,
-            "depth": depth,
-            "strength": strength,
-            "num_staff": num_staff,
-            "team_size": team_size,
-            "availability": team_size - num_staff,
-        })
+        summary.append(
+            {
+                "project_id": pid,
+                "project_name": project.get("name"),
+                "breadth": breadth,
+                "depth": depth,
+                "strength": strength,
+                "num_staff": num_staff,
+                "team_size": team_size,
+                "availability": team_size - num_staff,
+            }
+        )
 
     def _rank_desc(items: list[dict], key: str) -> dict[str, int]:
         """Return {project_id: rank} where rank 1 is the largest value, ties tie."""
@@ -794,11 +775,7 @@ def project_rank(user_id: str, class_id: UUID) -> list[dict]:
         entry["breadth_rank"] = breadth_ranks.get(pid, 0)
         entry["depth_rank"] = depth_ranks.get(pid, 0)
         entry["strength_rank"] = strength_ranks.get(pid, 0)
-        entry["sum_of_ranks"] = (
-            entry["breadth_rank"]
-            + entry["depth_rank"]
-            + entry["strength_rank"]
-        )
+        entry["sum_of_ranks"] = entry["breadth_rank"] + entry["depth_rank"] + entry["strength_rank"]
 
     # Total rank: lowest sum_of_ranks wins (rank 1).
     sum_sorted = sorted(summary, key=lambda x: x["sum_of_ranks"])
@@ -830,9 +807,7 @@ def get_assignments(user_id: str, class_id: UUID) -> list[dict]:
     students = fut_students.result()
     projects = fut_projects.result()
     members = _project_members_for_class(client, class_id, projects=projects)
-    project_lookup = _project_lookup(
-        client, [m.get("project_id") for m in members]
-    )
+    project_lookup = _project_lookup(client, [m.get("project_id") for m in members])
 
     student_to_project: dict[str, dict] = {}
     for m in members:
@@ -844,7 +819,8 @@ def get_assignments(user_id: str, class_id: UUID) -> list[dict]:
             logger.warning(
                 "get_assignments: user assigned to multiple projects in class | "
                 "user_id=%s class=%s",
-                uid, class_id,
+                uid,
+                class_id,
             )
             continue
         proj = project_lookup.get(pid) or {}
@@ -858,16 +834,16 @@ def get_assignments(user_id: str, class_id: UUID) -> list[dict]:
     for profile in students:
         uid = str(profile["id"])
         assignment = student_to_project.get(uid)
-        out.append({
-            "user_id": uid,
-            "user_name": _profile_display_name(profile),
-            "user_email": profile.get("email"),
-            "assigned_project_id": assignment["project_id"] if assignment else None,
-            "assigned_project_name": (
-                assignment["project_name"] if assignment else None
-            ),
-            "role": assignment["role"] if assignment else None,
-        })
+        out.append(
+            {
+                "user_id": uid,
+                "user_name": _profile_display_name(profile),
+                "user_email": profile.get("email"),
+                "assigned_project_id": assignment["project_id"] if assignment else None,
+                "assigned_project_name": (assignment["project_name"] if assignment else None),
+                "role": assignment["role"] if assignment else None,
+            }
+        )
 
     out.sort(key=lambda e: (e["user_name"] or "").lower())
     return out
@@ -891,9 +867,7 @@ def get_project_availability(user_id: str, class_id: UUID) -> list[dict]:
     members = _project_members_for_class(client, class_id, projects=projects)
 
     project_lookup = {str(p["id"]): p for p in projects}
-    student_lookup = _name_lookup(
-        client, [r["user_id"] for r in interest_rows]
-    )
+    student_lookup = _name_lookup(client, [r["user_id"] for r in interest_rows])
 
     member_counts: dict[str, int] = {}
     user_to_project: dict[str, str] = {}
@@ -911,17 +885,19 @@ def get_project_availability(user_id: str, class_id: UUID) -> list[dict]:
         team_size = int(proj.get("team_size") or 0)
         num_staff = member_counts.get(pid, 0)
         uid = str(row["user_id"])
-        out.append({
-            "user_id": uid,
-            "user_name": _profile_display_name(student_lookup.get(uid)),
-            "user_email": (student_lookup.get(uid) or {}).get("email"),
-            "project_id": pid,
-            "project_name": proj.get("name"),
-            "interest_value": int(row.get("interest_value") or 0),
-            "interest_reason": row.get("interest_reason"),
-            "user_assignment": user_to_project.get(uid),
-            "project_availability": team_size - num_staff,
-        })
+        out.append(
+            {
+                "user_id": uid,
+                "user_name": _profile_display_name(student_lookup.get(uid)),
+                "user_email": (student_lookup.get(uid) or {}).get("email"),
+                "project_id": pid,
+                "project_name": proj.get("name"),
+                "interest_value": int(row.get("interest_value") or 0),
+                "interest_reason": row.get("interest_reason"),
+                "user_assignment": user_to_project.get(uid),
+                "project_availability": team_size - num_staff,
+            }
+        )
 
     out.sort(
         key=lambda e: (
@@ -933,9 +909,7 @@ def get_project_availability(user_id: str, class_id: UUID) -> list[dict]:
     return out
 
 
-def get_class_students_with_interest(
-    user_id: str, class_id: UUID
-) -> list[dict]:
+def get_class_students_with_interest(user_id: str, class_id: UUID) -> list[dict]:
     """
     Instructor view: a single payload that the Assign UI can render without
     making N+1 calls. Each entry combines the student's profile, their
@@ -979,9 +953,7 @@ def get_class_students_with_interest(
 
     members = _project_members_for_class(client, class_id, projects=projects)
 
-    submission_lookup = {
-        str(s["user_id"]): s for s in (submissions.data or [])
-    }
+    submission_lookup = {str(s["user_id"]): s for s in (submissions.data or [])}
 
     project_ids: set[str] = {str(r["project_id"]) for r in interest_rows}
     interest_by_user: dict[str, list[dict]] = {}
@@ -989,7 +961,7 @@ def get_class_students_with_interest(
         interest_by_user.setdefault(str(row["user_id"]), []).append(row)
 
     prefs_by_user: dict[str, list[dict]] = {}
-    for row in (prefs.data or []):
+    for row in prefs.data or []:
         prefs_by_user.setdefault(str(row["user_id"]), []).append(row)
 
     member_lookup: dict[str, dict] = {}
@@ -1016,9 +988,7 @@ def get_class_students_with_interest(
         preferences = [
             {
                 "project_id": str(r["project_id"]),
-                "project_name": (
-                    project_lookup.get(str(r["project_id"])) or {}
-                ).get("name"),
+                "project_name": (project_lookup.get(str(r["project_id"])) or {}).get("name"),
                 "interest_value": int(r.get("interest_value") or 0),
                 "interest_reason": r.get("interest_reason"),
             }
@@ -1036,9 +1006,7 @@ def get_class_students_with_interest(
             }
 
         work_with = [_peer_view(r) for r in peer_rows if r.get("kind") == "work_with"]
-        dont_work_with = [
-            _peer_view(r) for r in peer_rows if r.get("kind") == "dont_work_with"
-        ]
+        dont_work_with = [_peer_view(r) for r in peer_rows if r.get("kind") == "dont_work_with"]
 
         member = member_lookup.get(uid)
         if member:
@@ -1051,26 +1019,29 @@ def get_class_students_with_interest(
         else:
             assignment = None
 
-        out.append({
-            "user_id": uid,
-            "user_name": _profile_display_name(profile),
-            "user_email": profile.get("email"),
-            "submitted_at": sub.get("submitted_at"),
-            "taking_115c": sub.get("taking_115c"),
-            "previous_project_name": sub.get("previous_project_name"),
-            "previous_project_link": sub.get("previous_project_link"),
-            "notes": sub.get("notes"),
-            "preferences": preferences,
-            "work_with": work_with,
-            "dont_work_with": dont_work_with,
-            "assigned_project": assignment,
-        })
+        out.append(
+            {
+                "user_id": uid,
+                "user_name": _profile_display_name(profile),
+                "user_email": profile.get("email"),
+                "submitted_at": sub.get("submitted_at"),
+                "taking_115c": sub.get("taking_115c"),
+                "previous_project_name": sub.get("previous_project_name"),
+                "previous_project_link": sub.get("previous_project_link"),
+                "notes": sub.get("notes"),
+                "preferences": preferences,
+                "work_with": work_with,
+                "dont_work_with": dont_work_with,
+                "assigned_project": assignment,
+            }
+        )
 
     out.sort(key=lambda e: (e["user_name"] or "").lower())
     return out
 
 
 # --------------------------------------------------------------------------- writes (instructor)
+
 
 def assign_user(
     user_id: str,
@@ -1099,9 +1070,7 @@ def assign_user(
     # would otherwise form via app.projects.controller -> app.staffing.
     from app.projects import controller as projects_controller
 
-    existing_project_ids = _get_projects_user_is_in(
-        client, class_id, str(target_user_id)
-    )
+    existing_project_ids = _get_projects_user_is_in(client, class_id, str(target_user_id))
 
     if str(project_id) in existing_project_ids:
         return {
@@ -1157,13 +1126,17 @@ def assign_user(
             except Exception:
                 logger.exception(
                     "assign_user rollback failed | user=%s project=%s",
-                    target_user_id, pid,
+                    target_user_id,
+                    pid,
                 )
         raise
 
     logger.info(
         "assign_user | class=%s user=%s -> project=%s removed_from=%d",
-        class_id, target_user_id, project_id, len(removed_from),
+        class_id,
+        target_user_id,
+        project_id,
+        len(removed_from),
     )
     return {
         "message": "User assigned to project",
@@ -1186,9 +1159,7 @@ def unassign_user(
     _require_class_instructor(user_id, class_id)
     client = _client()
 
-    project_ids = _get_projects_user_is_in(
-        client, class_id, str(target_user_id)
-    )
+    project_ids = _get_projects_user_is_in(client, class_id, str(target_user_id))
     if not project_ids:
         raise HTTPException(
             status_code=404,
@@ -1208,7 +1179,9 @@ def unassign_user(
 
     logger.info(
         "unassign_user | class=%s user=%s removed_from=%s",
-        class_id, target_user_id, removed,
+        class_id,
+        target_user_id,
+        removed,
     )
     return {
         "message": "User unassigned from project",
@@ -1251,8 +1224,7 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
 
     project_lookup = {str(p["id"]): p for p in projects}
     seats_left: dict[str, int] = {
-        str(p["id"]): max(int(p.get("team_size") or 0) - 0, 0)
-        for p in projects
+        str(p["id"]): max(int(p.get("team_size") or 0) - 0, 0) for p in projects
     }
     # Subtract already-assigned members so seat math reflects reality.
     for m in members:
@@ -1260,10 +1232,7 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
         if pid in seats_left:
             seats_left[pid] = max(seats_left[pid] - 1, 0)
 
-    interest_rows = [
-        r for r in all_interest_rows
-        if str(r["user_id"]) in unassigned_ids
-    ]
+    interest_rows = [r for r in all_interest_rows if str(r["user_id"]) in unassigned_ids]
     prefs_by_user: dict[str, list[dict]] = {}
     for row in interest_rows:
         prefs_by_user.setdefault(str(row["user_id"]), []).append(row)
@@ -1272,8 +1241,7 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
     # the student id for determinism.
     def _viable_count(uid: str) -> int:
         return sum(
-            1 for r in prefs_by_user.get(uid, [])
-            if seats_left.get(str(r["project_id"]), 0) > 0
+            1 for r in prefs_by_user.get(uid, []) if seats_left.get(str(r["project_id"]), 0) > 0
         )
 
     order = sorted(unassigned_ids, key=lambda uid: (_viable_count(uid), uid))
@@ -1300,20 +1268,26 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
             except HTTPException:
                 logger.exception(
                     "auto_assign: add_member failed | class=%s user=%s project=%s",
-                    class_id, uid, pid,
+                    class_id,
+                    uid,
+                    pid,
                 )
                 continue
             seats_left[pid] = seats_left.get(pid, 0) - 1
-            placements.append({
-                "user_id": uid,
-                "project_id": pid,
-                "project_name": (project_lookup.get(pid) or {}).get("name"),
-                "interest_value": int(row.get("interest_value") or 0),
-            })
+            placements.append(
+                {
+                    "user_id": uid,
+                    "project_id": pid,
+                    "project_name": (project_lookup.get(pid) or {}).get("name"),
+                    "interest_value": int(row.get("interest_value") or 0),
+                }
+            )
             break
 
     logger.info(
         "auto_assign | class=%s placed=%d unassigned=%d",
-        class_id, len(placements), len(unassigned_ids),
+        class_id,
+        len(placements),
+        len(unassigned_ids),
     )
     return placements

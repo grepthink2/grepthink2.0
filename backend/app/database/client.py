@@ -1,13 +1,14 @@
 import functools
 import logging
 import os
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 import httpx
 from dotenv import load_dotenv
-from supabase import create_client, Client
+from supabase import Client, create_client
 
 logger = logging.getLogger(__name__)
 
@@ -25,17 +26,22 @@ query_pool: ThreadPoolExecutor = ThreadPoolExecutor(
 )
 
 # Load .env from project root
-env_path = Path(__file__).resolve().parent.parent.parent.parent / '.env'
+env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 url: str = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
 # Try standard names and the one in the .env
-key: str = os.environ.get("SUPABASE_KEY") or os.environ.get("VITE_SUPABASE_KEY") or os.environ.get("SUPABASE_SECRET_KEY")
+key: str = (
+    os.environ.get("SUPABASE_KEY")
+    or os.environ.get("VITE_SUPABASE_KEY")
+    or os.environ.get("SUPABASE_SECRET_KEY")
+)
 
 if not url or not key:
     raise ValueError("Supabase URL and Key must be set in .env file")
 else:
     logger.info("Supabase URL and Key loaded successfully | url=%s", url)
+
 
 def _force_http1(client: Client) -> None:
     """Swap PostgREST's HTTP/2 session for an HTTP/1.1 one.
@@ -120,6 +126,7 @@ def retry_on_disconnect(retries: int = 1) -> Callable[[Callable[..., T]], Callab
     the retry never runs. ``HTTPException`` and other exceptions are not
     retried.
     """
+
     def decorator(fn: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(fn)
         def wrapper(*args, **kwargs) -> T:
@@ -133,13 +140,17 @@ def retry_on_disconnect(retries: int = 1) -> Callable[[Callable[..., T]], Callab
                         raise
                     logger.warning(
                         "Supabase disconnect (%s) in %s — retrying %s/%s",
-                        type(exc).__name__, fn.__qualname__,
-                        attempt + 1, retries,
+                        type(exc).__name__,
+                        fn.__qualname__,
+                        attempt + 1,
+                        retries,
                     )
             # Unreachable in practice — the loop either returns or re-raises.
             assert last_exc is not None
             raise last_exc
+
         return wrapper
+
     return decorator
 
 

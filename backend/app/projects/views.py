@@ -1,21 +1,36 @@
 """
 Projects views — parameter handling and responses
 """
+
 import logging
 from uuid import UUID
-from typing import Optional
-from fastapi import HTTPException, Depends, Query
+
+from fastapi import Depends, Query
+
 from app.dependencies import require_user
-from app.projects.models import CreateProjectRequest, UpdateProjectRequest, JoinProjectRequest, AcceptJoinRequestRequest, DismissJoinRequestRequest, ManageProjectMemberRequest, AssignRoleRequest
 from app.projects import controller
+from app.projects.models import (
+    AcceptJoinRequestRequest,
+    AssignRoleRequest,
+    CreateProjectRequest,
+    DismissJoinRequestRequest,
+    JoinProjectRequest,
+    ManageProjectMemberRequest,
+    UpdateProjectRequest,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def create_project(data: CreateProjectRequest, user_id: str = Depends(require_user)):
     result = controller.create_project(
-        data.class_id, data.name, data.description, user_id,
-        data.team_size, data.looking_for_roles, data.skills,
+        data.class_id,
+        data.name,
+        data.description,
+        user_id,
+        data.team_size,
+        data.looking_for_roles,
+        data.skills,
         sponsor_name=data.sponsor_name,
         sponsor_company=data.sponsor_company,
         sponsor_email=data.sponsor_email,
@@ -26,7 +41,7 @@ def create_project(data: CreateProjectRequest, user_id: str = Depends(require_us
 
 
 def get_projects(
-    class_id: Optional[UUID] = Query(None, description="Filter projects by class ID"),
+    class_id: UUID | None = Query(None, description="Filter projects by class ID"),
     user_id: str = Depends(require_user),
 ):
     projects = controller.get_projects_for_user(user_id, class_id)
@@ -34,7 +49,9 @@ def get_projects(
 
 
 def get_pending_team_invites(
-    class_id: UUID = Query(..., description="Class scope for pending invitations to the current user"),
+    class_id: UUID = Query(
+        ..., description="Class scope for pending invitations to the current user"
+    ),
     user_id: str = Depends(require_user),
 ):
     """Team invites where the current user is the invitee (awaiting accept/decline)."""
@@ -43,7 +60,9 @@ def get_pending_team_invites(
 
 
 def get_my_join_requests(
-    class_id: UUID = Query(..., description="Class scope for the current user's pending join requests"),
+    class_id: UUID = Query(
+        ..., description="Class scope for the current user's pending join requests"
+    ),
     user_id: str = Depends(require_user),
 ):
     """Student-initiated join requests submitted by the current user (awaiting team response)."""

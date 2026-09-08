@@ -1,6 +1,8 @@
 """Message notifications reach TAs and instructors too (group channels)."""
+
 from __future__ import annotations
-from unittest.mock import MagicMock, patch
+
+from unittest.mock import patch
 
 
 @patch("app.notifications.controller._upsert_unread_notification")
@@ -8,9 +10,12 @@ from unittest.mock import MagicMock, patch
 @patch("app.notifications.controller._get_profile", return_value={"id": "alice"})
 def test_notifies_non_students(_prof, _name, upsert):
     from app.notifications.controller import notify_new_message
+
     notify_new_message(
-        recipient_id="ta-1", sender_id="alice",
-        conversation_id="conv-t", body="hello team",
+        recipient_id="ta-1",
+        sender_id="alice",
+        conversation_id="conv-t",
+        body="hello team",
     )
     upsert.assert_called_once()
     _, kwargs = upsert.call_args

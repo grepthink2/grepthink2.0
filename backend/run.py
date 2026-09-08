@@ -1,10 +1,12 @@
 """
 Server entry point
 """
+
 import uvicorn
+
 from app.config import settings
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(f"Starting GrepThink 2.0 server on {settings.HOST}:{settings.PORT}...")
     uvicorn.run(
         "app.main:app",

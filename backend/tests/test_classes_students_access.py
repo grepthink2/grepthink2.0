@@ -11,6 +11,7 @@ Access now matches the sibling ``get_class_roster``: the class owner
 Runs the real controller logic against an in-memory FakeSupabase (the repo's
 `mem` fixture references a missing module, so these are self-contained).
 """
+
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -18,7 +19,6 @@ from fastapi.testclient import TestClient
 import app.classes.controller as classes_controller
 from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
-
 
 INSTR = "11111111-1111-1111-1111-111111111111"
 TA1 = "22222222-2222-2222-2222-222222222222"
@@ -32,8 +32,13 @@ P1 = "dddddddd-dddd-dddd-dddd-dddddddddddd"
 
 
 def _profile(uid, first):
-    return {"id": uid, "email": f"{uid}@ucsc.edu", "role": "student",
-            "first_name": first, "last_name": "X"}
+    return {
+        "id": uid,
+        "email": f"{uid}@ucsc.edu",
+        "role": "student",
+        "first_name": first,
+        "last_name": "X",
+    }
 
 
 @pytest.fixture
@@ -44,9 +49,13 @@ def db(monkeypatch):
     OTHER_INSTR have no relationship to either class.
     """
     fake = FakeSupabase(
-        profiles=[_profile(INSTR, "Ina"), _profile(TA1, "Tara"),
-                  _profile(S1, "Sam"), _profile(OUTSIDER, "Otto"),
-                  _profile(OTHER_INSTR, "Otis")],
+        profiles=[
+            _profile(INSTR, "Ina"),
+            _profile(TA1, "Tara"),
+            _profile(S1, "Sam"),
+            _profile(OUTSIDER, "Otto"),
+            _profile(OTHER_INSTR, "Otis"),
+        ],
         classes=[
             {"id": CLASS, "created_by": INSTR, "name": "CSE115C"},
             {"id": EMPTY_CLASS, "created_by": INSTR, "name": "CSE110"},
@@ -64,6 +73,7 @@ def db(monkeypatch):
 
 
 # -- the hole this closes --
+
 
 def test_unrelated_user_cannot_read_roster(db):
     with pytest.raises(HTTPException) as exc:
@@ -87,6 +97,7 @@ def test_empty_class_still_denies_non_member(db):
 
 
 # -- legitimate callers keep working --
+
 
 def test_owning_instructor_can_read_roster(db):
     students = classes_controller.get_class_students(CLASS, INSTR, "instructor")
@@ -128,6 +139,7 @@ def test_missing_class_is_404(db):
 
 
 # -- the view must actually thread the caller through --
+
 
 def test_endpoint_denies_non_member(client: TestClient, db, monkeypatch):
     # Guards the original bug directly: the view injected user_id but dropped

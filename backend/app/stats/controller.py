@@ -20,7 +20,7 @@ def get_user_count() -> int:
 
     client = service_client if service_client else supabase
     try:
-        result = client.table('profiles').select('id', count='exact').execute()
+        result = client.table("profiles").select("id", count="exact").execute()
         count = result.count or 0
         with _count_cache_lock:
             _cache[0] = count

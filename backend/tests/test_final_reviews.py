@@ -10,6 +10,7 @@ Tests for the Final Reviews schedule layer on top of the review model:
 Controller logic runs against the in-memory FakeSupabase (same harness as
 test_ta_review_model.py); endpoint routing/role-gating uses TestClient + mocks.
 """
+
 import datetime
 from unittest.mock import patch
 
@@ -19,9 +20,8 @@ from fastapi import HTTPException
 import app.tas.controller as tas
 from tests.fake_supabase import FakeSupabase
 
-
 INSTR = "instructor-1"
-TA1 = "ta-1"   # Home TA (assigned_ta_id) of P1 and P3
+TA1 = "ta-1"  # Home TA (assigned_ta_id) of P1 and P3
 TA2 = "ta-2"
 TA3 = "ta-3"
 S1 = "student-1"
@@ -31,33 +31,64 @@ P2 = "proj-2"  # review at 20:00Z, no home TA
 P3 = "proj-3"  # unscheduled, home TA1
 
 ZOOM = "https://ucsc.zoom.us/j/123?pwd=abc"
-T_2000 = datetime.datetime(2026, 7, 22, 20, 0, tzinfo=datetime.timezone.utc)
-T_2200 = datetime.datetime(2026, 7, 22, 22, 0, tzinfo=datetime.timezone.utc)
+T_2000 = datetime.datetime(2026, 7, 22, 20, 0, tzinfo=datetime.UTC)
+T_2200 = datetime.datetime(2026, 7, 22, 22, 0, tzinfo=datetime.UTC)
 
 
 def _profile(uid, first):
-    return {"id": uid, "email": f"{uid}@ucsc.edu", "first_name": first, "last_name": "X", "image_url": None}
+    return {
+        "id": uid,
+        "email": f"{uid}@ucsc.edu",
+        "first_name": first,
+        "last_name": "X",
+        "image_url": None,
+    }
 
 
 @pytest.fixture
 def db(monkeypatch):
     fake = FakeSupabase(
-        profiles=[_profile(INSTR, "Ina"), _profile(TA1, "Tara"), _profile(TA2, "Tess"),
-                  _profile(TA3, "Tom"), _profile(S1, "Sam")],
-        classes=[{"id": CLASS, "created_by": INSTR, "review_period_open": False,
-                  "review_zoom_url": None}],
+        profiles=[
+            _profile(INSTR, "Ina"),
+            _profile(TA1, "Tara"),
+            _profile(TA2, "Tess"),
+            _profile(TA3, "Tom"),
+            _profile(S1, "Sam"),
+        ],
+        classes=[
+            {"id": CLASS, "created_by": INSTR, "review_period_open": False, "review_zoom_url": None}
+        ],
         class_enrollments=[
-            {"id": f"enr-{u}", "class_id": CLASS, "user_id": u,
-             "enrollment_role": ("ta" if u in (TA1, TA2, TA3) else "student")}
+            {
+                "id": f"enr-{u}",
+                "class_id": CLASS,
+                "user_id": u,
+                "enrollment_role": ("ta" if u in (TA1, TA2, TA3) else "student"),
+            }
             for u in (TA1, TA2, TA3, S1)
         ],
         projects=[
-            {"id": P1, "class_id": CLASS, "name": "Alpha", "assigned_ta_id": TA1,
-             "final_review_at": T_2200.isoformat()},
-            {"id": P2, "class_id": CLASS, "name": "Beta", "assigned_ta_id": None,
-             "final_review_at": T_2000.isoformat()},
-            {"id": P3, "class_id": CLASS, "name": "Gamma", "assigned_ta_id": TA1,
-             "final_review_at": None},
+            {
+                "id": P1,
+                "class_id": CLASS,
+                "name": "Alpha",
+                "assigned_ta_id": TA1,
+                "final_review_at": T_2200.isoformat(),
+            },
+            {
+                "id": P2,
+                "class_id": CLASS,
+                "name": "Beta",
+                "assigned_ta_id": None,
+                "final_review_at": T_2000.isoformat(),
+            },
+            {
+                "id": P3,
+                "class_id": CLASS,
+                "name": "Gamma",
+                "assigned_ta_id": TA1,
+                "final_review_at": None,
+            },
         ],
         project_review_tas=[],
     )
@@ -77,6 +108,7 @@ def _project(db, pid):
 # --------------------------------------------------------------------------
 # Shared Zoom (classes.review_zoom_url)
 # --------------------------------------------------------------------------
+
 
 def test_set_review_zoom_updates_class(db):
     out = tas.set_review_zoom(INSTR, CLASS, ZOOM)
@@ -104,8 +136,9 @@ def test_set_review_zoom_instructor_only(db):
 # Per-team review slot (projects.final_review_at)
 # --------------------------------------------------------------------------
 
+
 def test_set_final_review_time_sets_and_clears(db):
-    when = datetime.datetime(2026, 7, 24, 18, 0, tzinfo=datetime.timezone.utc)
+    when = datetime.datetime(2026, 7, 24, 18, 0, tzinfo=datetime.UTC)
     out = tas.set_final_review_time(INSTR, P3, when)
     assert out["final_review_at"] == when.isoformat()
     assert _project(db, P3)["final_review_at"] == when.isoformat()
@@ -131,6 +164,7 @@ def test_set_final_review_time_unknown_project_404(db):
 # --------------------------------------------------------------------------
 # Schedule read (instructor + class TAs)
 # --------------------------------------------------------------------------
+
 
 def test_schedule_forbidden_for_students_and_outsiders(db):
     for uid in (S1, "not-enrolled"):
@@ -158,8 +192,8 @@ def test_schedule_includes_tas_zoom_and_window(db):
     assert by_id[P1]["home_ta"]["name"]
     assert by_id[P1]["review_ta"]["user_id"] == TA2
     assert by_id[P1]["review_ta"]["email"] == f"{TA2}@ucsc.edu"
-    assert by_id[P2]["home_ta"] is None      # no assigned TA
-    assert by_id[P2]["review_ta"] is None    # open slot
+    assert by_id[P2]["home_ta"] is None  # no assigned TA
+    assert by_id[P2]["review_ta"] is None  # open slot
     assert by_id[P1]["final_review_at"] == T_2200.isoformat()
     assert by_id[P3]["final_review_at"] is None
 
@@ -196,7 +230,8 @@ def test_review_zoom_endpoint_requires_instructor(mock_role, mock_fn, client, au
     mock_role.return_value = "student"
     r = client.post(
         f"/api/tas/classes/{CLASS_UUID}/review-zoom",
-        headers=auth_header, json={"zoom_url": ZOOM},
+        headers=auth_header,
+        json={"zoom_url": ZOOM},
     )
     assert r.status_code == 403
     mock_fn.assert_not_called()
@@ -205,7 +240,8 @@ def test_review_zoom_endpoint_requires_instructor(mock_role, mock_fn, client, au
     mock_fn.return_value = {"review_zoom_url": ZOOM}
     r = client.post(
         f"/api/tas/classes/{CLASS_UUID}/review-zoom",
-        headers=auth_header, json={"zoom_url": ZOOM},
+        headers=auth_header,
+        json={"zoom_url": ZOOM},
     )
     assert r.status_code == 200
     mock_fn.assert_called_once()
@@ -217,7 +253,8 @@ def test_review_time_endpoint_requires_instructor(mock_role, mock_fn, client, au
     mock_role.return_value = "student"
     r = client.post(
         f"/api/tas/projects/{PROJ_UUID}/review-time",
-        headers=auth_header, json={"scheduled_at": "2026-07-22T20:00:00Z"},
+        headers=auth_header,
+        json={"scheduled_at": "2026-07-22T20:00:00Z"},
     )
     assert r.status_code == 403
     mock_fn.assert_not_called()
@@ -226,7 +263,8 @@ def test_review_time_endpoint_requires_instructor(mock_role, mock_fn, client, au
     mock_fn.return_value = {"final_review_at": "2026-07-22T20:00:00+00:00"}
     r = client.post(
         f"/api/tas/projects/{PROJ_UUID}/review-time",
-        headers=auth_header, json={"scheduled_at": None},
+        headers=auth_header,
+        json={"scheduled_at": None},
     )
     assert r.status_code == 200
     mock_fn.assert_called_once()

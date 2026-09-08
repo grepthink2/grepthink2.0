@@ -1,10 +1,13 @@
 """
 Classes views — parameter handling and responses
 """
+
 from uuid import UUID
-from fastapi import HTTPException, Depends, UploadFile, File
-from app.dependencies import require_user, require_instructor
+
+from fastapi import Depends, File, HTTPException, UploadFile
+
 from app.auth.controller import get_user_role
+from app.classes import controller
 from app.classes.models import (
     AddManualRosterStudentRequest,
     BulkInviteRequest,
@@ -16,12 +19,16 @@ from app.classes.models import (
     QueueInviteResponse,
     UpdateClassStatusRequest,
 )
-from app.classes import controller
+from app.dependencies import require_instructor, require_user
 
 
 def create_class(data: CreateClassRequest, user_id: str = Depends(require_instructor)):
     result = controller.create_class(
-        data.name, data.description, data.term, data.start_date, user_id,
+        data.name,
+        data.description,
+        data.term,
+        data.start_date,
+        user_id,
         tsr_count=data.tsr_count,
     )
     return {"message": "Class created successfully", "class": result}
@@ -91,7 +98,7 @@ async def upload_class_roster(
     """Replace the class roster from a UCSC CSV export (instructor only)."""
     raw = await file.read()
     try:
-        csv_text = raw.decode('utf-8-sig')
+        csv_text = raw.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
         raise HTTPException(status_code=400, detail="CSV must be UTF-8 encoded") from exc
     return controller.upload_class_roster(class_id, csv_text, user_id)
@@ -104,7 +111,11 @@ def add_manual_roster_student(
 ):
     """Manually add a student to the roster (instructor only)."""
     return controller.add_manual_roster_student(
-        class_id, data.first_name, data.last_name, data.email, user_id,
+        class_id,
+        data.first_name,
+        data.last_name,
+        data.email,
+        user_id,
     )
 
 
