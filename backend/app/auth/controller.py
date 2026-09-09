@@ -6,7 +6,7 @@ import logging
 import threading
 import time
 
-from app.database.client import service_client, supabase
+from app.core.db import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def get_user_role(user_id: str) -> str | None:
             return cached[0]
 
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         result = client.table("profiles").select("role").eq("id", user_id).execute()
         role = result.data[0].get("role") if result.data and len(result.data) > 0 else None
         if role is None:

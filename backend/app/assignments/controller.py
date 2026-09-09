@@ -8,11 +8,10 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from app.core.db import get_client
 from app.database.client import (
     _TRANSIENT_HTTPX_ERRORS,
     retry_on_disconnect,
-    service_client,
-    supabase,
 )
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
@@ -20,13 +19,9 @@ logger = logging.getLogger(__name__)
 ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form", "feedback"}
 
 
-def _client():
-    return service_client if service_client else supabase
-
-
 def _require_instructor(user_id: str) -> None:
     """Raise 403 if the user is not an instructor."""
-    result = _client().table("profiles").select("role").eq("id", user_id).execute()
+    result = get_client().table("profiles").select("role").eq("id", user_id).execute()
     if not result.data or result.data[0].get("role") != "instructor":
         raise HTTPException(status_code=403, detail="Only instructors can perform this action")
 
@@ -34,7 +29,7 @@ def _require_instructor(user_id: str) -> None:
 def _require_class_instructor(user_id: str, class_id: str) -> None:
     """Raise 403/404 if the class doesn't exist or the instructor doesn't own it."""
     result = (
-        _client()
+        get_client()
         .table("classes")
         .select("id")
         .eq("id", class_id)
@@ -123,7 +118,7 @@ def create_assignment(
                 )
             assignment_data["assignment_type"] = normalized_type
 
-        result = _client().table("assignments").insert(assignment_data).execute()
+        result = get_client().table("assignments").insert(assignment_data).execute()
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to create assignment")
 
@@ -246,7 +241,7 @@ def update_assignment(
     _require_instructor(user_id)
 
     try:
-        client = _client()
+        client = get_client()
 
         assignment_result = (
             client.table("assignments").select("*").eq("id", str(assignment_id)).execute()
@@ -329,7 +324,7 @@ def delete_assignment(user_id: str, assignment_id: UUID) -> None:
     """Delete an assignment (instructor who owns the class only)."""
     _require_instructor(user_id)
     try:
-        client = _client()
+        client = get_client()
         assignment_result = (
             client.table("assignments")
             .select("id, class_id")
@@ -414,7 +409,7 @@ def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
     - Students: must be enrolled in the class; only see 'publish' assignments.
     """
     try:
-        client = _client()
+        client = get_client()
 
         profile_result = client.table("profiles").select("role").eq("id", user_id).execute()
         role = profile_result.data[0].get("role") if profile_result.data else None
@@ -495,7 +490,7 @@ def update_tsr_entry(
     percent_contribution, positive_feedback, plus optional fields).
     """
     try:
-        client = _client()
+        client = get_client()
 
         # Fetch the TSR and verify it belongs to this assignment
         tsr_result = (
@@ -606,7 +601,7 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
     positive_feedback, plus Scrum Master fields).
     """
     try:
-        client = _client()
+        client = get_client()
 
         assignment_result = (
             client.table("assignments")
@@ -679,7 +674,7 @@ def get_tsr_responses_about_user(
     plus optional constructive_feedback and Scrum Master fields).
     """
     try:
-        client = _client()
+        client = get_client()
 
         assignment_result = (
             client.table("assignments")
@@ -739,7 +734,7 @@ def get_instructor_tsr_overview(user_id: str, assignment_id: UUID) -> dict:
     assignment (evaluator/evaluatee names, contributions, feedback).
     """
     try:
-        client = _client()
+        client = get_client()
 
         assignment_result = (
             client.table("assignments")
@@ -853,7 +848,7 @@ def submit_feedback(
 ) -> dict:
     """Upsert a student's feedback submission for a published feedback assignment."""
     try:
-        client = _client()
+        client = get_client()
 
         assignment_result = (
             client.table("assignments")
@@ -917,7 +912,7 @@ def submit_feedback(
 def get_my_feedback(user_id: str, assignment_id: UUID) -> dict | None:
     """Return the student's own feedback submission, or None if not yet submitted."""
     try:
-        client = _client()
+        client = get_client()
 
         assignment_result = (
             client.table("assignments")
@@ -963,7 +958,7 @@ def get_my_feedback(user_id: str, assignment_id: UUID) -> dict | None:
 def get_feedback_overview(user_id: str, assignment_id: UUID) -> dict:
     """Instructor view: all feedback submissions with student names + enrolled count."""
     try:
-        client = _client()
+        client = get_client()
 
         assignment_result = (
             client.table("assignments")

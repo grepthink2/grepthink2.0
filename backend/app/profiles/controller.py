@@ -8,7 +8,7 @@ import time
 
 from fastapi import HTTPException
 
-from app.database.client import service_client, supabase
+from app.core.db import get_client
 from app.utils.email import send_email
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ def get_profile(user_id: str) -> dict:
     """
     Fetch a user's full profile row.
     """
-    client = service_client or supabase
+    client = get_client()
     result = client.table("profiles").select(PROFILE_FIELDS).eq("id", user_id).limit(1).execute()
     return result.data[0] if result.data else {}
 
@@ -61,7 +61,7 @@ def get_profile_for_class_member(viewer_id: str, target_user_id: str, class_id: 
     Both viewer and target must belong to the class (instructor via created_by,
     student via class_enrollments).
     """
-    client = service_client or supabase
+    client = get_client()
     class_result = client.table("classes").select("id, created_by").eq("id", class_id).execute()
     if not class_result.data:
         raise HTTPException(status_code=404, detail="Class not found")
@@ -91,7 +91,7 @@ def update_profile(user_id: str, data: dict) -> dict:
         logger.debug("update_profile: no valid fields to update | user_id=%s", user_id)
         return get_profile(user_id)
 
-    client = service_client or supabase
+    client = get_client()
     result = client.table("profiles").update(payload).eq("id", user_id).execute()
     updated = result.data[0] if result.data else {}
     full_profile = get_profile(user_id) if updated else {}
@@ -130,7 +130,7 @@ def send_edu_verification(user_id: str, edu_email: str) -> None:
 
     # Check availability before issuing a code so the error surfaces at
     # Save Changes time (inline), not after the user enters the code in the modal.
-    client = service_client or supabase
+    client = get_client()
     conflict = (
         client.table("profiles")
         .select("id")
@@ -230,7 +230,7 @@ def verify_edu_email(user_id: str, edu_email: str, code: str) -> dict:
 
     del _pending_edu_codes[user_id]
 
-    client = service_client or supabase
+    client = get_client()
     try:
         result = (
             client.table("profiles").update({"edu_email": edu_email}).eq("id", user_id).execute()

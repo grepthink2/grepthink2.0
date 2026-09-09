@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from app.database.client import service_client, supabase
+from app.core.db import get_client
 from app.tsr.models import CreateTSRRequest
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
@@ -20,10 +20,6 @@ TSR_FIELDS = (
     "scrum_master_tickets, scrum_master_assessment, scrum_master_notes, "
     "assignment_id, created_at"
 )
-
-
-def _client():
-    return service_client if service_client else supabase
 
 
 def _enrich_tsrs(client, tsrs: list) -> list:
@@ -70,7 +66,7 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
     - If assignment_id is provided, it must belong to the same class and have assignment_type='tsr'.
     """
     try:
-        client = _client()
+        client = get_client()
 
         # Resolve project → class
         project_result = (
@@ -199,7 +195,7 @@ def view_tsrs(user_id: str, project_id: UUID) -> list:
     Admin / scrum master see everything; others see only their own submitted TSRs.
     """
     try:
-        client = _client()
+        client = get_client()
 
         user_role = _get_project_role(client, str(project_id), user_id)
 
@@ -243,7 +239,7 @@ def get_tsrs_submitted_by(
     Optionally filtered by week.
     """
     try:
-        client = _client()
+        client = get_client()
 
         requester_role = _get_project_role(client, str(project_id), requester_id)
         subject_id = target_user_id or requester_id
@@ -290,7 +286,7 @@ def get_tsrs_received_by(
     Optionally filtered by week.
     """
     try:
-        client = _client()
+        client = get_client()
 
         requester_role = _get_project_role(client, str(project_id), requester_id)
         subject_id = target_user_id or requester_id

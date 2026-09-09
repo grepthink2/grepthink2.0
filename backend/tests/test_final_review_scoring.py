@@ -100,6 +100,7 @@ def db(monkeypatch):
     )
     monkeypatch.setattr(tas, "service_client", fake, raising=False)
     monkeypatch.setattr(tas, "supabase", fake, raising=False)
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
 
 

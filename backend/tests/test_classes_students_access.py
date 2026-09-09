@@ -69,6 +69,7 @@ def db(monkeypatch):
     )
     monkeypatch.setattr(classes_controller, "service_client", fake, raising=False)
     monkeypatch.setattr(classes_controller, "supabase", fake, raising=False)
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
 
 

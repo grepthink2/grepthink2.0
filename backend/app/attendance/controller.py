@@ -38,7 +38,7 @@ from app.classes.controller import (
     _FULL_TSR_COUNT,
     _SUMMER_TSR_COUNT,
 )
-from app.database.client import service_client, supabase
+from app.core.db import get_client
 
 # Reuse the battle-tested "instructor owns this class" check.
 from app.projects.controller import _is_instructor
@@ -60,10 +60,6 @@ _WEEKDAY_ORDER = {
     "sunday": 6,
 }
 _CLASS_TZ = ZoneInfo("America/Los_Angeles") if ZoneInfo else None
-
-
-def _client():
-    return service_client if service_client else supabase
 
 
 # ---------------------------------------------------------------------------
@@ -134,7 +130,7 @@ def is_class_ta(user_id: str, class_id: str) -> bool:
     if not user_id or not class_id:
         return False
     return (
-        tas_controller.get_enrollment_role(_client(), class_id, str(user_id))
+        tas_controller.get_enrollment_role(get_client(), class_id, str(user_id))
         == tas_controller.ENROLLMENT_ROLE_TA
     )
 
@@ -296,7 +292,7 @@ def list_class_tas(class_id: UUID, user_id: str, role: str) -> list:
     TA badges); the designate-toggle UI is gated separately on the write path.
     """
     try:
-        client = _client()
+        client = get_client()
         cid = str(class_id)
 
         is_instr = _is_instructor(user_id, cid)
@@ -361,7 +357,7 @@ def list_class_tas(class_id: UUID, user_id: str, role: str) -> list:
 def assign_project_ta(project_id: UUID, instructor_id: str, ta_user_id: str | None) -> dict:
     """Assign a designated class TA to a project, or clear with ta_user_id=None."""
     try:
-        client = _client()
+        client = get_client()
         project = _load_project(client, project_id)
         _require_class_instructor(client, instructor_id, project["class_id"])
 
@@ -417,7 +413,7 @@ def upsert_meeting(
         raise HTTPException(status_code=400, detail="meeting_day must be a weekday name")
     seq = int(meeting_in_week or 1)
     try:
-        client = _client()
+        client = get_client()
         project = _load_project(client, project_id)
         _require_meeting_editor(client, user_id, project)
         meeting = _get_or_create_meeting(
@@ -478,7 +474,7 @@ def set_meeting_cadence(
     if meetings_per_week is None and meeting_duration_minutes is None:
         raise HTTPException(status_code=400, detail="Provide at least one field to update")
     try:
-        client = _client()
+        client = get_client()
         _require_class_instructor(client, instructor_id, str(class_id))
         updates: dict = {}
         if meetings_per_week is not None:
@@ -573,7 +569,7 @@ def get_ta_schedule(
       * ``my-team`` — the caller's own team(s) (student/member)
     """
     try:
-        client = _client()
+        client = get_client()
         cid = str(class_id)
 
         cls = (
@@ -747,7 +743,7 @@ def get_team_attendance(
     own row.
     """
     try:
-        client = _client()
+        client = get_client()
         project = _load_project(client, project_id)
 
         is_editor = True
@@ -897,7 +893,7 @@ def upsert_attendance(
     if status not in _VALID_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid status")
     try:
-        client = _client()
+        client = get_client()
         project = _load_project(client, project_id)
         _require_meeting_editor(client, marker_id, project)
         _validate_slot(client, project["class_id"], week_number, meeting_in_week)
@@ -946,7 +942,7 @@ def mark_all_present(
 ) -> list:
     """Mark every team member present for a (project, week, meeting)."""
     try:
-        client = _client()
+        client = get_client()
         project = _load_project(client, project_id)
         _require_meeting_editor(client, marker_id, project)
         _validate_slot(client, project["class_id"], week_number, meeting_in_week)

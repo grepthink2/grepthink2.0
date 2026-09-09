@@ -35,7 +35,8 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from app.database.client import query_pool, service_client, supabase
+from app.core.db import get_client
+from app.database.client import query_pool
 from app.staffing.models import RankedProject
 
 logger = logging.getLogger(__name__)
@@ -44,10 +45,6 @@ logger = logging.getLogger(__name__)
 # Interest value bounds matching the spreadsheet (5 = top, 1 = lowest ranked).
 MIN_INTEREST_VALUE = 1
 MAX_INTEREST_VALUE = 5
-
-
-def _client():
-    return service_client if service_client else supabase
 
 
 # --------------------------------------------------------------------------- helpers
@@ -60,7 +57,7 @@ def _require_class_instructor(user_id: str, class_id: UUID) -> None:
     404 (vs. 403) so we don't leak class existence to non-instructors.
     """
     result = (
-        _client()
+        get_client()
         .table("classes")
         .select("id")
         .eq("id", str(class_id))
@@ -82,7 +79,7 @@ def _require_class_member(user_id: str, class_id: UUID) -> None:
 
     Used for student-facing routes (submitting interest, viewing own form).
     """
-    client = _client()
+    client = get_client()
     enrollment = (
         client.table("class_enrollments")
         .select("id")
@@ -282,7 +279,7 @@ def submit_interest(
 
     _require_class_member(user_id, class_id)
 
-    client = _client()
+    client = get_client()
     _project_in_class(client, project_id, class_id)
 
     existing = (
@@ -357,7 +354,7 @@ def submit_form(
     save piecewise should call ``submit_interest`` instead.
     """
     _require_class_member(user_id, class_id)
-    client = _client()
+    client = get_client()
 
     # Validate every ranked-project entry up front so we never half-write.
     for rp in ranked_projects:
@@ -494,7 +491,7 @@ def get_my_interests(user_id: str, class_id: UUID) -> list[dict]:
     Return the current user's ranked-project rows for the class, hydrated
     with ``project_name`` and sorted from highest to lowest interest.
     """
-    client = _client()
+    client = get_client()
     rows = (
         client.table("interest_form")
         .select("id, user_id, class_id, project_id, interest_value, interest_reason, updated_at")
@@ -524,7 +521,7 @@ def get_my_submission(user_id: str, class_id: UUID) -> dict:
     Result is always a dict (never None) so the frontend doesn't need to
     distinguish "no record" from "blank record".
     """
-    client = _client()
+    client = get_client()
     sub = (
         client.table("interest_submissions")
         .select(
@@ -584,7 +581,7 @@ def pref_by_student(user_id: str, class_id: UUID) -> list[dict]:
     name. Mirrors the spreadsheet's "pref by student" sheet.
     """
     _require_class_instructor(user_id, class_id)
-    client = _client()
+    client = get_client()
 
     fut_students = query_pool.submit(lambda: _list_class_students(client, class_id))
     fut_interest = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
@@ -646,7 +643,7 @@ def pref_by_project(user_id: str, class_id: UUID) -> list[dict]:
     Mirrors the spreadsheet's "pref by project" sheet.
     """
     _require_class_instructor(user_id, class_id)
-    client = _client()
+    client = get_client()
 
     fut_projects = query_pool.submit(lambda: _list_class_projects(client, class_id))
     fut_interest = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
@@ -714,7 +711,7 @@ def project_rank(user_id: str, class_id: UUID) -> list[dict]:
     "best" project shows up first.
     """
     _require_class_instructor(user_id, class_id)
-    client = _client()
+    client = get_client()
 
     fut_projects = query_pool.submit(lambda: _list_class_projects(client, class_id))
     fut_interest = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
@@ -800,7 +797,7 @@ def get_assignments(user_id: str, class_id: UUID) -> list[dict]:
     the spreadsheet.
     """
     _require_class_instructor(user_id, class_id)
-    client = _client()
+    client = get_client()
 
     fut_students = query_pool.submit(lambda: _list_class_students(client, class_id))
     fut_projects = query_pool.submit(lambda: _list_class_projects(client, class_id))
@@ -858,7 +855,7 @@ def get_project_availability(user_id: str, class_id: UUID) -> list[dict]:
     where every interested student is already assigned elsewhere.
     """
     _require_class_instructor(user_id, class_id)
-    client = _client()
+    client = get_client()
 
     fut_projects = query_pool.submit(lambda: _list_class_projects(client, class_id))
     fut_interest = query_pool.submit(lambda: _list_class_interest_rows(client, class_id))
@@ -917,7 +914,7 @@ def get_class_students_with_interest(user_id: str, class_id: UUID) -> list[dict]
     project assignment (if any).
     """
     _require_class_instructor(user_id, class_id)
-    client = _client()
+    client = get_client()
     cid = str(class_id)
 
     def _fetch_submissions():
@@ -1063,7 +1060,7 @@ def assign_user(
         HTTPException 400 — project belongs to a different class.
     """
     _require_class_instructor(user_id, class_id)
-    client = _client()
+    client = get_client()
     _project_in_class(client, project_id, class_id)
 
     # Defer the projects-controller import to break the import cycle that
@@ -1157,7 +1154,7 @@ def unassign_user(
     this class. Raises 404 if the student is not currently assigned.
     """
     _require_class_instructor(user_id, class_id)
-    client = _client()
+    client = get_client()
 
     project_ids = _get_projects_user_is_in(client, class_id, str(target_user_id))
     if not project_ids:
@@ -1203,7 +1200,7 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
     placed (or nobody had a viable option), returns an empty list.
     """
     _require_class_instructor(user_id, class_id)
-    client = _client()
+    client = get_client()
 
     fut_students = query_pool.submit(lambda: _list_class_students(client, class_id))
     fut_projects = query_pool.submit(lambda: _list_class_projects(client, class_id))

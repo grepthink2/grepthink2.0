@@ -2,7 +2,7 @@ import logging
 import threading
 import time
 
-from app.database.client import service_client, supabase
+from app.core.db import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ def get_user_count() -> int:
         if _cache[0] is not None and now < _cache[1]:
             return _cache[0]
 
-    client = service_client if service_client else supabase
+    client = get_client()
     try:
         result = client.table("profiles").select("id", count="exact").execute()
         count = result.count or 0

@@ -35,17 +35,13 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from app.database.client import service_client, supabase
+from app.core.db import get_client
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
 
 ENROLLMENT_ROLE_STUDENT = "student"
 ENROLLMENT_ROLE_TA = "ta"
-
-
-def _client():
-    return service_client if service_client else supabase
 
 
 def _require_class_instructor(client, user_id: str, class_id) -> dict:
@@ -83,7 +79,7 @@ def get_enrollment_role(client, class_id, user_id: str) -> str | None:
 def get_my_enrollment_role(user_id: str, class_id: UUID) -> dict:
     """Class-level role for the requesting user (instructor / ta / student / none)."""
     try:
-        client = _client()
+        client = get_client()
         class_res = (
             client.table("classes").select("id, created_by").eq("id", str(class_id)).execute()
         )
@@ -108,7 +104,7 @@ def get_my_enrollment_role(user_id: str, class_id: UUID) -> dict:
 def promote_to_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
     """Promote an enrolled student to TA for this class (instructor only)."""
     try:
-        client = _client()
+        client = get_client()
         _require_class_instructor(client, instructor_id, class_id)
 
         enrollment = _get_enrollment(client, class_id, str(target_user_id))
@@ -139,7 +135,7 @@ def promote_to_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> d
 def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
     """Demote a TA back to a regular student and clear their project assignments."""
     try:
-        client = _client()
+        client = get_client()
         _require_class_instructor(client, instructor_id, class_id)
 
         enrollment = _get_enrollment(client, class_id, str(target_user_id))
@@ -207,7 +203,7 @@ def _ta_assignments_by_user(client, class_id, user_ids: list[str]) -> dict[str, 
 def list_class_tas(instructor_id: str, class_id: UUID) -> list[dict]:
     """List every TA in a class with the projects they oversee (instructor only)."""
     try:
-        client = _client()
+        client = get_client()
         _require_class_instructor(client, instructor_id, class_id)
 
         enrollments = (
@@ -269,7 +265,7 @@ def list_project_tas(user_id: str, project_id: UUID) -> list[dict]:
     Readable by the class instructor or any enrolled class member.
     """
     try:
-        client = _client()
+        client = get_client()
         project = _load_project(client, project_id)
         class_id = project["class_id"]
 
@@ -310,7 +306,7 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
     then the regular TSR-overview endpoint returns the (TA-scoped) responses.
     """
     try:
-        client = _client()
+        client = get_client()
         if get_enrollment_role(client, class_id, user_id) != ENROLLMENT_ROLE_TA:
             raise HTTPException(status_code=403, detail="You are not a TA in this class")
 
@@ -361,7 +357,7 @@ def _review_window_open(client, class_id) -> bool:
 def set_review_window(instructor_id: str, class_id: UUID, is_open: bool) -> dict:
     """Open or close a class's end-of-quarter review window (instructor only)."""
     try:
-        client = _client()
+        client = get_client()
         _require_class_instructor(client, instructor_id, class_id)
         client.table("classes").update({"review_period_open": bool(is_open)}).eq(
             "id", str(class_id)
@@ -392,7 +388,7 @@ def list_project_review_tas(user_id: str, project_id: UUID) -> dict:
     instructor or any enrolled class member.
     """
     try:
-        client = _client()
+        client = get_client()
         project = _load_project(client, project_id)
         class_id = project["class_id"]
 
@@ -454,7 +450,7 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
     additional reviewer must be a class TA other than the team's assigned TA.
     """
     try:
-        client = _client()
+        client = get_client()
         project = _load_project(client, project_id)
         class_id = project["class_id"]
         main_id = project.get("assigned_ta_id")
@@ -540,7 +536,7 @@ def set_review_zoom(instructor_id: str, class_id: UUID, zoom_url: str | None) ->
     Every team's final review happens in this room; a null/blank URL clears it.
     """
     try:
-        client = _client()
+        client = get_client()
         _require_class_instructor(client, instructor_id, class_id)
         url = (zoom_url or "").strip() or None
         client.table("classes").update({"review_zoom_url": url}).eq("id", str(class_id)).execute()
@@ -572,7 +568,7 @@ def set_final_review_time(
     row.
     """
     try:
-        client = _client()
+        client = get_client()
         project = _load_project(client, project_id)
         _require_class_instructor(client, instructor_id, project["class_id"])
         value = scheduled_at.isoformat() if scheduled_at else None
@@ -618,7 +614,7 @@ def get_final_review_schedule(user_id: str, class_id: UUID) -> dict:
     state, and how many teams the viewer reviews (their Review-TA claims).
     """
     try:
-        client = _client()
+        client = get_client()
         class_res = (
             client.table("classes")
             .select("id, created_by, review_period_open, review_zoom_url")
@@ -795,7 +791,7 @@ def get_final_review_detail(user_id: str, project_id: UUID) -> dict:
     shared), and the Review-TA notes document.
     """
     try:
-        client = _client()
+        client = get_client()
         ctx = _load_review_context(client, user_id, project_id)
         project, cls = ctx["project"], ctx["class"]
 
@@ -917,7 +913,7 @@ def save_final_review_scores(
         if role not in SCORE_ROLES:
             raise HTTPException(status_code=400, detail="Unknown scorer role")
 
-        client = _client()
+        client = get_client()
         ctx = _load_review_context(client, user_id, project_id)
         project = ctx["project"]
 
@@ -1046,7 +1042,7 @@ def save_final_review_notes(
     Review TA's worksheet (the Home TA has the score sheet instead).
     """
     try:
-        client = _client()
+        client = get_client()
         ctx = _load_review_context(client, user_id, project_id)
         if not ctx["is_instructor"] and ctx["review_ta_id"] != user_id:
             raise HTTPException(
@@ -1089,7 +1085,7 @@ def save_final_review_notes(
 def release_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID) -> dict:
     """Release a team's additional reviewer (the reviewer themselves, or the instructor)."""
     try:
-        client = _client()
+        client = get_client()
         project = _load_project(client, project_id)
         class_id = project["class_id"]
         target = str(target_user_id)

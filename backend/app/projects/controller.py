@@ -11,11 +11,10 @@ import httpx
 from fastapi import HTTPException
 
 from app.auth.controller import get_user_role
+from app.core.db import get_client
 from app.database.client import (
     query_pool,
     retry_on_disconnect,
-    service_client,
-    supabase,
 )
 from app.tas import controller as tas_controller
 
@@ -99,7 +98,7 @@ def _increment_project_num_members(client, project_id: str, delta: int) -> None:
 
 def _is_instructor(user_id, class_id):
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         classes_result = (
             client.table("classes")
             .select("created_by")
@@ -158,7 +157,7 @@ def create_project(
         HTTPException: If class not found, user lacks permission, or database error occurs
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
 
         # Fan out the two independent verifications. The enrollment lookup
@@ -325,7 +324,7 @@ def update_project(
         raise HTTPException(status_code=400, detail="Provide at least one field to update")
 
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         project_result = (
             client.table("projects").select("id, class_id").eq("id", str(project_id)).execute()
@@ -421,7 +420,7 @@ def delete_project(project_id: UUID, user_id: str) -> dict:
         HTTPException: 404 if project not found, 403 if user lacks permission.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         project_result = (
             client.table("projects").select("id, class_id").eq("id", str(project_id)).execute()
@@ -469,7 +468,7 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
     - Without class_id: returns only projects the user is a member of.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         if class_id:
             class_result = (
@@ -582,7 +581,7 @@ def get_project_by_id(project_id: UUID, user_id: str = None) -> dict:
         HTTPException: If project not found or database error occurs
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         result = client.table("projects").select("*").eq("id", str(project_id)).execute()
 
         if not result.data or len(result.data) == 0:
@@ -842,7 +841,7 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
         HTTPException: If project not found, already a member, or pending request exists
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         # Verify the project exists; fetch class_id for the cross-project check below
         project_result = (
@@ -960,7 +959,7 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
     - **Team invite** (``invited_by`` set): only the invitee (``user_id`` on the row) may accept.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         # Get the join request
         request_result = (
@@ -1081,7 +1080,7 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
     - **Team invite**: only the invitee may decline.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         # Get the join request
         request_result = (
@@ -1171,7 +1170,7 @@ def dismiss_my_join_request(request_id: UUID, user_id: str) -> dict:
     removes the row so it no longer surfaces in the requester's outgoing list.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         request_result = (
             client.table("project_join_requests")
@@ -1218,7 +1217,7 @@ def cancel_my_join_request(request_id: UUID, user_id: str) -> dict:
     Deletes the row so it no longer surfaces anywhere.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         result = (
             client.table("project_join_requests")
@@ -1264,7 +1263,7 @@ def cancel_team_invite(request_id: UUID, requester_id: str) -> dict:
     Deletes the invite row.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         result = (
             client.table("project_join_requests")
@@ -1320,7 +1319,7 @@ def get_project_pending_invites(project_id: UUID, requester_id: str) -> list:
     Returns each invite with the invitee's user_id, email, and request_id.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         _assert_can_review_student_join_request(client, requester_id, str(project_id))
 
@@ -1368,7 +1367,7 @@ def get_project_pending_invites(project_id: UUID, requester_id: str) -> list:
 
 
 def _pm_client():
-    return service_client if service_client else supabase
+    return get_client()
 
 
 def _auto_assign_scrum_master(client, project_id: str, new_user_id: str) -> None:
@@ -1636,7 +1635,7 @@ def get_project_members(project_id: UUID) -> list:
         HTTPException: If project not found or database error occurs
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         # Verify the project exists
         project_result = client.table("projects").select("id").eq("id", str(project_id)).execute()
@@ -1703,7 +1702,7 @@ def get_pending_team_invites_for_user(user_id: str, class_id: UUID) -> list:
     so the client can reuse the same UI. ``email`` / ``user_role`` refer to the **inviter**.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         class_result = (
             client.table("classes").select("id, created_by").eq("id", str(class_id)).execute()
@@ -1782,7 +1781,7 @@ def get_my_pending_join_requests_for_user(user_id: str, class_id: UUID) -> list:
     Each item includes project metadata so the client can show outgoing request cards.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         class_result = (
             client.table("classes")
@@ -1877,7 +1876,7 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
     Caller must be the **class instructor** or a project **owner** / **product owner** / **admin**.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         _assert_can_review_student_join_request(client, reviewer_id, str(project_id))
 
@@ -1958,7 +1957,7 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
         role,
     )
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         class_result = (
             client.table("projects").select("class_id").eq("id", str(project_id)).execute()
@@ -2132,7 +2131,7 @@ def instructor_remove_member(project_id: UUID, requester_id: str, target_user_id
         target_user_id,
     )
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         class_result = (
             client.table("projects").select("class_id").eq("id", str(project_id)).execute()
         )

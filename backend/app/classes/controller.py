@@ -11,12 +11,11 @@ from uuid import UUID
 from fastapi import HTTPException
 
 from app.classes.invite_email import send_class_invite_email, send_class_invite_email_or_raise
+from app.core.db import get_client
 from app.database.client import (
     _TRANSIENT_HTTPX_ERRORS,
     query_pool,
     retry_on_disconnect,
-    service_client,
-    supabase,
 )
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code
@@ -284,7 +283,7 @@ def create_class(
     term-based default (5 for Fall/Winter/Spring, 3 for Summer).
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         year = start_date.year
 
@@ -392,7 +391,7 @@ def get_classes_for_user(user_id: str, role: str) -> list:
         HTTPException: If database error occurs
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         if role == "instructor":
             # Instructors see classes they created
@@ -459,7 +458,7 @@ def update_class_status(class_id: UUID, status: str, instructor_id: str) -> dict
         raise HTTPException(status_code=400, detail="Status must be 'active' or 'complete'")
 
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
 
         class_result = (
@@ -512,7 +511,7 @@ def get_class_by_id(class_id: UUID) -> dict:
         HTTPException: If class not found or database error occurs
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         result = client.table("classes").select("*").eq("id", str(class_id)).execute()
 
         if not result.data or len(result.data) == 0:
@@ -541,7 +540,7 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
         HTTPException: If course code is invalid or database error occurs
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         # Find class by course code
         course_code = course_code.strip().upper()
@@ -596,7 +595,7 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
     a signup invitation with the class access code instead of returning 404.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         normalized_email = student_email.strip().lower()
 
         class_result = (
@@ -708,7 +707,7 @@ def get_class_students(class_id: UUID, user_id: str, role: str) -> list:
     five sequential Supabase round-trips into two parallel waves.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
 
         # Stage 1: independent reads fanned out in parallel. The class row
@@ -819,7 +818,7 @@ def get_class_roster(class_id: UUID, user_id: str, role: str) -> dict:
     not on the official roster (classStatus = not_on_roster).
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
 
         # Stage 1: the access-check reads (class + enrollments) and the two
@@ -1013,7 +1012,7 @@ def get_class_roster_timeline(class_id: UUID, instructor_id: str) -> dict:
       ``dropped`` (reflects when the roster was updated to mark them dropped).
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
 
         class_result = (
@@ -1240,7 +1239,7 @@ def upload_class_roster(class_id: UUID, csv_text: str, instructor_id: str) -> di
     Deletes existing rows for course_id, then bulk-inserts parsed entries.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
 
         class_result = (
@@ -1359,7 +1358,7 @@ def add_manual_roster_student(
     status for these rows is surfaced to the UI as ``manual``.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
 
         first_name = first_name.strip()
@@ -1439,7 +1438,7 @@ def delete_manual_roster_entry(class_id: UUID, entry_id: str, instructor_id: str
     rows are managed exclusively via roster re-upload.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
 
         class_result = (
@@ -1556,7 +1555,7 @@ def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: st
     :func:`_purge_student_from_class`.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         class_result = (
             client.table("classes")
@@ -1595,7 +1594,7 @@ def leave_class(class_id: UUID, user_id: str) -> dict:
     same cleanup as an instructor-initiated removal.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         enrollment = (
             client.table("class_enrollments")
@@ -1638,7 +1637,7 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
     - ``error``            – unexpected DB error for this email.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
 
         class_result = (
             client.table("classes")
@@ -1763,7 +1762,7 @@ def queue_invite(
 ) -> dict:
     """Store a pending invite batch; the background worker sends it after delay_seconds."""
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         class_result = (
             client.table("classes")
             .select("id")
@@ -1810,7 +1809,7 @@ def queue_invite(
 def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
     """Cancel a queued invite batch before it is sent."""
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         result = (
             client.table("pending_invites")
             .select("id, sent, cancelled")
@@ -1858,7 +1857,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
     the role before issuing the projects query.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
 
         # Stage 1: fan out the three independent reads.
@@ -2023,7 +2022,7 @@ def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict
     ``get_class_students`` so the frontend mapping is unchanged.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
 
         # Wave 1: independent reads.
@@ -2179,7 +2178,7 @@ def get_class_turn_in_stats(class_id: UUID, user_id: str) -> dict:
     but not all members have submitted.
     """
     try:
-        client = service_client if service_client else supabase
+        client = get_client()
         cid = str(class_id)
         today = datetime.date.today()
 

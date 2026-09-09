@@ -41,7 +41,7 @@ def _client_with_chains(*chains_in_call_order):
 
 
 @patch("app.projects.controller._is_instructor", return_value=True)
-@patch("app.projects.controller.service_client")
+@patch("app.core.db.service_client")
 def test_membership_precheck_is_scoped_to_project_id(svc, _is_inst):
     """The pre-check must filter by project_id (regression of BUG-1).
 
@@ -86,7 +86,7 @@ def test_membership_precheck_is_scoped_to_project_id(svc, _is_inst):
 
 
 @patch("app.projects.controller._is_instructor", return_value=True)
-@patch("app.projects.controller.service_client")
+@patch("app.core.db.service_client")
 def test_role_update_targets_the_target_not_the_requester(svc, _is_inst):
     """When the user is already a member, the role update must touch target_user_id (BUG-2)."""
     project_lookup = _chain([{"class_id": "cls-1"}])
@@ -114,7 +114,7 @@ def test_role_update_targets_the_target_not_the_requester(svc, _is_inst):
 
 
 @patch("app.projects.controller._is_instructor", return_value=True)
-@patch("app.projects.controller.service_client")
+@patch("app.core.db.service_client")
 def test_owner_demotion_excludes_target_not_requester(svc, _is_inst):
     """Demoting other owners should exclude the new owner (target), not the instructor."""
     project_lookup = _chain([{"class_id": "cls-1"}])
@@ -143,7 +143,7 @@ def test_owner_demotion_excludes_target_not_requester(svc, _is_inst):
     )
 
 
-@patch("app.projects.controller.service_client")
+@patch("app.core.db.service_client")
 def test_missing_project_raises_404_not_returns_false(svc):
     """The project-not-found branch used to `return False` (contract mismatch)."""
     not_found = _chain([])

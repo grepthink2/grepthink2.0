@@ -106,6 +106,7 @@ def db(monkeypatch):
     for mod in (controller, projects_controller, tas_controller):
         monkeypatch.setattr(mod, "service_client", fake, raising=False)
         monkeypatch.setattr(mod, "supabase", fake, raising=False)
+        monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
 
 
