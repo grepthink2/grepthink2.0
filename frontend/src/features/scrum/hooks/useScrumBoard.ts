@@ -45,6 +45,20 @@ export function useScrumBoard(
   useEffect(() => { boardRef.current = board; }, [board]);
 
   const requestSeq = useRef(0);
+  /**
+   * Per-entity write sequence. Field edits are optimistic, but a story PATCH
+   * costs ~1s (the backend makes ~6 sequential Supabase round-trips, including
+   * a burnup snapshot), so a fast second click lands while the first is still
+   * in flight. Without this, the *earlier* response arrives last and overwrites
+   * the newer value — picking 13 then 5 snapped back to 13. Only the response
+   * to the newest write for a given id is allowed to touch state.
+   */
+  const writeSeq = useRef<Map<string, number>>(new Map());
+  const nextWrite = (id: string) => {
+    const seq = (writeSeq.current.get(id) ?? 0) + 1;
+    writeSeq.current.set(id, seq);
+    return seq;
+  };
   const committedSeq = useRef(0);
   const prRefreshedFor = useRef<string | null>(null);
   /** Sprint currently being viewed; null = let the server pick the active one. */
@@ -159,13 +173,18 @@ export function useScrumBoard(
         backlog: applyStoryPatch(prev.backlog, storyId, patch),
       } : prev));
 
+    const seq = nextWrite(storyId);
     local(body as Partial<ApiScrumStory>);
     try {
       const { story } = await api.updateStory(storyId, body);
+      // A newer edit is already on screen and in flight — its response wins.
+      if (writeSeq.current.get(storyId) !== seq) return story;
       // The PATCH response carries no children — keep the ones already loaded.
       local({ ...story, tasks: snapshot.tasks });
       return story;
     } catch (err) {
+      // Rolling back to this snapshot would discard a newer pending edit.
+      if (writeSeq.current.get(storyId) !== seq) return null;
       local(snapshot);
       setNotice(noticeFor(err, `Couldn’t save ${snapshot.key}`));
       return null;
@@ -180,12 +199,15 @@ export function useScrumBoard(
     const local = (patch: Partial<ApiScrumTask>) =>
       setBoard((prev) => (prev ? { ...prev, stories: applyTaskPatch(prev.stories, taskId, patch) } : prev));
 
+    const seq = nextWrite(taskId);
     local(body as Partial<ApiScrumTask>);
     try {
       const { task } = await api.updateScrumTask(taskId, body);
+      if (writeSeq.current.get(taskId) !== seq) return task;   // superseded
       local(task);
       return task;
     } catch (err) {
+      if (writeSeq.current.get(taskId) !== seq) return null;   // superseded
       local(snapshot);
       setNotice(noticeFor(err, `Couldn’t save ${snapshot.key}`));
       return null;

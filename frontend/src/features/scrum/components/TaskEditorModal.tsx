@@ -18,23 +18,28 @@ interface Props {
   members: ApiScrumMember[];
   scale: EstimateScale;
   saving?: boolean;
-  /** Returns to the story detail; also what the back arrow calls. */
+  /** Dismisses the editor entirely, back to the board. */
   onClose: () => void;
+  /** Returns to the parent story's detail. Omit and the back arrow closes. */
+  onBack?: () => void;
   onCreate?: (body: ApiCreateTaskBody) => void;
   onSave?: (body: ApiUpdateTaskBody) => void;
 }
 
 /**
- * Create or edit a task inside a story. It has no route and one import site
- * (StoryModal), so a task can never exist without a parent story.
+ * Create or edit a task inside a story. Always rendered by ScrumBoardPage as
+ * the *only* modal on screen — opening it closes the story detail rather than
+ * stacking over it (maintainer 2026-09-10) — and every task still carries its
+ * parent story, reachable through the back arrow.
  *
  * Points are capped at what the parent story has left (maintainer 2026-08-29):
  * the story estimate is a budget in both directions — a story cannot drop below
  * what its tasks claim, and a task cannot claim more than the story has.
  */
 export default function TaskEditorModal({
-  story, task = null, members, scale, saving = false, onClose, onCreate, onSave,
+  story, task = null, members, scale, saving = false, onClose, onBack, onCreate, onSave,
 }: Props) {
+  const back = onBack ?? onClose;
   const editing = task != null;
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description_md ?? '');
@@ -98,8 +103,16 @@ export default function TaskEditorModal({
           <X size={20} />
         </button>
 
-        {/* Back to the story this task belongs to — also the parent reference. */}
-        <button type="button" className="task-editor__back" onClick={onClose}>
+        {/* Back to the story this task belongs to — also the parent reference.
+            The page swaps the two modals, so this is navigation, not a close. */}
+        {/* Explicit label: the key and title spans are adjacent in the DOM, so the
+            computed name would otherwise run them together ("US-1Login flow"). */}
+        <button
+          type="button"
+          className="task-editor__back"
+          aria-label={`Back to ${story.key} ${story.title}`}
+          onClick={back}
+        >
           <ArrowLeft size={13} aria-hidden="true" />
           <span className="task-editor__back-key">{story.key}</span>
           <span className="task-editor__back-title">{story.title}</span>
