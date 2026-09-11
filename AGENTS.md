@@ -30,7 +30,7 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes projects assignments tsr staffing
-  messages profiles contact notifications tas attendance stats
+  messages profiles contact notifications tas attendance stats scrum
   main.py            # FastAPI app: CORS, security headers, rate limiter, routers
   config.py          # settings from .env
   dependencies.py    # require_user / require_instructor (JWT verify)
@@ -86,7 +86,8 @@ npx vitest run                              # unit tests
 Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `login-check`,
 `create-user`, `check-email`), `/api/classes`, `/api/projects`, `/api/assignments`,
 `/api/tsrs`, `/api/staffing`, `/api/messages`, `/api/profiles`, `/api/contact`,
-`/api/notifications`, `/api/tas`, `/api/stats`, plus attendance routes under `/api`.
+`/api/notifications`, `/api/tas`, `/api/stats`, `/api/scrum` + `/api/projects/{id}/scrum`
+(scrum board), plus attendance routes under `/api`.
 The full agent-facing action catalog (method, params, role) lives at
 `frontend/public/.well-known/grepthink-actions.json`.
 

@@ -94,6 +94,19 @@ class Settings:
     # Falls back to the first CORS origin when unset.
     FRONTEND_URL: str = (os.environ.get("FRONTEND_URL") or "").strip().rstrip("/")
 
+    # --- Scrum board integrations (all optional; features degrade when unset) ---
+    # PR/MR state: GITHUB_TOKEN lifts api.github.com to 5k req/h (Vercel egress IPs
+    # share the anonymous 60/h pool); GITLAB_UCSC_TOKEN is a git.ucsc.edu PAT with
+    # read_api. AI drafting: OpenAI-compatible endpoint — e.g. Cloudflare Workers AI
+    #   AI_BASE_URL=https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/ai/v1
+    #   AI_MODEL=@cf/meta/llama-3.1-8b-instruct
+    # Empty AI_API_KEY disables drafting (board payload sends ai_enabled=false).
+    GITHUB_TOKEN: str = os.environ.get("GITHUB_TOKEN", "")
+    GITLAB_UCSC_TOKEN: str = os.environ.get("GITLAB_UCSC_TOKEN", "")
+    AI_BASE_URL: str = os.environ.get("AI_BASE_URL", "")
+    AI_API_KEY: str = os.environ.get("AI_API_KEY", "")
+    AI_MODEL: str = os.environ.get("AI_MODEL", "@cf/meta/llama-3.1-8b-instruct")
+
     @classmethod
     def validate(cls):
         """Validate required settings"""

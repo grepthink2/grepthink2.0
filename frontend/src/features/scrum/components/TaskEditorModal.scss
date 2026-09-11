@@ -1,0 +1,226 @@
+@use '@styles/index.scss' as *;
+
+.task-editor-backdrop {
+  position: fixed;
+  inset: 0;
+  // Same layer as the story modal: the page shows one or the other, never both.
+  z-index: var(--gt-z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--gt-scrim);
+}
+
+.task-editor {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 24px;
+  background: var(--gt-gray-0);
+  border-radius: var(--gt-radius-md);
+  box-shadow: var(--gt-shadow-modal);
+  font-family: $primary-font;
+
+  &__close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    padding: 4px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background: transparent;
+    color: var(--gt-text-tertiary);
+    cursor: pointer;
+    @include gt-transition(background-color, color);
+
+    &:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  // Back to the parent story — doubles as the "which story is this?" reference.
+  &__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    max-width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: $primary-font;
+    font-size: 11.5px;
+    color: var(--gt-text-tertiary);
+    cursor: pointer;
+    @include gt-transition(color);
+
+    &:hover { color: var(--gt-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: 4px; }
+  }
+
+  &__back-key {
+    font-family: var(--gt-font-mono);
+    font-weight: 500;
+    color: var(--gt-primary);
+  }
+
+  &__back-title {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__title {
+    margin: 0;
+    padding-right: 32px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gt-text-primary);
+  }
+
+  &__story-key {
+    font-family: var(--gt-font-mono);
+    font-size: 13px;
+    color: var(--gt-primary);
+  }
+
+  &__field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+  &__row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  &__label {
+    font-size: 10.5px;
+    font-weight: var(--gt-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--gt-tracking-wide);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__hint { font-size: 11px; color: var(--gt-text-tertiary); }
+
+  // Tag toggles: the real TagBadge in its own colors, dimmed until chosen, so
+  // the palette is legible while picking rather than a wall of gray chips.
+  &__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  // Selection reads through the pill's *own* colour rather than a border:
+  // a border box around a rounded chip never lines up, and a second accent
+  // colour fights the ten-colour tag palette. Unselected = quiet; selected =
+  // full colour with a soft ring in the chip's own hue.
+  &__tag {
+    padding: 0;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background: none;
+    line-height: 0;
+    cursor: pointer;
+    opacity: 0.4;
+    filter: saturate(0.45);
+    @include gt-transition(opacity, filter, box-shadow);
+
+    &:hover { opacity: 0.75; filter: saturate(0.8); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+
+    &--on {
+      opacity: 1;
+      filter: none;
+    }
+
+    // The halo sits on the badge, where currentColor is that tag's own text
+    // colour — so each selected label glows in its own hue, not a shared blue.
+    &--on .gt-tagbadge {
+      box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 20%, transparent);
+    }
+  }
+
+  &__points { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+
+  &__point {
+    min-width: 34px;
+    height: 30px;
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+    font-family: var(--gt-font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gt-text-secondary);
+    cursor: pointer;
+    @include gt-transition(background-color, border-color, color, opacity);
+
+    &:hover { border-color: var(--gt-border-strong); color: var(--gt-text-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+
+    // Past what the story has left — a suggestion, never a block.
+    &--over { opacity: 0.4; }
+
+    &--on {
+      background: var(--gt-primary);
+      border-color: var(--gt-primary);
+      color: var(--gt-gray-0);
+      opacity: 1;
+    }
+  }
+
+  input,
+  textarea,
+  select {
+    padding: 8px 12px;
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+    font-family: $primary-font;
+    font-size: 12.5px;
+    color: var(--gt-text-primary);
+    box-sizing: border-box;
+
+    &::placeholder { color: var(--gt-text-tertiary); }
+    &:focus { outline: none; border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+  }
+
+  textarea { resize: vertical; line-height: var(--gt-leading-normal); }
+  select { cursor: pointer; }
+
+  &__foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--gt-border);
+  }
+
+  &__cancel,
+  &__submit {
+    padding: 8px 16px;
+    border-radius: var(--gt-radius-sm);
+    font-family: $primary-font;
+    font-size: 12.5px;
+    font-weight: var(--gt-weight-medium);
+    cursor: pointer;
+    @include gt-transition(background-color, border-color, color, opacity);
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__cancel {
+    border: 1px solid var(--gt-border);
+    background: var(--gt-gray-0);
+    color: var(--gt-text-secondary);
+
+    &:hover { border-color: var(--gt-border-strong); color: var(--gt-text-primary); }
+  }
+
+  &__submit {
+    border: none;
+    background: var(--gt-primary);
+    color: var(--gt-gray-0);
+
+    &:hover:not(:disabled) { background: var(--gt-primary-hover); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+}

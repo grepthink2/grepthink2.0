@@ -49,7 +49,7 @@ interface BreadcrumbSegment {
  *
  * Adding a new route: just add a case in the instructor or student block below.
  */
-function buildBreadcrumbs(
+export function buildBreadcrumbs(
   pathname: string,
   role: string | null,
   className: string | undefined,
@@ -66,6 +66,19 @@ function buildBreadcrumbs(
   };
 
   // ── Shared detail routes (role determines the parent crumb) ──────────────
+  // Scrum board sits under a project — must precede the generic project case.
+  if (/^\/app\/projects\/[^/]+\/board$/.test(pathname)) {
+    const projectId = pathname.split('/')[3];
+    const parentLabel = role === 'instructor' ? 'Projects' : 'Browse Projects';
+    const parentPath = role === 'instructor' ? '/app/projects' : '/app/browse-projects';
+    return [
+      classSegment,
+      { label: parentLabel, path: parentPath },
+      { label: state?.projectName ?? 'Project', path: `/app/projects/${projectId}` },
+      { label: 'Scrum Board' },
+    ];
+  }
+
   if (pathname.startsWith('/app/projects/') && pathname !== '/app/projects') {
     const projectName = state?.projectName;
     const parentLabel = role === 'instructor' ? 'Projects' : 'Browse Projects';
