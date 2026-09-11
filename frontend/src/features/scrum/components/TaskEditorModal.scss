@@ -3,8 +3,8 @@
 .task-editor-backdrop {
   position: fixed;
   inset: 0;
-  // Above the story modal it opens from.
-  z-index: calc(var(--gt-z-modal) + 1);
+  // Same layer as the story modal: the page shows one or the other, never both.
+  z-index: var(--gt-z-modal);
   display: flex;
   align-items: center;
   justify-content: center;

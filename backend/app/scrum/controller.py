@@ -215,9 +215,14 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     res = client.table("user_stories").update(payload).eq("id", str(story_id)).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update story")
-    for sid in {story.get("sprint_id"), res.data[0].get("sprint_id")}:
-        if sid:
-            _snapshot_burnup_safe(sid)
+    # Only scope-bearing edits move the burnup line. A snapshot costs three
+    # more sequential round-trips (two to recompute totals, one to upsert), so
+    # a title or description edit would pay ~half the request for nothing —
+    # `completed` comes from task status, which a story write never touches.
+    if {"points", "sprint_id", "archived_at"} & payload.keys():
+        for sid in {story.get("sprint_id"), res.data[0].get("sprint_id")}:
+            if sid:
+                _snapshot_burnup_safe(sid)
     return res.data[0]
 
 

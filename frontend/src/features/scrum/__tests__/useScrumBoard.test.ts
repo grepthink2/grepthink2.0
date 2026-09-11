@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useScrumBoard } from '../hooks/useScrumBoard';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
-import type { ApiScrumBoard, ApiScrumTask } from '@/lib/api';
-import { makeBoard, makeTask } from './fixtures';
+import type { ApiScrumBoard, ApiScrumStory, ApiScrumTask } from '@/lib/api';
+import { makeBoard, makeStory, makeTask } from './fixtures';
 
 vi.mock('@/lib/api', () => ({
   api: {
@@ -75,6 +75,46 @@ describe('useScrumBoard', () => {
     act(() => { void result.current.moveTask('a', 'done'); });
     await waitFor(() => expect(result.current.board!.stories[0].tasks[0].status).toBe('done'));
     expect(result.current.board!.stories[0].tasks[0].moved_by_name).toBe('Dr. Instructor');
+  });
+
+  it('a slow earlier points write cannot overwrite a newer one', async () => {
+    // The reported bug: pick 13, then 5 before the first PATCH lands. The 13
+    // response arrives last and used to snap the picker back to 13.
+    const resolvers: Array<(v: { message: string; story: ApiScrumStory }) => void> = [];
+    vi.mocked(api.updateStory).mockImplementation(
+      () => new Promise((res) => { resolvers.push(res); }) as ReturnType<typeof api.updateStory>,
+    );
+
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => { void result.current.updateStory('s1', { points: 13 }); });
+    act(() => { void result.current.updateStory('s1', { points: 5 }); });
+    // Optimistically the newest choice is on screen.
+    expect(result.current.board!.stories[0].points).toBe(5);
+
+    // Server answers out of order: the stale 13 lands last.
+    await act(async () => { resolvers[1]({ message: 'ok', story: makeStory({ points: 5 }) }); });
+    await act(async () => { resolvers[0]({ message: 'ok', story: makeStory({ points: 13 }) }); });
+
+    expect(result.current.board!.stories[0].points).toBe(5);
+  });
+
+  it('a superseded failed write does not roll back the newer value', async () => {
+    const resolvers: Array<{ rej: (e: Error) => void }> = [];
+    vi.mocked(api.updateStory).mockImplementation(
+      () => new Promise((_res, rej) => { resolvers.push({ rej }); }) as ReturnType<typeof api.updateStory>,
+    );
+
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => { void result.current.updateStory('s1', { points: 13 }); });
+    act(() => { void result.current.updateStory('s1', { points: 5 }); });
+    await act(async () => { resolvers[0].rej(new Error('network down')); });
+
+    // The stale failure must not restore the pre-13 snapshot over the live 5.
+    expect(result.current.board!.stories[0].points).toBe(5);
   });
 
   it('rolls the card back and explains when the move fails', async () => {
