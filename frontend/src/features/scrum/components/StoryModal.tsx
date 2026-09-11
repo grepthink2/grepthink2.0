@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
 import MarkdownText from '@components/Markdown/MarkdownText';
 import type {
-  ApiCreateTaskBody, ApiScrumMember, ApiScrumSprint, ApiScrumStory, ApiScrumTask, ApiUpdateTaskBody,
+  ApiScrumSprint, ApiScrumStory, ApiScrumTask,
 } from '@/lib/api';
 import { BOARD_COLUMNS } from '../config/scrumTags';
 import type { BoardStatus, EstimateScale } from '../config/scrumTags';
@@ -11,7 +11,6 @@ import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
 import { assignedTaskPoints, storyRollup } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
 import CommentThread from './CommentThread';
-import TaskEditorModal from './TaskEditorModal';
 import { PointPicker } from './ScalePicker';
 import TagBadge from './TagBadge';
 import './StoryModal.scss';
@@ -26,10 +25,11 @@ export interface StoryModalProps {
   canWrite?: boolean;
   onClose: () => void;
   onUpdateStory: (body: { points?: number; sprint_id?: string | null; archived?: boolean }) => void;
-  onCreateTask: (body: ApiCreateTaskBody) => void;
-  onUpdateTask: (taskId: string, body: ApiUpdateTaskBody) => void;
-  /** Roster for the task editor's assignee picker. */
-  memberList: ApiScrumMember[];
+  /** Open the task editor for this task. The page swaps modals rather than
+   *  stacking them — story and task detail are never on screen together. */
+  onOpenTask: (task: ApiScrumTask) => void;
+  /** Open the task editor in create mode for this story. */
+  onAddTask: () => void;
   onDeleteTask: (taskId: string) => void;
   onMoveTask: (taskId: string, to: BoardStatus) => void;
   onCommentError: (message: string) => void;
@@ -45,13 +45,11 @@ export interface StoryModalProps {
  * from this list.
  */
 export default function StoryModal({
-  story, members, memberList, sprints, scale, focusTaskId, canWrite = true,
-  onClose, onUpdateStory, onCreateTask, onUpdateTask, onDeleteTask, onMoveTask,
+  story, members, sprints, scale, focusTaskId, canWrite = true,
+  onClose, onUpdateStory, onOpenTask, onAddTask, onDeleteTask, onMoveTask,
   onCommentError, onCommentPosted,
 }: StoryModalProps) {
   const focusedTask = story.tasks.find((t) => t.id === focusTaskId) ?? null;
-  const [addingTask, setAddingTask] = useState(false);
-  const [editingTask, setEditingTask] = useState<ApiScrumTask | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ApiScrumTask | null>(null);
   const focusRef = useRef<HTMLLIElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -139,7 +137,7 @@ export default function StoryModal({
                 <button
                   type="button"
                   className="story-modal__task-title"
-                  onClick={() => setEditingTask(t)}
+                  onClick={() => onOpenTask(t)}
                 >
                   {t.title}
                 </button>
@@ -176,7 +174,7 @@ export default function StoryModal({
             <button
               type="button"
               className="story-modal__add-task"
-              onClick={() => setAddingTask(true)}
+              onClick={onAddTask}
             >
               <Plus size={14} aria-hidden="true" /> Add task
             </button>
@@ -216,27 +214,6 @@ export default function StoryModal({
               {story.archived_at ? 'Restore story' : 'Archive story'}
             </button>
           </footer>
-        )}
-
-        {addingTask && (
-          <TaskEditorModal
-            story={story}
-            members={memberList}
-            scale={scale}
-            onClose={() => setAddingTask(false)}
-            onCreate={(body) => { onCreateTask(body); setAddingTask(false); }}
-          />
-        )}
-
-        {editingTask && (
-          <TaskEditorModal
-            story={story}
-            task={editingTask}
-            members={memberList}
-            scale={scale}
-            onClose={() => setEditingTask(null)}
-            onSave={(body) => { onUpdateTask(editingTask.id, body); setEditingTask(null); }}
-          />
         )}
 
         {confirmDelete && (

@@ -5,7 +5,9 @@ import Skeleton from '@components/Skeleton/Skeleton';
 import { ToastStack } from '@components/Toast/Toast';
 import { useToasts } from '@components/Toast/useToasts';
 import { useAuth } from '@/lib/auth';
-import type { ApiCreateStoryBody, ApiScrumStory, ApiScrumTask } from '@/lib/api';
+import type {
+  ApiCreateStoryBody, ApiCreateTaskBody, ApiScrumStory, ApiScrumTask, ApiUpdateTaskBody,
+} from '@/lib/api';
 import BacklogRow from '../components/BacklogRow';
 import BurnupChart from '../components/BurnupChart';
 import ScrumBoard from '../components/ScrumBoard';
@@ -13,6 +15,7 @@ import StoryCard from '../components/StoryCard';
 import StoryModal from '../components/StoryModal';
 import BoardSettingsModal from '../components/BoardSettingsModal';
 import StoryEditorModal from '../components/StoryEditorModal';
+import TaskEditorModal from '../components/TaskEditorModal';
 import { useScrumBoard } from '../hooks/useScrumBoard';
 import { buildMemberMap } from '../scrumTypes';
 import { collectTasks } from '../utils/rollups';
@@ -76,6 +79,8 @@ export default function ScrumBoardPage() {
   const view = parseView(searchParams.get('view'));
   const openTaskId = searchParams.get('task');
   const [openStoryId, setOpenStoryId] = useState<string | null>(null);
+  const [addTaskStoryId, setAddTaskStoryId] = useState<string | null>(null);
+  const [savingTask, setSavingTask] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creatingStory, setCreatingStory] = useState(false);
   const [savingStory, setSavingStory] = useState(false);
@@ -93,16 +98,36 @@ export default function ScrumBoardPage() {
     [board?.stories, storyFilter],
   );
 
-  /** A task deep link (?task=, used by mention notifications) opens its story. */
   const allStories = useMemo(
     () => [...(board?.stories ?? []), ...(board?.backlog ?? [])],
     [board?.stories, board?.backlog],
   );
-  const openStory: ApiScrumStory | null = useMemo(() => {
-    if (openStoryId) return allStories.find((s) => s.id === openStoryId) ?? null;
-    if (openTaskId) return allStories.find((s) => s.tasks.some((t) => t.id === openTaskId)) ?? null;
+
+  /**
+   * Exactly one modal is ever on screen (maintainer 2026-09-10). A task deep
+   * link (?task=, also what a mention notification links to) opens the *task*,
+   * with its story reachable by the back arrow; the story detail opens on its
+   * own. They swap rather than stacking.
+   */
+  const openTaskPair = useMemo(() => {
+    if (!openTaskId) return null;
+    for (const s of allStories) {
+      const t = s.tasks.find((x) => x.id === openTaskId);
+      if (t) return { story: s, task: t };
+    }
     return null;
-  }, [allStories, openStoryId, openTaskId]);
+  }, [allStories, openTaskId]);
+
+  const openStory: ApiScrumStory | null = useMemo(
+    () => (openStoryId ? allStories.find((s) => s.id === openStoryId) ?? null : null),
+    [allStories, openStoryId],
+  );
+
+  /** Story whose "Add task" was pressed — create mode for the same editor. */
+  const addTaskStory: ApiScrumStory | null = useMemo(
+    () => (addTaskStoryId ? allStories.find((s) => s.id === addTaskStoryId) ?? null : null),
+    [allStories, addTaskStoryId],
+  );
 
   // The hook reports one notice at a time; hand each to the stack exactly once.
   useEffect(() => {
@@ -118,13 +143,57 @@ export default function ScrumBoardPage() {
     setSearchParams(params, { replace: true });
   };
 
+  const setTaskParam = (taskId: string | null) => {
+    const params = new URLSearchParams(searchParams);
+    if (taskId) params.set('task', taskId);
+    else params.delete('task');
+    setSearchParams(params, { replace: true });
+  };
+
   const closeStory = () => {
     setOpenStoryId(null);
-    if (openTaskId) {
-      const params = new URLSearchParams(searchParams);
-      params.delete('task');
-      setSearchParams(params, { replace: true });
-    }
+    if (openTaskId) setTaskParam(null);
+  };
+
+  /** Board card or story row → the task's own detail. Closes the story. */
+  const openTask = (task: ApiScrumTask) => {
+    setOpenStoryId(null);
+    setAddTaskStoryId(null);
+    setTaskParam(task.id);
+  };
+
+  /** Back arrow inside the task editor → its parent story, task closed. */
+  const backToStory = (storyId: string) => {
+    setTaskParam(null);
+    setAddTaskStoryId(null);
+    setOpenStoryId(storyId);
+  };
+
+  /** Everything dismissed, back to the board. */
+  const closeTaskEditor = () => {
+    setTaskParam(null);
+    setAddTaskStoryId(null);
+  };
+
+  const startAddTask = (storyId: string) => {
+    setOpenStoryId(null);
+    setTaskParam(null);
+    setAddTaskStoryId(storyId);
+  };
+
+  const handleCreateTask = async (storyId: string, body: ApiCreateTaskBody) => {
+    setSavingTask(true);
+    await createTask(storyId, body);
+    setSavingTask(false);
+    // Land back on the story so the new task is visible in context.
+    backToStory(storyId);
+  };
+
+  const handleSaveTask = async (taskId: string, body: ApiUpdateTaskBody) => {
+    setSavingTask(true);
+    await updateTask(taskId, body);
+    setSavingTask(false);
+    closeTaskEditor();
   };
 
   const handleCreateStory = async (body: ApiCreateStoryBody) => {
@@ -136,12 +205,6 @@ export default function ScrumBoardPage() {
     push('success', `${created.story.key} created`);
     // Continue the flow: land in the new story so its tasks can be added now.
     setOpenStoryId(created.story.id);
-  };
-
-  const openTask = (task: ApiScrumTask) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('task', task.id);
-    setSearchParams(params, { replace: true });
   };
 
   if (loading) return <ScrumBoardSkeleton />;
@@ -231,6 +294,7 @@ export default function ScrumBoardPage() {
                       members={members}
                       active={storyFilter === s.id}
                       onSelect={() => setStoryFilter(storyFilter === s.id ? null : s.id)}
+                      onOpen={() => setOpenStoryId(s.id)}
                     />
                   ))}
                 </div>
@@ -313,19 +377,44 @@ export default function ScrumBoardPage() {
         )}
       </div>
 
-      {openStory && (
+      {/* One modal at a time: the task editor takes precedence over the story
+          detail, and opening either closes the other (maintainer 2026-09-10). */}
+      {openTaskPair && (
+        <TaskEditorModal
+          story={openTaskPair.story}
+          task={openTaskPair.task}
+          members={board.members}
+          scale={board.project.estimate_scale}
+          saving={savingTask}
+          onClose={closeTaskEditor}
+          onBack={() => backToStory(openTaskPair.story.id)}
+          onSave={(body) => handleSaveTask(openTaskPair.task.id, body)}
+        />
+      )}
+
+      {!openTaskPair && addTaskStory && (
+        <TaskEditorModal
+          story={addTaskStory}
+          members={board.members}
+          scale={board.project.estimate_scale}
+          saving={savingTask}
+          onClose={closeTaskEditor}
+          onBack={() => backToStory(addTaskStory.id)}
+          onCreate={(body) => handleCreateTask(addTaskStory.id, body)}
+        />
+      )}
+
+      {!openTaskPair && !addTaskStory && openStory && (
         <StoryModal
           story={openStory}
           members={members}
           sprints={board.sprints}
           scale={board.project.estimate_scale}
-          focusTaskId={openTaskId}
           canWrite={canWrite}
           onClose={closeStory}
           onUpdateStory={(body) => updateStory(openStory.id, body)}
-          memberList={board.members}
-          onCreateTask={(body) => createTask(openStory.id, body)}
-          onUpdateTask={updateTask}
+          onOpenTask={openTask}
+          onAddTask={() => startAddTask(openStory.id)}
           onDeleteTask={deleteTask}
           onMoveTask={moveTask}
           onCommentError={(m) => push('error', m)}

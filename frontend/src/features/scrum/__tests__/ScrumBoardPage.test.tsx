@@ -120,27 +120,49 @@ describe('ScrumBoardPage board view', () => {
 });
 
 describe('ScrumBoardPage story detail', () => {
-  it('opens a task’s story, focuses that task, and closes back', async () => {
+  it('opens the task itself, not its story, and goes back to the story', async () => {
     renderAt();
     await userEvent.click(await screen.findByText('Build form'));
 
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Login flow')).toBeInTheDocument();
-    expect(within(dialog).getByRole('combobox', { name: /Status of T-1/ })).toBeInTheDocument();
+    // The task's own editor, with the parent story only as a back reference.
+    const editor = await screen.findByRole('dialog');
+    expect(within(editor).getByRole('heading', { name: /edit t-1/i })).toBeInTheDocument();
+    expect(within(editor).getByLabelText('Title')).toHaveValue('Build form');
+    // Never both at once.
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
 
-    await userEvent.click(within(dialog).getByRole('button', { name: /close story/i }));
+    await userEvent.click(within(editor).getByRole('button', { name: /back to US-1 Login flow/i }));
+    const story = await screen.findByRole('dialog');
+    expect(within(story).getByText('Login flow')).toBeInTheDocument();
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+
+    await userEvent.click(within(story).getByRole('button', { name: /close story/i }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('opens straight from a ?task= deep link (mention notifications)', async () => {
+  it('opens a story from its card without opening any task', async () => {
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'Open US-1' }));
+
+    const story = await screen.findByRole('dialog');
+    expect(within(story).getByRole('combobox', { name: /Status of T-1/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+  });
+
+  it('opens the task straight from a ?task= deep link (mention notifications)', async () => {
     renderAt('/app/projects/p1/board?task=c');
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Roster import')).toBeInTheDocument();
+    // The task, with its story carried only as the back reference.
+    expect(within(dialog).getByLabelText('Title')).toHaveValue('Parse CSV');
+    expect(within(dialog).getByRole('button', { name: /back to US-2 Roster import/i })).toBeInTheDocument();
   });
 
   it('moves a task from the status select — the keyboard path for DnD', async () => {
     vi.mocked(api.moveScrumTask).mockResolvedValue({ message: 'ok', task: makeTask({ id: 'a', status: 'done' }) });
-    renderAt('/app/projects/p1/board?task=a');
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'Open US-1' }));
     const dialog = await screen.findByRole('dialog');
 
     await userEvent.selectOptions(within(dialog).getByRole('combobox', { name: /Status of T-1/ }), 'done');
@@ -149,7 +171,9 @@ describe('ScrumBoardPage story detail', () => {
 
   it('archives a story from the footer', async () => {
     vi.mocked(api.updateStory).mockResolvedValue({ message: 'ok', story: makeStory() });
-    renderAt('/app/projects/p1/board?task=a');
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'Open US-1' }));
     const dialog = await screen.findByRole('dialog');
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'Archive story' }));
@@ -158,11 +182,15 @@ describe('ScrumBoardPage story detail', () => {
 
   it('adds a task to the open story through the task editor', async () => {
     vi.mocked(api.createScrumTask).mockResolvedValue({ message: 'ok', task: makeTask() });
-    renderAt('/app/projects/p1/board?task=a');
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'Open US-1' }));
     const story = await screen.findByRole('dialog');
 
     await userEvent.click(within(story).getByRole('button', { name: /add task/i }));
     const editor = await screen.findByRole('dialog', { name: /new task in US-1/i });
+    // The story detail is gone, not merely covered.
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
     await userEvent.type(within(editor).getByLabelText('Title'), 'Write docs');
     await userEvent.click(within(editor).getByRole('button', { name: 'Add task' }));
 

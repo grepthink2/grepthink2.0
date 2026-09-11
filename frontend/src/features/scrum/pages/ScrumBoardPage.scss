@@ -237,3 +237,47 @@
 // partials export mixins only), and every scrum view mounts beneath this page.
 // Without it the labels render as ordinary visible text.
 .sr-only { @include gt-visually-hidden; }
+
+// Story card + its open control. The card body is a button (toggles the board
+// filter), so the control that opens the story detail has to be a sibling —
+// nested buttons are invalid. Added 2026-09-10 when task cards stopped opening
+// their parent story and stories needed their own way in.
+.story-slot {
+  position: relative;
+  display: flex;
+
+  > .gt-story { flex: 1; min-width: 0; }
+
+  &:hover .story-slot__open,
+  .story-slot__open:focus-visible { opacity: 1; }
+}
+
+.story-slot__open {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  // Explicit: the global scaffold `button` rule would otherwise pad this to a
+  // pill and crush the glyph (the same bug that hid the settings gear).
+  padding: 0;
+  border: 1px solid var(--gt-border);
+  border-radius: var(--gt-radius-sm);
+  background: var(--gt-gray-0);
+  color: var(--gt-text-tertiary);
+  cursor: pointer;
+  // Quiet until the card is hovered, so the card stays clean at rest.
+  opacity: 0;
+  @include gt-transition(opacity, color, border-color);
+
+  &:hover { color: var(--gt-primary); border-color: var(--gt-primary); }
+  &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+}
+
+// Coarse pointers have no hover: keep the control permanently visible there.
+@media (hover: none) {
+  .story-slot__open { opacity: 1; }
+}
