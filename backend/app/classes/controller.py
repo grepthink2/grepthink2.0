@@ -1044,6 +1044,70 @@ def get_class_roster(class_id: UUID, user_id: str) -> dict:
         raise HTTPException(status_code=500, detail="Failed to fetch roster")
 
 
+def _not_on_roster_count(students: list[dict]) -> int:
+    """Roster rows the instructor home page flags: registered on GrepThink, not a TA,
+    and not on the official roster (the frontend's ``summarizeRoster().notOnRoster``)."""
+    return sum(
+        1
+        for s in students
+        if s["enrollment_role"] != "ta"
+        and s["grepthink_status"] == "registered"
+        and s["class_status"] == "not_on_roster"
+    )
+
+
+@retry_on_disconnect()
+def get_attention_summary(user_id: str) -> dict:
+    """Roster alerts for every class the caller created, for the instructor home page.
+
+    Returns ``{"classes": [{"class_id", "roster_uploaded_at", "not_on_roster"}]}``.
+    ``roster_uploaded_at`` is what ``get_class_roster`` returns as ``uploaded_at``
+    (``None`` before any upload) and ``not_on_roster`` counts that roster's rows
+    for registered students, not TAs, who are not on the official roster. Every
+    class status is included; the page shows the active ones. A caller who created
+    no classes gets an empty list.
+
+    One query however many classes: the caller's classes with their enrollments
+    (profiles embedded) and roster rows embedded, merged by the same
+    ``_roster_payload`` the roster page uses. The home page used to request the
+    full roster of every class.
+    """
+    try:
+        client = get_client()
+        rows = (
+            client.table("classes")
+            .select(
+                "id, "
+                "class_enrollments(user_id, enrollment_role, "
+                f"profile:profiles!class_enrollments_user_id_fkey({_ROSTER_PROFILE_COLUMNS})), "
+                f"roster_entries({_ROSTER_ENTRY_COLUMNS})"
+            )
+            .eq("created_by", user_id)
+            .execute()
+        ).data or []
+
+        summary = []
+        for cls in rows:
+            roster = _roster_payload(
+                cls.get("roster_entries") or [], cls.get("class_enrollments") or [], []
+            )
+            summary.append(
+                {
+                    "class_id": cls["id"],
+                    "roster_uploaded_at": roster["uploaded_at"],
+                    "not_on_roster": _not_on_roster_count(roster["students"]),
+                }
+            )
+        return {"classes": summary}
+    except HTTPException:
+        raise
+    except TRANSIENT_ERRORS:
+        raise  # @retry_on_disconnect retries a dropped connection
+    except Exception:
+        logger.exception("Error fetching attention summary | user_id=%s", user_id)
+        raise HTTPException(status_code=500, detail="Failed to fetch attention summary")
+
+
 def get_class_roster_timeline(class_id: UUID, instructor_id: str) -> dict:
     """Enrollment, team-join, and drop timestamps for roster students (instructor only).
 

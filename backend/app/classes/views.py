@@ -81,6 +81,12 @@ def get_class_roster(class_id: UUID, user_id: str = Depends(require_user)):
     return controller.get_class_roster(class_id, user_id)
 
 
+def get_attention_summary(user_id: str = Depends(require_user)):
+    """Roster upload date and registered-but-not-on-roster count for every class the
+    caller created (instructor home page)."""
+    return controller.get_attention_summary(user_id=user_id)
+
+
 def get_class_roster_timeline(
     class_id: UUID,
     user_id: str = Depends(require_instructor),

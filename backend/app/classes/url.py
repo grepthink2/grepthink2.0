@@ -10,6 +10,8 @@ router = APIRouter(prefix="/api/classes", tags=["classes"])
 
 router.post("")(views.create_class)
 router.get("")(views.get_classes)
+# Before "/{class_id}": otherwise the literal path is parsed as a class id (422).
+router.get("/attention-summary")(views.get_attention_summary)
 router.get("/{class_id}")(views.get_class)
 router.patch("/{class_id}/status")(views.update_class_status)
 router.post("/join")(views.join_class)
