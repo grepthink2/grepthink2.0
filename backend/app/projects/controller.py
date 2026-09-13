@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 from app.auth.controller import get_user_role
 from app.core import authz
-from app.core.db import get_client
+from app.core.db import fan_out, get_client
 from app.database.client import (
     query_pool,
     retry_on_disconnect,
@@ -28,6 +28,8 @@ ROLE_MEMBER = "member"
 
 # The "elevated" set used by most write actions on a project.
 ELEVATED_ROLES = (ROLE_OWNER, ROLE_PRODUCT_OWNER, ROLE_ADMIN)
+
+REVIEW_DENIED_DETAIL = "Only the class instructor or project owners/admins can review join requests"
 
 
 def _require_member_role(
@@ -558,42 +560,29 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
 
 def get_project_by_id(project_id: UUID, user_id: str = None) -> dict:
     """
-    Get a specific project by ID
+    Get a specific project by ID.
 
     Args:
         project_id: Project unique identifier
-        user_id: Optional user ID to include membership info
+        user_id: Optional user ID; adds the caller's project role as ``user_role``
+            (``None`` for non-members)
 
-    Returns:
-        Project dictionary
+    The project row and the caller's role are read concurrently (one wave).
 
     Raises:
-        HTTPException: If project not found or database error occurs
+        HTTPException: 404 if the project does not exist; 500 on database error
     """
     try:
         client = get_client()
-        result = client.table("projects").select("*").eq("id", str(project_id)).execute()
-
-        if not result.data or len(result.data) == 0:
-            raise HTTPException(status_code=404, detail="Project not found")
-
-        project = result.data[0]
-
-        # If user_id provided, include their role in the project
+        pid = str(project_id)
+        jobs = {"project": lambda: authz.load_project(client, pid, columns="*")}
         if user_id:
-            membership = (
-                client.table("project_members")
-                .select("role")
-                .eq("project_id", str(project_id))
-                .eq("user_id", user_id)
-                .execute()
-            )
+            jobs["role"] = lambda: authz.get_project_role(client, pid, user_id)
+        reads = fan_out(jobs)
 
-            if membership.data and len(membership.data) > 0:
-                project["user_role"] = membership.data[0]["role"]
-            else:
-                project["user_role"] = None
-
+        project = reads["project"]
+        if user_id:
+            project["user_role"] = reads["role"]
         return project
     except HTTPException:
         raise
@@ -622,10 +611,46 @@ def _assert_can_review_loaded(client, reviewer_id: str, project: dict) -> None:
         return
     role = authz.get_project_role(client, project["id"], reviewer_id)
     if role not in ELEVATED_ROLES:
-        raise HTTPException(
-            status_code=403,
-            detail="Only the class instructor or project owners/admins can review join requests",
-        )
+        raise HTTPException(status_code=403, detail=REVIEW_DENIED_DETAIL)
+
+
+#: Project columns that decide who may review its join requests and invites without a
+#: separate role read: the class owner and every member come embedded.
+REVIEW_PROJECT_COLUMNS = "id, class_id, name, classes(created_by), project_members(user_id, role)"
+
+
+def _member_role(members: list[dict] | None, user_id: str) -> str | None:
+    """The role on ``user_id``'s membership row, or ``None`` when they are not a member."""
+    mine = next((m for m in members or [] if str(m.get("user_id")) == str(user_id)), None)
+    return mine.get("role") if mine else None
+
+
+def _load_review_project(client, project_id: str) -> dict | None:
+    """The project loaded with :data:`REVIEW_PROJECT_COLUMNS`, or ``None``. One round trip."""
+    res = (
+        client.table("projects")
+        .select(REVIEW_PROJECT_COLUMNS)
+        .eq("id", str(project_id))
+        .limit(1)
+        .execute()
+    )
+    return res.data[0] if res.data else None
+
+
+def _require_can_review(project: dict | None, reviewer_id: str) -> dict:
+    """The review rule for a project loaded with :data:`REVIEW_PROJECT_COLUMNS`.
+
+    404 when the project is missing; 403 unless ``reviewer_id`` is the class
+    instructor or holds ``owner`` / ``product owner`` / ``admin`` on the project.
+    Makes no round trips.
+    """
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if str(_class_owner(project)) == str(reviewer_id):
+        return project
+    if _member_role(project.get("project_members"), reviewer_id) not in ELEVATED_ROLES:
+        raise HTTPException(status_code=403, detail=REVIEW_DENIED_DETAIL)
+    return project
 
 
 def _get_student_project_in_class(
@@ -1264,41 +1289,43 @@ def get_project_pending_invites(project_id: UUID, requester_id: str) -> list:
 
     Caller must be class instructor or project owner/product-owner/admin.
     Returns each invite with the invitee's user_id, email, and request_id.
+
+    The project (class owner and members embedded) and the invites (invitee
+    email embedded) are read concurrently: 2 round trips in one wave.
     """
     try:
         client = get_client()
-
-        _assert_can_review_student_join_request(client, requester_id, str(project_id))
-
-        rows = (
-            client.table("project_join_requests")
-            .select("id, user_id, created_at, invited_by")
-            .eq("project_id", str(project_id))
-            .eq("request_status", "pending")
-            .execute()
+        pid = str(project_id)
+        reads = fan_out(
+            {
+                "project": lambda: _load_review_project(client, pid),
+                "invites": lambda: (
+                    (
+                        client.table("project_join_requests")
+                        .select(
+                            "id, user_id, created_at, "
+                            "invitee:profiles!project_join_requests_user_id_fkey(email)"
+                        )
+                        .eq("project_id", pid)
+                        .eq("request_status", "pending")
+                        .not_.is_("invited_by", "null")
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
         )
+        _require_can_review(reads["project"], requester_id)
 
-        invites = [r for r in (rows.data or []) if r.get("invited_by")]
-        if not invites:
-            return []
-
-        user_ids = [r["user_id"] for r in invites]
-        profiles = client.table("profiles").select("id, email").in_("id", user_ids).execute()
-        profile_map = {p["id"]: p for p in (profiles.data or [])}
-
-        result = []
-        for row in invites:
-            profile = profile_map.get(row["user_id"], {})
-            result.append(
-                {
-                    "request_id": row["id"],
-                    "user_id": row["user_id"],
-                    "email": profile.get("email"),
-                    "invited_at": row.get("created_at"),
-                }
-            )
-
-        return result
+        return [
+            {
+                "request_id": row["id"],
+                "user_id": row["user_id"],
+                "email": (row.get("invitee") or {}).get("email"),
+                "invited_at": row.get("created_at"),
+            }
+            for row in reads["invites"]
+        ]
     except HTTPException:
         raise
     except Exception:
@@ -1511,66 +1538,61 @@ def get_project_members(project_id: UUID) -> list:
         raise HTTPException(status_code=500, detail="Failed to fetch project members")
 
 
+def _require_class_access(class_row: dict | None, enrollment_role: str | None, user_id) -> None:
+    """404 for a missing class; 403 unless ``user_id`` created it or is enrolled.
+
+    Takes what :func:`authz.load_class` / :func:`authz.get_enrollment_role` returned,
+    so callers can read those rows concurrently with their own data.
+    """
+    if class_row is None:
+        raise HTTPException(status_code=404, detail="Class not found")
+    if str(class_row.get("created_by")) != str(user_id) and enrollment_role is None:
+        raise HTTPException(status_code=403, detail="You do not have access to this class")
+
+
 def get_pending_team_invites_for_user(user_id: str, class_id: UUID) -> list:
     """
     Pending team invitations addressed to ``user_id`` within a class.
 
     Each item matches the join-requests list shape (plus ``project_id`` / ``project_name``)
     so the client can reuse the same UI. ``email`` / ``user_role`` refer to the **inviter**.
+
+    One wave of three reads: the class, the caller's enrollment, and the caller's
+    pending invites with their project and inviter embedded. The invites are
+    narrowed to the class in memory (a user has only a handful pending).
     """
     try:
         client = get_client()
-
-        class_result = (
-            client.table("classes").select("id, created_by").eq("id", str(class_id)).execute()
+        cid = str(class_id)
+        reads = fan_out(
+            {
+                "class": lambda: authz.load_class(client, cid),
+                "enrollment": lambda: authz.get_enrollment_role(client, cid, user_id),
+                "invites": lambda: (
+                    (
+                        client.table("project_join_requests")
+                        .select(
+                            "id, user_id, project_id, created_at, request_status, "
+                            "projects(name, class_id), "
+                            "inviter:profiles!project_join_requests_invited_by_fkey(email, role)"
+                        )
+                        .eq("user_id", user_id)
+                        .eq("request_status", "pending")
+                        .not_.is_("invited_by", "null")
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
         )
-        if not class_result.data:
-            raise HTTPException(status_code=404, detail="Class not found")
-
-        class_row = class_result.data[0]
-        has_access = class_row.get("created_by") == user_id
-        if not has_access:
-            enrollment = (
-                client.table("class_enrollments")
-                .select("id")
-                .eq("class_id", str(class_id))
-                .eq("user_id", user_id)
-                .execute()
-            )
-            has_access = bool(enrollment.data)
-
-        if not has_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this class")
-
-        projects_res = (
-            client.table("projects").select("id, name").eq("class_id", str(class_id)).execute()
-        )
-        projects = projects_res.data or []
-        project_ids = [p["id"] for p in projects]
-        if not project_ids:
-            return []
-
-        project_name = {p["id"]: p.get("name") for p in projects}
-
-        rows = (
-            client.table("project_join_requests")
-            .select("id, user_id, project_id, created_at, request_status, invited_by")
-            .eq("user_id", user_id)
-            .eq("request_status", "pending")
-            .in_("project_id", project_ids)
-            .execute()
-        )
-        invites = [r for r in (rows.data or []) if r.get("invited_by")]
-        if not invites:
-            return []
-
-        inviter_ids = list({str(r["invited_by"]) for r in invites})
-        users = client.table("profiles").select("id, email, role").in_("id", inviter_ids).execute()
-        user_map = {u["id"]: u for u in (users.data or [])}
+        _require_class_access(reads["class"], reads["enrollment"], user_id)
 
         result = []
-        for row in invites:
-            inviter = user_map.get(row["invited_by"], {})
+        for row in reads["invites"]:
+            project = row.get("projects") or {}
+            if str(project.get("class_id")) != cid:
+                continue
+            inviter = row.get("inviter") or {}
             result.append(
                 {
                     "request_id": row["id"],
@@ -1580,7 +1602,7 @@ def get_pending_team_invites_for_user(user_id: str, class_id: UUID) -> list:
                     "requested_at": row.get("created_at"),
                     "status": row["request_status"],
                     "project_id": str(row["project_id"]),
-                    "project_name": project_name.get(row["project_id"]),
+                    "project_name": project.get("name"),
                 }
             )
         return result
@@ -1596,33 +1618,39 @@ def get_my_pending_join_requests_for_user(user_id: str, class_id: UUID) -> list:
     Pending **student-initiated** join requests submitted by ``user_id`` within a class.
 
     Each item includes project metadata so the client can show outgoing request cards.
+
+    One wave of three reads: the class, the caller's enrollment, and the caller's
+    requests with their project embedded, narrowed to the class in memory.
     """
     try:
         client = get_client()
-
-        class_result = (
-            client.table("classes")
-            .select("id, created_by, name, term, year")
-            .eq("id", str(class_id))
-            .execute()
+        cid = str(class_id)
+        reads = fan_out(
+            {
+                "class": lambda: authz.load_class(client, cid, "id, created_by, name, term, year"),
+                "enrollment": lambda: authz.get_enrollment_role(client, cid, user_id),
+                # Pending requests are still awaiting review; rejected ones surface as a
+                # dismissible "denied" notice until the requester dismisses them (which
+                # deletes the row). Accepted requests are dropped (the student is now a
+                # member), and team invites (invited_by set) are listed elsewhere.
+                "requests": lambda: (
+                    (
+                        client.table("project_join_requests")
+                        .select(
+                            "id, user_id, project_id, created_at, request_status, "
+                            "projects(name, class_id, num_members, sponsor_company, image_url)"
+                        )
+                        .eq("user_id", user_id)
+                        .in_("request_status", ["pending", "rejected"])
+                        .is_("invited_by", "null")
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
         )
-        if not class_result.data:
-            raise HTTPException(status_code=404, detail="Class not found")
-
-        class_row = class_result.data[0]
-        has_access = class_row.get("created_by") == user_id
-        if not has_access:
-            enrollment = (
-                client.table("class_enrollments")
-                .select("id")
-                .eq("class_id", str(class_id))
-                .eq("user_id", user_id)
-                .execute()
-            )
-            has_access = bool(enrollment.data)
-
-        if not has_access:
-            raise HTTPException(status_code=403, detail="You do not have access to this class")
+        class_row = reads["class"]
+        _require_class_access(class_row, reads["enrollment"], user_id)
 
         course_label_parts = [
             str(class_row["year"]) if class_row.get("year") else "",
@@ -1631,37 +1659,11 @@ def get_my_pending_join_requests_for_user(user_id: str, class_id: UUID) -> list:
         ]
         course_label = " ".join(p for p in course_label_parts if p).strip()
 
-        projects_res = (
-            client.table("projects")
-            .select("id, name, num_members, sponsor_company, image_url")
-            .eq("class_id", str(class_id))
-            .execute()
-        )
-        projects = projects_res.data or []
-        project_ids = [p["id"] for p in projects]
-        if not project_ids:
-            return []
-
-        project_map = {p["id"]: p for p in projects}
-
-        # Pending requests are still awaiting review; rejected ones surface as a
-        # dismissible "denied" notice until the requester dismisses them (which
-        # deletes the row). Accepted requests are dropped — the student is now a member.
-        rows = (
-            client.table("project_join_requests")
-            .select("id, user_id, project_id, created_at, request_status, invited_by")
-            .eq("user_id", user_id)
-            .in_("request_status", ["pending", "rejected"])
-            .in_("project_id", project_ids)
-            .execute()
-        )
-        outgoing = [r for r in (rows.data or []) if not r.get("invited_by")]
-        if not outgoing:
-            return []
-
         result = []
-        for row in outgoing:
-            project = project_map.get(row["project_id"], {})
+        for row in reads["requests"]:
+            project = row.get("projects") or {}
+            if str(project.get("class_id")) != cid:
+                continue
             result.append(
                 {
                     "request_id": row["id"],
@@ -1686,54 +1688,61 @@ def get_my_pending_join_requests_for_user(user_id: str, class_id: UUID) -> list:
         raise HTTPException(status_code=500, detail="Failed to fetch outgoing join requests")
 
 
+#: A pending request with its requester's profile embedded. ``project_join_requests``
+#: has three foreign keys to ``profiles`` (user_id, invited_by, reviewer_id), so the
+#: embed names the one it follows.
+_PENDING_REQUEST_COLUMNS = (
+    "id, user_id, project_id, created_at, request_status, message, "
+    "requester:profiles!project_join_requests_user_id_fkey(email, role)"
+)
+
+
+def _pending_student_requests(client, project_ids: list[str]) -> list[dict]:
+    """Pending student-initiated requests (``invited_by`` null) on the projects. One round trip."""
+    return (
+        client.table("project_join_requests")
+        .select(_PENDING_REQUEST_COLUMNS)
+        .in_("project_id", project_ids)
+        .eq("request_status", "pending")
+        .is_("invited_by", "null")
+        .execute()
+    ).data or []
+
+
+def _join_request_row(row: dict) -> dict:
+    """The seven keys :func:`get_pending_join_requests` emits for one request."""
+    requester = row.get("requester") or {}
+    return {
+        "request_id": row["id"],
+        "user_id": row["user_id"],
+        "email": requester.get("email"),
+        "user_role": requester.get("role"),
+        "requested_at": row.get("created_at"),
+        "status": row["request_status"],
+        "message": row.get("message"),
+    }
+
+
 def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
     """
     Pending **student-initiated** join requests for a project (``invited_by`` is null).
 
     Caller must be the **class instructor** or a project **owner** / **product owner** / **admin**.
+
+    The project (class owner and members embedded) and the requests (requester
+    profile embedded) are read concurrently: 2 round trips in one wave.
     """
     try:
         client = get_client()
-
-        _assert_can_review_student_join_request(client, reviewer_id, str(project_id))
-
-        # Pending student-initiated requests only (team invites omit invited_by)
-        requests = (
-            client.table("project_join_requests")
-            .select("id, user_id, created_at, request_status, invited_by, message")
-            .eq("project_id", str(project_id))
-            .eq("request_status", "pending")
-            .execute()
+        pid = str(project_id)
+        reads = fan_out(
+            {
+                "project": lambda: _load_review_project(client, pid),
+                "requests": lambda: _pending_student_requests(client, [pid]),
+            }
         )
-
-        student_requests = [r for r in (requests.data or []) if not r.get("invited_by")]
-
-        if not student_requests:
-            return []
-
-        # Fetch user details (requesters)
-        user_ids = [r["user_id"] for r in student_requests]
-        users = client.table("profiles").select("id, email, role").in_("id", user_ids).execute()
-
-        # Combine request and user data
-        user_map = {u["id"]: u for u in users.data} if users.data else {}
-
-        result = []
-        for request in student_requests:
-            user_info = user_map.get(request["user_id"], {})
-            result.append(
-                {
-                    "request_id": request["id"],
-                    "user_id": request["user_id"],
-                    "email": user_info.get("email"),
-                    "user_role": user_info.get("role"),
-                    "requested_at": request.get("created_at"),
-                    "status": request["request_status"],
-                    "message": request.get("message"),
-                }
-            )
-
-        return result
+        _require_can_review(reads["project"], reviewer_id)
+        return [_join_request_row(r) for r in reads["requests"]]
     except HTTPException:
         raise
     except Exception:
