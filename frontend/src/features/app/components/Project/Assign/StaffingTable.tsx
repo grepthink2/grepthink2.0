@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown, Users, TrendingUp, Zap } from 'lucide-react';
 import type { RankedStaffingProject, StaffingSortKey, SortDir } from './assignTypes';
 import './StaffingTable.scss';
@@ -54,7 +54,7 @@ const StaffingTable: React.FC<StaffingTableProps> = ({ projects, onAddSeat, onRe
     }
   };
 
-  const sorted = [...projects].sort((a, b) => {
+  const sorted = useMemo(() => [...projects].sort((a, b) => {
     if (sortKey === 'name') {
       const aVal = a.name.toLowerCase();
       const bVal = b.name.toLowerCase();
@@ -78,7 +78,7 @@ const StaffingTable: React.FC<StaffingTableProps> = ({ projects, onAddSeat, onRe
 
     const diff = getVal(a) - getVal(b);
     return sortDir === 'asc' ? diff : -diff;
-  });
+  }), [projects, sortKey, sortDir]);
 
   return (
     <div className="staffing-table">

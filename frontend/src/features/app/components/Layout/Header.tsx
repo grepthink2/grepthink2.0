@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu, Eye } from 'lucide-react';
@@ -162,6 +162,11 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
     markAllRead,
   } = useNotifications();
 
+  const unreadNotifications = useMemo(
+    () => notifications.filter((n) => !n.read_at),
+    [notifications],
+  );
+
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -177,7 +182,10 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
 
   const path = location.pathname;
 
-  const breadcrumbs = buildBreadcrumbs(path, role, selectedClass?.name, location.state);
+  const breadcrumbs = useMemo(
+    () => buildBreadcrumbs(path, role, selectedClass?.name, location.state),
+    [path, role, selectedClass?.name, location.state],
+  );
   const isClassRoute = breadcrumbs !== null;
   const showInstructorClassMeta = isClassRoute && role === 'instructor';
   const standaloneTitle = pageTitles[path] ?? 'GrepThink';
@@ -398,10 +406,10 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
                       </div>
                     ))}
                   </div>
-                ) : notifications.filter(n => !n.read_at).length === 0 ? (
+                ) : unreadNotifications.length === 0 ? (
                   <div className="app-header__empty-state">No notifications</div>
                 ) : (
-                  notifications.filter(n => !n.read_at).map((notification) => (
+                  unreadNotifications.map((notification) => (
                     <div
                       key={notification.id}
                       className={`app-header__notification-item ${!notification.read_at ? 'unread' : ''}`}

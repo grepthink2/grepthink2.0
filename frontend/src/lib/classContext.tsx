@@ -184,26 +184,37 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [visibleClasses, selectedClass, reselectSidebarClass]);
 
-  return (
-    <ClassContext.Provider
-      value={{
-        classes,
-        visibleClasses,
-        sidebarClasses,
-        selectedClass,
-        setSelectedClass,
-        refreshClasses,
-        loading,
-        successMessage,
-        setSuccessMessage,
-        getClassStatus,
-        setClassLifecycleStatus,
-        hideClassFromUI,
-      }}
-    >
-      {children}
-    </ClassContext.Provider>
+  const value = useMemo(
+    () => ({
+      classes,
+      visibleClasses,
+      sidebarClasses,
+      selectedClass,
+      setSelectedClass,
+      refreshClasses,
+      loading,
+      successMessage,
+      setSuccessMessage,
+      getClassStatus,
+      setClassLifecycleStatus,
+      hideClassFromUI,
+    }),
+    [
+      classes,
+      visibleClasses,
+      sidebarClasses,
+      selectedClass,
+      setSelectedClass,
+      refreshClasses,
+      loading,
+      successMessage,
+      getClassStatus,
+      setClassLifecycleStatus,
+      hideClassFromUI,
+    ],
   );
+
+  return <ClassContext.Provider value={value}>{children}</ClassContext.Provider>;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
