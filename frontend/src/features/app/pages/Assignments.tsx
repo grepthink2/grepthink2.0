@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { formatAssignmentDueDate } from '@/lib/dateUtils';
 import { useNavigate } from 'react-router-dom';
 import { useClass } from '@/lib/classContext';
-import { api, type ApiAssignment } from '@/lib/api';
+import { emptyMySubmissions, api, type ApiAssignment } from '@/lib/api';
 import { usePreview } from '@/lib/previewContext';
 import StudentAssignmentsTable, {
   type StudentAssignment,
@@ -90,10 +90,14 @@ const Assignments: React.FC = () => {
       try {
         const today = format(new Date(), 'yyyy-MM-dd');
 
-        const { assignments } = await api.getAssignments(selectedClass.id);
+        const [{ assignments }, { projects: myAllProjects }, { projects: classProjects }, mySubmissions] =
+          await Promise.all([
+            api.getAssignments(selectedClass.id),
+            api.getProjects(),
+            api.getProjects(selectedClass.id),
+            api.getMySubmissions(selectedClass.id).catch(emptyMySubmissions),
+          ]);
         assignments.sort((a, b) => a.close_date.localeCompare(b.close_date));
-        const { projects: myAllProjects } = await api.getProjects();
-        const { projects: classProjects } = await api.getProjects(selectedClass.id);
 
         const myProjectIds = new Set(myAllProjects.map((p) => p.id));
         const myClassProjects = classProjects.filter((p) => myProjectIds.has(p.id));
@@ -124,42 +128,23 @@ const Assignments: React.FC = () => {
         const tsrAssignments = assignments.filter(
           (a) => a.assignment_type !== 'interest_form' && a.assignment_type !== 'feedback',
         );
+        const projectIdsByAssignment = new Map<string, (string | null)[]>();
+        for (const t of mySubmissions.tsrs) {
+          const ids = projectIdsByAssignment.get(t.assignment_id) ?? [];
+          ids.push(t.project_id);
+          projectIdsByAssignment.set(t.assignment_id, ids);
+        }
         const submittedByAssignmentProject: Record<string, Set<string>> = {};
-        await Promise.all(
-          tsrAssignments.map(async (a) => {
-            try {
-              const { tsrs } = await api.getMyAssignmentTsrs(a.id);
-              const byProject = new Set<string>();
-              const legacyNoProject = tsrs.length > 0 && tsrs.every((t) => !t.project_id);
-              for (const t of tsrs) {
-                if (t.project_id) byProject.add(t.project_id);
-              }
-              if (legacyNoProject) {
-                for (const p of myClassProjects) byProject.add(p.id);
-              }
-              submittedByAssignmentProject[a.id] = byProject;
-            } catch {
-              submittedByAssignmentProject[a.id] = new Set();
-            }
-          }),
-        );
-
-        const feedbackAssignments = assignments.filter(
-          (a) => a.assignment_type === 'feedback',
-        );
-        const submittedFeedbackIds = new Set<string>();
-        await Promise.all(
-          feedbackAssignments.map(async (a) => {
-            try {
-              const { submission } = await api.getMyFeedback(a.id);
-              if (submission) submittedFeedbackIds.add(a.id);
-            } catch {
-              // not submitted or error — treat as not started
-            }
-          }),
-        );
-
-        if (cancelled) return;
+        for (const a of tsrAssignments) {
+          const ids = projectIdsByAssignment.get(a.id) ?? [];
+          const byProject = new Set(ids.filter((id): id is string => Boolean(id)));
+          // Legacy rows carry no project: count them for every team the student is on.
+          if (ids.length > 0 && ids.every((id) => !id)) {
+            for (const p of myClassProjects) byProject.add(p.id);
+          }
+          submittedByAssignmentProject[a.id] = byProject;
+        }
+        const submittedFeedbackIds = new Set(mySubmissions.feedback_assignment_ids);
 
         const result: StudentAssignment[] = [];
         for (const a of assignments) {

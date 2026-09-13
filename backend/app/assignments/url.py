@@ -9,6 +9,8 @@ from app.assignments import views
 router = APIRouter(prefix="/api/assignments", tags=["assignments"])
 
 router.post("")(views.create_assignment)
+# Static paths before the /{assignment_id} routes.
+router.get("/my-submissions")(views.get_my_submissions)
 router.patch("/{assignment_id}")(views.update_assignment)
 router.delete("/{assignment_id}")(views.delete_assignment)
 router.get("/{assignment_id}/tsr-overview")(views.get_tsr_overview)

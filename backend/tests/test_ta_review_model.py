@@ -41,6 +41,7 @@ def db(monkeypatch):
     fake = FakeSupabase(
         relations={
             ("projects", "classes"): ("class_id", "id", False),
+            ("projects", "project_members"): ("id", "project_id", True),
         },
         profiles=[
             _profile(INSTR, "Ina"),
@@ -89,18 +90,20 @@ def db(monkeypatch):
 
 
 def test_tsr_access_instructor_unrestricted(db):
-    assert assignments._resolve_tsr_overview_access(db, INSTR, CLASS) is None
+    projects = assignments.get_instructor_tsr_overview(INSTR, "a1")["projects"]
+    assert {p["id"] for p in projects} == {P1, P2}
 
 
 def test_tsr_access_ta_scoped_to_assigned(db):
-    assert assignments._resolve_tsr_overview_access(db, TA1, CLASS) == {P1}
+    projects = assignments.get_instructor_tsr_overview(TA1, "a1")["projects"]
+    assert [p["id"] for p in projects] == [P1]
     # TA2 is a class TA but isn't the assigned TA of any team -> empty scope.
-    assert assignments._resolve_tsr_overview_access(db, TA2, CLASS) == set()
+    assert assignments.get_instructor_tsr_overview(TA2, "a1")["projects"] == []
 
 
 def test_tsr_access_non_ta_forbidden(db):
     with pytest.raises(HTTPException) as exc:
-        assignments._resolve_tsr_overview_access(db, S1, CLASS)
+        assignments.get_instructor_tsr_overview(S1, "a1")
     assert exc.value.status_code == 403
 
 
@@ -129,7 +132,7 @@ def test_demote_clears_assigned_and_review(db):
     assert not [r for r in db.rows("project_review_tas") if r["user_id"] == TA1]
     # TSR access is revoked too (TA1 is now a student).
     with pytest.raises(HTTPException):
-        assignments._resolve_tsr_overview_access(db, TA1, CLASS)
+        assignments.get_instructor_tsr_overview(TA1, "a1")
 
 
 # --------------------------------------------------------------------------

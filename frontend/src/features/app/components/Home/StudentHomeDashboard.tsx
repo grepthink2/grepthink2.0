@@ -20,7 +20,7 @@ import {
 import { formatAssignmentDueDate } from '@/lib/dateUtils';
 import { useClass } from '@/lib/classContext';
 import { useUser } from '@/lib/auth';
-import { api, type ApiAssignment } from '@/lib/api';
+import { emptyMySubmissions, api, type ApiAssignment } from '@/lib/api';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import {
   // MOCK_SCHEDULE,
@@ -461,28 +461,26 @@ const StudentHomeDashboard: React.FC = () => {
     const load = async () => {
       setDeadlinesLoading(true);
       try {
-        const { assignments } = await api.getAssignments(selectedClass.id);
-        const { projects: myAllProjects } = await api.getProjects();
-        const { projects: classProjects } = await api.getProjects(selectedClass.id);
+        const [{ assignments }, { projects: myAllProjects }, { projects: classProjects }, mySubmissions] =
+          await Promise.all([
+            api.getAssignments(selectedClass.id),
+            api.getProjects(),
+            api.getProjects(selectedClass.id),
+            api.getMySubmissions(selectedClass.id).catch(emptyMySubmissions),
+          ]);
 
         const myProjectIds = new Set(myAllProjects.map((p) => p.id));
         const myClassProjects = classProjects
           .filter((p) => myProjectIds.has(p.id))
           .map((p) => ({ id: p.id, name: p.name }));
 
+        // Only the caller's own submissions count: a scrum master's project TSR
+        // list also contains teammates' rows, which marked deadlines done early.
         const tsrsByProject: Record<string, string[]> = {};
-        await Promise.all(
-          myClassProjects.map(async (p) => {
-            try {
-              const { tsrs } = await api.getProjectTsrs(p.id);
-              tsrsByProject[p.id] = tsrs
-                .map((t) => t.assignment_id)
-                .filter((id): id is string => Boolean(id));
-            } catch {
-              tsrsByProject[p.id] = [];
-            }
-          }),
-        );
+        for (const p of myClassProjects) tsrsByProject[p.id] = [];
+        for (const t of mySubmissions.tsrs) {
+          if (t.project_id && tsrsByProject[t.project_id]) tsrsByProject[t.project_id].push(t.assignment_id);
+        }
 
         if (cancelled) return;
 

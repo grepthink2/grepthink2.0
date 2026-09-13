@@ -416,6 +416,17 @@ export interface ApiAssignment {
   feedback_total?: number;
 }
 
+/** The caller's own submissions across a class's assignments (GET /api/assignments/my-submissions). */
+export interface ApiMySubmissions {
+  /** One entry per (TSR assignment, project) the caller evaluated for; project_id is null only on legacy rows. */
+  tsrs: { assignment_id: string; project_id: string | null }[];
+  /** Feedback assignments the caller has answered. */
+  feedback_assignment_ids: string[];
+}
+
+/** Fallback when the submissions read fails: treat everything as not yet submitted. */
+export const emptyMySubmissions = (): ApiMySubmissions => ({ tsrs: [], feedback_assignment_ids: [] });
+
 export interface ApiTurnInStats {
   rate: number;
   teamsSubmitted: { count: number; total: number };
@@ -1147,6 +1158,11 @@ export const api = {
   /** Get all assignments for a class (GET /api/assignments?class_id=...) */
   getAssignments: async (classId: string) => {
     return apiRequest<{ assignments: ApiAssignment[] }>(`/api/assignments?class_id=${classId}`);
+  },
+
+  /** Student: own TSR + feedback submissions for every assignment in a class, in one request. */
+  getMySubmissions: async (classId: string) => {
+    return apiRequest<ApiMySubmissions>(`/api/assignments/my-submissions?class_id=${classId}`);
   },
 
   /** Create an assignment (instructor only — POST /api/assignments) */
