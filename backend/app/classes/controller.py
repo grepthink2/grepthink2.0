@@ -1174,75 +1174,101 @@ def get_class_roster_timeline(class_id: UUID, instructor_id: str) -> dict:
 def _remove_dropped_roster_students_from_teams(client, class_id: str) -> int:
     """Remove registered students marked dropped on the roster from class teams.
 
-    Called after a roster CSV upload. Any matched GrepThink profile whose
-    roster row is ``dropped`` is removed from every project in the class;
-    remaining teammates receive an in-app notification.
+    Called after a roster CSV upload. Any matched GrepThink profile whose roster
+    row is ``dropped`` is removed from every project in the class. The teammates
+    who stay on each team get one in-app notification per student who left it;
+    students leaving the same team are not notified about each other.
+
+    Round trips, however many students leave: the dropped roster rows and the
+    class's projects with their member ids (concurrently), one membership delete,
+    a recount (one read plus one update per affected project), one notification
+    insert and one join-request delete. It used to be about 6 per removal.
     """
-    from app.notifications.controller import notify_team_member_dropped_from_roster
-    from app.projects.controller import _increment_project_num_members
+    from app.notifications.controller import _insert_notifications
+    from app.projects.controller import recount_num_members
 
     cid = str(class_id)
-    dropped_res = (
-        client.table("roster_entries")
-        .select("matched_profile_id, email, first_name, last_name")
-        .eq("course_id", cid)
-        .eq("status", "dropped")
-        .execute()
+    reads = fan_out(
+        {
+            "dropped": lambda: (
+                (
+                    client.table("roster_entries")
+                    .select("matched_profile_id, email, first_name, last_name")
+                    .eq("course_id", cid)
+                    .eq("status", "dropped")
+                    .execute()
+                ).data
+                or []
+            ),
+            "projects": lambda: (
+                (
+                    client.table("projects")
+                    .select("id, name, project_members(user_id)")
+                    .eq("class_id", cid)
+                    .execute()
+                ).data
+                or []
+            ),
+        }
     )
-    dropped_by_user: dict[str, dict] = {}
-    for row in dropped_res.data or []:
-        uid = row.get("matched_profile_id")
-        if uid:
-            dropped_by_user[str(uid)] = row
-    if not dropped_by_user:
-        return 0
-
-    projects_res = client.table("projects").select("id, name").eq("class_id", cid).execute()
-    projects = projects_res.data or []
-    if not projects:
+    dropped_by_user = {
+        str(row["matched_profile_id"]): row
+        for row in reads["dropped"]
+        if row.get("matched_profile_id")
+    }
+    projects = reads["projects"]
+    if not dropped_by_user or not projects:
         return 0
 
     project_ids = [p["id"] for p in projects]
-    project_names = {p["id"]: (p.get("name") or "Unknown project") for p in projects}
-
-    memberships_res = (
-        client.table("project_members")
-        .select("project_id, user_id")
-        .in_("user_id", list(dropped_by_user.keys()))
-        .in_("project_id", project_ids)
-        .execute()
-    )
-    memberships = memberships_res.data or []
-    if not memberships:
+    members_by_project = {
+        str(p["id"]): [
+            str(m["user_id"]) for m in (p.get("project_members") or []) if m.get("user_id")
+        ]
+        for p in projects
+    }
+    on_teams = {
+        uid for uids in members_by_project.values() for uid in uids if uid in dropped_by_user
+    }
+    if not on_teams:
         return 0
 
-    removed = 0
-    for membership in memberships:
-        pid = str(membership["project_id"])
-        uid = str(membership["user_id"])
-        team_res = client.table("project_members").select("user_id").eq("project_id", pid).execute()
-        recipient_ids = [
-            str(r["user_id"])
-            for r in (team_res.data or [])
-            if r.get("user_id") and str(r["user_id"]) != uid
-        ]
+    removed = (
+        client.table("project_members")
+        .delete()
+        .in_("user_id", sorted(on_teams))
+        .in_("project_id", project_ids)
+        .execute()
+    ).data or []
+    leavers_by_project: dict[str, set[str]] = {}
+    for row in removed:
+        leavers_by_project.setdefault(str(row["project_id"]), set()).add(str(row["user_id"]))
+    if leavers_by_project:
+        recount_num_members(client, list(leavers_by_project))
 
-        client.table("project_members").delete().eq(
-            "project_id",
-            pid,
-        ).eq("user_id", uid).execute()
-        _increment_project_num_members(client, pid, -1)
-        removed += 1
-
-        row = dropped_by_user.get(uid, {})
-        display_name = _roster_entry_name(row) or row.get("email") or "A student"
-        notify_team_member_dropped_from_roster(
-            project_id=pid,
-            project_name=project_names.get(pid, "Unknown project"),
-            removed_user_id=uid,
-            removed_user_name=display_name,
-            recipient_ids=recipient_ids,
-        )
+    project_names = {str(p["id"]): (p.get("name") or "Unknown project") for p in projects}
+    notifications = []
+    for pid, leavers in leavers_by_project.items():
+        staying = [uid for uid in members_by_project.get(pid, []) if uid not in leavers]
+        for uid in sorted(leavers):
+            row = dropped_by_user.get(uid, {})
+            display_name = _roster_entry_name(row) or row.get("email") or "A student"
+            body = (
+                f"{display_name} has dropped the course and was removed from "
+                f'"{project_names.get(pid, "Unknown project")}".'
+            )
+            notifications.extend(
+                {
+                    "user_id": recipient,
+                    "type": "member_removed",
+                    "title": "Team member removed",
+                    "body": body,
+                    "entity_type": "project",
+                    "entity_id": pid,
+                }
+                for recipient in staying
+            )
+    _insert_notifications(notifications)
 
     client.table("project_join_requests").delete().in_(
         "user_id",
@@ -1253,9 +1279,9 @@ def _remove_dropped_roster_students_from_teams(client, class_id: str) -> int:
         logger.info(
             "Removed dropped roster students from teams | class_id=%s count=%d",
             cid,
-            removed,
+            len(removed),
         )
-    return removed
+    return len(removed)
 
 
 def upload_class_roster(class_id: UUID, csv_text: str, instructor_id: str) -> dict:
@@ -1485,40 +1511,33 @@ def _purge_student_from_class(client, class_id: UUID, student_id: str) -> None:
     Remove all of a student's class-scoped state. Caller is responsible for
     authorization and error handling.
 
-    - Removes from every project in the class (project_members) and
-      decrements each affected project's num_members counter.
+    - Removes them from every project in the class (project_members) and
+      recounts each affected project's num_members from its remaining rows.
     - Cancels all pending project_join_requests for projects in this class.
     - Removes any TA project assignments for the user in the class.
     - Removes the class_enrollments row.
+
+    The membership delete returns the rows it removed, which name the affected
+    projects, so there is no membership read first and no read-then-write
+    decrement per project.
     """
-    projects_res = client.table("projects").select("id").eq("class_id", str(class_id)).execute()
+    from app.projects.controller import recount_num_members
+
+    cid = str(class_id)
+    projects_res = client.table("projects").select("id").eq("class_id", cid).execute()
     project_ids = [p["id"] for p in (projects_res.data or [])]
 
     if project_ids:
-        # Find which projects the student is actually a member of so we
-        # can decrement their num_members counters accurately.
-        existing_memberships = (
+        removed = (
             client.table("project_members")
-            .select("project_id")
+            .delete()
             .eq("user_id", student_id)
             .in_("project_id", project_ids)
             .execute()
-        )
-        affected_project_ids = [m["project_id"] for m in (existing_memberships.data or [])]
-
-        # Remove project memberships.
-        client.table("project_members").delete().eq("user_id", student_id).in_(
-            "project_id", project_ids
-        ).execute()
-
-        # Decrement num_members for each affected project.
-        for pid in affected_project_ids:
-            proj = client.table("projects").select("num_members").eq("id", pid).execute()
-            if proj.data:
-                current = proj.data[0].get("num_members") or 0
-                client.table("projects").update({"num_members": max(0, int(current) - 1)}).eq(
-                    "id", pid
-                ).execute()
+        ).data or []
+        affected = list(dict.fromkeys(str(row["project_id"]) for row in removed))
+        if affected:
+            recount_num_members(client, affected)
 
         # Cancel all pending join requests for projects in this class.
         client.table("project_join_requests").delete().eq("user_id", student_id).in_(
@@ -1527,15 +1546,15 @@ def _purge_student_from_class(client, class_id: UUID, student_id: str) -> None:
 
     # A removed member no longer oversees any project in this class as its TA,
     # nor holds any end-of-quarter review claim.
-    client.table("projects").update({"assigned_ta_id": None}).eq("class_id", str(class_id)).eq(
+    client.table("projects").update({"assigned_ta_id": None}).eq("class_id", cid).eq(
         "assigned_ta_id", student_id
     ).execute()
-    client.table("project_review_tas").delete().eq("class_id", str(class_id)).eq(
+    client.table("project_review_tas").delete().eq("class_id", cid).eq(
         "user_id", student_id
     ).execute()
 
     # Remove class enrollment.
-    client.table("class_enrollments").delete().eq("class_id", str(class_id)).eq(
+    client.table("class_enrollments").delete().eq("class_id", cid).eq(
         "user_id", student_id
     ).execute()
 
