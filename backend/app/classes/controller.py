@@ -366,6 +366,25 @@ def _generate_tsr_assignments(
         )
 
 
+_COURSE_CODE_ATTEMPTS = 5
+
+
+def _pick_course_code(client) -> str | None:
+    """A freshly generated course code that no class uses yet, or ``None``.
+
+    Generates ``_COURSE_CODE_ATTEMPTS`` candidates and probes them in one read
+    (it used to be one read per attempt). The probe stays case-insensitive: a code
+    stored in lower case still blocks the same letters in upper case.
+    """
+    candidates = list(
+        dict.fromkeys(generate_course_code().upper() for _ in range(_COURSE_CODE_ATTEMPTS))
+    )
+    probe = ",".join(f"course_code.ilike.{_postgrest_value(code)}" for code in candidates)
+    rows = client.table("classes").select("course_code").or_(probe).execute().data or []
+    taken = {(row.get("course_code") or "").upper() for row in rows}
+    return next((code for code in candidates if code not in taken), None)
+
+
 def create_class(
     name: str,
     description: str | None,
@@ -386,16 +405,7 @@ def create_class(
 
         year = start_date.year
 
-        # Generate unique course code
-        course_code = None
-        for _ in range(5):
-            candidate = generate_course_code()
-            existing = (
-                client.table("classes").select("id").ilike("course_code", candidate).execute()
-            )
-            if not existing.data:
-                course_code = candidate.upper()
-                break
+        course_code = _pick_course_code(client)
 
         if not course_code:
             raise HTTPException(status_code=500, detail="Failed to generate unique course code")
@@ -479,6 +489,13 @@ def get_classes_for_user(user_id: str, role: str) -> list:
     """
     Get all classes for a user based on their role
 
+    Instructors get every class they created (the full row). Students get the
+    classes they are enrolled in with ``teacher_email``, the instructor's email
+    the class list shows. Both carry ``enrolled_count`` (students, not TAs).
+
+    Round trips: 2, the classes and then the enrollment counts. A student's
+    classes arrive with their instructors' emails embedded (was 3).
+
     Args:
         user_id: User's unique identifier
         role: User's role (instructor or student)
@@ -503,47 +520,36 @@ def get_classes_for_user(user_id: str, role: str) -> list:
                 classes, _enrollment_counts_by_class(client, [c["id"] for c in classes])
             )
             return classes
-        else:
-            # Students: fetch enrollments with joined class + instructor info
-            enrollments = (
-                client.table("class_enrollments")
-                .select(
-                    "class_id, classes ( id, name, description, created_by, created_at, course_code, status, term, start_date, year, image_url )"
-                )
-                .eq("user_id", user_id)
-                .execute()
+
+        # Students: enrollments with the class and its instructor's email embedded.
+        enrollments = (
+            client.table("class_enrollments")
+            .select(
+                "class_id, classes(id, name, description, created_by, created_at, course_code, "
+                "status, term, start_date, year, image_url, "
+                "instructor:profiles!classes_created_by_fkey(email))"
             )
+            .eq("user_id", user_id)
+            .execute()
+        )
+        if not enrollments.data:
+            return []
 
-            if not enrollments.data:
-                return []
+        classes = []
+        for row in enrollments.data:
+            cls = row.get("classes")
+            if not cls:
+                continue
+            instructor = cls.pop("instructor", None) or {}
+            cls["teacher_email"] = instructor.get("email")
+            classes.append(cls)
 
-            classes = []
-            instructor_ids = []
-            for row in enrollments.data:
-                cls = row.get("classes")
-                if not cls:
-                    continue
-                if cls.get("created_by"):
-                    instructor_ids.append(cls["created_by"])
-                classes.append(cls)
-
-            # Fetch instructor emails
-            instructor_emails = {}
-            if instructor_ids:
-                instructors = (
-                    client.table("profiles").select("id, email").in_("id", instructor_ids).execute()
-                )
-                for t in instructors.data or []:
-                    instructor_emails[t["id"]] = t.get("email")
-
-            # Attach instructor email to each class
-            for cls in classes:
-                cls["instructor_email"] = instructor_emails.get(cls.get("created_by"))
-
-            _attach_enrolled_counts(
-                classes, _enrollment_counts_by_class(client, [c["id"] for c in classes])
-            )
-            return classes
+        _attach_enrolled_counts(
+            classes, _enrollment_counts_by_class(client, [c["id"] for c in classes])
+        )
+        return classes
+    except HTTPException:
+        raise
     except Exception:
         logger.exception("Error fetching classes | user_id=%s role=%s", user_id, role)
         raise HTTPException(status_code=500, detail="Failed to fetch classes")
