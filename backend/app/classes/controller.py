@@ -11,12 +11,8 @@ from uuid import UUID
 from fastapi import HTTPException
 
 from app.classes.invite_email import send_class_invite_email, send_class_invite_email_or_raise
-from app.core.db import get_client
-from app.database.client import (
-    _TRANSIENT_HTTPX_ERRORS,
-    query_pool,
-    retry_on_disconnect,
-)
+from app.core import authz
+from app.core.db import TRANSIENT_ERRORS, get_client, query_pool, retry_on_disconnect
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code
 from app.utils.profiles import profile_display_name
@@ -125,6 +121,39 @@ def _find_student_profile_by_email(client, email: str) -> dict | None:
     if email_match.data:
         return email_match.data[0]
     return None
+
+
+#: Instructor-only routes give one answer for "no such class" and "not your
+#: class", so a stranger cannot tell which class ids exist. The wording differs
+#: between routes and is kept exactly as each route answered before.
+_NO_PERMISSION = "Class not found or you do not have permission"
+_NO_PERMISSION_DONT = "Class not found or you don't have permission"
+
+
+def _require_owner(
+    client,
+    user_id: str,
+    class_id,
+    *,
+    columns: str = authz.CLASS_COLUMNS,
+    detail: str = _NO_PERMISSION,
+    status: int = 404,
+) -> dict:
+    """Return the class row when ``user_id`` created the class; raise otherwise.
+
+    One round trip. A missing class and someone else's class both raise
+    ``status`` with ``detail``.
+    """
+    return authz.require_class_instructor(
+        client,
+        user_id,
+        class_id,
+        columns=columns,
+        missing=status,
+        denied=status,
+        missing_detail=detail,
+        denied_detail=detail,
+    )
 
 
 def _class_invite_email_context(client, class_row: dict, instructor_id: str) -> dict:
@@ -461,18 +490,7 @@ def update_class_status(class_id: UUID, status: str, instructor_id: str) -> dict
         client = get_client()
         cid = str(class_id)
 
-        class_result = (
-            client.table("classes")
-            .select("id")
-            .eq("id", cid)
-            .eq("created_by", instructor_id)
-            .execute()
-        )
-        if not class_result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Class not found or you do not have permission",
-            )
+        _require_owner(client, instructor_id, cid)
 
         update_result = client.table("classes").update({"status": status}).eq("id", cid).execute()
         if not update_result.data:
@@ -598,19 +616,13 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
         client = get_client()
         normalized_email = student_email.strip().lower()
 
-        class_result = (
-            client.table("classes")
-            .select("id, name, course_code, created_by")
-            .eq("id", str(class_id))
-            .eq("created_by", instructor_id)
-            .execute()
+        class_row = _require_owner(
+            client,
+            instructor_id,
+            class_id,
+            columns="id, name, course_code, created_by",
+            detail=_NO_PERMISSION_DONT,
         )
-        if not class_result.data:
-            raise HTTPException(
-                status_code=404, detail="Class not found or you don't have permission"
-            )
-
-        class_row = class_result.data[0]
         email_ctx = _class_invite_email_context(client, class_row, instructor_id)
 
         student = _find_student_profile_by_email(client, normalized_email)
@@ -1015,18 +1027,7 @@ def get_class_roster_timeline(class_id: UUID, instructor_id: str) -> dict:
         client = get_client()
         cid = str(class_id)
 
-        class_result = (
-            client.table("classes")
-            .select("id")
-            .eq("id", cid)
-            .eq("created_by", instructor_id)
-            .execute()
-        )
-        if not class_result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Class not found or you do not have permission",
-            )
+        _require_owner(client, instructor_id, cid)
 
         enrollments_res = (
             client.table("class_enrollments")
@@ -1242,18 +1243,7 @@ def upload_class_roster(class_id: UUID, csv_text: str, instructor_id: str) -> di
         client = get_client()
         cid = str(class_id)
 
-        class_result = (
-            client.table("classes")
-            .select("id")
-            .eq("id", cid)
-            .eq("created_by", instructor_id)
-            .execute()
-        )
-        if not class_result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Class not found or you do not have permission",
-            )
+        _require_owner(client, instructor_id, cid)
 
         parsed_rows = _parse_roster_csv(csv_text)
         emails = [r["email"] for r in parsed_rows]
@@ -1370,18 +1360,7 @@ def add_manual_roster_student(
         if not normalized_email or "@" not in normalized_email:
             raise HTTPException(status_code=400, detail="A valid email is required")
 
-        class_result = (
-            client.table("classes")
-            .select("id")
-            .eq("id", cid)
-            .eq("created_by", instructor_id)
-            .execute()
-        )
-        if not class_result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Class not found or you do not have permission",
-            )
+        _require_owner(client, instructor_id, cid)
 
         existing = (
             client.table("roster_entries")
@@ -1441,18 +1420,7 @@ def delete_manual_roster_entry(class_id: UUID, entry_id: str, instructor_id: str
         client = get_client()
         cid = str(class_id)
 
-        class_result = (
-            client.table("classes")
-            .select("id")
-            .eq("id", cid)
-            .eq("created_by", instructor_id)
-            .execute()
-        )
-        if not class_result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Class not found or you do not have permission",
-            )
+        _require_owner(client, instructor_id, cid)
 
         existing = (
             client.table("roster_entries")
@@ -1557,18 +1525,7 @@ def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: st
     try:
         client = get_client()
 
-        class_result = (
-            client.table("classes")
-            .select("id")
-            .eq("id", str(class_id))
-            .eq("created_by", instructor_id)
-            .execute()
-        )
-        if not class_result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Class not found or you do not have permission",
-            )
+        _require_owner(client, instructor_id, class_id)
 
         _purge_student_from_class(client, class_id, student_id)
 
@@ -1639,20 +1596,9 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
     try:
         client = get_client()
 
-        class_result = (
-            client.table("classes")
-            .select("id, name, course_code, created_by")
-            .eq("id", str(class_id))
-            .eq("created_by", instructor_id)
-            .execute()
+        class_row = _require_owner(
+            client, instructor_id, class_id, columns="id, name, course_code, created_by"
         )
-        if not class_result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Class not found or you do not have permission",
-            )
-
-        class_row = class_result.data[0]
         email_ctx = _class_invite_email_context(client, class_row, instructor_id)
 
         clean_emails = list({e.strip().lower() for e in emails if e.strip()})
@@ -1763,17 +1709,7 @@ def queue_invite(
     """Store a pending invite batch; the background worker sends it after delay_seconds."""
     try:
         client = get_client()
-        class_result = (
-            client.table("classes")
-            .select("id")
-            .eq("id", str(class_id))
-            .eq("created_by", instructor_id)
-            .execute()
-        )
-        if not class_result.data:
-            raise HTTPException(
-                status_code=404, detail="Class not found or you don't have permission"
-            )
+        _require_owner(client, instructor_id, class_id, detail=_NO_PERMISSION_DONT)
 
         send_at = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=delay_seconds)
         payload: dict = {
@@ -1800,6 +1736,8 @@ def queue_invite(
         return {"job_id": inserted["id"], "send_at": inserted["send_at"]}
     except HTTPException:
         raise
+    except TRANSIENT_ERRORS:
+        raise  # @retry_on_disconnect retries a dropped connection
     except Exception:
         logger.exception("Error in queue_invite | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to queue invite")
@@ -1828,6 +1766,8 @@ def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
         return {"cancelled": True}
     except HTTPException:
         raise
+    except TRANSIENT_ERRORS:
+        raise  # @retry_on_disconnect retries a dropped connection
     except Exception:
         logger.exception("Error in cancel_invite | job_id=%s", job_id)
         raise HTTPException(status_code=500, detail="Failed to cancel invite")
@@ -1980,7 +1920,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
         return results
     except HTTPException:
         raise
-    except _TRANSIENT_HTTPX_ERRORS:
+    except TRANSIENT_ERRORS:
         # Bubble to @retry_on_disconnect; if the retry also fails the
         # decorator re-raises and the framework returns 500.
         raise
@@ -2001,6 +1941,7 @@ def _key_role_name(profile: dict) -> str | None:
     return full or profile.get("email")
 
 
+@retry_on_disconnect()
 def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict:
     """Projects list + enrolled-student list for the Projects page in one call.
 
@@ -2158,7 +2099,7 @@ def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict
         return {"projects": projects_result, "students": students_result}
     except HTTPException:
         raise
-    except _TRANSIENT_HTTPX_ERRORS:
+    except TRANSIENT_ERRORS:
         raise
     except Exception:
         logger.exception(
@@ -2182,14 +2123,7 @@ def get_class_turn_in_stats(class_id: UUID, user_id: str) -> dict:
         cid = str(class_id)
         today = datetime.date.today()
 
-        class_check = (
-            client.table("classes").select("id").eq("id", cid).eq("created_by", user_id).execute()
-        )
-        if not class_check.data:
-            raise HTTPException(
-                status_code=403,
-                detail="Class not found or you do not have permission",
-            )
+        _require_owner(client, user_id, cid, status=403)
 
         assignments_result = (
             client.table("assignments")
