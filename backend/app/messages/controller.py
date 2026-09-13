@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import logging
 import re
+import uuid
 from datetime import UTC
 
 from fastapi import HTTPException
 
-from app.core.db import get_client
+from app.core.db import fan_out, get_client
 
 logger = logging.getLogger(__name__)
 
@@ -37,19 +38,57 @@ def get_profile_roles(user_ids: list[str]) -> dict[str, str | None]:
     return {uid: found.get(uid) for uid in user_ids}
 
 
+def _id_key(value: object) -> str:
+    """An id in the form Postgres compares uuids in (lower-case, hyphenated).
+
+    Rows come back with canonical uuids while request ids are free-form strings.
+    A per-user ``.eq()`` let Postgres absorb the difference; rows read for several
+    users at once with ``.in_()`` are matched back to them on this key instead.
+    Values that are not uuids compare as plain strings.
+    """
+    try:
+        return str(uuid.UUID(str(value)))
+    except ValueError:
+        return str(value)
+
+
 def has_shared_class(a_id: str, b_id: str) -> bool:
     """Two users share a class iff each has a relationship (instructor or
-    enrolled student) to at least one common class id."""
+    enrolled student/TA) to at least one common class id.
+
+    Two reads in one wave — the classes either user owns and either user's
+    enrollments — where it used to be those two reads per user, four in a row.
+    """
     client = get_client()
-
-    def _user_classes(uid: str) -> set[str]:
-        owned = client.table("classes").select("id").eq("created_by", uid).execute()
-        enrolled = client.table("class_enrollments").select("class_id").eq("user_id", uid).execute()
-        return {row["id"] for row in (owned.data or [])} | {
-            row["class_id"] for row in (enrolled.data or [])
+    user_ids = [a_id, b_id]
+    reads = fan_out(
+        {
+            "owned": lambda: (
+                (
+                    client.table("classes")
+                    .select("id, created_by")
+                    .in_("created_by", user_ids)
+                    .execute()
+                ).data
+                or []
+            ),
+            "enrolled": lambda: (
+                (
+                    client.table("class_enrollments")
+                    .select("class_id, user_id")
+                    .in_("user_id", user_ids)
+                    .execute()
+                ).data
+                or []
+            ),
         }
-
-    return bool(_user_classes(a_id) & _user_classes(b_id))
+    )
+    classes_of: dict[str, set[str]] = {}
+    for row in reads["owned"]:
+        classes_of.setdefault(_id_key(row["created_by"]), set()).add(row["id"])
+    for row in reads["enrolled"]:
+        classes_of.setdefault(_id_key(row["user_id"]), set()).add(row["class_id"])
+    return bool(classes_of.get(_id_key(a_id), set()) & classes_of.get(_id_key(b_id), set()))
 
 
 def can_message(a_id: str, b_id: str) -> bool:
