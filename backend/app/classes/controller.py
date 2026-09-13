@@ -1047,67 +1047,65 @@ def get_class_roster_timeline(class_id: UUID, instructor_id: str) -> dict:
       in this class (if the student joined a team).
     - ``dropped_at``: ``roster_entries.uploaded_at`` when the roster row status is
       ``dropped`` (reflects when the roster was updated to mark them dropped).
+
+    Round trips: the class, the enrollments with profiles, the roster rows and the
+    projects with their members, all in one concurrent wave (was 6 sequential).
     """
     try:
         client = get_client()
         cid = str(class_id)
 
-        _require_owner(client, instructor_id, cid)
-
-        enrollments_res = (
-            client.table("class_enrollments")
-            .select("user_id, enrolled_at, enrollment_role")
-            .eq("class_id", cid)
-            .execute()
+        reads = fan_out(
+            {
+                "class": lambda: _require_owner(client, instructor_id, cid),
+                "enrollments": lambda: _enrollments_with_profiles(
+                    client,
+                    cid,
+                    "id, email, edu_email, first_name, last_name",
+                    columns="user_id, enrolled_at, enrollment_role",
+                ),
+                "roster": lambda: (
+                    (
+                        client.table("roster_entries")
+                        .select(
+                            "email, status, matched_profile_id, uploaded_at, first_name, last_name"
+                        )
+                        .eq("course_id", cid)
+                        .execute()
+                    ).data
+                    or []
+                ),
+                "projects": lambda: (
+                    (
+                        client.table("projects")
+                        .select("id, name, project_members(user_id, created_at)")
+                        .eq("class_id", cid)
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
         )
-        enrollment_by_user = {str(e["user_id"]): e for e in (enrollments_res.data or [])}
-
-        roster_rows = (
-            client.table("roster_entries")
-            .select("email, status, matched_profile_id, uploaded_at, first_name, last_name")
-            .eq("course_id", cid)
-            .execute()
-        ).data or []
-
-        projects = (
-            client.table("projects").select("id, name").eq("class_id", cid).execute()
-        ).data or []
-        project_ids = [p["id"] for p in projects]
-        project_names = {p["id"]: p.get("name") for p in projects}
-
-        enrolled_ids = list(enrollment_by_user.keys())
-        profiles: list[dict] = []
-        if enrolled_ids:
-            profiles = (
-                client.table("profiles")
-                .select("id, email, edu_email, first_name, last_name")
-                .in_("id", enrolled_ids)
-                .execute()
-            ).data or []
-
+        enrollments = reads["enrollments"]
+        roster_rows = reads["roster"]
+        enrollment_by_user = {str(e["user_id"]): e for e in enrollments}
+        profiles = _enrolled_profiles(enrollments)
         profile_by_id = {p["id"]: p for p in profiles}
         profile_by_email = _build_profile_email_map(profiles)
 
+        # Earliest team join per enrolled student across the class's projects.
         team_join_by_user: dict[str, dict] = {}
-        if project_ids and enrolled_ids:
-            members = (
-                client.table("project_members")
-                .select("user_id, project_id, created_at")
-                .in_("project_id", project_ids)
-                .in_("user_id", enrolled_ids)
-                .execute()
-            ).data or []
-            for m in members:
-                uid = str(m["user_id"])
-                ts = m.get("created_at")
-                if not ts:
+        for project in reads["projects"]:
+            for member in project.get("project_members") or []:
+                uid = str(member.get("user_id"))
+                ts = member.get("created_at")
+                if not ts or uid not in enrollment_by_user:
                     continue
-                pid = m["project_id"]
                 prev = team_join_by_user.get(uid)
                 if not prev or str(ts) < str(prev["joined_at"]):
                     team_join_by_user[uid] = {
                         "joined_at": ts,
-                        "project_name": project_names.get(pid),
+                        "project_name": project.get("name"),
                     }
 
         roster_emails = {(r.get("email") or "").strip().lower() for r in roster_rows}
@@ -2004,25 +2002,42 @@ def get_class_turn_in_stats(class_id: UUID, user_id: str) -> dict:
     A team is fully submitted when every project member has at least one TSR
     row for the assignment (one evaluator_id per member). Partial means some
     but not all members have submitted.
+
+    Round trips: the class, the published assignments and the projects with
+    their member ids concurrently, then the current assignment's TSRs, which are
+    skipped when no team has members (was 5 sequential).
     """
     try:
         client = get_client()
         cid = str(class_id)
         today = datetime.date.today()
 
-        _require_owner(client, user_id, cid, status=403)
-
-        assignments_result = (
-            client.table("assignments")
-            .select("id, Title, open_date, close_date, status, assignment_type")
-            .eq("class_id", cid)
-            .eq("status", "publish")
-            .order("close_date")
-            .execute()
+        reads = fan_out(
+            {
+                "class": lambda: _require_owner(client, user_id, cid, status=403),
+                "assignments": lambda: (
+                    (
+                        client.table("assignments")
+                        .select("id, Title, open_date, close_date, status, assignment_type")
+                        .eq("class_id", cid)
+                        .eq("status", "publish")
+                        .order("close_date")
+                        .execute()
+                    ).data
+                    or []
+                ),
+                "projects": lambda: (
+                    (
+                        client.table("projects")
+                        .select("id, project_members(user_id)")
+                        .eq("class_id", cid)
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
         )
-        tsr_assignments = [
-            a for a in (assignments_result.data or []) if a.get("assignment_type") == "tsr"
-        ]
+        tsr_assignments = [a for a in reads["assignments"] if a.get("assignment_type") == "tsr"]
 
         current: dict | None = None
         for assignment in tsr_assignments:
@@ -2057,45 +2072,33 @@ def get_class_turn_in_stats(class_id: UUID, user_id: str) -> dict:
         if not current:
             return empty
 
-        assignment_id = current["id"]
-
-        projects_result = client.table("projects").select("id").eq("class_id", cid).execute()
-        project_ids = [p["id"] for p in (projects_result.data or [])]
-        if not project_ids:
+        projects = reads["projects"]
+        if not projects:
             return {
                 **empty,
                 "currentAssignment": current.get("Title"),
                 "closeDate": current.get("close_date"),
             }
 
-        memberships_result = (
-            client.table("project_members")
-            .select("project_id, user_id")
-            .in_("project_id", project_ids)
-            .execute()
-        )
-        team_sizes: dict[str, int] = {}
-        for row in memberships_result.data or []:
-            pid = row["project_id"]
-            team_sizes[pid] = team_sizes.get(pid, 0) + 1
-
-        teams = {pid: size for pid, size in team_sizes.items() if size > 0}
+        # A team is a project with at least one member row; its size is the row count.
+        teams = {p["id"]: len(p["project_members"]) for p in projects if p.get("project_members")}
         total_teams = len(teams)
 
-        tsr_result = (
-            client.table("TSRs")
-            .select("project_id, evaluator_id")
-            .eq("assignment_id", assignment_id)
-            .in_("project_id", list(teams.keys()) if teams else project_ids)
-            .execute()
-        )
         evaluators_by_project: dict[str, set[str]] = {}
-        for row in tsr_result.data or []:
-            pid = row.get("project_id")
-            eid = row.get("evaluator_id")
-            if not pid or not eid:
-                continue
-            evaluators_by_project.setdefault(pid, set()).add(eid)
+        if teams:
+            tsr_rows = (
+                client.table("TSRs")
+                .select("project_id, evaluator_id")
+                .eq("assignment_id", current["id"])
+                .in_("project_id", list(teams))
+                .execute()
+            ).data or []
+            for row in tsr_rows:
+                pid = row.get("project_id")
+                eid = row.get("evaluator_id")
+                if not pid or not eid:
+                    continue
+                evaluators_by_project.setdefault(pid, set()).add(eid)
 
         full_count = 0
         partial_count = 0
