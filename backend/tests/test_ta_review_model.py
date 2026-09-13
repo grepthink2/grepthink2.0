@@ -39,6 +39,9 @@ def _profile(uid, first):
 @pytest.fixture
 def db(monkeypatch):
     fake = FakeSupabase(
+        relations={
+            ("projects", "classes"): ("class_id", "id", False),
+        },
         profiles=[
             _profile(INSTR, "Ina"),
             _profile(TA1, "Tara"),

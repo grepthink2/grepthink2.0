@@ -35,7 +35,8 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from app.core.db import get_client
+from app.core import authz
+from app.core.db import fan_out, get_client, is_unique_violation
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
@@ -44,17 +45,22 @@ ENROLLMENT_ROLE_STUDENT = "student"
 ENROLLMENT_ROLE_TA = "ta"
 
 
-def _require_class_instructor(client, user_id: str, class_id) -> dict:
-    """Ensure ``user_id`` owns ``class_id``; return the class row."""
-    res = client.table("classes").select("id, created_by").eq("id", str(class_id)).execute()
-    if not res.data:
+def _owner_check(cls: dict | None, user_id: str) -> None:
+    """404 for a missing class, 403 unless ``user_id`` created it (already-loaded row)."""
+    if not cls:
         raise HTTPException(status_code=404, detail="Class not found")
-    if res.data[0].get("created_by") != user_id:
+    if str(cls.get("created_by")) != str(user_id):
         raise HTTPException(
             status_code=403,
             detail="Only the class instructor can manage TAs",
         )
-    return res.data[0]
+
+
+def _require_class_instructor(client, user_id: str, class_id) -> dict:
+    """Ensure ``user_id`` owns ``class_id``; return the class row."""
+    cls = authz.load_class(client, class_id)
+    _owner_check(cls, user_id)
+    return cls
 
 
 def _get_enrollment(client, class_id, user_id: str) -> dict | None:
@@ -77,19 +83,24 @@ def get_enrollment_role(client, class_id, user_id: str) -> str | None:
 
 
 def get_my_enrollment_role(user_id: str, class_id: UUID) -> dict:
-    """Class-level role for the requesting user (instructor / ta / student / none)."""
+    """Class-level role for the requesting user (instructor / ta / student / none).
+
+    Called on every class switch (sidebar, review guards): the class row and the
+    enrollment are read concurrently — one round trip of latency instead of two.
+    """
     try:
         client = get_client()
-        class_res = (
-            client.table("classes").select("id, created_by").eq("id", str(class_id)).execute()
+        reads = fan_out(
+            {
+                "class": lambda: authz.load_class(client, class_id),
+                "role": lambda: get_enrollment_role(client, class_id, user_id),
+            }
         )
-        if not class_res.data:
+        if not reads["class"]:
             raise HTTPException(status_code=404, detail="Class not found")
-        if class_res.data[0].get("created_by") == user_id:
+        if str(reads["class"].get("created_by")) == str(user_id):
             return {"enrollment_role": "instructor"}
-
-        role = get_enrollment_role(client, class_id, user_id)
-        return {"enrollment_role": role}
+        return {"enrollment_role": reads["role"]}
     except HTTPException:
         raise
     except Exception:
@@ -105,9 +116,14 @@ def promote_to_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> d
     """Promote an enrolled student to TA for this class (instructor only)."""
     try:
         client = get_client()
-        _require_class_instructor(client, instructor_id, class_id)
-
-        enrollment = _get_enrollment(client, class_id, str(target_user_id))
+        reads = fan_out(
+            {
+                "class": lambda: authz.load_class(client, class_id),
+                "enrollment": lambda: _get_enrollment(client, class_id, str(target_user_id)),
+            }
+        )
+        _owner_check(reads["class"], instructor_id)
+        enrollment = reads["enrollment"]
         if not enrollment:
             raise HTTPException(
                 status_code=400,
@@ -133,30 +149,37 @@ def promote_to_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> d
 
 
 def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
-    """Demote a TA back to a regular student and clear their project assignments."""
+    """Demote a TA back to a regular student and clear their project assignments.
+
+    The three writes are not transactional, so they run in the order that fails
+    safe: the TA's team assignments and review claims are cleared BEFORE the role
+    flips. If a later write fails, the user is still a TA with nothing assigned —
+    never a student who still holds a team's assigned-TA (meeting, attendance,
+    TSR-review) privileges.
+    """
     try:
         client = get_client()
-        _require_class_instructor(client, instructor_id, class_id)
-
-        enrollment = _get_enrollment(client, class_id, str(target_user_id))
+        cid, tid = str(class_id), str(target_user_id)
+        reads = fan_out(
+            {
+                "class": lambda: authz.load_class(client, cid),
+                "enrollment": lambda: _get_enrollment(client, cid, tid),
+            }
+        )
+        _owner_check(reads["class"], instructor_id)
+        enrollment = reads["enrollment"]
         if not enrollment:
             raise HTTPException(
                 status_code=400,
                 detail="User is not enrolled in this class",
             )
 
+        client.table("projects").update({"assigned_ta_id": None}).eq("class_id", cid).eq(
+            "assigned_ta_id", tid
+        ).execute()
+        client.table("project_review_tas").delete().eq("class_id", cid).eq("user_id", tid).execute()
         client.table("class_enrollments").update({"enrollment_role": ENROLLMENT_ROLE_STUDENT}).eq(
             "id", enrollment["id"]
-        ).execute()
-
-        # A demoted TA no longer oversees any project in this class: clear their
-        # assigned-TA (meeting + TSR-review) ownership and drop any end-of-quarter
-        # review claims they hold.
-        client.table("projects").update({"assigned_ta_id": None}).eq("class_id", str(class_id)).eq(
-            "assigned_ta_id", str(target_user_id)
-        ).execute()
-        client.table("project_review_tas").delete().eq("class_id", str(class_id)).eq(
-            "user_id", str(target_user_id)
         ).execute()
 
         logger.info(
@@ -165,7 +188,7 @@ def demote_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
             target_user_id,
             instructor_id,
         )
-        return {"message": "TA demoted to student", "user_id": str(target_user_id)}
+        return {"message": "TA demoted to student", "user_id": tid}
     except HTTPException:
         raise
     except Exception:
@@ -204,22 +227,42 @@ def list_class_tas(instructor_id: str, class_id: UUID) -> list[dict]:
     """List every TA in a class with the projects they oversee (instructor only)."""
     try:
         client = get_client()
-        _require_class_instructor(client, instructor_id, class_id)
-
-        enrollments = (
-            client.table("class_enrollments")
-            .select("user_id, enrollment_role")
-            .eq("class_id", str(class_id))
-            .eq("enrollment_role", ENROLLMENT_ROLE_TA)
-            .execute()
+        cid = str(class_id)
+        reads = fan_out(
+            {
+                "class": lambda: authz.load_class(client, cid),
+                "ta_ids": lambda: [
+                    str(e["user_id"])
+                    for e in (
+                        client.table("class_enrollments")
+                        .select("user_id, enrollment_role")
+                        .eq("class_id", cid)
+                        .eq("enrollment_role", ENROLLMENT_ROLE_TA)
+                        .execute()
+                    ).data
+                    or []
+                    if e.get("user_id")
+                ],
+            }
         )
-        ta_ids = [str(e["user_id"]) for e in (enrollments.data or []) if e.get("user_id")]
+        _owner_check(reads["class"], instructor_id)
+        ta_ids = reads["ta_ids"]
         if not ta_ids:
             return []
 
-        profiles = client.table("profiles").select(PROFILE_SELECT).in_("id", ta_ids).execute()
-        profile_map = {p["id"]: p for p in (profiles.data or [])}
-        assignments_map = _ta_assignments_by_user(client, class_id, ta_ids)
+        details = fan_out(
+            {
+                "profiles": lambda: {
+                    p["id"]: p
+                    for p in (
+                        client.table("profiles").select(PROFILE_SELECT).in_("id", ta_ids).execute()
+                    ).data
+                    or []
+                },
+                "assignments": lambda: _ta_assignments_by_user(client, cid, ta_ids),
+            }
+        )
+        profile_map, assignments_map = details["profiles"], details["assignments"]
 
         result = [
             {
@@ -239,23 +282,26 @@ def list_class_tas(instructor_id: str, class_id: UUID) -> list[dict]:
         raise HTTPException(status_code=500, detail="Failed to list TAs")
 
 
-def _load_project(client, project_id: UUID) -> dict:
-    """Load the columns the TA/review helpers need, or 404."""
-    res = (
-        client.table("projects")
-        .select("id, class_id, name, assigned_ta_id")
-        .eq("id", str(project_id))
-        .execute()
+_REVIEW_CLASS_COLUMNS = "id, created_by, review_period_open, review_zoom_url"
+
+
+def _load_project(
+    client, project_id: UUID, columns: str = "id, class_id, name, assigned_ta_id"
+) -> dict:
+    """The project with its class (owner, review window, shared Zoom) embedded under
+    ``classes`` — one round trip that replaces the separate classes /
+    review-window reads; 404 if missing."""
+    return authz.load_project(
+        client, project_id, columns=columns, class_columns=_REVIEW_CLASS_COLUMNS
     )
-    if not res.data:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return res.data[0]
 
 
-def _is_class_instructor(client, user_id: str, class_id) -> bool:
-    """True iff ``user_id`` owns ``class_id`` (does not raise)."""
-    res = client.table("classes").select("created_by").eq("id", str(class_id)).execute()
-    return bool(res.data) and res.data[0].get("created_by") == user_id
+def _class_of(project: dict) -> dict:
+    return project.get("classes") or {}
+
+
+def _owns_class(project: dict, user_id: str) -> bool:
+    return str(_class_of(project).get("created_by")) == str(user_id)
 
 
 def list_project_tas(user_id: str, project_id: UUID) -> list[dict]:
@@ -271,7 +317,7 @@ def list_project_tas(user_id: str, project_id: UUID) -> list[dict]:
 
         # Access: class instructor or an enrolled member of the class.
         if (
-            not _is_class_instructor(client, user_id, class_id)
+            not _owns_class(project, user_id)
             and get_enrollment_role(client, class_id, user_id) is None
         ):
             raise HTTPException(status_code=403, detail="You do not have access to this class")
@@ -304,26 +350,32 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
 
     Powers the TA review page. The TA picks a TSR assignment and a project,
     then the regular TSR-overview endpoint returns the (TA-scoped) responses.
+    The three reads are independent and run concurrently.
     """
     try:
         client = get_client()
-        if get_enrollment_role(client, class_id, user_id) != ENROLLMENT_ROLE_TA:
-            raise HTTPException(status_code=403, detail="You are not a TA in this class")
-
-        assignment_rows = _ta_assignments_by_user(client, class_id, [user_id])
-        projects = assignment_rows.get(user_id, [])
-
-        assignments_res = (
-            client.table("assignments")
-            .select("id, Title, open_date, close_date, status, assignment_type")
-            .eq("class_id", str(class_id))
-            .eq("assignment_type", "tsr")
-            .order("open_date")
-            .execute()
+        reads = fan_out(
+            {
+                "role": lambda: get_enrollment_role(client, class_id, user_id),
+                "projects": lambda: _ta_assignments_by_user(client, class_id, [user_id]).get(
+                    user_id, []
+                ),
+                "assignments": lambda: (
+                    (
+                        client.table("assignments")
+                        .select("id, Title, open_date, close_date, status, assignment_type")
+                        .eq("class_id", str(class_id))
+                        .eq("assignment_type", "tsr")
+                        .order("open_date")
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
         )
-        assignments = assignments_res.data or []
-
-        return {"projects": projects, "assignments": assignments}
+        if reads["role"] != ENROLLMENT_ROLE_TA:
+            raise HTTPException(status_code=403, detail="You are not a TA in this class")
+        return {"projects": reads["projects"], "assignments": reads["assignments"]}
     except HTTPException:
         raise
     except Exception:
@@ -347,11 +399,6 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
 # instructor can release the slot.
 
 REVIEW_TA_TABLE = "project_review_tas"
-
-
-def _review_window_open(client, class_id) -> bool:
-    res = client.table("classes").select("review_period_open").eq("id", str(class_id)).execute()
-    return bool(res.data) and bool(res.data[0].get("review_period_open"))
 
 
 def set_review_window(instructor_id: str, class_id: UUID, is_open: bool) -> dict:
@@ -393,7 +440,7 @@ def list_project_review_tas(user_id: str, project_id: UUID) -> dict:
         class_id = project["class_id"]
 
         if (
-            not _is_class_instructor(client, user_id, class_id)
+            not _owns_class(project, user_id)
             and get_enrollment_role(client, class_id, user_id) is None
         ):
             raise HTTPException(status_code=403, detail="You do not have access to this class")
@@ -432,7 +479,7 @@ def list_project_review_tas(user_id: str, project_id: UUID) -> dict:
         return {
             "project_id": str(project_id),
             "reviewers": reviewers,
-            "review_period_open": _review_window_open(client, class_id),
+            "review_period_open": bool(_class_of(project).get("review_period_open")),
         }
     except HTTPException:
         raise
@@ -448,13 +495,19 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
     review window is open; the instructor may appoint any class TA at any time
     (override, which also replaces an existing additional reviewer). The
     additional reviewer must be a class TA other than the team's assigned TA.
+
+    Writes lean on ``UNIQUE (project_id)``: the instructor override is one upsert
+    on that key (it used to be delete + insert); a TA's self-appointment stays a
+    plain insert, so if another TA claims the team between our check and our
+    insert the loser gets a 409 instead of silently replacing the winner.
     """
     try:
         client = get_client()
+        pid = str(project_id)
         project = _load_project(client, project_id)
         class_id = project["class_id"]
         main_id = project.get("assigned_ta_id")
-        is_instructor = _is_class_instructor(client, caller_id, class_id)
+        is_instructor = _owns_class(project, caller_id)
 
         if is_instructor:
             if not target_user_id:
@@ -468,12 +521,26 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
                     status_code=403, detail="Only the instructor can appoint another TA"
                 )
             target = str(caller_id)
-            if not _review_window_open(client, class_id):
+            if not _class_of(project).get("review_period_open"):
                 raise HTTPException(
                     status_code=403, detail="The end-of-quarter review window is not open"
                 )
 
-        if get_enrollment_role(client, class_id, target) != ENROLLMENT_ROLE_TA:
+        reads = fan_out(
+            {
+                "role": lambda: get_enrollment_role(client, class_id, target),
+                "existing": lambda: (
+                    (
+                        client.table(REVIEW_TA_TABLE)
+                        .select("id, user_id")
+                        .eq("project_id", pid)
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
+        )
+        if reads["role"] != ENROLLMENT_ROLE_TA:
             raise HTTPException(
                 status_code=400, detail="The reviewer must be a designated TA of this class"
             )
@@ -483,35 +550,33 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
                 detail="The additional reviewer must be a different TA than the team's assigned TA",
             )
 
-        existing = (
-            client.table(REVIEW_TA_TABLE)
-            .select("id, user_id")
-            .eq("project_id", str(project_id))
-            .execute()
-        ).data or []
-
+        existing = reads["existing"]
         if any(str(r.get("user_id")) == target for r in existing):
             return {
                 "message": "Already the additional reviewer",
-                "project_id": str(project_id),
+                "project_id": pid,
                 "user_id": target,
             }
-        if existing:
-            if not is_instructor:
-                raise HTTPException(
-                    status_code=409, detail="This team already has an additional reviewer"
-                )
-            # Instructor override replaces the current additional reviewer.
-            client.table(REVIEW_TA_TABLE).delete().eq("project_id", str(project_id)).execute()
 
-        client.table(REVIEW_TA_TABLE).insert(
-            {
-                "class_id": class_id,
-                "project_id": str(project_id),
-                "user_id": target,
-                "assigned_by": caller_id,
-            }
-        ).execute()
+        row = {"class_id": class_id, "project_id": pid, "user_id": target, "assigned_by": caller_id}
+        taken = HTTPException(
+            status_code=409, detail="This team already has an additional reviewer"
+        )
+        if is_instructor:
+            # Override: replace whoever holds the slot; a new claim gets a new timestamp.
+            client.table(REVIEW_TA_TABLE).upsert(
+                {**row, "claimed_at": datetime.now(UTC).isoformat()}, on_conflict="project_id"
+            ).execute()
+        else:
+            if existing:
+                raise taken
+            try:
+                client.table(REVIEW_TA_TABLE).insert(row).execute()
+            except Exception as exc:
+                if is_unique_violation(exc):
+                    raise taken from exc
+                raise
+
         logger.info(
             "Additional reviewer set | project_id=%s user_id=%s by=%s",
             project_id,
@@ -520,7 +585,7 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
         )
         return {
             "message": "Additional reviewer assigned",
-            "project_id": str(project_id),
+            "project_id": pid,
             "user_id": target,
         }
     except HTTPException:
@@ -570,7 +635,8 @@ def set_final_review_time(
     try:
         client = get_client()
         project = _load_project(client, project_id)
-        _require_class_instructor(client, instructor_id, project["class_id"])
+        if not _owns_class(project, instructor_id):
+            raise HTTPException(status_code=403, detail="Only the class instructor can manage TAs")
         value = scheduled_at.isoformat() if scheduled_at else None
         client.table("projects").update({"final_review_at": value}).eq(
             "id", str(project_id)
@@ -612,40 +678,49 @@ def get_final_review_schedule(user_id: str, class_id: UUID) -> dict:
     (additional reviewer, null = open slot) — ordered by slot time with
     unscheduled teams last. Class-level: the shared Zoom room, the review-window
     state, and how many teams the viewer reviews (their Review-TA claims).
+
+    Class, enrollment, projects and review claims are read concurrently, then
+    one profile read: 2 waves (was 4-5 sequential reads).
     """
     try:
         client = get_client()
-        class_res = (
-            client.table("classes")
-            .select("id, created_by, review_period_open, review_zoom_url")
-            .eq("id", str(class_id))
-            .execute()
+        cid = str(class_id)
+        reads = fan_out(
+            {
+                "class": lambda: authz.load_class(
+                    client, cid, "id, created_by, review_period_open, review_zoom_url"
+                ),
+                "role": lambda: get_enrollment_role(client, cid, user_id),
+                "projects": lambda: (
+                    (
+                        client.table("projects")
+                        .select("id, name, assigned_ta_id, final_review_at")
+                        .eq("class_id", cid)
+                        .execute()
+                    ).data
+                    or []
+                ),
+                "review_rows": lambda: (
+                    (
+                        client.table(REVIEW_TA_TABLE)
+                        .select("project_id, user_id, claimed_at")
+                        .eq("class_id", cid)
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
         )
-        if not class_res.data:
+        cls = reads["class"]
+        if not cls:
             raise HTTPException(status_code=404, detail="Class not found")
-        cls = class_res.data[0]
-
-        if (
-            cls.get("created_by") != user_id
-            and get_enrollment_role(client, class_id, user_id) != ENROLLMENT_ROLE_TA
-        ):
+        if str(cls.get("created_by")) != str(user_id) and reads["role"] != ENROLLMENT_ROLE_TA:
             raise HTTPException(
                 status_code=403,
                 detail="Only the instructor or class TAs can view the final-review schedule",
             )
 
-        projects = (
-            client.table("projects")
-            .select("id, name, assigned_ta_id, final_review_at")
-            .eq("class_id", str(class_id))
-            .execute()
-        ).data or []
-        review_rows = (
-            client.table(REVIEW_TA_TABLE)
-            .select("project_id, user_id, claimed_at")
-            .eq("class_id", str(class_id))
-            .execute()
-        ).data or []
+        projects, review_rows = reads["projects"], reads["review_rows"]
         review_by_project = {r["project_id"]: r for r in review_rows if r.get("project_id")}
 
         ta_ids = {p.get("assigned_ta_id") for p in projects} | {
@@ -694,7 +769,7 @@ def get_final_review_schedule(user_id: str, class_id: UUID) -> dict:
         )
 
         return {
-            "class_id": str(class_id),
+            "class_id": cid,
             "review_zoom_url": cls.get("review_zoom_url"),
             "review_period_open": bool(cls.get("review_period_open")),
             "my_review_count": sum(1 for r in review_rows if str(r.get("user_id")) == str(user_id)),
@@ -730,41 +805,37 @@ def _review_ta_of(client, project_id) -> str | None:
     return rows[0].get("user_id") if rows else None
 
 
-def _load_review_context(client, user_id: str, project_id: UUID) -> dict:
+def _load_review_context(client, user_id: str, project_id: UUID, *, also=None) -> dict:
     """Project + class + role context shared by the scoring endpoints.
 
     Raises 404 for a missing project and 403 unless the caller is the class
     instructor or a class TA (students never see final-review internals).
+
+    One read loads the project with its class; the Review-TA lookup, the
+    caller's enrollment (non-instructors only) and any extra reads passed in
+    ``also`` (``{key: callable}``) then run concurrently. Their results are
+    under ``ctx["extra"]`` — computed before the permission check, but only
+    returned to a caller who passes it.
     """
-    proj_res = (
-        client.table("projects")
-        .select("id, class_id, name, assigned_ta_id, final_review_at")
-        .eq("id", str(project_id))
-        .execute()
+    project = _load_project(
+        client, project_id, columns="id, class_id, name, assigned_ta_id, final_review_at"
     )
-    if not proj_res.data:
-        raise HTTPException(status_code=404, detail="Project not found")
-    project = proj_res.data[0]
+    cls = _class_of(project)
+    is_instructor = _owns_class(project, user_id)
 
-    class_res = (
-        client.table("classes")
-        .select("id, created_by, review_period_open, review_zoom_url")
-        .eq("id", str(project["class_id"]))
-        .execute()
-    )
-    cls = class_res.data[0] if class_res.data else {}
+    jobs = {"review_ta_id": lambda: _review_ta_of(client, project_id)}
+    if not is_instructor:
+        jobs["enrollment_role"] = lambda: get_enrollment_role(client, project["class_id"], user_id)
+    jobs.update(also or {})
+    results = fan_out(jobs)
 
-    is_instructor = cls.get("created_by") == user_id
-    if (
-        not is_instructor
-        and get_enrollment_role(client, project["class_id"], user_id) != ENROLLMENT_ROLE_TA
-    ):
+    if not is_instructor and results["enrollment_role"] != ENROLLMENT_ROLE_TA:
         raise HTTPException(
             status_code=403,
             detail="Only the instructor or class TAs can access final-review details",
         )
 
-    review_ta_id = _review_ta_of(client, project_id)
+    review_ta_id = results["review_ta_id"]
     if is_instructor:
         viewer_role = "instructor"
     elif project.get("assigned_ta_id") == user_id:
@@ -780,6 +851,7 @@ def _load_review_context(client, user_id: str, project_id: UUID) -> dict:
         "is_instructor": is_instructor,
         "review_ta_id": review_ta_id,
         "viewer_role": viewer_role,
+        "extra": {key: results[key] for key in (also or {})},
     }
 
 
@@ -789,19 +861,54 @@ def get_final_review_detail(user_id: str, project_id: UUID) -> dict:
     Header context (slot, shared Zoom, both TAs), the roster of team members
     to score, every score row entered so far (all roles — the staff sheet is
     shared), and the Review-TA notes document.
+
+    Round trips: project+class, then the Review TA, enrollment, members, scores
+    and notes concurrently, then one profile read — 3 waves (was 8 sequential).
     """
     try:
         client = get_client()
-        ctx = _load_review_context(client, user_id, project_id)
-        project, cls = ctx["project"], ctx["class"]
-
-        member_rows = (
-            client.table("project_members")
-            .select("user_id")
-            .eq("project_id", str(project_id))
-            .execute()
-        ).data or []
-        member_ids = [str(m["user_id"]) for m in member_rows if m.get("user_id")]
+        pid = str(project_id)
+        ctx = _load_review_context(
+            client,
+            user_id,
+            project_id,
+            also={
+                "members": lambda: [
+                    str(m["user_id"])
+                    for m in (
+                        client.table("project_members")
+                        .select("user_id")
+                        .eq("project_id", pid)
+                        .execute()
+                    ).data
+                    or []
+                    if m.get("user_id")
+                ],
+                "scores": lambda: (
+                    (
+                        client.table(SCORE_TABLE)
+                        .select(
+                            "student_id, role, product, team, scrum, overall, notes, scored_by, updated_at"
+                        )
+                        .eq("project_id", pid)
+                        .execute()
+                    ).data
+                    or []
+                ),
+                "notes": lambda: (
+                    (
+                        client.table(NOTES_TABLE)
+                        .select("content, template_version, updated_by, updated_at")
+                        .eq("project_id", pid)
+                        .limit(1)
+                        .execute()
+                    ).data
+                    or []
+                ),
+            },
+        )
+        project, cls, extra = ctx["project"], ctx["class"], ctx["extra"]
+        member_ids = extra["members"]
 
         profile_ids = set(member_ids)
         profile_ids.update(i for i in (project.get("assigned_ta_id"), ctx["review_ta_id"]) if i)
@@ -830,20 +937,6 @@ def get_final_review_detail(user_id: str, project_id: UUID) -> dict:
             key=lambda m: (m["name"] or "").lower(),
         )
 
-        score_rows = (
-            client.table(SCORE_TABLE)
-            .select("student_id, role, product, team, scrum, overall, notes, scored_by, updated_at")
-            .eq("project_id", str(project_id))
-            .execute()
-        ).data or []
-
-        notes_rows = (
-            client.table(NOTES_TABLE)
-            .select("content, template_version, updated_by, updated_at")
-            .eq("project_id", str(project_id))
-            .execute()
-        ).data or []
-
         return {
             "project": {
                 "project_id": project["id"],
@@ -855,8 +948,8 @@ def get_final_review_detail(user_id: str, project_id: UUID) -> dict:
             "home_ta": _person(project.get("assigned_ta_id")),
             "review_ta": _person(ctx["review_ta_id"]),
             "members": members,
-            "scores": score_rows,
-            "notes": notes_rows[0] if notes_rows else None,
+            "scores": extra["scores"],
+            "notes": extra["notes"][0] if extra["notes"] else None,
             "viewer_role": ctx["viewer_role"],
         }
     except HTTPException:
@@ -1039,7 +1132,9 @@ def save_final_review_notes(
     """Replace a team's structured review-notes document.
 
     Writable by the team's Review TA or the instructor; the notes are the
-    Review TA's worksheet (the Home TA has the score sheet instead).
+    Review TA's worksheet (the Home TA has the score sheet instead). One upsert
+    on ``final_review_notes_project_unique (project_id)`` (was select, then
+    update or insert).
     """
     try:
         client = get_client()
@@ -1052,26 +1147,16 @@ def save_final_review_notes(
         if not isinstance(content, dict):
             raise HTTPException(status_code=400, detail="Notes content must be an object")
 
-        now = datetime.now(UTC).isoformat()
         payload = {
             "content": content,
             "template_version": int(template_version or 1),
             "updated_by": user_id,
-            "updated_at": now,
+            "updated_at": datetime.now(UTC).isoformat(),
         }
-        existing = (
-            client.table(NOTES_TABLE).select("id").eq("project_id", str(project_id)).execute()
-        ).data or []
-        if existing:
-            client.table(NOTES_TABLE).update(payload).eq("id", existing[0]["id"]).execute()
-        else:
-            client.table(NOTES_TABLE).insert(
-                {
-                    "class_id": ctx["project"]["class_id"],
-                    "project_id": str(project_id),
-                    **payload,
-                }
-            ).execute()
+        client.table(NOTES_TABLE).upsert(
+            {"class_id": ctx["project"]["class_id"], "project_id": str(project_id), **payload},
+            on_conflict="project_id",
+        ).execute()
 
         logger.info("Final-review notes saved | project_id=%s by=%s", project_id, user_id)
         return {"message": "Notes saved", "project_id": str(project_id), "notes": payload}
@@ -1087,10 +1172,9 @@ def release_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID) ->
     try:
         client = get_client()
         project = _load_project(client, project_id)
-        class_id = project["class_id"]
         target = str(target_user_id)
 
-        if not _is_class_instructor(client, caller_id, class_id) and target != str(caller_id):
+        if not _owns_class(project, caller_id) and target != str(caller_id):
             raise HTTPException(
                 status_code=403,
                 detail="Only the reviewer themselves or the instructor can remove this review slot",

@@ -26,6 +26,7 @@ WRITE_OPS = {"insert", "update", "upsert", "delete"}
 @pytest.fixture
 def db(monkeypatch):
     fake = FakeSupabase(
+        relations={("projects", "classes"): ("class_id", "id", False)},
         classes=[
             {"id": CLASS, "created_by": INSTR, "review_period_open": True, "review_zoom_url": None}
         ],
