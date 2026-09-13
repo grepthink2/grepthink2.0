@@ -100,27 +100,58 @@ def _resolve_roster_display_name(
     return local.replace(".", " ").replace("_", " ").title()
 
 
-def _find_student_profile_by_email(client, email: str) -> dict | None:
-    """Look up a student profile by UCSC edu_email first, then primary email."""
-    normalized = email.strip().lower()
-    edu_match = (
-        client.table("profiles")
-        .select("id, role, email, edu_email, first_name, last_name")
-        .eq("edu_email", normalized)
-        .execute()
-    )
-    if edu_match.data:
-        return edu_match.data[0]
+#: Addresses or ids per ``in.(...)`` filter. Keeps every lookup URL short even when
+#: an instructor invites a whole roster at once.
+_LOOKUP_BATCH = 100
+_PROFILE_LOOKUP_COLUMNS = "id, role, email, edu_email, first_name, last_name"
 
-    email_match = (
-        client.table("profiles")
-        .select("id, role, email, edu_email, first_name, last_name")
-        .eq("email", normalized)
-        .execute()
-    )
-    if email_match.data:
-        return email_match.data[0]
-    return None
+
+def _postgrest_value(value: str) -> str:
+    """Quote a value for a PostgREST ``or=(...)`` expression when it contains a
+    reserved character (the rule postgrest-py applies to ``.in_()`` values),
+    escaping quotes and backslashes inside."""
+    if any(ch in value for ch in ',:()"\\'):
+        escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{escaped}"'
+    return value
+
+
+def _find_student_profiles_by_email(client, emails) -> dict[str, dict]:
+    """Map each address to its profile, preferring an ``edu_email`` match over ``email``.
+
+    Matching is exact, like the per-address ``.eq`` lookups this replaced: callers
+    pass stripped, lower-cased addresses, and a stored address with capitals does
+    not match. Addresses without a profile are left out. One round trip per
+    ``_LOOKUP_BATCH`` addresses.
+    """
+    wanted = list(dict.fromkeys(e for e in emails if e))
+    by_edu: dict[str, dict] = {}
+    by_email: dict[str, dict] = {}
+    for start in range(0, len(wanted), _LOOKUP_BATCH):
+        values = ",".join(_postgrest_value(e) for e in wanted[start : start + _LOOKUP_BATCH])
+        rows = (
+            client.table("profiles")
+            .select(_PROFILE_LOOKUP_COLUMNS)
+            .or_(f"edu_email.in.({values}),email.in.({values})")
+            .execute()
+        ).data or []
+        for profile in rows:
+            if profile.get("edu_email"):
+                by_edu.setdefault(profile["edu_email"], profile)
+            if profile.get("email"):
+                by_email.setdefault(profile["email"], profile)
+    found = {}
+    for address in wanted:
+        profile = by_edu.get(address) or by_email.get(address)
+        if profile:
+            found[address] = profile
+    return found
+
+
+def _find_student_profile_by_email(client, email: str) -> dict | None:
+    """Look up a student profile by UCSC edu_email first, then primary email (one read)."""
+    normalized = email.strip().lower()
+    return _find_student_profiles_by_email(client, [normalized]).get(normalized)
 
 
 #: Instructor-only routes give one answer for "no such class" and "not your
@@ -156,20 +187,59 @@ def _require_owner(
     )
 
 
-def _class_invite_email_context(client, class_row: dict, instructor_id: str) -> dict:
-    """Build shared invite-email fields from a class row and instructor profile."""
-    instructor_res = (
-        client.table("profiles")
-        .select("id, email, first_name, last_name")
-        .eq("id", instructor_id)
-        .execute()
-    )
-    instructor = instructor_res.data[0] if instructor_res.data else {}
+#: The class row plus its instructor's profile for invite emails, in one read. The
+#: foreign-key hint names the relationship so the embed cannot become ambiguous.
+_INVITE_CLASS_COLUMNS = (
+    "id, name, course_code, created_by, "
+    "instructor:profiles!classes_created_by_fkey(id, email, first_name, last_name)"
+)
+
+
+def _invite_email_context(class_row: dict) -> dict:
+    """Shared invite-email fields from a class row read with ``_INVITE_CLASS_COLUMNS``."""
     return {
         "class_name": class_row.get("name") or "your class",
         "course_code": class_row.get("course_code") or "",
-        "instructor_name": profile_display_name(instructor),
+        "instructor_name": profile_display_name(class_row.get("instructor") or {}),
     }
+
+
+def _enrolled_user_ids(client, class_id: str, user_ids: list[str]) -> set[str]:
+    """The ids in ``user_ids`` that already have an enrollment row (student or TA)."""
+    enrolled: set[str] = set()
+    for start in range(0, len(user_ids), _LOOKUP_BATCH):
+        rows = (
+            client.table("class_enrollments")
+            .select("user_id")
+            .eq("class_id", class_id)
+            .in_("user_id", user_ids[start : start + _LOOKUP_BATCH])
+            .execute()
+        ).data or []
+        enrolled.update(str(row["user_id"]) for row in rows)
+    return enrolled
+
+
+def _enroll_students(client, class_id: str, user_ids) -> set[str]:
+    """Enroll ``user_ids`` in the class; return the ids this call enrolled.
+
+    One upsert on class_enrollments_class_id_user_id_key (class_id, user_id) that
+    ignores existing rows. PostgREST returns only the rows it inserted, so an id
+    missing from the result already had an enrollment (as a student or a TA) and
+    that row is left as it was. A concurrent enrollment is therefore not an error.
+    """
+    ids = list(dict.fromkeys(str(uid) for uid in user_ids))
+    if not ids:
+        return set()
+    res = (
+        client.table("class_enrollments")
+        .upsert(
+            [{"class_id": class_id, "user_id": uid} for uid in ids],
+            on_conflict="class_id,user_id",
+            ignore_duplicates=True,
+        )
+        .execute()
+    )
+    return {str(row["user_id"]) for row in (res.data or [])}
 
 
 def _build_profile_email_map(profiles: list[dict]) -> dict[str, dict]:
@@ -611,19 +681,23 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
     If the student already has a GrepThink account, enroll them and send a
     notification email. If they are on the roster but not registered yet, send
     a signup invitation with the class access code instead of returning 404.
+
+    Round trips: the class with its instructor's profile, the profile lookup, and
+    one enrollment upsert (was 6).
     """
     try:
         client = get_client()
+        cid = str(class_id)
         normalized_email = student_email.strip().lower()
 
         class_row = _require_owner(
             client,
             instructor_id,
-            class_id,
-            columns="id, name, course_code, created_by",
+            cid,
+            columns=_INVITE_CLASS_COLUMNS,
             detail=_NO_PERMISSION_DONT,
         )
-        email_ctx = _class_invite_email_context(client, class_row, instructor_id)
+        email_ctx = _invite_email_context(class_row)
 
         student = _find_student_profile_by_email(client, normalized_email)
         if not student:
@@ -646,21 +720,7 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
         if student["role"] != "student":
             raise HTTPException(status_code=400, detail="User is not a student")
 
-        existing = (
-            client.table("class_enrollments")
-            .select("id")
-            .eq("class_id", str(class_id))
-            .eq("user_id", student["id"])
-            .execute()
-        )
-        already_enrolled = bool(existing.data)
-        if not already_enrolled:
-            client.table("class_enrollments").insert(
-                {
-                    "class_id": str(class_id),
-                    "user_id": student["id"],
-                }
-            ).execute()
+        already_enrolled = str(student["id"]) not in _enroll_students(client, cid, [student["id"]])
 
         delivery_email = (student.get("email") or normalized_email).strip().lower()
         try:
@@ -1556,87 +1616,112 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
     - ``already_enrolled`` – student was already in the class; reminder email sent.
     - ``not_a_student``    – profile exists but the role is not 'student'.
     - ``email_failed``     – SMTP/delivery error for this address.
-    - ``error``            – unexpected DB error for this email.
+    - ``error``            – the profile lookup or the enrollment failed for this email.
+
+    Addresses are handled in the order given, duplicates dropped. Two addresses of
+    the same student report ``enrolled`` then ``already_enrolled`` and both are
+    emailed, as when every address was handled on its own.
+
+    Round trips: the class with its instructor's profile, then per 100 addresses at
+    most one profile lookup, one enrollment read and one enrollment upsert: 4 for a
+    typical batch (was 2 + up to 4 per address). Emails are still sent
+    synchronously, once the enrollments are written.
     """
     try:
         client = get_client()
+        cid = str(class_id)
+        class_row = _require_owner(client, instructor_id, cid, columns=_INVITE_CLASS_COLUMNS)
+        email_ctx = _invite_email_context(class_row)
 
-        class_row = _require_owner(
-            client, instructor_id, class_id, columns="id, name, course_code, created_by"
+        clean_emails = list(dict.fromkeys(e.strip().lower() for e in emails if e.strip()))
+
+        profiles: dict[str, dict] = {}
+        lookup_failed = False
+        try:
+            profiles = _find_student_profiles_by_email(client, clean_emails)
+        except Exception:
+            logger.warning("bulk_invite: profile lookup failed | class=%s", class_id, exc_info=True)
+            lookup_failed = True
+
+        student_ids = list(
+            dict.fromkeys(str(p["id"]) for p in profiles.values() if p.get("role") == "student")
         )
-        email_ctx = _class_invite_email_context(client, class_row, instructor_id)
-
-        clean_emails = list({e.strip().lower() for e in emails if e.strip()})
+        enrolled_before: set[str] = set()
+        newly_enrolled: set[str] = set()
+        read_failed = write_failed = False
+        if student_ids:
+            try:
+                enrolled_before = _enrolled_user_ids(client, cid, student_ids)
+            except Exception:
+                logger.warning(
+                    "bulk_invite: enrollment read failed | class=%s", class_id, exc_info=True
+                )
+                read_failed = True
+            to_enroll = [uid for uid in student_ids if uid not in enrolled_before]
+            if to_enroll and not read_failed:
+                try:
+                    newly_enrolled = _enroll_students(client, cid, to_enroll)
+                except Exception:
+                    logger.warning(
+                        "bulk_invite: enrollment write failed | class=%s", class_id, exc_info=True
+                    )
+                    write_failed = True
 
         results = []
+        reported: set[str] = set()  # students an earlier address already reported on
         for email in clean_emails:
-            try:
-                profile = _find_student_profile_by_email(client, email)
-                if not profile:
-                    try:
-                        send_class_invite_email(to=email, registered=False, **email_ctx)
-                        results.append({"email": email, "status": "invited"})
-                    except Exception as exc:
-                        logger.warning(
-                            "bulk_invite: email failed for unregistered | email=%s err=%s",
-                            email,
-                            exc,
-                        )
-                        results.append({"email": email, "status": "email_failed"})
-                    continue
+            if lookup_failed:
+                results.append({"email": email, "status": "error"})
+                continue
 
-                if profile.get("role") != "student":
-                    results.append({"email": email, "status": "not_a_student"})
-                    continue
-
-                existing = (
-                    client.table("class_enrollments")
-                    .select("id")
-                    .eq("class_id", str(class_id))
-                    .eq("user_id", profile["id"])
-                    .execute()
-                )
-                already_enrolled = bool(existing.data)
-                if not already_enrolled:
-                    client.table("class_enrollments").insert(
-                        {
-                            "class_id": str(class_id),
-                            "user_id": profile["id"],
-                        }
-                    ).execute()
-
-                delivery_email = (profile.get("email") or email).strip().lower()
+            profile = profiles.get(email)
+            if not profile:
                 try:
-                    send_class_invite_email(
-                        to=delivery_email,
-                        registered=True,
-                        **email_ctx,
-                    )
-                    results.append(
-                        {
-                            "email": email,
-                            "status": "already_enrolled" if already_enrolled else "enrolled",
-                        }
-                    )
+                    send_class_invite_email(to=email, registered=False, **email_ctx)
+                    results.append({"email": email, "status": "invited"})
                 except Exception as exc:
                     logger.warning(
-                        "bulk_invite: email failed for registered | email=%s err=%s",
+                        "bulk_invite: email failed for unregistered | email=%s err=%s",
                         email,
                         exc,
                     )
-                    if already_enrolled:
-                        results.append({"email": email, "status": "email_failed"})
-                    else:
-                        results.append({"email": email, "status": "enrolled"})
+                    results.append({"email": email, "status": "email_failed"})
+                continue
 
-            except Exception as e:
-                logger.warning(
-                    "bulk_invite: error for email=%s class=%s err=%s",
-                    email,
-                    class_id,
-                    e,
-                )
+            if profile.get("role") != "student":
+                results.append({"email": email, "status": "not_a_student"})
+                continue
+
+            uid = str(profile["id"])
+            if read_failed or (write_failed and uid not in enrolled_before):
                 results.append({"email": email, "status": "error"})
+                continue
+
+            already_enrolled = uid not in newly_enrolled or uid in reported
+            reported.add(uid)
+            delivery_email = (profile.get("email") or email).strip().lower()
+            try:
+                send_class_invite_email(
+                    to=delivery_email,
+                    registered=True,
+                    **email_ctx,
+                )
+                results.append(
+                    {
+                        "email": email,
+                        "status": "already_enrolled" if already_enrolled else "enrolled",
+                    }
+                )
+            except Exception as exc:
+                logger.warning(
+                    "bulk_invite: email failed for registered | email=%s err=%s",
+                    email,
+                    exc,
+                )
+                if already_enrolled:
+                    results.append({"email": email, "status": "email_failed"})
+                else:
+                    results.append({"email": email, "status": "enrolled"})
 
         enrolled_count = sum(1 for r in results if r["status"] == "enrolled")
         invited_count = sum(1 for r in results if r["status"] == "invited")
