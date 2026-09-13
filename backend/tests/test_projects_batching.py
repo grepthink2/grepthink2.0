@@ -1,9 +1,10 @@
-"""Behaviour + round-trip budgets for the project detail read and the join-request lists.
+"""Behaviour + round-trip budgets for project reads and the join-request flow.
 
 Each ``*_budget`` test bounds the Supabase round trips and checks that every read
 ran in a single ``fan_out`` wave (about one round trip of latency). The other tests
 pin today's response shapes, status codes and ``detail`` strings so the batching
-cannot change what the endpoints answer.
+cannot change what the endpoints answer; the write paths also check that a
+rejected call writes nothing.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from app.projects import controller as projects
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "instr", "instr-2"
-S1, S2, S3, S4, S5 = "s1", "s2", "s3", "s4", "s5"
+S1, S2, S3, S4, S5, S6 = "s1", "s2", "s3", "s4", "s5", "s6"
 OUTSIDER = "outsider"
 CLASS, OTHER_CLASS = "class-1", "class-2"
 P1, P2, P3, P4 = "proj-1", "proj-2", "proj-3", "proj-4"
@@ -107,9 +108,10 @@ def db(monkeypatch):
     S4 has a pending request to P1, a rejected request to P2, a pending invite
     from P2, and a pending invite / request in OTHER_CLASS. S5 has a pending
     request to P1. S2 was approved into P2 once; S3 declined an invite to P1.
+    S6 is enrolled in CLASS and on no team.
     """
     fake = FakeSupabase(
-        profiles=[_profile(u) for u in (INSTR, OTHER_INSTR, S1, S2, S3, S4, S5, OUTSIDER)],
+        profiles=[_profile(u) for u in (INSTR, OTHER_INSTR, S1, S2, S3, S4, S5, S6, OUTSIDER)],
         classes=[
             {"id": CLASS, "created_by": INSTR, "name": "CSE 115A", "term": "fall", "year": 2026},
             {
@@ -122,7 +124,7 @@ def db(monkeypatch):
         ],
         class_enrollments=[
             {"id": f"e-{u}", "class_id": CLASS, "user_id": u, "enrollment_role": "student"}
-            for u in (S1, S2, S3, S4, S5)
+            for u in (S1, S2, S3, S4, S5, S6)
         ]
         + [
             {"id": f"e2-{u}", "class_id": OTHER_CLASS, "user_id": u, "enrollment_role": "student"}
@@ -420,3 +422,145 @@ def test_pending_join_requests_budget(db, waves):
     waves.clear()
     projects.get_pending_join_requests(P1, INSTR)
     assert db.executes <= 2 and _one_wave(db, waves), (waves, _trace(db))
+
+
+# ------------------------------------------------------------- reject_join_request
+
+
+def _request_row(db, rid) -> dict:
+    return next(r for r in db.rows("project_join_requests") if r["id"] == rid)
+
+
+def _without_id(row: dict) -> dict:
+    return {k: v for k, v in row.items() if k != "id"}
+
+
+def test_reject_student_request_marks_it_rejected_and_notifies_the_requester(db):
+    out = projects.reject_join_request(R_JOIN_S4_P1, S1)  # P1's product owner
+    assert out == {"message": "Join request rejected successfully", "user_id": S4}
+    row = _request_row(db, R_JOIN_S4_P1)
+    assert (row["request_status"], row["reviewer_id"]) == ("rejected", S1)
+    assert row["reviewed_at"].endswith("+00:00")
+    assert [_without_id(n) for n in db.rows("notifications")] == [
+        {
+            "user_id": S4,
+            "type": "join_rejected",
+            "title": "Join request denied",
+            "body": 'Your request to join "Alpha" was denied.',
+            "entity_type": "project",
+            "entity_id": P1,
+        }
+    ]
+
+
+def test_reject_budget(db):
+    projects.reject_join_request(R_JOIN_S4_P1, S1)
+    # the request (project, class owner and members embedded), the update, the notification
+    assert db.executes <= 3, _trace(db)
+    db.reset_counter()
+    projects.reject_join_request(R_JOIN_S5_P1, INSTR)
+    assert db.executes <= 3, _trace(db)
+    assert _request_row(db, R_JOIN_S5_P1)["reviewer_id"] == INSTR
+
+
+def test_invitee_declines_a_team_invite_without_notifying_anyone(db):
+    out = projects.reject_join_request(R_INV_S4_P2, S4)
+    assert out == {"message": "Join request rejected successfully", "user_id": S4}
+    assert _request_row(db, R_INV_S4_P2)["request_status"] == "rejected"
+    assert db.rows("notifications") == []
+    assert db.executes <= 2, _trace(db)
+
+
+def test_reject_denials_write_nothing(db):
+    fn = projects.reject_join_request
+    invitee_only = "Only the invited user can decline this invitation"
+    db.rows("project_join_requests").append(_request("r-orphan", None, S4, "pending"))
+    assert _denied(fn, R_JOIN_S4_P1, S2) == (403, REVIEW_DENIED)  # plain member
+    assert _denied(fn, R_JOIN_S4_P1, S3) == (403, REVIEW_DENIED)  # owner of another project
+    assert _denied(fn, R_JOIN_S4_P1, OTHER_INSTR) == (403, REVIEW_DENIED)
+    assert _denied(fn, R_INV_S4_P2, S3) == (403, invitee_only)  # the inviter
+    assert _denied(fn, R_INV_S4_P2, INSTR) == (403, invitee_only)
+    assert _denied(fn, R_REJ_S4_P2, S3) == (400, "Request already rejected")
+    assert _denied(fn, R_APPR_S2_P2, S3) == (400, "Request already approved")
+    assert _denied(fn, "no-such-request", S1) == (404, "Join request not found")
+    assert _denied(fn, "r-orphan", S1) == (404, "Project not found")
+    assert not any(q["op"] in WRITE_OPS for q in db.queries), _trace(db)
+    assert db.rows("notifications") == []
+
+
+# --------------------------------------------------------- request_to_join_project
+
+
+def test_request_to_join_creates_a_pending_request_and_notifies_the_owner(db):
+    out = projects.request_to_join_project(P2, S6, "  hello team  ")
+    assert out["message"] == "Join request submitted successfully"
+    assert out["project"] == {"id": P2, "name": "Beta", "class_id": CLASS}
+    assert _without_id(out["request"]) == {
+        "project_id": P2,
+        "user_id": S6,
+        "request_status": "pending",
+        "reviewer_id": None,
+        "reviewed_at": None,
+        "invited_by": None,
+        "message": "hello team",
+    }
+    assert _request_row(db, out["request"]["id"])["user_id"] == S6
+    assert [_without_id(n) for n in db.rows("notifications")] == [
+        {
+            "user_id": S3,  # P2's owner
+            "type": "join_request",
+            "title": "New join request",
+            "body": 'S6 X requested to join Beta. "hello team"',
+            "entity_type": "project",
+            "entity_id": P2,
+        }
+    ]
+
+
+def test_request_to_join_budget(db, waves):
+    projects.request_to_join_project(P2, S6)
+    # one wave (project, memberships, pending row) + the insert, then
+    # notify_join_request: owners, requester profile, one insert per owner
+    assert waves == [3], waves
+    assert db.executes <= 7, _trace(db)
+
+
+def test_request_to_join_leaves_the_old_team_and_notifies_its_product_owner(db):
+    out = projects.request_to_join_project(P2, S2, "   ")  # S2 is on P1 (product owner S1)
+    assert (out["request"]["project_id"], out["request"]["message"]) == (P2, None)
+    assert {m["user_id"] for m in db.rows("project_members") if m["project_id"] == P1} == {S1}
+    assert next(p for p in db.rows("projects") if p["id"] == P1)["num_members"] == 1
+    notes = {n["user_id"]: n for n in db.rows("notifications")}
+    assert set(notes) == {S1, S3}
+    assert (notes[S1]["title"], notes[S1]["body"]) == (
+        "Member left your project",
+        'S2 X has left "Alpha" and submitted a join request for "Beta".',
+    )
+    assert notes[S3]["title"] == "New join request"
+    # one read wave, delete, num_members, leaver profile, departure notice, insert,
+    # then notify_join_request (owners, requester profile, one insert)
+    assert db.executes <= 11, _trace(db)
+
+
+def test_request_to_join_keeps_teams_in_other_classes(db):
+    projects.request_to_join_project(P2, S5)  # S5 is P3's admin in OTHER_CLASS
+    assert {m["project_id"] for m in db.rows("project_members") if m["user_id"] == S5} == {P3}
+    assert not any(q["op"] == "delete" for q in db.queries), _trace(db)
+
+
+def test_rejected_join_requests_write_nothing_and_keep_the_old_team(db):
+    fn = projects.request_to_join_project
+    db.rows("project_join_requests").append(
+        _request("r-inv-s2-p2", P2, S2, "pending", invited_by=S3)
+    )
+    assert _denied(fn, P2, S2) == (
+        400,
+        "You have a pending invitation to this project. Accept or decline it first.",
+    )
+    _request_row(db, "r-inv-s2-p2")["invited_by"] = None  # now a pending student request
+    assert _denied(fn, P2, S2) == (400, "Join request already pending")
+    assert _denied(fn, P1, S1) == (400, "Already a member of this project")
+    assert _denied(fn, "no-such-project", S6) == (404, "Project not found")
+    assert not any(q["op"] in WRITE_OPS for q in db.queries), _trace(db)
+    assert {m["user_id"] for m in db.rows("project_members") if m["project_id"] == P1} == {S1, S2}
+    assert db.rows("notifications") == []

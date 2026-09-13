@@ -591,22 +591,8 @@ def get_project_by_id(project_id: UUID, user_id: str = None) -> dict:
         raise HTTPException(status_code=500, detail="Failed to fetch project")
 
 
-def _assert_can_review_student_join_request(client, reviewer_id: str, project_id: str) -> None:
-    """
-    Permission to list / accept / reject **student-initiated** join requests
-    (``project_join_requests`` with ``invited_by`` unset).
-
-    Allowed: **class instructor** (``classes.created_by``) for the project's class, or
-    a **project member** with role ``owner``, ``product owner``, or ``admin``.
-    """
-    project = authz.load_project(
-        client, project_id, columns="id, class_id", class_columns="created_by"
-    )
-    _assert_can_review_loaded(client, reviewer_id, project)
-
-
 def _assert_can_review_loaded(client, reviewer_id: str, project: dict) -> None:
-    """Same rule as :func:`_assert_can_review_student_join_request` for a loaded project."""
+    """:func:`_require_can_review` for a project loaded without its members (reads the role)."""
     if str(_class_owner(project)) == str(reviewer_id):
         return
     role = authz.get_project_role(client, project["id"], reviewer_id)
@@ -800,10 +786,9 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
     """
     Create a request to join a project.
 
-    Before creating the request the function checks whether the user is already
-    a member of any other project in the **same class**.  If so, they are
-    automatically removed from that project and the project's product owner(s)
-    receive a notification message.
+    If the user is already a member of another project in the **same class**,
+    they are removed from it once the request is known to be valid, and that
+    project's product owner(s) receive a notification.
 
     Args:
         project_id: Project unique identifier
@@ -815,64 +800,94 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
 
     Raises:
         HTTPException: If project not found, already a member, or pending request exists
+
+    Every check reads in one concurrent wave: the project, the caller's
+    memberships (each with its project's class and members embedded) and any
+    pending row for this project. A rejected request therefore writes nothing,
+    and leaving the old team needs no further reads.
     """
     try:
         client = get_client()
+        pid = str(project_id)
 
-        # Verify the project exists; fetch class_id for the cross-project check below
-        project_result = (
-            client.table("projects")
-            .select("id, name, class_id")
-            .eq("id", str(project_id))
-            .execute()
+        reads = fan_out(
+            {
+                "project": lambda: (
+                    (
+                        client.table("projects")
+                        .select("id, name, class_id")
+                        .eq("id", pid)
+                        .limit(1)
+                        .execute()
+                    ).data
+                    or []
+                ),
+                "memberships": lambda: (
+                    (
+                        client.table("project_members")
+                        .select(
+                            "project_id, "
+                            "projects(id, name, class_id, project_members(user_id, role))"
+                        )
+                        .eq("user_id", user_id)
+                        .execute()
+                    ).data
+                    or []
+                ),
+                "pending": lambda: (
+                    (
+                        client.table("project_join_requests")
+                        .select("id, request_status, invited_by")
+                        .eq("project_id", pid)
+                        .eq("user_id", user_id)
+                        .eq("request_status", "pending")
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
         )
-        if not project_result.data:
-            raise HTTPException(status_code=404, detail="Project not found")
 
-        project = project_result.data[0]
+        if not reads["project"]:
+            raise HTTPException(status_code=404, detail="Project not found")
+        project = reads["project"][0]
         class_id = project.get("class_id")
         new_project_name = project.get("name", "the new project")
 
-        # Check if user is already a member of THIS project
-        existing_member = (
-            client.table("project_members")
-            .select("id")
-            .eq("project_id", str(project_id))
-            .eq("user_id", user_id)
-            .execute()
-        )
-
-        if existing_member.data:
+        memberships = reads["memberships"]
+        if any(str(m.get("project_id")) == pid for m in memberships):
             raise HTTPException(status_code=400, detail="Already a member of this project")
 
-        # Auto-leave any other project the user is in within the same class and
-        # notify that project's product owner(s).
-        if class_id:
-            _leave_current_project_in_class(
-                client,
-                user_id=user_id,
-                target_project_id=str(project_id),
-                class_id=str(class_id),
-                new_project_name=new_project_name,
-            )
-
-        # Check if there's already a pending row (student request or team invite)
-        existing_request = (
-            client.table("project_join_requests")
-            .select("id, request_status, invited_by")
-            .eq("project_id", str(project_id))
-            .eq("user_id", user_id)
-            .eq("request_status", "pending")
-            .execute()
-        )
-
-        for row in existing_request.data or []:
+        # A pending row already exists (student request or team invite)
+        for row in reads["pending"]:
             if row.get("invited_by"):
                 raise HTTPException(
                     status_code=400,
                     detail="You have a pending invitation to this project. Accept or decline it first.",
                 )
             raise HTTPException(status_code=400, detail="Join request already pending")
+
+        # The request is valid: leave any other project the user is in within the
+        # same class and notify that project's product owner(s).
+        if class_id:
+            teams = {
+                str(m["projects"]["id"]): m["projects"]
+                for m in memberships
+                if m.get("projects") and str(m["projects"].get("class_id")) == str(class_id)
+            }
+            _leave_current_project_in_class(
+                client,
+                user_id=user_id,
+                target_project_id=pid,
+                class_id=str(class_id),
+                new_project_name=new_project_name,
+                class_projects=[{"id": tid, "name": t.get("name")} for tid, t in teams.items()],
+                class_members=[
+                    {"project_id": tid, "user_id": m.get("user_id"), "role": m.get("role")}
+                    for tid, t in teams.items()
+                    for m in t.get("project_members") or []
+                ],
+            )
 
         # Normalize the optional requester message (trim, drop if empty)
         clean_message = message.strip() if isinstance(message, str) else None
@@ -881,7 +896,7 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
 
         # Create the join request (student-initiated; invited_by stays null)
         request_data = {
-            "project_id": str(project_id),
+            "project_id": pid,
             "user_id": user_id,
             "request_status": "pending",
             "reviewer_id": None,
@@ -899,7 +914,7 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
             from app.notifications.controller import notify_join_request
 
             notify_join_request(
-                project_id=str(project_id),
+                project_id=pid,
                 project_name=new_project_name,
                 request_id=str(request_id),
                 requester_id=user_id,
@@ -1050,19 +1065,26 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
 
     - **Student-initiated**: **class instructor** or project **owner** / **product owner** / **admin**.
     - **Team invite**: only the invitee may decline.
+
+    One read decides everything: the request with its project, the class owner
+    and the project's members embedded (no separate project, role or
+    project-name reads). Then the status update and, for a student request, the
+    requester's notification.
     """
     try:
         client = get_client()
 
-        # Get the join request
         request_result = (
             client.table("project_join_requests")
-            .select("id, project_id, user_id, request_status, invited_by")
+            .select(
+                "id, project_id, user_id, request_status, invited_by, "
+                f"projects({REVIEW_PROJECT_COLUMNS})"
+            )
             .eq("id", str(request_id))
+            .limit(1)
             .execute()
         )
-
-        if not request_result.data or len(request_result.data) == 0:
+        if not request_result.data:
             raise HTTPException(status_code=404, detail="Join request not found")
 
         join_request = request_result.data[0]
@@ -1074,6 +1096,7 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
             )
 
         invited_by = join_request.get("invited_by")
+        project = join_request.get("projects") or None
 
         if invited_by:
             if str(reviewer_id) != str(join_request["user_id"]):
@@ -1082,37 +1105,25 @@ def reject_join_request(request_id: UUID, reviewer_id: str) -> dict:
                     detail="Only the invited user can decline this invitation",
                 )
         else:
-            _assert_can_review_student_join_request(client, reviewer_id, join_request["project_id"])
+            _require_can_review(project, reviewer_id)
 
-        # Update the request status
-        update_data = {
-            "request_status": "rejected",
-            "reviewed_at": datetime.now(UTC).isoformat(),
-            "reviewer_id": reviewer_id,
-        }
-
-        client.table("project_join_requests").update(update_data).eq(
-            "id", str(request_id)
-        ).execute()
+        client.table("project_join_requests").update(
+            {
+                "request_status": "rejected",
+                "reviewed_at": datetime.now(UTC).isoformat(),
+                "reviewer_id": reviewer_id,
+            }
+        ).eq("id", str(request_id)).execute()
 
         # Notify the requester that a student-initiated request was denied.
         # (Team invites being declined notify nobody — the invitee declined their own invite.)
         if not invited_by:
-            project_row = (
-                client.table("projects")
-                .select("name")
-                .eq("id", join_request["project_id"])
-                .execute()
-            )
-            project_name = (
-                project_row.data[0].get("name") if project_row.data else None
-            ) or "the project"
             from app.notifications.controller import notify_join_request_rejected
 
             notify_join_request_rejected(
                 requester_id=join_request["user_id"],
                 project_id=str(join_request["project_id"]),
-                project_name=project_name,
+                project_name=(project or {}).get("name") or "the project",
             )
 
         logger.info(
