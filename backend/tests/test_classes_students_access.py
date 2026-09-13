@@ -66,9 +66,15 @@ def db(monkeypatch):
         ],
         projects=[{"id": P1, "class_id": CLASS, "name": "Alpha"}],
         project_members=[{"project_id": P1, "user_id": S1, "role": "member"}],
+        relations={
+            ("class_enrollments", "profiles!class_enrollments_user_id_fkey"): (
+                "user_id",
+                "id",
+                False,
+            ),
+            ("projects", "project_members"): ("id", "project_id", True),
+        },
     )
-    monkeypatch.setattr(classes_controller, "service_client", fake, raising=False)
-    monkeypatch.setattr(classes_controller, "supabase", fake, raising=False)
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
 
@@ -78,14 +84,14 @@ def db(monkeypatch):
 
 def test_unrelated_user_cannot_read_roster(db):
     with pytest.raises(HTTPException) as exc:
-        classes_controller.get_class_students(CLASS, OUTSIDER, "student")
+        classes_controller.get_class_students(CLASS, OUTSIDER)
     assert exc.value.status_code == 403
 
 
 def test_instructor_of_another_class_cannot_read_roster(db):
     # Being an instructor is not itself access — only owning *this* class is.
     with pytest.raises(HTTPException) as exc:
-        classes_controller.get_class_students(CLASS, OTHER_INSTR, "instructor")
+        classes_controller.get_class_students(CLASS, OTHER_INSTR)
     assert exc.value.status_code == 403
 
 
@@ -93,7 +99,7 @@ def test_empty_class_still_denies_non_member(db):
     # A class with no enrollments must 403 rather than leak an empty 200:
     # the access check has to run before the empty-roster early return.
     with pytest.raises(HTTPException) as exc:
-        classes_controller.get_class_students(EMPTY_CLASS, OUTSIDER, "student")
+        classes_controller.get_class_students(EMPTY_CLASS, OUTSIDER)
     assert exc.value.status_code == 403
 
 
@@ -101,25 +107,25 @@ def test_empty_class_still_denies_non_member(db):
 
 
 def test_owning_instructor_can_read_roster(db):
-    students = classes_controller.get_class_students(CLASS, INSTR, "instructor")
+    students = classes_controller.get_class_students(CLASS, INSTR)
     assert {s["id"] for s in students} == {TA1, S1}
 
 
 def test_enrolled_student_can_read_roster(db):
-    students = classes_controller.get_class_students(CLASS, S1, "student")
+    students = classes_controller.get_class_students(CLASS, S1)
     assert {s["id"] for s in students} == {TA1, S1}
 
 
 def test_enrolled_ta_can_read_roster(db):
     # TAs are rows in class_enrollments (enrollment_role='ta'), so the
     # membership arm covers them; TAManagement must keep working.
-    students = classes_controller.get_class_students(CLASS, TA1, "student")
+    students = classes_controller.get_class_students(CLASS, TA1)
     assert {s["id"] for s in students} == {TA1, S1}
 
 
 def test_roster_payload_is_unchanged_for_members(db):
     # The enrichment contract the frontend maps over must survive the fix.
-    students = classes_controller.get_class_students(CLASS, INSTR, "instructor")
+    students = classes_controller.get_class_students(CLASS, INSTR)
     sam = next(s for s in students if s["id"] == S1)
     assert sam["project_id"] == P1
     assert sam["project_name"] == "Alpha"
@@ -130,12 +136,12 @@ def test_roster_payload_is_unchanged_for_members(db):
 
 
 def test_owning_instructor_gets_empty_list_for_empty_class(db):
-    assert classes_controller.get_class_students(EMPTY_CLASS, INSTR, "instructor") == []
+    assert classes_controller.get_class_students(EMPTY_CLASS, INSTR) == []
 
 
 def test_missing_class_is_404(db):
     with pytest.raises(HTTPException) as exc:
-        classes_controller.get_class_students(MISSING_CLASS, INSTR, "instructor")
+        classes_controller.get_class_students(MISSING_CLASS, INSTR)
     assert exc.value.status_code == 404
 
 

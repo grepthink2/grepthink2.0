@@ -290,11 +290,11 @@ def test_cancel_invite_answers(db):
 
 CLASS_READS = {
     "get_class_students": (
-        lambda caller, cid: classes.get_class_students(cid, caller, _role(caller)),
+        lambda caller, cid: classes.get_class_students(cid, caller),
         NO_ROSTER_ACCESS,
     ),
     "get_class_roster": (
-        lambda caller, cid: classes.get_class_roster(cid, caller, _role(caller)),
+        lambda caller, cid: classes.get_class_roster(cid, caller),
         NO_ROSTER_ACCESS,
     ),
     "get_class_projects": (

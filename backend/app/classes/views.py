@@ -71,15 +71,14 @@ def invite_student(
 
 
 def get_class_students(class_id: UUID, user_id: str = Depends(require_user)):
-    role = get_user_role(user_id)
-    students = controller.get_class_students(class_id, user_id, role)
+    """Enrolled students with their team (class instructor or enrolled members)."""
+    students = controller.get_class_students(class_id, user_id)
     return {"students": students}
 
 
 def get_class_roster(class_id: UUID, user_id: str = Depends(require_user)):
     """Merged official roster + GrepThink enrollment status."""
-    role = get_user_role(user_id)
-    return controller.get_class_roster(class_id, user_id, role)
+    return controller.get_class_roster(class_id, user_id)
 
 
 def get_class_roster_timeline(
