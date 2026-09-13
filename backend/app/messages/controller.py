@@ -462,6 +462,25 @@ def list_inbox(*, caller_id: str) -> list[dict]:
     return out
 
 
+#: Profile columns a contact row is built from.
+_CONTACT_COLUMNS = "id, email, role, first_name, last_name, image_url"
+
+#: A class with its owner's profile and every enrollment's profile embedded, over
+#: classes_created_by_fkey, class_enrollments_class_id_fkey and
+#: class_enrollments_user_id_fkey. The hints are required where PostgREST would
+#: otherwise see several paths: class_enrollments and other tables also link
+#: classes to profiles.
+_CLASS_PEOPLE = (
+    "id, created_by, "
+    f"owner:profiles!classes_created_by_fkey({_CONTACT_COLUMNS}), "
+    "class_enrollments!class_enrollments_class_id_fkey("
+    f"user_id, profile:profiles!class_enrollments_user_id_fkey({_CONTACT_COLUMNS}))"
+)
+
+#: The caller's enrollments, each with its class (and that class's people).
+_ENROLLED_CLASS_PEOPLE = f"class_id, classes!class_enrollments_class_id_fkey({_CLASS_PEOPLE})"
+
+
 def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
     """Everyone the caller may DM: peers across the caller's classes
     (enrolled students/TAs + class owners), minus self and minus
@@ -471,39 +490,53 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
     convention as the messages_inbox RPC).
 
     Replaces the frontend's per-class getClassStudents() fan-out.
+
+    Two reads in one wave — the classes the caller owns and the classes the
+    caller is enrolled in, each with its owner, enrollments and their profiles
+    embedded — where it used to be five sequential reads. The caller's own
+    profile (for the instructor↔instructor rule) is part of that data whenever
+    the caller has a class: as its owner or as one of its enrollments.
     """
     client = get_client()
-    owned = client.table("classes").select("id, created_by").eq("created_by", caller_id).execute()
-    enrolled = (
-        client.table("class_enrollments").select("class_id").eq("user_id", caller_id).execute()
+    reads = fan_out(
+        {
+            "owned": lambda: (
+                (
+                    client.table("classes")
+                    .select(_CLASS_PEOPLE)
+                    .eq("created_by", caller_id)
+                    .execute()
+                ).data
+                or []
+            ),
+            "enrolled": lambda: (
+                (
+                    client.table("class_enrollments")
+                    .select(_ENROLLED_CLASS_PEOPLE)
+                    .eq("user_id", caller_id)
+                    .execute()
+                ).data
+                or []
+            ),
+        }
     )
-    class_ids = sorted(
-        {r["id"] for r in (owned.data or [])} | {r["class_id"] for r in (enrolled.data or [])}
-    )
-    if not class_ids:
+    classes = reads["owned"] + [e["classes"] for e in reads["enrolled"] if e.get("classes")]
+    if not classes:
         return []
 
-    peers_enrolled = (
-        client.table("class_enrollments")
-        .select("class_id, user_id")
-        .in_("class_id", class_ids)
-        .execute()
-    )
-    peers_owning = client.table("classes").select("id, created_by").in_("id", class_ids).execute()
-    peer_ids = (
-        {r["user_id"] for r in (peers_enrolled.data or [])}
-        | {r["created_by"] for r in (peers_owning.data or [])}
-    ) - {caller_id}
+    peer_ids: set[str] = set()
+    profiles: dict[str, dict] = {}
+    for cls in classes:
+        peer_ids.add(cls["created_by"])
+        if cls.get("owner"):
+            profiles[cls["owner"]["id"]] = cls["owner"]
+        for enrollment in cls.get("class_enrollments") or []:
+            peer_ids.add(enrollment["user_id"])
+            if enrollment.get("profile"):
+                profiles[enrollment["profile"]["id"]] = enrollment["profile"]
+    peer_ids.discard(caller_id)
     if not peer_ids:
         return []
-
-    profiles_res = (
-        client.table("profiles")
-        .select("id, email, role, first_name, last_name, image_url")
-        .in_("id", sorted(peer_ids | {caller_id}))
-        .execute()
-    )
-    profiles = {p["id"]: p for p in (profiles_res.data or [])}
     caller_role = (profiles.get(caller_id) or {}).get("role")
 
     needle = (query or "").strip().lower()[:100]
