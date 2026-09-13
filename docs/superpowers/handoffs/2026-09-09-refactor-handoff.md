@@ -113,5 +113,9 @@ The report's "Not done, and why" section is the full list. The ones worth a tick
   not part of the branch.
 - `npm install` may ERESOLVE against the installed tree; `rm -rf node_modules package-lock.json
   && npm install` resolves from the manifest.
+- `backend/api/index.py` is the Vercel entrypoint and only re-exports `app`. The ruff auto-fix
+  commit deleted that import as unused and broke every backend preview deployment until it was
+  restored with `__all__` and a test. Tool settings live in `ruff.toml` and `pytest.ini`, not
+  `pyproject.toml`, because Vercel reads `pyproject.toml` as a dependency source.
 - Do not apply migrations or touch PROD (`yfezwtoeoexfksvbpxmi`) without the maintainer.
   Read-only queries against dev (`jfbagjjvryqcwxsyeyeg`) are fine.

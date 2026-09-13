@@ -133,6 +133,10 @@ The full agent-facing action catalog (method, params, role) lives at
 - **Secrets stay server-side.** `.env` lives at the repo root (see `.env.example`), and Vite
   exposes only `VITE_*` (`envPrefix`). Never widen that prefix: the same file holds
   `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_JWT_SECRET`.
+- **`backend/api/index.py` is the Vercel entrypoint.** It only re-exports `app`; keep the
+  `__all__`, which stops ruff deleting the import as unused. Keep tool settings out of a
+  `backend/pyproject.toml`: Vercel reads that file as a dependency source, and deployments
+  install from `requirements.txt`.
 - **Rate limiting** (slowapi) covers `create_user`, `check_email`, `login_check`,
   `contact`, `stats`. Add `@limiter.limit(...)` (+ a `request: Request` param) for
   new abuse-prone endpoints.
