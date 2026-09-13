@@ -76,7 +76,7 @@ RPC_TEAM_ROW = {
 }
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_inbox_calls_rpc_with_caller(client):
     from app.messages.controller import list_inbox
 
@@ -85,7 +85,7 @@ def test_inbox_calls_rpc_with_caller(client):
     client.rpc.assert_called_once_with("messages_inbox", {"p_user": "alice"})
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_inbox_dm_row_derives_other_user(client):
     from app.messages.controller import list_inbox
 
@@ -98,7 +98,7 @@ def test_inbox_dm_row_derives_other_user(client):
     assert row["type"] == "dm"
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_inbox_team_row_has_no_other_user(client):
     from app.messages.controller import list_inbox
 

@@ -13,7 +13,7 @@ from datetime import UTC
 
 from fastapi import HTTPException
 
-from app.database.client import service_client
+from app.core.db import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def get_profile_roles(user_ids: list[str]) -> dict[str, str | None]:
     """Return {user_id: role} for the given ids. Missing rows → None."""
     if not user_ids:
         return {}
-    res = service_client.table("profiles").select("id, role").in_("id", user_ids).execute()
+    res = get_client().table("profiles").select("id, role").in_("id", user_ids).execute()
     found = {row["id"]: row["role"] for row in (res.data or [])}
     return {uid: found.get(uid) for uid in user_ids}
 
@@ -40,15 +40,11 @@ def get_profile_roles(user_ids: list[str]) -> dict[str, str | None]:
 def has_shared_class(a_id: str, b_id: str) -> bool:
     """Two users share a class iff each has a relationship (instructor or
     enrolled student) to at least one common class id."""
+    client = get_client()
 
     def _user_classes(uid: str) -> set[str]:
-        owned = service_client.table("classes").select("id").eq("created_by", uid).execute()
-        enrolled = (
-            service_client.table("class_enrollments")
-            .select("class_id")
-            .eq("user_id", uid)
-            .execute()
-        )
+        owned = client.table("classes").select("id").eq("created_by", uid).execute()
+        enrolled = client.table("class_enrollments").select("class_id").eq("user_id", uid).execute()
         return {row["id"] for row in (owned.data or [])} | {
             row["class_id"] for row in (enrolled.data or [])
         }
@@ -75,11 +71,12 @@ def _canonical_pair(a_id: str, b_id: str) -> tuple[str, str]:
 def _get_or_create_conversation(a_id: str, b_id: str) -> str:
     """Return the conversation id for the pair, creating it if absent."""
     user_a, user_b = _canonical_pair(a_id, b_id)
+    client = get_client()
     # NOTE: supabase-py 2.x returns *None* (not a response object) from
     # `.maybe_single().execute()` when no row matches. Older versions
     # returned a response with `data=None`. Always guard for `None`.
     existing = (
-        service_client.table("conversations")
+        client.table("conversations")
         .select("id")
         .eq("user_a", user_a)
         .eq("user_b", user_b)
@@ -88,13 +85,11 @@ def _get_or_create_conversation(a_id: str, b_id: str) -> str:
     )
     if existing is not None and existing.data:
         return existing.data["id"]
-    created = (
-        service_client.table("conversations").insert({"user_a": user_a, "user_b": user_b}).execute()
-    )
+    created = client.table("conversations").insert({"user_a": user_a, "user_b": user_b}).execute()
     if not created.data:
         # Lost a create race — refetch.
         refetch = (
-            service_client.table("conversations")
+            client.table("conversations")
             .select("id")
             .eq("user_a", user_a)
             .eq("user_b", user_b)
@@ -194,8 +189,9 @@ def send_message(
         conversation_id = _get_or_create_conversation(sender_id, to_user_id)
         recipient_ids = [to_user_id]
 
+    client = get_client()
     inserted = (
-        service_client.table("messages")
+        client.table("messages")
         .insert(
             {
                 "conversation_id": conversation_id,
@@ -208,7 +204,7 @@ def send_message(
     message_row = inserted.data[0]
 
     # Sender is implicitly "read" through their own latest send.
-    service_client.table("conversation_reads").upsert(
+    client.table("conversation_reads").upsert(
         {
             "conversation_id": conversation_id,
             "user_id": sender_id,
@@ -243,7 +239,8 @@ def _participant_ids(conversation_id: str) -> list[str]:
     every conversation endpoint would 500, including existing DMs.
     """
     res = (
-        service_client.table("conversation_participants")
+        get_client()
+        .table("conversation_participants")
         .select("user_id, role")
         .eq("conversation_id", conversation_id)
         .execute()
@@ -258,7 +255,8 @@ def _require_participant(conversation_id: str, caller_id: str) -> dict:
     participant. Read-only conversations stay readable by participants.
     """
     res = (
-        service_client.table("conversations")
+        get_client()
+        .table("conversations")
         .select("id, type, user_a, user_b, project_id")
         .eq("id", conversation_id)
         .maybe_single()
@@ -294,8 +292,7 @@ def list_messages(
     _require_participant(conversation_id, caller_id)
     limit = max(1, min(limit, 100))
 
-    # Validate the cursor before touching the DB client: fail fast on bad
-    # input rather than depend on a service_client that may be unset.
+    # Validate the cursor before building the query: fail fast on bad input.
     before_created_at: str | None = None
     before_id: str | None = None
     if before is not None:
@@ -309,7 +306,8 @@ def list_messages(
             raise HTTPException(status_code=400, detail="Malformed cursor")
 
     query = (
-        service_client.table("messages")
+        get_client()
+        .table("messages")
         .select("id, sender_id, body, created_at")
         .eq("conversation_id", conversation_id)
     )
@@ -332,7 +330,7 @@ def mark_read(*, conversation_id: str, caller_id: str) -> None:
     _require_participant(conversation_id, caller_id)
     from datetime import datetime
 
-    service_client.table("conversation_reads").upsert(
+    get_client().table("conversation_reads").upsert(
         {
             "conversation_id": conversation_id,
             "user_id": caller_id,
@@ -355,7 +353,7 @@ def delete_conversation_for_user(*, conversation_id: str, caller_id: str) -> Non
     _require_participant(conversation_id, caller_id)
     from datetime import datetime
 
-    service_client.table("conversation_deletes").upsert(
+    get_client().table("conversation_deletes").upsert(
         {
             "conversation_id": conversation_id,
             "user_id": caller_id,
@@ -383,7 +381,7 @@ def list_inbox(*, caller_id: str) -> list[dict]:
     HARD DEPENDENCY: the messages_inbox() SQL function exists only after
     the 2026-07-14 migration (Task R1, gated).
     """
-    res = service_client.rpc("messages_inbox", {"p_user": caller_id}).execute()
+    res = get_client().rpc("messages_inbox", {"p_user": caller_id}).execute()
     rows = res.data or []
     out: list[dict] = []
     for r in rows:
@@ -435,17 +433,10 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
 
     Replaces the frontend's per-class getClassStudents() fan-out.
     """
-    owned = (
-        service_client.table("classes")
-        .select("id, created_by")
-        .eq("created_by", caller_id)
-        .execute()
-    )
+    client = get_client()
+    owned = client.table("classes").select("id, created_by").eq("created_by", caller_id).execute()
     enrolled = (
-        service_client.table("class_enrollments")
-        .select("class_id")
-        .eq("user_id", caller_id)
-        .execute()
+        client.table("class_enrollments").select("class_id").eq("user_id", caller_id).execute()
     )
     class_ids = sorted(
         {r["id"] for r in (owned.data or [])} | {r["class_id"] for r in (enrolled.data or [])}
@@ -454,14 +445,12 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
         return []
 
     peers_enrolled = (
-        service_client.table("class_enrollments")
+        client.table("class_enrollments")
         .select("class_id, user_id")
         .in_("class_id", class_ids)
         .execute()
     )
-    peers_owning = (
-        service_client.table("classes").select("id, created_by").in_("id", class_ids).execute()
-    )
+    peers_owning = client.table("classes").select("id, created_by").in_("id", class_ids).execute()
     peer_ids = (
         {r["user_id"] for r in (peers_enrolled.data or [])}
         | {r["created_by"] for r in (peers_owning.data or [])}
@@ -470,7 +459,7 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
         return []
 
     profiles_res = (
-        service_client.table("profiles")
+        client.table("profiles")
         .select("id, email, role, first_name, last_name, image_url")
         .in_("id", sorted(peer_ids | {caller_id}))
         .execute()

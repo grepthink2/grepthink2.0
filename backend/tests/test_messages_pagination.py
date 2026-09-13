@@ -21,7 +21,7 @@ def _msgs(n, start=0):
 
 
 @patch("app.messages.controller._require_participant")
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_full_page_returns_cursor(client, _auth):
     from app.messages.controller import list_messages
 
@@ -37,7 +37,7 @@ def test_full_page_returns_cursor(client, _auth):
 
 
 @patch("app.messages.controller._require_participant")
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_short_page_has_no_cursor(client, _auth):
     from app.messages.controller import list_messages
 
@@ -50,7 +50,7 @@ def test_short_page_has_no_cursor(client, _auth):
 
 
 @patch("app.messages.controller._require_participant")
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_before_cursor_applies_keyset_filter(client, _auth):
     from app.messages.controller import list_messages
 
@@ -90,7 +90,7 @@ def test_cursor_filter_smuggling_400():
 
 
 @patch("app.messages.controller._require_participant")
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_limit_clamped_high(client, _auth):
     from app.messages.controller import list_messages
 
@@ -103,7 +103,7 @@ def test_limit_clamped_high(client, _auth):
 
 
 @patch("app.messages.controller._require_participant")
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_limit_clamped_low(client, _auth):
     from app.messages.controller import list_messages
 
@@ -115,7 +115,7 @@ def test_limit_clamped_low(client, _auth):
     q.order.return_value.order.return_value.limit.assert_called_once_with(1)
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_list_messages_403_for_non_participant_wired(client):
     """Defense-in-depth: exercises the real _require_participant wiring."""
     from app.messages.controller import list_messages

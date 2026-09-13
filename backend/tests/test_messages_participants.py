@@ -21,7 +21,7 @@ def _mock_participants(client, user_ids):
     ) = MagicMock(data=[{"user_id": u, "role": "member"} for u in user_ids])
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_participant_passes(client):
     from app.messages.controller import _require_participant
 
@@ -31,7 +31,7 @@ def test_participant_passes(client):
     assert conv["type"] == "team_members"
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_outsider_403(client):
     from app.messages.controller import _require_participant
 
@@ -42,7 +42,7 @@ def test_outsider_403(client):
     assert exc.value.status_code == 403
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_missing_conversation_404(client):
     from app.messages.controller import _require_participant
 

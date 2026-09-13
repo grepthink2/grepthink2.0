@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 @patch("app.messages.controller.can_message", return_value=True)
 @patch("app.messages.controller._get_or_create_conversation", return_value="conv-x")
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_send_message_inserts_and_marks_sender_read(client, _get_or_create, _can):
     from app.messages.controller import send_message
 
@@ -81,7 +81,7 @@ def test_send_message_accepts_1024_codepoints_with_emoji(_can):
     # Mock through the insert path
     with (
         patch("app.messages.controller._get_or_create_conversation", return_value="c"),
-        patch("app.messages.controller.service_client") as client,
+        patch("app.core.db.service_client") as client,
     ):
         client.table.return_value.insert.return_value.execute.return_value = MagicMock(
             data=[
@@ -98,7 +98,7 @@ def test_send_message_accepts_1024_codepoints_with_emoji(_can):
     # No exception = pass
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_get_or_create_canonicalizes_pair(client):
     """Given two ids, the smaller goes in user_a regardless of call order."""
     from app.messages.controller import _get_or_create_conversation
@@ -126,7 +126,7 @@ def test_get_or_create_canonicalizes_pair(client):
             assert call.args[1] == "00000000-0000-0000-0000-000000000002"
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_get_or_create_inserts_when_absent(client):
     from app.messages.controller import _get_or_create_conversation
 
@@ -144,7 +144,7 @@ def test_get_or_create_inserts_when_absent(client):
     assert result == "new-conv"
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_get_or_create_handles_none_return_from_maybe_single(client):
     """Regression: supabase-py 2.x returns None (not a response object) from
     `.maybe_single().execute()` when no row matches. Earlier versions returned

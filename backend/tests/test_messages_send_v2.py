@@ -39,7 +39,7 @@ def test_requires_exactly_one_target():
     "app.messages.controller._require_participant",
     return_value={"id": "conv-t", "type": "team_members", "user_a": None, "user_b": None},
 )
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_team_channel_send_notifies_others(client, _conv, _ids, notify):
     from app.messages.controller import send_message
 
@@ -56,7 +56,7 @@ def test_team_channel_send_notifies_others(client, _conv, _ids, notify):
     "app.messages.controller._require_participant",
     return_value={"id": "conv-d", "type": "dm", "user_a": "alice", "user_b": "bob"},
 )
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_dm_via_conversation_id_rechecks_eligibility(client, _conv, _ids, _can):
     from app.messages.controller import send_message
 
@@ -68,7 +68,7 @@ def test_dm_via_conversation_id_rechecks_eligibility(client, _conv, _ids, _can):
 @patch("app.messages.controller.notify_recipients")
 @patch("app.messages.controller._get_or_create_conversation", return_value="conv-x")
 @patch("app.messages.controller.can_message", return_value=True)
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_legacy_to_user_id_path_still_works(client, _can, _goc, notify):
     from app.messages.controller import send_message
 
@@ -79,7 +79,7 @@ def test_legacy_to_user_id_path_still_works(client, _can, _goc, notify):
     assert kwargs["recipient_ids"] == ["bob"]
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_send_403_for_non_participant_wired(client):
     """Core security property: non-participant cannot send via conversation_id."""
     from app.messages.controller import send_message
@@ -110,7 +110,7 @@ def test_send_403_for_non_participant_wired(client):
     "app.messages.controller._require_participant",
     return_value={"id": "conv-t", "type": "team_members", "user_a": None, "user_b": None},
 )
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_notify_failure_does_not_fail_send(client, _conv, _ids):
     """One recipient's notify blowing up must not 500 the send or starve the rest."""
     from app.messages import controller

@@ -9,11 +9,25 @@ from fastapi import Depends, HTTPException, Request
 
 from app.auth.controller import get_user_role
 from app.auth.models import CheckEmailRequest, SignupRequest
-from app.database.client import get_authenticated_client, service_client
+from app.core import db as core_db
+from app.core.db import get_client
+from app.database.client import get_authenticated_client
 from app.dependencies import require_user, require_user_payload
 from app.limiter import limiter
 
 logger = logging.getLogger(__name__)
+
+
+def _has_service_client() -> bool:
+    """True when the service-role client is configured (``SUPABASE_SERVICE_ROLE_KEY``).
+
+    ``get_client()`` quietly falls back to the anon client without one; these
+    views must not. ``check_email`` / ``check_user_exists`` would answer from
+    RLS-filtered rows (every address would look free / unknown), so they answer
+    503 instead, and ``create_user`` provisions through the caller's JWT-scoped
+    client. Read through ``app.core.db`` at call time — the one point tests patch.
+    """
+    return core_db.service_client is not None
 
 
 @limiter.limit("120/minute")
@@ -96,8 +110,10 @@ def create_user(  # noqa: C901
             row["image_url"] = data.avatarUrl
         return client.table("profiles").insert(row).execute()
 
-    client = service_client
-    if client is None:
+    service_configured = _has_service_client()
+    if service_configured:
+        client = get_client()
+    else:
         auth_header = request.headers.get("Authorization") or ""
         parts = auth_header.split(" ")
         if len(parts) != 2:
@@ -189,13 +205,13 @@ def create_user(  # noqa: C901
         # If the signup email is .edu, block it if another account already owns
         # that address as its edu_email (defensive backstop for race conditions;
         # the /check-email endpoint handles the common case earlier in SignUp.tsx).
-        if email.lower().endswith(".edu") and service_client:
-            edu_conflict = (
-                service_client.table("profiles").select("id").eq("edu_email", email).execute()
-            )
+        # Only with the service-role client: `client` is that client here, and it
+        # can see (and delete the auth user behind) other accounts' rows.
+        if email.lower().endswith(".edu") and service_configured:
+            edu_conflict = client.table("profiles").select("id").eq("edu_email", email).execute()
             if edu_conflict.data:
                 try:
-                    service_client.auth.admin.delete_user(user_id)
+                    client.auth.admin.delete_user(user_id)
                 except Exception:
                     logger.warning(
                         "create_user: failed to delete orphaned auth user | user_id=%s", user_id
@@ -255,9 +271,9 @@ def check_user_exists(request: Request, data: CheckEmailRequest):
     account. Used by ForgotPassword.tsx to surface an error before calling
     Supabase resetPasswordForEmail (which silently succeeds for unknown emails).
     """
-    client = service_client
-    if client is None:
+    if not _has_service_client():
         raise HTTPException(status_code=503, detail="Service unavailable")
+    client = get_client()
 
     try:
         result = client.table("profiles").select("id").eq("email", data.email.lower()).execute()
@@ -275,9 +291,9 @@ def check_email(request: Request, data: CheckEmailRequest):
     existing profile. Used by SignUp.tsx to give early feedback before
     calling supabase.auth.signUp.
     """
-    client = service_client
-    if client is None:
+    if not _has_service_client():
         raise HTTPException(status_code=503, detail="Service unavailable")
+    client = get_client()
 
     try:
         result = client.table("profiles").select("id").eq("edu_email", data.email.lower()).execute()

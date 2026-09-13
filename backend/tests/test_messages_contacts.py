@@ -25,7 +25,7 @@ def _wire(client, *, owned, enrolled, class_enrollments, class_owners, profiles)
     client.table.side_effect = table
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_contacts_excludes_self_and_instructor_pairs(client):
     from app.messages.controller import list_contacts
 
@@ -72,7 +72,7 @@ def test_contacts_excludes_self_and_instructor_pairs(client):
     assert "prof2" not in ids  # instructor↔instructor excluded
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_contacts_query_filters_by_name(client):
     from app.messages.controller import list_contacts
 
@@ -116,7 +116,7 @@ def test_contacts_query_filters_by_name(client):
     assert [c["id"] for c in contacts] == ["stu1"]
 
 
-@patch("app.messages.controller.service_client")
+@patch("app.core.db.service_client")
 def test_contacts_drops_peers_without_profiles_row(client):
     """Pin the documented decision: a peer id present in class_enrollments
     but absent from profiles (orphaned enrollment / auth-glue gap) is
