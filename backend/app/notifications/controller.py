@@ -7,8 +7,8 @@ from datetime import UTC, datetime
 
 from fastapi import HTTPException
 
+from app.core import db as core_db
 from app.core.db import get_client
-from app.database.client import service_client
 from app.utils.profiles import profile_display_name
 
 logger = logging.getLogger(__name__)
@@ -33,9 +33,15 @@ def _now_iso() -> str:
 
 
 def _client():
-    if service_client is None:
+    """The service-role client; 503 when ``SUPABASE_SERVICE_ROLE_KEY`` is unset.
+
+    Unlike ``get_client()`` this never falls back to the anon client (RLS would
+    hide other users' rows from these reads and writes). The key is checked
+    through ``app.core.db`` at call time — the one point tests patch.
+    """
+    if core_db.service_client is None:
         raise HTTPException(status_code=503, detail="Service unavailable")
-    return service_client
+    return get_client()
 
 
 def _insert_notification(
