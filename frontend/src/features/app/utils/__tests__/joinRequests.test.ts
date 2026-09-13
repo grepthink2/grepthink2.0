@@ -42,6 +42,8 @@ describe('email display helpers', () => {
   it('gives a stable avatar colour per email and a fallback without one', () => {
     expect(avatarBgFromEmail('a@b.c')).toBe(avatarBgFromEmail('a@b.c'));
     expect(avatarBgFromEmail('a@b.c')).toMatch(/^hsl\(\d+ 42% 40%\)$/);
+    // The no-email fallback predates the design tokens and is left as raw hex in
+    // joinRequests.ts; the value is pinned here so changing it is deliberate.
     expect(avatarBgFromEmail(undefined)).toBe('#018156');
   });
 });

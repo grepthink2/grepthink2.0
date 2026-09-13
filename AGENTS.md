@@ -146,6 +146,6 @@ The full agent-facing action catalog (method, params, role) lives at
 
 ## Before you commit
 - Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest` (all green).
-- Frontend: `npm run lint && npm run build && npx vitest run` (0 lint errors, all green).
+- Frontend: `npm run lint && npm run lint:design && npm run build && npx vitest run` (0 lint errors, all green).
 - New backend route → add the matching method to `frontend/src/lib/api/<domain>.ts`.
 - New `backend/database/migrations/*.sql` → update `supabase/schema.sql` once it is applied.
