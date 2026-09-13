@@ -11,12 +11,13 @@ import httpx
 from fastapi import HTTPException
 
 from app.auth.controller import get_user_role
+from app.core import authz
 from app.core.db import get_client
 from app.database.client import (
     query_pool,
     retry_on_disconnect,
 )
-from app.tas import controller as tas_controller
+from app.utils.profiles import profile_display_name
 
 # Project member roles. Keep in sync with the DB CHECK constraint on project_members.role.
 ROLE_OWNER = "owner"
@@ -70,50 +71,63 @@ _TRANSIENT_HTTPX_ERRORS = (
 )
 
 
+def _set_num_members(client, project_id: str, count: int) -> None:
+    """Write ``projects.num_members`` for one project (one round trip)."""
+    client.table("projects").update({"num_members": max(0, int(count))}).eq(
+        "id", str(project_id)
+    ).execute()
+
+
+def _recount_num_members(client, project_ids: Iterable[str]) -> dict[str, int]:
+    """Derive ``num_members`` from the real ``project_members`` rows and write it.
+
+    One read for all projects plus one update per project. Used after bulk
+    membership changes; single-row paths that already hold the member list
+    call :func:`_set_num_members` directly.
+    """
+    pids = [str(p) for p in dict.fromkeys(project_ids)]
+    if not pids:
+        return {}
+    rows = (
+        client.table("project_members").select("project_id").in_("project_id", pids).execute()
+    ).data or []
+    counts = dict.fromkeys(pids, 0)
+    for r in rows:
+        counts[str(r["project_id"])] = counts.get(str(r["project_id"]), 0) + 1
+    for pid, n in counts.items():
+        _set_num_members(client, pid, n)
+    return counts
+
+
 def _increment_project_num_members(client, project_id: str, delta: int) -> None:
-    """Update projects.num_members by delta (+1 or -1)."""
-    # DEBUG: the num_members counter is maintained by hand (see CODE_REVIEW.md #12);
-    # if it drifts from the actual project_members count, this trace is where to look.
-    proj = client.table("projects").select("num_members").eq("id", project_id).execute()
-    if not proj.data:
-        logger.warning(
-            "_increment_project_num_members: project not found | project_id=%s delta=%d",
-            project_id,
-            delta,
-        )
-        return
-    current = proj.data[0].get("num_members")
-    if current is None:
-        current = 0
-    new_val = max(0, int(current) + delta)
-    logger.debug(
-        "num_members: %d -> %d (delta=%+d) | project_id=%s",
-        int(current),
-        new_val,
-        delta,
-        project_id,
-    )
-    client.table("projects").update({"num_members": new_val}).eq("id", project_id).execute()
+    """Resync ``projects.num_members`` after a membership change.
+
+    Kept for callers outside this module. ``delta`` is informational: the
+    value written is always the real row count, so a stray call (e.g. after a
+    delete that removed nothing) can no longer drift the counter.
+    """
+    logger.debug("num_members resync | project_id=%s delta=%+d", project_id, delta)
+    _recount_num_members(client, [str(project_id)])
 
 
-def _is_instructor(user_id, class_id):
-    try:
-        client = get_client()
-        classes_result = (
-            client.table("classes")
-            .select("created_by")
-            .eq("created_by", str(user_id))
-            .eq("id", str(class_id))
-            .execute()
-        )
-        result = len(classes_result.data) > 0
-        logger.debug("_is_instructor: user=%s class=%s -> %s", user_id, class_id, result)
-        return result
-    except Exception:
-        logger.exception("_is_instructor failed | user_id=%s class_id=%s", user_id, class_id)
-        # NOTE: returns None on error, which callers treat as falsy — OK for now
-        # but this inconsistency is tracked in CODE_REVIEW.md #17.
-        return None
+def _project_member_rows(client, project_id: str) -> list[dict]:
+    """``user_id, role`` for every member of the project (one round trip)."""
+    return (
+        client.table("project_members")
+        .select("user_id, role")
+        .eq("project_id", str(project_id))
+        .execute()
+    ).data or []
+
+
+def _class_owner(project: dict) -> str | None:
+    """``classes.created_by`` from a project row loaded with the class embedded."""
+    return ((project.get("classes") or {}).get("created_by")) if project else None
+
+
+def _is_instructor(user_id, class_id) -> bool:
+    """True iff ``user_id`` created ``class_id``. Errors propagate (no silent False)."""
+    return authz.is_class_instructor(get_client(), user_id, class_id)
 
 
 def create_project(
@@ -462,98 +476,74 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
     """
     Get all projects for a user, optionally filtered by class.
 
-    Returns id, name, and member_count for each project.
+    Returns id, name, team_size, image_url, member_count and the caller's
+    role for each project.
 
-    - With class_id: returns all projects in the class (instructor or enrolled student).
-    - Without class_id: returns only projects the user is a member of.
+    - With class_id: every project in the class (instructor or enrolled
+      student) — the access check plus ONE read with members embedded.
+    - Without class_id: only projects the user is a member of (two reads).
     """
     try:
         client = get_client()
 
         if class_id:
-            class_result = (
-                client.table("classes").select("id, created_by").eq("id", str(class_id)).execute()
+            authz.require_class_access(
+                client,
+                user_id,
+                class_id,
+                denied_detail="You do not have access to this class projects list",
             )
-            if not class_result.data:
-                raise HTTPException(status_code=404, detail="Class not found")
-
-            class_row = class_result.data[0]
-            has_access = class_row.get("created_by") == user_id
-
-            if not has_access:
-                enrollment = (
-                    client.table("class_enrollments")
-                    .select("id")
-                    .eq("class_id", str(class_id))
-                    .eq("user_id", user_id)
-                    .execute()
-                )
-                has_access = bool(enrollment.data)
-
-            if not has_access:
-                raise HTTPException(
-                    status_code=403, detail="You do not have access to this class projects list"
-                )
-
-            projects_result = (
+            res = (
                 client.table("projects")
-                .select("id, name, team_size, image_url")
+                .select("id, name, team_size, image_url, project_members(user_id, role)")
                 .eq("class_id", str(class_id))
                 .order("created_at", desc=True)
                 .execute()
             )
+            out = []
+            for p in res.data or []:
+                members = p.get("project_members") or []
+                mine = next((m for m in members if str(m.get("user_id")) == str(user_id)), None)
+                out.append(
+                    {
+                        "id": p["id"],
+                        "name": p.get("name"),
+                        "team_size": p.get("team_size"),
+                        "image_url": p.get("image_url"),
+                        "member_count": len(members),
+                        "user_role": mine.get("role") if mine else None,
+                    }
+                )
+            return out
 
-            projects = projects_result.data or []
-        else:
-            memberships = (
-                client.table("project_members")
-                .select("project_id, projects ( id, name )")
-                .eq("user_id", user_id)
-                .execute()
-            )
-
-            projects = []
-            for row in memberships.data or []:
-                project = row.get("projects")
-                if project:
-                    projects.append(project)
-
-        if not projects:
+        memberships = (
+            client.table("project_members")
+            .select("project_id, role, projects ( id, name )")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        rows = [r for r in (memberships.data or []) if r.get("projects")]
+        if not rows:
             return []
-
-        # Fetch member counts for all projects in one query
-        project_ids = [p["id"] for p in projects]
-        members_result = (
+        project_ids = [r["projects"]["id"] for r in rows]
+        counts: dict[str, int] = {}
+        for m in (
             client.table("project_members")
             .select("project_id")
             .in_("project_id", project_ids)
             .execute()
-        )
-
-        count_map: dict[str, int] = {}
-        for m in members_result.data or []:
-            pid = m["project_id"]
-            count_map[pid] = count_map.get(pid, 0) + 1
-
-        role_rows = (
-            client.table("project_members")
-            .select("project_id, role")
-            .eq("user_id", user_id)
-            .in_("project_id", project_ids)
-            .execute()
-        )
-        role_map: dict[str, str] = {r["project_id"]: r["role"] for r in (role_rows.data or [])}
-
+        ).data or []:
+            counts[m["project_id"]] = counts.get(m["project_id"], 0) + 1
         return [
             {
-                "id": p["id"],
-                "name": p.get("name"),
-                "team_size": p.get("team_size"),
-                "image_url": p.get("image_url"),
-                "member_count": count_map.get(p["id"], 0),
-                "user_role": role_map.get(p["id"]),
+                "id": r["projects"]["id"],
+                "name": r["projects"].get("name"),
+                "team_size": None,
+                "image_url": None,
+                "member_count": counts.get(r["projects"]["id"], 0),
+                "user_role": r.get("role"),
             }
-            for p in projects
+            for r in rows
         ]
     except HTTPException:
         raise
@@ -620,99 +610,22 @@ def _assert_can_review_student_join_request(client, reviewer_id: str, project_id
     Allowed: **class instructor** (``classes.created_by``) for the project's class, or
     a **project member** with role ``owner``, ``product owner``, or ``admin``.
     """
-    proj = client.table("projects").select("class_id").eq("id", str(project_id)).execute()
-    if not proj.data:
-        raise HTTPException(status_code=404, detail="Project not found")
-    class_id = proj.data[0]["class_id"]
-    if _is_instructor(reviewer_id, class_id):
-        return
-    mem = (
-        client.table("project_members")
-        .select("role")
-        .eq("project_id", str(project_id))
-        .eq("user_id", str(reviewer_id))
-        .execute()
+    project = authz.load_project(
+        client, project_id, columns="id, class_id", class_columns="created_by"
     )
-    if not mem.data or mem.data[0].get("role") not in ("owner", "product owner", "admin"):
+    _assert_can_review_loaded(client, reviewer_id, project)
+
+
+def _assert_can_review_loaded(client, reviewer_id: str, project: dict) -> None:
+    """Same rule as :func:`_assert_can_review_student_join_request` for a loaded project."""
+    if str(_class_owner(project)) == str(reviewer_id):
+        return
+    role = authz.get_project_role(client, project["id"], reviewer_id)
+    if role not in ELEVATED_ROLES:
         raise HTTPException(
             status_code=403,
             detail="Only the class instructor or project owners/admins can review join requests",
         )
-
-
-def _notify_product_owners_of_departure(
-    client,
-    leaving_user_id: str,
-    old_project_id: str,
-    old_project_name: str,
-    new_project_name: str,
-) -> None:
-    """
-    Send an in-app notification to each product owner of the project the user
-    just left. Failures are non-fatal and only logged.
-    """
-    po_rows = (
-        client.table("project_members")
-        .select("user_id")
-        .eq("project_id", old_project_id)
-        .eq("role", "product owner")
-        .neq("user_id", leaving_user_id)
-        .execute()
-    )
-    po_ids = [r["user_id"] for r in (po_rows.data or [])]
-    if not po_ids:
-        logger.info(
-            "departure_notify: no product owner to notify | old_project=%s leaver=%s",
-            old_project_id,
-            leaving_user_id,
-        )
-        return
-
-    profile_res = (
-        client.table("profiles")
-        .select("first_name, last_name, email")
-        .eq("id", leaving_user_id)
-        .maybe_single()
-        .execute()
-    )
-    up = profile_res.data if profile_res else None
-    if up:
-        user_name = f"{up.get('first_name') or ''} {up.get('last_name') or ''}".strip() or up.get(
-            "email", "A student"
-        )
-    else:
-        user_name = "A student"
-
-    title = "Member left your project"
-    body = (
-        f'{user_name} has left "{old_project_name}" and submitted a join request '
-        f'for "{new_project_name}".'
-    )
-
-    from app.notifications.controller import (
-        _insert_notification,  # local import — avoids circular dep
-    )
-
-    for po_id in po_ids:
-        try:
-            _insert_notification(
-                user_id=po_id,
-                type="join_request",
-                title=title,
-                body=body,
-                entity_type="project",
-                entity_id=old_project_id,
-            )
-            logger.info(
-                "departure_notify: notification sent | to=%s old_project=%s",
-                po_id,
-                old_project_id,
-            )
-        except Exception:
-            logger.warning(
-                "departure_notify: failed to notify PO (non-fatal) | to=%s",
-                po_id,
-            )
 
 
 def _get_student_project_in_class(
@@ -760,64 +673,102 @@ def _leave_current_project_in_class(
     target_project_id: str,
     class_id: str,
     new_project_name: str,
+    *,
+    class_projects: list[dict] | None = None,
+    class_members: list[dict] | None = None,
 ) -> None:
     """
-    If the user is already a member of any project in *class_id* (other than
-    *target_project_id*), remove them from that project and notify its product
-    owner(s).  Only the first membership found is acted on — a student should
-    only ever be in one project per class.
+    If the user is already a member of another project in *class_id*, remove
+    them from it and notify that project's product owner(s). A student should
+    only ever be in one project per class, but every membership found is
+    handled.
+
+    Batched: one bulk delete, one ``num_members`` write per old project, one
+    profile read and one bulk notification insert per old project. Callers
+    that already hold the class's projects/members pass them in to skip the
+    two reads.
     """
-    # Fetch every project in this class except the one they're requesting to join.
-    sibling_res = (
-        client.table("projects")
-        .select("id, name")
-        .eq("class_id", str(class_id))
-        .neq("id", str(target_project_id))
-        .execute()
-    )
-    sibling_projects = sibling_res.data or []
-    if not sibling_projects:
+    if class_projects is None:
+        class_projects = (
+            client.table("projects").select("id, name").eq("class_id", str(class_id)).execute()
+        ).data or []
+    siblings = {str(p["id"]): p for p in class_projects if str(p["id"]) != str(target_project_id)}
+    if not siblings:
         return
 
-    sibling_ids = [p["id"] for p in sibling_projects]
-    sibling_name = {p["id"]: p.get("name", "Unknown project") for p in sibling_projects}
-
-    membership_res = (
-        client.table("project_members")
-        .select("project_id")
-        .eq("user_id", user_id)
-        .in_("project_id", sibling_ids)
-        .execute()
+    if class_members is None:
+        class_members = (
+            client.table("project_members")
+            .select("project_id, user_id, role")
+            .in_("project_id", list(siblings))
+            .execute()
+        ).data or []
+    old_pids = sorted(
+        {
+            str(m["project_id"])
+            for m in class_members
+            if str(m.get("user_id")) == str(user_id) and str(m["project_id"]) in siblings
+        }
     )
-    memberships = membership_res.data or []
-    if not memberships:
+    if not old_pids:
         return
 
-    for m in memberships:
-        old_pid = m["project_id"]
-        old_name = sibling_name.get(old_pid, "Unknown project")
+    client.table("project_members").delete().eq("user_id", str(user_id)).in_(
+        "project_id", old_pids
+    ).execute()
 
-        # Remove from old project
-        client.table("project_members").delete().eq("project_id", old_pid).eq(
-            "user_id", user_id
-        ).execute()
-        _increment_project_num_members(client, old_pid, -1)
-
+    remaining = [
+        m
+        for m in class_members
+        if str(m["project_id"]) in old_pids and str(m.get("user_id")) != str(user_id)
+    ]
+    for pid in old_pids:
+        _set_num_members(client, pid, sum(1 for m in remaining if str(m["project_id"]) == pid))
         logger.info(
             "Auto-removed user from previous project | user=%s old_project=%s new_project=%s",
             user_id,
-            old_pid,
+            pid,
             target_project_id,
         )
 
-        # Notify product owner(s) of the old project
-        _notify_product_owners_of_departure(
-            client,
-            leaving_user_id=user_id,
-            old_project_id=old_pid,
-            old_project_name=old_name,
-            new_project_name=new_project_name,
+    po_by_project = {
+        pid: [
+            str(m["user_id"])
+            for m in remaining
+            if str(m["project_id"]) == pid and m.get("role") == ROLE_PRODUCT_OWNER
+        ]
+        for pid in old_pids
+    }
+    if not any(po_by_project.values()):
+        logger.info(
+            "departure_notify: no product owner to notify | old_projects=%s leaver=%s",
+            old_pids,
+            user_id,
         )
+        return
+
+    profile_res = (
+        client.table("profiles")
+        .select("id, first_name, last_name, email")
+        .eq("id", str(user_id))
+        .limit(1)
+        .execute()
+    )
+    leaver_name = profile_display_name(profile_res.data[0] if profile_res.data else None) or (
+        "A student"
+    )
+
+    from app.notifications.controller import notify_member_departure  # avoids import cycle
+
+    for pid, po_ids in po_by_project.items():
+        if po_ids:
+            notify_member_departure(
+                recipient_ids=po_ids,
+                leaver_name=leaver_name,
+                old_project_id=pid,
+                old_project_name=siblings[pid].get("name") or "Unknown project",
+                new_project_name=new_project_name,
+            )
 
 
 def request_to_join_project(project_id: UUID, user_id: str, message: str | None = None) -> dict:
@@ -957,107 +908,103 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
     - **Student-initiated** (``invited_by`` null): **class instructor** or project
       **owner** / **product owner** / **admin** may accept.
     - **Team invite** (``invited_by`` set): only the invitee (``user_id`` on the row) may accept.
+
+    The request row is read with its project and class embedded, the class's
+    projects/members are read once and reused for the leave-previous-team
+    step, the scrum-master check and the ``num_members`` write — about 11
+    round trips when the student changes teams, 8 when they do not (was 13-17).
+    The writes are still not transactional (see CODE_REVIEW.md #10).
     """
     try:
         client = get_client()
 
-        # Get the join request
         request_result = (
             client.table("project_join_requests")
-            .select("id, project_id, user_id, request_status, invited_by")
+            .select(
+                "id, project_id, user_id, request_status, invited_by, "
+                "projects(id, class_id, name, classes(created_by))"
+            )
             .eq("id", str(request_id))
+            .limit(1)
             .execute()
         )
-
-        if not request_result.data or len(request_result.data) == 0:
+        if not request_result.data:
             raise HTTPException(status_code=404, detail="Join request not found")
-
         join_request = request_result.data[0]
 
-        # Check if request is still pending
         if join_request["request_status"] != "pending":
             raise HTTPException(
                 status_code=400, detail=f"Request already {join_request['request_status']}"
             )
 
+        project = join_request.get("projects") or None
+        pid = str(join_request["project_id"])
+        new_user = str(join_request["user_id"])
         invited_by = join_request.get("invited_by")
 
         if invited_by:
-            if str(reviewer_id) != str(join_request["user_id"]):
+            if str(reviewer_id) != new_user:
                 raise HTTPException(
                     status_code=403,
                     detail="Only the invited user can accept this invitation",
                 )
         else:
-            _assert_can_review_student_join_request(client, reviewer_id, join_request["project_id"])
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found")
+            _assert_can_review_loaded(client, reviewer_id, project)
 
-        # WARN: The next 3 statements are NOT atomic (see CODE_REVIEW.md #10).
-        # If any one of them fails after the first succeeds we get an inconsistent
-        # state (approved request with no membership row, or member without
-        # num_members increment). Trace via these DEBUG logs to triage.
-        logger.debug(
-            "accept_join_request: begin multi-step commit | request_id=%s project_id=%s user_id=%s invited_by=%s",
-            request_id,
-            join_request["project_id"],
-            join_request["user_id"],
-            invited_by,
-        )
+        class_id = (project or {}).get("class_id")
+        class_projects: list[dict] = []
+        class_members: list[dict] = []
+        if class_id:
+            class_projects = (
+                client.table("projects").select("id, name").eq("class_id", str(class_id)).execute()
+            ).data or []
+            class_members = (
+                client.table("project_members")
+                .select("project_id, user_id, role")
+                .in_("project_id", [str(p["id"]) for p in class_projects] or [pid])
+                .execute()
+            ).data or []
+            # Safety net: if the joining user is still in another project in the
+            # same class (e.g. they were added directly after submitting this
+            # request), auto-remove them and notify that project's product owner.
+            _leave_current_project_in_class(
+                client,
+                user_id=new_user,
+                target_project_id=pid,
+                class_id=str(class_id),
+                new_project_name=(project or {}).get("name") or "the new project",
+                class_projects=class_projects,
+                class_members=class_members,
+            )
+        else:
+            class_members = [{"project_id": pid, **m} for m in _project_member_rows(client, pid)]
 
-        # Safety net: if the joining user is still in another project in the same
-        # class (e.g. they were added directly after submitting this request),
-        # auto-remove them and notify that project's product owner before we add
-        # them to the new project.
-        project_res = (
-            client.table("projects")
-            .select("class_id, name")
-            .eq("id", join_request["project_id"])
-            .maybe_single()
-            .execute()
-        )
-        if project_res and project_res.data:
-            class_id = project_res.data.get("class_id")
-            new_project_name = project_res.data.get("name", "the new project")
-            if class_id:
-                _leave_current_project_in_class(
-                    client,
-                    user_id=join_request["user_id"],
-                    target_project_id=join_request["project_id"],
-                    class_id=str(class_id),
-                    new_project_name=new_project_name,
-                )
+        client.table("project_join_requests").update(
+            {
+                "request_status": "approved",
+                "reviewed_at": datetime.now(UTC).isoformat(),
+                "reviewer_id": reviewer_id,
+            }
+        ).eq("id", str(request_id)).execute()
 
-        # Update the request status
-        update_data = {
-            "request_status": "approved",
-            "reviewed_at": datetime.now(UTC).isoformat(),
-            "reviewer_id": reviewer_id,
-        }
-
-        client.table("project_join_requests").update(update_data).eq(
-            "id", str(request_id)
+        team = [m for m in class_members if str(m["project_id"]) == pid]
+        client.table("project_members").insert(
+            {"project_id": pid, "user_id": new_user, "role": ROLE_MEMBER}
         ).execute()
-        logger.debug("accept_join_request: request status updated | request_id=%s", request_id)
-
-        # Add user as project member
-        member_data = {
-            "project_id": join_request["project_id"],
-            "user_id": join_request["user_id"],
-            "role": "member",
-        }
-
-        client.table("project_members").insert(member_data).execute()
-        logger.debug("accept_join_request: member inserted | user_id=%s", join_request["user_id"])
-
-        _auto_assign_scrum_master(client, join_request["project_id"], join_request["user_id"])
-
-        # Increment num_members on the project
-        _increment_project_num_members(client, join_request["project_id"], 1)
+        if not any(m.get("role") == ROLE_SCRUM_MASTER for m in team):
+            client.table("project_members").update({"role": ROLE_SCRUM_MASTER}).eq(
+                "project_id", pid
+            ).eq("user_id", new_user).execute()
+            logger.info("Auto-assigned scrum master | project_id=%s user_id=%s", pid, new_user)
+        _set_num_members(client, pid, len(team) + 1)
 
         logger.info(
             "Join request accepted | request_id=%s project_id=%s new_member=%s reviewer=%s",
             request_id,
-            join_request["project_id"],
-            join_request["user_id"],
+            pid,
+            new_user,
             reviewer_id,
         )
         return {"message": "Join request accepted successfully", "user_id": join_request["user_id"]}
@@ -1366,317 +1313,188 @@ def get_project_pending_invites(project_id: UUID, requester_id: str) -> list:
 # ---------------------------------------------------------------------------
 
 
-def _pm_client():
-    return get_client()
+def _load_role_context(
+    client, project_id: str, requester_id: str, target_user_id: str, *, staff_only: bool
+) -> dict[str, str]:
+    """Load the project (with its class owner) and the member list, then authorise.
 
-
-def _auto_assign_scrum_master(client, project_id: str, new_user_id: str) -> None:
-    """If the project has no scrum master yet, promote new_user_id to scrum master."""
-    existing = (
-        client.table("project_members")
-        .select("user_id")
-        .eq("project_id", project_id)
-        .eq("role", "scrum master")
-        .execute()
+    ``staff_only=False``: class instructor or a project owner / product owner /
+    admin may act. ``staff_only=True``: class instructor or a class TA only.
+    Returns ``{user_id: role}`` for the project. Two round trips (three for a
+    TA check).
+    """
+    project = authz.load_project(
+        client, project_id, columns="id, class_id", class_columns="created_by"
     )
-    if not existing.data:
-        client.table("project_members").update({"role": "scrum master"}).eq(
-            "project_id", project_id
-        ).eq("user_id", new_user_id).execute()
-        logger.info(
-            "Auto-assigned scrum master | project_id=%s user_id=%s",
-            project_id,
-            new_user_id,
+    roles = {str(m["user_id"]): m.get("role") for m in _project_member_rows(client, project_id)}
+    rid = str(requester_id)
+    if str(_class_owner(project)) != rid:
+        if staff_only:
+            if authz.get_enrollment_role(client, project["class_id"], rid) != authz.ROLE_TA:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only the class instructor or a TA can manage project admins",
+                )
+        else:
+            if rid not in roles:
+                raise HTTPException(status_code=403, detail="Not a member of this project")
+            if roles[rid] not in ELEVATED_ROLES:
+                raise HTTPException(
+                    status_code=403, detail="Insufficient permissions to manage project roles"
+                )
+    if str(target_user_id) not in roles:
+        raise HTTPException(status_code=404, detail="User is not a member of this project")
+    return roles
+
+
+def _set_role(client, project_id: str, user_id: str, role: str) -> None:
+    client.table("project_members").update({"role": role}).eq("project_id", str(project_id)).eq(
+        "user_id", str(user_id)
+    ).execute()
+
+
+def _give_exclusive_role(
+    client, project_id: str, roles: dict[str, str], target_user_id: str, role: str
+) -> None:
+    """Make ``target_user_id`` the only holder of ``role``: one demotion statement
+    for every other current holder, then one promotion."""
+    pid, tid = str(project_id), str(target_user_id)
+    if any(uid != tid and r == role for uid, r in roles.items()):
+        client.table("project_members").update({"role": ROLE_MEMBER}).eq("project_id", pid).eq(
+            "role", role
+        ).neq("user_id", tid).execute()
+    _set_role(client, pid, tid, role)
+
+
+def _drop_role(
+    client, project_id: str, roles: dict[str, str], target_user_id: str, role: str, *, label: str
+) -> None:
+    if roles.get(str(target_user_id)) != role:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Target user is not {label}; cannot remove {role} role this way",
         )
+    _set_role(client, project_id, target_user_id, ROLE_MEMBER)
 
 
-def _require_project_role_manager(client, requester_id: str, project_id: str) -> None:
-    """Allow class instructor or project member with product owner / admin / owner."""
-    proj = client.table("projects").select("class_id").eq("id", project_id).execute()
-    if not proj.data:
-        raise HTTPException(status_code=404, detail="Project not found")
-    class_id = proj.data[0]["class_id"]
-    if _is_instructor(requester_id, class_id):
-        return
-    mem = (
-        client.table("project_members")
-        .select("role")
-        .eq("project_id", project_id)
-        .eq("user_id", str(requester_id))
-        .execute()
-    )
-    if not mem.data:
-        raise HTTPException(status_code=403, detail="Not a member of this project")
-    role = mem.data[0].get("role")
-    if role in ("product owner", "admin", "owner"):
-        return
-    raise HTTPException(status_code=403, detail="Insufficient permissions to manage project roles")
-
-
-def _require_instructor_or_class_ta(client, requester_id: str, project_id: str) -> None:
-    """Allow only the class instructor or a class TA to manage project admin role."""
-    proj = client.table("projects").select("class_id").eq("id", project_id).execute()
-    if not proj.data:
-        raise HTTPException(status_code=404, detail="Project not found")
-    class_id = proj.data[0]["class_id"]
-    if _is_instructor(requester_id, class_id):
-        return
-    if (
-        tas_controller.get_enrollment_role(client, class_id, str(requester_id))
-        == tas_controller.ENROLLMENT_ROLE_TA
-    ):
-        return
-    raise HTTPException(
-        status_code=403,
-        detail="Only the class instructor or a TA can manage project admins",
-    )
-
-
-def _member_row(client, project_id: str, user_id: str):
-    return (
-        client.table("project_members")
-        .select("user_id, role")
-        .eq("project_id", project_id)
-        .eq("user_id", str(user_id))
-        .execute()
-    )
+def _role_endpoint(action: str, fn):
+    """Run ``fn`` and map unexpected failures to a fixed 500 (never the exception text)."""
+    try:
+        return fn()
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error while trying to %s", action)
+        raise HTTPException(status_code=500, detail=f"Failed to {action}")
 
 
 def assign_product_owner(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
-    try:
-        client = _pm_client()
-        pid = str(project_id)
-        tid = str(target_user_id)
-        proj = client.table("projects").select("id").eq("id", pid).execute()
-        if not proj.data:
-            raise HTTPException(status_code=404, detail="Project not found")
-        _require_project_role_manager(client, requester_id, pid)
-        targ = _member_row(client, pid, tid)
-        if not targ.data:
-            raise HTTPException(status_code=404, detail="User is not a member of this project")
-        rows = (
-            client.table("project_members")
-            .select("user_id")
-            .eq("project_id", pid)
-            .eq("role", "product owner")
-            .execute()
-        ).data or []
-        for row in rows:
-            uid = row["user_id"]
-            if uid != tid:
-                client.table("project_members").update({"role": "member"}).eq("project_id", pid).eq(
-                    "user_id", uid
-                ).execute()
-        client.table("project_members").update({"role": "product owner"}).eq("project_id", pid).eq(
-            "user_id", tid
-        ).execute()
-        return {"role": "product owner", "user_id": tid}
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error assigning product owner: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to assign product owner: {str(e)}")
+    def go():
+        client = get_client()
+        roles = _load_role_context(
+            client, project_id, requester_id, target_user_id, staff_only=False
+        )
+        _give_exclusive_role(client, project_id, roles, target_user_id, ROLE_PRODUCT_OWNER)
+        return {"role": ROLE_PRODUCT_OWNER, "user_id": str(target_user_id)}
+
+    return _role_endpoint("assign product owner", go)
 
 
 def assign_scrum_master(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
-    try:
-        client = _pm_client()
-        pid = str(project_id)
-        tid = str(target_user_id)
-        proj = client.table("projects").select("id").eq("id", pid).execute()
-        if not proj.data:
-            raise HTTPException(status_code=404, detail="Project not found")
-        _require_project_role_manager(client, requester_id, pid)
-        targ = _member_row(client, pid, tid)
-        if not targ.data:
-            raise HTTPException(status_code=404, detail="User is not a member of this project")
-        rows = (
-            client.table("project_members")
-            .select("user_id")
-            .eq("project_id", pid)
-            .eq("role", "scrum master")
-            .execute()
-        ).data or []
-        for row in rows:
-            uid = row["user_id"]
-            if uid != tid:
-                client.table("project_members").update({"role": "member"}).eq("project_id", pid).eq(
-                    "user_id", uid
-                ).execute()
-        client.table("project_members").update({"role": "scrum master"}).eq("project_id", pid).eq(
-            "user_id", tid
-        ).execute()
-        return {"role": "scrum master", "user_id": tid}
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error assigning scrum master: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to assign scrum master: {str(e)}")
+    def go():
+        client = get_client()
+        roles = _load_role_context(
+            client, project_id, requester_id, target_user_id, staff_only=False
+        )
+        _give_exclusive_role(client, project_id, roles, target_user_id, ROLE_SCRUM_MASTER)
+        return {"role": ROLE_SCRUM_MASTER, "user_id": str(target_user_id)}
+
+    return _role_endpoint("assign scrum master", go)
 
 
 def assign_admin(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
-    try:
-        client = _pm_client()
-        pid = str(project_id)
-        tid = str(target_user_id)
-        proj = client.table("projects").select("id").eq("id", pid).execute()
-        if not proj.data:
-            raise HTTPException(status_code=404, detail="Project not found")
-        _require_instructor_or_class_ta(client, requester_id, pid)
-        targ = _member_row(client, pid, tid)
-        if not targ.data:
-            raise HTTPException(status_code=404, detail="User is not a member of this project")
-        client.table("project_members").update({"role": "admin"}).eq("project_id", pid).eq(
-            "user_id", tid
-        ).execute()
-        return {"role": "admin", "user_id": tid}
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error assigning admin: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to assign admin: {str(e)}")
+    def go():
+        client = get_client()
+        _load_role_context(client, project_id, requester_id, target_user_id, staff_only=True)
+        _set_role(client, project_id, target_user_id, ROLE_ADMIN)
+        return {"role": ROLE_ADMIN, "user_id": str(target_user_id)}
+
+    return _role_endpoint("assign admin", go)
 
 
 def remove_product_owner(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
-    try:
-        client = _pm_client()
-        pid = str(project_id)
-        tid = str(target_user_id)
-        proj = client.table("projects").select("id").eq("id", pid).execute()
-        if not proj.data:
-            raise HTTPException(status_code=404, detail="Project not found")
-        _require_project_role_manager(client, requester_id, pid)
-        targ = _member_row(client, pid, tid)
-        if not targ.data:
-            raise HTTPException(status_code=404, detail="User is not a member of this project")
-        if targ.data[0].get("role") != "product owner":
-            raise HTTPException(
-                status_code=400,
-                detail="Target user is not the product owner; cannot remove product owner role this way",
-            )
-        client.table("project_members").update({"role": "member"}).eq("project_id", pid).eq(
-            "user_id", tid
-        ).execute()
-        return {"role": "member", "user_id": tid}
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error removing product owner: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to remove product owner: {str(e)}")
+    def go():
+        client = get_client()
+        roles = _load_role_context(
+            client, project_id, requester_id, target_user_id, staff_only=False
+        )
+        _drop_role(
+            client, project_id, roles, target_user_id, ROLE_PRODUCT_OWNER, label="the product owner"
+        )
+        return {"role": ROLE_MEMBER, "user_id": str(target_user_id)}
+
+    return _role_endpoint("remove product owner", go)
 
 
 def remove_scrum_master(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
-    try:
-        client = _pm_client()
-        pid = str(project_id)
-        tid = str(target_user_id)
-        proj = client.table("projects").select("id").eq("id", pid).execute()
-        if not proj.data:
-            raise HTTPException(status_code=404, detail="Project not found")
-        _require_project_role_manager(client, requester_id, pid)
-        targ = _member_row(client, pid, tid)
-        if not targ.data:
-            raise HTTPException(status_code=404, detail="User is not a member of this project")
-        if targ.data[0].get("role") != "scrum master":
-            raise HTTPException(
-                status_code=400,
-                detail="Target user is not the scrum master; cannot remove scrum master role this way",
-            )
-        client.table("project_members").update({"role": "member"}).eq("project_id", pid).eq(
-            "user_id", tid
-        ).execute()
-        return {"role": "member", "user_id": tid}
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error removing scrum master: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to remove scrum master: {str(e)}")
+    def go():
+        client = get_client()
+        roles = _load_role_context(
+            client, project_id, requester_id, target_user_id, staff_only=False
+        )
+        _drop_role(
+            client, project_id, roles, target_user_id, ROLE_SCRUM_MASTER, label="the scrum master"
+        )
+        return {"role": ROLE_MEMBER, "user_id": str(target_user_id)}
+
+    return _role_endpoint("remove scrum master", go)
 
 
 def remove_admin(project_id: UUID, requester_id: str, target_user_id: str) -> dict:
-    try:
-        client = _pm_client()
-        pid = str(project_id)
-        tid = str(target_user_id)
-        proj = client.table("projects").select("id").eq("id", pid).execute()
-        if not proj.data:
-            raise HTTPException(status_code=404, detail="Project not found")
-        _require_instructor_or_class_ta(client, requester_id, pid)
-        targ = _member_row(client, pid, tid)
-        if not targ.data:
-            raise HTTPException(status_code=404, detail="User is not a member of this project")
-        if targ.data[0].get("role") != "admin":
-            raise HTTPException(
-                status_code=400,
-                detail="Target user is not an admin; cannot remove admin role this way",
-            )
-        client.table("project_members").update({"role": "member"}).eq("project_id", pid).eq(
-            "user_id", tid
-        ).execute()
-        return {"role": "member", "user_id": tid}
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error removing admin: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to remove admin: {str(e)}")
+    def go():
+        client = get_client()
+        roles = _load_role_context(
+            client, project_id, requester_id, target_user_id, staff_only=True
+        )
+        _drop_role(client, project_id, roles, target_user_id, ROLE_ADMIN, label="an admin")
+        return {"role": ROLE_MEMBER, "user_id": str(target_user_id)}
+
+    return _role_endpoint("remove admin", go)
 
 
 def get_project_members(project_id: UUID) -> list:
     """
-    Get all members of a project
-
-    Args:
-        project_id: Project unique identifier
-
-    Returns:
-        List of member dictionaries with user info
+    Get all members of a project with their profile fields — one embedded read.
 
     Raises:
-        HTTPException: If project not found or database error occurs
+        HTTPException: 404 if the project does not exist; 500 on database error.
     """
     try:
         client = get_client()
-
-        # Verify the project exists
-        project_result = client.table("projects").select("id").eq("id", str(project_id)).execute()
-        if not project_result.data or len(project_result.data) == 0:
+        res = (
+            client.table("projects")
+            .select(
+                "id, project_members(user_id, role, created_at, "
+                "profiles(id, email, role, first_name, last_name, linkedin, github, "
+                "image_url, edu_email))"
+            )
+            .eq("id", str(project_id))
+            .limit(1)
+            .execute()
+        )
+        if not res.data:
             raise HTTPException(status_code=404, detail="Project not found")
 
-        # Get project members with user info
-        members = (
-            client.table("project_members")
-            .select("user_id, role, created_at")
-            .eq("project_id", str(project_id))
-            .execute()
-        )
-
-        if not members.data or len(members.data) == 0:
-            return []
-
-        # Fetch user details
-        user_ids = [m["user_id"] for m in members.data]
-        users = (
-            client.table("profiles")
-            .select(
-                "id, email, role, first_name, last_name, linkedin, github, image_url, edu_email"
-            )
-            .in_("id", user_ids)
-            .execute()
-        )
-
-        # Combine member and user data
-        user_map = {u["id"]: u for u in users.data} if users.data else {}
-
         result = []
-        for member in members.data:
-            user_info = user_map.get(member["user_id"], {})
+        for member in res.data[0].get("project_members") or []:
+            user_info = member.get("profiles") or {}
             result.append(
                 {
                     "user_id": member["user_id"],
                     "email": user_info.get("email"),
                     "user_role": user_info.get("role"),
-                    "project_role": member["role"],
-                    "joined_at": member["created_at"],
+                    "project_role": member.get("role"),
+                    "joined_at": member.get("created_at"),
                     "first_name": user_info.get("first_name"),
                     "last_name": user_info.get("last_name"),
                     "linkedin": user_info.get("linkedin"),
@@ -1685,7 +1503,6 @@ def get_project_members(project_id: UUID) -> list:
                     "edu_email": user_info.get("edu_email"),
                 }
             )
-
         return result
     except HTTPException:
         raise
@@ -1937,17 +1754,15 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
       creates a **pending team invitation**; the user must accept via the same
       accept-request endpoint used for join requests.
 
-    Args:
-        project_id: Project unique identifier
-        requester_id: ID of user performing the add (instructor or elevated project role)
-        target_user_id: ID of user to add
-        role: role of newly added user
+    Two reads (project with its class owner embedded, the project's members)
+    decide authorisation, whether the target is already a member, whether a
+    scrum master exists and the new ``num_members`` value; then 1-3 writes.
 
-    Returns:
-        Dict of successful request
+    Returns one of three shapes: ``Changed roles`` (existing member),
+    ``Invitation sent`` (elevated member adding a member), ``Added member``.
 
     Raises:
-        HTTPException: If no permission or database error occurs
+        HTTPException: 404 missing project, 403 no permission, 400 duplicate invite.
     """
     logger.debug(
         "instructor_add_member called | project_id=%s requester=%s target=%s role=%r",
@@ -1958,72 +1773,42 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
     )
     try:
         client = get_client()
-
-        class_result = (
-            client.table("projects").select("class_id").eq("id", str(project_id)).execute()
+        pid, tid, rid = str(project_id), str(target_user_id), str(requester_id)
+        project = authz.load_project(
+            client, pid, columns="id, class_id", class_columns="created_by"
         )
-        if not class_result.data:
-            raise HTTPException(status_code=404, detail="Project not found")
+        is_instructor = str(_class_owner(project)) == rid
 
-        class_id = class_result.data[0]["class_id"]
-        # Allow class instructor OR project product owner / admin / owner
-        is_instructor = _is_instructor(requester_id, class_id)
-        if not is_instructor:
-            membership = (
-                client.table("project_members")
-                .select("role")
-                .eq("project_id", str(project_id))
-                .eq("user_id", str(requester_id))
-                .execute()
+        members = _project_member_rows(client, pid)
+        roles = {str(m["user_id"]): m.get("role") for m in members}
+        if not is_instructor and roles.get(rid) not in ELEVATED_ROLES:
+            logger.warning(
+                "instructor_add_member: forbidden (not class instructor or elevated role) | "
+                "requester=%s class_id=%s project_id=%s",
+                requester_id,
+                project.get("class_id"),
+                project_id,
             )
-            if not membership.data or membership.data[0].get("role") not in (
-                "product owner",
-                "admin",
-                "owner",
-            ):
-                logger.warning(
-                    "instructor_add_member: forbidden (not class instructor or elevated role) | "
-                    "requester=%s class_id=%s project_id=%s",
-                    requester_id,
-                    class_id,
-                    project_id,
-                )
-                raise HTTPException(
-                    status_code=403,
-                    detail="Only instructors, product owners, and admins can add members",
-                )
+            raise HTTPException(
+                status_code=403,
+                detail="Only instructors, product owners, and admins can add members",
+            )
 
-        res = (
-            client.table("project_members")
-            .select("user_id")
-            .eq("project_id", str(project_id))
-            .eq("user_id", target_user_id)
-            .execute()
-        )
-        logger.debug(
-            "instructor_add_member: pre-check membership rows=%d",
-            len(res.data) if res.data else 0,
-        )
-
-        if len(res.data) > 0:  # update role if already in project
+        if tid in roles:  # already a member: change their role
             response = (
                 client.table("project_members")
                 .update({"role": role})
-                .eq("user_id", target_user_id)
-                .eq("project_id", str(project_id))
+                .eq("user_id", tid)
+                .eq("project_id", pid)
                 .execute()
             )
-
-            # only one scrum master or owner, set old one as member
-            if role in ["scrum master", "owner"]:
-                (
-                    client.table("project_members")
-                    .update({"role": "member"})
-                    .neq("user_id", target_user_id)
-                    .eq("project_id", str(project_id))
-                    .eq("role", role)
-                    .execute()
-                )
+            # only one scrum master or owner: demote the previous holder(s) in one statement
+            if role in (ROLE_SCRUM_MASTER, ROLE_OWNER) and any(
+                uid != tid and r == role for uid, r in roles.items()
+            ):
+                client.table("project_members").update({"role": ROLE_MEMBER}).neq(
+                    "user_id", tid
+                ).eq("project_id", pid).eq("role", role).execute()
             logger.info(
                 "Changed roles | project_id=%s affected_rows=%d role=%r",
                 project_id,
@@ -2031,72 +1816,69 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
                 role,
             )
             return {"message": "Changed roles successfully", "member": target_user_id, "role": role}
-        else:  # not yet a member
-            if role == "member" and not is_instructor:
-                pending = (
-                    client.table("project_join_requests")
-                    .select("id, invited_by")
-                    .eq("project_id", str(project_id))
-                    .eq("user_id", str(target_user_id))
-                    .eq("request_status", "pending")
-                    .execute()
-                )
-                for pr in pending.data or []:
-                    if pr.get("invited_by"):
-                        raise HTTPException(
-                            status_code=400,
-                            detail="This user already has a pending invitation to this project",
-                        )
+
+        if role == ROLE_MEMBER and not is_instructor:
+            pending = (
+                client.table("project_join_requests")
+                .select("id, invited_by")
+                .eq("project_id", pid)
+                .eq("user_id", tid)
+                .eq("request_status", "pending")
+                .execute()
+            )
+            for pr in pending.data or []:
+                if pr.get("invited_by"):
                     raise HTTPException(
                         status_code=400,
-                        detail="This user already has a pending join request for this project",
+                        detail="This user already has a pending invitation to this project",
                     )
-
-                invite_row = {
-                    "project_id": str(project_id),
-                    "user_id": str(target_user_id),
-                    "request_status": "pending",
-                    "reviewer_id": None,
-                    "reviewed_at": None,
-                    "invited_by": str(requester_id),
-                }
-                ins = client.table("project_join_requests").insert(invite_row).execute()
-
-                logger.info(
-                    "Team invite created | project_id=%s invitee=%s invited_by=%s",
-                    project_id,
-                    target_user_id,
-                    requester_id,
+                raise HTTPException(
+                    status_code=400,
+                    detail="This user already has a pending join request for this project",
                 )
-                return {
-                    "message": "Invitation sent; user must accept before joining",
-                    "request": ins.data[0] if ins.data else None,
-                    "user_id": str(target_user_id),
-                    "role": role,
-                }
-
-            member_data = {
-                "project_id": str(project_id),
-                "user_id": str(target_user_id),
+            ins = (
+                client.table("project_join_requests")
+                .insert(
+                    {
+                        "project_id": pid,
+                        "user_id": tid,
+                        "request_status": "pending",
+                        "reviewer_id": None,
+                        "reviewed_at": None,
+                        "invited_by": rid,
+                    }
+                )
+                .execute()
+            )
+            logger.info(
+                "Team invite created | project_id=%s invitee=%s invited_by=%s",
+                project_id,
+                target_user_id,
+                requester_id,
+            )
+            return {
+                "message": "Invitation sent; user must accept before joining",
+                "request": ins.data[0] if ins.data else None,
+                "user_id": tid,
                 "role": role,
             }
 
-            client.table("project_members").insert(member_data).execute()
+        client.table("project_members").insert(
+            {"project_id": pid, "user_id": tid, "role": role}
+        ).execute()
+        if role == ROLE_MEMBER and not any(r == ROLE_SCRUM_MASTER for r in roles.values()):
+            _set_role(client, pid, tid, ROLE_SCRUM_MASTER)
+            logger.info("Auto-assigned scrum master | project_id=%s user_id=%s", pid, tid)
+        _set_num_members(client, pid, len(members) + 1)
 
-            if role == "member":
-                _auto_assign_scrum_master(client, str(project_id), str(target_user_id))
-
-            # Increment num_members on the project
-            _increment_project_num_members(client, str(project_id), 1)
-
-            logger.info(
-                "Member added | project_id=%s user_id=%s role=%r added_by=%s",
-                project_id,
-                target_user_id,
-                role,
-                requester_id,
-            )
-            return {"message": "Added member successfully", "user_id": target_user_id, "role": role}
+        logger.info(
+            "Member added | project_id=%s user_id=%s role=%r added_by=%s",
+            project_id,
+            target_user_id,
+            role,
+            requester_id,
+        )
+        return {"message": "Added member successfully", "user_id": target_user_id, "role": role}
     except HTTPException:
         raise
     except Exception:
@@ -2112,17 +1894,15 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
 
 def instructor_remove_member(project_id: UUID, requester_id: str, target_user_id: str):
     """
-    Remove member from project (instructor only)
+    Remove a member from a project.
 
-    Args:
-        project_id: Project unique identifier
-        requester_id: ID of instructor requesting this
-        target_user_id: ID of user to remove
+    Allowed: the class instructor, a project owner / product owner / admin, or
+    the member removing themselves. ``num_members`` is rewritten from the real
+    row count, so removing someone who is not a member changes nothing.
 
-    Returns:
-        Dict of successful request
     Raises:
-        HTTPException: If no permission or database error occurs
+        HTTPException: 404 if the project does not exist (this used to return
+        ``False`` with a 200), 403 without permission.
     """
     logger.debug(
         "instructor_remove_member called | project_id=%s requester=%s target=%s",
@@ -2132,48 +1912,33 @@ def instructor_remove_member(project_id: UUID, requester_id: str, target_user_id
     )
     try:
         client = get_client()
-        class_result = (
-            client.table("projects").select("class_id").eq("id", str(project_id)).execute()
+        pid, tid, rid = str(project_id), str(target_user_id), str(requester_id)
+        project = authz.load_project(
+            client, pid, columns="id, class_id", class_columns="created_by"
         )
-        if not class_result.data:
-            logger.warning(
-                "instructor_remove_member: project not found | project_id=%s", project_id
-            )
-            return False
-        class_id = class_result.data[0]["class_id"]
-        # Allow class instructor, product owner/admin, or the student removing themselves
-        is_instructor = _is_instructor(requester_id, class_id)
-        is_self_removal = requester_id == target_user_id
-        if not is_instructor and not is_self_removal:
-            membership = (
-                client.table("project_members")
-                .select("role")
-                .eq("project_id", str(project_id))
-                .eq("user_id", str(requester_id))
-                .execute()
-            )
-            if not membership.data or membership.data[0].get("role") not in (
-                "product owner",
-                "admin",
-                "owner",
-            ):
-                raise HTTPException(status_code=403, detail="Not the instructor of this project")
-        # Remove user as project member
+        members = _project_member_rows(client, pid)
+        roles = {str(m["user_id"]): m.get("role") for m in members}
+
+        is_instructor = str(_class_owner(project)) == rid
+        if not is_instructor and rid != tid and roles.get(rid) not in ELEVATED_ROLES:
+            raise HTTPException(status_code=403, detail="Not the instructor of this project")
+
         delete_result = (
             client.table("project_members")
             .delete()
-            .eq("project_id", str(project_id))
-            .eq("user_id", str(target_user_id))
+            .eq("project_id", pid)
+            .eq("user_id", tid)
             .execute()
         )
-        # Decrement num_members on the project
-        _increment_project_num_members(client, str(project_id), -1)
+        deleted = len(delete_result.data) if delete_result.data else 0
+        if deleted:
+            _set_num_members(client, pid, max(0, len(members) - deleted))
         logger.info(
             "Member removed | project_id=%s user_id=%s removed_by=%s deleted_rows=%d",
             project_id,
             target_user_id,
             requester_id,
-            len(delete_result.data) if delete_result.data else 0,
+            deleted,
         )
         return {"message": "Removed member successfully", "user_id": target_user_id}
     except HTTPException:

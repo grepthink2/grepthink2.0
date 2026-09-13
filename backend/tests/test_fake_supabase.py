@@ -209,3 +209,19 @@ def test_delete_returns_removed_rows_and_update_returns_updated():
         .data[0]["num_members"]
         == 9
     )
+
+
+def test_embed_syntax_tolerates_whitespace_like_postgrest():
+    db = FakeSupabase(
+        project_members=[{"id": "m1", "project_id": "p1", "user_id": "u1", "role": "member"}],
+        projects=[{"id": "p1", "name": "Alpha"}],
+        relations={("project_members", "projects"): ("project_id", "id", False)},
+    )
+    rows = (
+        db.table("project_members")
+        .select("project_id, role, projects ( id, name )")
+        .eq("user_id", "u1")
+        .execute()
+        .data
+    )
+    assert rows[0]["projects"] == {"id": "p1", "name": "Alpha"}

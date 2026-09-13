@@ -91,6 +91,10 @@ def _parse_select(
     star = False
     embeds = []
     for seg in _split_top(select):
+        # PostgREST tolerates whitespace around the embed parentheses
+        # (`projects ( id, name )`); normalise before matching.
+        seg = re.sub(r"\s*\(\s*", "(", seg.strip())
+        seg = re.sub(r"\s*\)$", ")", seg)
         if seg == "*":
             star = True
             continue

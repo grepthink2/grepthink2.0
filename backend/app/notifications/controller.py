@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 
 from fastapi import HTTPException
 
+from app.core.db import get_client
 from app.database.client import service_client
 from app.utils.profiles import profile_display_name
 
@@ -66,6 +67,63 @@ def _insert_notification(
             user_id,
             type,
         )
+
+
+def _insert_notifications(rows: list[dict]) -> None:
+    """Best-effort bulk insert of several notification rows in one round trip.
+
+    Rows whose ``type`` is not in :data:`NOTIFICATION_TYPES` are dropped (logged),
+    mirroring :func:`_insert_notification`. Never raises.
+    """
+    valid = []
+    for row in rows:
+        if row.get("type") not in NOTIFICATION_TYPES:
+            logger.warning("Unknown notification type %r — skipping", row.get("type"))
+            continue
+        valid.append(
+            {
+                "user_id": row["user_id"],
+                "type": row["type"],
+                "title": row["title"],
+                "body": row["body"],
+                "entity_type": row.get("entity_type"),
+                "entity_id": row.get("entity_id"),
+            }
+        )
+    if not valid:
+        return
+    try:
+        get_client().table("notifications").insert(valid).execute()
+    except Exception:
+        logger.exception("Failed to bulk-insert %d notifications", len(valid))
+
+
+def notify_member_departure(
+    *,
+    recipient_ids: list[str],
+    leaver_name: str,
+    old_project_id: str,
+    old_project_name: str,
+    new_project_name: str,
+) -> None:
+    """Tell each product owner of ``old_project`` that a member left for another team."""
+    body = (
+        f'{leaver_name} has left "{old_project_name}" and submitted a join request '
+        f'for "{new_project_name}".'
+    )
+    _insert_notifications(
+        [
+            {
+                "user_id": rid,
+                "type": "join_request",
+                "title": "Member left your project",
+                "body": body,
+                "entity_type": "project",
+                "entity_id": old_project_id,
+            }
+            for rid in recipient_ids
+        ]
+    )
 
 
 def _upsert_unread_notification(
