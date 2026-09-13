@@ -310,6 +310,13 @@ export interface ApiProjectJoinRequest {
   image_url?: string | null;
 }
 
+/** A pending student join request on a team the caller reviews (GET /api/projects/incoming-join-requests). */
+export interface ApiIncomingJoinRequest extends ApiProjectJoinRequest {
+  project_id: string;
+  project_name: string;
+  member_count: number;
+}
+
 export interface ApiProjectPendingInvite {
   request_id: string;
   user_id: string;
@@ -426,6 +433,15 @@ export interface ApiMySubmissions {
 
 /** Fallback when the submissions read fails: treat everything as not yet submitted. */
 export const emptyMySubmissions = (): ApiMySubmissions => ({ tsrs: [], feedback_assignment_ids: [] });
+
+/** Roster alerts for one class the caller created (GET /api/classes/attention-summary). */
+export interface ApiClassAttention {
+  class_id: string;
+  /** When the official roster was uploaded; null if it never was. */
+  roster_uploaded_at: string | null;
+  /** Students registered on GrepThink who are not on the official roster (TAs excluded). */
+  not_on_roster: number;
+}
 
 export interface ApiTurnInStats {
   rate: number;
@@ -837,6 +853,11 @@ export const api = {
     );
   },
 
+  /** Instructor home: roster alerts for every class the caller created, in one request. */
+  getClassesAttentionSummary: async () => {
+    return apiRequest<{ classes: ApiClassAttention[] }>('/api/classes/attention-summary');
+  },
+
   /** Enrollment, team-join, and drop timestamps (instructor only). */
   getClassRosterTimeline: async (classId: string) => {
     return apiRequest<{ students: ApiRosterTimelineStudent[] }>(
@@ -984,6 +1005,13 @@ export const api = {
 
   getProjectJoinRequests: async (projectId: string) => {
     return apiRequest<{ requests: ApiProjectJoinRequest[] }>(`/api/projects/${projectId}/join-requests`);
+  },
+
+  /** Pending join requests on every team the caller reviews in a class, in one request. */
+  getIncomingJoinRequests: async (classId: string) => {
+    return apiRequest<{ requests: ApiIncomingJoinRequest[] }>(
+      `/api/projects/incoming-join-requests?class_id=${encodeURIComponent(classId)}`,
+    );
   },
 
   getPendingTeamInvites: async (classId: string) => {
