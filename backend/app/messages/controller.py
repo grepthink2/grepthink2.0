@@ -292,20 +292,30 @@ def _require_participant(conversation_id: str, caller_id: str) -> dict:
 
     Raises 404 if the conversation doesn't exist, 403 if caller isn't a
     participant. Read-only conversations stay readable by participants.
+
+    The conversation and its participant ids are read in one wave (they used
+    to be read one after the other); a missing conversation still answers 404
+    before the participants are looked at.
     """
-    res = (
-        get_client()
-        .table("conversations")
-        .select("id, type, user_a, user_b, project_id")
-        .eq("id", conversation_id)
-        .maybe_single()
-        .execute()
+    client = get_client()
+    reads = fan_out(
+        {
+            "conversation": lambda: (
+                client.table("conversations")
+                .select("id, type, user_a, user_b, project_id")
+                .eq("id", conversation_id)
+                .maybe_single()
+                .execute()
+            ),
+            "participant_ids": lambda: _participant_ids(conversation_id),
+        }
     )
+    res = reads["conversation"]
     # supabase-py 2.x: None when the row doesn't exist.
     conv = res.data if res is not None else None
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    if caller_id not in _participant_ids(conversation_id):
+    if caller_id not in reads["participant_ids"]:
         logger.warning(
             "messages: participant check failed | caller=%s conv=%s",
             caller_id,

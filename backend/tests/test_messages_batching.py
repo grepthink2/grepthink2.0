@@ -8,6 +8,8 @@ Before:
 * ``list_contacts`` made five sequential reads: the caller's owned classes, the
   caller's enrollments, every enrollment of those classes, their owners, and
   the profiles of everyone found.
+* ``_require_participant`` (thread reads, mark-read, hide, channel sends) read
+  the conversation, then its participants.
 
 ``FakeSupabase`` counts every ``.execute()``; each test pins the answer and an
 upper bound on round trips. Reads fanned out with ``fan_out`` run on the query
@@ -16,7 +18,10 @@ pool, so traces are compared sorted.
 
 from __future__ import annotations
 
+import threading
+
 import pytest
+from fastapi import HTTPException
 
 from app.messages import controller as messages
 from tests.fake_supabase import FakeSupabase
@@ -240,3 +245,129 @@ def test_list_contacts_reads_owned_and_enrolled_classes_once_each(db):
     """Peers and their profiles are embedded: no separate enrollment, owner or profile reads."""
     messages.list_contacts(caller_id=S1)
     assert _trace(db) == ["class_enrollments:select", "classes:select"]
+
+
+# -------------------------------------------------------- _require_participant
+
+CONV_DM, CONV_TEAM = "conv-dm", "conv-team"
+
+
+@pytest.fixture
+def conv_db(monkeypatch):
+    """A DM between S1 and S2; a TA channel for S1, S3 and TA holding five messages."""
+    fake = FakeSupabase(
+        conversations=[
+            {"id": CONV_DM, "type": "dm", "user_a": S1, "user_b": S2, "project_id": None},
+            {
+                "id": CONV_TEAM,
+                "type": "team_ta",
+                "user_a": None,
+                "user_b": None,
+                "project_id": "proj-1",
+            },
+        ],
+        conversation_participants=[
+            {"conversation_id": CONV_DM, "user_id": S1, "role": "member"},
+            {"conversation_id": CONV_DM, "user_id": S2, "role": "member"},
+            {"conversation_id": CONV_TEAM, "user_id": S1, "role": "member"},
+            {"conversation_id": CONV_TEAM, "user_id": S3, "role": "member"},
+            {"conversation_id": CONV_TEAM, "user_id": TA, "role": "ta"},
+        ],
+        messages=[
+            {
+                "id": f"m{i}",
+                "conversation_id": CONV_TEAM,
+                "sender_id": S1,
+                "body": f"body {i}",
+                "created_at": f"2026-07-10T00:00:0{i}+00:00",
+            }
+            for i in range(5)
+        ],
+    )
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    return fake
+
+
+def _reads_wait_for_each_other(db, n: int = 2) -> None:
+    """Let a read through only once ``n`` reads are in flight together.
+
+    Reads issued one after another never get there: the first one times out
+    with ``BrokenBarrierError``.
+    """
+    barrier = threading.Barrier(n, timeout=1)
+    make_query = db.table
+
+    def table(name):
+        query = make_query(name)
+        run = query.execute
+
+        def execute():
+            barrier.wait()
+            return run()
+
+        query.execute = execute
+        return query
+
+    db.table = table
+
+
+def test_require_participant_returns_the_conversation(conv_db):
+    assert messages._require_participant(CONV_TEAM, TA) == {
+        "id": CONV_TEAM,
+        "type": "team_ta",
+        "user_a": None,
+        "user_b": None,
+        "project_id": "proj-1",
+    }
+    assert conv_db.executes <= 2, _trace(conv_db)
+
+
+def test_require_participant_reads_the_conversation_and_participants_in_one_wave(conv_db):
+    """Both reads are in flight together; they used to run one after the other."""
+    _reads_wait_for_each_other(conv_db)
+    assert messages._require_participant(CONV_DM, S2)["type"] == "dm"
+
+
+@pytest.mark.parametrize(
+    ("conversation_id", "caller", "status", "detail"),
+    [
+        pytest.param("conv-missing", S1, 404, "Conversation not found", id="missing"),
+        pytest.param(CONV_DM, S3, 403, "Not a participant", id="not-a-participant"),
+        pytest.param(CONV_TEAM, NOBODY, 403, "Not a participant", id="unknown-user"),
+    ],
+)
+def test_require_participant_denials(conv_db, conversation_id, caller, status, detail):
+    with pytest.raises(HTTPException) as exc:
+        messages._require_participant(conversation_id, caller)
+    assert (exc.value.status_code, exc.value.detail) == (status, detail)
+    assert conv_db.executes <= 2, _trace(conv_db)
+
+
+def test_list_messages_pages_newest_first_with_the_keyset_cursor(conv_db):
+    first = messages.list_messages(conversation_id=CONV_TEAM, caller_id=S3, limit=2)
+    assert first == {
+        "messages": [
+            {
+                "id": "m4",
+                "sender_id": S1,
+                "body": "body 4",
+                "created_at": "2026-07-10T00:00:04+00:00",
+            },
+            {
+                "id": "m3",
+                "sender_id": S1,
+                "body": "body 3",
+                "created_at": "2026-07-10T00:00:03+00:00",
+            },
+        ],
+        "next_cursor": "2026-07-10T00:00:03+00:00|m3",
+    }
+    assert conv_db.executes <= 3, _trace(conv_db)  # conversation + participants, then the page
+
+    conv_db.reset_counter()
+    rest = messages.list_messages(
+        conversation_id=CONV_TEAM, caller_id=S3, limit=2, before=first["next_cursor"]
+    )
+    assert [m["id"] for m in rest["messages"]] == ["m2", "m1"]
+    assert rest["next_cursor"] == "2026-07-10T00:00:01+00:00|m1"
+    assert conv_db.executes <= 3, _trace(conv_db)
