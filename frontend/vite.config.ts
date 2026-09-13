@@ -26,6 +26,23 @@ export default defineConfig(({ mode }) => {
         '@styles': path.resolve(__dirname, './src/styles'),
       },
     },
+    build: {
+      rolldownOptions: {
+        output: {
+          // Vendor code changes far less often than app code; separate chunks
+          // stay cached in browsers across deploys.
+          codeSplitting: {
+            groups: [
+              {
+                name: 'react',
+                test: /[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom)[\\/]/,
+              },
+              { name: 'supabase', test: /[\\/]node_modules[\\/]@supabase[\\/]/ },
+            ],
+          },
+        },
+      },
+    },
     server: {
       host: true, // Listen on all addresses (LAN) so other devices can connect over wifi
       proxy: {

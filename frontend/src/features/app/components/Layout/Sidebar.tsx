@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { TbLayoutSidebar } from "react-icons/tb";
+import { PanelLeft } from 'lucide-react';
 import { ChevronDown } from 'lucide-react';
 import { instructorSidebarConfig, studentSidebarConfig, type SidebarItem, type SidebarSection, type UserRole } from '../../config/sidebar';
 import { useClass } from '@/lib/classContext';
@@ -147,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
           </div>
         )}
         <button className="collapse-button" onClick={toggleCollapse}>
-          <TbLayoutSidebar size={20} />
+          <PanelLeft size={20} />
         </button>
       </div>
 

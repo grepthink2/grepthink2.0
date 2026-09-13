@@ -15,10 +15,16 @@ import {
 } from 'lucide-react';
 import { useClass, type Class } from '@/lib/classContext';
 import { api } from '@/lib/api';
-import CreateClassModal from '@features/app/components/Classes/CreateClassModal';
+import { lazyModal } from '@/lib/lazyModal';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { buildAttentionItems, type AttentionItem } from './attentionItems';
 import './InstructorHomeDashboard.scss';
+
+// Loads on first open; the form pulls in the date picker.
+const CreateClassModal = lazyModal(
+  () => import('@features/app/components/Classes/CreateClassModal'),
+  (p) => p.isOpen,
+);
 
 function courseLabel(cls: Class): string {
   const parts = [cls.year ? String(cls.year) : '', cls.term].filter(Boolean);

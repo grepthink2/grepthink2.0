@@ -4,8 +4,7 @@ import type { AppOutletContext } from '@/features/app/appOutletContext';
 import Sidebar from '@features/app/components/Layout/Sidebar';
 import Header from '@features/app/components/Layout/Header';
 import PreviewBanner from '@features/app/components/Layout/PreviewBanner';
-import CreateClassModal from '@/features/app/components/Classes/CreateClassModal';
-import JoinClassModal from '@/features/app/components/Classes/JoinClassModal';
+import { lazyModal } from '@/lib/lazyModal';
 import Settings from '@features/app/pages/Settings';
 import PageFallback from '@features/app/components/PageFallback';
 import { ClassProvider } from '@/lib/classContext';
@@ -14,6 +13,16 @@ import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/rout
 import { MessageWidget } from '@features/messages/components/MessageWidget';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './AppView.scss';
+
+// Both modals load on first open; the create-class form pulls in the date picker.
+const CreateClassModal = lazyModal(
+  () => import('@/features/app/components/Classes/CreateClassModal'),
+  (p) => p.isOpen,
+);
+const JoinClassModal = lazyModal(
+  () => import('@/features/app/components/Classes/JoinClassModal'),
+  (p) => p.isOpen,
+);
 
 const AppView: React.FC = () => {
   const { role, isPreviewing, loading: authLoading } = useAuth();

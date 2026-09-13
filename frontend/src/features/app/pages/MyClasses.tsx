@@ -6,12 +6,18 @@ import { useClass, type Class } from '@/lib/classContext';
 import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
-import CreateClassModal from '@features/app/components/Classes/CreateClassModal';
+import { lazyModal } from '@/lib/lazyModal';
 import ClassSettingsModal from '@features/app/components/Classes/ClassSettingsModal';
 import ConfirmModal from '@features/app/components/Overlays/ConfirmModal';
 import { pickClassBannerPreset, presetToCssBackground } from '@/lib/classBannerGradients';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './MyClasses.scss';
+
+// Loads on first open; the form pulls in the date picker.
+const CreateClassModal = lazyModal(
+  () => import('@features/app/components/Classes/CreateClassModal'),
+  (p) => p.isOpen,
+);
 
 type CourseFilter = 'all' | 'active' | 'complete';
 

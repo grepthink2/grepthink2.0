@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { LuMessageCircle, LuChevronDown, LuChevronLeft } from 'react-icons/lu';
+import { MessageCircle as MessageCircleIcon, ChevronDown as ChevronDownIcon, ChevronLeft as ChevronLeftIcon } from 'lucide-react';
 import { useConversations } from '../hooks/useConversations';
 import { useUnreadTotal } from '../hooks/useUnreadTotal';
 import { conversationTitle } from '../conversationTitle';
@@ -58,7 +58,7 @@ export const MessageWidget: React.FC = () => {
         onClick={() => setIsOpen(true)}
         aria-label="Open messages"
       >
-        <LuMessageCircle size={18} aria-hidden="true" />
+        <MessageCircleIcon size={18} aria-hidden="true" />
         <span className="message-widget__label">Messages</span>
         {renderUnreadBadge()}
       </button>
@@ -76,7 +76,7 @@ export const MessageWidget: React.FC = () => {
               onClick={() => setSelectedId(null)}
               aria-label="Back to inbox"
             >
-              <LuChevronLeft size={20} aria-hidden="true" />
+              <ChevronLeftIcon size={20} aria-hidden="true" />
             </button>
             <InitialsAvatar
               email={isChannel ? undefined : selected.other_user?.email}
@@ -103,7 +103,7 @@ export const MessageWidget: React.FC = () => {
           onClick={() => setIsOpen(false)}
           aria-label="Minimize"
         >
-          <LuChevronDown size={20} aria-hidden="true" />
+          <ChevronDownIcon size={20} aria-hidden="true" />
         </button>
       </header>
 

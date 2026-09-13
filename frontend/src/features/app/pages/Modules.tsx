@@ -10,10 +10,19 @@ import AssignmentList, { type Assignment, type AssignmentStatus } from '@feature
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import AssignmentTurnInRate from '@/features/app/components/Stats/AssignmentTurnInRate';
 // import ProjectHealth, { type ProjectHealthItem } from '@/features/app/components/Stats/ProjectHealth';
-import CreateAssignmentModal from '@features/app/components/Modules/CreateAssignmentModal';
-import AssignmentEditorModal from '@features/app/components/Modules/AssignmentEditorModal';
+import { lazyModal } from '@/lib/lazyModal';
 import { useClassTurnInStats } from '@features/app/hooks/useClassTurnInStats';
 import './Modules.scss';
+
+// Both load on first open; the assignment forms pull in the date picker.
+const CreateAssignmentModal = lazyModal(
+  () => import('@features/app/components/Modules/CreateAssignmentModal'),
+  (p) => p.isOpen,
+);
+const AssignmentEditorModal = lazyModal(
+  () => import('@features/app/components/Modules/AssignmentEditorModal'),
+  (p) => p.assignment !== null,
+);
 
 // const mockProjectHealth: ProjectHealthItem[] = [
 //   {

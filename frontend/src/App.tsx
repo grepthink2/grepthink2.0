@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Suspense, useEffect, lazy } from 'react';
 import './App.scss';
 
 function ScrollToTop() {
@@ -12,15 +12,7 @@ import ContactPage from '@features/landing/ContactPage';
 import AppView from '@/features/app/AppView';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
-import Login from '@features/auth/pages/Login';
 import AuthCallback from '@features/auth/pages/AuthCallback';
-import AuthConfirm from '@features/auth/pages/AuthConfirm';
-import SignUpOrchestrator from '@features/auth/pages/SignUpOrchestrator';
-import RoleSelection from '@features/auth/pages/RoleSelection';
-import CompleteProfile from '@features/auth/pages/CompleteProfile';
-import ForgetPassword from '@features/auth/pages/ForgotPassword';
-import VerifyResetPassword from '@features/auth/pages/VerifyResetPassword';
-import ResetPassword from '@features/auth/pages/ResetPassword';
 import ClassManagement from '@features/classes/pages/ClassManagement';
 import Modules from '@features/app/pages/Modules';
 import TAManagement from '@features/app/pages/TAManagement';
@@ -63,6 +55,16 @@ const Staffing = lazy(() => import('@features/app/components/Project/Assign/Staf
 // InterestForm, and FeedbackForm depending on assignment type — the
 // heaviest single leaf in the app after FinalReviewDetail.
 const AssignmentDetail = lazy(() => import('@features/app/pages/AssignmentDetail'));
+// Auth pages share the animated gradient background (react-gradient-animation), so
+// they load on demand under their own <Suspense> in the routes below.
+const Login = lazy(() => import('@features/auth/pages/Login'));
+const AuthConfirm = lazy(() => import('@features/auth/pages/AuthConfirm'));
+const SignUpOrchestrator = lazy(() => import('@features/auth/pages/SignUpOrchestrator'));
+const RoleSelection = lazy(() => import('@features/auth/pages/RoleSelection'));
+const CompleteProfile = lazy(() => import('@features/auth/pages/CompleteProfile'));
+const ForgetPassword = lazy(() => import('@features/auth/pages/ForgotPassword'));
+const VerifyResetPassword = lazy(() => import('@features/auth/pages/VerifyResetPassword'));
+const ResetPassword = lazy(() => import('@features/auth/pages/ResetPassword'));
 function App() {
   return (
     <Router>
@@ -71,16 +73,18 @@ function App() {
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/auth/confirm" element={<AuthConfirm />} />
-        <Route path="/studentsignup" element={<SignUpOrchestrator />} />
-        <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
-        <Route path="/select" element={<RoleSelection />} />
-        <Route path="/complete-profile" element={<CompleteProfile />} />
-        <Route path="/forgot-password" element={<ForgetPassword />} />
-        <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route element={<Suspense fallback={null}><Outlet /></Suspense>}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/auth/confirm" element={<AuthConfirm />} />
+          <Route path="/studentsignup" element={<SignUpOrchestrator />} />
+          <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
+          <Route path="/select" element={<RoleSelection />} />
+          <Route path="/complete-profile" element={<CompleteProfile />} />
+          <Route path="/forgot-password" element={<ForgetPassword />} />
+          <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+        </Route>
 
         {/* App routes with persistent sidebar (protected: requires auth).
             ConversationsProvider lives here so the unread badge in the
