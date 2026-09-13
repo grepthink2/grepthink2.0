@@ -4,6 +4,8 @@ import { supabase } from './supabaseClient';
 import type { UserRole } from '@/features/app/config/sidebar';
 import { usePreview } from './previewContext';
 import { AUTH_UNAUTHORIZED_EVENT } from './authEvents';
+import { apiRequest } from './api/client';
+import type { ApiProfile } from './api/types';
 
 interface AuthContextValue {
   session: Session | null;
@@ -21,6 +23,12 @@ interface AuthContextValue {
   isPreviewing: boolean;
   getToken: () => Promise<string | null>;
   signOut: () => Promise<void>;
+}
+
+/** `'instructor'` or `'student'` for a recognised role value, otherwise `null`. */
+function toUserRole(value: unknown): UserRole | null {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return normalized === 'instructor' || normalized === 'student' ? normalized : null;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -77,16 +85,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, onUnauthorized);
   }, []);
 
+  // The backend authorizes by profiles.role (AUTH.md, "Role source-of-truth: DB,
+  // not JWT"). user_metadata.role is written only by the signup flow, so an
+  // account created any other way has none and used to get the student UI while
+  // the API treated it as an instructor. Keyed by user id so one account's role
+  // never carries over to the next session in this tab.
+  const userId = session?.user?.id ?? null;
+  const [profileRole, setProfileRole] = useState<{ userId: string; role: UserRole | null } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    apiRequest<ApiProfile>('/api/profiles/me')
+      .then((profile) => {
+        if (!cancelled) setProfileRole({ userId, role: toUserRole(profile?.role) });
+      })
+      .catch(() => {
+        // No profile row yet (first OAuth login) or the API is unreachable: keep
+        // the metadata role rather than blocking the app.
+        if (!cancelled) setProfileRole({ userId, role: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
   const value = useMemo<AuthContextValue>(() => {
-    const raw = String(
-      (session?.user?.user_metadata as { role?: string } | undefined)?.role ?? ''
-    ).toLowerCase();
-    const role: UserRole = raw === 'instructor' ? 'instructor' : 'student';
+    const metadataRole = toUserRole(
+      (session?.user?.user_metadata as { role?: unknown } | undefined)?.role,
+    );
+    const resolved = profileRole && profileRole.userId === userId ? profileRole : null;
+    const role: UserRole = resolved?.role ?? metadataRole ?? 'student';
+    // With no metadata role there is nothing to render with yet, so hold the UI
+    // until the profile answers instead of showing an instructor the student app
+    // (and letting the route guards redirect them).
+    const resolvingRole = userId !== null && metadataRole === null && resolved === null;
 
     return {
       session,
       user: session?.user ?? null,
-      loading,
+      loading: loading || resolvingRole,
       // Provider exposes the true role; the `useAuth` hook below overlays
       // preview state (it can't be read here — PreviewProvider is a descendant).
       role,
@@ -114,7 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut({ scope: 'global' });
       },
     };
-  }, [session, loading]);
+  }, [session, loading, profileRole, userId]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
