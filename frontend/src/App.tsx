@@ -26,6 +26,7 @@ import MyProject from '@features/app/pages/MyProject';
 import { ConversationsProvider } from '@features/messages/hooks/useConversations';
 import { NotificationsProvider } from '@features/notifications/hooks/useNotifications';
 import { PreviewProvider } from '@/lib/previewContext';
+import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 
 // Heavy leaf routes — code-split with React.lazy so recharts, the big
 // review/roster/assignment forms, and long tables aren't part of the
@@ -67,77 +68,79 @@ const VerifyResetPassword = lazy(() => import('@features/auth/pages/VerifyResetP
 const ResetPassword = lazy(() => import('@features/auth/pages/ResetPassword'));
 function App() {
   return (
-    <Router>
-      <ScrollToTop />
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route element={<Suspense fallback={null}><Outlet /></Suspense>}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/auth/confirm" element={<AuthConfirm />} />
-          <Route path="/studentsignup" element={<SignUpOrchestrator />} />
-          <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
-          <Route path="/select" element={<RoleSelection />} />
-          <Route path="/complete-profile" element={<CompleteProfile />} />
-          <Route path="/forgot-password" element={<ForgetPassword />} />
-          <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-        </Route>
-
-        {/* App routes with persistent sidebar (protected: requires auth).
-            ConversationsProvider lives here so the unread badge in the
-            sidebar (and the tab title) update even when the user isn't
-            on /app/messages. */}
-        <Route path="/app" element={<ProtectedRoute />}>
-          <Route element={
-            <PreviewProvider>
-              <ConversationsProvider>
-                <NotificationsProvider>
-                  <AppView />
-                </NotificationsProvider>
-              </ConversationsProvider>
-            </PreviewProvider>
-          }>
-            <Route index element={<Navigate to="/app/home" replace />} />
-            <Route path="home" element={<Home />} />
-            <Route path="messages" element={<Messages />} />
-            <Route path="messages/compose" element={<Messages />} />
-            <Route path="messages/:conversationId" element={<Messages />} />
-            <Route path="my-classes" element={<MyClasses />} />
-            <Route path="class-settings" element={<div>Class settings — Coming soon</div>} />
-            <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="projects" element={<Projects />} />
-            <Route path="projects/:projectId" element={<ProjectDetails />} />
-            <Route path="roster" element={<Roster />} />
-            <Route path="modules" element={<Modules />} />
-            <Route path="modules/tsr/:assignmentId" element={<TSRViewPage />} />
-            <Route path="modules/feedback/:assignmentId" element={<FeedbackViewPage />} />
-            <Route path="ta-management" element={<TAManagement />} />
-            <Route path="ta-meetings" element={<TAMeetings />} />
-            <Route path="ta-review" element={<TAReview />} />
-            <Route element={<RequireReviewAccess />}>
-              <Route path="ta-review/final-reviews" element={<FinalReviews />} />
-              <Route path="ta-review/final-reviews/:projectId" element={<FinalReviewDetail />} />
-            </Route>
-            <Route path="ta-review/:assignmentId" element={<TAReview />} />
-            <Route path="create-project" element={<CreateProject />} />
-            <Route path="assign-projects" element={<Assign />} />
-            <Route path="staff-projects" element={<Staffing />} />
-            <Route path="browse-projects" element={<BrowseProjects />} />
-            <Route path="my-project" element={<MyProject />} />
-            <Route path="assignments" element={<Assignments />} />
-            <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
-            <Route path="settings" element={<Navigate to="/app/home" replace />} />
-            <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
+    <ErrorBoundary>
+      <Router>
+        <ScrollToTop />
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route element={<Suspense fallback={null}><Outlet /></Suspense>}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/auth/confirm" element={<AuthConfirm />} />
+            <Route path="/studentsignup" element={<SignUpOrchestrator />} />
+            <Route path="/instructorsignup" element={<SignUpOrchestrator />} />
+            <Route path="/select" element={<RoleSelection />} />
+            <Route path="/complete-profile" element={<CompleteProfile />} />
+            <Route path="/forgot-password" element={<ForgetPassword />} />
+            <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Route>
-        </Route>
 
-        <Route path="/classes" element={<ClassManagement />} />
-      </Routes>
-    </Router>
+          {/* App routes with persistent sidebar (protected: requires auth).
+              ConversationsProvider lives here so the unread badge in the
+              sidebar (and the tab title) update even when the user isn't
+              on /app/messages. */}
+          <Route path="/app" element={<ProtectedRoute />}>
+            <Route element={
+              <PreviewProvider>
+                <ConversationsProvider>
+                  <NotificationsProvider>
+                    <AppView />
+                  </NotificationsProvider>
+                </ConversationsProvider>
+              </PreviewProvider>
+            }>
+              <Route index element={<Navigate to="/app/home" replace />} />
+              <Route path="home" element={<Home />} />
+              <Route path="messages" element={<Messages />} />
+              <Route path="messages/compose" element={<Messages />} />
+              <Route path="messages/:conversationId" element={<Messages />} />
+              <Route path="my-classes" element={<MyClasses />} />
+              <Route path="class-settings" element={<div>Class settings — Coming soon</div>} />
+              <Route path="join-class" element={<div>Join Class - Coming Soon</div>} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="projects" element={<Projects />} />
+              <Route path="projects/:projectId" element={<ProjectDetails />} />
+              <Route path="roster" element={<Roster />} />
+              <Route path="modules" element={<Modules />} />
+              <Route path="modules/tsr/:assignmentId" element={<TSRViewPage />} />
+              <Route path="modules/feedback/:assignmentId" element={<FeedbackViewPage />} />
+              <Route path="ta-management" element={<TAManagement />} />
+              <Route path="ta-meetings" element={<TAMeetings />} />
+              <Route path="ta-review" element={<TAReview />} />
+              <Route element={<RequireReviewAccess />}>
+                <Route path="ta-review/final-reviews" element={<FinalReviews />} />
+                <Route path="ta-review/final-reviews/:projectId" element={<FinalReviewDetail />} />
+              </Route>
+              <Route path="ta-review/:assignmentId" element={<TAReview />} />
+              <Route path="create-project" element={<CreateProject />} />
+              <Route path="assign-projects" element={<Assign />} />
+              <Route path="staff-projects" element={<Staffing />} />
+              <Route path="browse-projects" element={<BrowseProjects />} />
+              <Route path="my-project" element={<MyProject />} />
+              <Route path="assignments" element={<Assignments />} />
+              <Route path="assignments/:assignmentId" element={<AssignmentDetail />} />
+              <Route path="settings" element={<Navigate to="/app/home" replace />} />
+              <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
+            </Route>
+          </Route>
+
+          <Route path="/classes" element={<ClassManagement />} />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

@@ -3,6 +3,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import type { UserRole } from '@/features/app/config/sidebar';
 import { usePreview } from './previewContext';
+import { AUTH_UNAUTHORIZED_EVENT } from './authEvents';
 
 interface AuthContextValue {
   session: Session | null;
@@ -63,6 +64,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
+  }, []);
+
+  // apiRequest announces a 401: the backend no longer accepts this session even
+  // after Supabase's own refresh, so drop it locally and let ProtectedRoute send
+  // the user to /login instead of every screen failing.
+  useEffect(() => {
+    const onUnauthorized = () => {
+      void supabase.auth.signOut({ scope: 'local' });
+    };
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, onUnauthorized);
+    return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, onUnauthorized);
   }, []);
 
   const value = useMemo<AuthContextValue>(() => {

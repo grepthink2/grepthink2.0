@@ -7,6 +7,7 @@ import PreviewBanner from '@features/app/components/Layout/PreviewBanner';
 import { lazyModal } from '@/lib/lazyModal';
 import Settings from '@features/app/pages/Settings';
 import PageFallback from '@features/app/components/PageFallback';
+import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/routePermissions';
@@ -110,13 +111,15 @@ const AppView: React.FC = () => {
               above are siblings, not descendants, so they stay mounted and
               visible while a page chunk loads instead of being replaced by
               the fallback. */}
-          <Suspense fallback={<PageFallback />}>
-            <Outlet
-              context={
-                { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
-              }
-            />
-          </Suspense>
+          <ErrorBoundary resetKey={location.pathname}>
+            <Suspense fallback={<PageFallback />}>
+              <Outlet
+                context={
+                  { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
+                }
+              />
+            </Suspense>
+          </ErrorBoundary>
         </main>
 
         {/* Create Class Modal */}
