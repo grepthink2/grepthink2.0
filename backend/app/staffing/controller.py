@@ -19,11 +19,11 @@ backend/cse115b Project staffing.xlsx:
        (``assign_user`` / ``unassign_user``) or via the auto-assign
        greedy heuristic (``auto_assign``).
 
-Project assignments themselves continue to live in ``project_members`` so
-the rest of the system (TSRs, project pages, etc.) keeps working
-unchanged. We always go through ``app.projects.controller`` to mutate
-``project_members`` so the ``num_members`` counter and the join-request
-machinery stay consistent.
+Project assignments themselves live in ``project_members`` so the rest of
+the system (TSRs, project pages, etc.) keeps working unchanged. Membership
+rows are written directly here in bulk and ``projects.num_members`` is
+rewritten from the member rows via ``app.projects.controller.set_num_members``
+— the same helper every other membership write uses.
 """
 
 from __future__ import annotations
@@ -37,6 +37,7 @@ from fastapi import HTTPException
 
 from app.core.db import get_client
 from app.database.client import query_pool
+from app.projects.controller import ROLE_MEMBER, ROLE_SCRUM_MASTER, set_num_members
 from app.staffing.models import RankedProject
 
 logger = logging.getLogger(__name__)
@@ -204,10 +205,23 @@ def _project_members_for_class(
     return res.data or []
 
 
-def _get_projects_user_is_in(client, class_id: UUID, target_user_id: str) -> list[str]:
-    """All project ids in this class where the user is a project_members row."""
-    members = _project_members_for_class(client, class_id)
-    return [str(m["project_id"]) for m in members if str(m.get("user_id")) == str(target_user_id)]
+def _class_projects_and_members(client, class_id: UUID) -> tuple[list[dict], list[dict]]:
+    """The class's projects and every membership row on them — two round trips."""
+    projects = _list_class_projects(client, class_id)
+    members = _project_members_for_class(client, class_id, projects=projects)
+    return projects, members
+
+
+def _projects_of(members: list[dict], user_id: str) -> list[str]:
+    """Sorted project ids (from ``members``) that ``user_id`` belongs to."""
+    return sorted({str(m["project_id"]) for m in members if str(m.get("user_id")) == str(user_id)})
+
+
+def _team_role_for_newcomer(team: list[dict]) -> str:
+    """Scrum master when the team has none yet (first-member rule), else member."""
+    return (
+        ROLE_MEMBER if any(m.get("role") == ROLE_SCRUM_MASTER for m in team) else ROLE_SCRUM_MASTER
+    )
 
 
 def _profile_display_name(profile: dict | None) -> str | None:
@@ -1050,9 +1064,11 @@ def assign_user(
     Place ``target_user_id`` onto ``project_id``, removing them from any
     other project they currently belong to in this class.
 
-    The remove-then-add is wrapped in a manual rollback: if the new add
-    fails, every previously-removed project is re-added so a botched
-    request never leaves a student dangling without a team.
+    Reads the class's projects and memberships once (2 round trips), then
+    inserts the new membership **before** deleting the old ones — a failure
+    can leave a student on two teams for a moment, never on none — and
+    rewrites ``num_members`` for every touched project from the rows it
+    already holds. ~7 round trips (was ~18).
 
     Raises:
         HTTPException 404 — class / project not found, or caller is not the
@@ -1061,86 +1077,60 @@ def assign_user(
     """
     _require_class_instructor(user_id, class_id)
     client = get_client()
-    _project_in_class(client, project_id, class_id)
+    projects, members = _class_projects_and_members(client, class_id)
+    pid, tid = str(project_id), str(target_user_id)
 
-    # Defer the projects-controller import to break the import cycle that
-    # would otherwise form via app.projects.controller -> app.staffing.
-    from app.projects import controller as projects_controller
+    if pid not in {str(p["id"]) for p in projects}:
+        _project_in_class(client, project_id, class_id)  # raises 404 / 400 with the usual detail
+        raise HTTPException(status_code=404, detail="Project not found")
 
-    existing_project_ids = _get_projects_user_is_in(client, class_id, str(target_user_id))
-
-    if str(project_id) in existing_project_ids:
+    previous = _projects_of(members, tid)
+    if pid in previous:
         return {
             "message": "User already assigned to this project",
-            "user_id": str(target_user_id),
-            "project_id": str(project_id),
+            "user_id": tid,
+            "project_id": pid,
         }
 
-    # Track which projects we successfully removed from so we can roll back
-    # on failure. A False return value from instructor_remove_member means
-    # the project no longer exists or the membership row vanished — treat
-    # that as a partial failure to avoid silently dropping the assignment.
-    removed_from: list[str] = []
+    team = [m for m in members if str(m["project_id"]) == pid]
     try:
-        for old_pid in existing_project_ids:
-            result = projects_controller.instructor_remove_member(
-                project_id=UUID(old_pid),
-                requester_id=user_id,
-                target_user_id=str(target_user_id),
+        client.table("project_members").insert(
+            {"project_id": pid, "user_id": tid, "role": _team_role_for_newcomer(team)}
+        ).execute()
+        if previous:
+            client.table("project_members").delete().eq("user_id", tid).in_(
+                "project_id", previous
+            ).execute()
+        set_num_members(client, pid, len(team) + 1)
+        for old_pid in previous:
+            set_num_members(
+                client,
+                old_pid,
+                sum(
+                    1
+                    for m in members
+                    if str(m["project_id"]) == old_pid and str(m.get("user_id")) != tid
+                ),
             )
-            if result is False:
-                # Roll back the previously-removed projects before bailing.
-                for pid in removed_from:
-                    projects_controller.instructor_add_member(
-                        project_id=UUID(pid),
-                        requester_id=user_id,
-                        target_user_id=str(target_user_id),
-                        role="member",
-                    )
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to remove user from previous project",
-                )
-            removed_from.append(old_pid)
-
-        added = projects_controller.instructor_add_member(
-            project_id=project_id,
-            requester_id=user_id,
-            target_user_id=str(target_user_id),
-            role="member",
-        )
     except HTTPException:
-        # Re-add to any project we successfully removed from before the
-        # failure so we don't leave the student off every project.
-        for pid in removed_from:
-            try:
-                projects_controller.instructor_add_member(
-                    project_id=UUID(pid),
-                    requester_id=user_id,
-                    target_user_id=str(target_user_id),
-                    role="member",
-                )
-            except Exception:
-                logger.exception(
-                    "assign_user rollback failed | user=%s project=%s",
-                    target_user_id,
-                    pid,
-                )
         raise
+    except Exception:
+        logger.exception("assign_user failed | class=%s user=%s project=%s", class_id, tid, pid)
+        raise HTTPException(status_code=500, detail="Failed to assign user to project")
 
     logger.info(
         "assign_user | class=%s user=%s -> project=%s removed_from=%d",
         class_id,
-        target_user_id,
-        project_id,
-        len(removed_from),
+        tid,
+        pid,
+        len(previous),
     )
     return {
         "message": "User assigned to project",
-        "user_id": str(target_user_id),
-        "project_id": str(project_id),
-        "previous_project_ids": removed_from,
-        "added": added,
+        "user_id": tid,
+        "project_id": pid,
+        "previous_project_ids": previous,
+        "added": {"message": "Added member successfully", "user_id": tid, "role": ROLE_MEMBER},
     }
 
 
@@ -1150,40 +1140,35 @@ def unassign_user(
     target_user_id: UUID,
 ) -> dict:
     """
-    Remove ``target_user_id`` from whichever project they belong to in
-    this class. Raises 404 if the student is not currently assigned.
+    Remove ``target_user_id`` from whichever project(s) they belong to in
+    this class (one bulk delete + a count write per project; ~5 round trips).
+    Raises 404 if the student is not currently assigned.
     """
     _require_class_instructor(user_id, class_id)
     client = get_client()
+    _projects, members = _class_projects_and_members(client, class_id)
+    tid = str(target_user_id)
 
-    project_ids = _get_projects_user_is_in(client, class_id, str(target_user_id))
-    if not project_ids:
+    current = _projects_of(members, tid)
+    if not current:
         raise HTTPException(
             status_code=404,
             detail="User is not assigned to a project in this class",
         )
 
-    from app.projects import controller as projects_controller
-
-    removed: list[str] = []
-    for pid in project_ids:
-        projects_controller.instructor_remove_member(
-            project_id=UUID(pid),
-            requester_id=user_id,
-            target_user_id=str(target_user_id),
+    client.table("project_members").delete().eq("user_id", tid).in_("project_id", current).execute()
+    for pid in current:
+        set_num_members(
+            client,
+            pid,
+            sum(1 for m in members if str(m["project_id"]) == pid and str(m.get("user_id")) != tid),
         )
-        removed.append(pid)
 
-    logger.info(
-        "unassign_user | class=%s user=%s removed_from=%s",
-        class_id,
-        target_user_id,
-        removed,
-    )
+    logger.info("unassign_user | class=%s user=%s removed_from=%s", class_id, tid, current)
     return {
         "message": "User unassigned from project",
-        "user_id": str(target_user_id),
-        "removed_project_ids": removed,
+        "user_id": tid,
+        "removed_project_ids": current,
     }
 
 
@@ -1195,6 +1180,11 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
     the highest ``interest_value`` that still has open seats. To minimize
     the chance of a "dead" student (one with zero remaining matches),
     students with the fewest viable options go first.
+
+    Placements are decided in memory and written as ONE bulk insert plus one
+    ``num_members`` write per touched project (~9 round trips for a whole
+    class; it used to be ~8 per placement). A team that has no scrum master
+    gets one from its first placement, matching the single-add rule.
 
     Returns the list of newly placed assignments. If everyone is already
     placed (or nobody had a viable option), returns an empty list.
@@ -1221,21 +1211,24 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
 
     project_lookup = {str(p["id"]): p for p in projects}
     seats_left: dict[str, int] = {
-        str(p["id"]): max(int(p.get("team_size") or 0) - 0, 0) for p in projects
+        str(p["id"]): max(int(p.get("team_size") or 0), 0) for p in projects
     }
-    # Subtract already-assigned members so seat math reflects reality.
+    counts: dict[str, int] = dict.fromkeys(seats_left, 0)
+    has_scrum_master: dict[str, bool] = dict.fromkeys(seats_left, False)
     for m in members:
         pid = str(m["project_id"])
         if pid in seats_left:
             seats_left[pid] = max(seats_left[pid] - 1, 0)
+            counts[pid] += 1
+            if m.get("role") == ROLE_SCRUM_MASTER:
+                has_scrum_master[pid] = True
 
-    interest_rows = [r for r in all_interest_rows if str(r["user_id"]) in unassigned_ids]
     prefs_by_user: dict[str, list[dict]] = {}
-    for row in interest_rows:
-        prefs_by_user.setdefault(str(row["user_id"]), []).append(row)
+    for row in all_interest_rows:
+        if str(row["user_id"]) in unassigned_ids:
+            prefs_by_user.setdefault(str(row["user_id"]), []).append(row)
 
-    # Sort: students with the fewest viable choices first, ties broken by
-    # the student id for determinism.
+    # Students with the fewest viable choices first, ties broken by id.
     def _viable_count(uid: str) -> int:
         return sum(
             1 for r in prefs_by_user.get(uid, []) if seats_left.get(str(r["project_id"]), 0) > 0
@@ -1243,9 +1236,8 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
 
     order = sorted(unassigned_ids, key=lambda uid: (_viable_count(uid), uid))
 
-    from app.projects import controller as projects_controller
-
     placements: list[dict] = []
+    new_rows: list[dict] = []
     for uid in order:
         sorted_prefs = sorted(
             prefs_by_user.get(uid, []),
@@ -1255,22 +1247,11 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
             pid = str(row["project_id"])
             if seats_left.get(pid, 0) <= 0:
                 continue
-            try:
-                projects_controller.instructor_add_member(
-                    project_id=UUID(pid),
-                    requester_id=user_id,
-                    target_user_id=uid,
-                    role="member",
-                )
-            except HTTPException:
-                logger.exception(
-                    "auto_assign: add_member failed | class=%s user=%s project=%s",
-                    class_id,
-                    uid,
-                    pid,
-                )
-                continue
-            seats_left[pid] = seats_left.get(pid, 0) - 1
+            role = ROLE_MEMBER if has_scrum_master.get(pid) else ROLE_SCRUM_MASTER
+            has_scrum_master[pid] = True
+            seats_left[pid] -= 1
+            counts[pid] = counts.get(pid, 0) + 1
+            new_rows.append({"project_id": pid, "user_id": uid, "role": role})
             placements.append(
                 {
                     "user_id": uid,
@@ -1280,6 +1261,11 @@ def auto_assign(user_id: str, class_id: UUID) -> list[dict]:
                 }
             )
             break
+
+    if new_rows:
+        client.table("project_members").insert(new_rows).execute()
+        for pid in sorted({r["project_id"] for r in new_rows}):
+            set_num_members(client, pid, counts[pid])
 
     logger.info(
         "auto_assign | class=%s placed=%d unassigned=%d",

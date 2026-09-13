@@ -71,14 +71,14 @@ _TRANSIENT_HTTPX_ERRORS = (
 )
 
 
-def _set_num_members(client, project_id: str, count: int) -> None:
+def set_num_members(client, project_id: str, count: int) -> None:
     """Write ``projects.num_members`` for one project (one round trip)."""
     client.table("projects").update({"num_members": max(0, int(count))}).eq(
         "id", str(project_id)
     ).execute()
 
 
-def _recount_num_members(client, project_ids: Iterable[str]) -> dict[str, int]:
+def recount_num_members(client, project_ids: Iterable[str]) -> dict[str, int]:
     """Derive ``num_members`` from the real ``project_members`` rows and write it.
 
     One read for all projects plus one update per project. Used after bulk
@@ -95,7 +95,7 @@ def _recount_num_members(client, project_ids: Iterable[str]) -> dict[str, int]:
     for r in rows:
         counts[str(r["project_id"])] = counts.get(str(r["project_id"]), 0) + 1
     for pid, n in counts.items():
-        _set_num_members(client, pid, n)
+        set_num_members(client, pid, n)
     return counts
 
 
@@ -107,7 +107,7 @@ def _increment_project_num_members(client, project_id: str, delta: int) -> None:
     delete that removed nothing) can no longer drift the counter.
     """
     logger.debug("num_members resync | project_id=%s delta=%+d", project_id, delta)
-    _recount_num_members(client, [str(project_id)])
+    recount_num_members(client, [str(project_id)])
 
 
 def _project_member_rows(client, project_id: str) -> list[dict]:
@@ -723,7 +723,7 @@ def _leave_current_project_in_class(
         if str(m["project_id"]) in old_pids and str(m.get("user_id")) != str(user_id)
     ]
     for pid in old_pids:
-        _set_num_members(client, pid, sum(1 for m in remaining if str(m["project_id"]) == pid))
+        set_num_members(client, pid, sum(1 for m in remaining if str(m["project_id"]) == pid))
         logger.info(
             "Auto-removed user from previous project | user=%s old_project=%s new_project=%s",
             user_id,
@@ -998,7 +998,7 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
                 "project_id", pid
             ).eq("user_id", new_user).execute()
             logger.info("Auto-assigned scrum master | project_id=%s user_id=%s", pid, new_user)
-        _set_num_members(client, pid, len(team) + 1)
+        set_num_members(client, pid, len(team) + 1)
 
         logger.info(
             "Join request accepted | request_id=%s project_id=%s new_member=%s reviewer=%s",
@@ -1869,7 +1869,7 @@ def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: s
         if role == ROLE_MEMBER and not any(r == ROLE_SCRUM_MASTER for r in roles.values()):
             _set_role(client, pid, tid, ROLE_SCRUM_MASTER)
             logger.info("Auto-assigned scrum master | project_id=%s user_id=%s", pid, tid)
-        _set_num_members(client, pid, len(members) + 1)
+        set_num_members(client, pid, len(members) + 1)
 
         logger.info(
             "Member added | project_id=%s user_id=%s role=%r added_by=%s",
@@ -1932,7 +1932,7 @@ def instructor_remove_member(project_id: UUID, requester_id: str, target_user_id
         )
         deleted = len(delete_result.data) if delete_result.data else 0
         if deleted:
-            _set_num_members(client, pid, max(0, len(members) - deleted))
+            set_num_members(client, pid, max(0, len(members) - deleted))
         logger.info(
             "Member removed | project_id=%s user_id=%s removed_by=%s deleted_rows=%d",
             project_id,
