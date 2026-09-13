@@ -4,7 +4,7 @@ import { TbLayoutSidebar } from "react-icons/tb";
 import { ChevronDown } from 'lucide-react';
 import { instructorSidebarConfig, studentSidebarConfig, type SidebarItem, type SidebarSection, type UserRole } from '../../config/sidebar';
 import { useClass } from '@/lib/classContext';
-import { api } from '@/lib/api';
+import { useEnrollmentRole } from '@/lib/enrollmentRole';
 import { useUnreadTotal } from '@features/messages/hooks/useUnreadTotal';
 import logo from '@assets/grepthink l logo.svg?url';
 import ModulesIcon from '@assets/streamline-ultimate_module-three-bold.svg?url';
@@ -34,30 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   const { sidebarClasses, selectedClass, setSelectedClass } = useClass();
   const unreadTotal = useUnreadTotal();
   // Students who are a TA in the selected class get an extra "TA Review" nav item.
-  const [isTaForClass, setIsTaForClass] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const classId = role === 'student' ? selectedClass?.id : undefined;
-    void (async () => {
-      if (!classId) {
-        // Inside the IIFE so it's no longer syntactically the effect body
-        // (satisfies react-hooks/set-state-in-effect); this branch still runs
-        // before any await, so timing is unchanged.
-        if (!cancelled) setIsTaForClass(false);
-        return;
-      }
-      try {
-        const { enrollment_role } = await api.getMyEnrollmentRole(classId);
-        if (!cancelled) setIsTaForClass(enrollment_role === 'ta');
-      } catch {
-        if (!cancelled) setIsTaForClass(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [role, selectedClass?.id]);
+  const isTaForClass = useEnrollmentRole(role === 'student' ? selectedClass?.id : undefined) === 'ta';
 
   const sidebarConfig: SidebarSection[] = React.useMemo(() => {
     if (role === 'instructor') return instructorSidebarConfig;
