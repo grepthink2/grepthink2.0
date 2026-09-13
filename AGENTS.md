@@ -16,14 +16,16 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 
 | Layer     | Technology                                  |
 | --------- | ------------------------------------------- |
-| Frontend  | React 19, TypeScript, Vite (rolldown-vite)  |
-| Styling   | SCSS + design tokens (`src/styles/`), Lucide / react-icons |
+| Frontend  | React 19, TypeScript 5.9, Vite 8 (rolldown) |
+| Styling   | SCSS + design tokens (`src/styles/`), lucide-react icons |
 | Routing   | React Router DOM v7                         |
-| State     | React Context (AuthContext, ClassContext)   |
+| State     | React Context (auth, class, preview, conversations, notifications) |
 | Backend   | Python 3.11 FastAPI + Uvicorn, slowapi (rate limiting) |
-| Database  | Supabase (managed PostgreSQL)               |
+| Database  | Supabase (managed PostgreSQL) through supabase-py / PostgREST |
 | Auth      | Supabase Auth (JWT); PyJWT verification (HS256 + ES256) |
-| Tests     | pytest (backend), Vitest (frontend)         |
+| Tests     | pytest + `tests/fake_supabase.py` (backend), Vitest 5 + Testing Library (frontend) |
+| Lint      | ruff check + format (backend), ESLint 10 + `lint:design` (frontend) |
+| Tooling   | Node 24 in CI (`engines` >= 22.12), `backend/requirements-dev.txt` |
 
 ## Directory structure
 
@@ -31,20 +33,28 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes projects assignments tsr staffing
   messages profiles contact notifications tas attendance stats
-  main.py            # FastAPI app: CORS, security headers, rate limiter, routers
-  config.py          # settings from .env
+  core/db.py         # get_client(), fan_out() for concurrent reads, is_unique_violation()
+  core/authz.py      # class and project access checks shared by controllers
+  core/errors.py     # global handler: anything uncaught -> {"detail": "Internal server error"}
+  jobs/pending_invites.py  # poller that sends queued class-invite emails
+  main.py            # app wiring: CORS, security headers, rate limiter, routers
+  config.py          # settings from the repo-root .env
   dependencies.py    # require_user / require_instructor (JWT verify)
   database/client.py # supabase (anon) + service_client (service role, bypasses RLS)
-backend/database/migrations/*.sql   # per-change SQL
-backend/tests/                      # pytest (conftest stubs env + mints HS256 JWTs)
+backend/database/migrations/*.sql   # per-change SQL, applied by hand (merging never applies it)
+backend/tests/                      # pytest: conftest mints HS256 JWTs; fake_supabase.py is the DB double
 
 frontend/src/
   features/<area>/{pages,components,hooks,config}/   # auth, app, classes, messages...
-  lib/api.ts          # hand-maintained typed API client (keep in sync w/ routes!)
-  lib/auth.tsx        # AuthContext / useAuth
+  lib/api.ts          # facade: assembles `api` from lib/api/<domain>.ts and re-exports types
+  lib/api/client.ts   # apiRequest / apiUpload: auth header, preview guard, ApiError, 401 event
+  lib/auth.tsx        # AuthContext / useAuth (signs out locally on auth:unauthorized)
   lib/classContext.tsx# selected-class state
-  styles/             # design tokens (@use '@styles')
-  App.tsx             # router config
+  lib/enrollmentRole.ts # useEnrollmentRole(classId): one shared, briefly cached my-role lookup
+  lib/lazyModal.ts    # load a heavy modal's code the first time it opens
+  components/         # shared UI (Skeleton, ErrorBoundary)
+  styles/             # design tokens (@use '@styles/index.scss' as *)
+  App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
 
 supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
@@ -55,6 +65,16 @@ supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
 - **Backend module = url + views + controller + models.** `url.py` registers routes
   (functional `router.post('/x')(views.fn)`); `views.py` handles request/response;
   `controller.py` holds business logic + **authorization checks**; `models.py` is Pydantic.
+- **Data access (backend).** Controllers take the client from `app.core.db.get_client()` and
+  authorize with `app.core.authz`. Every `.execute()` is a network round trip, so batch:
+  embed related rows over foreign keys (`projects(class_id, classes(created_by))`, with
+  `!fk_name` hints where a table has several FKs to one target), use `.in_()` instead of
+  per-row loops, run independent reads with `fan_out({...})`, and validate everything in
+  memory before one bulk `insert` / `upsert` / `delete`. Tests pin a round-trip budget with
+  `FakeSupabase.executes`. `backend/STYLE_GUIDE.md` has the details.
+- **Errors.** Raise `HTTPException` with a fixed `detail`; `app/core/errors.py` logs anything
+  uncaught and answers `{"detail": "Internal server error"}`. In the web client a failed
+  call throws `ApiError` (status + detail), and a 401 signs the user out locally.
 - **Auth flow:** Supabase `signUp`/`signInWithPassword`/Google OAuth on the frontend
   → frontend calls `POST /api/create-user` to provision the `profiles` row → JWT in
   cookies → every API call sends `Authorization: Bearer <jwt>` → backend verifies via
@@ -71,14 +91,16 @@ supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
 ```bash
 # Backend (Python 3.11 venv at backend/.venv)
 cd backend && .venv/bin/pip install -r requirements-dev.txt   # runtime + test/lint tools
-.venv/bin/python -m pytest                 # conftest stubs SUPABASE_* env
-uvicorn app.main:app                        # serve (needs real SUPABASE_* env)
+.venv/bin/ruff format . && .venv/bin/ruff check .             # lint gate
+.venv/bin/python -m pytest                  # no network: conftest stubs SUPABASE_* env
+.venv/bin/python run.py                     # serve on :5001 (needs the real repo-root .env)
 
-# Frontend
-cd frontend && npm install
-npm run dev                                 # Vite dev server (proxies /api)
+# Frontend (Node 24)
+cd frontend && npm ci
+npm run dev                                 # Vite dev server on :5173 (proxies /api)
+npm run lint                                # ESLint: 0 errors required, warnings advisory
 npm run build                               # tsc -b && vite build  (the typecheck gate)
-npx vitest run                              # unit tests
+npx vitest run                              # unit + component tests
 ```
 
 ## API surface
@@ -100,8 +122,17 @@ The full agent-facing action catalog (method, params, role) lives at
   from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
   designating via TA Management or TA Meetings writes the same `enrollment_role`
   (the legacy `class_tas` table was removed).
-- **`api.ts` can drift from routes** — it's hand-maintained, no codegen. Confirm a
-  route exists before adding/calling a client method.
+- **`lib/api/*.ts` can drift from routes** — the client is hand-maintained, no codegen.
+  Confirm a route exists before adding or calling a client method, and add the method to
+  the matching domain file (`lib/api.ts` spreads them all into `api`).
+- **Never depend on unapplied SQL.** Migrations in `backend/database/migrations/` are
+  applied by hand, dev first and then prod; merging does not apply them. Code must work on
+  the schema that is live, and an upsert needs a unique constraint that already exists.
+- **`projects.num_members` is derived.** After any `project_members` write call
+  `projects.controller.recount_num_members(client, project_ids)`; never read-modify-write it.
+- **Secrets stay server-side.** `.env` lives at the repo root (see `.env.example`), and Vite
+  exposes only `VITE_*` (`envPrefix`). Never widen that prefix: the same file holds
+  `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_JWT_SECRET`.
 - **Rate limiting** (slowapi) covers `create_user`, `check_email`, `login_check`,
   `contact`, `stats`. Add `@limiter.limit(...)` (+ a `request: Request` param) for
   new abuse-prone endpoints.
@@ -114,7 +145,7 @@ The full agent-facing action catalog (method, params, role) lives at
 `@components/`→`src/components/`, `@assets/`→`src/assets/`, `@styles/`→`src/styles/`.
 
 ## Before you commit
-- Backend: `.venv/bin/python -m pytest` (all green).
-- Frontend: `npm run build` + `npx vitest run` (all green).
-- New backend route → add the matching `api.ts` method.
-- New `backend/database/migrations/*.sql` → also update `supabase/schema.sql`.
+- Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest` (all green).
+- Frontend: `npm run lint && npm run build && npx vitest run` (0 lint errors, all green).
+- New backend route → add the matching method to `frontend/src/lib/api/<domain>.ts`.
+- New `backend/database/migrations/*.sql` → update `supabase/schema.sql` once it is applied.

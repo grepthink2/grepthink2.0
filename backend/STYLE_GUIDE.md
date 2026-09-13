@@ -24,10 +24,8 @@ router.patch("/{project_id}")(views.update_project)
 **`views.py`** — Extract params, check auth, delegate to controller, return response.
 
 ```python
-def create_project(data: CreateProjectRequest, payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    project = controller.create_project(user_id=payload.get('sub'), ...)
+def create_project(data: CreateProjectRequest, user_id: str = Depends(require_user)):
+    project = controller.create_project(user_id=user_id, ...)
     return {"message": "Project created", "project": project}
 ```
 
@@ -41,7 +39,7 @@ def create_project(data: CreateProjectRequest, payload: dict = Depends(verify_su
 
 - **Modules**: `snake_case` (e.g. `project_members`, `interest_form`)
 - **Functions**: `snake_case` (e.g. `create_project`, `get_my_interests`)
-- **Private helpers**: prefix with `_` (e.g. `_client()`, `_require_class_instructor()`)
+- **Private helpers**: prefix with `_` (e.g. `_load_project()`, `_require_meeting_editor()`)
 - **Route paths**: `kebab-case` for multi-word segments (e.g. `/assign-product-owner`, `/pref-by-student`)
 - **Pydantic models**: `PascalCase` with `Request` or `Response` suffix (e.g. `CreateProjectRequest`, `AssignUserRequest`)
 
@@ -49,53 +47,95 @@ def create_project(data: CreateProjectRequest, payload: dict = Depends(verify_su
 
 ## Authentication
 
-Use `Depends(verify_supabase_token)` for protected endpoints. The dependency returns the decoded JWT payload or `None` if no token is sent.
+Views take the caller from a dependency, so the JWT is verified before the view runs:
 
 ```python
-def my_view(payload: dict = Depends(verify_supabase_token)):
-    if not payload:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    user_id = payload.get("sub")
-    # ...
+from app.dependencies import require_user
+
+
+def get_assignments(class_id: UUID = Query(...), user_id: str = Depends(require_user)):
+    return {"assignments": controller.get_assignments_for_class(user_id, class_id)}
 ```
 
-For instructor-only endpoints, enforce in the controller (e.g. `_require_class_instructor(user_id, class_id)`).
+- `require_user` answers 401 without a valid token and returns the user id.
+- `require_instructor` also requires `profiles.role == 'instructor'`.
+- Class and project rules (class owner, enrolled student or TA, project role) live in the
+  controller, through `app.core.authz`:
+
+```python
+from app.core import authz
+
+cls = authz.require_class_instructor(client, user_id, class_id, missing=404, denied=403)
+access = authz.require_class_access(client, user_id, class_id)  # instructor or enrolled
+project = authz.load_project(client, project_id, class_columns="created_by")
+```
+
+When you move an existing check onto a helper, keep that endpoint's status code and
+`detail` (`missing=`, `denied=`, `missing_detail=`, `denied_detail=`).
 
 ---
 
 ## Database Access
 
-- Use `service_client` when available, otherwise `supabase` from `app.database.client`
-- Prefer a shared helper in the controller:
+The service-role client bypasses Row-Level Security, so every authorization decision is made
+in Python. Get the client per call; feature modules never import `service_client`:
 
 ```python
-def _client():
-    return service_client if service_client else supabase
+from app.core.db import fan_out, get_client, is_unique_violation
+
+client = get_client()
 ```
 
-- Convert UUIDs to strings for queries: `str(project_id)`, `str(class_id)`
-- Chain Supabase filters: `.eq()`, `.in_()`, `.order()`, etc.
-- Handle empty results: `result.data or []`, `if not result.data: raise HTTPException(...)`
+Every `.execute()` is one HTTP round trip to PostgREST. Keep the count flat as data grows:
+
+- **Embed related rows** over foreign keys instead of reading them one by one:
+  `select("id, name, project_members(user_id, role)")`. When a table has several FKs to the
+  same target, name the constraint: `profiles!project_join_requests_user_id_fkey(email)`.
+- **Batch with `.in_()`** instead of one query per id, and read profiles once for all ids.
+- **Fan out independent reads** so they cost one round trip of latency, not one each:
+
+```python
+reads = fan_out(
+    {
+        "class": lambda: authz.load_class(client, class_id),
+        "projects": lambda: (
+            client.table("projects").select("id, name").eq("class_id", cid).execute().data or []
+        ),
+    }
+)
+```
+
+- **Validate, then write once.** Check every item in memory, then issue one bulk `insert`,
+  `upsert(on_conflict=...)` or `delete`, so nothing is written when any item is invalid.
+- **Lost races on unique keys:** catch the insert error and test `is_unique_violation(exc)`
+  to answer 409 (or re-read) instead of 500. Rely only on constraints in `supabase/schema.sql`
+  that are applied; never on a staged migration.
+- Convert UUIDs to strings for filters (`str(project_id)`) and treat empty results as
+  `result.data or []`.
 
 ---
 
 ## Error Handling
 
-- Use `HTTPException` for HTTP errors (400, 401, 403, 404, 500)
-- Re-raise `HTTPException` in `except` blocks; handle other exceptions and wrap in 500
-- Prefer specific status codes:
-  - `400` — Bad request (validation, wrong class, etc.)
-  - `401` — Unauthenticated
-  - `403` — Forbidden (wrong role)
-  - `404` — Not found
-  - `500` — Server error (with `detail` including error message for debugging)
+- Raise `HTTPException` with a fixed, user-safe `detail` (400, 401, 403, 404, 409).
+- Never put exception text in `detail`: PostgREST errors include table and constraint names.
+  `app/core/errors.py` logs anything uncaught and answers `{"detail": "Internal server error"}`.
+- Catch exceptions only to add context to the log or to map a known failure to a better
+  status. Re-raise `HTTPException`, and re-raise transient network errors so
+  `@retry_on_disconnect()` can retry a read.
 
 ```python
+from app.core.db import TRANSIENT_ERRORS
+
+try:
+    ...
 except HTTPException:
     raise
-except Exception as e:
-    print(f"Error in create_project: {e}")
-    raise HTTPException(status_code=500, detail=f"Failed to create project: {str(e)}")
+except TRANSIENT_ERRORS:
+    raise  # @retry_on_disconnect() retries the read
+except Exception:
+    logger.exception("Error creating project | class_id=%s user_id=%s", class_id, user_id)
+    raise HTTPException(status_code=500, detail="Failed to create project")
 ```
 
 ---
@@ -145,8 +185,8 @@ def assign_user(user_id: str, class_id: UUID, target_user_id: UUID, project_id: 
 
 - Standard library first, then third-party, then `app.*`
 - Prefer explicit imports; avoid `from module import *`
-- Use `from app.database.client import service_client, supabase`
-- Use `from app.dependencies import verify_supabase_token` for auth
+- Use `from app.core.db import get_client` (plus `fan_out` where reads are independent)
+- Use `from app.dependencies import require_user` (or `require_instructor`) for auth
 
 ---
 
@@ -156,4 +196,5 @@ def assign_user(user_id: str, class_id: UUID, target_user_id: UUID, project_id: 
 2. Define routes in `url.py`, handlers in `views.py`, logic in `controller.py`
 3. Add Pydantic models in `models.py`
 4. Register the router in `app/main.py`
-5. Add integration tests in `tests/` if the feature has non-trivial logic
+5. Add tests in `tests/` with `FakeSupabase` (`tests/fake_supabase.py`; see `tests/test_assignments.py`):
+   pin the response shape, the status codes and a round-trip budget (`assert fake.executes <= N`)
