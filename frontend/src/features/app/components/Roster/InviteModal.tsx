@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import {
   X, Loader2, RotateCcw, Link, Hash,
@@ -42,7 +42,7 @@ const TOKEN_CODE = 'ACCESS_CODE';
 const draftKey = (courseCode: string) => `invite_draft_${courseCode}`;
 
 function saveDraft(courseCode: string, draft: Draft) {
-  try { localStorage.setItem(draftKey(courseCode), JSON.stringify(draft)); } catch {}
+  try { localStorage.setItem(draftKey(courseCode), JSON.stringify(draft)); } catch { /* storage unavailable: drafts are best-effort */ }
 }
 
 function loadDraft(courseCode: string): Draft | null {
@@ -53,7 +53,7 @@ function loadDraft(courseCode: string): Draft | null {
 }
 
 function clearDraft(courseCode: string) {
-  try { localStorage.removeItem(draftKey(courseCode)); } catch {}
+  try { localStorage.removeItem(draftKey(courseCode)); } catch { /* storage unavailable: drafts are best-effort */ }
 }
 
 function defaultSubject(cls: string) {
@@ -179,6 +179,26 @@ const EmailInputSection: React.FC<EmailInputSectionProps> = ({
   );
 };
 
+// ── Toolbar button ────────────────────────────────────────────────────────────
+interface ToolbarButtonProps {
+  active: boolean;
+  onDown: () => void;
+  title: string;
+  children: React.ReactNode;
+}
+
+/** Acts on mousedown (and prevents default) so the editor keeps its selection. */
+const ToolbarButton: React.FC<ToolbarButtonProps> = ({ active, onDown, title, children }) => (
+  <button
+    type="button"
+    className={`invite-modal__toolbar-btn${active ? ' invite-modal__toolbar-btn--active' : ''}`}
+    onMouseDown={(e) => { e.preventDefault(); onDown(); }}
+    title={title}
+  >
+    {children}
+  </button>
+);
+
 // ── Body editor ───────────────────────────────────────────────────────────────
 interface BodyEditorProps {
   htmlContent: string;
@@ -201,8 +221,15 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
   const [showLinkPanel, setShowLinkPanel] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+  const [isEditingLink, setIsEditingLink] = useState(false);
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+
+  const refreshPresence = () => {
+    if (!divRef.current) return;
+    setMissingSignup(!divRef.current.querySelector(`[data-token="${TOKEN_SIGNUP}"]`));
+    setMissingCode(!divRef.current.querySelector(`[data-token="${TOKEN_CODE}"]`));
+  };
 
   useEffect(() => {
     if (!divRef.current) return;
@@ -216,25 +243,6 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
     if (!showLinkPanel) return;
     requestAnimationFrame(() => linkTextInputRef.current?.focus());
   }, [showLinkPanel]);
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        toggleLinkPanel();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  // toggleLinkPanel reads showLinkPanel via closure — re-register when it changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showLinkPanel]);
-
-  const refreshPresence = () => {
-    if (!divRef.current) return;
-    setMissingSignup(!divRef.current.querySelector(`[data-token="${TOKEN_SIGNUP}"]`));
-    setMissingCode(!divRef.current.querySelector(`[data-token="${TOKEN_CODE}"]`));
-  };
 
   const saveSelection = () => {
     const sel = window.getSelection();
@@ -257,6 +265,7 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
     setLinkText('');
     setLinkUrl('');
     editingLinkRef.current = null;
+    setIsEditingLink(false);
     divRef.current?.focus();
   };
 
@@ -267,10 +276,12 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
 
     if (anchor) {
       editingLinkRef.current = anchor;
+      setIsEditingLink(true);
       setLinkText(anchor.textContent ?? '');
       setLinkUrl(anchor.getAttribute('href') ?? '');
     } else {
       editingLinkRef.current = null;
+      setIsEditingLink(false);
       setLinkText(range && !range.collapsed ? range.toString() : '');
       setLinkUrl('https://');
     }
@@ -280,6 +291,19 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
   const toggleLinkPanel = () => {
     if (showLinkPanel) { closeLinkPanel(); } else { openLinkPanel(); }
   };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        toggleLinkPanel();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  // toggleLinkPanel reads showLinkPanel via closure — re-register when it changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showLinkPanel]);
 
   const refreshActiveFormats = () => {
     const formats = new Set<string>();
@@ -419,42 +443,26 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
     if (anchor && divRef.current?.contains(anchor)) {
       e.preventDefault();
       editingLinkRef.current = anchor;
+      setIsEditingLink(true);
       setLinkText(anchor.textContent ?? '');
       setLinkUrl(anchor.getAttribute('href') ?? '');
       setShowLinkPanel(true);
     }
   };
 
-  const tbBtn = (
-    _fmt: string,
-    active: boolean,
-    onDown: () => void,
-    title: string,
-    icon: React.ReactNode,
-  ) => (
-    <button
-      type="button"
-      className={`invite-modal__toolbar-btn${active ? ' invite-modal__toolbar-btn--active' : ''}`}
-      onMouseDown={(e) => { e.preventDefault(); onDown(); }}
-      title={title}
-    >
-      {icon}
-    </button>
-  );
-
   return (
     <div className="invite-modal__body-editor">
       {/* ── Toolbar ── */}
       <div className="invite-modal__toolbar">
-        {tbBtn('bold', activeFormats.has('bold'), () => execFormat('bold'), 'Bold', <Bold size={14} strokeWidth={2} />)}
-        {tbBtn('italic', activeFormats.has('italic'), () => execFormat('italic'), 'Italic', <Italic size={14} strokeWidth={2} />)}
-        {tbBtn('underline', activeFormats.has('underline'), () => execFormat('underline'), 'Underline', <Underline size={14} strokeWidth={2} />)}
-        {tbBtn('strikeThrough', activeFormats.has('strikeThrough'), () => execFormat('strikeThrough'), 'Strikethrough', <Strikethrough size={14} strokeWidth={2} />)}
+        <ToolbarButton active={activeFormats.has('bold')} onDown={() => execFormat('bold')} title="Bold"><Bold size={14} strokeWidth={2} /></ToolbarButton>
+        <ToolbarButton active={activeFormats.has('italic')} onDown={() => execFormat('italic')} title="Italic"><Italic size={14} strokeWidth={2} /></ToolbarButton>
+        <ToolbarButton active={activeFormats.has('underline')} onDown={() => execFormat('underline')} title="Underline"><Underline size={14} strokeWidth={2} /></ToolbarButton>
+        <ToolbarButton active={activeFormats.has('strikeThrough')} onDown={() => execFormat('strikeThrough')} title="Strikethrough"><Strikethrough size={14} strokeWidth={2} /></ToolbarButton>
         <div className="invite-modal__toolbar-sep" />
-        {tbBtn('ul', activeFormats.has('insertUnorderedList'), () => execFormat('insertUnorderedList'), 'Bullet list', <List size={14} strokeWidth={2} />)}
-        {tbBtn('ol', activeFormats.has('insertOrderedList'), () => execFormat('insertOrderedList'), 'Numbered list', <ListOrdered size={14} strokeWidth={2} />)}
+        <ToolbarButton active={activeFormats.has('insertUnorderedList')} onDown={() => execFormat('insertUnorderedList')} title="Bullet list"><List size={14} strokeWidth={2} /></ToolbarButton>
+        <ToolbarButton active={activeFormats.has('insertOrderedList')} onDown={() => execFormat('insertOrderedList')} title="Numbered list"><ListOrdered size={14} strokeWidth={2} /></ToolbarButton>
         <div className="invite-modal__toolbar-sep" />
-        {tbBtn('link', showLinkPanel, () => { saveSelection(); toggleLinkPanel(); }, 'Insert link (⌘K)', <Link size={14} strokeWidth={2} />)}
+        <ToolbarButton active={showLinkPanel} onDown={() => { saveSelection(); toggleLinkPanel(); }} title="Insert link (⌘K)"><Link size={14} strokeWidth={2} /></ToolbarButton>
       </div>
 
       {/* ── Scrollable editor with resize handle + floating link panel ── */}
@@ -475,7 +483,7 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
           <div className="invite-modal__link-panel">
             <div className="invite-modal__link-panel-header">
               <span className="invite-modal__link-panel-title">
-                {editingLinkRef.current ? 'Edit link' : 'Add link'}
+                {isEditingLink ? 'Edit link' : 'Add link'}
               </span>
               <button type="button" className="invite-modal__link-cancel" onClick={closeLinkPanel} aria-label="Close">
                 <X size={12} />
@@ -513,7 +521,7 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
               </label>
             </div>
             <div className="invite-modal__link-actions">
-              {editingLinkRef.current && (
+              {isEditingLink && (
                 <button type="button" className="invite-modal__link-remove" onClick={removeLink}>
                   Remove
                 </button>
@@ -570,7 +578,10 @@ const InviteModal: React.FC<InviteModalProps> = ({
 
   const prevIsOpenRef = useRef(false);
   const stateRef = useRef({ recipients, cc, bcc, subject, body, bodyHtml });
-  stateRef.current = { recipients, cc, bcc, subject, body, bodyHtml };
+  // handleClose is a stable callback that needs the latest form values.
+  useLayoutEffect(() => {
+    stateRef.current = { recipients, cc, bcc, subject, body, bodyHtml };
+  });
   const firstFocusRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<Element | null>(null);
 

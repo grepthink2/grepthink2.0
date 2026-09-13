@@ -55,7 +55,6 @@ export const ConversationMenu: React.FC<Props> = ({
       await api.markConversationRead(conversationId);
       await refetch();
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error('[ConversationMenu] mark read failed:', err);
     } finally {
       setBusy(false);
@@ -73,7 +72,6 @@ export const ConversationMenu: React.FC<Props> = ({
       setOpen(false);
       onDeleted?.();
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error('[ConversationMenu] delete failed:', err);
       window.alert('Could not delete the conversation. Please try again.');
     } finally {

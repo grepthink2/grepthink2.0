@@ -53,7 +53,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
         console.debug('[auth] state change:', event, 'has session:', !!nextSession);
       }
       setSession(nextSession ?? null);
@@ -92,7 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // that Home.tsx used to surface as "Not authenticated".
         const { data: refreshed, error } = await supabase.auth.refreshSession();
         if (error) {
-          // eslint-disable-next-line no-console
           console.warn('[auth] refreshSession failed:', error.message);
           return null;
         }
@@ -109,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
 export const useAuth = (): AuthContextValue => {
   const ctx = useContext(AuthContext);
   if (!ctx) {
@@ -128,6 +127,7 @@ export const useAuth = (): AuthContextValue => {
   };
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
 export const useUser = () => {
   const { user, loading } = useAuth();
   return { user, isLoaded: !loading };

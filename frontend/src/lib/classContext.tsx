@@ -206,6 +206,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
 export const useClass = () => {
   const context = useContext(ClassContext);
   if (!context) {

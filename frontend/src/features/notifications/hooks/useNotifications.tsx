@@ -108,6 +108,7 @@ export const NotificationsProvider: React.FC<{ children: ReactNode }> = ({ child
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
 export const useNotifications = (): NotificationsValue => {
   const ctx = useContext(NotificationsContext);
   if (!ctx) {

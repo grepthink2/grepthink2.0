@@ -106,6 +106,7 @@ export const ConversationsProvider: React.FC<{ children: ReactNode }> = ({ child
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
 export const useConversations = (): ConversationsValue => {
   const ctx = useContext(ConversationsContext);
   if (!ctx) {
