@@ -10,8 +10,10 @@ router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 router.post("")(views.create_project)
 router.get("")(views.get_projects)
+# Static GET paths stay above "/{project_id}", which would otherwise capture them.
 router.get("/pending-invites")(views.get_pending_team_invites)
 router.get("/my-join-requests")(views.get_my_join_requests)
+router.get("/incoming-join-requests")(views.get_incoming_join_requests)
 router.get("/{project_id}")(views.get_project)
 router.patch("/{project_id}")(views.update_project)
 router.delete("/{project_id}")(views.delete_project)

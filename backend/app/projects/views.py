@@ -70,6 +70,21 @@ def get_my_join_requests(
     return {"requests": requests}
 
 
+def get_incoming_join_requests(
+    class_id: UUID = Query(..., description="Class whose join requests the caller reviews"),
+    user_id: str = Depends(require_user),
+):
+    """
+    Pending **student-initiated** join requests on every project in the class that
+    the caller reviews (project owner / product owner / admin), in one request.
+
+    Each row is a ``GET /{project_id}/join-requests`` row plus ``project_id``,
+    ``project_name`` and ``member_count``; oldest first.
+    """
+    requests = controller.get_incoming_join_requests(user_id=user_id, class_id=class_id)
+    return {"requests": requests}
+
+
 def get_project(project_id: UUID, user_id: str = Depends(require_user)):
     project = controller.get_project_by_id(project_id, user_id)
     return {"project": project}

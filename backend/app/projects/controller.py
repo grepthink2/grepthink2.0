@@ -1765,6 +1765,87 @@ def get_pending_join_requests(project_id: UUID, reviewer_id: str) -> list:
         raise HTTPException(status_code=500, detail="Failed to fetch join requests")
 
 
+#: Project roles whose members review a project's join requests, compared trimmed and
+#: lowercased to match the web client's ``canReviewJoinRequests``.
+JOIN_REVIEW_ROLES = frozenset(ELEVATED_ROLES)
+
+
+def _requested_at_sort_key(row: dict) -> tuple[int, datetime]:
+    """Rows without a (parseable) ``requested_at`` first, then oldest first."""
+    raw = row.get("requested_at")
+    try:
+        ts = datetime.fromisoformat(str(raw)) if raw else None
+    except ValueError:
+        ts = None
+    if ts is None:
+        return (0, datetime.min.replace(tzinfo=UTC))
+    return (1, ts if ts.tzinfo else ts.replace(tzinfo=UTC))
+
+
+@retry_on_disconnect()
+def get_incoming_join_requests(user_id: str, class_id: UUID) -> list:
+    """
+    Pending **student-initiated** join requests on every project in a class that
+    ``user_id`` reviews, replacing one ``GET /{project_id}/join-requests`` per project.
+
+    A project is reviewable when the caller is a member whose role, trimmed and
+    lowercased, is ``owner``, ``product owner`` or ``admin`` (the web client's
+    ``canReviewJoinRequests``). A class instructor therefore sees only the projects
+    they are a member of, as the per-project view did. No reviewable project gives
+    an empty list.
+
+    Each row carries the seven keys :func:`get_pending_join_requests` emits plus
+    ``project_id``, ``project_name`` and ``member_count`` (the live member-row count,
+    as :func:`get_projects_for_user` reports it). Rows are sorted oldest first, with
+    rows lacking a timestamp at the top.
+
+    Two queries however many projects qualify: the class's projects with their
+    members embedded, then the pending requests (requester profile embedded) on the
+    reviewable ones.
+    """
+    try:
+        client = get_client()
+        class_projects = (
+            client.table("projects")
+            .select("id, name, project_members(user_id, role)")
+            .eq("class_id", str(class_id))
+            .execute()
+        ).data or []
+
+        reviewable: dict[str, dict] = {}
+        for p in class_projects:
+            members = p.get("project_members") or []
+            role = (_member_role(members, user_id) or "").strip().lower()
+            if role in JOIN_REVIEW_ROLES:
+                reviewable[str(p["id"])] = {"name": p.get("name"), "member_count": len(members)}
+        if not reviewable:
+            return []
+
+        rows = []
+        for r in _pending_student_requests(client, list(reviewable)):
+            project = reviewable[str(r["project_id"])]
+            rows.append(
+                {
+                    **_join_request_row(r),
+                    "project_id": str(r["project_id"]),
+                    "project_name": project["name"],
+                    "member_count": project["member_count"],
+                }
+            )
+        rows.sort(key=_requested_at_sort_key)
+        return rows
+    except HTTPException:
+        raise
+    except _TRANSIENT_HTTPX_ERRORS:
+        # Bubble to @retry_on_disconnect (a read, so retrying is safe).
+        raise
+    except Exception:
+        logger.exception(
+            "Error fetching incoming join requests | user_id=%s class_id=%s", user_id, class_id
+        )
+        raise HTTPException(status_code=500, detail="Failed to fetch incoming join requests")
+
+
 def instructor_add_member(project_id: UUID, requester_id: str, target_user_id: str, role="member"):
     """
     Add or promote a project member.
