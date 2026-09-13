@@ -1,17 +1,20 @@
 """Teaching Assistant (TA) views — parameter handling and responses."""
+
 from uuid import UUID
+
 from fastapi import Depends
-from app.dependencies import require_user, require_instructor
-from app.tas.models import (
-    TaUserRequest,
-    SetReviewWindowRequest,
-    SetReviewTaRequest,
-    SetReviewZoomRequest,
-    SetFinalReviewTimeRequest,
-    SaveFinalReviewScoresRequest,
-    SaveFinalReviewNotesRequest,
-)
+
+from app.dependencies import require_instructor, require_user
 from app.tas import controller
+from app.tas.models import (
+    SaveFinalReviewNotesRequest,
+    SaveFinalReviewScoresRequest,
+    SetFinalReviewTimeRequest,
+    SetReviewTaRequest,
+    SetReviewWindowRequest,
+    SetReviewZoomRequest,
+    TaUserRequest,
+)
 
 
 def promote_to_ta(
@@ -60,6 +63,7 @@ def list_project_tas(
 
 # ----- End-of-quarter review (additional reviewer) --------------------------
 
+
 def set_review_window(
     class_id: UUID,
     data: SetReviewWindowRequest,
@@ -93,6 +97,7 @@ def release_review_ta(
 
 # ----- Final Reviews: schedule + shared Zoom --------------------------------
 
+
 def set_review_zoom(
     class_id: UUID,
     data: SetReviewZoomRequest,
@@ -120,6 +125,7 @@ def get_final_review_schedule(
 # Role-specific authz (Home TA / Review TA / instructor) lives in the
 # controller — these callers are class TAs, not platform instructors.
 
+
 def get_final_review_detail(
     project_id: UUID,
     user_id: str = Depends(require_user),
@@ -139,8 +145,7 @@ def save_final_review_scores(
     # erases that distinction, which would make an absent key look identical
     # to an explicit clear.
     entries = [
-        {**e.model_dump(exclude_unset=True), "student_id": str(e.student_id)}
-        for e in data.scores
+        {**e.model_dump(exclude_unset=True), "student_id": str(e.student_id)} for e in data.scores
     ]
     return controller.save_final_review_scores(user_id, project_id, data.role, entries)
 
@@ -150,4 +155,6 @@ def save_final_review_notes(
     data: SaveFinalReviewNotesRequest,
     user_id: str = Depends(require_user),
 ):
-    return controller.save_final_review_notes(user_id, project_id, data.content, data.template_version)
+    return controller.save_final_review_notes(
+        user_id, project_id, data.content, data.template_version
+    )

@@ -1,4 +1,5 @@
 """Routes for the notifications feature."""
+
 from fastapi import APIRouter
 
 from app.notifications import views

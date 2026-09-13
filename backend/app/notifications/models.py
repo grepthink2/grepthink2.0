@@ -1,7 +1,6 @@
 """Pydantic models for the notifications feature."""
-from __future__ import annotations
 
-from typing import Optional
+from __future__ import annotations
 
 from pydantic import BaseModel
 
@@ -11,9 +10,9 @@ class NotificationItem(BaseModel):
     type: str
     title: str
     body: str
-    entity_type: Optional[str] = None
-    entity_id: Optional[str] = None
-    read_at: Optional[str] = None
+    entity_type: str | None = None
+    entity_id: str | None = None
+    read_at: str | None = None
     created_at: str
 
 

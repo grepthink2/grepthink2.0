@@ -1,99 +1,105 @@
-"""Server-side messageable-users list."""
+"""Server-side messageable-users list.
+
+Scenario tests against FakeSupabase. Round-trip budgets and the exact response
+shape and ordering are pinned in test_messages_batching.py. The foreign keys
+list_contacts embeds over are declared here, just as PostgREST needs them.
+"""
+
 from __future__ import annotations
-from unittest.mock import MagicMock, patch
+
+import pytest
+
+from app.messages.controller import list_contacts
+from tests.fake_supabase import FakeSupabase
+
+RELATIONS = {
+    ("classes", "profiles!classes_created_by_fkey"): ("created_by", "id", False),
+    ("classes", "class_enrollments!class_enrollments_class_id_fkey"): ("id", "class_id", True),
+    ("class_enrollments", "classes!class_enrollments_class_id_fkey"): ("class_id", "id", False),
+    ("class_enrollments", "profiles!class_enrollments_user_id_fkey"): ("user_id", "id", False),
+}
 
 
-def _wire(client, *, owned, enrolled, class_enrollments, class_owners, profiles):
-    """Route table() calls to canned data by table + call order."""
-    def table(name):
-        m = MagicMock()
-        chain = m.select.return_value
-        if name == "classes":
-            # 1st: caller-owned classes (.eq); 2nd: owners of class ids (.in_)
-            chain.eq.return_value.execute.return_value = MagicMock(data=owned)
-            chain.in_.return_value.execute.return_value = MagicMock(data=class_owners)
-        elif name == "class_enrollments":
-            chain.eq.return_value.execute.return_value = MagicMock(data=enrolled)
-            chain.in_.return_value.execute.return_value = MagicMock(data=class_enrollments)
-        elif name == "profiles":
-            chain.in_.return_value.execute.return_value = MagicMock(data=profiles)
-        return m
-    client.table.side_effect = table
+def _profile(uid, role, email, first, last):
+    return {
+        "id": uid,
+        "role": role,
+        "email": email,
+        "first_name": first,
+        "last_name": last,
+        "image_url": None,
+    }
 
 
-@patch("app.messages.controller.service_client")
-def test_contacts_excludes_self_and_instructor_pairs(client):
-    from app.messages.controller import list_contacts
-    _wire(
-        client,
-        owned=[{"id": "cls1", "created_by": "prof"}],   # caller owns cls1
-        enrolled=[],
+@pytest.fixture
+def seed(monkeypatch):
+    """Install a FakeSupabase holding the given tables as the service client."""
+
+    def install(**tables):
+        fake = FakeSupabase(relations=RELATIONS, **tables)
+        monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+        return fake
+
+    return install
+
+
+def test_contacts_excludes_self_and_instructor_pairs(seed):
+    # prof (instructor) owns cls1 and is enrolled in it too; prof2 (instructor)
+    # owns cls2, where prof is a TA.
+    seed(
+        classes=[{"id": "cls1", "created_by": "prof"}, {"id": "cls2", "created_by": "prof2"}],
         class_enrollments=[
             {"class_id": "cls1", "user_id": "stu1"},
             {"class_id": "cls1", "user_id": "prof"},
+            {"class_id": "cls2", "user_id": "prof", "enrollment_role": "ta"},
         ],
-        class_owners=[{"id": "cls1", "created_by": "prof2"}],
         profiles=[
-            {"id": "prof", "role": "instructor", "email": "p@u.e",
-             "first_name": "Pat", "last_name": "Prof", "image_url": None},
-            {"id": "prof2", "role": "instructor", "email": "p2@u.e",
-             "first_name": "Pam", "last_name": "Prof", "image_url": None},
-            {"id": "stu1", "role": "student", "email": "s@u.e",
-             "first_name": "Sam", "last_name": "Stu", "image_url": None},
+            _profile("prof", "instructor", "p@u.e", "Pat", "Prof"),
+            _profile("prof2", "instructor", "p2@u.e", "Pam", "Prof"),
+            _profile("stu1", "student", "s@u.e", "Sam", "Stu"),
         ],
     )
     contacts = list_contacts(caller_id="prof")
     ids = {c["id"] for c in contacts}
-    assert "stu1" in ids          # student peer included
-    assert "prof" not in ids      # never include self
-    assert "prof2" not in ids     # instructor↔instructor excluded
+    assert "stu1" in ids  # student peer included
+    assert "prof" not in ids  # never include self
+    assert "prof2" not in ids  # instructor↔instructor excluded
 
 
-@patch("app.messages.controller.service_client")
-def test_contacts_query_filters_by_name(client):
-    from app.messages.controller import list_contacts
-    _wire(
-        client,
-        owned=[],
-        enrolled=[{"class_id": "cls1"}],
+def test_contacts_query_filters_by_name(seed):
+    seed(
+        classes=[{"id": "cls1", "created_by": "prof"}],
         class_enrollments=[
+            {"class_id": "cls1", "user_id": "me"},
             {"class_id": "cls1", "user_id": "stu1"},
             {"class_id": "cls1", "user_id": "stu2"},
         ],
-        class_owners=[],
         profiles=[
-            {"id": "me", "role": "student", "email": "me@u.e",
-             "first_name": "Me", "last_name": "M", "image_url": None},
-            {"id": "stu1", "role": "student", "email": "s@u.e",
-             "first_name": "Samantha", "last_name": "Stone", "image_url": None},
-            {"id": "stu2", "role": "student", "email": "j@u.e",
-             "first_name": "Jo", "last_name": "Jones", "image_url": None},
+            _profile("prof", "instructor", "p@u.e", "Pat", "Prof"),
+            _profile("me", "student", "me@u.e", "Me", "M"),
+            _profile("stu1", "student", "s@u.e", "Samantha", "Stone"),
+            _profile("stu2", "student", "j@u.e", "Jo", "Jones"),
         ],
     )
     contacts = list_contacts(caller_id="me", query="stone")
     assert [c["id"] for c in contacts] == ["stu1"]
 
 
-@patch("app.messages.controller.service_client")
-def test_contacts_drops_peers_without_profiles_row(client):
+def test_contacts_drops_peers_without_profiles_row(seed):
     """Pin the documented decision: a peer id present in class_enrollments
     but absent from profiles (orphaned enrollment / auth-glue gap) is
     silently omitted — never an error, never an unnameable contact."""
-    from app.messages.controller import list_contacts
-    _wire(
-        client,
-        owned=[],
-        enrolled=[{"class_id": "cls1"}],
+    seed(
+        # The owner has no profiles row either, so stu1 is the only nameable peer.
+        classes=[{"id": "cls1", "created_by": "ghost-owner"}],
         class_enrollments=[
+            {"class_id": "cls1", "user_id": "me"},
             {"class_id": "cls1", "user_id": "stu1"},
             {"class_id": "cls1", "user_id": "ghost"},  # no profiles row
         ],
-        class_owners=[],
         profiles=[
-            {"id": "me", "role": "student", "email": "me@u.e",
-             "first_name": "Me", "last_name": "M", "image_url": None},
-            {"id": "stu1", "role": "student", "email": "s@u.e",
-             "first_name": "Sam", "last_name": "Stu", "image_url": None},
+            _profile("me", "student", "me@u.e", "Me", "M"),
+            _profile("stu1", "student", "s@u.e", "Sam", "Stu"),
         ],
     )
     contacts = list_contacts(caller_id="me")

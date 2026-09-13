@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useClass } from '@/lib/classContext';
-import { api } from '@/lib/api';
+import { useEnrollmentRole } from '@/lib/enrollmentRole';
 import TAScheduleView from '@features/app/components/TAManagement/TAScheduleView';
-
-type ClassRole = 'instructor' | 'ta' | 'student' | null;
 
 /**
  * TA meeting schedule + attendance. One route (`/app/ta-meetings`) serving all
@@ -17,27 +15,7 @@ type ClassRole = 'instructor' | 'ta' | 'student' | null;
 const TAMeetings: React.FC = () => {
   const { selectedClass } = useClass();
   // `undefined` = still resolving; `null` = no class / not enrolled.
-  const [role, setRole] = useState<ClassRole | undefined>(undefined);
-
-  useEffect(() => {
-    if (!selectedClass?.id) {
-      setRole(null);
-      return;
-    }
-    let cancelled = false;
-    setRole(undefined);
-    void (async () => {
-      try {
-        const { enrollment_role } = await api.getMyEnrollmentRole(selectedClass.id);
-        if (!cancelled) setRole((enrollment_role as ClassRole) ?? null);
-      } catch {
-        if (!cancelled) setRole(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedClass?.id]);
+  const role = useEnrollmentRole(selectedClass?.id);
 
   if (role === undefined) return null; // resolving role — avoid a wrong-scope flash
 

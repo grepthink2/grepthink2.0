@@ -2,8 +2,9 @@
 
 ## Documentation for contributors
 
-- **[docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)** — Full onboarding: architecture, request flow, auth and Supabase clients, database tables used in code, **[all HTTP endpoints (§8)](docs/DEVELOPER_GUIDE.md#8-api-reference-all-endpoints)**, how to add a feature, testing, troubleshooting.
-- **[STYLE_GUIDE.md](STYLE_GUIDE.md)** — Naming, layer responsibilities, errors, and small examples.
+- **[STYLE_GUIDE.md](STYLE_GUIDE.md)** — layers, auth, database access and batching rules, errors, small examples.
+- **[../AGENTS.md](../AGENTS.md)** — architecture, roles, gotchas and the commit gates.
+- **[docs/FRONTEND_API.md](docs/FRONTEND_API.md)** — API notes for the web client.
 
 ## Table of Contents
 
@@ -19,18 +20,18 @@
 ```bash
 # From the backend directory (or project root with backend as cwd for run.py)
 
-# Create a virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
+# Create a virtual environment (Python 3.11)
+python3.11 -m venv .venv
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # runtime deps + pytest/ruff (requirements.txt = runtime only)
 
 # Run the development server
 python run.py
 ```
 
-**Environment:** Create a `.env` file at the **repository root** (parent of `backend/`). `app.config` and `app.database.client` load it from there. Typical variables:
+**Environment:** Copy `.env.example` to `.env` at the **repository root** (parent of `backend/`). `app.config` and `app.database.client` load it from there. Typical variables:
 
 ```env
 SUPABASE_URL=your_supabase_url
@@ -44,56 +45,57 @@ The API runs at `http://localhost:5001` by default. Use `GET /health` to confirm
 
 ## Project Structure
 
-The backend is organized by **feature**: each feature has its own folder with routes, views, logic, and request models.
+The backend is organized by **feature**: each feature has its own folder with routes, views, logic, and request models. Shared infrastructure lives in `app/core`.
 
 ```
 backend/
 ├── app/
-│   ├── main.py              # FastAPI app, CORS, router registration
-│   ├── config.py            # Settings and env vars
-│   ├── dependencies.py      # Shared deps (e.g. JWT auth)
+│   ├── main.py              # App wiring: CORS, security headers, rate limiter, routers
+│   ├── config.py            # Settings from the repo-root .env
+│   ├── dependencies.py      # require_user / require_instructor (JWT verification)
+│   ├── core/
+│   │   ├── db.py            # get_client(), fan_out(), is_unique_violation(), retries
+│   │   ├── authz.py         # Class and project access checks
+│   │   └── errors.py        # Global handler for uncaught exceptions
+│   ├── jobs/
+│   │   └── pending_invites.py  # Poller that sends queued class-invite emails
+│   ├── database/client.py   # Supabase clients (anon + service role)
+│   ├── utils/               # Helpers (profiles, code generators)
 │   │
-│   ├── database/            # DB client (Supabase)
-│   │   └── client.py
-│   ├── utils/                # Helpers (e.g. code generators)
-│   │   └── generators.py
-│   │
-│   ├── health/               # Health check
-│   ├── auth/                 # Authentication
-│   ├── classes/              # Class management
-│   ├── projects/             # Project management (members, roles, join requests)
-│   ├── assignments/          # Assignments and TSR (Team Self-Review)
-│   ├── tsr/                  # TSR submission flow
-│   ├── staffing/             # Project staffing (interest forms, assignments, auto-assign)
-│   └── messages/             # Direct messaging between users
+│   ├── health/  auth/  profiles/  contact/  stats/
+│   ├── classes/             # Classes, enrollments, rosters, invites
+│   ├── projects/            # Projects, members, roles, join requests
+│   ├── assignments/         # Assignments, TSR review, feedback
+│   ├── tsr/                 # TSR submission
+│   ├── staffing/            # Interest forms, assign / unassign / auto-assign
+│   ├── tas/                 # TA roles and final reviews
+│   ├── attendance/          # TA meetings and attendance
+│   ├── messages/            # Direct and group messaging
+│   └── notifications/       # In-app notifications
 │
-├── database/
-│   └── migrations/           # SQL DDL snippets for reference (not auto-applied)
-├── docs/
-│   └── DEVELOPER_GUIDE.md    # Full onboarding + §8 API reference
-├── tests/                    # Pytest tests (unit + integration)
-│   ├── conftest.py
-│   ├── memory_supabase.py
-│   ├── test_staffing.py
-│   ├── test_staffing_output.py
-│   ├── test_tsr_view_and_edit.py
-│   └── ...
-├── requirements.txt
-└── run.py                    # Entry point (starts uvicorn)
+├── database/migrations/     # SQL applied by hand (dev, then prod); merging does not apply it
+├── docs/FRONTEND_API.md
+├── tests/
+│   ├── conftest.py          # Env stubs, HS256 test tokens
+│   ├── fake_supabase.py     # In-memory PostgREST double with a round-trip counter
+│   └── test_*.py
+├── requirements.txt         # Runtime dependencies (pinned)
+├── requirements-dev.txt     # + pytest, ruff
+└── run.py                   # Entry point (starts uvicorn)
 ```
 
 Each feature module follows the same pattern:
 
 - **`url.py`** — Path and HTTP method only; one line per route, e.g. `router.get('/path')(views.handler)`.
-- **`views.py`** — Parameter handling (query, body, `Depends`), auth checks, and calls into the controller; returns response dicts.
-- **`controller.py`** — Business logic and database access (no FastAPI dependencies).
+- **`views.py`** — Parameters (query, body, `Depends`) and the authenticated user; calls the controller and returns response dicts.
+- **`controller.py`** — Business logic, authorization and database access (no FastAPI request objects).
 - **`models.py`** — Pydantic models for request bodies (and any shared DTOs).
 
 To add a new feature, create a folder under `app/` with `url.py`, `views.py`, `controller.py`, and `models.py`, then register its router in `app/main.py`.
 
 ## API overview
 
-**Full reference:** Every defined route, HTTP method, path, and a short description of what it does is documented in **[docs/DEVELOPER_GUIDE.md — section 8, API reference](docs/DEVELOPER_GUIDE.md#8-api-reference-all-endpoints)**. Update that section (and `app/<feature>/url.py`) when you add or change endpoints.
+**Routes:** each module's `app/<feature>/url.py` is the source of truth. The agent-facing action catalog lives at `frontend/public/.well-known/grepthink-actions.json`; update it and the web client (`frontend/src/lib/api/<domain>.ts`) when you add or change endpoints.
 
 **High-level map:**
 
@@ -110,27 +112,27 @@ To add a new feature, create a folder under `app/` with `url.py`, `views.py`, `c
 
 ## Testing
 
-Install dev dependencies (pytest, pytest-cov, httpx):
-
-```bash
-pip install -r requirements-dev.txt
-```
-
-**Default (fast, no live DB):** unit/API tests use an in-memory Supabase stand-in and pytest excludes `integration` tests.
-
 ```bash
 cd backend
-python -m pytest --cov=app --cov-report=term-missing
+pip install -r requirements-dev.txt
+ruff format . && ruff check .     # lint gate (CI runs `ruff format --check`)
+python -m pytest                  # fast; no network, no real Supabase project
 ```
 
-**Integration (real Supabase):** requires `.env` and seed data (instructors/students in `profiles`, etc.).
+`tests/conftest.py` stubs the environment and mints HS256 JWTs for route tests.
+`tests/fake_supabase.py` is an in-memory PostgREST double (filters, embeds declared with
+`relations=`, bulk writes, RPCs) that counts round trips, so data-heavy functions pin a budget:
 
-```bash
-python -m pytest -m integration tests/test_staffing.py -v
-python -m pytest tests/ -v   # everything including integration
+```python
+fake = FakeSupabase(
+    relations={("projects", "classes"): ("class_id", "id", False)},
+    projects=[...],
+    classes=[...],
+)
+monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+result = controller.some_read(...)
+assert fake.executes <= 3
 ```
-
-Coverage target is configured in `pytest.ini` (`fail_under`). Raise it as you add tests; full line coverage including every error branch usually needs both unit tests and integration runs.
 
 ## Style Guide
 

@@ -1,14 +1,19 @@
 """
 Profile views — parameter handling and responses
 """
+
 import logging
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Query
 
 from app.dependencies import require_user
-from app.profiles.models import ProfileUpdateRequest, SendEduVerificationRequest, VerifyEduEmailRequest
 from app.profiles import controller
+from app.profiles.models import (
+    ProfileUpdateRequest,
+    SendEduVerificationRequest,
+    VerifyEduEmailRequest,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,16 +43,16 @@ def get_user_profile(
     View another user's profile when you share a class roster.
     """
     try:
-        profile = controller.get_profile_for_class_member(
-            viewer_id, user_id, str(class_id)
-        )
+        profile = controller.get_profile_for_class_member(viewer_id, user_id, str(class_id))
         return {"profile": profile}
     except HTTPException:
         raise
     except Exception:
         logger.exception(
             "get_user_profile failed | viewer=%s target=%s class=%s",
-            viewer_id, user_id, class_id,
+            viewer_id,
+            user_id,
+            class_id,
         )
         raise HTTPException(status_code=500, detail="Failed to fetch profile")
 

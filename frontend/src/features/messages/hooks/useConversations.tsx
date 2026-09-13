@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { api, type ApiConversationSummary } from '@/lib/api';
 import { supabase } from '@/lib/supabaseClient';
@@ -99,13 +99,15 @@ export const ConversationsProvider: React.FC<{ children: ReactNode }> = ({ child
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, refetch]);
 
-  return (
-    <ConversationsContext.Provider value={{ conversations, loading, error, refetch, optimisticMarkRead }}>
-      {children}
-    </ConversationsContext.Provider>
+  const value = useMemo<ConversationsValue>(
+    () => ({ conversations, loading, error, refetch, optimisticMarkRead }),
+    [conversations, loading, error, refetch, optimisticMarkRead],
   );
+
+  return <ConversationsContext.Provider value={value}>{children}</ConversationsContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
 export const useConversations = (): ConversationsValue => {
   const ctx = useContext(ConversationsContext);
   if (!ctx) {

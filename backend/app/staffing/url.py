@@ -1,6 +1,7 @@
 """
 Staffing / Interest-Form routes.
 """
+
 from fastapi import APIRouter
 
 from app.staffing import views

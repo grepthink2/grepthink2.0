@@ -22,6 +22,15 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // eslint-plugin-react-hooks 7 ships React Compiler readiness rules as
+      // errors in "recommended". This app does not use the compiler, so they
+      // are advisory: they point at patterns worth cleaning up, not at bugs.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      // `const { dropped, ...rest } = obj` is the idiomatic way to omit a key.
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

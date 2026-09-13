@@ -9,6 +9,7 @@ If SMTP is not configured (e.g. local dev without a mail server) the
 function raises a RuntimeError so callers can surface a clear error
 rather than silently swallowing it.
 """
+
 import logging
 import re
 import smtplib
@@ -36,23 +37,39 @@ def normalize_editor_html_for_email(html: str) -> str:
       li      → margin: 0; padding: 0
     """
     html = re.sub(
-        r'<div(\s[^>]*)?>',
-        lambda m: m.group(0) if 'style=' in m.group(0) else f'<div{m.group(1) or ""} style="margin:0;padding:0">',
+        r"<div(\s[^>]*)?>",
+        lambda m: (
+            m.group(0)
+            if "style=" in m.group(0)
+            else f'<div{m.group(1) or ""} style="margin:0;padding:0">'
+        ),
         html,
     )
     html = re.sub(
-        r'<ul(\s[^>]*)?>',
-        lambda m: m.group(0) if 'style=' in m.group(0) else f'<ul{m.group(1) or ""} style="margin:4px 0;padding:0 0 0 24px">',
+        r"<ul(\s[^>]*)?>",
+        lambda m: (
+            m.group(0)
+            if "style=" in m.group(0)
+            else f'<ul{m.group(1) or ""} style="margin:4px 0;padding:0 0 0 24px">'
+        ),
         html,
     )
     html = re.sub(
-        r'<ol(\s[^>]*)?>',
-        lambda m: m.group(0) if 'style=' in m.group(0) else f'<ol{m.group(1) or ""} style="margin:4px 0;padding:0 0 0 24px">',
+        r"<ol(\s[^>]*)?>",
+        lambda m: (
+            m.group(0)
+            if "style=" in m.group(0)
+            else f'<ol{m.group(1) or ""} style="margin:4px 0;padding:0 0 0 24px">'
+        ),
         html,
     )
     html = re.sub(
-        r'<li(\s[^>]*)?>',
-        lambda m: m.group(0) if 'style=' in m.group(0) else f'<li{m.group(1) or ""} style="margin:0;padding:0">',
+        r"<li(\s[^>]*)?>",
+        lambda m: (
+            m.group(0)
+            if "style=" in m.group(0)
+            else f'<li{m.group(1) or ""} style="margin:0;padding:0">'
+        ),
         html,
     )
     return html
@@ -64,9 +81,11 @@ def wrap_editor_html_for_email(html: str) -> str:
     return (
         '<html><body style="margin:0;padding:0;font-family:sans-serif;color:#1a1a1a">'
         '<div style="max-width:560px;margin:0 auto;padding:24px;line-height:1.5;font-size:13px">'
-        f'{content}'
-        '</div></body></html>'
+        f"{content}"
+        "</div></body></html>"
     )
+
+
 _RESEND_SMTP_USER = "resend"
 
 
@@ -145,7 +164,12 @@ def send_email(
     login_user = _smtp_login_user(settings.SMTP_HOST, settings.SMTP_USER)
     logger.info(
         "send_email: connecting | host=%s port=%s user=%s to=%s cc=%s bcc_count=%d",
-        settings.SMTP_HOST, settings.SMTP_PORT, login_user, to, cc, len(bcc),
+        settings.SMTP_HOST,
+        settings.SMTP_PORT,
+        login_user,
+        to,
+        cc,
+        len(bcc),
     )
 
     with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:

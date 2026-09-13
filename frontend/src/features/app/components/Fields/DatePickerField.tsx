@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { DayPicker } from 'react-day-picker';
 import { format, parse, isValid } from 'date-fns';
 import { CalendarDays, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
-import 'react-day-picker/dist/style.css';
+import 'react-day-picker/style.css';
 import './DatePickerField.scss';
 
 // ── Format constants ───────────────────────────────────────────

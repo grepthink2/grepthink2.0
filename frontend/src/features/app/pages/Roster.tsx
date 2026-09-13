@@ -318,7 +318,6 @@ const Roster: React.FC = () => {
             showActions
             onInvite={handleInvite}
             onRemove={handleRemove}
-            invitingEmails={new Set()}
             onDeleteManual={handleDeleteManual}
             onAddStudent={() => {
               setAddStudentError(null);

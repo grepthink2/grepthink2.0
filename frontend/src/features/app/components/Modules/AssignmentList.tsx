@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { SquarePen } from 'lucide-react';
 import './AssignmentList.scss';
 
@@ -37,10 +37,7 @@ const statusLabel: Record<AssignmentStatus, string> = {
 };
 
 const AssignmentList: React.FC<AssignmentListProps> = ({ assignments, onEdit, onViewTsr, onViewFeedback }) => {
-  const [_editingId, setEditingId] = useState<string | null>(null);
-
   const handleEdit = (assignment: Assignment) => {
-    setEditingId(assignment.id);
     onEdit?.(assignment);
   };
 

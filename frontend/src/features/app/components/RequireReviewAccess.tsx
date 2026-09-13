@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { useClass } from '@/lib/classContext';
-import { api } from '@/lib/api';
+import { useEnrollmentRole } from '@/lib/enrollmentRole';
 
 type GuardStatus = 'checking' | 'allow' | 'deny';
 
@@ -29,50 +29,20 @@ type GuardStatus = 'checking' | 'allow' | 'deny';
 export const RequireReviewAccess: React.FC = () => {
   const { role } = useAuth();
   const { selectedClass, loading: classesLoading } = useClass();
-  const [status, setStatus] = useState<GuardStatus>(role === 'instructor' ? 'allow' : 'checking');
+  // Ask only once ClassProvider has settled: treating "classes still loading"
+  // as "no class" would flash-redirect a real TA off the page on a hard refresh.
+  const classRole = useEnrollmentRole(
+    role === 'instructor' || classesLoading ? undefined : selectedClass?.id,
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    // Every branch's setState lives inside this async IIFE (rather than
-    // directly in the effect body) so none of them are lexically direct
-    // statements of the effect callback — same pattern as Sidebar.tsx's
-    // isTaForClass check, which satisfies react-hooks/set-state-in-effect
-    // without changing timing (the synchronous branches below still run
-    // before any await, on the same tick as every other render-phase effect).
-    void (async () => {
-      if (role === 'instructor') {
-        if (!cancelled) setStatus('allow');
-        return;
-      }
-
-      // ClassProvider hasn't resolved `selectedClass` yet — wait, rather
-      // than treating "no class" as a verdict. Otherwise every hard refresh
-      // would flash-redirect a real TA off the page while classes load.
-      if (classesLoading) {
-        if (!cancelled) setStatus('checking');
-        return;
-      }
-
-      const classId = selectedClass?.id;
-      if (!classId) {
-        // No class selected and nothing left to load — same "not a TA for
-        // this class" signal Sidebar.tsx falls back to.
-        if (!cancelled) setStatus('deny');
-        return;
-      }
-
-      if (!cancelled) setStatus('checking');
-      try {
-        const { enrollment_role } = await api.getMyEnrollmentRole(classId);
-        if (!cancelled) setStatus(enrollment_role === 'ta' ? 'allow' : 'deny');
-      } catch {
-        if (!cancelled) setStatus('deny');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [role, selectedClass?.id, classesLoading]);
+  let status: GuardStatus;
+  if (role === 'instructor') status = 'allow';
+  else if (classesLoading) status = 'checking';
+  // No class selected and nothing left to load: the same "not a TA for this
+  // class" signal Sidebar.tsx falls back to.
+  else if (!selectedClass?.id) status = 'deny';
+  else if (classRole === undefined) status = 'checking';
+  else status = classRole === 'ta' ? 'allow' : 'deny';
 
   if (status === 'checking') {
     return <div className="require-review-access" aria-busy="true" />;

@@ -3,6 +3,7 @@
 Field length bounds here are a fast pre-flight; the controller re-validates
 (trimming + email format) as the authoritative check.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field

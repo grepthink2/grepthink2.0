@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Linkedin, Github } from 'lucide-react';
+import { LinkedinIcon as Linkedin, GithubIcon as Github } from '@/components/icons/BrandIcons';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 import './Portfolio.scss';

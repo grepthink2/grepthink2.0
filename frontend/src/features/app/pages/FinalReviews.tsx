@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarCheck, Check, ChevronRight, Clock, Video, X } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
+import { fetchEnrollmentRole } from '@/lib/enrollmentRole';
 import { api, type ApiClassTA, type ApiFinalReviewSchedule, type ApiFinalReviewTeam } from '@/lib/api';
 import { getInitials } from '@features/app/utils/memberUtils';
 import { formatReviewTime as formatTime } from './finalReviewTemplate';
@@ -94,18 +95,18 @@ const FinalReviews: React.FC = () => {
 
   const loadSchedule = useCallback(async () => {
     if (!classId) return;
-    const [scheduleRes, roleRes] = await Promise.all([
+    const [scheduleRes, viewerRole] = await Promise.all([
       api.getFinalReviewSchedule(classId),
-      api.getMyEnrollmentRole(classId).catch(() => ({ enrollment_role: null })),
+      fetchEnrollmentRole(classId, user?.id).catch(() => null),
     ]);
     setSchedule(scheduleRes);
-    setRole((roleRes.enrollment_role as ViewerRole) ?? null);
+    setRole(viewerRole);
     setTimeDrafts(Object.fromEntries(
       scheduleRes.teams.map((t) => [t.project_id, toInputValue(t.final_review_at)]),
     ));
     // Fresh server data supersedes any stale per-row validation state.
     setTimeInvalid({});
-  }, [classId]);
+  }, [classId, user?.id]);
 
   useEffect(() => {
     if (!classId) {

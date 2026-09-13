@@ -15,20 +15,16 @@ import {
 } from 'lucide-react';
 import { useClass, type Class } from '@/lib/classContext';
 import { api } from '@/lib/api';
-import CreateClassModal from '@features/app/components/Classes/CreateClassModal';
-import { summarizeRoster } from '@features/app/components/Dashboard/dashboardData';
+import { lazyModal } from '@/lib/lazyModal';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { buildAttentionItems, type AttentionItem } from './attentionItems';
 import './InstructorHomeDashboard.scss';
 
-type AttentionType = 'roster_missing' | 'unmatched';
-
-interface AttentionItem {
-  id: string;
-  classId: string;
-  className: string;
-  type: AttentionType;
-  message: string;
-}
+// Loads on first open; the form pulls in the date picker.
+const CreateClassModal = lazyModal(
+  () => import('@features/app/components/Classes/CreateClassModal'),
+  (p) => p.isOpen,
+);
 
 function courseLabel(cls: Class): string {
   const parts = [cls.year ? String(cls.year) : '', cls.term].filter(Boolean);
@@ -82,38 +78,11 @@ const InstructorHomeDashboard: React.FC = () => {
     const load = async () => {
       setAlertsLoading(true);
       try {
-        const perClass = await Promise.all(
-          activeClasses.map(async (cls) => {
-            try {
-              const { students, uploaded_at } = await api.getClassRoster(cls.id);
-              const items: AttentionItem[] = [];
-              if (!uploaded_at) {
-                items.push({
-                  id: `${cls.id}:roster_missing`,
-                  classId: cls.id,
-                  className: cls.name,
-                  type: 'roster_missing',
-                  message: 'No official roster uploaded yet',
-                });
-              }
-              const { notOnRoster } = summarizeRoster(students);
-              if (notOnRoster > 0) {
-                items.push({
-                  id: `${cls.id}:unmatched`,
-                  classId: cls.id,
-                  className: cls.name,
-                  type: 'unmatched',
-                  message: `${notOnRoster} student${notOnRoster === 1 ? '' : 's'} registered but not on the roster`,
-                });
-              }
-              return items;
-            } catch {
-              return [];
-            }
-          }),
-        );
+        const { classes } = await api.getClassesAttentionSummary();
         if (cancelled) return;
-        setAlerts(perClass.flat());
+        setAlerts(buildAttentionItems(activeClasses, classes));
+      } catch {
+        if (!cancelled) setAlerts([]);
       } finally {
         if (!cancelled) setAlertsLoading(false);
       }

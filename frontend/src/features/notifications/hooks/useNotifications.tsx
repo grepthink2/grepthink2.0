@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { api, type ApiNotification } from '@/lib/api';
 import { supabase } from '@/lib/supabaseClient';
@@ -99,15 +99,15 @@ export const NotificationsProvider: React.FC<{ children: ReactNode }> = ({ child
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, refetch]);
 
-  return (
-    <NotificationsContext.Provider
-      value={{ notifications, unreadCount, loading, error, refetch, markRead, markAllRead }}
-    >
-      {children}
-    </NotificationsContext.Provider>
+  const value = useMemo<NotificationsValue>(
+    () => ({ notifications, unreadCount, loading, error, refetch, markRead, markAllRead }),
+    [notifications, unreadCount, loading, error, refetch, markRead, markAllRead],
   );
+
+  return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
 export const useNotifications = (): NotificationsValue => {
   const ctx = useContext(NotificationsContext);
   if (!ctx) {
