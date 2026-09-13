@@ -69,12 +69,16 @@ export interface ApiAssignedTa {
 export interface ApiTeamMeeting {
   project_id: string;
   project_name: string;
+  /** The weekly meeting slot row this entry reflects; null until one exists. */
+  meeting_id?: string | null;
   meeting_day?: string | null;
   meeting_time?: string | null;
   zoom_url?: string | null;
   assigned_ta?: ApiAssignedTa | null;
   attendance_present: number;
   attendance_total: number;
+  /** The viewer's own status for the selected meeting; null when they are not on this team. */
+  viewer_status?: AttendanceStatus | null;
 }
 
 export interface ApiTAMeetingSchedule {

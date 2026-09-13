@@ -15,7 +15,6 @@ from app.attendance.models import (
     UpdateProjectMeetingRequest,
     UpsertAttendanceRequest,
 )
-from app.auth.controller import get_user_role
 from app.dependencies import require_user
 
 # ---- Class TA designation ----
@@ -26,9 +25,7 @@ def set_class_ta(class_id: UUID, data: SetClassTARequest, user_id: str = Depends
 
 
 def list_class_tas(class_id: UUID, user_id: str = Depends(require_user)):
-    role = get_user_role(user_id)
-    tas = controller.list_class_tas(class_id, user_id, role)
-    return {"tas": tas}
+    return {"tas": controller.list_class_tas(class_id, user_id)}
 
 
 # ---- Project TA assignment + meeting metadata ----
@@ -78,9 +75,8 @@ def get_ta_schedule(
     ),
     user_id: str = Depends(require_user),
 ):
-    role = get_user_role(user_id)
     return controller.get_ta_schedule(
-        class_id, user_id, role, week, scope="all", meeting_in_week=meeting
+        class_id, user_id, week_number=week, scope="all", meeting_in_week=meeting
     )
 
 
@@ -90,9 +86,8 @@ def get_my_assigned_teams(
     meeting: int | None = Query(None),
     user_id: str = Depends(require_user),
 ):
-    role = get_user_role(user_id)
     return controller.get_ta_schedule(
-        class_id, user_id, role, week, scope="mine", meeting_in_week=meeting
+        class_id, user_id, week_number=week, scope="mine", meeting_in_week=meeting
     )
 
 
@@ -102,9 +97,8 @@ def get_my_team_schedule(
     meeting: int | None = Query(None),
     user_id: str = Depends(require_user),
 ):
-    role = get_user_role(user_id)
     return controller.get_ta_schedule(
-        class_id, user_id, role, week, scope="my-team", meeting_in_week=meeting
+        class_id, user_id, week_number=week, scope="my-team", meeting_in_week=meeting
     )
 
 

@@ -58,7 +58,6 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
   const [roster, setRoster] = useState<AttendanceRow[]>([]);
   const [rosterLoading, setRosterLoading] = useState(false);
 
-  const [ownStatusMap, setOwnStatusMap] = useState<Record<string, AttendanceStatus>>({});
   const [taOptions, setTaOptions] = useState<{ id: string; name: string }[]>([]);
   const [zoomTeam, setZoomTeam] = useState<TeamMeetingItem | null>(null);
   const [designateOpen, setDesignateOpen] = useState(false);
@@ -122,24 +121,13 @@ const TAScheduleView: React.FC<TAScheduleViewProps> = ({
     return () => { active = false; };
   }, [expandedId, effWeek, effMeeting]);
 
-  // Student view: resolve the viewer's own status per team for the selected meeting.
-  useEffect(() => {
-    if (!readOnlyOwn || !schedule) return;
-    let active = true;
-    (async () => {
-      const map: Record<string, AttendanceStatus> = {};
-      for (const t of schedule.teams) {
-        try {
-          const att = await api.getTeamAttendance(t.project_id, schedule.week_number, effMeeting);
-          map[t.project_id] = att.entries[0]?.status ?? 'unmarked';
-        } catch {
-          map[t.project_id] = 'unmarked';
-        }
-      }
-      if (active) setOwnStatusMap(map);
-    })();
-    return () => { active = false; };
-  }, [readOnlyOwn, schedule, effMeeting]);
+  // Student view: the schedule already carries the viewer's own status per team
+  // for the resolved meeting, so no per-team attendance requests are needed.
+  const ownStatusMap = useMemo(() => {
+    const map: Record<string, AttendanceStatus> = {};
+    for (const t of schedule?.teams ?? []) map[t.project_id] = t.viewer_status ?? 'unmarked';
+    return map;
+  }, [schedule]);
 
   const patchTeam = useCallback((projectId: string, patch: Partial<TeamMeetingItem>) => {
     setSchedule((prev) => {

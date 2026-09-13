@@ -44,6 +44,10 @@ def db(monkeypatch):
     """
     start = (datetime.date.today() - datetime.timedelta(days=7)).isoformat()  # → week 2
     fake = FakeSupabase(
+        relations={
+            ("projects", "classes"): ("class_id", "id", False),
+            ("projects", "project_members"): ("id", "project_id", True),
+        },
         profiles=[
             _profile(INSTR, "Ina"),
             _profile(TA1, "Tara"),
@@ -133,14 +137,19 @@ def test_meeting_weeks():
 
 
 def test_current_term_week_clamps():
-    today = datetime.date.today()
-    assert controller._current_term_week(today.isoformat(), "fall") == 1
+    today = datetime.date(2026, 10, 15)
+    assert controller._current_term_week(today.isoformat(), "fall", today=today) == 1
     assert (
-        controller._current_term_week((today - datetime.timedelta(days=7)).isoformat(), "fall") == 2
+        controller._current_term_week(
+            (today - datetime.timedelta(days=7)).isoformat(), "fall", today=today
+        )
+        == 2
     )
     # Far in the past clamps to the meeting-week count (10 for a full term).
     assert (
-        controller._current_term_week((today - datetime.timedelta(days=400)).isoformat(), "fall")
+        controller._current_term_week(
+            (today - datetime.timedelta(days=400)).isoformat(), "fall", today=today
+        )
         == 10
     )
 
@@ -152,7 +161,7 @@ def test_current_term_week_clamps():
 
 def test_designate_and_list_class_ta(db):
     controller.set_class_ta(CLASS, INSTR, S2, True)
-    tas = controller.list_class_tas(CLASS, INSTR, "instructor")
+    tas = controller.list_class_tas(CLASS, INSTR)
     flags = {t["user_id"]: t["is_ta"] for t in tas}
     assert flags[TA1] is True
     assert flags[S2] is True
@@ -316,7 +325,7 @@ def test_mark_all_present(db):
 
 def test_schedule_all_for_instructor_with_summary(db):
     controller.upsert_attendance(P1, INSTR, S1, 3, "present")
-    sched = controller.get_ta_schedule(CLASS, INSTR, "instructor", week_number=3, scope="all")
+    sched = controller.get_ta_schedule(CLASS, INSTR, week_number=3, scope="all")
     assert sched["week_number"] == 3
     assert sched["total_weeks"] == 10
     assert sched["meetings_per_week"] == 2
@@ -330,18 +339,18 @@ def test_schedule_all_for_instructor_with_summary(db):
 
 def test_schedule_all_denied_for_student(db):
     with pytest.raises(HTTPException) as exc:
-        controller.get_ta_schedule(CLASS, S1, "student", week_number=3, scope="all")
+        controller.get_ta_schedule(CLASS, S1, week_number=3, scope="all")
     assert exc.value.status_code == 403
 
 
 def test_schedule_mine_filters_to_assigned(db):
-    sched = controller.get_ta_schedule(CLASS, TA1, "student", week_number=3, scope="mine")
+    sched = controller.get_ta_schedule(CLASS, TA1, week_number=3, scope="mine")
     ids = {t["project_id"] for t in sched["teams"]}
     assert ids == {P1}  # TA1 only assigned to P1
 
 
 def test_schedule_my_team_filters_to_membership(db):
-    sched = controller.get_ta_schedule(CLASS, S3, "student", week_number=3, scope="my-team")
+    sched = controller.get_ta_schedule(CLASS, S3, week_number=3, scope="my-team")
     ids = {t["project_id"] for t in sched["teams"]}
     assert ids == {P2}  # S3 only in P2
 
@@ -407,12 +416,8 @@ def test_team_attendance_filtered_by_meeting(db):
 
 def test_schedule_summary_is_per_meeting(db):
     controller.upsert_attendance(P1, INSTR, S1, 3, "present", meeting_in_week=2)
-    s1 = controller.get_ta_schedule(
-        CLASS, INSTR, "instructor", week_number=3, scope="all", meeting_in_week=1
-    )
-    s2 = controller.get_ta_schedule(
-        CLASS, INSTR, "instructor", week_number=3, scope="all", meeting_in_week=2
-    )
+    s1 = controller.get_ta_schedule(CLASS, INSTR, week_number=3, scope="all", meeting_in_week=1)
+    s2 = controller.get_ta_schedule(CLASS, INSTR, week_number=3, scope="all", meeting_in_week=2)
     p1_m1 = next(t for t in s1["teams"] if t["project_id"] == P1)
     p1_m2 = next(t for t in s2["teams"] if t["project_id"] == P1)
     assert p1_m1["attendance_present"] == 0
