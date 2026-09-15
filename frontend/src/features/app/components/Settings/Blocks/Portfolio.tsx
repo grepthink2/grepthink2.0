@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LinkedinIcon as Linkedin, GithubIcon as Github } from '@/components/icons/BrandIcons';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
@@ -13,12 +13,19 @@ const Portfolio: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
-  useEffect(() => {
-    if (!user) return;
-    const meta = (user.user_metadata ?? {}) as Record<string, string>;
-    setLinkedIn(meta.linkedin_username || '');
-    setGithub(meta.github_username || '');
-  }, [user]);
+  // Fill the fields from the account's saved usernames when a user signs in or
+  // the account changes. Keyed by user id and adjusted during render, so it
+  // does not run again for every session refresh of the same account.
+  const userId = user?.id ?? null;
+  const [filledForUserId, setFilledForUserId] = useState<string | null>(null);
+  if (filledForUserId !== userId) {
+    setFilledForUserId(userId);
+    if (user) {
+      const meta = (user.user_metadata ?? {}) as Record<string, string>;
+      setLinkedIn(meta.linkedin_username || '');
+      setGithub(meta.github_username || '');
+    }
+  }
 
   const handleSave = async () => {
     if (!user) return;

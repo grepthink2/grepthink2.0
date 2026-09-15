@@ -66,7 +66,11 @@ const ProjectMembershipChart: React.FC<ProjectMembershipChartProps> = ({
   registeredNoProject,
   notRegistered,
 }) => {
-  const counts: Record<string, number> = { inProject, registeredNoProject, notRegistered };
+  // Memoised on the three counts so chartData below can list it as a dependency.
+  const counts = useMemo<Record<string, number>>(
+    () => ({ inProject, registeredNoProject, notRegistered }),
+    [inProject, registeredNoProject, notRegistered],
+  );
   const total = inProject + registeredNoProject + notRegistered;
 
   const chartData: ChartEntry[] = useMemo(
@@ -74,7 +78,7 @@ const ProjectMembershipChart: React.FC<ProjectMembershipChartProps> = ({
       LEGEND_ENTRIES.map((e) => ({ name: e.name, value: counts[e.key], color: e.color })).filter(
         (entry) => entry.value > 0,
       ),
-    [inProject, registeredNoProject, notRegistered],
+    [counts],
   );
 
   return (
