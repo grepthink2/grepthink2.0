@@ -10,7 +10,7 @@ import { PRESET_SKILLS } from '../components/CreateProject/constants';
 import { generateTemplateMarkdown, parseTemplateFromMarkdown } from '../utils/projectDescriptionTemplate';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useClass } from '@/lib/classContext';
+import { useClass, type Class } from '@/lib/classContext';
 import './CreateProject.scss';
 
 const CreateProject: React.FC = () => {
@@ -34,8 +34,12 @@ const CreateProject: React.FC = () => {
   const [classError, setClassError] = useState<string | null>(null);
   const [teamSizeError, setTeamSizeError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [existingProject, setExistingProject] = useState<{ id: string; name: string } | null>(null);
-  const [membershipLoading, setMembershipLoading] = useState(false);
+  // Latest membership check: the class and role it ran for, and what it found.
+  const [membership, setMembership] = useState<{
+    forClass: Class;
+    forRole: string;
+    existingProject: { id: string; name: string } | null;
+  } | null>(null);
 
   // const [sponsorName, setSponsorName] = useState('');
   // const [sponsorCompany, setSponsorCompany] = useState('');
@@ -47,35 +51,34 @@ const CreateProject: React.FC = () => {
   const { selectedClass } = useClass();
   const { role } = useAuth();
 
+  // A student already on a project in this class may not create another one.
+  const checksMembership = selectedClass !== null && role === 'student';
+  const membershipLoading =
+    checksMembership && (membership?.forClass !== selectedClass || membership?.forRole !== role);
+  // While another class is being checked, the previous answer stays up.
+  const existingProject = checksMembership ? (membership?.existingProject ?? null) : null;
+
   useEffect(() => {
-    if (!selectedClass || role !== 'student') {
-      setExistingProject(null);
-      return;
-    }
+    if (!selectedClass || role !== 'student') return;
 
     let isMounted = true;
 
     const checkMembership = async () => {
-      setMembershipLoading(true);
+      let found: { id: string; name: string } | null = null;
       try {
         const [{ projects: myMemberships }, { projects: classProjects }] = await Promise.all([
           api.getProjects(),
           api.getClassProjects(selectedClass.id),
         ]);
-        if (!isMounted) return;
-
         const myIds = new Set(myMemberships.map((p) => p.id));
         const mineInClass = classProjects.filter((p) => myIds.has(p.id));
-        setExistingProject(
-          mineInClass.length > 0
-            ? { id: mineInClass[0].id, name: mineInClass[0].name }
-            : null,
-        );
+        if (mineInClass.length > 0) {
+          found = { id: mineInClass[0].id, name: mineInClass[0].name };
+        }
       } catch {
-        if (isMounted) setExistingProject(null);
-      } finally {
-        if (isMounted) setMembershipLoading(false);
+        // A failed check does not block creating a project.
       }
+      if (isMounted) setMembership({ forClass: selectedClass, forRole: role, existingProject: found });
     };
 
     void checkMembership();

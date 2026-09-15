@@ -69,6 +69,36 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
   const [unsendingId, setUnsendingId] = useState<string | null>(null);
 
   const isInstructor = role === 'instructor';
+  const showingAddTab = isOpen && activeTab === 'add';
+
+  // Each opening, and each fresh member list from the parent, starts from that
+  // list with an empty search and no stale error; the effect below refetches.
+  const [openedWith, setOpenedWith] = useState({ isOpen, projectId, initialMembers });
+  if (
+    openedWith.isOpen !== isOpen ||
+    openedWith.projectId !== projectId ||
+    openedWith.initialMembers !== initialMembers
+  ) {
+    setOpenedWith({ isOpen, projectId, initialMembers });
+    if (isOpen) {
+      setMembers(initialMembers);
+      setActionError(null);
+      setSearchQuery('');
+    }
+  }
+
+  // The Add tab reloads the class roster whenever it comes into view or its
+  // inputs change while shown; the skeleton stays up until that request settles.
+  const [addTabInputs, setAddTabInputs] = useState({ showingAddTab, classId, projectId, isInstructor });
+  if (
+    addTabInputs.showingAddTab !== showingAddTab ||
+    addTabInputs.classId !== classId ||
+    addTabInputs.projectId !== projectId ||
+    addTabInputs.isInstructor !== isInstructor
+  ) {
+    setAddTabInputs({ showingAddTab, classId, projectId, isInstructor });
+    if (showingAddTab) setLoadingStudents(true);
+  }
 
   const teamSize = typeof project.team_size === 'number' && Number.isFinite(project.team_size)
     ? project.team_size
@@ -97,41 +127,39 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
     }
   };
 
-  const fetchClassStudents = async () => {
-    setLoadingStudents(true);
-    try {
-      const res = await api.getClassStudents(classId);
-      setClassStudents(res.students ?? []);
-    } catch {
-      setClassStudents([]);
-    } finally {
-      setLoadingStudents(false);
-    }
-  };
-
+  // Refetch on open, and whenever the parent hands over a new member list
+  // (it has just refetched after a change).
   useEffect(() => {
     if (!isOpen) return;
-    setMembers(initialMembers);
-    setActionError(null);
-    setSearchQuery('');
-    fetchMembers();
-    fetchRequests();
+    api
+      .getProjectMembers(projectId)
+      .then((res) => setMembers(res.members ?? []))
+      .catch(() => {
+        // keep current state
+      });
+    api
+      .getProjectJoinRequests(projectId)
+      .then((res) => setRequests(res.requests ?? []))
+      .catch(() => setRequests([]));
   }, [isOpen, projectId, initialMembers]);
 
   useEffect(() => {
-    if (isOpen && activeTab === 'add') {
-      fetchClassStudents();
-      if (!isInstructor) {
-        api.getProjectPendingInvites(projectId).then(({ invites }) => {
-          const map: Record<string, string> = {};
-          for (const inv of invites) {
-            map[inv.user_id] = inv.request_id;
-          }
-          setInvitedMap(map);
-        }).catch(() => {/* keep existing map */});
-      }
+    if (!showingAddTab) return;
+    api
+      .getClassStudents(classId)
+      .then((res) => setClassStudents(res.students ?? []))
+      .catch(() => setClassStudents([]))
+      .finally(() => setLoadingStudents(false));
+    if (!isInstructor) {
+      api.getProjectPendingInvites(projectId).then(({ invites }) => {
+        const map: Record<string, string> = {};
+        for (const inv of invites) {
+          map[inv.user_id] = inv.request_id;
+        }
+        setInvitedMap(map);
+      }).catch(() => {/* keep existing map */});
     }
-  }, [isOpen, activeTab, classId, projectId, isInstructor]);
+  }, [showingAddTab, classId, projectId, isInstructor]);
 
   useEffect(() => {
     if (!isOpen) return;

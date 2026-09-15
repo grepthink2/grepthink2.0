@@ -1,36 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { useClass } from '@/lib/classContext';
+import { useClass, type Class } from '@/lib/classContext';
 import { usePreview } from '@/lib/previewContext';
 import ProjectGrid, { ProjectGridSkeleton, type ProjectGridItem } from '@features/app/components/Project/ProjectGrid';
 import { toProjectGridItem } from '@features/app/components/Project/projectGridHelpers';
 import './BrowseProjects.scss';
 
+/** A completed load of the student's projects, and the class object it was made for. */
+interface MyProjectsLoad {
+  forClass: Class;
+  count: number;
+  /** Set when the student is on exactly one project, which the page redirects to. */
+  singleRedirectId: string | null;
+  gridProjects: ProjectGridItem[];
+  error: string | null;
+}
+
 const MyProject: React.FC = () => {
   const { selectedClass } = useClass();
   const { isPreviewing, previewProjectId } = usePreview();
-  const [gridProjects, setGridProjects] = useState<ProjectGridItem[]>([]);
-  const [singleRedirectId, setSingleRedirectId] = useState<string | null>(null);
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<MyProjectsLoad | null>(null);
 
   useEffect(() => {
-    if (!selectedClass) {
-      setLoading(false);
-      setGridProjects([]);
-      setSingleRedirectId(null);
-      setCount(0);
-      setError(null);
-      return;
-    }
+    if (!selectedClass) return;
 
     let isMounted = true;
 
     const load = async () => {
       try {
-        setLoading(true);
         const [{ projects: myMemberships }, { projects: classProjects }] = await Promise.all([
           api.getProjects(),
           api.getClassProjects(selectedClass.id),
@@ -39,37 +37,33 @@ const MyProject: React.FC = () => {
 
         const myIds = new Set(myMemberships.map((p) => p.id));
         const mineInClass = classProjects.filter((p) => myIds.has(p.id));
-        setCount(mineInClass.length);
-
-        if (mineInClass.length === 1) {
-          setSingleRedirectId(mineInClass[0].id);
-          setGridProjects([]);
-        } else if (mineInClass.length > 1) {
-          setSingleRedirectId(null);
-          setGridProjects(
-            mineInClass.map((p) =>
-              toProjectGridItem({
-                id: p.id,
-                name: p.name,
-                team_size: p.team_size,
-                member_count: p.member_count,
-                image_url: p.image_url,
-              }),
-            ),
-          );
-        } else {
-          setSingleRedirectId(null);
-          setGridProjects([]);
-        }
-        setError(null);
+        setLoaded({
+          forClass: selectedClass,
+          count: mineInClass.length,
+          singleRedirectId: mineInClass.length === 1 ? mineInClass[0].id : null,
+          gridProjects:
+            mineInClass.length > 1
+              ? mineInClass.map((p) =>
+                  toProjectGridItem({
+                    id: p.id,
+                    name: p.name,
+                    team_size: p.team_size,
+                    member_count: p.member_count,
+                    image_url: p.image_url,
+                  }),
+                )
+              : [],
+          error: null,
+        });
       } catch (err) {
         if (!isMounted) return;
-        setError(err instanceof Error ? err.message : 'Failed to load your projects');
-        setGridProjects([]);
-        setSingleRedirectId(null);
-        setCount(0);
-      } finally {
-        if (isMounted) setLoading(false);
+        setLoaded({
+          forClass: selectedClass,
+          count: 0,
+          singleRedirectId: null,
+          gridProjects: [],
+          error: err instanceof Error ? err.message : 'Failed to load your projects',
+        });
       }
     };
 
@@ -96,7 +90,10 @@ const MyProject: React.FC = () => {
     );
   }
 
-  if (loading) {
+  // Until a load for this class lands, it is still loading.
+  const current = loaded?.forClass === selectedClass ? loaded : null;
+
+  if (!current) {
     return (
       <div className="browse-projects">
         <header className="browse-projects__header">
@@ -107,21 +104,21 @@ const MyProject: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (current.error) {
     return (
       <div className="browse-projects">
         <div className="browse-projects__empty">
-          <p>Error: {error}</p>
+          <p>Error: {current.error}</p>
         </div>
       </div>
     );
   }
 
-  if (singleRedirectId) {
-    return <Navigate to={`/app/projects/${singleRedirectId}`} replace />;
+  if (current.singleRedirectId) {
+    return <Navigate to={`/app/projects/${current.singleRedirectId}`} replace />;
   }
 
-  if (count === 0) {
+  if (current.count === 0) {
     return (
       <div className="browse-projects">
         <header className="browse-projects__header">
@@ -145,9 +142,9 @@ const MyProject: React.FC = () => {
     <div className="browse-projects">
       <header className="browse-projects__header">
         <h2 className="browse-projects__title">My Project Count</h2>
-        <span className="browse-projects__count-badge">{count}</span>
+        <span className="browse-projects__count-badge">{current.count}</span>
       </header>
-      <ProjectGrid projects={gridProjects} memberProjects />
+      <ProjectGrid projects={current.gridProjects} memberProjects />
     </div>
   );
 };

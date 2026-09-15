@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Settings, Trash2, Users, X } from 'lucide-react';
 import ConfirmModal from '../Overlays/ConfirmModal';
 import DetailsTab from './DetailsTab';
@@ -26,6 +26,25 @@ export interface EditProjectModalProps {
 
 type TabId = 'details' | 'team';
 
+/** Who holds each project role according to a member list. */
+interface RoleHolders {
+  /** The person with role 'owner' (project creator) — read-only badge. */
+  projectOwnerId: string | null;
+  /** The Scrum 'product owner' role — assignable via dropdown. */
+  productOwnerId: string | null;
+  scrumMasterId: string | null;
+  adminIds: Set<string>;
+}
+
+function roleHoldersOf(members: ApiProjectMember[]): RoleHolders {
+  return {
+    projectOwnerId: members.find((m) => m.project_role === 'owner')?.user_id ?? null,
+    productOwnerId: members.find((m) => m.project_role === 'product owner')?.user_id ?? null,
+    scrumMasterId: members.find((m) => m.project_role === 'scrum master')?.user_id ?? null,
+    adminIds: new Set(members.filter((m) => m.project_role === 'admin').map((m) => m.user_id)),
+  };
+}
+
 const EditProjectModal: React.FC<EditProjectModalProps> = ({
   isOpen,
   onClose,
@@ -36,7 +55,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   onProjectChange,
   onDelete,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabId>('details');
+  const [activeTab, setActiveTab] = useState<TabId>(canEditProjectDetails ? 'details' : 'team');
 
   // ── Details fields ────────────────────────────────
   const [name, setName] = useState(project.name ?? '');
@@ -50,17 +69,12 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   const [logoRemoved, setLogoRemoved] = useState(false);
 
   // ── Team role fields ──────────────────────────────
-  // projectOwnerId: the person with role 'owner' (project creator) — read-only badge
-  const [projectOwnerId, setProjectOwnerId] = useState<string | null>(null);
-  // productOwnerId: the Scrum 'product owner' role — assignable via dropdown
-  const [productOwnerId, setProductOwnerId] = useState<string | null>(null);
-  const [scrumMasterId, setScrumMasterId] = useState<string | null>(null);
-  const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
-
-  // ── Initial values for dirty-checking on save ────
-  const initialProductOwnerIdRef = useRef<string | null>(null);
-  const initialScrumMasterIdRef = useRef<string | null>(null);
-  const initialAdminIdsRef = useRef<Set<string>>(new Set());
+  // Role holders when the form was seeded: the owner badge, and the baseline
+  // that Save diffs the dropdowns and admin toggles against.
+  const [initialRoles, setInitialRoles] = useState(() => roleHoldersOf(projectMembers));
+  const [productOwnerId, setProductOwnerId] = useState(initialRoles.productOwnerId);
+  const [scrumMasterId, setScrumMasterId] = useState(initialRoles.scrumMasterId);
+  const [adminIds, setAdminIds] = useState(() => new Set(initialRoles.adminIds));
 
   // ── UI state ──────────────────────────────────────
   const [nameError, setNameError] = useState<string | null>(null);
@@ -69,40 +83,38 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    setName(project.name ?? '');
-    setDescription(project.description ?? '');
-    setTeamSize(String(project.team_size ?? ''));
-    setLogoUrl(project.image_url ?? null);
-    setPendingLogoFile(null);
-    if (logoPreview) URL.revokeObjectURL(logoPreview);
-    setLogoPreview(null);
-    setLogoRemoved(false);
-    setNameError(null);
-    setTeamSizeError(null);
-    setApiError(null);
-    setSaving(false);
-    setActiveTab(canEditProjectDetails ? 'details' : 'team');
-    setShowDeleteConfirm(false);
+  // The modal stays mounted while closed, so reseed the form each time it opens,
+  // and again if the project, its members or the caller's rights change while open.
+  const [seededFrom, setSeededFrom] = useState({ isOpen, project, projectMembers, canEditProjectDetails });
+  if (
+    seededFrom.isOpen !== isOpen ||
+    seededFrom.project !== project ||
+    seededFrom.projectMembers !== projectMembers ||
+    seededFrom.canEditProjectDetails !== canEditProjectDetails
+  ) {
+    setSeededFrom({ isOpen, project, projectMembers, canEditProjectDetails });
+    if (isOpen) {
+      setName(project.name ?? '');
+      setDescription(project.description ?? '');
+      setTeamSize(String(project.team_size ?? ''));
+      setLogoUrl(project.image_url ?? null);
+      setPendingLogoFile(null);
+      setLogoPreview(null); // the cleanup effect below revokes the dropped preview URL
+      setLogoRemoved(false);
+      setNameError(null);
+      setTeamSizeError(null);
+      setApiError(null);
+      setSaving(false);
+      setActiveTab(canEditProjectDetails ? 'details' : 'team');
+      setShowDeleteConfirm(false);
 
-    // Seed role state from current member list
-    const ownerMember = projectMembers.find((m) => m.project_role === 'owner');
-    const productOwnerMember = projectMembers.find((m) => m.project_role === 'product owner');
-    const scrumMasterMember = projectMembers.find((m) => m.project_role === 'scrum master');
-    const adminMembers = projectMembers.filter((m) => m.project_role === 'admin');
-
-    setProjectOwnerId(ownerMember?.user_id ?? null);
-    setProductOwnerId(productOwnerMember?.user_id ?? null);
-    setScrumMasterId(scrumMasterMember?.user_id ?? null);
-    const initialAdmins = new Set(adminMembers.map((m) => m.user_id));
-    setAdminIds(initialAdmins);
-
-    // Snapshot initial values for diffing on save
-    initialProductOwnerIdRef.current = productOwnerMember?.user_id ?? null;
-    initialScrumMasterIdRef.current = scrumMasterMember?.user_id ?? null;
-    initialAdminIdsRef.current = new Set(initialAdmins);
-  }, [isOpen, project, projectMembers, canEditProjectDetails]);
+      const roles = roleHoldersOf(projectMembers);
+      setInitialRoles(roles);
+      setProductOwnerId(roles.productOwnerId);
+      setScrumMasterId(roles.scrumMasterId);
+      setAdminIds(new Set(roles.adminIds));
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -212,27 +224,27 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
         }
 
         // 2. Product Owner: assign new or remove if cleared
-        if (productOwnerId !== initialProductOwnerIdRef.current) {
+        if (productOwnerId !== initialRoles.productOwnerId) {
           if (productOwnerId) {
             await api.assignProductOwner(projectId, productOwnerId);
-          } else if (initialProductOwnerIdRef.current) {
-            await api.removeProductOwner(projectId, initialProductOwnerIdRef.current);
+          } else if (initialRoles.productOwnerId) {
+            await api.removeProductOwner(projectId, initialRoles.productOwnerId);
           }
         }
 
         // 3. Scrum Master: assign new or remove if cleared
-        if (scrumMasterId !== initialScrumMasterIdRef.current) {
+        if (scrumMasterId !== initialRoles.scrumMasterId) {
           if (scrumMasterId) {
             await api.assignScrumMaster(projectId, scrumMasterId);
-          } else if (initialScrumMasterIdRef.current) {
-            await api.removeScrumMaster(projectId, initialScrumMasterIdRef.current);
+          } else if (initialRoles.scrumMasterId) {
+            await api.removeScrumMaster(projectId, initialRoles.scrumMasterId);
           }
         }
       }
 
       // 4. Admin: only instructors / TAs may change admin assignments
       if (canManageAdmins) {
-        const initialAdmins = initialAdminIdsRef.current;
+        const initialAdmins = initialRoles.adminIds;
         const addedAdmins = [...adminIds].filter((id) => !initialAdmins.has(id));
         const removedAdmins = [...initialAdmins].filter((id) => !adminIds.has(id));
         await Promise.all([
@@ -343,7 +355,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
             {(activeTab === 'team' || !canEditProjectDetails) && (
               <TeamTab
                 memberOptions={memberOptions}
-                projectOwnerId={projectOwnerId}
+                projectOwnerId={initialRoles.projectOwnerId}
                 productOwnerId={productOwnerId}
                 onProductOwnerChange={setProductOwnerId}
                 scrumMasterId={scrumMasterId}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import { parse, isValid } from 'date-fns';
 import { X, FileText, Globe, Trash2 } from 'lucide-react';
 import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
@@ -30,10 +30,12 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
 }) => {
   const isOpen = assignment !== null;
 
-  const [name,         setName]         = useState('');
-  const [openDate,     setOpenDate]     = useState('');
-  const [dueDate,      setDueDate]      = useState('');
-  const [status,       setStatus]       = useState<EditorStatus>('published');
+  const [name,         setName]         = useState(assignment?.title ?? '');
+  const [openDate,     setOpenDate]     = useState(assignment?.openDate ?? '');
+  const [dueDate,      setDueDate]      = useState(assignment?.dueDatetime ?? '');
+  const [status,       setStatus]       = useState<EditorStatus>(() =>
+    assignment ? toEditorStatus(assignment.status) : 'published',
+  );
   const [isClosing,      setIsClosing]      = useState(false);
   const [isSubmitting,   setIsSubmitting]   = useState(false);
   const [isDeleting,     setIsDeleting]     = useState(false);
@@ -41,12 +43,16 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
   const [error,          setError]          = useState<string | null>(null);
 
   // Snapshot of original values — used to detect dirty state
-  const [origName,     setOrigName]     = useState('');
-  const [origOpenDate, setOrigOpenDate] = useState('');
-  const [origDueDate,  setOrigDueDate]  = useState('');
-  const [origStatus,   setOrigStatus]   = useState<EditorStatus>('published');
+  const [origName,     setOrigName]     = useState(name);
+  const [origOpenDate, setOrigOpenDate] = useState(openDate);
+  const [origDueDate,  setOrigDueDate]  = useState(dueDate);
+  const [origStatus,   setOrigStatus]   = useState(status);
 
-  useEffect(() => {
+  // The modal stays mounted between openings (lazyModal), so load the chosen
+  // assignment into the form whenever a different one opens.
+  const [loadedId, setLoadedId] = useState(assignment?.id);
+  if (assignment?.id !== loadedId) {
+    setLoadedId(assignment?.id);
     if (assignment) {
       const n  = assignment.title;
       const od = assignment.openDate ?? '';
@@ -59,7 +65,7 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
       setError(null);
       setConfirmDelete(false);
     }
-  }, [assignment?.id]);
+  }
 
   const isDirty =
     name.trim() !== origName.trim() ||
@@ -72,10 +78,13 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
     setTimeout(() => { setIsClosing(false); onClose(); }, 250);
   };
 
+  // Escape uses the latest close handler; the listener only lives while open.
+  const onEscape = useEffectEvent(() => handleClose());
   useEffect(() => {
-    const onEscape = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen) handleClose(); };
-    document.addEventListener('keydown', onEscape);
-    return () => document.removeEventListener('keydown', onEscape);
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onEscape(); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, [isOpen]);
 
   useEffect(() => {

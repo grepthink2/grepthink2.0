@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
@@ -33,6 +33,18 @@ function toRankedStaffingProject(row: ApiStaffingProjectRank): RankedStaffingPro
   };
 }
 
+/** The ranked projects and the number of students not yet placed, for one class. */
+async function fetchStaffingSummary(classId: string) {
+  const [rankRes, assignRes] = await Promise.all([
+    api.getStaffingProjectRank(classId),
+    api.getStaffingAssignments(classId),
+  ]);
+  return {
+    rankedProjects: rankRes.projects.map(toRankedStaffingProject),
+    unassignedCount: assignRes.assignments.filter((a) => !a.assigned_project_id).length,
+  };
+}
+
 const Staffing: React.FC = () => {
   const navigate = useNavigate();
   const { selectedClass } = useClass();
@@ -40,10 +52,45 @@ const Staffing: React.FC = () => {
 
   const [rankedProjects, setRankedProjects] = useState<RankedStaffingProject[]>([]);
   const [unassignedCount, setUnassignedCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(classId !== null);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  // A different class loads from scratch; with no class, drop the old class's data.
+  const [prevClassId, setPrevClassId] = useState(classId);
+  if (prevClassId !== classId) {
+    setPrevClassId(classId);
+    if (classId) {
+      setLoading(true);
+      setError(null);
+    } else {
+      setRankedProjects([]);
+      setUnassignedCount(0);
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!classId) return;
+    let ignore = false;
+    fetchStaffingSummary(classId)
+      .then((summary) => {
+        if (ignore) return;
+        setRankedProjects(summary.rankedProjects);
+        setUnassignedCount(summary.unassignedCount);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) setError(err instanceof Error ? err.message : 'Failed to load staffing data');
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [classId]);
+
+  // Reload with the skeleton, to reconcile after a failed seat change.
+  const refresh = async () => {
     if (!classId) {
       setRankedProjects([]);
       setUnassignedCount(0);
@@ -53,24 +100,15 @@ const Staffing: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [rankRes, assignRes] = await Promise.all([
-        api.getStaffingProjectRank(classId),
-        api.getStaffingAssignments(classId),
-      ]);
-      setRankedProjects(rankRes.projects.map(toRankedStaffingProject));
-      setUnassignedCount(
-        assignRes.assignments.filter((a) => !a.assigned_project_id).length,
-      );
+      const summary = await fetchStaffingSummary(classId);
+      setRankedProjects(summary.rankedProjects);
+      setUnassignedCount(summary.unassignedCount);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load staffing data');
     } finally {
       setLoading(false);
     }
-  }, [classId]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  };
 
   const totalSeats = useMemo(
     () => rankedProjects.reduce((sum, p) => sum + p.totalSeats, 0),
