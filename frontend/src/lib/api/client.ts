@@ -21,12 +21,18 @@ export class ApiError extends Error {
   readonly status: number;
   /** The body's `detail`: text, or FastAPI's list of validation errors for a 422. */
   readonly detail: unknown;
+  /**
+   * The body's `code` when the backend sends one, e.g. `database_unavailable` or
+   * `internal_error`; `null` otherwise.
+   */
+  readonly code: string | null;
 
-  constructor(status: number, detail: unknown, fallbackMessage: string) {
+  constructor(status: number, detail: unknown, fallbackMessage: string, code: string | null = null) {
     super(typeof detail === 'string' && detail ? detail : fallbackMessage);
     this.name = 'ApiError';
     this.status = status;
     this.detail = detail;
+    this.code = code;
   }
 }
 
@@ -41,10 +47,14 @@ async function accessToken(): Promise<string> {
 }
 
 async function failure(response: Response, action: 'Request' | 'Upload'): Promise<ApiError> {
-  const body = await response.json().catch(() => null);
-  const detail = (body as { detail?: unknown } | null)?.detail;
+  const body = (await response.json().catch(() => null)) as { detail?: unknown; code?: unknown } | null;
   if (response.status === 401) announceUnauthorized();
-  return new ApiError(response.status, detail, `${action} failed with status ${response.status}`);
+  return new ApiError(
+    response.status,
+    body?.detail,
+    `${action} failed with status ${response.status}`,
+    typeof body?.code === 'string' ? body.code : null,
+  );
 }
 
 /**

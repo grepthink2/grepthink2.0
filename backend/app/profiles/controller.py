@@ -9,6 +9,7 @@ import time
 from fastapi import HTTPException
 
 from app.core.db import get_client
+from app.core.errors import DatabaseConflictError
 from app.utils.email import send_email
 
 logger = logging.getLogger(__name__)
@@ -235,15 +236,13 @@ def verify_edu_email(user_id: str, edu_email: str, code: str) -> dict:
         result = (
             client.table("profiles").update({"edu_email": edu_email}).eq("id", user_id).execute()
         )
-    except Exception as e:
-        # Postgres unique constraint violation — another account claimed this
-        # edu_email between when the code was sent and when it was verified.
-        if "23505" in str(e):
-            raise HTTPException(
-                status_code=409,
-                detail="This .edu email is already linked to another account.",
-            )
-        raise HTTPException(status_code=500, detail="Database error during verification.")
+    except DatabaseConflictError as exc:
+        # Another account claimed this edu_email between when the code was sent
+        # and when it was verified (profiles_edu_email_key).
+        raise HTTPException(
+            status_code=409,
+            detail="This .edu email is already linked to another account.",
+        ) from exc
 
     logger.info("edu_verification: verified and saved | user_id=%s email=%s", user_id, edu_email)
     return result.data[0] if result.data else {}

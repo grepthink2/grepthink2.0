@@ -42,7 +42,8 @@ from app.classes.controller import (
     _SUMMER_TSR_COUNT,
 )
 from app.core import authz
-from app.core.db import fan_out, get_client, is_unique_violation
+from app.core.db import fan_out, get_client
+from app.core.errors import DatabaseConflictError
 
 # Class-TA designation writes are shared with the tas module so both designation
 # UIs (TA Management and TA Meetings) stay in lockstep.
@@ -299,12 +300,11 @@ def _get_or_create_meeting(
         row["created_by"] = marker_id
     try:
         res = client.table("meetings").insert(row).execute()
-    except Exception as exc:
+    except DatabaseConflictError:
         # Another request created the same slot first (meetings_project_seq_uniq).
-        if is_unique_violation(exc):
-            found = existing()
-            if found:
-                return found[0]
+        found = existing()
+        if found:
+            return found[0]
         raise
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create the meeting slot")

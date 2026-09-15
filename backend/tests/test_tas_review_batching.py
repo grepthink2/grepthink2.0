@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import pytest
 from fastapi import HTTPException
+from postgrest.exceptions import APIError
 
 import app.tas.controller as tas
 from tests.fake_supabase import FakeSupabase
@@ -171,8 +172,16 @@ def test_self_appointment_is_an_insert_and_a_lost_race_is_409(db, monkeypatch):
         r for r in db.rows("project_review_tas") if r["project_id"] != P2
     ]
 
-    class UniqueViolation(Exception):
-        code = "23505"
+    class _LosingInsert:
+        def execute(self):
+            raise APIError(
+                {
+                    "code": "23505",
+                    "message": 'duplicate key value violates unique constraint "project_review_tas_project_unique"',
+                    "details": None,
+                    "hint": None,
+                }
+            )
 
     real_table = db.table
 
@@ -181,7 +190,7 @@ def test_self_appointment_is_an_insert_and_a_lost_race_is_409(db, monkeypatch):
         if name == "project_review_tas":
 
             def lose_the_race(*_a, **_k):
-                raise UniqueViolation("duplicate key value violates unique constraint")
+                return _LosingInsert()
 
             q.insert = lose_the_race
         return q

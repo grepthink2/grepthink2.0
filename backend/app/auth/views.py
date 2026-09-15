@@ -11,6 +11,7 @@ from app.auth.controller import get_user_role
 from app.auth.models import CheckEmailRequest, SignupRequest
 from app.core import db as core_db
 from app.core.db import get_client
+from app.core.errors import DatabaseError
 from app.database.client import get_authenticated_client
 from app.dependencies import require_user, require_user_payload
 from app.limiter import limiter
@@ -121,7 +122,7 @@ def create_user(  # noqa: C901
             # the header. Defensive check.
             logger.warning("create_user: malformed auth header on RLS fallback | email=%s", email)
             raise HTTPException(status_code=401, detail="Missing authentication token")
-        client = get_authenticated_client(parts[1])
+        client = core_db.DatabaseClient(get_authenticated_client(parts[1]))
 
     try:
         existing = _select_profile(client)
@@ -236,16 +237,13 @@ def create_user(  # noqa: C901
             "email": email,
             "role": user_type,
         }
-    except HTTPException:
-        raise
-    except Exception as exc:
-        exc_str = str(exc)
-        # FK violation on profiles_id_fkey means the auth user ID is not in
-        # auth.users — stale JWT for a deleted account. Return 401 so the
-        # frontend can prompt a re-login instead of showing "Database insert
-        # failed".
-        if "profiles_id_fkey" in exc_str or (
-            "not present in table" in exc_str and "users" in exc_str
+    except DatabaseError as exc:
+        # A foreign-key violation on profiles_id_fkey means the auth user id is not
+        # in auth.users: a stale JWT for a deleted account. Answer 401 so the
+        # frontend prompts a re-login. Any other database failure propagates with
+        # its own status and code.
+        if exc.pg_code == core_db.FOREIGN_KEY_VIOLATION and "profiles_id_fkey" in (
+            exc.pg_message or ""
         ):
             logger.warning(
                 "create_user: auth user missing from users table (stale JWT?) | user_id=%s email=%s",
@@ -255,13 +253,17 @@ def create_user(  # noqa: C901
             raise HTTPException(
                 status_code=401,
                 detail="Auth account not found. Please sign out and sign back in.",
-            )
+            ) from exc
+        raise
+    except HTTPException:
+        raise
+    except Exception:
         logger.exception(
-            "create_user: profile insert failed | user_id=%s email=%s",
+            "create_user: profile provisioning failed | user_id=%s email=%s",
             user_id,
             email,
         )
-        raise HTTPException(status_code=500, detail="Database insert failed")
+        raise HTTPException(status_code=500, detail="Failed to create profile")
 
 
 @limiter.limit("60/minute")
@@ -275,12 +277,8 @@ def check_user_exists(request: Request, data: CheckEmailRequest):
         raise HTTPException(status_code=503, detail="Service unavailable")
     client = get_client()
 
-    try:
-        result = client.table("profiles").select("id").eq("email", data.email.lower()).execute()
-        return {"exists": len(result.data) > 0}
-    except Exception:
-        logger.exception("check_user_exists: lookup failed | email=%s", data.email)
-        raise HTTPException(status_code=500, detail="Failed to check user existence")
+    result = client.table("profiles").select("id").eq("email", data.email.lower()).execute()
+    return {"exists": len(result.data) > 0}
 
 
 @limiter.limit("60/minute")
@@ -295,9 +293,5 @@ def check_email(request: Request, data: CheckEmailRequest):
         raise HTTPException(status_code=503, detail="Service unavailable")
     client = get_client()
 
-    try:
-        result = client.table("profiles").select("id").eq("edu_email", data.email.lower()).execute()
-        return {"available": len(result.data) == 0}
-    except Exception:
-        logger.exception("check_email: lookup failed | email=%s", data.email)
-        raise HTTPException(status_code=500, detail="Failed to check email availability")
+    result = client.table("profiles").select("id").eq("edu_email", data.email.lower()).execute()
+    return {"available": len(result.data) == 0}

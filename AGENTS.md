@@ -33,9 +33,9 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes projects assignments tsr staffing
   messages profiles contact notifications tas attendance stats
-  core/db.py         # get_client(), fan_out() for concurrent reads, is_unique_violation()
+  core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
-  core/errors.py     # global handler: anything uncaught -> {"detail": "Internal server error"}
+  core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
   jobs/pending_invites.py  # poller that sends queued class-invite emails
   main.py            # app wiring: CORS, security headers, rate limiter, routers
   config.py          # settings from the repo-root .env
@@ -72,8 +72,10 @@ supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
   per-row loops, run independent reads with `fan_out({...})`, and validate everything in
   memory before one bulk `insert` / `upsert` / `delete`. Tests pin a round-trip budget with
   `FakeSupabase.executes`. `backend/STYLE_GUIDE.md` has the details.
-- **Errors.** Raise `HTTPException` with a fixed `detail`; `app/core/errors.py` logs anything
-  uncaught and answers `{"detail": "Internal server error"}`. In the web client a failed
+- **Errors.** Raise `HTTPException` with a fixed `detail`; a failed database request raises
+  `DatabaseError` (503 unavailable, 409 conflict, 500 read or write failure, each with a `code`),
+  and `app/core/errors.py` logs anything else uncaught and answers
+  `{"detail": "Internal server error", "code": "internal_error"}`. In the web client a failed
   call throws `ApiError` (status + detail), and a 401 signs the user out locally.
 - **Auth flow:** Supabase `signUp`/`signInWithPassword`/Google OAuth on the frontend
   → frontend calls `POST /api/create-user` to provision the `profiles` row → JWT in

@@ -121,37 +121,44 @@ def retry_on_disconnect(retries: int = 1) -> Callable[[Callable[..., T]], Callab
         def update_thing(...):
             client.table('thing').update(...).execute()
 
-    The decorated function MUST allow the transient ``httpx`` exceptions to
-    propagate; if it catches them and converts to ``HTTPException(500)``,
-    the retry never runs. ``HTTPException`` and other exceptions are not
-    retried.
+    The decorated function MUST let the failure propagate. Through the client from
+    ``app.core.db.get_client()`` a dropped connection arrives as a retryable
+    ``DatabaseUnavailableError``, which is an ``HTTPException``, so the usual
+    ``except HTTPException: raise`` passes it; from an unwrapped client it arrives
+    as a transient ``httpx`` error. Nothing else is retried.
     """
 
     def decorator(fn: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(fn)
         def wrapper(*args, **kwargs) -> T:
-            last_exc: Exception | None = None
-            for attempt in range(retries + 1):
+            attempt = 0
+            while True:
                 try:
                     return fn(*args, **kwargs)
-                except _TRANSIENT_HTTPX_ERRORS as exc:
-                    last_exc = exc
-                    if attempt >= retries:
+                except Exception as exc:
+                    if attempt >= retries or not _is_retryable(exc):
                         raise
+                    attempt += 1
                     logger.warning(
                         "Supabase disconnect (%s) in %s — retrying %s/%s",
-                        type(exc).__name__,
+                        type(exc.__cause__ or exc).__name__,
                         fn.__qualname__,
-                        attempt + 1,
+                        attempt,
                         retries,
                     )
-            # Unreachable in practice — the loop either returns or re-raises.
-            assert last_exc is not None
-            raise last_exc
 
         return wrapper
 
     return decorator
+
+
+def _is_retryable(exc: BaseException) -> bool:
+    """A dropped connection: raw from httpx, or already translated by ``app.core.db``."""
+    from app.core.errors import DatabaseUnavailableError  # app.core imports this module
+
+    return isinstance(exc, _TRANSIENT_HTTPX_ERRORS) or (
+        isinstance(exc, DatabaseUnavailableError) and exc.retryable
+    )
 
 
 def get_authenticated_client(access_token: str) -> Client:

@@ -29,7 +29,7 @@ def test_unexpected_exception_becomes_fixed_500_body():
     client = TestClient(_app(), raise_server_exceptions=False)
     res = client.get("/boom")
     assert res.status_code == 500
-    assert res.json() == {"detail": "Internal server error"}
+    assert res.json() == {"detail": "Internal server error", "code": "internal_error"}
     assert "duplicate key" not in res.text
     assert "profiles_email_key" not in res.text
 

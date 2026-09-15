@@ -54,9 +54,9 @@ backend/
 │   ├── config.py            # Settings from the repo-root .env
 │   ├── dependencies.py      # require_user / require_instructor (JWT verification)
 │   ├── core/
-│   │   ├── db.py            # get_client(), fan_out(), is_unique_violation(), retries
+│   │   ├── db.py            # get_client() (failures raise DatabaseError), fan_out(), retries
 │   │   ├── authz.py         # Class and project access checks
-│   │   └── errors.py        # Global handler for uncaught exceptions
+│   │   └── errors.py        # DatabaseError types; handlers answer {"detail", "code"}
 │   ├── jobs/
 │   │   └── pending_invites.py  # Poller that sends queued class-invite emails
 │   ├── database/client.py   # Supabase clients (anon + service role)

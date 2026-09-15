@@ -36,7 +36,8 @@ from uuid import UUID
 from fastapi import HTTPException
 
 from app.core import authz
-from app.core.db import fan_out, get_client, is_unique_violation
+from app.core.db import fan_out, get_client
+from app.core.errors import DatabaseConflictError
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
@@ -572,10 +573,8 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
                 raise taken
             try:
                 client.table(REVIEW_TA_TABLE).insert(row).execute()
-            except Exception as exc:
-                if is_unique_violation(exc):
-                    raise taken from exc
-                raise
+            except DatabaseConflictError as exc:
+                raise taken from exc
 
         logger.info(
             "Additional reviewer set | project_id=%s user_id=%s by=%s",

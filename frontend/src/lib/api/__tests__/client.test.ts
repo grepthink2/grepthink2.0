@@ -47,6 +47,20 @@ describe('apiRequest', () => {
     expect(err).toBeInstanceOf(Error);
     expect(err.status).toBe(403);
     expect(err.message).toBe('You do not own this class');
+    expect(err.code).toBeNull();
+  });
+
+  it('keeps the error code the backend sends', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(503, {
+        detail: 'The service is temporarily unavailable. Please try again in a moment.',
+        code: 'database_unavailable',
+      }),
+    );
+    const err = await failureOf(apiRequest('/api/x'));
+    expect(err.status).toBe(503);
+    expect(err.code).toBe('database_unavailable');
+    expect(err.message).toBe('The service is temporarily unavailable. Please try again in a moment.');
   });
 
   it('falls back to a status message when the detail is not text', async () => {

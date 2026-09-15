@@ -14,7 +14,9 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
+from postgrest.exceptions import APIError
 
 from tests.fake_supabase import FakeSupabase
 
@@ -126,3 +128,66 @@ def test_create_user_without_a_service_client_uses_the_callers_jwt_client(
     assert res.status_code == 200
     make_client.assert_called_once_with(valid_token)
     assert [p["id"] for p in jwt_db.rows("profiles")] == ["user-abc"]
+
+
+def _failing_profile_insert(fake, error):
+    """The profile insert fails with ``error`` when it executes."""
+    real_table = fake.table
+
+    def table(name):
+        query = real_table(name)
+        if name == "profiles":
+
+            class _Failing:
+                def execute(self):
+                    raise error
+
+            def insert(*_args, **_kwargs):
+                return _Failing()
+
+            query.insert = insert
+        return query
+
+    return table
+
+
+def test_create_user_answers_401_for_a_deleted_auth_account(client, auth_header, fake, monkeypatch):
+    stale = APIError(
+        {
+            "code": "23503",
+            "message": 'insert or update on table "profiles" violates foreign key constraint "profiles_id_fkey"',
+            "details": None,
+            "hint": None,
+        }
+    )
+    monkeypatch.setattr(fake, "table", _failing_profile_insert(fake, stale))
+    res = client.post("/api/create-user", headers=auth_header, json=SIGNUP)
+    assert res.status_code == 401
+    assert res.json()["detail"] == "Auth account not found. Please sign out and sign back in."
+
+
+def test_create_user_passes_other_database_failures_through(client, auth_header, fake, monkeypatch):
+    denied = APIError(
+        {
+            "code": "42501",
+            "message": "permission denied for table profiles",
+            "details": None,
+            "hint": None,
+        }
+    )
+    monkeypatch.setattr(fake, "table", _failing_profile_insert(fake, denied))
+    res = client.post("/api/create-user", headers=auth_header, json=SIGNUP)
+    assert res.status_code == 500
+    assert res.json()["code"] == "database_write_failed"
+    assert "permission denied" not in res.text
+
+
+@pytest.mark.parametrize("path", ["/api/check-email", "/api/check-user-exists"])
+def test_lookups_answer_503_when_the_database_is_unreachable(client, fake, monkeypatch, path):
+    def unreachable(_name):
+        raise httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(fake, "table", unreachable)
+    res = client.post(path, json={"email": TAKEN})
+    assert res.status_code == 503
+    assert res.json()["code"] == "database_unavailable"

@@ -67,6 +67,8 @@ def update_my_profile(
     """
     try:
         return controller.update_profile(user_id, data.model_dump(exclude_unset=True))
+    except HTTPException:
+        raise
     except Exception:
         logger.exception("update_my_profile failed | user_id=%s", user_id)
         raise HTTPException(status_code=500, detail="Failed to update profile")
