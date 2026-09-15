@@ -54,11 +54,15 @@ const Staffing: React.FC = () => {
   const [unassignedCount, setUnassignedCount] = useState(0);
   const [loading, setLoading] = useState(classId !== null);
   const [error, setError] = useState<string | null>(null);
+  // The last seat change that failed. It is kept apart from `error`, which
+  // `refresh` resets, so it survives the reload after the failure.
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // A different class loads from scratch; with no class, drop the old class's data.
   const [prevClassId, setPrevClassId] = useState(classId);
   if (prevClassId !== classId) {
     setPrevClassId(classId);
+    setActionError(null);
     if (classId) {
       setLoading(true);
       setError(null);
@@ -131,13 +135,14 @@ const Staffing: React.FC = () => {
     const target = rankedProjects.find((p) => p.id === projectId);
     if (!target) return;
     const newTotal = target.totalSeats + 1;
+    setActionError(null);
     setRankedProjects((prev) =>
       prev.map((p) => (p.id === projectId ? { ...p, totalSeats: newTotal } : p)),
     );
     try {
       await api.updateProject(projectId, { team_size: newTotal });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add seat');
+      setActionError(err instanceof Error ? err.message : 'Failed to add seat');
       void refresh();
     }
   };
@@ -150,13 +155,14 @@ const Staffing: React.FC = () => {
     // would render a negative availability that's confusing.
     if (target.totalSeats - 1 < target.seatsTaken) return;
     const newTotal = Math.max(target.totalSeats - 1, 0);
+    setActionError(null);
     setRankedProjects((prev) =>
       prev.map((p) => (p.id === projectId ? { ...p, totalSeats: newTotal } : p)),
     );
     try {
       await api.updateProject(projectId, { team_size: newTotal });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove seat');
+      setActionError(err instanceof Error ? err.message : 'Failed to remove seat');
       void refresh();
     }
   };
@@ -195,6 +201,12 @@ const Staffing: React.FC = () => {
           projectsTotal: rankedProjects.length,
         }}
       />
+
+      {actionError && (
+        <p className="staffing-page__error" role="alert">
+          {actionError}
+        </p>
+      )}
 
       {loading ? (
         <div className="staffing-table" aria-busy="true">

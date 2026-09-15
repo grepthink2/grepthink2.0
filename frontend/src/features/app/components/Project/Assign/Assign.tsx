@@ -177,16 +177,20 @@ const Assign: React.FC = () => {
   const [loading, setLoading] = useState(classId !== null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The last seat change or save that failed. It is kept apart from `error`,
+  // which `refresh` resets, so it survives the reload after the failure.
+  const [actionError, setActionError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [savedAssignmentRows, setSavedAssignmentRows] = useState<
     ApiStaffingAssignmentRow[]
   >([]);
 
-  // A different class loads from scratch: skeleton on, old error cleared. With
+  // A different class loads from scratch: skeleton on, old errors cleared. With
   // no class there is nothing to load, so drop the previous class's rows.
   const [prevClassId, setPrevClassId] = useState(classId);
   if (prevClassId !== classId) {
     setPrevClassId(classId);
+    setActionError(null);
     if (classId) {
       setError(null);
       setLoading(true);
@@ -366,13 +370,14 @@ const Assign: React.FC = () => {
     if (!focusedProject) return;
     const projectId = focusedProject.id;
     const newTotal = focusedProject.totalSeats + 1;
+    setActionError(null);
     setProjects((prev) =>
       prev.map((p) => (p.id === projectId ? { ...p, totalSeats: newTotal } : p)),
     );
     try {
       await api.updateProject(projectId, { team_size: newTotal });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add seat');
+      setActionError(err instanceof Error ? err.message : 'Failed to add seat');
       void refresh();
     }
   };
@@ -383,13 +388,14 @@ const Assign: React.FC = () => {
     if (focusedProject.totalSeats - 1 < focusedProject.seatsTaken) return;
     const projectId = focusedProject.id;
     const newTotal = Math.max(focusedProject.totalSeats - 1, 0);
+    setActionError(null);
     setProjects((prev) =>
       prev.map((p) => (p.id === projectId ? { ...p, totalSeats: newTotal } : p)),
     );
     try {
       await api.updateProject(projectId, { team_size: newTotal });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove seat');
+      setActionError(err instanceof Error ? err.message : 'Failed to remove seat');
       void refresh();
     }
   };
@@ -436,6 +442,7 @@ const Assign: React.FC = () => {
     if (!classId) return;
     setSaving(true);
     setError(null);
+    setActionError(null);
     setSaveMessage(null);
     const current = assignmentMap(assignmentRows);
     const saved = assignmentMap(savedAssignmentRows);
@@ -458,7 +465,7 @@ const Assign: React.FC = () => {
       );
       await refresh();
     } catch (err) {
-      setError(
+      setActionError(
         err instanceof Error ? err.message : 'Failed to save assignments',
       );
       await refresh();
@@ -498,6 +505,11 @@ const Assign: React.FC = () => {
         </button>
       </div>
 
+      {actionError && (
+        <p className="assign-page__error" role="alert">
+          {actionError}
+        </p>
+      )}
       {error && <p className="assign-page__error">{error}</p>}
       {saveMessage && !error && (
         <p className="assign-page__save-message">{saveMessage}</p>

@@ -56,6 +56,9 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
   const [outgoing, setOutgoing] = useState<OutgoingRequestRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The last accept, decline or dismiss that failed. It is kept apart from
+  // `error`, which `refresh` resets, so it survives the reload after the failure.
+  const [actionError, setActionError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<{
     requestId: string;
     action: 'accept' | 'reject';
@@ -70,6 +73,7 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
     setPrevProps({ isOpen, classId });
     if (isOpen) {
       setActiveTab('incoming');
+      setActionError(null);
       if (classId) {
         setLoading(true);
         setError(null);
@@ -130,14 +134,14 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
 
   const handleAccept = useCallback(
     async (row: IncomingRequestRow) => {
-      setError(null);
+      setActionError(null);
       setProcessing({ requestId: row.requestId, action: 'accept' });
       try {
         await api.acceptProjectJoinRequest(row.requestId);
         setIncoming((prev) => prev.filter((r) => r.requestId !== row.requestId));
         onRequestsChanged?.();
       } catch {
-        setError('Could not accept this request. Please try again.');
+        setActionError('Could not accept this request. Please try again.');
         await refresh();
       } finally {
         setProcessing(null);
@@ -148,14 +152,14 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
 
   const handleReject = useCallback(
     async (row: IncomingRequestRow) => {
-      setError(null);
+      setActionError(null);
       setProcessing({ requestId: row.requestId, action: 'reject' });
       try {
         await api.rejectProjectJoinRequest(row.requestId);
         setIncoming((prev) => prev.filter((r) => r.requestId !== row.requestId));
         onRequestsChanged?.();
       } catch {
-        setError('Could not decline this request. Please try again.');
+        setActionError('Could not decline this request. Please try again.');
         await refresh();
       } finally {
         setProcessing(null);
@@ -166,14 +170,14 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
 
   const handleDismiss = useCallback(
     async (row: OutgoingRequestRow) => {
-      setError(null);
+      setActionError(null);
       setDismissingId(row.requestId);
       try {
         await api.dismissJoinRequest(row.requestId);
         setOutgoing((prev) => prev.filter((r) => r.requestId !== row.requestId));
         onRequestsChanged?.();
       } catch {
-        setError('Could not dismiss this request. Please try again.');
+        setActionError('Could not dismiss this request. Please try again.');
         await refresh();
       } finally {
         setDismissingId(null);
@@ -248,6 +252,11 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
           </button>
         </div>
 
+        {actionError ? (
+          <p className="requests-modal__error" role="alert">
+            {actionError}
+          </p>
+        ) : null}
         {error ? (
           <p className="requests-modal__error" role="alert">
             {error}
