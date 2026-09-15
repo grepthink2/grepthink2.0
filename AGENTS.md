@@ -76,7 +76,8 @@ supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
   `DatabaseError` (503 unavailable, 409 conflict, 500 read or write failure, each with a `code`),
   and `app/core/errors.py` logs anything else uncaught and answers
   `{"detail": "Internal server error", "code": "internal_error"}`. In the web client a failed
-  call throws `ApiError` (status + detail), and a 401 signs the user out locally.
+  call throws `ApiError` (status, detail and the backend's `code`), and a 401 signs the user out
+  locally.
 - **Auth flow:** Supabase `signUp`/`signInWithPassword`/Google OAuth on the frontend
   → frontend calls `POST /api/create-user` to provision the `profiles` row → JWT in
   cookies → every API call sends `Authorization: Bearer <jwt>` → backend verifies via
