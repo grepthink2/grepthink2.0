@@ -8,7 +8,7 @@
     "dev:dev": "vite",
     "dev:prod": "vite --mode prod",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "lint:design": "node scripts/design-adherence.mjs",
     "preview": "vite preview",
     "test": "vitest run",

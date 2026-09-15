@@ -101,7 +101,7 @@ cd backend && .venv/bin/pip install -r requirements-dev.txt   # runtime + test/l
 # Frontend (Node 24)
 cd frontend && npm ci
 npm run dev                                 # Vite dev server on :5173 (proxies /api)
-npm run lint                                # ESLint: 0 errors required, warnings advisory
+npm run lint                                # ESLint: any finding fails (react-hooks rules are errors)
 npm run build                               # tsc -b && vite build  (the typecheck gate)
 npx vitest run                              # unit + component tests
 ```
@@ -153,6 +153,6 @@ The full agent-facing action catalog (method, params, role) lives at
 
 ## Before you commit
 - Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest` (all green).
-- Frontend: `npm run lint && npm run lint:design && npm run build && npx vitest run` (0 lint errors, all green).
+- Frontend: `npm run lint && npm run lint:design && npm run build && npx vitest run` (no lint findings, all green).
 - New backend route → add the matching method to `frontend/src/lib/api/<domain>.ts`.
 - New `backend/database/migrations/*.sql` → update `supabase/schema.sql` once it is applied.

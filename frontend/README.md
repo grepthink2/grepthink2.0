@@ -17,7 +17,7 @@ Use Node 24 (what CI runs; `engines` requires >= 22.12). The app reads `VITE_*` 
 ```bash
 npm ci               # install from the lockfile
 npm run dev          # dev server on :5173; proxies /api to the backend on :5001
-npm run lint         # ESLint: 0 errors required (warnings are advisory)
+npm run lint         # ESLint: any finding fails; every react-hooks rule is an error
 npm run lint:design  # no raw hex colours outside the token files
 npm run build        # tsc -b && vite build (the type-check gate)
 npx vitest run       # unit and component tests
