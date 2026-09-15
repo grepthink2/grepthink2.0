@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import Sidebar from '@features/app/components/Layout/Sidebar';
@@ -49,12 +49,15 @@ const AppView: React.FC = () => {
     setIsJoinClassModalOpen(false);
   };
 
-  // Close modals and the mobile nav drawer when navigation occurs
-  useEffect(() => {
+  // Close modals and the mobile nav drawer when navigation occurs. Adjusted
+  // while rendering the new path, so nothing stays open into the next page.
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname);
     setIsCreateClassModalOpen(false);
     setIsJoinClassModalOpen(false);
     setMobileNavOpen(false);
-  }, [location.pathname]);
+  }
 
   if (authLoading) {
     return (

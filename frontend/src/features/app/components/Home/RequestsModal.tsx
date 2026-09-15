@@ -16,6 +16,28 @@ import './RequestsModal.scss';
 
 type TabId = 'incoming' | 'outgoing';
 
+interface RequestRows {
+  incoming: IncomingRequestRow[];
+  outgoing: OutgoingRequestRow[];
+}
+
+/** Both request directions (incoming includes team invites), or null if a read fails. */
+async function fetchRequestRows(classId: string): Promise<RequestRows | null> {
+  try {
+    const [{ requests: joinRequests }, invitesRes, outgoingRes] = await Promise.all([
+      api.getIncomingJoinRequests(classId),
+      api.getPendingTeamInvites(classId),
+      api.getMyJoinRequests(classId),
+    ]);
+    return {
+      incoming: incomingRowsFromApi(joinRequests, invitesRes.requests ?? []),
+      outgoing: outgoingRowsFromApi(outgoingRes.requests ?? []),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export interface RequestsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -40,6 +62,50 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
   } | null>(null);
   const [dismissingId, setDismissingId] = useState<string | null>(null);
 
+  // Opening the modal, or switching class while it is open, starts over on the
+  // Incoming tab with a fresh load. That reset happens while rendering; the
+  // effect below only fetches.
+  const [prevProps, setPrevProps] = useState({ isOpen: false, classId });
+  if (prevProps.isOpen !== isOpen || prevProps.classId !== classId) {
+    setPrevProps({ isOpen, classId });
+    if (isOpen) {
+      setActiveTab('incoming');
+      if (classId) {
+        setLoading(true);
+        setError(null);
+      } else {
+        setIncoming([]);
+        setOutgoing([]);
+        setLoading(false);
+      }
+    }
+  }
+
+  // Shows a finished load: its rows, or the load error with empty lists.
+  const showLoaded = useCallback((rows: RequestRows | null) => {
+    if (rows) {
+      setIncoming(rows.incoming);
+      setOutgoing(rows.outgoing);
+    } else {
+      setError('Could not load requests. Please try again.');
+      setIncoming([]);
+      setOutgoing([]);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || !classId) return;
+    let cancelled = false;
+    void fetchRequestRows(classId).then((rows) => {
+      if (!cancelled) showLoaded(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, classId, showLoaded]);
+
+  // Reloads after an action fails.
   const refresh = useCallback(async () => {
     if (!classId) {
       setIncoming([]);
@@ -50,28 +116,8 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
 
     setLoading(true);
     setError(null);
-    try {
-      const [{ requests: joinRequests }, invitesRes, outgoingRes] = await Promise.all([
-        api.getIncomingJoinRequests(classId),
-        api.getPendingTeamInvites(classId),
-        api.getMyJoinRequests(classId),
-      ]);
-      setIncoming(incomingRowsFromApi(joinRequests, invitesRes.requests ?? []));
-      setOutgoing(outgoingRowsFromApi(outgoingRes.requests ?? []));
-    } catch {
-      setError('Could not load requests. Please try again.');
-      setIncoming([]);
-      setOutgoing([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [classId]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setActiveTab('incoming');
-    void refresh();
-  }, [isOpen, refresh]);
+    showLoaded(await fetchRequestRows(classId));
+  }, [classId, showLoaded]);
 
   useEffect(() => {
     if (!isOpen) return;

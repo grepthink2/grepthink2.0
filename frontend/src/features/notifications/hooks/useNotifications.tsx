@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useEffectEvent, useRef, useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { api, type ApiNotification } from '@/lib/api';
 import { supabase } from '@/lib/supabaseClient';
@@ -24,26 +24,45 @@ const NotificationsContext = createContext<NotificationsValue | undefined>(undef
  */
 export const NotificationsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { session } = useAuth();
+  const userId = session?.user?.id;
   const [notifications, setNotifications] = useState<ApiNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  // Signed out, there is nothing to load.
+  const [loading, setLoading] = useState(Boolean(userId));
   const [error, setError] = useState<string | null>(null);
   const cancelled = useRef(false);
 
-  const refetch = useCallback(async () => {
-    try {
-      const res = await api.getNotifications();
-      if (cancelled.current) return;
-      setNotifications(res.notifications);
-      setUnreadCount(res.unread_count);
-      setError(null);
-      setLoading(false);
-    } catch (err) {
-      if (cancelled.current) return;
-      setError((err as Error).message);
+  // Signing out empties the dropdown. Adjusted while rendering; the effect
+  // below only loads and subscribes.
+  const [prevUserId, setPrevUserId] = useState(userId);
+  if (prevUserId !== userId) {
+    setPrevUserId(userId);
+    if (!userId) {
+      setNotifications([]);
+      setUnreadCount(0);
       setLoading(false);
     }
-  }, []);
+  }
+
+  // State is committed in the promise callbacks, once the request settles.
+  const refetch = useCallback(
+    () =>
+      api
+        .getNotifications()
+        .then((res) => {
+          if (cancelled.current) return;
+          setNotifications(res.notifications);
+          setUnreadCount(res.unread_count);
+          setError(null);
+          setLoading(false);
+        })
+        .catch((err: unknown) => {
+          if (cancelled.current) return;
+          setError((err as Error).message);
+          setLoading(false);
+        }),
+    [],
+  );
 
   const markRead = useCallback(async (notificationId: string) => {
     await api.markNotificationRead(notificationId);
@@ -64,19 +83,17 @@ export const NotificationsProvider: React.FC<{ children: ReactNode }> = ({ child
     setUnreadCount(0);
   }, []);
 
-  const userId = session?.user?.id;
+  // Point the realtime socket at this user's JWT so RLS only delivers their
+  // own notification rows. Read through an Effect Event so a token refresh
+  // doesn't tear down and rebuild the channel.
+  const authorizeRealtime = useEffectEvent(() => {
+    if (session) supabase.realtime.setAuth(session.access_token);
+  });
 
   useEffect(() => {
     cancelled.current = false;
-    if (!session || !userId) {
-      setNotifications([]);
-      setUnreadCount(0);
-      setLoading(false);
-      return;
-    }
-    // Point the realtime socket at this user's JWT so RLS only delivers
-    // their own notification rows.
-    supabase.realtime.setAuth(session.access_token);
+    if (!userId) return;
+    authorizeRealtime();
     refetch();
     // INSERT = new notification; UPDATE = read_at synced from another tab/device.
     const channel = supabase
@@ -96,7 +113,6 @@ export const NotificationsProvider: React.FC<{ children: ReactNode }> = ({ child
     };
     // Keyed on userId (not the whole session) so a token refresh doesn't tear
     // down and rebuild the channel.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, refetch]);
 
   const value = useMemo<NotificationsValue>(

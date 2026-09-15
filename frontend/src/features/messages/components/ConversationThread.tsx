@@ -136,12 +136,13 @@ export const ConversationThread: React.FC<Props> = ({
     prevScrollHeight.current = scroller.scrollHeight;
   }, [messages, loading]);
 
+  const userId = user?.id;
   const myLatestSent = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].sender_id === user?.id) return messages[i];
+      if (messages[i].sender_id === userId) return messages[i];
     }
     return null;
-  }, [messages, user?.id]);
+  }, [messages, userId]);
 
   const seenAt =
     conversation.other_user_last_read_at &&

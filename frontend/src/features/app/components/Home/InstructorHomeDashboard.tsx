@@ -33,6 +33,8 @@ function courseLabel(cls: Class): string {
 
 const DISMISSED_ALERTS_KEY = 'gt:instructor:dismissed-alerts';
 
+const NO_ALERTS: AttentionItem[] = [];
+
 function loadDismissedAlerts(): Set<string> {
   try {
     const raw = localStorage.getItem(DISMISSED_ALERTS_KEY);
@@ -56,8 +58,11 @@ const InstructorHomeDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { visibleClasses, setSelectedClass, getClassStatus } = useClass();
 
-  const [alerts, setAlerts] = useState<AttentionItem[]>([]);
-  const [alertsLoading, setAlertsLoading] = useState(false);
+  // The alerts last built, and the active-class list they were built for.
+  const [alertsResult, setAlertsResult] = useState<{
+    classes: Class[];
+    alerts: AttentionItem[];
+  } | null>(null);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(loadDismissedAlerts);
   const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
 
@@ -67,25 +72,29 @@ const InstructorHomeDashboard: React.FC = () => {
     [visibleClasses, getClassStatus],
   );
 
+  // No active classes means no alerts.
+  if (activeClasses.length === 0 && alertsResult !== null) {
+    setAlertsResult(null);
+  }
+  // Each new active-class list (a class refresh) loads the summary again; the
+  // previous alerts stay counted until it lands.
+  const alertsLoading = activeClasses.length > 0 && alertsResult?.classes !== activeClasses;
+  const alerts = alertsResult?.alerts ?? NO_ALERTS;
+
   useEffect(() => {
-    if (activeClasses.length === 0) {
-      setAlerts([]);
-      return;
-    }
+    if (activeClasses.length === 0) return;
 
     let cancelled = false;
 
     const load = async () => {
-      setAlertsLoading(true);
+      let items: AttentionItem[] = [];
       try {
         const { classes } = await api.getClassesAttentionSummary();
-        if (cancelled) return;
-        setAlerts(buildAttentionItems(activeClasses, classes));
+        items = buildAttentionItems(activeClasses, classes);
       } catch {
-        if (!cancelled) setAlerts([]);
-      } finally {
-        if (!cancelled) setAlertsLoading(false);
+        // No alerts: the card shows its all-clear state.
       }
+      if (!cancelled) setAlertsResult({ classes: activeClasses, alerts: items });
     };
 
     void load();
