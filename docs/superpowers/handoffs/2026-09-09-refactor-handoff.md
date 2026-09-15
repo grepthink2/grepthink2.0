@@ -1,4 +1,4 @@
-# Handoff — codebase refactor branch (updated 2026-09-12, ready for review)
+# Handoff — codebase refactor branch (updated 2026-09-14, ready for review)
 
 Every item on the earlier low-hanging-fruit checklist is done, and the branch is up for review
 as a PR onto `beta`. What remains needs a person: a signed-in click-through, confirming unique
@@ -11,8 +11,8 @@ indexes on PROD, and the design decisions.
 - **Ask:** "refactor the whole codebase for best practices, extensibility and
   maintainability; dependency upgrades; performance bottlenecks, especially DB-driven ones."
   The maintainer was unavailable, so every judgment call is in the spec's decisions table (D1–D16).
-- **Gates:** backend ruff clean and 485 pytest green; frontend `npm run lint`
-  0 errors (77 advisory warnings), `npm run build` clean, 134 vitest green; `npm audit` 0.
+- **Gates:** backend ruff clean and 570 pytest green; frontend `npm run lint` (every React hooks
+  rule an error, 0 findings), `npm run build` clean, 144 vitest green; `npm audit` 0.
 - **Results:** `docs/superpowers/reports/2026-09-08-refactor-report.md` has the before/after
   tables, the bugs fixed, how it was verified, and what was left out.
 
@@ -37,6 +37,7 @@ before and after.
 | Batched database access | `a88866b` `cddb7d5` `1a15fbc` `5efb235` `aaf9ec4` `4ce5af6` `7c999b5` `14eb865` `6df99b3` `ecaa0fd` `5e4fa84` `6fe45a6` `58f59f4` `2e5d44d` `74d330b` `bc2cd49` `c7353d3` `cf333ad` `cc2d79e` `32df322` `6b1be99` |
 | Staged migration (not applied) | `89b3e37` |
 | Web client | `0613c87` `a7e27f0` `baac47a` `78f0fc6` `0230530` `afddff7` `7073a82` |
+| Role from the profile, typed errors, status policy, lint as errors | `6d29907` and the commits after it |
 | Docs | `c0c47e6` `64cea36` `1509dda` and the final docs commit |
 
 ## Before merging (maintainer)
@@ -51,7 +52,7 @@ before and after.
 3. **Optional migration.** `backend/database/migrations/2026-09-08_perf_indexes_and_lints.sql`
    is staged, not applied, and nothing depends on it. Apply on dev, then prod, then regenerate
    `supabase/schema.sql`.
-4. **Decisions.** D1–D16, plus: React Compiler lint rules are warnings (9c); rename
+4. **Decisions.** D1–D16, plus: rename
    `react-day-picker` to `@daypicker/react` (same API); drop the unused staffing endpoints (D5
    keeps them); `num_members` as a DB trigger; a shared `Modal` primitive; react-query; serverless
    rate limiting; invite poller as Vercel Cron.
@@ -68,6 +69,9 @@ before and after.
 3. Watch it fail, then write the code: `authz` helpers for access; embeds over existing FKs
    (hints where a table has several FKs to one target); `fan_out` for independent reads; one
    bulk `insert` / `upsert` / `delete` after validating in memory. **Never depend on unapplied SQL.**
+   Let database failures propagate as `DatabaseError`; catch a subclass such as
+   `DatabaseConflictError` before `except HTTPException` only to handle it. Answer 404 for a
+   missing resource and 403 for denied access.
 4. `ruff format . && ruff check . && python -m pytest -q`, then run any new select string once,
    read-only, against dev (`limit 1`), because the fake cannot prove PostgREST accepts
    relationship names. Commit with the before/after round trips in the message.
@@ -92,6 +96,10 @@ The report's "Not done, and why" section is the full list. The ones worth a tick
 - `notifications.notify_team_member_dropped_from_roster` is no longer called.
 - The attention summary embeds every enrollment and roster row of an instructor's classes in one
   response; it was not measured against a very large roster.
+- Sign-out on a 401: tokens are verified with no clock leeway, and a failed signing-key fetch
+  answers 401; the web client signs out on either.
+- Filed as tasks: Save and Cancel stay disabled after an assignment is deleted; action errors on
+  Assign, Staffing and the requests modal are cleared by the reload that follows.
 
 ## Gotchas learned (save yourself an hour)
 
@@ -119,3 +127,7 @@ The report's "Not done, and why" section is the full list. The ones worth a tick
   `pyproject.toml`, because Vercel reads `pyproject.toml` as a dependency source.
 - Do not apply migrations or touch PROD (`yfezwtoeoexfksvbpxmi`) without the maintainer.
   Read-only queries against dev (`jfbagjjvryqcwxsyeyeg`) are fine.
+- zsh applies history modifiers to `$name:x`, so `git show "$sha:frontend/..."` breaks; write
+  `"${sha}:frontend/..."`.
+- A frontend agent in its own worktree can clone `node_modules` with `cp -Rc` (an APFS clone) and
+  delete the clone's `.tmp` and `.vite` caches, so type-check caches don't leak between trees.

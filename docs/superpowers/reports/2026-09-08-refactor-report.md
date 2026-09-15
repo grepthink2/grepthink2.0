@@ -1,4 +1,4 @@
-# Refactor report — 2026-09-08 to 2026-09-12
+# Refactor report — 2026-09-08 to 2026-09-14
 
 Branch `claude/refactor-dependencies-performance-453545`, cut from `origin/beta` at `613e4d1`.
 The ask: refactor the whole codebase for best practices, extensibility and maintainability,
@@ -10,16 +10,17 @@ are in the four `reports/2026-09-08-audit-*.md` files.
 
 | Measure | Before (`613e4d1`) | After |
 |---|---|---|
-| Backend tests | 177 | 485 |
-| Frontend tests | 94 | 134 (24 files) |
+| Backend tests | 177 | 570 |
+| Frontend tests | 94 | 144 (26 files) |
 | Backend lint | none configured; 942 ruff findings | `ruff check` + `ruff format --check` clean, in CI |
-| Frontend lint | 14 errors, 28 warnings, not in CI | 0 errors (77 advisory warnings), in CI |
+| Frontend lint | 14 errors, 28 warnings, not in CI | 0 findings with every React hooks rule an error, in CI |
 | `npm audit` | 12 findings, 10 high | 0 |
 | Main JS chunk | 761 kB min / 218 kB gzip | 247 kB min / 67 kB gzip |
 | Supabase client-selection copies | 48 | 1 (`app.core.db.get_client`) |
-| Instructor-check implementations | 5 variants (403 / 404 / `None`) | `app.core.authz` helpers with explicit status codes |
+| Instructor-check implementations | 5 variants (403 / 404 / `None`) | `app.core.authz` helpers: 404 for a missing resource, 403 for denied access |
 | Client bundle secrets | every `SUPABASE_*` variable exposed | only `VITE_*` |
-| `lib/api.ts` | 1,586 lines, errors lose the HTTP status | 30-line facade over 9 domain files; `ApiError` keeps status and detail |
+| `lib/api.ts` | 1,586 lines, errors lose the HTTP status | 30-line facade over 9 domain files; `ApiError` keeps status, detail and code |
+| Database failures | a 500 with a per-function message, or a silent `None` | typed `DatabaseError`: 503, 409 or 500 with a stable `code` |
 
 ## Database round trips per request
 
@@ -85,6 +86,29 @@ New batch endpoints: `GET /api/assignments/my-submissions?class_id=` (at most 5 
 `GET /api/projects/incoming-join-requests?class_id=` (2 queries) and
 `GET /api/classes/attention-summary` (1 query, however many classes).
 
+## Errors and status codes
+
+**Database failures are typed.** `app.core.db.get_client()` wraps the Supabase client, so a
+request PostgREST rejects, or one that cannot reach the database, raises
+`app.core.errors.DatabaseError` with the original exception chained. Our own bugs are never
+translated. Because it derives from `HTTPException`, the controllers' existing
+`except HTTPException: raise` clauses pass it through unchanged.
+
+| Raised | Status | `code` |
+|---|---|---|
+| `DatabaseUnavailableError`: timeout, dropped connection, overload | 503 with `Retry-After` | `database_unavailable` |
+| `DatabaseConflictError`: a unique key | 409 | `database_conflict` |
+| `DatabaseError`: any other rejected request | 500 | `database_read_failed` or `database_write_failed` |
+| Any other uncaught exception | 500 | `internal_error` |
+
+**Not found versus not allowed.** A missing resource answers 404 and a denied caller answers
+403, with one `detail` per condition from the constants in `app/core/authz.py`. The authz
+helpers no longer take status arguments. Commit `3f603ed` lists every endpoint whose status or
+text changed.
+
+**Web client.** The UI takes the account's role from `GET /api/profiles/me` instead of sign-up
+metadata, and `ApiError` exposes the backend's `code`.
+
 ## Bugs fixed along the way
 
 - The Vite `envPrefix` could ship `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_JWT_SECRET` to browsers.
@@ -102,6 +126,10 @@ New batch endpoints: `GET /api/assignments/my-submissions?class_id=` (at most 5 
 - Students never saw their instructor's email: the class list sent `instructor_email`, but the UI reads `teacher_email`.
 - `queue_invite` and `cancel_invite` turned a dropped connection into a 500 before the retry decorator could see it.
 - Inviting a blank address could match a profile whose email was an empty string.
+- An account with no role in its sign-up metadata saw the student UI even when its profile role was instructor.
+- A failed role lookup counted as "no role", so a database blip answered 403 instead of an error.
+- The profile update answered its own 4xx errors as 500s.
+- The same "not the class instructor" condition answered 403 on some endpoints and 404 on others, and a missing class sometimes answered 403.
 
 ## How this was verified
 
@@ -112,6 +140,11 @@ New batch endpoints: `GET /api/assignments/my-submissions?class_id=` (at most 5 
   PostgREST accepts relationship names. Production was not touched.
 - Browser, signed out, on the dev server: landing page, the lazily loaded login page, and the
   redirect from `/app/home` to `/login`; no console or server errors.
+- The database client adapter ran read-only against dev with real postgrest builders: selects,
+  counts, `not_`, `maybe_single`, `single`, embeds with order and range, an RPC, and an unknown
+  column and relation.
+- Each React hooks lint fix was checked with temporary characterization tests run against the
+  old and the new code, then deleted.
 - Bundle sizes are from `npm run build` output.
 
 ## Not done, and why
@@ -127,10 +160,19 @@ New batch endpoints: `GET /api/assignments/my-submissions?class_id=` (at most 5 
 - **Session token cache** in `apiRequest` not added: `supabase.auth.getSession()` reads the
   stored session and refreshes it only when expired, so a second cache would add staleness risk
   for little gain.
-- **Lint warnings** (77) are advisory: 58 `set-state-in-effect`, 17 `exhaustive-deps`, 3
-  `immutability` in the legacy `ClassManagement` page, 1 memoisation.
+- **Behaviour edges found while fixing lint**, filed as separate tasks: after an assignment is
+  deleted, the editor's Save and Cancel stay disabled on the next one; a failed seat change on
+  Assign or Staffing, or a failed request action in the requests modal, clears its error before
+  it shows.
+- **Sign-out on a 401.** The backend verifies tokens with no clock leeway and answers 401 when it
+  cannot fetch Supabase's signing keys. The web client signs out on a 401, so either edge logs a
+  user out. Adding leeway and answering 503 for a key-fetch failure would close both.
 - **Follow-ups noticed:** `messages.get_profile_roles` compares user ids as exact strings, so
   an upper-cased id skips the instructor-to-instructor rule; `notify_recipients` makes three
   round trips per recipient; `project_members` has no unique `(project_id, user_id)` constraint;
   incoming join requests match reviewer roles case-insensitively while accept/reject match
   exactly; Vite warns that `__dirname` in `vite.config.ts` will not work with the native config loader. `notifications.notify_team_member_dropped_from_roster` is now unused. The attention summary embeds every enrollment and roster row of an instructor's classes in one response; it was not measured against a very large roster.
+- **Status policy edges:** `require_instructor` checks the profile role before any lookup, so a
+  non-instructor gets 403 even for a missing class; `leave_class` answers 404 with the same text
+  as the 403 "not enrolled" message; the settings `Profile` and `Portfolio` blocks are not
+  rendered anywhere.
