@@ -11,7 +11,6 @@ from fastapi import HTTPException
 from app.core import authz
 from app.core.db import fan_out, get_client
 from app.database.client import (
-    _TRANSIENT_HTTPX_ERRORS,
     retry_on_disconnect,
 )
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
@@ -652,10 +651,6 @@ def get_my_tsr_entries(user_id: str, assignment_id: UUID) -> list:
         profile_map = _profiles_by_id(client, _people_in(rows))
         return [_serialize_tsr_entry(row, profile_map) for row in rows]
     except HTTPException:
-        raise
-    except _TRANSIENT_HTTPX_ERRORS:
-        # Bubble to @retry_on_disconnect; if the retry also fails the
-        # decorator re-raises and the framework returns 500.
         raise
     except Exception:
         logger.exception(

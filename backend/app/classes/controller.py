@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 from app.classes.invite_email import send_class_invite_email, send_class_invite_email_or_raise
 from app.core import authz
-from app.core.db import TRANSIENT_ERRORS, fan_out, get_client, retry_on_disconnect
+from app.core.db import fan_out, get_client, retry_on_disconnect
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code
 from app.utils.profiles import profile_display_name
@@ -1056,8 +1056,6 @@ def get_attention_summary(user_id: str) -> dict:
         return {"classes": summary}
     except HTTPException:
         raise
-    except TRANSIENT_ERRORS:
-        raise  # @retry_on_disconnect retries a dropped connection
     except Exception:
         logger.exception("Error fetching attention summary | user_id=%s", user_id)
         raise HTTPException(status_code=500, detail="Failed to fetch attention summary")
@@ -1828,8 +1826,6 @@ def queue_invite(
         return {"job_id": inserted["id"], "send_at": inserted["send_at"]}
     except HTTPException:
         raise
-    except TRANSIENT_ERRORS:
-        raise  # @retry_on_disconnect retries a dropped connection
     except Exception:
         logger.exception("Error in queue_invite | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to queue invite")
@@ -1858,8 +1854,6 @@ def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
         return {"cancelled": True}
     except HTTPException:
         raise
-    except TRANSIENT_ERRORS:
-        raise  # @retry_on_disconnect retries a dropped connection
     except Exception:
         logger.exception("Error in cancel_invite | job_id=%s", job_id)
         raise HTTPException(status_code=500, detail="Failed to cancel invite")
@@ -1906,10 +1900,6 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
         )
         return _project_cards(reads["projects"], role, lambda m: m.get("profile") or {})
     except HTTPException:
-        raise
-    except TRANSIENT_ERRORS:
-        # Bubble to @retry_on_disconnect; if the retry also fails the
-        # decorator re-raises and the framework returns 500.
         raise
     except Exception:
         logger.exception(
@@ -2004,8 +1994,6 @@ def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict
             "students": _student_rows(enrollments, projects),
         }
     except HTTPException:
-        raise
-    except TRANSIENT_ERRORS:
         raise
     except Exception:
         logger.exception(

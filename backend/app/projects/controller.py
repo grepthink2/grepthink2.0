@@ -7,7 +7,6 @@ from collections.abc import Iterable
 from datetime import UTC, datetime
 from uuid import UUID
 
-import httpx
 from fastapi import HTTPException
 
 from app.auth.controller import get_user_role
@@ -60,17 +59,6 @@ def _require_member_role(
 
 
 logger = logging.getLogger(__name__)
-
-
-# Transient Supabase HTTP/2 errors. We let these propagate from controllers
-# that are decorated with ``@retry_on_disconnect`` so the retry can fire;
-# everything else still maps to HTTPException(500).
-_TRANSIENT_HTTPX_ERRORS = (
-    httpx.RemoteProtocolError,
-    httpx.ReadError,
-    httpx.ConnectError,
-    httpx.ReadTimeout,
-)
 
 
 def set_num_members(client, project_id: str, count: int) -> None:
@@ -404,10 +392,6 @@ def update_project(
         return result.data[0]
     except HTTPException:
         raise
-    except _TRANSIENT_HTTPX_ERRORS:
-        # Bubble to @retry_on_disconnect; if the retry also fails the
-        # decorator re-raises and the framework returns 500.
-        raise
     except Exception:
         logger.exception("Error updating project | project_id=%s user_id=%s", project_id, user_id)
         raise HTTPException(status_code=500, detail="Failed to update project")
@@ -541,10 +525,6 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
             for r in rows
         ]
     except HTTPException:
-        raise
-    except _TRANSIENT_HTTPX_ERRORS:
-        # Bubble to @retry_on_disconnect; if the retry also fails the
-        # decorator re-raises and the framework returns 500.
         raise
     except Exception:
         logger.exception("Error fetching projects | user_id=%s class_id=%s", user_id, class_id)
@@ -1828,9 +1808,6 @@ def get_incoming_join_requests(user_id: str, class_id: UUID) -> list:
         rows.sort(key=_requested_at_sort_key)
         return rows
     except HTTPException:
-        raise
-    except _TRANSIENT_HTTPX_ERRORS:
-        # Bubble to @retry_on_disconnect (a read, so retrying is safe).
         raise
     except Exception:
         logger.exception(

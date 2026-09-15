@@ -81,9 +81,9 @@ The service-role client bypasses Row-Level Security, so every authorization deci
 in Python. Get the client per call; feature modules never import `service_client`:
 
 ```python
-from app.core.db import fan_out, get_client, is_unique_violation
+from app.core.db import fan_out, get_client
 
-client = get_client()
+client = get_client()  # a failed request raises app.core.errors.DatabaseError
 ```
 
 Every `.execute()` is one HTTP round trip to PostgREST. Keep the count flat as data grows:
@@ -107,9 +107,9 @@ reads = fan_out(
 
 - **Validate, then write once.** Check every item in memory, then issue one bulk `insert`,
   `upsert(on_conflict=...)` or `delete`, so nothing is written when any item is invalid.
-- **Lost races on unique keys:** catch the insert error and test `is_unique_violation(exc)`
-  to answer 409 (or re-read) instead of 500. Rely only on constraints in `supabase/schema.sql`
-  that are applied; never on a staged migration.
+- **Lost races on unique keys:** catch `DatabaseConflictError` around the write to answer a
+  specific 409 or re-read the winning row; uncaught, it answers a generic 409. Rely only on
+  constraints in `supabase/schema.sql` that are applied; never on a staged migration.
 - Convert UUIDs to strings for filters (`str(project_id)`) and treat empty results as
   `result.data or []`.
 
@@ -119,23 +119,37 @@ reads = fan_out(
 
 - Raise `HTTPException` with a fixed, user-safe `detail` (400, 401, 403, 404, 409).
 - Never put exception text in `detail`: PostgREST errors include table and constraint names.
-  `app/core/errors.py` logs anything uncaught and answers `{"detail": "Internal server error"}`.
-- Catch exceptions only to add context to the log or to map a known failure to a better
-  status. Re-raise `HTTPException`, and re-raise transient network errors so
-  `@retry_on_disconnect()` can retry a read.
+- **Database failures are typed.** The client from `get_client()` raises
+  `app.core.errors.DatabaseError` when PostgREST rejects a request or the database cannot be
+  reached; a bug in our own code never becomes one. Every error body has a `detail` and a `code`:
+
+| Raised | Status | `code` |
+|---|---|---|
+| `DatabaseUnavailableError`: timeout, dropped connection, overload | 503 with `Retry-After` | `database_unavailable` |
+| `DatabaseConflictError`: a unique key (`23505`) | 409 | `database_conflict` |
+| `DatabaseError`: any other rejected request | 500 | `database_read_failed` or `database_write_failed` |
+| Any other uncaught exception (a bug) | 500 | `internal_error` |
+
+- PostgREST's code and message stay on the exception (`pg_code`, `pg_message`) and in the log,
+  which `app/core/errors.py` writes once per failure.
+- `DatabaseError` is an `HTTPException`, so `except HTTPException: raise` passes it through a
+  broad handler with its status and code, and `@retry_on_disconnect()` retries a dropped
+  connection. Catch exceptions only to add context to the log or to map a known failure to a
+  better status. To handle a database failure, catch its subclass **before**
+  `except HTTPException`:
 
 ```python
-from app.core.db import TRANSIENT_ERRORS
+from app.core.errors import DatabaseConflictError
 
 try:
-    ...
+    client.table("meetings").insert(row).execute()
+except DatabaseConflictError:
+    meeting = existing_meeting()  # another request created the slot first
 except HTTPException:
     raise
-except TRANSIENT_ERRORS:
-    raise  # @retry_on_disconnect() retries the read
 except Exception:
-    logger.exception("Error creating project | class_id=%s user_id=%s", class_id, user_id)
-    raise HTTPException(status_code=500, detail="Failed to create project")
+    logger.exception("Error creating meeting | project_id=%s", project_id)
+    raise HTTPException(status_code=500, detail="Failed to create meeting")
 ```
 
 ### Not found versus not allowed
