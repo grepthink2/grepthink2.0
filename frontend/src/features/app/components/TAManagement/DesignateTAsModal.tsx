@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useEffectEvent, useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { api, type ApiClassTa } from '@/lib/api';
 import { getInitials } from '@features/app/utils/memberUtils';
@@ -15,23 +15,38 @@ interface DesignateTAsModalProps {
 
 const DesignateTAsModal: React.FC<DesignateTAsModalProps> = ({ isOpen, classId, onClose, onChanged }) => {
   const [rows, setRows] = useState<ApiClassTa[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
 
+  // Each open (and each class switch while open) loads the roster afresh:
+  // `loadSeq` numbers those loads and `loadedSeq` is the last one that settled.
+  // The modal stays mounted while closed, so compare against the last render.
+  const [prevOpen, setPrevOpen] = useState<{ isOpen: boolean; classId: string | null }>({
+    isOpen: false,
+    classId: null,
+  });
+  const [loadSeq, setLoadSeq] = useState(0);
+  const [loadedSeq, setLoadedSeq] = useState(0);
+  if (prevOpen.isOpen !== isOpen || prevOpen.classId !== classId) {
+    setPrevOpen({ isOpen, classId });
+    if (isOpen && classId) {
+      setLoadSeq(loadSeq + 1);
+      setError(null);
+    }
+  }
+  const loading = isOpen && !!classId && loadedSeq !== loadSeq;
+
   useEffect(() => {
     if (!isOpen || !classId) return;
     let active = true;
-    setLoading(true);
-    setError(null);
     api.getClassTaRoster(classId)
       .then((res) => { if (active) setRows(res.tas); })
       .catch((err) => { if (active) setError(err instanceof Error ? err.message : 'Failed to load students'); })
-      .finally(() => { if (active) setLoading(false); });
+      .finally(() => { if (active) setLoadedSeq(loadSeq); });
     return () => { active = false; };
-  }, [isOpen, classId]);
+  }, [isOpen, classId, loadSeq]);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -43,12 +58,16 @@ const DesignateTAsModal: React.FC<DesignateTAsModalProps> = ({ isOpen, classId, 
     }, 200);
   };
 
+  // Reads the latest isOpen / handleClose (and so `dirty`) without re-subscribing.
+  const onEscape = useEffectEvent((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && isOpen) handleClose();
+  });
+
   useEffect(() => {
-    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen) handleClose(); };
+    const onEsc = (e: KeyboardEvent) => onEscape(e);
     document.addEventListener('keydown', onEsc);
     return () => document.removeEventListener('keydown', onEsc);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, dirty]);
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : 'unset';

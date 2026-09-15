@@ -129,8 +129,10 @@ const FinalReviewDetail: React.FC = () => {
   const navigate = useNavigate();
 
   const [detail, setDetail] = useState<ApiFinalReviewDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  /** The project whose detail request last settled, and its error. */
+  const [loaded, setLoaded] = useState<{ projectId: string; error: string | null } | null>(null);
+  const loading = !!projectId && loaded?.projectId !== projectId;
+  const error = loading ? null : (loaded?.error ?? null);
   const [actionError, setActionError] = useState<string | null>(null);
   /** Confirmation text shown in the savebar once nothing is dirty anymore. */
   const [savedFlash, setSavedFlash] = useState<string | null>(null);
@@ -211,28 +213,37 @@ const FinalReviewDetail: React.FC = () => {
     seedNoteDrafts(d);
   }, [seedScoreDrafts, seedNoteDrafts]);
 
-  const loadDetail = useCallback(async () => {
-    if (!projectId) return;
-    const d = await api.getFinalReviewDetail(projectId);
+  const applyDetail = useCallback((d: ApiFinalReviewDetail) => {
     setDetail(d);
     seedDrafts(d);
-  }, [projectId, seedDrafts]);
+  }, [seedDrafts]);
+
+  /** Refetches after a save; the page stays on screen while it runs. */
+  const loadDetail = useCallback(async () => {
+    if (!projectId) return;
+    applyDetail(await api.getFinalReviewDetail(projectId));
+  }, [projectId, applyDetail]);
 
   useEffect(() => {
+    if (!projectId) return;
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    loadDetail()
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load the review');
+    api.getFinalReviewDetail(projectId)
+      .then((d) => {
+        if (cancelled) return;
+        applyDetail(d);
+        setLoaded({ projectId, error: null });
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+      .catch((err) => {
+        if (cancelled) return;
+        setLoaded({
+          projectId,
+          error: err instanceof Error ? err.message : 'Failed to load the review',
+        });
       });
     return () => {
       cancelled = true;
     };
-  }, [loadDetail]);
+  }, [projectId, applyDetail]);
 
   // Auto-dismiss the savebar's "Saved" confirmation ~2.5s after it appears.
   // Re-running the effect (a new savedFlash value, e.g. one save's flash
