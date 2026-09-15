@@ -458,12 +458,13 @@ const Assign: React.FC = () => {
         }
       }
       setSavedAssignmentRows(cloneAssignmentRows(assignmentRows));
+      // Set after the reload, which clears the message when it applies the new data.
+      await refresh();
       setSaveMessage(
         dirty
           ? 'Assignments saved and applied.'
           : 'Assignments are already up to date with the server.',
       );
-      await refresh();
     } catch (err) {
       setActionError(
         err instanceof Error ? err.message : 'Failed to save assignments',

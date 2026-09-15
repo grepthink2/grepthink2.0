@@ -134,6 +134,29 @@ describe('Assign', () => {
     expect(screen.getByText('Could not save the placement')).toBeInTheDocument();
   });
 
+  it('keeps the save confirmation after the reload', async () => {
+    vi.mocked(api.staffingAssign).mockResolvedValue({
+      message: 'Student assigned',
+      user_id: 'user-1',
+      project_id: 'project-1',
+    });
+    const user = userEvent.setup();
+    render(assignPage());
+
+    // Place Ada in the focused project, then save that draft.
+    await user.click(
+      await screen.findByRole('button', { name: 'Add Ada Lovelace to focused project' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Save assignments' }));
+
+    // Saving ends once the reload that follows the save is done.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save assignments' })).toBeEnabled(),
+    );
+    expect(api.getStaffingAssignments).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Assignments saved and applied.')).toBeInTheDocument();
+  });
+
   it('clears the error when the next seat change starts', async () => {
     vi.mocked(api.updateProject).mockResolvedValue({
       message: 'Project updated',
