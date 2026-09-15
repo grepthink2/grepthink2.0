@@ -1,9 +1,10 @@
 import { useRef, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { User } from 'lucide-react';
 import type { TeamMember, FeedbackEntry } from './tsrsTypes';
+import { emptyFeedbackFields, type FeedbackFieldKey } from './teamFeedbackValidation';
 import './TeamFeedbackTab.scss';
 
-type FieldKey = `${string}-contribution` | `${string}-improvement`;
+type FieldKey = FeedbackFieldKey;
 
 function formatMemberRole(role: string): string {
   const normalized = role.trim().toLowerCase();
@@ -16,8 +17,6 @@ function formatMemberRole(role: string): string {
 export interface TeamFeedbackTabHandle {
   /** Returns true if all fields are valid (caller may navigate). If invalid, shows errors, scrolls to first, returns false. */
   validateForNavigation: () => boolean;
-  /** Returns true if all fields are valid, without showing errors or scrolling. */
-  checkIsValid: () => boolean;
 }
 
 interface TeamFeedbackTabProps {
@@ -38,23 +37,8 @@ const TeamFeedbackTab = forwardRef<TeamFeedbackTabHandle, TeamFeedbackTabProps>(
   const fieldRefs = useRef<Record<FieldKey, HTMLTextAreaElement | null>>({} as Record<FieldKey, HTMLTextAreaElement | null>);
   const [invalidFields, setInvalidFields] = useState<Set<FieldKey>>(new Set());
 
-  const checkIsValid = useCallback((): boolean => {
-    for (const member of members) {
-      const c = (feedback[member.id]?.contribution ?? '').trim();
-      const i = (feedback[member.id]?.improvement ?? '').trim();
-      if (!c || !i) return false;
-    }
-    return true;
-  }, [members, feedback]);
-
   const runValidation = useCallback((): boolean => {
-    const emptyKeys: FieldKey[] = [];
-    for (const member of members) {
-      const c = (feedback[member.id]?.contribution ?? '').trim();
-      const i = (feedback[member.id]?.improvement ?? '').trim();
-      if (!c) emptyKeys.push(`${member.id}-contribution` as FieldKey);
-      if (!i) emptyKeys.push(`${member.id}-improvement` as FieldKey);
-    }
+    const emptyKeys = emptyFeedbackFields(members, feedback);
     if (emptyKeys.length > 0) {
       setInvalidFields(new Set(emptyKeys));
       const firstKey = emptyKeys[0];
@@ -73,8 +57,7 @@ const TeamFeedbackTab = forwardRef<TeamFeedbackTabHandle, TeamFeedbackTabProps>(
 
   useImperativeHandle(ref, () => ({
     validateForNavigation: runValidation,
-    checkIsValid,
-  }), [runValidation, checkIsValid]);
+  }), [runValidation]);
 
   const updateField = useCallback(
     (memberId: string, field: keyof FeedbackEntry, value: string) => {

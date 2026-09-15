@@ -9,6 +9,7 @@ import TsrsStepper from './TsrsStepper';
 import ContributionsTab from './ContributionsTab';
 import TeamFeedbackTab from './TeamFeedbackTab';
 import type { TeamFeedbackTabHandle } from './TeamFeedbackTab';
+import { isTeamFeedbackComplete } from './teamFeedbackValidation';
 import ScrumMasterTab from './ScrumMasterTab';
 import type {
   TsrsTab,
@@ -38,18 +39,6 @@ function entriesByEvaluatee(
     }
   }
   return map;
-}
-
-/** Every member has both answers filled in (TeamFeedbackTab's checkIsValid rule). */
-function isTeamFeedbackComplete(
-  members: TeamMember[],
-  feedback: Record<string, FeedbackEntry>,
-): boolean {
-  return members.every(
-    (m) =>
-      (feedback[m.id]?.contribution ?? '').trim() !== '' &&
-      (feedback[m.id]?.improvement ?? '').trim() !== '',
-  );
 }
 
 const PREVIEW_MEMBERS: TeamMember[] = [1, 2, 3, 4].map((n) => ({
