@@ -131,7 +131,7 @@ def test_assign_rejects_wrong_class_missing_project_and_non_instructor(db):
     assert missing.value.status_code == 404
     with pytest.raises(HTTPException) as denied:
         staffing.assign_user(TA1, CLASS, S2, P1)
-    assert denied.value.status_code == 404  # staffing deliberately answers 404 to non-instructors
+    assert denied.value.status_code == 403
 
 
 def test_assign_inserts_before_removing_so_a_failure_never_strands_the_student(db, monkeypatch):

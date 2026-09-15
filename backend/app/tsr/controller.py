@@ -7,6 +7,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from app.core import authz
 from app.core.db import get_client
 from app.tsr.models import CreateTSRRequest
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
@@ -43,7 +44,11 @@ def _enrich_tsrs(client, tsrs: list) -> list:
 
 
 def _get_project_role(client, project_id: str, user_id: str) -> str:
-    """Return the user's role in a project, or raise 403 if not a member."""
+    """Return the user's role in a project.
+
+    Raises 403 if the user is not a member, or 404 if the project does not exist
+    (read only when denying: a missing project has no members either).
+    """
     membership = (
         client.table("project_members")
         .select("role")
@@ -52,7 +57,8 @@ def _get_project_role(client, project_id: str, user_id: str) -> str:
         .execute()
     )
     if not membership.data:
-        raise HTTPException(status_code=403, detail="Not a member of this project")
+        authz.load_project(client, project_id, columns="id")
+        raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
     return membership.data[0]["role"]
 
 
@@ -73,7 +79,7 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
             client.table("projects").select("id, class_id").eq("id", str(data.project_id)).execute()
         )
         if not project_result.data:
-            raise HTTPException(status_code=404, detail="Project not found")
+            raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
 
         class_id = project_result.data[0].get("class_id")
 
@@ -86,10 +92,7 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
             .execute()
         )
         if not enrollment.data:
-            raise HTTPException(
-                status_code=403,
-                detail="You must be enrolled in this project's class to submit a TSR",
-            )
+            raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
 
         # Validate assignment_id if provided
         if data.assignment_id:

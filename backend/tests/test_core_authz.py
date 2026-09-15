@@ -56,16 +56,10 @@ class TestClassInstructor:
         row = authz.require_class_instructor(_db(), INSTRUCTOR, CLASS_ID)
         assert row["id"] == CLASS_ID and row["created_by"] == INSTRUCTOR
 
-    def test_require_class_instructor_denied_uses_configured_status(self):
+    def test_require_class_instructor_denied_is_403(self):
         with pytest.raises(HTTPException) as exc:
             authz.require_class_instructor(_db(), STUDENT, CLASS_ID)
         assert exc.value.status_code == 403
-        with pytest.raises(HTTPException) as exc404:
-            authz.require_class_instructor(
-                _db(), STUDENT, CLASS_ID, denied=404, denied_detail="nope"
-            )
-        assert exc404.value.status_code == 404
-        assert exc404.value.detail == "nope"
 
     def test_require_class_instructor_missing_class(self):
         with pytest.raises(HTTPException) as exc:

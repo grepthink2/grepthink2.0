@@ -49,19 +49,14 @@ ENROLLMENT_ROLE_TA = "ta"
 def _owner_check(cls: dict | None, user_id: str) -> None:
     """404 for a missing class, 403 unless ``user_id`` created it (already-loaded row)."""
     if not cls:
-        raise HTTPException(status_code=404, detail="Class not found")
+        raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
     if str(cls.get("created_by")) != str(user_id):
-        raise HTTPException(
-            status_code=403,
-            detail="Only the class instructor can manage TAs",
-        )
+        raise HTTPException(status_code=403, detail=authz.NOT_CLASS_INSTRUCTOR)
 
 
 def _require_class_instructor(client, user_id: str, class_id) -> dict:
     """Ensure ``user_id`` owns ``class_id``; return the class row."""
-    cls = authz.load_class(client, class_id)
-    _owner_check(cls, user_id)
-    return cls
+    return authz.require_class_instructor(client, user_id, class_id)
 
 
 def _get_enrollment(client, class_id, user_id: str) -> dict | None:
@@ -98,7 +93,7 @@ def get_my_enrollment_role(user_id: str, class_id: UUID) -> dict:
             }
         )
         if not reads["class"]:
-            raise HTTPException(status_code=404, detail="Class not found")
+            raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
         if str(reads["class"].get("created_by")) == str(user_id):
             return {"enrollment_role": "instructor"}
         return {"enrollment_role": reads["role"]}
@@ -321,7 +316,7 @@ def list_project_tas(user_id: str, project_id: UUID) -> list[dict]:
             not _owns_class(project, user_id)
             and get_enrollment_role(client, class_id, user_id) is None
         ):
-            raise HTTPException(status_code=403, detail="You do not have access to this class")
+            raise HTTPException(status_code=403, detail=authz.NOT_CLASS_MEMBER)
 
         assigned_ta_id = project.get("assigned_ta_id")
         if not assigned_ta_id:
@@ -351,7 +346,8 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
 
     Powers the TA review page. The TA picks a TSR assignment and a project,
     then the regular TSR-overview endpoint returns the (TA-scoped) responses.
-    The three reads are independent and run concurrently.
+    The three reads are independent and run concurrently. A caller with no
+    enrollment costs one more read, to answer 404 when the class does not exist.
     """
     try:
         client = get_client()
@@ -375,6 +371,9 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
             }
         )
         if reads["role"] != ENROLLMENT_ROLE_TA:
+            # No enrollment can also mean no class; read it only to tell 404 from 403.
+            if reads["role"] is None and authz.load_class(client, class_id) is None:
+                raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
             raise HTTPException(status_code=403, detail="You are not a TA in this class")
         return {"projects": reads["projects"], "assignments": reads["assignments"]}
     except HTTPException:
@@ -444,7 +443,7 @@ def list_project_review_tas(user_id: str, project_id: UUID) -> dict:
             not _owns_class(project, user_id)
             and get_enrollment_role(client, class_id, user_id) is None
         ):
-            raise HTTPException(status_code=403, detail="You do not have access to this class")
+            raise HTTPException(status_code=403, detail=authz.NOT_CLASS_MEMBER)
 
         main_id = project.get("assigned_ta_id")
         extra_rows = (
@@ -635,7 +634,7 @@ def set_final_review_time(
         client = get_client()
         project = _load_project(client, project_id)
         if not _owns_class(project, instructor_id):
-            raise HTTPException(status_code=403, detail="Only the class instructor can manage TAs")
+            raise HTTPException(status_code=403, detail=authz.NOT_CLASS_INSTRUCTOR)
         value = scheduled_at.isoformat() if scheduled_at else None
         client.table("projects").update({"final_review_at": value}).eq(
             "id", str(project_id)
@@ -712,7 +711,7 @@ def get_final_review_schedule(user_id: str, class_id: UUID) -> dict:
         )
         cls = reads["class"]
         if not cls:
-            raise HTTPException(status_code=404, detail="Class not found")
+            raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
         if str(cls.get("created_by")) != str(user_id) and reads["role"] != ENROLLMENT_ROLE_TA:
             raise HTTPException(
                 status_code=403,

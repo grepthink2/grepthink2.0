@@ -52,7 +52,7 @@ def _require_member_role(
         .execute()
     )
     if not membership.data:
-        raise HTTPException(status_code=403, detail="Not a member of this project")
+        raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
     role = membership.data[0]["role"]
     if role not in allowed_roles:
         raise HTTPException(status_code=403, detail=forbidden_detail)
@@ -200,7 +200,7 @@ def create_project(
 
         class_result = class_future.result()
         if not class_result.data or len(class_result.data) == 0:
-            raise HTTPException(status_code=404, detail="Class not found")
+            raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
 
         class_row = class_result.data[0]
 
@@ -214,9 +214,7 @@ def create_project(
                 )
             enrollment = enrollment_future.result()
             if not enrollment.data:
-                raise HTTPException(
-                    status_code=403, detail="You must be enrolled in the class to create a project"
-                )
+                raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
 
             existing_project = _get_student_project_in_class(client, user_id, cid)
             if existing_project:
@@ -346,7 +344,7 @@ def update_project(
             client.table("projects").select("id, class_id").eq("id", str(project_id)).execute()
         )
         if not project_result.data:
-            raise HTTPException(status_code=404, detail="Project not found")
+            raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
 
         class_id = project_result.data[0].get("class_id")
 
@@ -442,7 +440,7 @@ def delete_project(project_id: UUID, user_id: str) -> dict:
             client.table("projects").select("id, class_id").eq("id", str(project_id)).execute()
         )
         if not project_result.data:
-            raise HTTPException(status_code=404, detail="Project not found")
+            raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
 
         class_id = project_result.data[0]["class_id"]
 
@@ -489,12 +487,7 @@ def get_projects_for_user(user_id: str, class_id: UUID = None) -> list:
         client = get_client()
 
         if class_id:
-            authz.require_class_access(
-                client,
-                user_id,
-                class_id,
-                denied_detail="You do not have access to this class projects list",
-            )
+            authz.require_class_access(client, user_id, class_id)
             res = (
                 client.table("projects")
                 .select("id, name, team_size, image_url, project_members(user_id, role)")
@@ -631,7 +624,7 @@ def _require_can_review(project: dict | None, reviewer_id: str) -> dict:
     Makes no round trips.
     """
     if project is None:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
     if str(_class_owner(project)) == str(reviewer_id):
         return project
     if _member_role(project.get("project_members"), reviewer_id) not in ELEVATED_ROLES:
@@ -849,7 +842,7 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
         )
 
         if not reads["project"]:
-            raise HTTPException(status_code=404, detail="Project not found")
+            raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
         project = reads["project"][0]
         class_id = project.get("class_id")
         new_project_name = project.get("name", "the new project")
@@ -990,7 +983,7 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
                 )
         else:
             if not project:
-                raise HTTPException(status_code=404, detail="Project not found")
+                raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
             _assert_can_review_loaded(client, reviewer_id, project)
 
         class_id = (project or {}).get("class_id")
@@ -1375,7 +1368,7 @@ def _load_role_context(
                 )
         else:
             if rid not in roles:
-                raise HTTPException(status_code=403, detail="Not a member of this project")
+                raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
             if roles[rid] not in ELEVATED_ROLES:
                 raise HTTPException(
                     status_code=403, detail="Insufficient permissions to manage project roles"
@@ -1521,7 +1514,7 @@ def get_project_members(project_id: UUID) -> list:
             .execute()
         )
         if not res.data:
-            raise HTTPException(status_code=404, detail="Project not found")
+            raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
 
         result = []
         for member in res.data[0].get("project_members") or []:
@@ -1556,9 +1549,9 @@ def _require_class_access(class_row: dict | None, enrollment_role: str | None, u
     so callers can read those rows concurrently with their own data.
     """
     if class_row is None:
-        raise HTTPException(status_code=404, detail="Class not found")
+        raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
     if str(class_row.get("created_by")) != str(user_id) and enrollment_role is None:
-        raise HTTPException(status_code=403, detail="You do not have access to this class")
+        raise HTTPException(status_code=403, detail=authz.NOT_CLASS_MEMBER)
 
 
 def get_pending_team_invites_for_user(user_id: str, class_id: UUID) -> list:

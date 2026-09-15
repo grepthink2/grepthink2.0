@@ -21,24 +21,15 @@ ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form", "feedback"}
 
 
 def _require_instructor(user_id: str) -> None:
-    """Raise 403 if the user is not an instructor."""
+    """Raise 403 if the user's profile role is not instructor."""
     result = get_client().table("profiles").select("role").eq("id", user_id).execute()
     if not result.data or result.data[0].get("role") != "instructor":
-        raise HTTPException(status_code=403, detail="Only instructors can perform this action")
+        raise HTTPException(status_code=403, detail=authz.INSTRUCTOR_ROLE_REQUIRED)
 
 
 def _require_class_instructor(user_id: str, class_id: str) -> None:
-    """Raise 404 unless the user owns the class (404 also hides whether it exists)."""
-    detail = "Class not found or you don't have permission"
-    authz.require_class_instructor(
-        get_client(),
-        user_id,
-        class_id,
-        missing=404,
-        denied=404,
-        missing_detail=detail,
-        denied_detail=detail,
-    )
+    """Raise 404 if the class does not exist and 403 unless the user is its instructor."""
+    authz.require_class_instructor(get_client(), user_id, class_id)
 
 
 def _tsr_overview_scope(
@@ -53,7 +44,7 @@ def _tsr_overview_scope(
     missing class a 404. Pure: callers load the rows (concurrently).
     """
     if not class_row:
-        raise HTTPException(status_code=404, detail="Class not found")
+        raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
     if str(class_row.get("created_by")) == str(user_id):
         return None
     if enrollment_role != authz.ROLE_TA:
@@ -451,6 +442,8 @@ def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
       submission stats.
     - Students: must be enrolled in the class; only see 'publish' assignments.
 
+    404 when the class does not exist; 403 when the caller fails the rule above.
+
     Round trips: the caller's profile role, the class, their enrollment and the
     assignment list are read concurrently; an instructor's stats take one more
     concurrent wave. At most 8 queries in 2 waves (was 8 sequential reads for an
@@ -492,15 +485,17 @@ def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
         )
         role = reads["role"][0].get("role") if reads["role"] else None
         assignments = reads["assignments"]
+        cls = reads["class"]
+        if cls is None:
+            raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
 
         if role == "instructor":
-            cls = reads["class"]
-            if not cls or str(cls.get("created_by")) != str(user_id):
-                raise HTTPException(status_code=403, detail="You do not own this class")
+            if str(cls.get("created_by")) != str(user_id):
+                raise HTTPException(status_code=403, detail=authz.NOT_CLASS_INSTRUCTOR)
             return _with_instructor_stats(client, cid, assignments)
 
         if not reads["enrolled"]:
-            raise HTTPException(status_code=403, detail="You are not enrolled in this class")
+            raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
         return [a for a in assignments if a.get("status") == "publish"]
     except HTTPException:
         raise
@@ -870,7 +865,7 @@ def submit_feedback(
             .execute()
         )
         if not enrollment.data:
-            raise HTTPException(status_code=403, detail="You are not enrolled in this class")
+            raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
 
         row = {
             "assignment_id": str(assignment_id),
@@ -932,7 +927,7 @@ def get_my_feedback(user_id: str, assignment_id: UUID) -> dict | None:
             .execute()
         )
         if not enrollment.data:
-            raise HTTPException(status_code=403, detail="You are not enrolled in this class")
+            raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
 
         result = (
             client.table("feedback_submissions")
@@ -1004,10 +999,10 @@ def get_feedback_overview(user_id: str, assignment_id: UUID) -> dict:
             }
         )
         cls = reads["class"]
-        if not cls or str(cls.get("created_by")) != str(user_id):
-            raise HTTPException(
-                status_code=404, detail="Class not found or you don't have permission"
-            )
+        if cls is None:
+            raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
+        if str(cls.get("created_by")) != str(user_id):
+            raise HTTPException(status_code=403, detail=authz.NOT_CLASS_INSTRUCTOR)
 
         enrolled, submissions = reads["enrolled"], reads["submissions"]
         submitted_ids = {s["student_id"] for s in submissions if s.get("student_id")}
@@ -1072,7 +1067,7 @@ def get_my_submissions(user_id: str, class_id: UUID) -> dict:
         cid = str(class_id)
         reads = fan_out(
             {
-                "access": lambda: authz.get_class_access(client, user_id, cid),
+                "access": lambda: authz.require_class_access(client, user_id, cid),
                 "assignments": lambda: (
                     (
                         client.table("assignments")
@@ -1084,12 +1079,6 @@ def get_my_submissions(user_id: str, class_id: UUID) -> dict:
                 ),
             }
         )
-        access = reads["access"]
-        if access is None:
-            raise HTTPException(status_code=404, detail="Class not found")
-        if not access["is_instructor"] and access["enrollment_role"] is None:
-            raise HTTPException(status_code=403, detail="You are not enrolled in this class")
-
         tsr_ids = sorted(a["id"] for a in reads["assignments"] if a.get("assignment_type") == "tsr")
         feedback_ids = sorted(
             a["id"] for a in reads["assignments"] if a.get("assignment_type") == "feedback"

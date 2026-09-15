@@ -68,7 +68,6 @@ _CLASS_TZ = ZoneInfo("America/Los_Angeles")
 _PROJECT_COLUMNS = "id, class_id, name, assigned_ta_id, num_members"
 _CLASS_COLUMNS = "id, created_by, term, start_date, meetings_per_week, meeting_duration_minutes"
 _PROFILE_COLUMNS = "id, email, first_name, last_name, image_url"
-_NOT_CLASS_INSTRUCTOR = "Only the class instructor can do this"
 
 
 # ---------------------------------------------------------------------------
@@ -198,7 +197,7 @@ def _require_meeting_editor(user_id: str, project: dict) -> None:
 
 def _require_project_class_instructor(user_id: str, project: dict) -> None:
     if not _is_class_owner(user_id, project):
-        raise HTTPException(status_code=403, detail=_NOT_CLASS_INSTRUCTOR)
+        raise HTTPException(status_code=403, detail=authz.NOT_CLASS_INSTRUCTOR)
 
 
 # ---------------------------------------------------------------------------
@@ -364,9 +363,11 @@ def list_class_tas(class_id: UUID, user_id: str) -> list:
             }
         )
         cls, enroll_rows = reads["class"], reads["enrollments"]
-        is_instr = bool(cls) and str(cls.get("created_by")) == uid
+        if cls is None:
+            raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
+        is_instr = str(cls.get("created_by")) == uid
         if not is_instr and not any(str(r.get("user_id")) == uid for r in enroll_rows):
-            raise HTTPException(status_code=403, detail="You do not have access to this class")
+            raise HTTPException(status_code=403, detail=authz.NOT_CLASS_MEMBER)
 
         student_ids = [str(r["user_id"]) for r in enroll_rows if r.get("user_id")]
         if not student_ids:
@@ -526,15 +527,7 @@ def set_meeting_cadence(
         raise HTTPException(status_code=400, detail="Provide at least one field to update")
     try:
         client = get_client()
-        authz.require_class_instructor(
-            client,
-            instructor_id,
-            class_id,
-            missing=403,
-            denied=403,
-            missing_detail=_NOT_CLASS_INSTRUCTOR,
-            denied_detail=_NOT_CLASS_INSTRUCTOR,
-        )
+        authz.require_class_instructor(client, instructor_id, class_id)
         updates: dict = {}
         if meetings_per_week is not None:
             if not (1 <= int(meetings_per_week) <= 7):
@@ -656,7 +649,7 @@ def get_ta_schedule(
         )
         class_row = first["class"]
         if not class_row:
-            raise HTTPException(status_code=404, detail="Class not found")
+            raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
 
         is_instr = str(class_row.get("created_by")) == uid
         enrollment_role = first["enrollment_role"]
@@ -668,7 +661,7 @@ def get_ta_schedule(
                 )
         elif scope == "my-team":
             if not (is_instr or enrollment_role is not None):
-                raise HTTPException(status_code=403, detail="You do not have access to this class")
+                raise HTTPException(status_code=403, detail=authz.NOT_CLASS_MEMBER)
         else:
             raise HTTPException(status_code=400, detail="Invalid scope")
 
@@ -825,7 +818,7 @@ def get_team_attendance(
         member_ids = reads["members"]
         if not is_editor:
             if uid not in member_ids:
-                raise HTTPException(status_code=403, detail="You are not a member of this team")
+                raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
             member_ids = [uid]
 
         if not member_ids:

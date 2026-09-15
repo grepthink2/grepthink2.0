@@ -33,6 +33,7 @@ from fastapi import Depends, HTTPException, Request
 from jwt import PyJWK, PyJWKClient
 
 from app.config import settings
+from app.core import authz
 
 logger = logging.getLogger(__name__)
 
@@ -193,5 +194,5 @@ def require_instructor(user_id: str = Depends(require_user)) -> str:
             user_id,
             role,
         )
-        raise HTTPException(status_code=403, detail="Instructor role required")
+        raise HTTPException(status_code=403, detail=authz.INSTRUCTOR_ROLE_REQUIRED)
     return user_id

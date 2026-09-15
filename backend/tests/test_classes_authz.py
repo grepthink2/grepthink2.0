@@ -1,16 +1,15 @@
 """Access rules for app.classes: who may call each controller, and the exact
 answer everyone else gets.
 
-Instructor-only routes answer 404 with one message for both "no such class" and
-"not your class", so a stranger cannot probe which class ids exist. Turn-in
-stats is the exception and has always answered 403. Class reads (students,
-roster, projects) are open to the class instructor and to enrolled students and
-TAs: 404 for a missing class, 403 for everyone else.
+Instructor-only routes answer 404 "Class not found" when the class does not
+exist and 403 "Only the class instructor can do this" to everyone else. Class
+reads (students, roster, projects) are open to the class instructor and to
+enrolled students and TAs: 404 for a missing class, 403 for everyone else.
 
-These tests pin today's status codes and messages so moving the checks onto
-``app.core.authz`` cannot change them, and assert that a denied call writes
-nothing and sends no email. The retry tests cover ``@retry_on_disconnect``: a
-dropped connection has to reach the decorator instead of becoming a 500 first.
+These tests pin those status codes and messages, and assert that a denied call
+writes nothing and sends no email. The retry tests cover
+``@retry_on_disconnect``: a dropped connection has to reach the decorator
+instead of becoming a 500 first.
 """
 
 from __future__ import annotations
@@ -32,10 +31,9 @@ MANUAL_ENTRY = "roster-manual"
 JOB = "job-1"
 
 WRITE_OPS = {"insert", "update", "upsert", "delete"}
-NO_PERMISSION = "Class not found or you do not have permission"
-NO_PERMISSION_DONT = "Class not found or you don't have permission"
-NO_ROSTER_ACCESS = "You do not have access to this class roster"
-NO_PROJECTS_ACCESS = "You do not have access to this class projects list"
+CLASS_NOT_FOUND = "Class not found"
+NOT_CLASS_INSTRUCTOR = "Only the class instructor can do this"
+NO_CLASS_ACCESS = "You do not have access to this class"
 
 RELATIONS = {
     ("classes", "profiles!classes_created_by_fkey"): ("created_by", "id", False),
@@ -157,71 +155,44 @@ def _role(caller: str) -> str:
 CSV = "Email Address,Status\na@ucsc.edu,Enrolled\n"
 
 INSTRUCTOR_ONLY = {
-    "update_class_status": (
-        lambda caller, cid: classes.update_class_status(cid, "complete", caller),
-        404,
-        NO_PERMISSION,
+    "update_class_status": lambda caller, cid: classes.update_class_status(cid, "complete", caller),
+    "invite_student_to_class": lambda caller, cid: classes.invite_student_to_class(
+        cid, "s1@ucsc.edu", caller
     ),
-    "invite_student_to_class": (
-        lambda caller, cid: classes.invite_student_to_class(cid, "s1@ucsc.edu", caller),
-        404,
-        NO_PERMISSION_DONT,
+    "get_class_roster_timeline": lambda caller, cid: classes.get_class_roster_timeline(cid, caller),
+    "upload_class_roster": lambda caller, cid: classes.upload_class_roster(cid, CSV, caller),
+    "add_manual_roster_student": lambda caller, cid: classes.add_manual_roster_student(
+        cid, "Ann", "Lee", "ann@ucsc.edu", caller
     ),
-    "get_class_roster_timeline": (
-        lambda caller, cid: classes.get_class_roster_timeline(cid, caller),
-        404,
-        NO_PERMISSION,
+    "delete_manual_roster_entry": lambda caller, cid: classes.delete_manual_roster_entry(
+        cid, MANUAL_ENTRY, caller
     ),
-    "upload_class_roster": (
-        lambda caller, cid: classes.upload_class_roster(cid, CSV, caller),
-        404,
-        NO_PERMISSION,
+    "remove_student_from_class": lambda caller, cid: classes.remove_student_from_class(
+        cid, S1, caller
     ),
-    "add_manual_roster_student": (
-        lambda caller, cid: classes.add_manual_roster_student(
-            cid, "Ann", "Lee", "ann@ucsc.edu", caller
-        ),
-        404,
-        NO_PERMISSION,
+    "bulk_invite_students": lambda caller, cid: classes.bulk_invite_students(
+        cid, ["s1@ucsc.edu"], caller
     ),
-    "delete_manual_roster_entry": (
-        lambda caller, cid: classes.delete_manual_roster_entry(cid, MANUAL_ENTRY, caller),
-        404,
-        NO_PERMISSION,
-    ),
-    "remove_student_from_class": (
-        lambda caller, cid: classes.remove_student_from_class(cid, S1, caller),
-        404,
-        NO_PERMISSION,
-    ),
-    "bulk_invite_students": (
-        lambda caller, cid: classes.bulk_invite_students(cid, ["s1@ucsc.edu"], caller),
-        404,
-        NO_PERMISSION,
-    ),
-    "queue_invite": (
-        lambda caller, cid: classes.queue_invite(cid, ["s1@ucsc.edu"], caller),
-        404,
-        NO_PERMISSION_DONT,
-    ),
-    "get_class_turn_in_stats": (
-        lambda caller, cid: classes.get_class_turn_in_stats(cid, caller),
-        403,
-        NO_PERMISSION,
-    ),
+    "queue_invite": lambda caller, cid: classes.queue_invite(cid, ["s1@ucsc.edu"], caller),
+    "get_class_turn_in_stats": lambda caller, cid: classes.get_class_turn_in_stats(cid, caller),
 }
 
 
 @pytest.mark.parametrize("name", sorted(INSTRUCTOR_ONLY))
 @pytest.mark.parametrize(
-    ("caller", "cid"),
-    [(OTHER_INSTR, CLASS), (S1, CLASS), (INSTR, MISSING)],
+    ("caller", "cid", "status", "detail"),
+    [
+        (OTHER_INSTR, CLASS, 403, NOT_CLASS_INSTRUCTOR),
+        (S1, CLASS, 403, NOT_CLASS_INSTRUCTOR),
+        (INSTR, MISSING, 404, CLASS_NOT_FOUND),
+    ],
     ids=["other-instructor", "enrolled-student", "missing-class"],
 )
-def test_instructor_only_routes_keep_their_code_and_message(db, emails, name, caller, cid):
-    call, status, detail = INSTRUCTOR_ONLY[name]
+def test_instructor_only_routes_answer_404_for_a_missing_class_and_403_otherwise(
+    db, emails, name, caller, cid, status, detail
+):
     with pytest.raises(HTTPException) as exc:
-        call(caller, cid)
+        INSTRUCTOR_ONLY[name](caller, cid)
     assert (exc.value.status_code, exc.value.detail) == (status, detail)
     assert not [q for q in db.queries if q["op"] in WRITE_OPS], _trace(db)
     assert emails == []
@@ -230,7 +201,7 @@ def test_instructor_only_routes_keep_their_code_and_message(db, emails, name, ca
 def test_roster_upload_checks_ownership_before_parsing_the_csv(db):
     with pytest.raises(HTTPException) as exc:
         classes.upload_class_roster(CLASS, "not,a,roster\n", OTHER_INSTR)
-    assert (exc.value.status_code, exc.value.detail) == (404, NO_PERMISSION)
+    assert (exc.value.status_code, exc.value.detail) == (403, NOT_CLASS_INSTRUCTOR)
 
 
 def test_manual_roster_add_validates_input_before_reading_the_class(db):
@@ -291,19 +262,19 @@ def test_cancel_invite_answers(db):
 CLASS_READS = {
     "get_class_students": (
         lambda caller, cid: classes.get_class_students(cid, caller),
-        NO_ROSTER_ACCESS,
+        NO_CLASS_ACCESS,
     ),
     "get_class_roster": (
         lambda caller, cid: classes.get_class_roster(cid, caller),
-        NO_ROSTER_ACCESS,
+        NO_CLASS_ACCESS,
     ),
     "get_class_projects": (
         lambda caller, cid: classes.get_class_projects(cid, caller, _role(caller)),
-        NO_PROJECTS_ACCESS,
+        NO_CLASS_ACCESS,
     ),
     "get_class_projects_overview": (
         lambda caller, cid: classes.get_class_projects_overview(cid, caller, _role(caller)),
-        NO_PROJECTS_ACCESS,
+        NO_CLASS_ACCESS,
     ),
 }
 

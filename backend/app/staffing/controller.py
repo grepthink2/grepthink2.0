@@ -35,6 +35,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from app.core import authz
 from app.core.db import get_client
 from app.database.client import query_pool
 from app.projects.controller import ROLE_MEMBER, ROLE_SCRUM_MASTER, set_num_members
@@ -52,31 +53,14 @@ MAX_INTEREST_VALUE = 5
 
 
 def _require_class_instructor(user_id: str, class_id: UUID) -> None:
-    """
-    Raise 404 if the caller is not the instructor (creator) of the class.
-
-    404 (vs. 403) so we don't leak class existence to non-instructors.
-    """
-    result = (
-        get_client()
-        .table("classes")
-        .select("id")
-        .eq("id", str(class_id))
-        .eq("created_by", user_id)
-        .execute()
-    )
-    if not result.data:
-        logger.info(
-            "_require_class_instructor: denied | user_id=%s class_id=%s",
-            user_id,
-            class_id,
-        )
-        raise HTTPException(status_code=404, detail="Class not found or you don't have permission")
+    """Raise 404 if the class does not exist and 403 if the caller is not its instructor."""
+    authz.require_class_instructor(get_client(), user_id, class_id)
 
 
 def _require_class_member(user_id: str, class_id: UUID) -> None:
     """
-    Raise 400 if the caller is neither enrolled nor the instructor of the class.
+    Raise 404 if the class does not exist and 403 if the caller is neither
+    enrolled in it nor its instructor.
 
     Used for student-facing routes (submitting interest, viewing own form).
     """
@@ -91,18 +75,11 @@ def _require_class_member(user_id: str, class_id: UUID) -> None:
     if enrollment.data:
         return
 
-    instructor = (
-        client.table("classes")
-        .select("id")
-        .eq("id", str(class_id))
-        .eq("created_by", user_id)
-        .execute()
-    )
-    if not instructor.data:
-        raise HTTPException(
-            status_code=400,
-            detail="You must be enrolled in this class to submit interest",
-        )
+    cls = authz.load_class(client, class_id)
+    if cls is None:
+        raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
+    if str(cls.get("created_by")) != str(user_id):
+        raise HTTPException(status_code=403, detail=authz.NOT_CLASS_MEMBER)
 
 
 def _project_in_class(client, project_id: UUID, class_id: UUID) -> dict:
@@ -114,7 +91,7 @@ def _project_in_class(client, project_id: UUID, class_id: UUID) -> dict:
         .execute()
     )
     if not res.data:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
     project = res.data[0]
     if str(project.get("class_id")) != str(class_id):
         raise HTTPException(
@@ -281,7 +258,8 @@ def submit_interest(
 
     Raises:
         HTTPException 400 — invalid value or project / class mismatch.
-        HTTPException 404 — project not found.
+        HTTPException 403 — caller is neither enrolled nor the class instructor.
+        HTTPException 404 — class or project not found.
     """
     if not (MIN_INTEREST_VALUE <= int(interest_value) <= MAX_INTEREST_VALUE):
         raise HTTPException(
@@ -1071,8 +1049,8 @@ def assign_user(
     already holds. ~7 round trips (was ~18).
 
     Raises:
-        HTTPException 404 — class / project not found, or caller is not the
-            class instructor.
+        HTTPException 404 — class / project not found.
+        HTTPException 403 — caller is not the class instructor.
         HTTPException 400 — project belongs to a different class.
     """
     _require_class_instructor(user_id, class_id)
@@ -1082,7 +1060,7 @@ def assign_user(
 
     if pid not in {str(p["id"]) for p in projects}:
         _project_in_class(client, project_id, class_id)  # raises 404 / 400 with the usual detail
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
 
     previous = _projects_of(members, tid)
     if pid in previous:

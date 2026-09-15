@@ -146,7 +146,7 @@ The staffing module backs the **Interest Form** (student) and the **Project Staf
 
 ### Instructor analytics
 
-All routes require the caller to be the class instructor; non-instructors receive **404** to avoid leaking class existence.
+All routes require the caller to be the class instructor: **404** if the class does not exist, **403** for anyone who is not its instructor.
 
 | Method | Path | Description |
 |--------|------|-------------|

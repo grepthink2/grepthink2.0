@@ -154,37 +154,13 @@ def _find_student_profile_by_email(client, email: str) -> dict | None:
     return _find_student_profiles_by_email(client, [normalized]).get(normalized)
 
 
-#: Instructor-only routes give one answer for "no such class" and "not your
-#: class", so a stranger cannot tell which class ids exist. The wording differs
-#: between routes and is kept exactly as each route answered before.
-_NO_PERMISSION = "Class not found or you do not have permission"
-_NO_PERMISSION_DONT = "Class not found or you don't have permission"
+def _require_owner(client, user_id: str, class_id, *, columns: str = authz.CLASS_COLUMNS) -> dict:
+    """Return the class row when ``user_id`` created the class.
 
-
-def _require_owner(
-    client,
-    user_id: str,
-    class_id,
-    *,
-    columns: str = authz.CLASS_COLUMNS,
-    detail: str = _NO_PERMISSION,
-    status: int = 404,
-) -> dict:
-    """Return the class row when ``user_id`` created the class; raise otherwise.
-
-    One round trip. A missing class and someone else's class both raise
-    ``status`` with ``detail``.
+    One round trip. 404 when the class does not exist, 403 when someone else
+    created it.
     """
-    return authz.require_class_instructor(
-        client,
-        user_id,
-        class_id,
-        columns=columns,
-        missing=status,
-        denied=status,
-        missing_detail=detail,
-        denied_detail=detail,
-    )
+    return authz.require_class_instructor(client, user_id, class_id, columns=columns)
 
 
 #: The class row plus its instructor's profile for invite emails, in one read. The
@@ -609,7 +585,7 @@ def get_class_by_id(class_id: UUID) -> dict:
         result = client.table("classes").select("*").eq("id", str(class_id)).execute()
 
         if not result.data or len(result.data) == 0:
-            raise HTTPException(status_code=404, detail="Class not found")
+            raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
 
         return result.data[0]
     except HTTPException:
@@ -696,13 +672,7 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
         cid = str(class_id)
         normalized_email = student_email.strip().lower()
 
-        class_row = _require_owner(
-            client,
-            instructor_id,
-            cid,
-            columns=_INVITE_CLASS_COLUMNS,
-            detail=_NO_PERMISSION_DONT,
-        )
+        class_row = _require_owner(client, instructor_id, cid, columns=_INVITE_CLASS_COLUMNS)
         email_ctx = _invite_email_context(class_row)
 
         student = _find_student_profile_by_email(client, normalized_email)
@@ -775,9 +745,6 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
 # its data reads in one ``fan_out`` wave; profiles and project members arrive
 # embedded in the enrollment and project rows.
 
-_ROSTER_ACCESS_DENIED = "You do not have access to this class roster"
-_PROJECTS_ACCESS_DENIED = "You do not have access to this class projects list"
-
 _STUDENT_PROFILE_COLUMNS = "id, email, role, first_name, last_name"
 _ROSTER_PROFILE_COLUMNS = "id, email, edu_email, first_name, last_name, role"
 _ROSTER_ENTRY_COLUMNS = (
@@ -785,21 +752,13 @@ _ROSTER_ENTRY_COLUMNS = (
 )
 
 
-def _require_member(client, user_id: str, class_id: str, *, denied_detail: str) -> dict:
+def _require_member(client, user_id: str, class_id: str) -> dict:
     """Pass the class instructor and enrolled students / TAs.
 
-    404 "Class not found" for a missing class, 403 ``denied_detail`` for anyone
-    else. One read for the instructor, two for everyone else.
+    404 for a missing class, 403 for anyone else. One read for the instructor,
+    two for everyone else.
     """
-    return authz.require_class_access(
-        client,
-        user_id,
-        class_id,
-        missing=404,
-        denied=403,
-        missing_detail="Class not found",
-        denied_detail=denied_detail,
-    )
+    return authz.require_class_access(client, user_id, class_id)
 
 
 def _enrollments_with_profiles(
@@ -980,9 +939,7 @@ def get_class_students(class_id: UUID, user_id: str) -> list:
         cid = str(class_id)
         reads = fan_out(
             {
-                "access": lambda: _require_member(
-                    client, user_id, cid, denied_detail=_ROSTER_ACCESS_DENIED
-                ),
+                "access": lambda: _require_member(client, user_id, cid),
                 "enrollments": lambda: _enrollments_with_profiles(
                     client, cid, _STUDENT_PROFILE_COLUMNS
                 ),
@@ -1016,9 +973,7 @@ def get_class_roster(class_id: UUID, user_id: str) -> dict:
         cid = str(class_id)
         reads = fan_out(
             {
-                "access": lambda: _require_member(
-                    client, user_id, cid, denied_detail=_ROSTER_ACCESS_DENIED
-                ),
+                "access": lambda: _require_member(client, user_id, cid),
                 "enrollments": lambda: _enrollments_with_profiles(
                     client, cid, _ROSTER_PROFILE_COLUMNS
                 ),
@@ -1846,7 +1801,7 @@ def queue_invite(
     """Store a pending invite batch; the background worker sends it after delay_seconds."""
     try:
         client = get_client()
-        _require_owner(client, instructor_id, class_id, detail=_NO_PERMISSION_DONT)
+        _require_owner(client, instructor_id, class_id)
 
         send_at = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=delay_seconds)
         payload: dict = {
@@ -1933,9 +1888,7 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
         cid = str(class_id)
         reads = fan_out(
             {
-                "access": lambda: _require_member(
-                    client, user_id, cid, denied_detail=_PROJECTS_ACCESS_DENIED
-                ),
+                "access": lambda: _require_member(client, user_id, cid),
                 "projects": lambda: (
                     (
                         client.table("projects")
@@ -2024,9 +1977,7 @@ def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict
         cid = str(class_id)
         reads = fan_out(
             {
-                "access": lambda: _require_member(
-                    client, user_id, cid, denied_detail=_PROJECTS_ACCESS_DENIED
-                ),
+                "access": lambda: _require_member(client, user_id, cid),
                 "enrollments": lambda: _enrollments_with_profiles(
                     client, cid, _STUDENT_PROFILE_COLUMNS
                 ),
@@ -2084,7 +2035,7 @@ def get_class_turn_in_stats(class_id: UUID, user_id: str) -> dict:
 
         reads = fan_out(
             {
-                "class": lambda: _require_owner(client, user_id, cid, status=403),
+                "class": lambda: _require_owner(client, user_id, cid),
                 "assignments": lambda: (
                     (
                         client.table("assignments")

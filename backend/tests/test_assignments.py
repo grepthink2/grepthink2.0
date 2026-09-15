@@ -226,7 +226,10 @@ def test_student_list_is_published_only_and_bounded(db):
 def test_list_access_rules(db):
     with pytest.raises(HTTPException) as other:
         assignments.get_assignments_for_class(OTHER_INSTR, CLASS)
-    assert (other.value.status_code, other.value.detail) == (403, "You do not own this class")
+    assert (other.value.status_code, other.value.detail) == (
+        403,
+        "Only the class instructor can do this",
+    )
     with pytest.raises(HTTPException) as outsider:
         assignments.get_assignments_for_class(OUTSIDER, CLASS)
     assert (outsider.value.status_code, outsider.value.detail) == (
@@ -351,7 +354,7 @@ def test_feedback_overview_shape_and_budget(db):
 def test_feedback_overview_denies_non_owner(db):
     with pytest.raises(HTTPException) as exc:
         assignments.get_feedback_overview(OTHER_INSTR, A_FB)
-    assert exc.value.status_code == 404
+    assert exc.value.status_code == 403
 
 
 def test_feedback_submission_timestamp_is_timezone_aware(db):

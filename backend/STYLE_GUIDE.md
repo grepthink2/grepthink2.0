@@ -58,20 +58,20 @@ def get_assignments(class_id: UUID = Query(...), user_id: str = Depends(require_
 ```
 
 - `require_user` answers 401 without a valid token and returns the user id.
-- `require_instructor` also requires `profiles.role == 'instructor'`.
+- `require_instructor` also requires `profiles.role == 'instructor'` (403 otherwise).
 - Class and project rules (class owner, enrolled student or TA, project role) live in the
   controller, through `app.core.authz`:
 
 ```python
 from app.core import authz
 
-cls = authz.require_class_instructor(client, user_id, class_id, missing=404, denied=403)
+cls = authz.require_class_instructor(client, user_id, class_id)  # 404 no class, 403 not owner
 access = authz.require_class_access(client, user_id, class_id)  # instructor or enrolled
-project = authz.load_project(client, project_id, class_columns="created_by")
+project = authz.load_project(client, project_id, class_columns="created_by")  # 404 no project
 ```
 
-When you move an existing check onto a helper, keep that endpoint's status code and
-`detail` (`missing=`, `denied=`, `missing_detail=`, `denied_detail=`).
+The helpers choose the status code and the `detail`; they take no status arguments. See
+[Not found versus not allowed](#not-found-versus-not-allowed).
 
 ---
 
@@ -137,6 +137,30 @@ except Exception:
     logger.exception("Error creating project | class_id=%s user_id=%s", class_id, user_id)
     raise HTTPException(status_code=500, detail="Failed to create project")
 ```
+
+### Not found versus not allowed
+
+Every endpoint answers these two conditions the same way:
+
+- **404**: the resource the request addresses does not exist: the class, project, assignment,
+  TSR, join request, invite, roster entry, and so on.
+- **403**: the resource exists and the caller is signed in, but lacks the relationship or role the
+  action needs: not the class instructor, not enrolled, not a project member, not the assigned
+  TA, the wrong project role, the wrong profile role.
+- Existence is not hidden from non-members, so check that the resource exists before checking
+  access. Ids are UUIDs, and the web client never branches on 403 versus 404 (it only
+  special-cases 401).
+- A membership that does not exist is itself the missing resource and answers 404: leaving a class
+  you are not in, removing a member who is not on the team, viewing the profile of a user who is
+  not in the class, unassigning a user with no team. Resources private to one user and looked up
+  through that user, such as notifications, answer 404 too.
+- One condition, one status and one `detail`, from the constants in `app/core/authz.py`:
+  `CLASS_NOT_FOUND`, `NOT_CLASS_INSTRUCTOR`, `NOT_CLASS_MEMBER`, `NOT_ENROLLED`,
+  `INSTRUCTOR_ROLE_REQUIRED`, `PROJECT_NOT_FOUND`, `NOT_PROJECT_MEMBER`. Write a different message
+  only when it adds real information, such as "Only the instructor can appoint another TA".
+- `authz.require_class_instructor` and `authz.require_class_access` enforce this. A controller that
+  reads the rows itself (to fan them out with its own data) raises the same statuses with the same
+  constants.
 
 ---
 
