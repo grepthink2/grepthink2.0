@@ -64,6 +64,7 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
       setStatus(st);   setOrigStatus(st);
       setError(null);
       setConfirmDelete(false);
+      setIsDeleting(false);
     }
   }
 
