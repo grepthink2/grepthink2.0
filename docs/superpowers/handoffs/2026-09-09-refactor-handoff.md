@@ -12,7 +12,7 @@ indexes on PROD, and the design decisions.
   maintainability; dependency upgrades; performance bottlenecks, especially DB-driven ones."
   The maintainer was unavailable, so every judgment call is in the spec's decisions table (D1–D16).
 - **Gates:** backend ruff clean and 570 pytest green; frontend `npm run lint` (every React hooks
-  rule an error, 0 findings), `npm run build` clean, 144 vitest green; `npm audit` 0.
+  rule an error, 0 findings), `npm run build` clean, 160 vitest green; `npm audit` 0.
 - **Results:** `docs/superpowers/reports/2026-09-08-refactor-report.md` has the before/after
   tables, the bugs fixed, how it was verified, and what was left out.
 
@@ -98,8 +98,12 @@ The report's "Not done, and why" section is the full list. The ones worth a tick
   response; it was not measured against a very large roster.
 - Sign-out on a 401: tokens are verified with no clock leeway, and a failed signing-key fetch
   answers 401; the web client signs out on either.
-- Filed as tasks: Save and Cancel stay disabled after an assignment is deleted; action errors on
-  Assign, Staffing and the requests modal are cleared by the reload that follows.
+
+Fixed since, as local commits on this branch:
+- A failed action's error was cleared by the reload that follows it, on Assign, Staffing and the
+  requests modal (`b915b96`).
+- Assign's save confirmation was cleared by the reload after a save (`10a822e`).
+- Save and Cancel stayed disabled for the assignment opened after a delete (`e1eff23`).
 
 ## Gotchas learned (save yourself an hour)
 
