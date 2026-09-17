@@ -154,7 +154,10 @@ metadata, and `ApiError` exposes the backend's `code`.
   and instructor), Assignments, Roster, Projects, TA Meetings, Final Reviews, Messages, and a
   create-class or assignment modal (lazy-loaded date picker).
 - **Staged migration.** `backend/database/migrations/2026-09-08_perf_indexes_and_lints.sql` is
-  not applied (no code depends on it). Apply on dev, then prod, then regenerate `supabase/schema.sql`.
+  not applied (no code depends on it). Apply the whole file on dev; on PROD run the preflight in
+  its header first and apply only the parts whose tables and functions exist there, because PROD
+  trails dev and the SQL editor aborts the whole script on the first missing relation. Then
+  regenerate `supabase/schema.sql`.
 - **Projects page roster call** stays: the membership chart counts unregistered and dropped
   roster rows that the projects overview does not return (the audit called it redundant).
 - **Session token cache** in `apiRequest` not added: `supabase.auth.getSession()` reads the

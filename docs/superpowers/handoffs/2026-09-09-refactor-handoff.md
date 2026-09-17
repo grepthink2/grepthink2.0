@@ -50,7 +50,9 @@ before and after.
    `project_review_tas_project_unique` and `class_enrollments_class_id_user_id_key`. All exist on dev; the PR
    description has the query to run on PROD.
 3. **Optional migration.** `backend/database/migrations/2026-09-08_perf_indexes_and_lints.sql`
-   is staged, not applied, and nothing depends on it. Apply on dev, then prod, then regenerate
+   is staged, not applied, and nothing depends on it. The whole file applies on dev; on PROD run
+   the preflight in its header and apply only parts A, B and E unless the messaging migrations
+   have landed there (a missing relation aborts the entire pasted script). Then regenerate
    `supabase/schema.sql`.
 4. **Decisions.** D1–D16, plus: rename
    `react-day-picker` to `@daypicker/react` (same API); drop the unused staffing endpoints (D5
