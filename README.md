@@ -35,7 +35,7 @@ Then install both halves:
 
 ```bash
 npm --prefix frontend ci
-cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+cd backend && python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 ```
 
 ### Start

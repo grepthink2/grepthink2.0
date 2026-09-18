@@ -1,16 +1,19 @@
 """
 Assignment views — parameter handling and HTTP responses
 """
+
 from uuid import UUID
+
 from fastapi import Depends, Query
-from app.dependencies import require_user
+
+from app.assignments import controller
 from app.assignments.models import (
     CreateAssignmentRequest,
+    SubmitFeedbackRequest,
     UpdateAssignmentRequest,
     UpdateTSREntryRequest,
-    SubmitFeedbackRequest,
 )
-from app.assignments import controller
+from app.dependencies import require_user
 
 
 def create_assignment(
@@ -90,7 +93,7 @@ def get_tsr_overview(
     assignment_id: UUID,
     user_id: str = Depends(require_user),
 ):
-    """All TSR responses for an assignment, by project (instructor only)."""
+    """TSR responses for an assignment, by project (class instructor, or a TA for their teams)."""
     overview = controller.get_instructor_tsr_overview(
         user_id=user_id,
         assignment_id=assignment_id,
@@ -161,3 +164,11 @@ def get_feedback_overview(
         user_id=user_id,
         assignment_id=assignment_id,
     )
+
+
+def get_my_submissions(
+    class_id: UUID = Query(..., description="Class to list the caller's own submissions for"),
+    user_id: str = Depends(require_user),
+):
+    """The caller's own TSR and feedback submissions across a class's assignments."""
+    return controller.get_my_submissions(user_id=user_id, class_id=class_id)

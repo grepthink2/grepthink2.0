@@ -2,7 +2,8 @@
 TA Management request models — class-TA designation, project-TA assignment,
 project meeting/Zoom metadata, and per-week attendance.
 """
-from typing import Literal, Optional
+
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -11,6 +12,7 @@ from pydantic import BaseModel
 class SetClassTARequest(BaseModel):
     """Designate (is_ta=True) or undesignate (is_ta=False) an enrolled student
     as a TA for the class. Instructor only."""
+
     user_id: UUID
     is_ta: bool = True
 
@@ -18,11 +20,13 @@ class SetClassTARequest(BaseModel):
 class AssignProjectTARequest(BaseModel):
     """Assign a class TA to a project, or clear the assignment with ta_id=None.
     Instructor only."""
-    ta_id: Optional[UUID] = None
+
+    ta_id: UUID | None = None
 
 
 class UpsertAttendanceRequest(BaseModel):
     """Mark one person present/late/absent for a (project, week, meeting)."""
+
     person_id: UUID
     week_number: int
     meeting_in_week: int = 1
@@ -31,6 +35,7 @@ class UpsertAttendanceRequest(BaseModel):
 
 class MarkAllPresentRequest(BaseModel):
     """Mark every team member present for a (project, week, meeting)."""
+
     week_number: int
     meeting_in_week: int = 1
 
@@ -38,8 +43,9 @@ class MarkAllPresentRequest(BaseModel):
 class SetMeetingCadenceRequest(BaseModel):
     """Set a class's TA-meeting cadence (instructor only). Omitted fields are
     left unchanged."""
-    meetings_per_week: Optional[int] = None
-    meeting_duration_minutes: Optional[int] = None
+
+    meetings_per_week: int | None = None
+    meeting_duration_minutes: int | None = None
 
 
 class UpdateProjectMeetingRequest(BaseModel):
@@ -49,7 +55,8 @@ class UpdateProjectMeetingRequest(BaseModel):
     field (e.g. ``zoom_url=""`` removes the link). ``meeting_in_week`` selects
     which of the team's weekly meetings (1, 2, …) this slot is.
     """
+
     meeting_in_week: int = 1
-    zoom_url: Optional[str] = None
-    meeting_day: Optional[str] = None
-    meeting_time: Optional[str] = None
+    zoom_url: str | None = None
+    meeting_day: str | None = None
+    meeting_time: str | None = None

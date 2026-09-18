@@ -1,12 +1,14 @@
 """
 TSR views — parameter handling and HTTP responses
 """
+
 from uuid import UUID
-from typing import Optional
+
 from fastapi import Depends, Query
+
 from app.dependencies import require_user
-from app.tsr.models import CreateTSRRequest
 from app.tsr import controller
+from app.tsr.models import CreateTSRRequest
 
 
 def submit_tsr(data: CreateTSRRequest, user_id: str = Depends(require_user)):
@@ -23,8 +25,10 @@ def view_project_tsrs(project_id: UUID, user_id: str = Depends(require_user)):
 
 def get_submitted_tsrs(
     project_id: UUID,
-    user_id: Optional[UUID] = Query(None, description="Target user (admin/scrum master only; defaults to self)"),
-    week: Optional[int] = Query(None, description="Filter by week number"),
+    user_id: UUID | None = Query(
+        None, description="Target user (admin/scrum master only; defaults to self)"
+    ),
+    week: int | None = Query(None, description="Filter by week number"),
     requester_id: str = Depends(require_user),
 ):
     """TSRs submitted (evaluator) by a user in a project, optionally filtered by week."""
@@ -39,8 +43,10 @@ def get_submitted_tsrs(
 
 def get_received_tsrs(
     project_id: UUID,
-    user_id: Optional[UUID] = Query(None, description="Target user (admin/scrum master only; defaults to self)"),
-    week: Optional[int] = Query(None, description="Filter by week number"),
+    user_id: UUID | None = Query(
+        None, description="Target user (admin/scrum master only; defaults to self)"
+    ),
+    week: int | None = Query(None, description="Filter by week number"),
     requester_id: str = Depends(require_user),
 ):
     """TSRs received (evaluatee) by a user in a project, optionally filtered by week."""

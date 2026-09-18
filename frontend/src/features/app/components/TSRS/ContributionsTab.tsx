@@ -53,7 +53,7 @@ function redistributeProportionally(
     id,
     val: Math.round((remaining * (contributions[id] ?? 0)) / othersTotal),
   }));
-  let sum = raw.reduce((s, r) => s + r.val, 0);
+  const sum = raw.reduce((s, r) => s + r.val, 0);
   let diff = remaining - sum;
   // Hand out rounding remainder: when diff > 0 add 1 to members (prioritize larger current share); when diff < 0 subtract 1 (prioritize smaller).
   const sorted =

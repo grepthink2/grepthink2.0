@@ -10,8 +10,11 @@ interface Props {
   pending?: boolean;
 }
 
-/** Single message bubble — left-aligned for theirs, right-aligned for mine. */
-export const MessageBubble: React.FC<Props> = ({ message, isMine, author, pending }) => {
+/**
+ * Single message bubble — left-aligned for theirs, right-aligned for mine.
+ * Memoised so a thread update re-renders only the bubbles whose props changed.
+ */
+export const MessageBubble = React.memo(function MessageBubble({ message, isMine, author, pending }: Props) {
   return (
     <div
       className={[
@@ -30,4 +33,4 @@ export const MessageBubble: React.FC<Props> = ({ message, isMine, author, pendin
       </div>
     </div>
   );
-};
+});

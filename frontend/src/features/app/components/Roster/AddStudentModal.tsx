@@ -32,12 +32,20 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({
   const [touched, setTouched] = useState(false);
   const firstFieldRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  // The modal stays mounted while closed, so clear the form as it opens.
+  const [wasOpen, setWasOpen] = useState(false);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
       setFirstName('');
       setLastName('');
       setEmail('');
       setTouched(false);
+    }
+  }
+
+  useEffect(() => {
+    if (isOpen) {
       setTimeout(() => firstFieldRef.current?.focus(), 0);
     }
   }, [isOpen]);

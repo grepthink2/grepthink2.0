@@ -124,29 +124,40 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     [sidebarClasses, setSelectedClass],
   );
 
+  // Fetches the roster and re-resolves the selection; state is committed once
+  // the request settles.
+  const loadClasses = useCallback(
+    (selectClassId?: string | null) =>
+      api
+        .getClasses()
+        .then((response) => {
+          setClasses(response.classes);
+
+          const prefs = getPreferencesSnapshot();
+          const visible = filterVisibleClasses(response.classes, prefs);
+          const sidebar = filterSidebarClasses(response.classes, prefs);
+          const preferredId =
+            selectClassId !== undefined ? selectClassId : getStoredSelectedClassId();
+          // Keep focus on completed classes chosen from My Classes; fall back to an active class.
+          const resolved =
+            resolveSelectedClass(visible, preferredId) ?? resolveSelectedClass(sidebar, null);
+          setSelectedClass(resolved);
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to fetch classes:', error);
+        })
+        .finally(() => {
+          setLoading(false);
+        }),
+    [setSelectedClass],
+  );
+
   const refreshClasses = useCallback(
     async (showLoading = true, selectClassId?: string | null) => {
-      try {
-        if (showLoading) setLoading(true);
-        const response = await api.getClasses();
-        setClasses(response.classes);
-
-        const prefs = getPreferencesSnapshot();
-        const visible = filterVisibleClasses(response.classes, prefs);
-        const sidebar = filterSidebarClasses(response.classes, prefs);
-        const preferredId =
-          selectClassId !== undefined ? selectClassId : getStoredSelectedClassId();
-        // Keep focus on completed classes chosen from My Classes; fall back to an active class.
-        const resolved =
-          resolveSelectedClass(visible, preferredId) ?? resolveSelectedClass(sidebar, null);
-        setSelectedClass(resolved);
-      } catch (error) {
-        console.error('Failed to fetch classes:', error);
-      } finally {
-        setLoading(false);
-      }
+      if (showLoading) setLoading(true);
+      await loadClasses(selectClassId);
     },
-    [setSelectedClass],
+    [loadClasses],
   );
 
   const getClassStatus = useCallback(
@@ -171,41 +182,58 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     [selectedClass?.id, reselectSidebarClass],
   );
 
-  useEffect(() => {
-    void refreshClasses();
-  }, [refreshClasses]);
+  // Clear focus only when the class is hidden or no longer in the roster (not
+  // when completed), falling back to the first sidebar class. Adjusted while
+  // rendering; the effect below saves the fallback.
+  if (selectedClass && !visibleClasses.some((c) => c.id === selectedClass.id)) {
+    setSelectedClassState(resolveSelectedClass(sidebarClasses, null));
+  }
 
-  // Clear focus only when the class is hidden or no longer in the roster (not when completed).
+  // The first load; `loading` already starts out true.
   useEffect(() => {
-    if (!selectedClass) return;
-    const stillVisible = visibleClasses.some((c) => c.id === selectedClass.id);
-    if (!stillVisible) {
-      reselectSidebarClass(null);
-    }
-  }, [visibleClasses, selectedClass, reselectSidebarClass]);
+    void loadClasses();
+  }, [loadClasses]);
 
-  return (
-    <ClassContext.Provider
-      value={{
-        classes,
-        visibleClasses,
-        sidebarClasses,
-        selectedClass,
-        setSelectedClass,
-        refreshClasses,
-        loading,
-        successMessage,
-        setSuccessMessage,
-        getClassStatus,
-        setClassLifecycleStatus,
-        hideClassFromUI,
-      }}
-    >
-      {children}
-    </ClassContext.Provider>
+  // Keep storage on the selected class, including a fallback picked above.
+  const selectedClassId = selectedClass?.id;
+  useEffect(() => {
+    if (selectedClassId) persistSelectedClassId(selectedClassId);
+  }, [selectedClassId]);
+
+  const value = useMemo(
+    () => ({
+      classes,
+      visibleClasses,
+      sidebarClasses,
+      selectedClass,
+      setSelectedClass,
+      refreshClasses,
+      loading,
+      successMessage,
+      setSuccessMessage,
+      getClassStatus,
+      setClassLifecycleStatus,
+      hideClassFromUI,
+    }),
+    [
+      classes,
+      visibleClasses,
+      sidebarClasses,
+      selectedClass,
+      setSelectedClass,
+      refreshClasses,
+      loading,
+      successMessage,
+      getClassStatus,
+      setClassLifecycleStatus,
+      hideClassFromUI,
+    ],
   );
+
+  return <ClassContext.Provider value={value}>{children}</ClassContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
 export const useClass = () => {
   const context = useContext(ClassContext);
   if (!context) {

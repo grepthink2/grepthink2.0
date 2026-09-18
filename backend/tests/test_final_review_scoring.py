@@ -12,6 +12,7 @@ Tests for final-review scoring + the Review-TA notes form:
 Controller logic runs against the in-memory FakeSupabase (same harness as
 test_final_reviews.py); endpoint routing uses TestClient + mocks.
 """
+
 from unittest.mock import patch
 
 import pytest
@@ -21,11 +22,10 @@ import app.tas.controller as tas
 from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
 
-
 INSTR = "instructor-1"
-TA1 = "ta-1"   # Home TA of P1
-TA2 = "ta-2"   # Review TA of P1
-TA3 = "ta-3"   # class TA, no role on P1
+TA1 = "ta-1"  # Home TA of P1
+TA2 = "ta-2"  # Review TA of P1
+TA3 = "ta-3"  # class TA, no role on P1
 S1 = "student-1"
 S2 = "student-2"
 S3 = "student-3"  # enrolled, but NOT a member of P1
@@ -34,38 +34,76 @@ P1 = "proj-1"
 
 
 def _profile(uid, first):
-    return {"id": uid, "email": f"{uid}@ucsc.edu", "first_name": first, "last_name": "X", "image_url": None}
+    return {
+        "id": uid,
+        "email": f"{uid}@ucsc.edu",
+        "first_name": first,
+        "last_name": "X",
+        "image_url": None,
+    }
 
 
 @pytest.fixture
 def db(monkeypatch):
     fake = FakeSupabase(
-        profiles=[_profile(INSTR, "Ina"), _profile(TA1, "Tara"), _profile(TA2, "Tess"),
-                  _profile(TA3, "Tom"), _profile(S1, "Sam"), _profile(S2, "Sara"), _profile(S3, "Sid")],
-        classes=[{"id": CLASS, "created_by": INSTR, "review_period_open": True,
-                  "review_zoom_url": "https://zoom.example/room"}],
+        relations={
+            ("projects", "classes"): ("class_id", "id", False),
+        },
+        profiles=[
+            _profile(INSTR, "Ina"),
+            _profile(TA1, "Tara"),
+            _profile(TA2, "Tess"),
+            _profile(TA3, "Tom"),
+            _profile(S1, "Sam"),
+            _profile(S2, "Sara"),
+            _profile(S3, "Sid"),
+        ],
+        classes=[
+            {
+                "id": CLASS,
+                "created_by": INSTR,
+                "review_period_open": True,
+                "review_zoom_url": "https://zoom.example/room",
+            }
+        ],
         class_enrollments=[
-            {"id": f"enr-{u}", "class_id": CLASS, "user_id": u,
-             "enrollment_role": ("ta" if u in (TA1, TA2, TA3) else "student")}
+            {
+                "id": f"enr-{u}",
+                "class_id": CLASS,
+                "user_id": u,
+                "enrollment_role": ("ta" if u in (TA1, TA2, TA3) else "student"),
+            }
             for u in (TA1, TA2, TA3, S1, S2, S3)
         ],
         projects=[
-            {"id": P1, "class_id": CLASS, "name": "Alpha", "assigned_ta_id": TA1,
-             "final_review_at": "2026-07-24T20:00:00+00:00"},
+            {
+                "id": P1,
+                "class_id": CLASS,
+                "name": "Alpha",
+                "assigned_ta_id": TA1,
+                "final_review_at": "2026-07-24T20:00:00+00:00",
+            },
         ],
         project_members=[
             {"project_id": P1, "user_id": S1, "role": "member"},
             {"project_id": P1, "user_id": S2, "role": "owner"},
         ],
         project_review_tas=[
-            {"id": "prt-1", "class_id": CLASS, "project_id": P1, "user_id": TA2,
-             "assigned_by": INSTR, "claimed_at": "2026-07-20T00:00:00+00:00"},
+            {
+                "id": "prt-1",
+                "class_id": CLASS,
+                "project_id": P1,
+                "user_id": TA2,
+                "assigned_by": INSTR,
+                "claimed_at": "2026-07-20T00:00:00+00:00",
+            },
         ],
         final_review_scores=[],
         final_review_notes=[],
     )
     monkeypatch.setattr(tas, "service_client", fake, raising=False)
     monkeypatch.setattr(tas, "supabase", fake, raising=False)
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
 
 
@@ -77,6 +115,7 @@ def _score_rows(db, role=None):
 # --------------------------------------------------------------------------
 # Detail read
 # --------------------------------------------------------------------------
+
 
 def test_detail_forbidden_for_students_and_outsiders(db):
     for uid in (S1, "not-enrolled"):
@@ -115,6 +154,7 @@ def test_detail_unknown_project_404(db):
 # Scores: home TA (product / team / scrum)
 # --------------------------------------------------------------------------
 
+
 def test_home_scores_save_and_upsert(db):
     entries = [
         {"student_id": S1, "product": 4.5, "team": 4.0, "scrum": 3.5, "notes": "solid"},
@@ -131,9 +171,14 @@ def test_home_scores_save_and_upsert(db):
     assert s1["scored_by"] == TA1
 
     # Re-saving updates in place — no duplicate rows.
-    tas.save_final_review_scores(TA1, P1, "home", [
-        {"student_id": S1, "product": 3.0, "team": 3.0, "scrum": 3.0},
-    ])
+    tas.save_final_review_scores(
+        TA1,
+        P1,
+        "home",
+        [
+            {"student_id": S1, "product": 3.0, "team": 3.0, "scrum": 3.0},
+        ],
+    )
     rows = _score_rows(db, "home")
     assert len(rows) == 2
     s1 = next(r for r in rows if r["student_id"] == S1)
@@ -155,6 +200,7 @@ def test_home_scores_role_gating(db):
 # --------------------------------------------------------------------------
 # Scores: review TA + instructor (single overall)
 # --------------------------------------------------------------------------
+
 
 def test_review_overall_save_and_gating(db):
     entry = [{"student_id": S1, "overall": 4.2}]
@@ -183,6 +229,7 @@ def test_instructor_overall_gating(db):
 # Scores: validation
 # --------------------------------------------------------------------------
 
+
 def test_score_bounds_and_shape_validation(db):
     # NOTE: a bare {"student_id": S1} (no "overall" key AT ALL — absent, not
     # explicit null) is a bad case again: clearing requires the key to be
@@ -190,12 +237,15 @@ def test_score_bounds_and_shape_validation(db):
     # _is_a_noop for that), so a genuinely missing key still 400s exactly
     # like it always did.
     bad_cases = [
-        ("home", {"student_id": S1, "product": 5.5, "team": 4.0, "scrum": 4.0}),   # out of range
-        ("home", {"student_id": S1, "product": 0.9, "team": 4.0, "scrum": 4.0}),   # out of range
-        ("home", {"student_id": S1, "product": 4.0, "team": 4.0}),                  # partial null — missing scrum
-        ("home", {"student_id": S1, "product": 4.0, "team": 4.0, "scrum": 4.0, "overall": 4.0}),  # overall not allowed
-        ("review", {"student_id": S1, "overall": 4.0, "product": 4.0}),             # category not allowed
-        ("review", {"student_id": S1}),                                             # overall key absent entirely
+        ("home", {"student_id": S1, "product": 5.5, "team": 4.0, "scrum": 4.0}),  # out of range
+        ("home", {"student_id": S1, "product": 0.9, "team": 4.0, "scrum": 4.0}),  # out of range
+        ("home", {"student_id": S1, "product": 4.0, "team": 4.0}),  # partial null — missing scrum
+        (
+            "home",
+            {"student_id": S1, "product": 4.0, "team": 4.0, "scrum": 4.0, "overall": 4.0},
+        ),  # overall not allowed
+        ("review", {"student_id": S1, "overall": 4.0, "product": 4.0}),  # category not allowed
+        ("review", {"student_id": S1}),  # overall key absent entirely
     ]
     for role, entry in bad_cases:
         caller = TA1 if role == "home" else TA2
@@ -216,14 +266,24 @@ def test_scores_rounded_to_tenths(db):
 def test_home_scores_clear_deletes_row(db):
     """Blanking a previously-saved Home TA row (all three fields null) must
     delete that row server-side, not silently keep the old values."""
-    tas.save_final_review_scores(TA1, P1, "home", [
-        {"student_id": S1, "product": 4.5, "team": 4.0, "scrum": 3.5, "notes": "solid"},
-    ])
+    tas.save_final_review_scores(
+        TA1,
+        P1,
+        "home",
+        [
+            {"student_id": S1, "product": 4.5, "team": 4.0, "scrum": 3.5, "notes": "solid"},
+        ],
+    )
     assert len(_score_rows(db, "home")) == 1
 
-    out = tas.save_final_review_scores(TA1, P1, "home", [
-        {"student_id": S1, "product": None, "team": None, "scrum": None},
-    ])
+    out = tas.save_final_review_scores(
+        TA1,
+        P1,
+        "home",
+        [
+            {"student_id": S1, "product": None, "team": None, "scrum": None},
+        ],
+    )
     assert out["saved"] == 1
     assert _score_rows(db, "home") == []
 
@@ -245,9 +305,14 @@ def test_review_and_instructor_overall_clear_deletes_row(db):
 def test_clearing_a_never_scored_student_is_a_noop(db):
     """An all-null entry for a student with no existing row is a harmless
     no-op, not a validation error — clearing is idempotent."""
-    out = tas.save_final_review_scores(TA1, P1, "home", [
-        {"student_id": S1, "product": None, "team": None, "scrum": None},
-    ])
+    out = tas.save_final_review_scores(
+        TA1,
+        P1,
+        "home",
+        [
+            {"student_id": S1, "product": None, "team": None, "scrum": None},
+        ],
+    )
     assert out["saved"] == 1
     assert _score_rows(db, "home") == []
 
@@ -261,9 +326,14 @@ def test_home_scores_partial_null_still_rejected(db):
     combination (some filled, some blank) is still a validation error, not a
     silent partial clear."""
     with pytest.raises(HTTPException) as exc:
-        tas.save_final_review_scores(TA1, P1, "home", [
-            {"student_id": S1, "product": 4.0, "team": None, "scrum": None},
-        ])
+        tas.save_final_review_scores(
+            TA1,
+            P1,
+            "home",
+            [
+                {"student_id": S1, "product": 4.0, "team": None, "scrum": None},
+            ],
+        )
     assert exc.value.status_code == 400
     assert _score_rows(db, "home") == []
 
@@ -289,9 +359,14 @@ def test_home_scores_key_absent_400s_and_preserves_existing_row(db):
     """Same risk on the Home TA triple: one key present-and-null plus two
     entirely absent is still a shape error (clearing needs all three
     PRESENT), and must not touch the existing row."""
-    tas.save_final_review_scores(TA1, P1, "home", [
-        {"student_id": S1, "product": 4.0, "team": 4.0, "scrum": 4.0, "notes": "ok"},
-    ])
+    tas.save_final_review_scores(
+        TA1,
+        P1,
+        "home",
+        [
+            {"student_id": S1, "product": 4.0, "team": 4.0, "scrum": 4.0, "notes": "ok"},
+        ],
+    )
     assert _score_rows(db, "home")[0]["product"] == 4.0
 
     with pytest.raises(HTTPException) as exc:
@@ -305,15 +380,21 @@ def test_home_scores_key_absent_400s_and_preserves_existing_row(db):
 
 def test_scores_require_project_membership(db):
     with pytest.raises(HTTPException) as exc:
-        tas.save_final_review_scores(TA1, P1, "home",
-                                     [{"student_id": S3, "product": 4.0, "team": 4.0, "scrum": 4.0}])
+        tas.save_final_review_scores(
+            TA1, P1, "home", [{"student_id": S3, "product": 4.0, "team": 4.0, "scrum": 4.0}]
+        )
     assert exc.value.status_code == 400
 
 
 def test_scores_appear_in_detail(db):
-    tas.save_final_review_scores(TA1, P1, "home", [
-        {"student_id": S1, "product": 4.5, "team": 4.0, "scrum": 3.5},
-    ])
+    tas.save_final_review_scores(
+        TA1,
+        P1,
+        "home",
+        [
+            {"student_id": S1, "product": 4.5, "team": 4.0, "scrum": 3.5},
+        ],
+    )
     tas.save_final_review_scores(TA2, P1, "review", [{"student_id": S1, "overall": 4.0}])
     out = tas.get_final_review_detail(TA3, P1)
     roles = {(s["student_id"], s["role"]) for s in out["scores"]}
@@ -323,6 +404,7 @@ def test_scores_appear_in_detail(db):
 # --------------------------------------------------------------------------
 # Review-TA notes form
 # --------------------------------------------------------------------------
+
 
 def test_notes_gating_and_upsert(db):
     content = {"project_scope": "Travel app", "member_contributions": {S1: "UI work"}}
@@ -404,19 +486,37 @@ WIRE_STUDENT = "eeeeeeee-0000-0000-0000-000000000004"
 def wire_db(db):
     """Seeds a second, UUID-shaped project into the same fake client `db`
     already patches into app.tas.controller."""
-    db.store.setdefault("classes", []).append({
-        "id": WIRE_CLASS, "created_by": "someone-else", "review_period_open": True,
-        "review_zoom_url": None,
-    })
-    db.store.setdefault("class_enrollments", []).append({
-        "id": "enr-wire-ta", "class_id": WIRE_CLASS, "user_id": WIRE_TA, "enrollment_role": "ta",
-    })
-    db.store.setdefault("projects", []).append({
-        "id": WIRE_PROJECT, "class_id": WIRE_CLASS, "name": "Wire", "assigned_ta_id": WIRE_TA,
-    })
-    db.store.setdefault("project_members", []).append({
-        "project_id": WIRE_PROJECT, "user_id": WIRE_STUDENT, "role": "member",
-    })
+    db.store.setdefault("classes", []).append(
+        {
+            "id": WIRE_CLASS,
+            "created_by": "someone-else",
+            "review_period_open": True,
+            "review_zoom_url": None,
+        }
+    )
+    db.store.setdefault("class_enrollments", []).append(
+        {
+            "id": "enr-wire-ta",
+            "class_id": WIRE_CLASS,
+            "user_id": WIRE_TA,
+            "enrollment_role": "ta",
+        }
+    )
+    db.store.setdefault("projects", []).append(
+        {
+            "id": WIRE_PROJECT,
+            "class_id": WIRE_CLASS,
+            "name": "Wire",
+            "assigned_ta_id": WIRE_TA,
+        }
+    )
+    db.store.setdefault("project_members", []).append(
+        {
+            "project_id": WIRE_PROJECT,
+            "user_id": WIRE_STUDENT,
+            "role": "member",
+        }
+    )
     return db
 
 
@@ -428,9 +528,14 @@ def test_endpoint_absent_key_400s_through_real_request_parsing(client, wire_db):
     request cycle. A regression here (e.g. reverting to plain model_dump())
     would make an absent key indistinguishable from an explicit null and
     silently delete the score instead of rejecting the request."""
-    tas.save_final_review_scores(WIRE_TA, WIRE_PROJECT, "home", [
-        {"student_id": WIRE_STUDENT, "product": 4.0, "team": 4.0, "scrum": 4.0},
-    ])
+    tas.save_final_review_scores(
+        WIRE_TA,
+        WIRE_PROJECT,
+        "home",
+        [
+            {"student_id": WIRE_STUDENT, "product": 4.0, "team": 4.0, "scrum": 4.0},
+        ],
+    )
 
     r = client.put(
         f"/api/tas/projects/{WIRE_PROJECT}/final-review/scores",

@@ -1,4 +1,3 @@
-/// <reference types="vitest/config" />
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'path'
@@ -13,7 +12,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     envDir: '..', // Point to the root directory for .env file
-    envPrefix: ['VITE_', 'SUPABASE_'], // Expose these prefixes to the client
+    // Only VITE_* reaches the browser bundle. The root .env also holds the
+    // backend's SUPABASE_SERVICE_ROLE_KEY and SUPABASE_JWT_SECRET; adding a
+    // 'SUPABASE_' prefix here would inline them into the client JS.
+    envPrefix: ['VITE_'],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
@@ -22,6 +24,23 @@ export default defineConfig(({ mode }) => {
         '@features': path.resolve(__dirname, './src/features'),
         '@pages': path.resolve(__dirname, './src/pages'),
         '@styles': path.resolve(__dirname, './src/styles'),
+      },
+    },
+    build: {
+      rolldownOptions: {
+        output: {
+          // Vendor code changes far less often than app code; separate chunks
+          // stay cached in browsers across deploys.
+          codeSplitting: {
+            groups: [
+              {
+                name: 'react',
+                test: /[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom)[\\/]/,
+              },
+              { name: 'supabase', test: /[\\/]node_modules[\\/]@supabase[\\/]/ },
+            ],
+          },
+        },
       },
     },
     server: {

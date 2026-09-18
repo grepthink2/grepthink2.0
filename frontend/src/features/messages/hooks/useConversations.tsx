@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useEffectEvent, useRef, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { api, type ApiConversationSummary } from '@/lib/api';
 import { supabase } from '@/lib/supabaseClient';
@@ -31,10 +31,23 @@ const ConversationsContext = createContext<ConversationsValue | undefined>(undef
  */
 export const ConversationsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { session } = useAuth();
+  const userId = session?.user?.id;
   const [conversations, setConversations] = useState<ApiConversationSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Signed out, there is nothing to load.
+  const [loading, setLoading] = useState(Boolean(userId));
   const [error, setError] = useState<string | null>(null);
   const cancelled = useRef(false);
+
+  // Signing out empties the inbox. Adjusted while rendering; the effect below
+  // only loads and subscribes.
+  const [prevUserId, setPrevUserId] = useState(userId);
+  if (prevUserId !== userId) {
+    setPrevUserId(userId);
+    if (!userId) {
+      setConversations([]);
+      setLoading(false);
+    }
+  }
 
   const optimisticMarkRead = useCallback((conversationId: string) => {
     setConversations(prev =>
@@ -46,32 +59,35 @@ export const ConversationsProvider: React.FC<{ children: ReactNode }> = ({ child
   // so a stale late-resolving response can't clobber fresher delta state.
   const requestSeq = useRef(0);
 
-  const refetch = useCallback(async () => {
+  // State is committed in the promise callbacks, once the request settles.
+  const refetch = useCallback(() => {
     const seq = ++requestSeq.current;
-    try {
-      const res = await api.getConversations();
-      if (cancelled.current || seq !== requestSeq.current) return;
-      setConversations(res.conversations);
-      setError(null);
-      setLoading(false);
-    } catch (err) {
-      if (cancelled.current || seq !== requestSeq.current) return;
-      // Silent on poll: stale data > intrusive error.
-      setError((err as Error).message);
-      setLoading(false);
-    }
+    return api
+      .getConversations()
+      .then((res) => {
+        if (cancelled.current || seq !== requestSeq.current) return;
+        setConversations(res.conversations);
+        setError(null);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled.current || seq !== requestSeq.current) return;
+        // Silent on poll: stale data > intrusive error.
+        setError((err as Error).message);
+        setLoading(false);
+      });
   }, []);
 
-  const userId = session?.user?.id;
+  // Point the realtime socket at this user's JWT. Read through an Effect Event
+  // so a token refresh doesn't tear down and rebuild the channel.
+  const authorizeRealtime = useEffectEvent(() => {
+    if (session) supabase.realtime.setAuth(session.access_token);
+  });
 
   useEffect(() => {
     cancelled.current = false;
-    if (!session || !userId) {
-      setConversations([]);
-      setLoading(false);
-      return;
-    }
-    supabase.realtime.setAuth(session.access_token);
+    if (!userId) return;
+    authorizeRealtime();
     refetch();
     // No column filter: the B1 migration's participant RLS SELECT policy on
     // `messages` scopes delivery to rows this user can see server-side.
@@ -96,16 +112,17 @@ export const ConversationsProvider: React.FC<{ children: ReactNode }> = ({ child
       cancelled.current = true;
       supabase.removeChannel(channel);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, refetch]);
 
-  return (
-    <ConversationsContext.Provider value={{ conversations, loading, error, refetch, optimisticMarkRead }}>
-      {children}
-    </ConversationsContext.Provider>
+  const value = useMemo<ConversationsValue>(
+    () => ({ conversations, loading, error, refetch, optimisticMarkRead }),
+    [conversations, loading, error, refetch, optimisticMarkRead],
   );
+
+  return <ConversationsContext.Provider value={value}>{children}</ConversationsContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
 export const useConversations = (): ConversationsValue => {
   const ctx = useContext(ConversationsContext);
   if (!ctx) {

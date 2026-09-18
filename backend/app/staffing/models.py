@@ -13,7 +13,8 @@ The staffing surface has three flavors of write:
     actions against project_members.
 
 """
-from typing import List, Literal, Optional
+
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -21,17 +22,19 @@ from pydantic import BaseModel, Field
 
 class SubmitInterestRequest(BaseModel):
     """Submit / update a single ranked preference for the current user."""
+
     class_id: UUID
     project_id: UUID
     interest_value: int = Field(..., ge=1, le=5)
-    interest_reason: Optional[str] = None
+    interest_reason: str | None = None
 
 
 class RankedProject(BaseModel):
     """A single ranked-project entry inside the full interest-form submission."""
+
     project_id: UUID
     interest_value: int = Field(..., ge=1, le=5)
-    interest_reason: Optional[str] = None
+    interest_reason: str | None = None
 
 
 class SubmitInterestFormRequest(BaseModel):
@@ -42,24 +45,27 @@ class SubmitInterestFormRequest(BaseModel):
     ``interest_form`` rows for this class, and replaces the user's
     ``interest_team_preferences`` rows for this class.
     """
-    taking_115c: Optional[bool] = None
-    previous_project_name: Optional[str] = None
-    previous_project_link: Optional[str] = None
-    notes: Optional[str] = None
-    ranked_projects: List[RankedProject] = Field(default_factory=list)
-    work_with: List[UUID] = Field(default_factory=list)
-    dont_work_with: List[UUID] = Field(default_factory=list)
+
+    taking_115c: bool | None = None
+    previous_project_name: str | None = None
+    previous_project_link: str | None = None
+    notes: str | None = None
+    ranked_projects: list[RankedProject] = Field(default_factory=list)
+    work_with: list[UUID] = Field(default_factory=list)
+    dont_work_with: list[UUID] = Field(default_factory=list)
     submitted: bool = True
 
 
 class AssignUserRequest(BaseModel):
     """Instructor request to assign a student to a project in the class."""
+
     user_id: UUID
     project_id: UUID
 
 
 class UnassignUserRequest(BaseModel):
     """Instructor request to remove a student's project assignment in the class."""
+
     user_id: UUID
 
 

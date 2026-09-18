@@ -34,7 +34,6 @@ const Roster: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterOption>('all');
   const [students, setStudents] = useState<UiStudent[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<ActionMessage | null>(null);
   const [inviteModal, setInviteModal] = useState<{ initialEmails: string[] } | null>(null);
@@ -64,8 +63,8 @@ const Roster: React.FC = () => {
     }
   }, []);
 
-  const loadRoster = useCallback(async (classId: string, silent = false) => {
-    if (!silent) setLoading(true);
+  /** Reloads the roster in place (no loading state) after a change. */
+  const reloadRoster = useCallback(async (classId: string) => {
     setError(null);
     try {
       const { students: rows } = await api.getClassRoster(classId);
@@ -73,20 +72,43 @@ const Roster: React.FC = () => {
     } catch (err) {
       setStudents([]);
       setError(err instanceof Error ? err.message : 'Failed to load roster');
-    } finally {
-      if (!silent) setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
+  const classId = selectedClass?.id ?? null;
+  /** The class whose roster request last settled. */
+  const [loadedClassId, setLoadedClassId] = useState<string | null>(null);
+  const loading = classId !== null && loadedClassId !== classId;
+
+  // A newly selected class starts with a clear search, filter and error.
+  const [prevClassId, setPrevClassId] = useState(classId);
+  if (prevClassId !== classId) {
+    setPrevClassId(classId);
     setSearch('');
     setFilter('all');
-    if (!selectedClass?.id) {
-      setStudents([]);
-      return;
-    }
-    void loadRoster(selectedClass.id);
-  }, [selectedClass?.id, loadRoster]);
+    setError(null);
+    if (!classId) setStudents([]);
+  }
+
+  useEffect(() => {
+    if (!classId) return;
+    let cancelled = false;
+    api.getClassRoster(classId)
+      .then(({ students: rows }) => {
+        if (cancelled) return;
+        setStudents(rows.map(mapApiRosterStudent));
+        setLoadedClassId(classId);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setStudents([]);
+        setError(err instanceof Error ? err.message : 'Failed to load roster');
+        setLoadedClassId(classId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [classId]);
 
   // Clean up timers on unmount
   useEffect(() => {
@@ -123,7 +145,7 @@ const Roster: React.FC = () => {
     setActionMessage(null);
     try {
       await api.uploadClassRoster(selectedClass.id, file);
-      await loadRoster(selectedClass.id, true);
+      await reloadRoster(selectedClass.id);
       showMessage('success', 'Roster uploaded successfully.');
     } catch (err) {
       showMessage('error', err instanceof Error ? err.message : 'Failed to upload roster');
@@ -152,14 +174,14 @@ const Roster: React.FC = () => {
         if (prev.secondsLeft <= 1) {
           clearInterval(unsendIntervalRef.current!);
           unsendIntervalRef.current = null;
-          void loadRoster(prev.classId, true);
+          void reloadRoster(prev.classId);
           setActionMessage(null);
           return null;
         }
         return { ...prev, secondsLeft: prev.secondsLeft - 1 };
       });
     }, 1000);
-  }, [clearUnsend, loadRoster]);
+  }, [clearUnsend, reloadRoster]);
 
   const handleModalSend = async ({ emails, cc, bcc, subject, body, bodyHtml }: InvitePayload) => {
     if (!selectedClass?.id) return;
@@ -201,7 +223,7 @@ const Roster: React.FC = () => {
         last_name: lastName,
         email,
       });
-      await loadRoster(selectedClass.id, true);
+      await reloadRoster(selectedClass.id);
       setAddStudentModalOpen(false);
       showMessage('success', `${firstName} ${lastName} added to the roster.`);
     } catch (err) {
@@ -218,7 +240,7 @@ const Roster: React.FC = () => {
     setActionMessage(null);
     try {
       await api.removeStudentFromClass(selectedClass.id, student.id);
-      await loadRoster(selectedClass.id, true);
+      await reloadRoster(selectedClass.id);
       showMessage('success', `${student.name} removed from the class.`);
     } catch (err) {
       showMessage('error', err instanceof Error ? err.message : 'Failed to remove student');
@@ -232,7 +254,7 @@ const Roster: React.FC = () => {
     setActionMessage(null);
     try {
       await api.deleteManualRosterEntry(selectedClass.id, student.rosterEntryId);
-      await loadRoster(selectedClass.id, true);
+      await reloadRoster(selectedClass.id);
       showMessage('success', `${student.name} removed from the roster.`);
     } catch (err) {
       showMessage('error', err instanceof Error ? err.message : 'Failed to remove student from roster');
@@ -318,7 +340,6 @@ const Roster: React.FC = () => {
             showActions
             onInvite={handleInvite}
             onRemove={handleRemove}
-            invitingEmails={new Set()}
             onDeleteManual={handleDeleteManual}
             onAddStudent={() => {
               setAddStudentError(null);

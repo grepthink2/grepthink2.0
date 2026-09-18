@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore, ChevronDown, LogOut/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
 import { useClickOutside } from '@features/app/components/Interest/useClickOutside';
@@ -8,6 +8,7 @@ import LinkedInIcon from '@assets/mdi_linkedin.svg';
 import CodeIcon from '@assets/material-symbols_code-rounded.svg';
 import './ProjectView.scss';
 import { useAuth } from '@/lib/auth';
+import { useEnrollmentRole } from '@/lib/enrollmentRole';
 import { MessageButton } from '@features/messages/components/MessageButton';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
@@ -158,7 +159,6 @@ const ProjectView: React.FC<ProjectViewProps> = ({
 }) => {
   const { role, user } = useAuth();
   const isInstructor = role === 'instructor';
-  const [canManageAdmins, setCanManageAdmins] = useState(false);
   const canManageProject =
     isInstructor ||
     (userRoleOnProject != null && MANAGER_ROLES.includes(userRoleOnProject as (typeof MANAGER_ROLES)[number]));
@@ -172,31 +172,10 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const joinedDropdownRef = useRef<HTMLDivElement>(null);
   useClickOutside(joinedDropdownRef, useCallback(() => setJoinedDropdownOpen(false), []));
 
-  useEffect(() => {
-    if (!classId) {
-      setCanManageAdmins(false);
-      return;
-    }
-    if (isInstructor) {
-      setCanManageAdmins(true);
-      return;
-    }
-
-    let cancelled = false;
-    api.getMyEnrollmentRole(classId)
-      .then(({ enrollment_role }) => {
-        if (!cancelled) {
-          setCanManageAdmins(enrollment_role === 'instructor' || enrollment_role === 'ta');
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setCanManageAdmins(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [classId, isInstructor]);
+  // The class instructor and class TAs may manage project admins.
+  const classRole = useEnrollmentRole(classId && !isInstructor ? classId : undefined);
+  const canManageAdmins =
+    Boolean(classId) && (isInstructor || classRole === 'instructor' || classRole === 'ta');
 
   const handleCancelRequest = useCallback(async () => {
     if (!pendingRequestId || cancellingRequest) return;

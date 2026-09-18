@@ -1,19 +1,29 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import Sidebar from '@features/app/components/Layout/Sidebar';
 import Header from '@features/app/components/Layout/Header';
 import PreviewBanner from '@features/app/components/Layout/PreviewBanner';
-import CreateClassModal from '@/features/app/components/Classes/CreateClassModal';
-import JoinClassModal from '@/features/app/components/Classes/JoinClassModal';
+import { lazyModal } from '@/lib/lazyModal';
 import Settings from '@features/app/pages/Settings';
 import PageFallback from '@features/app/components/PageFallback';
+import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/routePermissions';
 import { MessageWidget } from '@features/messages/components/MessageWidget';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './AppView.scss';
+
+// Both modals load on first open; the create-class form pulls in the date picker.
+const CreateClassModal = lazyModal(
+  () => import('@/features/app/components/Classes/CreateClassModal'),
+  (p) => p.isOpen,
+);
+const JoinClassModal = lazyModal(
+  () => import('@/features/app/components/Classes/JoinClassModal'),
+  (p) => p.isOpen,
+);
 
 const AppView: React.FC = () => {
   const { role, isPreviewing, loading: authLoading } = useAuth();
@@ -39,12 +49,15 @@ const AppView: React.FC = () => {
     setIsJoinClassModalOpen(false);
   };
 
-  // Close modals and the mobile nav drawer when navigation occurs
-  useEffect(() => {
+  // Close modals and the mobile nav drawer when navigation occurs. Adjusted
+  // while rendering the new path, so nothing stays open into the next page.
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname);
     setIsCreateClassModalOpen(false);
     setIsJoinClassModalOpen(false);
     setMobileNavOpen(false);
-  }, [location.pathname]);
+  }
 
   if (authLoading) {
     return (
@@ -101,13 +114,15 @@ const AppView: React.FC = () => {
               above are siblings, not descendants, so they stay mounted and
               visible while a page chunk loads instead of being replaced by
               the fallback. */}
-          <Suspense fallback={<PageFallback />}>
-            <Outlet
-              context={
-                { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
-              }
-            />
-          </Suspense>
+          <ErrorBoundary resetKey={location.pathname}>
+            <Suspense fallback={<PageFallback />}>
+              <Outlet
+                context={
+                  { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
+                }
+              />
+            </Suspense>
+          </ErrorBoundary>
         </main>
 
         {/* Create Class Modal */}

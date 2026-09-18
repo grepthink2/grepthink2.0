@@ -15,20 +15,16 @@ import {
 } from 'lucide-react';
 import { useClass, type Class } from '@/lib/classContext';
 import { api } from '@/lib/api';
-import CreateClassModal from '@features/app/components/Classes/CreateClassModal';
-import { summarizeRoster } from '@features/app/components/Dashboard/dashboardData';
+import { lazyModal } from '@/lib/lazyModal';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { buildAttentionItems, type AttentionItem } from './attentionItems';
 import './InstructorHomeDashboard.scss';
 
-type AttentionType = 'roster_missing' | 'unmatched';
-
-interface AttentionItem {
-  id: string;
-  classId: string;
-  className: string;
-  type: AttentionType;
-  message: string;
-}
+// Loads on first open; the form pulls in the date picker.
+const CreateClassModal = lazyModal(
+  () => import('@features/app/components/Classes/CreateClassModal'),
+  (p) => p.isOpen,
+);
 
 function courseLabel(cls: Class): string {
   const parts = [cls.year ? String(cls.year) : '', cls.term].filter(Boolean);
@@ -36,6 +32,8 @@ function courseLabel(cls: Class): string {
 }
 
 const DISMISSED_ALERTS_KEY = 'gt:instructor:dismissed-alerts';
+
+const NO_ALERTS: AttentionItem[] = [];
 
 function loadDismissedAlerts(): Set<string> {
   try {
@@ -60,8 +58,11 @@ const InstructorHomeDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { visibleClasses, setSelectedClass, getClassStatus } = useClass();
 
-  const [alerts, setAlerts] = useState<AttentionItem[]>([]);
-  const [alertsLoading, setAlertsLoading] = useState(false);
+  // The alerts last built, and the active-class list they were built for.
+  const [alertsResult, setAlertsResult] = useState<{
+    classes: Class[];
+    alerts: AttentionItem[];
+  } | null>(null);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(loadDismissedAlerts);
   const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
 
@@ -71,52 +72,29 @@ const InstructorHomeDashboard: React.FC = () => {
     [visibleClasses, getClassStatus],
   );
 
+  // No active classes means no alerts.
+  if (activeClasses.length === 0 && alertsResult !== null) {
+    setAlertsResult(null);
+  }
+  // Each new active-class list (a class refresh) loads the summary again; the
+  // previous alerts stay counted until it lands.
+  const alertsLoading = activeClasses.length > 0 && alertsResult?.classes !== activeClasses;
+  const alerts = alertsResult?.alerts ?? NO_ALERTS;
+
   useEffect(() => {
-    if (activeClasses.length === 0) {
-      setAlerts([]);
-      return;
-    }
+    if (activeClasses.length === 0) return;
 
     let cancelled = false;
 
     const load = async () => {
-      setAlertsLoading(true);
+      let items: AttentionItem[] = [];
       try {
-        const perClass = await Promise.all(
-          activeClasses.map(async (cls) => {
-            try {
-              const { students, uploaded_at } = await api.getClassRoster(cls.id);
-              const items: AttentionItem[] = [];
-              if (!uploaded_at) {
-                items.push({
-                  id: `${cls.id}:roster_missing`,
-                  classId: cls.id,
-                  className: cls.name,
-                  type: 'roster_missing',
-                  message: 'No official roster uploaded yet',
-                });
-              }
-              const { notOnRoster } = summarizeRoster(students);
-              if (notOnRoster > 0) {
-                items.push({
-                  id: `${cls.id}:unmatched`,
-                  classId: cls.id,
-                  className: cls.name,
-                  type: 'unmatched',
-                  message: `${notOnRoster} student${notOnRoster === 1 ? '' : 's'} registered but not on the roster`,
-                });
-              }
-              return items;
-            } catch {
-              return [];
-            }
-          }),
-        );
-        if (cancelled) return;
-        setAlerts(perClass.flat());
-      } finally {
-        if (!cancelled) setAlertsLoading(false);
+        const { classes } = await api.getClassesAttentionSummary();
+        items = buildAttentionItems(activeClasses, classes);
+      } catch {
+        // No alerts: the card shows its all-clear state.
       }
+      if (!cancelled) setAlertsResult({ classes: activeClasses, alerts: items });
     };
 
     void load();

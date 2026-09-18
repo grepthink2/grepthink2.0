@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, X } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -37,13 +37,13 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
     setTsrCount(DEFAULT_TSR_COUNT[term]);
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
       setIsClosing(false);
       onClose();
     }, 200); // Match animation duration
-  };
+  }, [onClose]);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -55,7 +55,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {

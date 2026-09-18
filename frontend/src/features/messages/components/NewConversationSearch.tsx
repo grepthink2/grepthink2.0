@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuPencilLine, LuSearch, LuX } from 'react-icons/lu';
+import { PencilLine as PencilLineIcon, Search as SearchIcon, X as XIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { ApiContact } from '@/lib/api';
 import { emailToDisplayName } from '@features/app/utils/memberUtils';
@@ -108,13 +108,13 @@ export const NewConversationSearch: React.FC = () => {
         aria-label="New conversation"
         onClick={open ? handleClose : handleOpen}
       >
-        {open ? <LuX size={18} /> : <LuPencilLine size={18} />}
+        {open ? <XIcon size={18} /> : <PencilLineIcon size={18} />}
       </button>
 
       {open && (
         <div className="new-conv-search__panel">
           <div className="new-conv-search__input-row">
-            <LuSearch size={15} className="new-conv-search__icon" />
+            <SearchIcon size={15} className="new-conv-search__icon" />
             <input
               ref={inputRef}
               type="text"

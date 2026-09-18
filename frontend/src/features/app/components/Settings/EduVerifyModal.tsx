@@ -22,11 +22,20 @@ const EduVerifyModal: React.FC<EduVerifyModalProps> = ({
   const [success, setSuccess] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => {
+  // Reset state each time the modal opens: adjusted during render when isOpen
+  // flips, while the delayed focus stays in an effect.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
       setCode(['', '', '', '', '', '']);
       setError(null);
       setSuccess(false);
+    }
+  }
+
+  useEffect(() => {
+    if (isOpen) {
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     }
   }, [isOpen]);

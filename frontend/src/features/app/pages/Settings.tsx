@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Camera, Linkedin, Github, UserPen, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Camera, UserPen, CheckCircle, AlertCircle } from 'lucide-react';
+import { LinkedinIcon as Linkedin, GithubIcon as Github } from '@/components/icons/BrandIcons';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 import { apiRequest, api, type ApiProfile } from '@/lib/api';

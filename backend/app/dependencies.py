@@ -24,13 +24,16 @@ business logic. Raising at the dependency layer makes "authenticated" the
 default and surfaces auth bugs as test/runtime failures instead of silent
 bypasses. See CODE_REVIEW.md findings #3, #9, #17.
 """
+
 import json
 import logging
 
-from fastapi import Request, HTTPException, Depends
 import jwt
-from jwt import PyJWKClient, PyJWK
+from fastapi import Depends, HTTPException, Request
+from jwt import PyJWK, PyJWKClient
+
 from app.config import settings
+from app.core import authz
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +80,8 @@ def verify_supabase_token(request: Request) -> dict:
     if not auth_header:
         logger.debug(
             "verify_supabase_token: missing Authorization header on %s %s",
-            request.method, request.url.path,
+            request.method,
+            request.url.path,
         )
         raise HTTPException(status_code=401, detail="Authentication required")
 
@@ -85,7 +89,8 @@ def verify_supabase_token(request: Request) -> dict:
     if len(parts) != 2 or parts[0].lower() != "bearer":
         logger.warning(
             "Malformed Authorization header on %s %s",
-            request.method, request.url.path,
+            request.method,
+            request.url.path,
         )
         raise HTTPException(status_code=401, detail="Invalid authorization header")
 
@@ -116,9 +121,7 @@ def verify_supabase_token(request: Request) -> dict:
                 signing_key = _jwks_client.get_signing_key_from_jwt(token).key
             except Exception as jwks_error:
                 if _static_jwk:
-                    logger.debug(
-                        "JWKS lookup failed, falling back to static JWK: %s", jwks_error
-                    )
+                    logger.debug("JWKS lookup failed, falling back to static JWK: %s", jwks_error)
                     signing_key = _static_jwk.key
                 else:
                     raise jwks_error
@@ -137,7 +140,8 @@ def verify_supabase_token(request: Request) -> dict:
     except Exception:
         logger.warning(
             "Token verification failed on %s %s",
-            request.method, request.url.path,
+            request.method,
+            request.url.path,
             exc_info=True,
         )
         raise HTTPException(status_code=401, detail="Invalid authentication token")
@@ -187,9 +191,8 @@ def require_instructor(user_id: str = Depends(require_user)) -> str:
     if not is_instructor_role(role):
         logger.info(
             "require_instructor: denied non-instructor | user_id=%s role=%s",
-            user_id, role,
+            user_id,
+            role,
         )
-        raise HTTPException(
-            status_code=403, detail="Instructor role required"
-        )
+        raise HTTPException(status_code=403, detail=authz.INSTRUCTOR_ROLE_REQUIRED)
     return user_id

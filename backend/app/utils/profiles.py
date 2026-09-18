@@ -1,11 +1,9 @@
 """Helpers for reading profile rows (first_name / last_name schema)."""
 
-from typing import Optional
-
 PROFILE_SELECT = "id, email, first_name, last_name"
 
 
-def profile_display_name(profile: Optional[dict]) -> str:
+def profile_display_name(profile: dict | None) -> str:
     """Human-friendly label: 'First Last', else email, else empty string."""
     if not profile:
         return ""
