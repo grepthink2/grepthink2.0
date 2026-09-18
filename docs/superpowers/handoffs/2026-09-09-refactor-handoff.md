@@ -54,7 +54,12 @@ before and after.
    parts A, B, C1 and E apply as measured on 2026-09-18, while C2 and D wait for
    `conversation_participants` and the group messaging functions to reach PROD (a missing
    relation aborts the entire pasted script). Re-run the preflight in the header rather than
-   trusting that split, then regenerate `supabase/schema.sql`.
+   trusting that split, then regenerate `supabase/schema.sql`. What gates C2 and D is PROD's
+   messaging schema being one migration behind;
+   `backend/database/migrations/prod/2026-09-18_messaging_to_group_model.sql` is the staged
+   runbook that closes it in place, with no data loss, and also restores realtime — PROD's
+   `supabase_realtime` publication is empty, so live message and notification delivery is
+   dead there today. That runbook has to run before beta reaches main regardless of this PR.
 4. **Decisions.** D1–D16, plus: rename
    `react-day-picker` to `@daypicker/react` (same API); drop the unused staffing endpoints (D5
    keeps them); `num_members` as a DB trigger; a shared `Modal` primitive; react-query; serverless

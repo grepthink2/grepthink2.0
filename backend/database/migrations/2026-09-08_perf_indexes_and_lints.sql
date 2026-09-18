@@ -14,6 +14,8 @@
 --      do not — PROD has messages, conversations, conversation_reads and
 --      conversation_deletes, but no conversation_participants and none of the group
 --      messaging functions. Re-run the preflight rather than trusting this line.
+--      prod/2026-09-18_messaging_to_group_model.sql closes that gap without losing data;
+--      once it has run on PROD, every part of this file applies there.
 --   3. record the apply dates here and regenerate supabase/schema.sql
 --
 -- Nothing in the application code depends on this file: it only makes existing queries
