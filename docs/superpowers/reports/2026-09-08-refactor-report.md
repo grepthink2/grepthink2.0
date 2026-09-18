@@ -156,8 +156,9 @@ metadata, and `ApiError` exposes the backend's `code`.
 - **Staged migration.** `backend/database/migrations/2026-09-08_perf_indexes_and_lints.sql` is
   not applied (no code depends on it). Apply the whole file on dev; on PROD run the preflight in
   its header first and apply only the parts whose tables and functions exist there, because PROD
-  trails dev and the SQL editor aborts the whole script on the first missing relation. Then
-  regenerate `supabase/schema.sql`.
+  trails dev and the SQL editor aborts the whole script on the first missing relation. As measured
+  on 2026-09-18 that is parts A, B, C1 and E: PROD has no `conversation_participants` and none of
+  the group messaging functions. Then regenerate `supabase/schema.sql`.
 - **Projects page roster call** stays: the membership chart counts unregistered and dropped
   roster rows that the projects overview does not return (the audit called it redundant).
 - **Session token cache** in `apiRequest` not added: `supabase.auth.getSession()` reads the

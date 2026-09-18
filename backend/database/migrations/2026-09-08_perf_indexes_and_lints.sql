@@ -10,6 +10,10 @@
 --      exist" aborts the whole file, including the parts that would have applied.
 --      IF NOT EXISTS / IF EXISTS do not save you here — they guard the index or the
 --      policy, not the table underneath it.
+--      Measured on PROD 2026-09-18: parts A, B, C1 and E apply as-is. Part C2 and part D
+--      do not — PROD has messages, conversations, conversation_reads and
+--      conversation_deletes, but no conversation_participants and none of the group
+--      messaging functions. Re-run the preflight rather than trusting this line.
 --   3. record the apply dates here and regenerate supabase/schema.sql
 --
 -- Nothing in the application code depends on this file: it only makes existing queries
@@ -40,8 +44,8 @@
 --     ('B','feedback_submissions'),('B','notifications'),('B','pending_invites'),
 --     ('B','attendance'),('B','meetings'),('B','final_review_notes'),
 --     ('B','final_review_scores'),('B','project_review_tas'),
---     ('C','messages'),('C','conversations'),('C','conversation_participants'),
---     ('C','conversation_reads'),('C','conversation_deletes')
+--     ('C1','messages'),('C1','conversation_reads'),('C1','conversation_deletes'),
+--     ('C2','conversation_participants'),('C2','conversations')
 --   ) AS v(part, obj) ORDER BY 3, 1, 2;
 --
 --   SELECT v.part, v.fn, EXISTS (
@@ -49,7 +53,7 @@
 --            WHERE n.nspname = 'public' AND p.proname = v.fn
 --          ) AS present
 --   FROM (VALUES
---     ('C','bump_conversation_last_message'),
+--     ('C1','bump_conversation_last_message'),
 --     ('D','provision_team_channels'),('D','trg_projects_provision_channels'),
 --     ('D','trg_project_members_sync'),('D','trg_projects_ta_swap'),
 --     ('D','trg_classes_owner_swap'),('D','trg_dm_participants'),('D','messages_inbox'),
@@ -145,16 +149,13 @@ CREATE POLICY notifications_select_own ON public.notifications
 
 
 -- ═════════════════════════════════════════════════════════════════════════════
--- PART C — messaging (2026-04-23_messages.sql, 2026-04-26_conversation_deletes.sql)
+-- PART C1 — messaging tables that PROD already has (2026-04-23_messages.sql,
+-- 2026-04-26_conversation_deletes.sql)
 -- ═════════════════════════════════════════════════════════════════════════════
 
 CREATE INDEX IF NOT EXISTS idx_messages_sender_id            ON public.messages (sender_id);
 CREATE INDEX IF NOT EXISTS idx_conversation_reads_user_id    ON public.conversation_reads (user_id);
 CREATE INDEX IF NOT EXISTS idx_conversation_deletes_user_id  ON public.conversation_deletes (user_id);
-
-DROP POLICY IF EXISTS conversation_participants_select_own ON public.conversation_participants;
-CREATE POLICY conversation_participants_select_own ON public.conversation_participants
-  FOR SELECT USING (user_id = (SELECT auth.uid()));
 
 DROP POLICY IF EXISTS conversation_reads_select_own ON public.conversation_reads;
 CREATE POLICY conversation_reads_select_own ON public.conversation_reads
@@ -162,6 +163,21 @@ CREATE POLICY conversation_reads_select_own ON public.conversation_reads
 
 DROP POLICY IF EXISTS conversation_deletes_select_own ON public.conversation_deletes;
 CREATE POLICY conversation_deletes_select_own ON public.conversation_deletes
+  FOR SELECT USING (user_id = (SELECT auth.uid()));
+
+-- Pin search_path (advisor: function_search_path_mutable). `public` matches what
+-- handle_new_user already uses and keeps the unqualified table references working.
+ALTER FUNCTION public.bump_conversation_last_message()           SET search_path = public;
+
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- PART C2 — policies whose USING clause reads conversation_participants, which
+-- PROD does not have (2026-09-18). Creating a policy that references a missing
+-- table fails, so these wait for the messaging migration to reach the target.
+-- ═════════════════════════════════════════════════════════════════════════════
+
+DROP POLICY IF EXISTS conversation_participants_select_own ON public.conversation_participants;
+CREATE POLICY conversation_participants_select_own ON public.conversation_participants
   FOR SELECT USING (user_id = (SELECT auth.uid()));
 
 DROP POLICY IF EXISTS conversations_select_participant ON public.conversations;
@@ -183,10 +199,6 @@ CREATE POLICY messages_select_participant ON public.messages
         AND cp.user_id = (SELECT auth.uid())
     )
   );
-
--- Pin search_path (advisor: function_search_path_mutable). `public` matches what
--- handle_new_user already uses and keeps the unqualified table references working.
-ALTER FUNCTION public.bump_conversation_last_message()           SET search_path = public;
 
 
 -- ═════════════════════════════════════════════════════════════════════════════
