@@ -1,4 +1,4 @@
-"""Tests for the send-message path: conversation create-or-fetch + insert."""
+"""send_message: to a user (create-or-fetch the DM) or to an existing conversation."""
 
 from __future__ import annotations
 
@@ -10,10 +10,13 @@ from fastapi import HTTPException
 # ---------- send_message ---------------------------------------------------
 
 
+@patch("app.messages.controller.notify_recipients")
 @patch("app.messages.controller.can_message", return_value=True)
 @patch("app.messages.controller._get_or_create_conversation", return_value="conv-x")
 @patch("app.core.db.service_client")
-def test_send_message_inserts_and_marks_sender_read(client, _get_or_create, _can):
+def test_send_to_a_user_inserts_marks_the_sender_read_and_notifies_the_recipient(
+    client, _get_or_create, _can, notify
+):
     from app.messages.controller import send_message
 
     inserted = {
@@ -33,32 +36,26 @@ def test_send_message_inserts_and_marks_sender_read(client, _get_or_create, _can
     table_calls = [c.args[0] for c in client.table.call_args_list]
     assert "messages" in table_calls
     assert "conversation_reads" in table_calls
+    assert notify.call_args.kwargs["recipient_ids"] == ["bob"]
 
 
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"to_user_id": "bob", "body": "x" * 1025},
+        {"to_user_id": "bob", "body": "   \n\t  "},
+        {"to_user_id": "alice", "body": "hi"},
+        {"body": "hi"},
+        {"to_user_id": "bob", "conversation_id": "c1", "body": "hi"},
+    ],
+    ids=["too long", "whitespace only", "to yourself", "no target", "two targets"],
+)
 @patch("app.messages.controller.can_message", return_value=True)
-def test_send_message_rejects_too_long(_can):
+def test_send_message_answers_400(_can, kwargs):
     from app.messages.controller import send_message
 
     with pytest.raises(HTTPException) as exc:
-        send_message(sender_id="alice", to_user_id="bob", body="x" * 1025)
-    assert exc.value.status_code == 400
-
-
-@patch("app.messages.controller.can_message", return_value=True)
-def test_send_message_rejects_whitespace_only(_can):
-    from app.messages.controller import send_message
-
-    with pytest.raises(HTTPException) as exc:
-        send_message(sender_id="alice", to_user_id="bob", body="   \n\t  ")
-    assert exc.value.status_code == 400
-
-
-@patch("app.messages.controller.can_message", return_value=True)
-def test_send_message_rejects_self_target(_can):
-    from app.messages.controller import send_message
-
-    with pytest.raises(HTTPException) as exc:
-        send_message(sender_id="alice", to_user_id="alice", body="hi")
+        send_message(sender_id="alice", **kwargs)
     assert exc.value.status_code == 400
 
 
@@ -150,3 +147,102 @@ def test_get_or_create_inserts_when_absent(client, no_row):
         "00000000-0000-0000-0000-000000000002",
     )
     assert result == "new-conv"
+
+
+# ---------- send_message to an existing conversation (a DM or a team channel) ----
+
+
+def _wire_insert(client, conv="conv-t"):
+    client.table.return_value.insert.return_value.execute.return_value = MagicMock(
+        data=[
+            {
+                "id": "msg-1",
+                "conversation_id": conv,
+                "sender_id": "alice",
+                "body": "hi",
+                "created_at": "now",
+            }
+        ]
+    )
+
+
+@patch("app.messages.controller.notify_recipients")
+@patch("app.messages.controller._participant_ids", return_value=["alice", "bob", "carol"])
+@patch(
+    "app.messages.controller._require_participant",
+    return_value={"id": "conv-t", "type": "team_members", "user_a": None, "user_b": None},
+)
+@patch("app.core.db.service_client")
+def test_team_channel_send_notifies_others(client, _conv, _ids, notify):
+    from app.messages.controller import send_message
+
+    _wire_insert(client)
+    result = send_message(sender_id="alice", conversation_id="conv-t", body="hi")
+    assert result["conversation_id"] == "conv-t"
+    _, kwargs = notify.call_args
+    assert sorted(kwargs["recipient_ids"]) == ["bob", "carol"]
+
+
+@patch("app.messages.controller.can_message", return_value=False)
+@patch("app.messages.controller._participant_ids", return_value=["alice", "bob"])
+@patch(
+    "app.messages.controller._require_participant",
+    return_value={"id": "conv-d", "type": "dm", "user_a": "alice", "user_b": "bob"},
+)
+@patch("app.core.db.service_client")
+def test_dm_via_conversation_id_rechecks_eligibility(client, _conv, _ids, _can):
+    from app.messages.controller import send_message
+
+    with pytest.raises(HTTPException) as exc:
+        send_message(sender_id="alice", conversation_id="conv-d", body="hi")
+    assert exc.value.status_code == 403
+
+
+@patch("app.core.db.service_client")
+def test_send_403_for_non_participant_wired(client):
+    """Core security property: non-participant cannot send via conversation_id."""
+    from app.messages.controller import send_message
+
+    (
+        client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value
+    ) = MagicMock(
+        data={
+            "id": "conv-t",
+            "type": "team_members",
+            "user_a": None,
+            "user_b": None,
+            "project_id": "p1",
+        }
+    )
+    (
+        client.table.return_value.select.return_value.eq.return_value.execute.return_value
+    ) = MagicMock(
+        data=[{"user_id": "alice", "role": "member"}, {"user_id": "bob", "role": "member"}]
+    )
+    with pytest.raises(HTTPException) as exc:
+        send_message(sender_id="mallory", conversation_id="conv-t", body="hi")
+    assert exc.value.status_code == 403
+
+
+@patch("app.messages.controller._participant_ids", return_value=["alice", "bob", "carol"])
+@patch(
+    "app.messages.controller._require_participant",
+    return_value={"id": "conv-t", "type": "team_members", "user_a": None, "user_b": None},
+)
+@patch("app.core.db.service_client")
+def test_notify_failure_does_not_fail_send(client, _conv, _ids):
+    """One recipient's notify blowing up must not 500 the send or starve the rest."""
+    from app.messages import controller
+
+    _wire_insert(client)
+    calls = []
+
+    def flaky(*, recipient_id, **kw):
+        calls.append(recipient_id)
+        if recipient_id == "bob":
+            raise RuntimeError("boom")
+
+    with patch("app.notifications.controller.notify_new_message", side_effect=flaky):
+        result = controller.send_message(sender_id="alice", conversation_id="conv-t", body="hi")
+    assert result["conversation_id"] == "conv-t"
+    assert calls == ["bob", "carol"]

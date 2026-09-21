@@ -1,11 +1,11 @@
-"""Signup and class-join hardening (the 2026-09-21 review).
+"""The roster .edu address is written only once its owner has proven they hold it.
 
-- A join code is eight characters from the generator's alphabet and is matched exactly,
-  so ``%`` or ``Q%`` no longer joins whichever class PostgREST lists first.
-- The roster .edu address is written only after its owner proves they hold it. Codes live
-  in the database (serverless instances share no memory), are stored hashed, expire, can
-  be re-sent at most once a minute, and die after five wrong guesses.
-- A profile's role stays empty until its owner picks one, and is picked exactly once.
+``profiles.edu_email`` wins when a roster is matched to accounts, so whoever holds an address
+there owns that student's roster row. ``PATCH /api/profiles/me`` can clear it but never set it;
+the only writer is ``verify-edu-email``. Codes live in the database (serverless instances share
+no memory), are stored hashed, expire, can be re-sent at most once a minute, and die after five
+wrong guesses. ``/api/create-user``, the other place an address is written, is pinned in
+``test_auth_views.py``.
 """
 
 from __future__ import annotations
@@ -13,24 +13,14 @@ from __future__ import annotations
 import datetime
 import logging
 import re
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from tests.conftest import header_for
 from tests.fake_supabase import FakeSupabase
 
 USER = "user-abc"  # the `sub` of conftest's auth_header token
 OLD = "2020-01-01T00:00:00+00:00"
-
-
-@pytest.fixture(autouse=True)
-def _fresh_role_cache():
-    from app.auth import controller
-
-    controller._role_cache.clear()
-    yield
-    controller._role_cache.clear()
 
 
 @pytest.fixture(autouse=True)
@@ -54,7 +44,6 @@ def db(monkeypatch):
                 "role": "student",
                 "first_name": "Ann",
                 "last_name": "Lee",
-                "created_at": OLD,
             },
             {
                 "id": "u-other",
@@ -63,19 +52,8 @@ def db(monkeypatch):
                 "role": "student",
             },
         ],
-        classes=[
-            {
-                "id": "class-1",
-                "name": "CSE 115A",
-                "course_code": "QASBX26A",
-                "created_by": "inst-1",
-            },
-            {"id": "class-2", "name": "Other", "course_code": "ZZ99ZZ99", "created_by": "inst-1"},
-        ],
-        class_enrollments=[],
         edu_email_verifications=[],
     )
-    fake.auth = MagicMock()
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
 
@@ -94,39 +72,6 @@ def _profile(db: FakeSupabase, user_id: str = USER) -> dict:
 
 def _pending(db: FakeSupabase) -> list[dict]:
     return db.rows("edu_email_verifications")
-
-
-# ── joining a class ──────────────────────────────────────────────────────────────
-
-
-@pytest.mark.parametrize(
-    "code",
-    ["%", "*", "________", "Q%", "QASBX26%", "QASBX26", "QASBX26AA", "QASB 26A", "QASBX26_", ""],
-)
-def test_join_rejects_anything_that_is_not_eight_code_characters(client, auth_header, db, code):
-    res = client.post("/api/classes/join", headers=auth_header, json={"course_code": code})
-
-    assert res.status_code == 404
-    assert res.json()["detail"] == "Invalid course code"
-    assert db.rows("class_enrollments") == []
-    # A malformed code never reaches the database, wildcard or not.
-    assert [q for q in db.queries if q["table"] == "classes"] == []
-
-
-def test_join_matches_the_code_exactly_whatever_its_case(client, auth_header, db):
-    res = client.post("/api/classes/join", headers=auth_header, json={"course_code": " qasbx26a "})
-
-    assert res.status_code == 200
-    assert [e["class_id"] for e in db.rows("class_enrollments")] == ["class-1"]
-    lookup = next(q for q in db.queries if q["table"] == "classes")
-    assert lookup["filters"] == [("course_code", "eq", "QASBX26A")]
-
-
-def test_join_answers_404_for_a_well_formed_code_nobody_uses(client, auth_header, db):
-    res = client.post("/api/classes/join", headers=auth_header, json={"course_code": "AAAA1111"})
-
-    assert res.status_code == 404
-    assert db.rows("class_enrollments") == []
 
 
 # ── the profile endpoint can no longer claim a roster address ────────────────────
@@ -407,145 +352,3 @@ def test_verify_refuses_a_different_address_without_spending_an_attempt(
 
 def test_verify_with_nothing_pending(client, auth_header, db):
     assert _verify(client, auth_header, "123456").status_code == 400
-
-
-# ── the role is picked once, by its owner ────────────────────────────────────────
-
-
-def _signup(role: str, email: str = "ann@gmail.com") -> dict:
-    return {"email": email, "userId": USER, "userType": role}
-
-
-ANN = header_for("ann@gmail.com")
-
-
-def test_create_user_sets_the_role_the_first_time_and_only_then(client, db):
-    _profile(db)["role"] = None
-
-    first = client.post("/api/create-user", headers=ANN, json=_signup("instructor"))
-
-    assert first.status_code == 200
-    assert first.json()["role"] == "instructor"
-    assert _profile(db)["role"] == "instructor"
-    pick = next(q for q in db.queries if q["table"] == "profiles" and q["op"] == "update")
-    # Conditional on the role still being empty: two racing picks cannot both land.
-    assert ("role", "is", None) in pick["filters"]
-
-    second = client.post("/api/create-user", headers=ANN, json=_signup("student"))
-
-    assert second.status_code == 409
-    assert _profile(db)["role"] == "instructor"
-
-
-def test_create_user_answers_409_when_another_request_picked_first(client, db):
-    _profile(db)["role"] = None
-    real_table = db.table
-
-    def table(name):
-        query = real_table(name)
-        if name == "profiles":
-            real_update = query.update
-
-            def update(payload):
-                if "role" in payload:  # the other request lands between our read and write
-                    _profile(db)["role"] = "student"
-                return real_update(payload)
-
-            query.update = update
-        return query
-
-    with patch.object(db, "table", side_effect=table):
-        res = client.post("/api/create-user", headers=ANN, json=_signup("instructor"))
-
-    assert res.status_code == 409
-    assert _profile(db)["role"] == "student"
-
-
-def test_the_first_pick_fills_in_the_edu_email_for_an_edu_login(client, db):
-    _profile(db).update({"role": None, "email": "ann@ucsc.edu"})
-
-    res = client.post(
-        "/api/create-user",
-        headers=header_for("ann@ucsc.edu"),
-        json=_signup("student", email=" Ann@UCSC.edu "),
-    )
-
-    assert res.status_code == 200
-    assert _profile(db)["edu_email"] == "ann@ucsc.edu"
-
-
-def test_the_first_pick_survives_an_edu_address_someone_else_holds(client, db):
-    _profile(db).update({"role": None, "email": "bo@ucsc.edu"})
-    from app.core.errors import DatabaseConflictError
-
-    real_table = db.table
-
-    def table(name):
-        query = real_table(name)
-        if name == "profiles":
-            real_update = query.update
-
-            def update(payload):
-                if "edu_email" in payload:  # profiles_edu_email_key
-                    raise DatabaseConflictError(operation="write", target="profiles")
-                return real_update(payload)
-
-            query.update = update
-        return query
-
-    with patch.object(db, "table", side_effect=table):
-        res = client.post(
-            "/api/create-user",
-            headers=header_for("bo@ucsc.edu"),
-            json=_signup("student", email="bo@ucsc.edu"),
-        )
-
-    assert res.status_code == 200
-    assert _profile(db)["role"] == "student"
-    assert _profile(db)["edu_email"] is None
-
-
-@pytest.mark.parametrize(
-    ("token_email", "body_email"),
-    [
-        ("ann@gmail.com", "bo@ucsc.edu"),  # a classmate's roster address
-        ("ann@gmail.com", ""),
-        (None, "ann@gmail.com"),  # a token with no verified address proves nothing
-    ],
-)
-def test_create_user_takes_the_email_from_the_token_not_the_body(
-    client, auth_header, db, token_email, body_email
-):
-    _profile(db)["role"] = None
-    headers = header_for(token_email) if token_email else auth_header
-
-    res = client.post(
-        "/api/create-user", headers=headers, json=_signup("student", email=body_email)
-    )
-
-    assert res.status_code == 403
-    assert res.json()["detail"] == "Email mismatch between Token and Body"
-    assert _profile(db)["role"] is None
-    assert _profile(db)["edu_email"] is None
-
-
-def test_a_missing_role_is_never_cached(db):
-    from app.auth.controller import get_user_role
-
-    _profile(db)["role"] = None
-    assert get_user_role(USER) is None
-
-    _profile(db)["role"] = "student"
-
-    # Picking a role must take effect on the very next request, on every instance.
-    assert get_user_role(USER) == "student"
-
-
-def test_a_chosen_role_is_still_cached(db):
-    from app.auth.controller import get_user_role
-
-    assert get_user_role(USER) == "student"
-    db.reset_counter()
-
-    assert get_user_role(USER) == "student"
-    assert db.executes == 0
