@@ -72,7 +72,19 @@ PROD is three migrations behind dev (group messaging, the `handle_new_user` fix,
 migration) and its realtime publication is empty, so live messages and notifications do not
 arrive there. The bundle applies all of it in one transaction, drops no table and deletes no
 row, is safe under the code `main` runs today, and **must run before `beta` is merged into
-`main`**. Dev has had every step since 2026-09-20.
+`main`**. Dev has had steps 1–7 since 2026-09-20; steps 8 and 9 (2026-09-21) are applied
+nowhere yet.
+
+**Run today, on its own if need be:**
+`backend/database/migrations/2026-09-21_lock_down_direct_table_access.sql`. On PROD any
+signed-in user can currently set their own `profiles.role` to `instructor` with the public anon
+key. The file depends on nothing else, changes nothing the application does (the backend uses
+the service-role key), and is also the bundle's last step.
+
+**Only after `beta` is live on `main`:**
+`backend/database/migrations/2026-09-21_role_chosen_by_its_owner.sql`. It is not an expand — the
+code `main` runs today cannot finish a Google signup once it is applied — so it is deliberately
+not in the bundle.
 
 PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. See
 `docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md` for that and for the rest of
