@@ -16,35 +16,7 @@ import pytest
 
 
 @patch("app.messages.views.controller.list_inbox")
-def test_get_conversations_returns_summary(_list, client, auth_header):
-    _list.return_value = [
-        {
-            "id": "c1",
-            "other_user": {"id": "bob", "email": "bob@x", "name": "Bob"},
-            "last_message": {
-                "id": "m",
-                "sender_id": "bob",
-                "body": "hi",
-                "created_at": "2026-04-23T12:00:00Z",
-            },
-            "unread_count": 2,
-            "other_user_last_read_at": None,
-            "can_send": True,
-            "last_message_at": "2026-04-23T12:00:00Z",
-        }
-    ]
-    res = client.get("/api/messages/conversations", headers=auth_header)
-    assert res.status_code == 200
-    body = res.json()
-    assert len(body["conversations"]) == 1
-    row = body["conversations"][0]
-    assert row["id"] == "c1"
-    assert row["unread_count"] == 2
-    assert row["can_send"] is True
-
-
-@patch("app.messages.views.controller.list_inbox")
-def test_get_conversations_v2_team_and_dm_shapes(_list, client, auth_header):
+def test_get_conversations_serializes_team_channels_and_dms(_list, client, auth_header):
     """v2 shape through the real HTTP/Pydantic round trip: a team channel
     (other_user null, type/team_name/participants populated) and a DM
     (other_user populated) both serialize intact."""
