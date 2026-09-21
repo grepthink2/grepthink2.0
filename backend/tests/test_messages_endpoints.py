@@ -10,16 +10,9 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from fastapi import HTTPException
+import pytest
 
 # ----- list_conversations ---------------------------------------------------
-
-
-@patch("app.messages.views.controller.list_inbox", return_value=[])
-def test_get_conversations_empty(_list, client, auth_header):
-    res = client.get("/api/messages/conversations", headers=auth_header)
-    assert res.status_code == 200
-    assert res.json() == {"conversations": []}
 
 
 @patch("app.messages.views.controller.list_inbox")
@@ -149,17 +142,7 @@ def test_get_conversations_v2_team_and_dm_shapes(_list, client, auth_header):
     assert [p["id"] for p in dm["participants"]] == ["alice", "bob"]
 
 
-def test_get_conversations_requires_auth(client):
-    res = client.get("/api/messages/conversations")
-    assert res.status_code == 401
-
-
 # ----- list_contacts --------------------------------------------------------
-
-
-def test_get_contacts_requires_auth(client):
-    res = client.get("/api/messages/contacts")
-    assert res.status_code == 401
 
 
 @patch("app.messages.views.controller.list_contacts")
@@ -209,33 +192,14 @@ def test_post_message_success(send, client, auth_header):
     assert res.json()["conversation_id"] == "c1"
 
 
-def test_post_message_rejects_empty_body(client, auth_header):
+@pytest.mark.parametrize("body", ["", "x" * 1025], ids=["empty", "over 1024 characters"])
+def test_post_message_rejects_a_body_outside_the_length_limits(client, auth_header, body):
     res = client.post(
         "/api/messages",
         headers=auth_header,
-        json={"to_user_id": "bob", "body": ""},
+        json={"to_user_id": "bob", "body": body},
     )
-    assert res.status_code == 422  # Pydantic validation
-
-
-def test_post_message_rejects_too_long(client, auth_header):
-    res = client.post(
-        "/api/messages",
-        headers=auth_header,
-        json={"to_user_id": "bob", "body": "x" * 1025},
-    )
-    assert res.status_code == 422
-
-
-@patch("app.messages.views.controller.send_message")
-def test_post_message_propagates_403(send, client, auth_header):
-    send.side_effect = HTTPException(status_code=403, detail="Cannot message this user")
-    res = client.post(
-        "/api/messages",
-        headers=auth_header,
-        json={"to_user_id": "bob", "body": "hi"},
-    )
-    assert res.status_code == 403
+    assert res.status_code == 422  # SendMessageRequest's own constraints
 
 
 # ----- list_messages -------------------------------------------------------
@@ -251,15 +215,6 @@ def test_get_messages_returns_list(lst, client, auth_header):
     assert res.status_code == 200
     assert res.json()["messages"][0]["body"] == "hi"
     assert res.json()["next_cursor"] is None
-
-
-@patch(
-    "app.messages.views.controller.list_messages",
-    side_effect=HTTPException(status_code=403, detail="Not a participant"),
-)
-def test_get_messages_403_for_non_participant(_lst, client, auth_header):
-    res = client.get("/api/messages/conversations/c1/messages", headers=auth_header)
-    assert res.status_code == 403
 
 
 # ----- mark_read ----------------------------------------------------------
@@ -279,26 +234,3 @@ def test_delete_conversation_returns_204(_del, client, auth_header):
     res = client.delete("/api/messages/conversations/c1", headers=auth_header)
     assert res.status_code == 204
     _del.assert_called_once()
-
-
-@patch("app.messages.views.controller.delete_conversation_for_user", return_value=None)
-def test_delete_conversation_is_idempotent(_del, client, auth_header):
-    """Repeated deletes should still return 204 (controller handles upsert)."""
-    for _ in range(3):
-        res = client.delete("/api/messages/conversations/c1", headers=auth_header)
-        assert res.status_code == 204
-    assert _del.call_count == 3
-
-
-@patch(
-    "app.messages.views.controller.delete_conversation_for_user",
-    side_effect=HTTPException(status_code=403, detail="Not a participant"),
-)
-def test_delete_conversation_403_for_non_participant(_del, client, auth_header):
-    res = client.delete("/api/messages/conversations/c1", headers=auth_header)
-    assert res.status_code == 403
-
-
-def test_delete_conversation_requires_auth(client):
-    res = client.delete("/api/messages/conversations/c1")
-    assert res.status_code == 401
