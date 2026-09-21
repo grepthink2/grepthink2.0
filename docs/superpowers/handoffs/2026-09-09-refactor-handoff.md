@@ -55,11 +55,13 @@ before and after.
    `conversation_participants` and the group messaging functions to reach PROD (a missing
    relation aborts the entire pasted script). Re-run the preflight in the header rather than
    trusting that split, then regenerate `supabase/schema.sql`. What gates C2 and D is PROD's
-   messaging schema being one migration behind;
-   `backend/database/migrations/prod/2026-09-18_messaging_to_group_model.sql` is the staged
-   runbook that closes it in place, with no data loss, and also restores realtime — PROD's
-   `supabase_realtime` publication is empty, so live message and notification delivery is
-   dead there today. That runbook has to run before beta reaches main regardless of this PR.
+   messaging schema being one migration behind. Do not apply parts by hand:
+   `backend/database/migrations/prod/2026-09-20_align_prod.sql` is one script that upgrades
+   messaging in place (no data loss), restores realtime — PROD's `supabase_realtime`
+   publication is empty, so live messages and notifications do not arrive there — installs the
+   current `handle_new_user`, then runs this whole file and the 2026-09-20 cleanup. Dev has had
+   all of it since 2026-09-20. It has to run on PROD before beta reaches main, regardless of
+   this PR. An agent cannot do it: the auto-mode classifier blocks schema writes to PROD.
 4. **Decisions.** D1–D16, plus: rename
    `react-day-picker` to `@daypicker/react` (same API); drop the unused staffing endpoints (D5
    keeps them); `num_members` as a DB trigger; a shared `Modal` primitive; react-query; serverless

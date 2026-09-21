@@ -67,9 +67,16 @@ code that depends on a schema change:
 4. Regenerate `supabase/schema.sql` (`npx supabase db dump -f supabase/schema.sql
    --schema public`) so the schema-as-code stays current.
 
-Pending as of 2026-09-08: `2026-09-08_perf_indexes_and_lints.sql` (indexes, duplicate
-index cleanup, RLS `auth.uid()` initplan fix, function `search_path`) — safe to apply
-at any time, independent of code.
+**Pending on PROD as of 2026-09-20:** `backend/database/migrations/prod/2026-09-20_align_prod.sql`.
+PROD is three migrations behind dev (group messaging, the `handle_new_user` fix, the perf
+migration) and its realtime publication is empty, so live messages and notifications do not
+arrive there. The bundle applies all of it in one transaction, drops no table and deletes no
+row, is safe under the code `main` runs today, and **must run before `beta` is merged into
+`main`**. Dev has had every step since 2026-09-20.
+
+PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. See
+`docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md` for that and for the rest of
+the deployment gaps (no CI or branch protection on `main`, squash-merged releases, no staging).
 
 ## Known serverless caveats
 

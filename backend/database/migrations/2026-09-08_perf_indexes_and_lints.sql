@@ -14,15 +14,16 @@
 --      do not — PROD has messages, conversations, conversation_reads and
 --      conversation_deletes, but no conversation_participants and none of the group
 --      messaging functions. Re-run the preflight rather than trusting this line.
---      prod/2026-09-18_messaging_to_group_model.sql closes that gap without losing data;
---      once it has run on PROD, every part of this file applies there.
+--      prod/2026-09-20_align_prod.sql runs the group messaging migration first (in place,
+--      no data lost) and then this whole file, so on PROD use that bundle rather than
+--      applying parts of this file on their own.
 --   3. record the apply dates here and regenerate supabase/schema.sql
 --
 -- Nothing in the application code depends on this file: it only makes existing queries
 -- cheaper and clears advisor findings. The parts below are independent and may be
 -- applied separately, in any order, whenever their migration reaches an environment.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-09-20 (recorded as `perf_indexes_and_lints`)   PROD ____-__-__
 --
 -- Everything is idempotent (IF NOT EXISTS / IF EXISTS / CREATE OR REPLACE-style
 -- policy recreation), so re-running is harmless. Tables added by the scrum-board

@@ -158,7 +158,9 @@ metadata, and `ApiError` exposes the backend's `code`.
   its header first and apply only the parts whose tables and functions exist there, because PROD
   trails dev and the SQL editor aborts the whole script on the first missing relation. As measured
   on 2026-09-18 that is parts A, B, C1 and E: PROD has no `conversation_participants` and none of
-  the group messaging functions. Then regenerate `supabase/schema.sql`.
+  the group messaging functions. Applied to dev on 2026-09-20. For PROD use
+  `backend/database/migrations/prod/2026-09-20_align_prod.sql`, which brings messaging up to the
+  group model first and then runs this file whole. Then regenerate `supabase/schema.sql`.
 - **Projects page roster call** stays: the membership chart counts unregistered and dropped
   roster rows that the projects overview does not return (the audit called it redundant).
 - **Session token cache** in `apiRequest` not added: `supabase.auth.getSession()` reads the

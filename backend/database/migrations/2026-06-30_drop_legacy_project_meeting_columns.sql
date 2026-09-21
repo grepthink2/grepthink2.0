@@ -12,6 +12,9 @@
 -- return a PostgREST "column does not exist" 400 and breaks attendance/meeting
 -- editing. They were a dead select (never read), so the code change is behavior-
 -- preserving; this drop is purely mechanical once it is deployed.
+-- Applied: DEV 2026-09-20   PROD ____-__-__ (queued in prod/2026-09-20_align_prod.sql).
+-- Re-verified 2026-09-20: 0 non-null values in all three columns on both databases, and
+-- neither `main` nor `beta` selects them from `projects`.
 ALTER TABLE public.projects
   DROP COLUMN IF EXISTS zoom_url,
   DROP COLUMN IF EXISTS meeting_day,
