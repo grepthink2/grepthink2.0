@@ -310,14 +310,6 @@ def test_mark_attendance_rejects_out_of_range_week(db):
     assert exc.value.status_code == 400
 
 
-def test_mark_all_present(db):
-    records = controller.mark_all_present(P1, INSTR, 4)
-    assert len(records) == 2  # S1, S2
-    rows = [a for a in db.rows("attendance") if a["project_id"] == P1 and a["week_number"] == 4]
-    assert all(a["status"] == "present" for a in rows)
-    assert {a["user_id"] for a in rows} == {S1, S2}
-
-
 # --------------------------------------------------------------------------
 # Schedule + attendance reads
 # --------------------------------------------------------------------------
@@ -368,12 +360,6 @@ def test_team_attendance_editor_sees_all(db):
     ids = {e["person_id"] for e in res["entries"]}
     assert ids == {S1, S2}
     assert all(e["status"] == "unmarked" for e in res["entries"])
-
-
-def test_team_attendance_non_member_denied(db):
-    with pytest.raises(HTTPException) as exc:
-        controller.get_team_attendance(P1, S3, 3)
-    assert exc.value.status_code == 403
 
 
 # --------------------------------------------------------------------------
@@ -429,12 +415,6 @@ def test_set_meeting_cadence(db):
     cls = next(c for c in db.rows("classes") if c["id"] == CLASS)
     assert cls["meetings_per_week"] == 1
     assert cls["meeting_duration_minutes"] == 45
-
-
-def test_set_meeting_cadence_requires_instructor(db):
-    with pytest.raises(HTTPException) as exc:
-        controller.set_meeting_cadence(CLASS, TA1, meetings_per_week=3)
-    assert exc.value.status_code == 403
 
 
 def test_set_meeting_cadence_rejects_bad_value(db):

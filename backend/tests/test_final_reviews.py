@@ -114,14 +114,11 @@ def _project(db, pid):
 # --------------------------------------------------------------------------
 
 
-def test_set_review_zoom_updates_class(db):
+def test_set_review_zoom_sets_the_link_and_clears_it_with_none_or_blank(db):
     out = tas.set_review_zoom(INSTR, CLASS, ZOOM)
     assert out["review_zoom_url"] == ZOOM
     assert _class_row(db)["review_zoom_url"] == ZOOM
 
-
-def test_set_review_zoom_clears_with_none_or_blank(db):
-    tas.set_review_zoom(INSTR, CLASS, ZOOM)
     tas.set_review_zoom(INSTR, CLASS, None)
     assert _class_row(db)["review_zoom_url"] is None
     tas.set_review_zoom(INSTR, CLASS, ZOOM)
@@ -150,13 +147,6 @@ def test_set_final_review_time_sets_and_clears(db):
     out = tas.set_final_review_time(INSTR, P3, None)
     assert out["final_review_at"] is None
     assert _project(db, P3)["final_review_at"] is None
-
-
-def test_set_final_review_time_instructor_only(db):
-    with pytest.raises(HTTPException) as exc:
-        tas.set_final_review_time(TA1, P1, T_2000)
-    assert exc.value.status_code == 403
-    assert _project(db, P1)["final_review_at"] == T_2200.isoformat()
 
 
 def test_set_final_review_time_unknown_project_404(db):

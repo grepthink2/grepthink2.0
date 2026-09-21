@@ -192,12 +192,8 @@ EXPECTED_TIMELINE = [
 ]
 
 
-def test_roster_timeline_shape_and_order(timeline_db):
+def test_roster_timeline_shape_order_and_cost(timeline_db):
     assert classes.get_class_roster_timeline(CLASS, INSTR) == {"students": EXPECTED_TIMELINE}
-
-
-def test_roster_timeline_budget(timeline_db):
-    classes.get_class_roster_timeline(CLASS, INSTR)
     # class, enrollments with profiles, roster rows, projects with members: one wave
     assert timeline_db.executes <= 4, _trace(timeline_db)
 
@@ -287,10 +283,6 @@ def _stats(rate, full, partial, total, title, close):
 def test_turn_in_stats_for_the_open_tsr(turnin_db):
     out = classes.get_class_turn_in_stats(CLASS, INSTR)
     assert out == _stats(33, 1, 1, 3, "TSR 2", _day(2))
-
-
-def test_turn_in_stats_budget(turnin_db):
-    classes.get_class_turn_in_stats(CLASS, INSTR)
     # class, assignments and projects-with-members together, then the TSRs
     assert turnin_db.executes <= 4, _trace(turnin_db)
 

@@ -138,14 +138,18 @@ def test_rows_are_matched_back_to_users_the_way_postgres_compares_uuids():
 # ----------------------------------------------------------------- can_message
 
 
-def test_can_message_student_and_instructor(db):
-    assert messages.can_message(S1, INSTR) is True
-    assert db.executes <= 3, _trace(db)  # roles, then owned classes + enrollments
-
-
-def test_can_message_without_a_shared_class(db):
-    assert messages.can_message(S2, S3) is False
-    assert db.executes <= 3, _trace(db)
+@pytest.mark.parametrize(
+    ("a", "b", "allowed", "reads"),
+    [
+        pytest.param(S1, INSTR, True, 3, id="a-student-and-their-instructor"),
+        pytest.param(S1, S2, True, 3, id="two-students-of-one-class"),
+        pytest.param(S2, S3, False, 3, id="no-shared-class"),
+        pytest.param(S1, S1, False, 0, id="yourself"),
+    ],
+)
+def test_can_message(db, a, b, allowed, reads):
+    assert messages.can_message(a, b) is allowed
+    assert db.executes <= reads, _trace(db)  # roles, then owned classes + enrollments
 
 
 def test_can_message_instructor_pair_stops_after_the_role_read(db):
@@ -198,7 +202,8 @@ def test_list_contacts_for_a_student_in_two_classes(db):
     contacts = messages.list_contacts(caller_id=S1)
     assert [c["id"] for c in contacts] == [S2, INSTR, OTHER_INSTR, TA, S3]
     assert next(c for c in contacts if c["id"] == INSTR)["role"] == "instructor"
-    assert db.executes <= 2, _trace(db)
+    # Peers and their profiles are embedded: no separate enrollment, owner or profile reads.
+    assert _trace(db) == ["class_enrollments:select", "classes:select"]
 
 
 def test_list_contacts_for_an_instructor_who_is_a_ta_elsewhere(db):
@@ -239,12 +244,6 @@ def test_list_contacts_is_empty_without_classes_or_peers(db):
     db.reset_counter()
     assert messages.list_contacts(caller_id="instr-3") == []  # owns a class nobody joined
     assert db.executes <= 2, _trace(db)
-
-
-def test_list_contacts_reads_owned_and_enrolled_classes_once_each(db):
-    """Peers and their profiles are embedded: no separate enrollment, owner or profile reads."""
-    messages.list_contacts(caller_id=S1)
-    assert _trace(db) == ["class_enrollments:select", "classes:select"]
 
 
 # -------------------------------------------------------- _require_participant

@@ -6,6 +6,10 @@ service-role client through ``app.core.db`` (the one place tests patch), but unl
 two lookups answer 503 and ``create-user`` provisions through the caller's
 JWT-scoped client.
 
+``create-user`` also decides who an account is: it writes the role exactly once (a profile
+made by the signup trigger for a Google signup has none until its owner picks), and it takes
+the email from the verified token, never from the body.
+
 Every test pins ``app.core.db.service_client`` explicitly so none of them can reach
 a real project when a developer's ``.env`` carries a service key.
 """
@@ -21,6 +25,8 @@ from postgrest.exceptions import APIError
 from tests.conftest import header_for, make_token
 from tests.fake_supabase import FakeSupabase
 
+USER = "user-abc"  # the `sub` of conftest's auth_header token
+OLD = "2020-01-01T00:00:00+00:00"
 TAKEN = "taken@ucsc.edu"
 SIGNUP = {
     "email": "new@gmail.com",
@@ -51,6 +57,29 @@ def fake(monkeypatch):
         MagicMock(side_effect=AssertionError("JWT client used with a service client configured")),
     )
     return db
+
+
+@pytest.fixture
+def db(fake):
+    """``fake`` plus the caller's own profile as the signup trigger leaves it after a Google
+    signup: the row exists, the role is for its owner to choose."""
+    fake.rows("profiles").append(
+        {"id": USER, "email": "ann@gmail.com", "edu_email": None, "role": None, "created_at": OLD}
+    )
+    return fake
+
+
+def _profile(db: FakeSupabase, user_id: str = "user-abc") -> dict:
+    return next(p for p in db.rows("profiles") if p["id"] == user_id)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_role_cache():
+    from app.auth import controller
+
+    controller._role_cache.clear()
+    yield
+    controller._role_cache.clear()
 
 
 @pytest.fixture
@@ -113,20 +142,6 @@ def test_create_user_checks_edu_conflicts_on_the_service_client(client, fake):
     assert res.json()["detail"] == "This .edu email is already linked to another account."
     fake.auth.admin.delete_user.assert_called_once_with("user-abc")
     assert not [p for p in fake.rows("profiles") if p["id"] == "user-abc"]
-
-
-def test_create_user_answers_409_when_the_profile_exists(client, auth_header, fake):
-    fake.rows("profiles").append(
-        {
-            "id": "user-abc",
-            "email": "new@gmail.com",
-            "role": "student",
-            "created_at": "2020-01-01T00:00:00+00:00",
-        }
-    )
-    res = client.post("/api/create-user", headers=auth_header, json=SIGNUP)
-    assert res.status_code == 409
-    assert res.json()["detail"] == "Profile already exists for this user"
 
 
 def test_create_user_without_a_service_client_uses_the_callers_jwt_client(
@@ -201,3 +216,147 @@ def test_lookups_answer_503_when_the_database_is_unreachable(client, fake, monke
     res = client.post(path, json={"email": TAKEN})
     assert res.status_code == 503
     assert res.json()["code"] == "database_unavailable"
+
+
+# ── the role is picked once, by its owner; the email is the token's ─────────────────
+
+
+def _signup(role: str, email: str = "ann@gmail.com") -> dict:
+    return {"email": email, "userId": USER, "userType": role}
+
+
+ANN = header_for("ann@gmail.com")
+
+
+def test_create_user_sets_the_role_the_first_time_and_only_then(client, db):
+    _profile(db)["role"] = None
+
+    first = client.post("/api/create-user", headers=ANN, json=_signup("instructor"))
+
+    assert first.status_code == 200
+    assert first.json()["role"] == "instructor"
+    assert _profile(db)["role"] == "instructor"
+    pick = next(q for q in db.queries if q["table"] == "profiles" and q["op"] == "update")
+    # Conditional on the role still being empty: two racing picks cannot both land.
+    assert ("role", "is", None) in pick["filters"]
+
+    second = client.post("/api/create-user", headers=ANN, json=_signup("student"))
+
+    assert second.status_code == 409
+    assert second.json()["detail"] == "Profile already exists for this user"
+    assert _profile(db)["role"] == "instructor"
+
+
+def test_create_user_answers_409_when_another_request_picked_first(client, db):
+    _profile(db)["role"] = None
+    real_table = db.table
+
+    def table(name):
+        query = real_table(name)
+        if name == "profiles":
+            real_update = query.update
+
+            def update(payload):
+                if "role" in payload:  # the other request lands between our read and write
+                    _profile(db)["role"] = "student"
+                return real_update(payload)
+
+            query.update = update
+        return query
+
+    with patch.object(db, "table", side_effect=table):
+        res = client.post("/api/create-user", headers=ANN, json=_signup("instructor"))
+
+    assert res.status_code == 409
+    assert _profile(db)["role"] == "student"
+
+
+def test_the_first_pick_fills_in_the_edu_email_for_an_edu_login(client, db):
+    _profile(db).update({"role": None, "email": "ann@ucsc.edu"})
+
+    res = client.post(
+        "/api/create-user",
+        headers=header_for("ann@ucsc.edu"),
+        json=_signup("student", email=" Ann@UCSC.edu "),
+    )
+
+    assert res.status_code == 200
+    assert _profile(db)["edu_email"] == "ann@ucsc.edu"
+
+
+def test_the_first_pick_survives_an_edu_address_someone_else_holds(client, db):
+    _profile(db).update({"role": None, "email": "bo@ucsc.edu"})
+    from app.core.errors import DatabaseConflictError
+
+    real_table = db.table
+
+    def table(name):
+        query = real_table(name)
+        if name == "profiles":
+            real_update = query.update
+
+            def update(payload):
+                if "edu_email" in payload:  # profiles_edu_email_key
+                    raise DatabaseConflictError(operation="write", target="profiles")
+                return real_update(payload)
+
+            query.update = update
+        return query
+
+    with patch.object(db, "table", side_effect=table):
+        res = client.post(
+            "/api/create-user",
+            headers=header_for("bo@ucsc.edu"),
+            json=_signup("student", email="bo@ucsc.edu"),
+        )
+
+    assert res.status_code == 200
+    assert _profile(db)["role"] == "student"
+    assert _profile(db)["edu_email"] is None
+
+
+@pytest.mark.parametrize(
+    ("token_email", "body_email"),
+    [
+        ("ann@gmail.com", "bo@ucsc.edu"),  # a classmate's roster address
+        ("ann@gmail.com", ""),
+        (None, "ann@gmail.com"),  # a token with no verified address proves nothing
+    ],
+)
+def test_create_user_takes_the_email_from_the_token_not_the_body(
+    client, auth_header, db, token_email, body_email
+):
+    _profile(db)["role"] = None
+    headers = header_for(token_email) if token_email else auth_header
+
+    res = client.post(
+        "/api/create-user", headers=headers, json=_signup("student", email=body_email)
+    )
+
+    assert res.status_code == 403
+    assert res.json()["detail"] == "Email mismatch between Token and Body"
+    assert _profile(db)["role"] is None
+    assert _profile(db)["edu_email"] is None
+
+
+def test_a_missing_role_is_never_cached(db):
+    from app.auth.controller import get_user_role
+
+    _profile(db)["role"] = None
+    assert get_user_role(USER) is None
+
+    _profile(db)["role"] = "student"
+
+    # Picking a role must take effect on the very next request, on every instance.
+    assert get_user_role(USER) == "student"
+
+
+def test_a_chosen_role_is_still_cached(db):
+    from app.auth.controller import get_user_role
+
+    _profile(db)["role"] = "student"
+    assert get_user_role(USER) == "student"
+    db.reset_counter()
+
+    assert get_user_role(USER) == "student"
+    assert db.executes == 0

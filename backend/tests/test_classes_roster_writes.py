@@ -154,8 +154,17 @@ def _notified(db, pid: str) -> Counter:
 # -------------------------------------------------- dropped students on teams
 
 
-def test_dropped_students_leave_their_teams_and_teammates_hear_about_it(db):
+def test_dropped_students_leave_their_teams_and_only_those_who_stay_hear_about_it(db):
     assert classes._remove_dropped_roster_students_from_teams(db, CLASS) == 3
+
+    # Counted before anything below touches the fake: roster + projects-with-members reads,
+    # one membership delete, a recount read and one update per affected project (2), one
+    # notification insert, one request delete.
+    assert db.executes <= 8, _trace(db)
+    assert [q["op"] for q in db.queries if q["table"] == "notifications"] == ["insert"]
+    assert [
+        q["op"] for q in db.queries if q["table"] == "project_members" and q["op"] in WRITE_OPS
+    ] == ["delete"]
 
     assert _members(db, P1) == [S1, S4]
     assert _members(db, P2) == [S7]
@@ -178,27 +187,10 @@ def test_dropped_students_leave_their_teams_and_teammates_hear_about_it(db):
         # no name on the roster row: the email stands in
         's5@ucsc.edu has dropped the course and was removed from "Beta".',
     ]
-
-
-def test_students_dropped_from_the_same_team_are_not_told_about_each_other(db):
-    # S2 and S5 both leave Beta. Only S7, who stays, is notified (about each of them).
-    classes._remove_dropped_roster_students_from_teams(db, CLASS)
+    # S2 and S5 both left Beta. Only S7, who stays, is told (about each of them).
     assert _notified(db, P2) == Counter({S7: 2})
 
-
-def test_dropping_students_costs_a_fixed_number_of_writes(db):
-    classes._remove_dropped_roster_students_from_teams(db, CLASS)
-    # roster + projects-with-members reads, one membership delete, a recount read and
-    # one update per affected project (2), one notification insert, one request delete
-    assert db.executes <= 8, _trace(db)
-    assert [q["op"] for q in db.queries if q["table"] == "notifications"] == ["insert"]
-    assert [
-        q["op"] for q in db.queries if q["table"] == "project_members" and q["op"] in WRITE_OPS
-    ] == ["delete"]
-
-
-def test_pending_join_requests_of_dropped_students_are_cancelled(db):
-    classes._remove_dropped_roster_students_from_teams(db, CLASS)
+    # Their pending join requests are cancelled; nothing else is.
     assert sorted(r["id"] for r in db.rows("project_join_requests")) == [
         "jr-s1-p2",
         "jr-s1-p3",
@@ -247,27 +239,20 @@ def test_roster_upload_reports_how_many_students_left_teams(db):
 
 
 def test_removing_a_student_clears_their_class_state(db):
+    next(p for p in db.rows("projects") if p["id"] == P1)["num_members"] = 9  # drifted
+
     out = classes.remove_student_from_class(CLASS, S1, INSTR)
+
     assert out == {"message": "Student removed successfully", "student_id": S1}
+    # The memberships are deleted without being read first: class, projects, membership
+    # delete, recount read + 1 update, join requests, assigned TA, review TAs, enrollment.
+    assert [q["op"] for q in db.queries if q["table"] == "project_members"][0] == "delete"
+    assert db.executes <= 9, _trace(db)
     assert _members(db, P1) == [S3, S4]
-    assert _num_members(db, P1) == 2
+    assert _num_members(db, P1) == 2  # recounted from the rows, not decremented from 9
     # the pending request is cancelled; the approved one stays
     assert [r["id"] for r in db.rows("project_join_requests") if r["user_id"] == S1] == ["jr-s1-p3"]
     assert S1 not in {e["user_id"] for e in db.rows("class_enrollments")}
-
-
-def test_removal_recounts_num_members_from_rows(db):
-    next(p for p in db.rows("projects") if p["id"] == P1)["num_members"] = 9  # drifted
-    classes.remove_student_from_class(CLASS, S1, INSTR)
-    assert _num_members(db, P1) == 2
-
-
-def test_removal_deletes_memberships_without_reading_them_first(db):
-    classes.remove_student_from_class(CLASS, S1, INSTR)
-    assert [q["op"] for q in db.queries if q["table"] == "project_members"][0] == "delete"
-    # class, projects, membership delete, recount read + 1 update, join requests,
-    # assigned TA, review TAs, enrollment
-    assert db.executes <= 9, _trace(db)
 
 
 def test_removing_a_ta_clears_their_team_assignment_and_review_claims(db):
