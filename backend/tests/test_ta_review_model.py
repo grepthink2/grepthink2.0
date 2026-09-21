@@ -8,16 +8,16 @@ Tests for the unified TA-review model:
 
 Runs the real controllers against the in-memory FakeSupabase.
 """
+
 import pytest
 from fastapi import HTTPException
 
-import app.tas.controller as tas
 import app.assignments.controller as assignments
+import app.tas.controller as tas
 from tests.fake_supabase import FakeSupabase
 
-
 INSTR = "instructor-1"
-TA1 = "ta-1"   # assigned TA (main reviewer) of P1
+TA1 = "ta-1"  # assigned TA (main reviewer) of P1
 TA2 = "ta-2"
 TA3 = "ta-3"
 S1 = "student-1"
@@ -27,18 +27,37 @@ P2 = "proj-2"  # no assigned TA
 
 
 def _profile(uid, first):
-    return {"id": uid, "email": f"{uid}@ucsc.edu", "first_name": first, "last_name": "X", "image_url": None}
+    return {
+        "id": uid,
+        "email": f"{uid}@ucsc.edu",
+        "first_name": first,
+        "last_name": "X",
+        "image_url": None,
+    }
 
 
 @pytest.fixture
 def db(monkeypatch):
     fake = FakeSupabase(
-        profiles=[_profile(INSTR, "Ina"), _profile(TA1, "Tara"), _profile(TA2, "Tess"),
-                  _profile(TA3, "Tom"), _profile(S1, "Sam")],
+        relations={
+            ("projects", "classes"): ("class_id", "id", False),
+            ("projects", "project_members"): ("id", "project_id", True),
+        },
+        profiles=[
+            _profile(INSTR, "Ina"),
+            _profile(TA1, "Tara"),
+            _profile(TA2, "Tess"),
+            _profile(TA3, "Tom"),
+            _profile(S1, "Sam"),
+        ],
         classes=[{"id": CLASS, "created_by": INSTR, "review_period_open": False}],
         class_enrollments=[
-            {"id": f"enr-{u}", "class_id": CLASS, "user_id": u,
-             "enrollment_role": ("ta" if u in (TA1, TA2, TA3) else "student")}
+            {
+                "id": f"enr-{u}",
+                "class_id": CLASS,
+                "user_id": u,
+                "enrollment_role": ("ta" if u in (TA1, TA2, TA3) else "student"),
+            }
             for u in (TA1, TA2, TA3, S1)
         ],
         projects=[
@@ -46,14 +65,22 @@ def db(monkeypatch):
             {"id": P2, "class_id": CLASS, "name": "Beta", "assigned_ta_id": None},
         ],
         assignments=[
-            {"id": "a1", "class_id": CLASS, "Title": "TSR 1", "assignment_type": "tsr",
-             "open_date": "2026-07-01", "close_date": "2026-07-08", "status": "open"},
+            {
+                "id": "a1",
+                "class_id": CLASS,
+                "Title": "TSR 1",
+                "assignment_type": "tsr",
+                "open_date": "2026-07-01",
+                "close_date": "2026-07-08",
+                "status": "open",
+            },
         ],
         project_review_tas=[],
     )
     for mod in (tas, assignments):
         monkeypatch.setattr(mod, "service_client", fake, raising=False)
         monkeypatch.setattr(mod, "supabase", fake, raising=False)
+        monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
 
 
@@ -61,19 +88,22 @@ def db(monkeypatch):
 # TSR-overview access + TA Review targets read projects.assigned_ta_id
 # --------------------------------------------------------------------------
 
+
 def test_tsr_access_instructor_unrestricted(db):
-    assert assignments._resolve_tsr_overview_access(db, INSTR, CLASS) is None
+    projects = assignments.get_instructor_tsr_overview(INSTR, "a1")["projects"]
+    assert {p["id"] for p in projects} == {P1, P2}
 
 
 def test_tsr_access_ta_scoped_to_assigned(db):
-    assert assignments._resolve_tsr_overview_access(db, TA1, CLASS) == {P1}
+    projects = assignments.get_instructor_tsr_overview(TA1, "a1")["projects"]
+    assert [p["id"] for p in projects] == [P1]
     # TA2 is a class TA but isn't the assigned TA of any team -> empty scope.
-    assert assignments._resolve_tsr_overview_access(db, TA2, CLASS) == set()
+    assert assignments.get_instructor_tsr_overview(TA2, "a1")["projects"] == []
 
 
 def test_tsr_access_non_ta_forbidden(db):
     with pytest.raises(HTTPException) as exc:
-        assignments._resolve_tsr_overview_access(db, S1, CLASS)
+        assignments.get_instructor_tsr_overview(S1, "a1")
     assert exc.value.status_code == 403
 
 
@@ -102,12 +132,13 @@ def test_demote_clears_assigned_and_review(db):
     assert not [r for r in db.rows("project_review_tas") if r["user_id"] == TA1]
     # TSR access is revoked too (TA1 is now a student).
     with pytest.raises(HTTPException):
-        assignments._resolve_tsr_overview_access(db, TA1, CLASS)
+        assignments.get_instructor_tsr_overview(TA1, "a1")
 
 
 # --------------------------------------------------------------------------
 # End-of-quarter additional-reviewer mechanics
 # --------------------------------------------------------------------------
+
 
 def test_self_appoint_blocked_when_window_closed(db):
     with pytest.raises(HTTPException) as exc:

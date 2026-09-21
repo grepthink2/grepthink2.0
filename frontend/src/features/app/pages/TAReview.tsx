@@ -8,43 +8,57 @@ import TSRView from '@features/app/components/TSRS/TSRView';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './TAReview.scss';
 
+interface ReviewTargets {
+  classId: string;
+  assignments: ApiAssignment[];
+  projects: { id: string; name: string | null }[];
+  /** Set when loading this class's targets failed. */
+  error: string | null;
+}
+
+const NO_ASSIGNMENTS: ApiAssignment[] = [];
+const NO_PROJECTS: ReviewTargets['projects'] = [];
+
 const TAReview: React.FC = () => {
   const { selectedClass } = useClass();
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [assignments, setAssignments] = useState<ApiAssignment[]>([]);
-  const [projects, setProjects] = useState<{ id: string; name: string | null }[]>([]);
+  const classId = selectedClass?.id ?? null;
+  /** The last review targets loaded, tagged with the class they belong to. */
+  const [targets, setTargets] = useState<ReviewTargets | null>(null);
+  const current = classId !== null && targets?.classId === classId ? targets : null;
+  const loading = classId !== null && current === null;
+  const error = current?.error ?? null;
+  const assignments = current?.assignments ?? NO_ASSIGNMENTS;
+  const projects = current?.projects ?? NO_PROJECTS;
 
   useEffect(() => {
-    if (!selectedClass?.id) {
-      setAssignments([]);
-      setProjects([]);
-      return;
-    }
+    if (!classId) return;
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    (async () => {
-      try {
-        const res = await api.getTAReviewTargets(selectedClass.id);
+    api.getTAReviewTargets(classId)
+      .then((res) => {
         if (cancelled) return;
-        setAssignments(res.assignments ?? []);
-        setProjects(res.projects ?? []);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load TA review data');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+        setTargets({
+          classId,
+          assignments: res.assignments ?? [],
+          projects: res.projects ?? [],
+          error: null,
+        });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setTargets({
+          classId,
+          assignments: [],
+          projects: [],
+          error: err instanceof Error ? err.message : 'Failed to load TA review data',
+        });
+      });
     return () => {
       cancelled = true;
     };
-  }, [selectedClass?.id]);
+  }, [classId]);
 
   const selectedAssignmentId = useMemo(() => {
     if (assignmentId && assignments.some((a) => a.id === assignmentId)) {

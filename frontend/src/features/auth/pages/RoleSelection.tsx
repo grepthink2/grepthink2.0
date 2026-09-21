@@ -28,7 +28,10 @@ const RoleSelection: React.FC = () => {
   const { user, isLoaded } = useUser();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string>('');
-  const [isChecking, setIsChecking] = React.useState(false);
+  // The signed-in user whose profile check below has finished; until it is
+  // the current `user`, that check is still running.
+  const [checkedUser, setCheckedUser] = React.useState<typeof user>(null);
+  const isChecking = isLoaded && user !== null && checkedUser !== user;
 
   // If an authenticated user already has a profile row, don't let them sit
   // on the role picker — send them to the app. This guards against users
@@ -37,7 +40,6 @@ const RoleSelection: React.FC = () => {
   React.useEffect(() => {
     if (!isLoaded || !user) return;
     let cancelled = false;
-    setIsChecking(true);
     (async () => {
       try {
         const me = await api.loginCheck();
@@ -51,7 +53,7 @@ const RoleSelection: React.FC = () => {
         // surface any real backend problem with a readable error.
         console.warn('[RoleSelection] loginCheck failed:', err);
       } finally {
-        if (!cancelled) setIsChecking(false);
+        if (!cancelled) setCheckedUser(user);
       }
     })();
     return () => {

@@ -53,6 +53,9 @@ const SORT_ACCESSORS: SortAccessors<UiStudent, RosterSortKey> = {
   projects: (s) => s.projects.join(', '),
 };
 
+/** Shared empty default instead of a new Set on every render. */
+const NO_INVITING_EMAILS = new Set<string>();
+
 const RosterList: React.FC<RosterListProps> = ({
   students,
   loading,
@@ -60,7 +63,7 @@ const RosterList: React.FC<RosterListProps> = ({
   showActions = false,
   onInvite,
   onRemove,
-  invitingEmails = new Set(),
+  invitingEmails = NO_INVITING_EMAILS,
   onAddStudent,
   onDeleteManual,
 }) => {

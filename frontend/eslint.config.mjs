@@ -4,6 +4,15 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
+// Every react-hooks rule is an error: exhaustive-deps and the React Compiler
+// readiness rules included (options kept). `npm run lint` also fails on any warning.
+const reactHooksRulesAsErrors = Object.fromEntries(
+  Object.entries(reactHooks.configs.recommended.rules).map(([rule, setting]) => [
+    rule,
+    Array.isArray(setting) ? ['error', ...setting.slice(1)] : 'error',
+  ]),
+);
+
 export default tseslint.config(
   // Ignore build artifacts and config files
   { ignores: ['dist', 'node_modules'] },
@@ -21,9 +30,11 @@ export default tseslint.config(
       'react-refresh': reactRefresh,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      ...reactHooksRulesAsErrors,
+      // `const { dropped, ...rest } = obj` is the idiomatic way to omit a key.
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
       'react-refresh/only-export-components': [
-        'warn',
+        'error',
         { allowConstantExport: true },
       ],
     },

@@ -1,4 +1,5 @@
 """HTTP handler for the contact form. Thin layer over controller.py."""
+
 from __future__ import annotations
 
 from fastapi import Request, Response, status

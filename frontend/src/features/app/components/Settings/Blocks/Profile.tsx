@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Camera } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
@@ -17,13 +17,20 @@ const Profile: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
-  useEffect(() => {
-    if (!user) return;
-    const meta = (user.user_metadata ?? {}) as Record<string, string>;
-    setFirstName(meta.first_name || '');
-    setLastName(meta.last_name || '');
-    setAvatarUrl(meta.avatar_url || null);
-  }, [user]);
+  // Fill the form from the account's saved profile when a user signs in or the
+  // account changes. Keyed by user id and adjusted during render, so it does
+  // not run again for every session refresh of the same account.
+  const userId = user?.id ?? null;
+  const [filledForUserId, setFilledForUserId] = useState<string | null>(null);
+  if (filledForUserId !== userId) {
+    setFilledForUserId(userId);
+    if (user) {
+      const meta = (user.user_metadata ?? {}) as Record<string, string>;
+      setFirstName(meta.first_name || '');
+      setLastName(meta.last_name || '');
+      setAvatarUrl(meta.avatar_url || null);
+    }
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

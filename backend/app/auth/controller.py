@@ -1,11 +1,12 @@
 """
 Authentication business logic
 """
-import logging
-import time
-import threading
 
-from app.database.client import service_client, supabase
+import logging
+import threading
+import time
+
+from app.core.db import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +56,9 @@ def get_user_role(user_id: str) -> str | None:
 
     The cache is populated with the value the database returned (including
     ``None`` for missing profile rows), so we never re-query the same id
-    repeatedly inside the TTL window. Database errors are not cached: they
-    log and return ``None`` for this call only.
+    repeatedly inside the TTL window. A failed lookup raises ``DatabaseError``
+    and is not cached, so callers answer 503 or 500 instead of treating a
+    database blip as "no role" (which used to surface as a 403).
 
     Args:
         user_id: User's unique identifier
@@ -73,23 +75,11 @@ def get_user_role(user_id: str) -> str | None:
         if cached is not None and cached[1] > now:
             return cached[0]
 
-    try:
-        client = service_client if service_client else supabase
-        result = client.table('profiles').select('role').eq('id', user_id).execute()
-        role = (
-            result.data[0].get('role')
-            if result.data and len(result.data) > 0
-            else None
-        )
-        if role is None:
-            logger.debug("get_user_role: no profile row | user_id=%s", user_id)
-        with _role_cache_lock:
-            _role_cache[user_id] = (role, now + _ROLE_CACHE_TTL_SECONDS)
-        return role
-    except Exception:
-        # WARN: Silent failure path — callers just get None back and can't
-        # distinguish "no role" from "DB error". Returning None here means
-        # downstream role checks may silently deny access instead of failing
-        # loud. See CODE_REVIEW.md #17.
-        logger.exception("get_user_role: lookup failed | user_id=%s", user_id)
-    return None
+    client = get_client()
+    result = client.table("profiles").select("role").eq("id", user_id).execute()
+    role = result.data[0].get("role") if result.data else None
+    if role is None:
+        logger.debug("get_user_role: no profile row | user_id=%s", user_id)
+    with _role_cache_lock:
+        _role_cache[user_id] = (role, now + _ROLE_CACHE_TTL_SECONDS)
+    return role

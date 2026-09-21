@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { resolveSupabaseEnv } from './supabaseEnv';
 
 /**
  * Supabase client for GrepThink 2.0.
@@ -16,24 +17,16 @@ import { createClient } from '@supabase/supabase-js';
  * backend-for-frontend pattern we'll reintroduce cookie-based storage
  * via HttpOnly server-set cookies. See AUTH.md for background.
  */
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL ||
-  import.meta.env.SUPABASE_URL;
+// Only VITE_-prefixed variables reach the bundle (see vite.config.ts envPrefix).
+const { url: supabaseUrl, anonKey: supabaseAnonKey, missing } = resolveSupabaseEnv(import.meta.env);
 
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.VITE_SUPABASE_KEY ||
-  import.meta.env.SUPABASE_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  // eslint-disable-next-line no-console
+if (missing.length > 0) {
   console.error(
-    'Missing Supabase configuration. Set VITE_SUPABASE_URL and ' +
-      'VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_KEY) in your .env.'
+    `Missing Supabase configuration. Set ${missing.join(' and ')} in the repo-root .env.`,
   );
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

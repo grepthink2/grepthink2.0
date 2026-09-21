@@ -12,6 +12,7 @@ SPA ships its own CSP via nginx; this one only governs the few bytes of
 HTML the API returns on errors. Do not relax it to allow scripts — the
 FastAPI host should never serve executable JS.
 """
+
 from __future__ import annotations
 
 from starlette.middleware.base import BaseHTTPMiddleware

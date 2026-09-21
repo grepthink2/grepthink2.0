@@ -1,4 +1,5 @@
 """HTTP handlers for the messages feature. Thin layer over controller.py."""
+
 from __future__ import annotations
 
 from fastapi import Depends, Request, Response, status
@@ -51,8 +52,10 @@ def list_messages(
     limit: int = 50,
 ) -> MessagesListResponse:
     page = controller.list_messages(
-        conversation_id=conversation_id, caller_id=user_id,
-        before=before, limit=limit,
+        conversation_id=conversation_id,
+        caller_id=user_id,
+        before=before,
+        limit=limit,
     )
     return MessagesListResponse(**page)
 
@@ -70,6 +73,7 @@ def delete_conversation(
     user_id: str = Depends(require_user),
 ) -> Response:
     controller.delete_conversation_for_user(
-        conversation_id=conversation_id, caller_id=user_id,
+        conversation_id=conversation_id,
+        caller_id=user_id,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)

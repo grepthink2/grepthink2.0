@@ -30,22 +30,18 @@ const ProjectDetails: React.FC = () => {
   const [project, setProject] = useState<ApiProject | null>(null);
   const [members, setMembers] = useState<ApiProjectMember[]>([]);
   const [tas, setTas] = useState<ApiProjectTA[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  /** How the latest load finished, and which project it was for. */
+  const [loadStatus, setLoadStatus] = useState<{ projectId: string; error: string | null } | null>(null);
   const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!projectId) {
-      setError('Missing project ID');
-      setLoading(false);
-      return;
-    }
+    if (!projectId) return;
 
     let isMounted = true;
 
     const fetchData = async () => {
+      let error: string | null = null;
       try {
-        setLoading(true);
         const [projectRes, membersRes, tasRes] = await Promise.all([
           api.getProject(projectId),
           api.getProjectMembers(projectId).catch(() => ({ members: [] as ApiProjectMember[] })),
@@ -66,17 +62,10 @@ const ProjectDetails: React.FC = () => {
             setPendingRequestId(pending?.request_id ?? null);
           }
         }
-
-        setError(null);
       } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load project');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        error = err instanceof Error ? err.message : 'Failed to load project';
       }
+      if (isMounted) setLoadStatus({ projectId, error });
     };
 
     fetchData();
@@ -122,6 +111,10 @@ const ProjectDetails: React.FC = () => {
       // keep current state
     }
   }, [projectId]);
+
+  // Until the load for this project settles, show the skeleton.
+  const loading = Boolean(projectId) && loadStatus?.projectId !== projectId;
+  const error = projectId ? (loadStatus?.error ?? null) : 'Missing project ID';
 
   if (loading) {
     return (

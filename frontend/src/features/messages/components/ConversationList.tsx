@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { LuSearch, LuX } from 'react-icons/lu';
+import { Search as SearchIcon, X as XIcon } from 'lucide-react';
 import type { ApiConversationSummary } from '@/lib/api';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { useAuth } from '@/lib/auth';
@@ -82,9 +82,9 @@ export const ConversationList: React.FC<Props> = ({
           }}
         >
           {searchOpen ? (
-            <LuX size={18} aria-hidden="true" />
+            <XIcon size={18} aria-hidden="true" />
           ) : (
-            <LuSearch size={18} aria-hidden="true" />
+            <SearchIcon size={18} aria-hidden="true" />
           )}
         </button>
         {!searchOpen && <NewConversationSearch />}

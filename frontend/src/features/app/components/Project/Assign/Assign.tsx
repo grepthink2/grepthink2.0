@@ -149,6 +149,22 @@ function toStudent(
   };
 }
 
+/** Everything the page is built from, read from the server for one class. */
+async function fetchStaffingData(classId: string) {
+  const [rankRes, studentRes, assignRes] = await Promise.all([
+    api.getStaffingProjectRank(classId),
+    api.getStaffingStudents(classId),
+    api.getStaffingAssignments(classId),
+  ]);
+  return {
+    projects: rankRes.projects.map(toAssignProject),
+    students: studentRes.students,
+    assignments: assignRes.assignments,
+  };
+}
+
+type StaffingData = Awaited<ReturnType<typeof fetchStaffingData>>;
+
 const Assign: React.FC = () => {
   const navigate = useNavigate();
   const { selectedClass } = useClass();
@@ -158,15 +174,67 @@ const Assign: React.FC = () => {
   const [studentRows, setStudentRows] = useState<ApiStaffingStudent[]>([]);
   const [assignmentRows, setAssignmentRows] = useState<ApiStaffingAssignmentRow[]>([]);
   const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(classId !== null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The last seat change or save that failed. It is kept apart from `error`,
+  // which `refresh` resets, so it survives the reload after the failure.
+  const [actionError, setActionError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [savedAssignmentRows, setSavedAssignmentRows] = useState<
     ApiStaffingAssignmentRow[]
   >([]);
 
-  const refresh = useCallback(async (showSpinner = false) => {
+  // A different class loads from scratch: skeleton on, old errors cleared. With
+  // no class there is nothing to load, so drop the previous class's rows.
+  const [prevClassId, setPrevClassId] = useState(classId);
+  if (prevClassId !== classId) {
+    setPrevClassId(classId);
+    setActionError(null);
+    if (classId) {
+      setError(null);
+      setLoading(true);
+    } else {
+      setProjects([]);
+      setStudentRows([]);
+      setAssignmentRows([]);
+      setLoading(false);
+    }
+  }
+
+  const applyStaffingData = useCallback((data: StaffingData) => {
+    setProjects(data.projects);
+    setStudentRows(data.students);
+    setAssignmentRows(data.assignments);
+    setSavedAssignmentRows(cloneAssignmentRows(data.assignments));
+    setSaveMessage(null);
+    // Preserve the focused project across refreshes when possible.
+    setFocusedProjectId((curr) => {
+      if (curr && data.projects.some((p) => p.id === curr)) return curr;
+      return data.projects[0]?.id ?? null;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!classId) return;
+    let ignore = false;
+    fetchStaffingData(classId)
+      .then((data) => {
+        if (!ignore) applyStaffingData(data);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) setError(err instanceof Error ? err.message : 'Failed to load assignments');
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [classId, applyStaffingData]);
+
+  // Re-read the class in place after an edit, without the loading skeleton.
+  const refresh = async () => {
     if (!classId) {
       setProjects([]);
       setStudentRows([]);
@@ -175,34 +243,12 @@ const Assign: React.FC = () => {
       return;
     }
     setError(null);
-    if (showSpinner) setLoading(true);
     try {
-      const [rankRes, studentRes, assignRes] = await Promise.all([
-        api.getStaffingProjectRank(classId),
-        api.getStaffingStudents(classId),
-        api.getStaffingAssignments(classId),
-      ]);
-      const nextProjects = rankRes.projects.map(toAssignProject);
-      setProjects(nextProjects);
-      setStudentRows(studentRes.students);
-      setAssignmentRows(assignRes.assignments);
-      setSavedAssignmentRows(cloneAssignmentRows(assignRes.assignments));
-      setSaveMessage(null);
-      // Preserve the focused project across refreshes when possible.
-      setFocusedProjectId((curr) => {
-        if (curr && nextProjects.some((p) => p.id === curr)) return curr;
-        return nextProjects[0]?.id ?? null;
-      });
+      applyStaffingData(await fetchStaffingData(classId));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load assignments');
-    } finally {
-      if (showSpinner) setLoading(false);
     }
-  }, [classId]);
-
-  useEffect(() => {
-    void refresh(true);
-  }, [refresh]);
+  };
 
   const hasUnsavedAssignments = useMemo(
     () =>
@@ -324,13 +370,14 @@ const Assign: React.FC = () => {
     if (!focusedProject) return;
     const projectId = focusedProject.id;
     const newTotal = focusedProject.totalSeats + 1;
+    setActionError(null);
     setProjects((prev) =>
       prev.map((p) => (p.id === projectId ? { ...p, totalSeats: newTotal } : p)),
     );
     try {
       await api.updateProject(projectId, { team_size: newTotal });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add seat');
+      setActionError(err instanceof Error ? err.message : 'Failed to add seat');
       void refresh();
     }
   };
@@ -341,13 +388,14 @@ const Assign: React.FC = () => {
     if (focusedProject.totalSeats - 1 < focusedProject.seatsTaken) return;
     const projectId = focusedProject.id;
     const newTotal = Math.max(focusedProject.totalSeats - 1, 0);
+    setActionError(null);
     setProjects((prev) =>
       prev.map((p) => (p.id === projectId ? { ...p, totalSeats: newTotal } : p)),
     );
     try {
       await api.updateProject(projectId, { team_size: newTotal });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove seat');
+      setActionError(err instanceof Error ? err.message : 'Failed to remove seat');
       void refresh();
     }
   };
@@ -394,6 +442,7 @@ const Assign: React.FC = () => {
     if (!classId) return;
     setSaving(true);
     setError(null);
+    setActionError(null);
     setSaveMessage(null);
     const current = assignmentMap(assignmentRows);
     const saved = assignmentMap(savedAssignmentRows);
@@ -409,17 +458,18 @@ const Assign: React.FC = () => {
         }
       }
       setSavedAssignmentRows(cloneAssignmentRows(assignmentRows));
+      // Set after the reload, which clears the message when it applies the new data.
+      await refresh();
       setSaveMessage(
         dirty
           ? 'Assignments saved and applied.'
           : 'Assignments are already up to date with the server.',
       );
-      await refresh();
     } catch (err) {
-      setError(
+      setActionError(
         err instanceof Error ? err.message : 'Failed to save assignments',
       );
-      await refresh(false);
+      await refresh();
     } finally {
       setSaving(false);
     }
@@ -456,6 +506,11 @@ const Assign: React.FC = () => {
         </button>
       </div>
 
+      {actionError && (
+        <p className="assign-page__error" role="alert">
+          {actionError}
+        </p>
+      )}
       {error && <p className="assign-page__error">{error}</p>}
       {saveMessage && !error && (
         <p className="assign-page__save-message">{saveMessage}</p>

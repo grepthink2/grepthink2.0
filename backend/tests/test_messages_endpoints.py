@@ -5,14 +5,15 @@ and mock the controller layer at function boundaries — that's the
 right altitude: it validates routing, auth dep injection, request/response
 shapes, and error mapping, without re-testing controller internals.
 """
+
 from __future__ import annotations
+
 from unittest.mock import patch
 
-import pytest
 from fastapi import HTTPException
 
-
 # ----- list_conversations ---------------------------------------------------
+
 
 @patch("app.messages.views.controller.list_inbox", return_value=[])
 def test_get_conversations_empty(_list, client, auth_header):
@@ -23,16 +24,22 @@ def test_get_conversations_empty(_list, client, auth_header):
 
 @patch("app.messages.views.controller.list_inbox")
 def test_get_conversations_returns_summary(_list, client, auth_header):
-    _list.return_value = [{
-        "id": "c1",
-        "other_user": {"id": "bob", "email": "bob@x", "name": "Bob"},
-        "last_message": {"id": "m", "sender_id": "bob", "body": "hi",
-                         "created_at": "2026-04-23T12:00:00Z"},
-        "unread_count": 2,
-        "other_user_last_read_at": None,
-        "can_send": True,
-        "last_message_at": "2026-04-23T12:00:00Z",
-    }]
+    _list.return_value = [
+        {
+            "id": "c1",
+            "other_user": {"id": "bob", "email": "bob@x", "name": "Bob"},
+            "last_message": {
+                "id": "m",
+                "sender_id": "bob",
+                "body": "hi",
+                "created_at": "2026-04-23T12:00:00Z",
+            },
+            "unread_count": 2,
+            "other_user_last_read_at": None,
+            "can_send": True,
+            "last_message_at": "2026-04-23T12:00:00Z",
+        }
+    ]
     res = client.get("/api/messages/conversations", headers=auth_header)
     assert res.status_code == 200
     body = res.json()
@@ -55,12 +62,24 @@ def test_get_conversations_v2_team_and_dm_shapes(_list, client, auth_header):
             "project_id": "proj-1",
             "team_name": "Team Rocket",
             "participants": [
-                {"id": "alice", "role": "member", "email": "a@ucsc.edu",
-                 "first_name": "Alice", "last_name": "A", "image_url": None,
-                 "last_read_at": None},
-                {"id": "ta-1", "role": "ta", "email": "t@ucsc.edu",
-                 "first_name": "Tess", "last_name": "A", "image_url": None,
-                 "last_read_at": None},
+                {
+                    "id": "alice",
+                    "role": "member",
+                    "email": "a@ucsc.edu",
+                    "first_name": "Alice",
+                    "last_name": "A",
+                    "image_url": None,
+                    "last_read_at": None,
+                },
+                {
+                    "id": "ta-1",
+                    "role": "ta",
+                    "email": "t@ucsc.edu",
+                    "first_name": "Tess",
+                    "last_name": "A",
+                    "image_url": None,
+                    "last_read_at": None,
+                },
             ],
             "other_user": None,
             "last_message": None,
@@ -75,18 +94,39 @@ def test_get_conversations_v2_team_and_dm_shapes(_list, client, auth_header):
             "project_id": None,
             "team_name": None,
             "participants": [
-                {"id": "alice", "role": "member", "email": "a@ucsc.edu",
-                 "first_name": "Alice", "last_name": "A", "image_url": None,
-                 "last_read_at": "2026-07-09T00:00:00+00:00"},
-                {"id": "bob", "role": "member", "email": "b@ucsc.edu",
-                 "first_name": "Bob", "last_name": "B", "image_url": None,
-                 "last_read_at": "2026-07-08T00:00:00+00:00"},
+                {
+                    "id": "alice",
+                    "role": "member",
+                    "email": "a@ucsc.edu",
+                    "first_name": "Alice",
+                    "last_name": "A",
+                    "image_url": None,
+                    "last_read_at": "2026-07-09T00:00:00+00:00",
+                },
+                {
+                    "id": "bob",
+                    "role": "member",
+                    "email": "b@ucsc.edu",
+                    "first_name": "Bob",
+                    "last_name": "B",
+                    "image_url": None,
+                    "last_read_at": "2026-07-08T00:00:00+00:00",
+                },
             ],
-            "other_user": {"id": "bob", "email": "b@ucsc.edu",
-                           "name": "Bob B", "first_name": "Bob",
-                           "last_name": "B", "image_url": None},
-            "last_message": {"id": "m9", "sender_id": "bob", "body": "yo",
-                             "created_at": "2026-07-10T00:00:00+00:00"},
+            "other_user": {
+                "id": "bob",
+                "email": "b@ucsc.edu",
+                "name": "Bob B",
+                "first_name": "Bob",
+                "last_name": "B",
+                "image_url": None,
+            },
+            "last_message": {
+                "id": "m9",
+                "sender_id": "bob",
+                "body": "yo",
+                "created_at": "2026-07-10T00:00:00+00:00",
+            },
             "unread_count": 2,
             "other_user_last_read_at": "2026-07-08T00:00:00+00:00",
             "can_send": True,
@@ -116,6 +156,7 @@ def test_get_conversations_requires_auth(client):
 
 # ----- list_contacts --------------------------------------------------------
 
+
 def test_get_contacts_requires_auth(client):
     res = client.get("/api/messages/contacts")
     assert res.status_code == 401
@@ -123,15 +164,17 @@ def test_get_contacts_requires_auth(client):
 
 @patch("app.messages.views.controller.list_contacts")
 def test_get_contacts_returns_contacts(lst, client, auth_header):
-    lst.return_value = [{
-        "id": "stu1",
-        "name": "Samantha Stone",
-        "first_name": "Samantha",
-        "last_name": "Stone",
-        "email": "s@u.e",
-        "image_url": None,
-        "role": "student",
-    }]
+    lst.return_value = [
+        {
+            "id": "stu1",
+            "name": "Samantha Stone",
+            "first_name": "Samantha",
+            "last_name": "Stone",
+            "email": "s@u.e",
+            "image_url": None,
+            "role": "student",
+        }
+    ]
     res = client.get("/api/messages/contacts?q=sam", headers=auth_header)
     assert res.status_code == 200
     contacts = res.json()["contacts"]
@@ -145,12 +188,17 @@ def test_get_contacts_returns_contacts(lst, client, auth_header):
 
 # ----- send_message ---------------------------------------------------------
 
+
 @patch("app.messages.views.controller.send_message")
 def test_post_message_success(send, client, auth_header):
     send.return_value = {
         "conversation_id": "c1",
-        "message": {"id": "m1", "sender_id": "user-abc",
-                    "body": "hi", "created_at": "2026-04-23T12:00:00Z"},
+        "message": {
+            "id": "m1",
+            "sender_id": "user-abc",
+            "body": "hi",
+            "created_at": "2026-04-23T12:00:00Z",
+        },
     }
     res = client.post(
         "/api/messages",
@@ -192,12 +240,11 @@ def test_post_message_propagates_403(send, client, auth_header):
 
 # ----- list_messages -------------------------------------------------------
 
+
 @patch("app.messages.views.controller.list_messages")
 def test_get_messages_returns_list(lst, client, auth_header):
     lst.return_value = {
-        "messages": [
-            {"id": "m1", "sender_id": "bob", "body": "hi", "created_at": "t1"}
-        ],
+        "messages": [{"id": "m1", "sender_id": "bob", "body": "hi", "created_at": "t1"}],
         "next_cursor": None,
     }
     res = client.get("/api/messages/conversations/c1/messages", headers=auth_header)
@@ -206,14 +253,17 @@ def test_get_messages_returns_list(lst, client, auth_header):
     assert res.json()["next_cursor"] is None
 
 
-@patch("app.messages.views.controller.list_messages",
-       side_effect=HTTPException(status_code=403, detail="Not a participant"))
+@patch(
+    "app.messages.views.controller.list_messages",
+    side_effect=HTTPException(status_code=403, detail="Not a participant"),
+)
 def test_get_messages_403_for_non_participant(_lst, client, auth_header):
     res = client.get("/api/messages/conversations/c1/messages", headers=auth_header)
     assert res.status_code == 403
 
 
 # ----- mark_read ----------------------------------------------------------
+
 
 @patch("app.messages.views.controller.mark_read", return_value=None)
 def test_mark_read_returns_204(_mark, client, auth_header):
@@ -222,6 +272,7 @@ def test_mark_read_returns_204(_mark, client, auth_header):
 
 
 # ----- delete_conversation -------------------------------------------------
+
 
 @patch("app.messages.views.controller.delete_conversation_for_user", return_value=None)
 def test_delete_conversation_returns_204(_del, client, auth_header):

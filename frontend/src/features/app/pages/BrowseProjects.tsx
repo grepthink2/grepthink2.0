@@ -1,36 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { useClass } from '@/lib/classContext';
+import { useClass, type Class } from '@/lib/classContext';
 import ProjectGrid, { ProjectGridSkeleton, type ProjectGridItem } from '@features/app/components/Project/ProjectGrid';
 import { toProjectGridItem } from '@features/app/components/Project/projectGridHelpers';
 import './BrowseProjects.scss';
 
+/** A completed load, and the class object it was made for. */
+interface ClassProjectsLoad {
+  forClass: Class;
+  projects: ProjectGridItem[];
+  error: string | null;
+}
+
 const BrowseProjects: React.FC = () => {
   const { selectedClass } = useClass();
-  const [projects, setProjects] = useState<ProjectGridItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<ClassProjectsLoad | null>(null);
 
   useEffect(() => {
-    if (!selectedClass) {
-      setLoading(false);
-      setProjects([]);
-      setError(null);
-      return;
-    }
+    if (!selectedClass) return;
 
     let isMounted = true;
 
     const fetchProjects = async () => {
       try {
-        setLoading(true);
         const response = await api.getClassProjects(selectedClass.id);
         if (!isMounted) return;
         const list = (response.projects ?? []).slice().sort((a, b) =>
           a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
         );
-        setProjects(
-          list.map((p) =>
+        setLoaded({
+          forClass: selectedClass,
+          projects: list.map((p) =>
             toProjectGridItem({
               id: p.id,
               name: p.name,
@@ -39,13 +39,15 @@ const BrowseProjects: React.FC = () => {
               image_url: p.image_url,
             }),
           ),
-        );
-        setError(null);
+          error: null,
+        });
       } catch (err) {
         if (!isMounted) return;
-        setError(err instanceof Error ? err.message : 'Failed to fetch projects');
-      } finally {
-        if (isMounted) setLoading(false);
+        setLoaded({
+          forClass: selectedClass,
+          projects: [],
+          error: err instanceof Error ? err.message : 'Failed to fetch projects',
+        });
       }
     };
 
@@ -64,7 +66,10 @@ const BrowseProjects: React.FC = () => {
     );
   }
 
-  if (loading) {
+  // Until a load for this class lands, it is still loading.
+  const current = loaded?.forClass === selectedClass ? loaded : null;
+
+  if (!current) {
     return (
       <div className="browse-projects">
         <header className="browse-projects__header">
@@ -75,10 +80,10 @@ const BrowseProjects: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (current.error) {
     return (
       <div className="browse-projects">
-        <div className="browse-projects__empty"><p>Error: {error}</p></div>
+        <div className="browse-projects__empty"><p>Error: {current.error}</p></div>
       </div>
     );
   }
@@ -87,9 +92,9 @@ const BrowseProjects: React.FC = () => {
     <div className="browse-projects">
       <header className="browse-projects__header">
         <h2 className="browse-projects__title">Project Count</h2>
-        <span className="browse-projects__count-badge">{projects.length}</span>
+        <span className="browse-projects__count-badge">{current.projects.length}</span>
       </header>
-      <ProjectGrid projects={projects} />
+      <ProjectGrid projects={current.projects} />
     </div>
   );
 };

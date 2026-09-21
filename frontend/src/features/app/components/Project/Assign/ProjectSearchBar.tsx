@@ -33,22 +33,19 @@ const ProjectSearchBar: React.FC<ProjectSearchBarProps> = ({
     );
   }, [projects, query]);
 
-  // Clamp highlight within bounds whenever results change.
-  useEffect(() => {
-    setHighlightIdx((prev) => {
-      if (results.length === 0) return 0;
-      return Math.min(prev, results.length - 1);
-    });
-  }, [results]);
+  // The stored index can point past a shorter result list; clamp it when read.
+  const clampIdx = (idx: number) =>
+    results.length === 0 ? 0 : Math.min(idx, results.length - 1);
+  const activeIdx = clampIdx(highlightIdx);
 
   // Auto-scroll the highlighted item into view.
   useEffect(() => {
     if (!open) return;
     const el = dropdownRef.current?.querySelector<HTMLButtonElement>(
-      `[data-idx="${highlightIdx}"]`,
+      `[data-idx="${activeIdx}"]`,
     );
     el?.scrollIntoView({ block: 'nearest' });
-  }, [highlightIdx, open]);
+  }, [activeIdx, open]);
 
   const handleSelect = (project: AssignProject) => {
     onSelect(project);
@@ -60,16 +57,16 @@ const ProjectSearchBar: React.FC<ProjectSearchBarProps> = ({
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (!open) setOpen(true);
-      setHighlightIdx((i) => (results.length === 0 ? 0 : (i + 1) % results.length));
+      setHighlightIdx((i) => (results.length === 0 ? 0 : (clampIdx(i) + 1) % results.length));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (!open) setOpen(true);
       setHighlightIdx((i) =>
-        results.length === 0 ? 0 : (i - 1 + results.length) % results.length,
+        results.length === 0 ? 0 : (clampIdx(i) - 1 + results.length) % results.length,
       );
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const selected = results[highlightIdx];
+      const selected = results[activeIdx];
       if (selected) handleSelect(selected);
     } else if (e.key === 'Escape') {
       setOpen(false);
@@ -111,7 +108,7 @@ const ProjectSearchBar: React.FC<ProjectSearchBarProps> = ({
           ) : (
             results.map((project, idx) => {
               const active = project.id === focusedProjectId;
-              const highlighted = idx === highlightIdx;
+              const highlighted = idx === activeIdx;
               return (
                 <li key={project.id}>
                   <button

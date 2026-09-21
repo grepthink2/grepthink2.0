@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { ApiAssignmentTsrEntry } from '@/lib/api';
@@ -8,6 +9,7 @@ import TsrsStepper from './TsrsStepper';
 import ContributionsTab from './ContributionsTab';
 import TeamFeedbackTab from './TeamFeedbackTab';
 import type { TeamFeedbackTabHandle } from './TeamFeedbackTab';
+import { isTeamFeedbackComplete } from './teamFeedbackValidation';
 import ScrumMasterTab from './ScrumMasterTab';
 import type {
   TsrsTab,
@@ -57,15 +59,28 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
   const { isPreviewing } = usePreview();
   const isPreviewMode = isPreviewing && !assignment.projectId;
 
+  const projectId = assignment.projectId;
+  const assignmentId = assignment.id;
+  const userId = user?.id;
+  /** What the two requests below load; null when nothing is fetched (preview, or no project). */
+  const requestKey =
+    !isPreviewMode && projectId ? JSON.stringify([projectId, assignmentId, userId ?? null]) : null;
+
   // ── Member loading ──────────────────────────────────────────
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [membersLoading, setMembersLoading] = useState(true);
-  const [membersError, setMembersError] = useState<string | null>(null);
+  const [loadedMembers, setLoadedMembers] = useState<TeamMember[]>([]);
+  /** The request the member list last settled for, and its error. */
+  const [membersResult, setMembersResult] = useState<{ key: string; error: string | null } | null>(null);
+  const members = isPreviewMode ? PREVIEW_MEMBERS : loadedMembers;
+  const membersLoading = requestKey !== null && membersResult?.key !== requestKey;
+  const membersError =
+    requestKey !== null && membersResult?.key === requestKey ? membersResult.error : null;
 
   // ── Prior-submission loading (for edit pre-fill) ─────────
   const [priorEntries, setPriorEntries] = useState<ApiAssignmentTsrEntry[]>([]);
   const [tsrIdByMemberId, setTsrIdByMemberId] = useState<Record<string, string>>({});
-  const [tsrsLoading, setTsrsLoading] = useState(true);
+  /** The request the prior submission last settled for. */
+  const [tsrsLoadedKey, setTsrsLoadedKey] = useState<string | null>(null);
+  const tsrsLoading = requestKey !== null && tsrsLoadedKey !== requestKey;
 
   // ── Form initialisation ──────────────────────────────────
   const [membersInitialized, setMembersInitialized] = useState(false);
@@ -76,50 +91,37 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
 
   // Kick off both fetches in parallel when the projectId is known.
   useEffect(() => {
-    if (isPreviewMode) {
-      setMembers(PREVIEW_MEMBERS);
-      setMembersLoading(false);
-      setTsrsLoading(false);
-      return;
-    }
-
-    if (!assignment.projectId) {
-      setMembersLoading(false);
-      setTsrsLoading(false);
-      return;
-    }
+    if (!requestKey) return;
 
     let cancelled = false;
 
-    setMembersLoading(true);
-    setMembersError(null);
-    api.getProjectMembers(assignment.projectId)
+    api.getProjectMembers(projectId)
       .then(({ members: apiMembers }) => {
         if (cancelled) return;
         const teamMembers: TeamMember[] = apiMembers.map((m) => ({
           id: m.user_id,
           name: m.email ?? m.user_id,
           role: m.project_role,
-          isCurrentUser: m.user_id === user?.id,
+          isCurrentUser: m.user_id === userId,
           isScrumMaster: m.project_role === 'scrum master',
         }));
-        setMembers(teamMembers);
+        setLoadedMembers(teamMembers);
+        setMembersResult({ key: requestKey, error: null });
       })
       .catch((e) => {
         if (!cancelled) {
-          setMembersError(e instanceof Error ? e.message : 'Failed to load team members');
+          setMembersResult({
+            key: requestKey,
+            error: e instanceof Error ? e.message : 'Failed to load team members',
+          });
         }
-      })
-      .finally(() => {
-        if (!cancelled) setMembersLoading(false);
       });
 
-    setTsrsLoading(true);
-    api.getMyAssignmentTsrs(assignment.id)
+    api.getMyAssignmentTsrs(assignmentId)
       .then(({ tsrs }) => {
         if (cancelled) return;
         const forProject = tsrs.filter(
-          (t) => !t.project_id || t.project_id === assignment.projectId,
+          (t) => !t.project_id || t.project_id === projectId,
         );
         setPriorEntries(forProject);
         const ids: Record<string, string> = {};
@@ -129,19 +131,18 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
           }
         }
         setTsrIdByMemberId(ids);
+        setTsrsLoadedKey(requestKey);
       })
       .catch(() => {
         if (!cancelled) {
           setPriorEntries([]);
           setTsrIdByMemberId({});
+          setTsrsLoadedKey(requestKey);
         }
-      })
-      .finally(() => {
-        if (!cancelled) setTsrsLoading(false);
       });
 
     return () => { cancelled = true; };
-  }, [assignment.projectId, assignment.id, user?.id, isPreviewMode]);
+  }, [requestKey, projectId, assignmentId, userId]);
 
   // ── Form state ──────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TsrsTab>('contributions');
@@ -152,14 +153,11 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [pendingTeamFeedbackValidationOnSubmit, setPendingTeamFeedbackValidationOnSubmit] =
-    useState(false);
   const [contributionsError, setContributionsError] = useState<string | null>(null);
   const teamFeedbackTabRef = useRef<TeamFeedbackTabHandle>(null);
 
-  useEffect(() => {
-    if (membersInitialized || membersLoading || tsrsLoading || members.length === 0) return;
-
+  // Pre-fill the form once, as soon as the members and any prior submission are in.
+  if (!membersInitialized && !membersLoading && !tsrsLoading && members.length > 0) {
     const byEvaluatee = entriesByEvaluatee(priorEntries);
     const hasPrior = Object.keys(byEvaluatee).length > 0;
 
@@ -199,24 +197,32 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
 
     setMembersInitialized(true);
     if (hasPrior) setIsEditMode(true);
-  }, [members, membersLoading, tsrsLoading, membersInitialized, priorEntries]);
+  }
 
   const currentUser   = members.find((m) => m.isCurrentUser);
   const isScrumMaster = currentUser?.isScrumMaster ?? false;
 
   const contributionsTotal = Object.values(contributions).reduce((s, v) => s + v, 0);
 
-  useEffect(() => {
+  // Whenever the open tab, the contribution total or the feedback changes, mark
+  // the open step complete if it is now valid.
+  const [stepCheckInputs, setStepCheckInputs] = useState({ activeTab, contributionsTotal, feedback });
+  if (
+    stepCheckInputs.activeTab !== activeTab ||
+    stepCheckInputs.contributionsTotal !== contributionsTotal ||
+    stepCheckInputs.feedback !== feedback
+  ) {
+    setStepCheckInputs({ activeTab, contributionsTotal, feedback });
     if (activeTab === 'contributions') {
       if (contributionsTotal === 100) {
         setCompletedSteps((prev) => new Set([...prev, 'contributions']));
       }
     } else if (activeTab === 'team_feedback') {
-      if (teamFeedbackTabRef.current?.checkIsValid()) {
+      if (isTeamFeedbackComplete(members, feedback)) {
         setCompletedSteps((prev) => new Set([...prev, 'team_feedback']));
       }
     }
-  }, [activeTab, contributionsTotal, feedback]);
+  }
 
   const handleContributionChange = (c: ContributionMap) => {
     setContributions(c);
@@ -269,8 +275,9 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
     if (isPreviewMode) return;
 
     if (isScrumMaster && !completedSteps.has('team_feedback')) {
-      setActiveTab('team_feedback');
-      setPendingTeamFeedbackValidationOnSubmit(true);
+      // Render the Team Feedback tab now so its fields exist, then flag the missing ones.
+      flushSync(() => setActiveTab('team_feedback'));
+      teamFeedbackTabRef.current?.validateForNavigation();
       return;
     }
 
@@ -315,13 +322,6 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
       setIsSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    if (activeTab === 'team_feedback' && pendingTeamFeedbackValidationOnSubmit) {
-      teamFeedbackTabRef.current?.validateForNavigation();
-      setPendingTeamFeedbackValidationOnSubmit(false);
-    }
-  }, [activeTab, pendingTeamFeedbackValidationOnSubmit]);
 
   if (isLoading) {
     return (

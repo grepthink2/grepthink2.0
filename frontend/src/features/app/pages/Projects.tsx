@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { ApiProject, ApiRosterStudent } from '@/lib/api';
-import { useClass } from '@/lib/classContext';
+import { useClass, type Class } from '@/lib/classContext';
 import AddProjectButton from '@features/app/components/Project/AddProjectButton';
 import AssignProjectsButton from '@features/app/components/Project/AssignProjectsButton';
 import ProjectList, {
@@ -47,13 +47,27 @@ function countProjectMembership(students: ApiRosterStudent[]) {
   return { inProject, registeredNoProject, notRegistered };
 }
 
+/** The last completed load, and the class object it was made for. */
+interface ProjectsPageLoad {
+  forClass: Class;
+  apiProjects: ApiProject[];
+  classStudents: ApiRosterStudent[];
+  error: string | null;
+}
+
+const NO_PROJECTS: ApiProject[] = [];
+const NO_STUDENTS: ApiRosterStudent[] = [];
+
 const Projects: React.FC = () => {
   const { selectedClass } = useClass();
   const navigate = useNavigate();
-  const [apiProjects, setApiProjects] = useState<ApiProject[]>([]);
-  const [classStudents, setClassStudents] = useState<ApiRosterStudent[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<ProjectsPageLoad | null>(null);
+
+  // The last load's rows and roster stay on screen while another class loads.
+  const apiProjects = loaded?.apiProjects ?? NO_PROJECTS;
+  const classStudents = loaded?.classStudents ?? NO_STUDENTS;
+  const loading = selectedClass !== null && loaded?.forClass !== selectedClass;
+  const error = loaded?.error ?? null;
 
   const projects = useMemo(
     () => apiProjects.map(mapApiProjectToUi),
@@ -66,35 +80,34 @@ const Projects: React.FC = () => {
   );
 
   useEffect(() => {
-    if (!selectedClass) {
-      setLoading(false);
-      setApiProjects([]);
-      setClassStudents([]);
-      setError(null);
-      return;
-    }
+    if (!selectedClass) return;
 
     let isMounted = true;
 
     const fetchProjectsPageData = async () => {
       try {
-        setLoading(true);
         const [overview, rosterResponse] = await Promise.all([
           api.getClassProjectsOverview(selectedClass.id),
           api.getClassRoster(selectedClass.id),
         ]);
         if (!isMounted) return;
 
-        setApiProjects(overview.projects ?? []);
-        setClassStudents(rosterResponse.students ?? []);
-        setError(null);
+        setLoaded({
+          forClass: selectedClass,
+          apiProjects: overview.projects ?? [],
+          classStudents: rosterResponse.students ?? [],
+          error: null,
+        });
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load projects');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
+          const message = err instanceof Error ? err.message : 'Failed to load projects';
+          // A failed load keeps the previous rows and roster.
+          setLoaded((prev) => ({
+            forClass: selectedClass,
+            apiProjects: prev?.apiProjects ?? [],
+            classStudents: prev?.classStudents ?? [],
+            error: message,
+          }));
         }
       }
     };

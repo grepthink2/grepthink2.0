@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarCheck, Check, ChevronRight, Clock, Video, X } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
+import { fetchEnrollmentRole } from '@/lib/enrollmentRole';
 import { api, type ApiClassTA, type ApiFinalReviewSchedule, type ApiFinalReviewTeam } from '@/lib/api';
 import { getInitials } from '@features/app/utils/memberUtils';
 import { formatReviewTime as formatTime } from './finalReviewTemplate';
@@ -21,6 +22,13 @@ const toInputValue = (iso: string | null): string => {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
+
+/** The class's review schedule plus the viewer's role in it (null when the role lookup fails). */
+const fetchScheduleAndRole = (classId: string, userId: string | null) =>
+  Promise.all([
+    api.getFinalReviewSchedule(classId),
+    fetchEnrollmentRole(classId, userId ?? undefined).catch(() => null),
+  ]);
 
 const Avatar: React.FC<{ name: string; email?: string | null }> = ({ name, email }) => (
   <span className="fr-avatar" aria-hidden="true">{getInitials(name || '', email || '')}</span>
@@ -64,8 +72,11 @@ const FinalReviews: React.FC = () => {
 
   const [schedule, setSchedule] = useState<ApiFinalReviewSchedule | null>(null);
   const [role, setRole] = useState<ViewerRole>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const loadKey = classId ? JSON.stringify([classId, viewerId]) : null;
+  /** The schedule request that last settled, and its error. */
+  const [loaded, setLoaded] = useState<{ key: string; error: string | null } | null>(null);
+  const loading = loadKey !== null && loaded?.key !== loadKey;
+  const error = loading ? null : (loaded?.error ?? null);
   /** Transient failure of a sign-up/edit action (the schedule itself is fine). */
   const [actionError, setActionError] = useState<string | null>(null);
   /** project_id (or a class-level token) with an in-flight mutation. */
@@ -92,48 +103,52 @@ const FinalReviews: React.FC = () => {
   const isInstructor = role === 'instructor';
   const isTa = role === 'ta';
 
-  const loadSchedule = useCallback(async () => {
-    if (!classId) return;
-    const [scheduleRes, roleRes] = await Promise.all([
-      api.getFinalReviewSchedule(classId),
-      api.getMyEnrollmentRole(classId).catch(() => ({ enrollment_role: null })),
-    ]);
+  /** Stores a fetched schedule and resets the per-row time drafts from it. */
+  const applySchedule = useCallback((scheduleRes: ApiFinalReviewSchedule, viewerRole: ViewerRole) => {
     setSchedule(scheduleRes);
-    setRole((roleRes.enrollment_role as ViewerRole) ?? null);
+    setRole(viewerRole);
     setTimeDrafts(Object.fromEntries(
       scheduleRes.teams.map((t) => [t.project_id, toInputValue(t.final_review_at)]),
     ));
     // Fresh server data supersedes any stale per-row validation state.
     setTimeInvalid({});
-  }, [classId]);
+  }, []);
+
+  /** Refetches after a mutation; the page stays on screen while it runs. */
+  const loadSchedule = useCallback(async () => {
+    if (!classId) return;
+    const [scheduleRes, viewerRole] = await fetchScheduleAndRole(classId, viewerId);
+    applySchedule(scheduleRes, viewerRole);
+  }, [classId, viewerId, applySchedule]);
 
   useEffect(() => {
-    if (!classId) {
-      setSchedule(null);
-      setLoading(false);
-      return;
-    }
+    if (!classId || !loadKey) return;
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    loadSchedule()
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load the schedule');
+    fetchScheduleAndRole(classId, viewerId)
+      .then(([scheduleRes, viewerRole]) => {
+        if (cancelled) return;
+        applySchedule(scheduleRes, viewerRole);
+        setLoaded({ key: loadKey, error: null });
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+      .catch((err) => {
+        if (cancelled) return;
+        setLoaded({
+          key: loadKey,
+          error: err instanceof Error ? err.message : 'Failed to load the schedule',
+        });
       });
     return () => {
       cancelled = true;
     };
-  }, [classId, loadSchedule]);
+  }, [classId, viewerId, loadKey, applySchedule]);
 
-  // Instructor: class TAs for the appoint/override dropdown.
+  // Instructor: class TAs for the appoint/override dropdown. Anyone else (or
+  // no class) gets an empty list.
+  if ((!isInstructor || !classId) && taOptions.length > 0) {
+    setTaOptions([]);
+  }
   useEffect(() => {
-    if (!isInstructor || !classId) {
-      setTaOptions([]);
-      return;
-    }
+    if (!isInstructor || !classId) return;
     let cancelled = false;
     api.getClassTAs(classId)
       .then((res) => { if (!cancelled) setTaOptions(res.tas); })

@@ -1,9 +1,10 @@
 """
 TSR request models
 """
-from typing import Optional
-from pydantic import BaseModel
+
 from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class CreateTSRRequest(BaseModel):
@@ -16,13 +17,14 @@ class CreateTSRRequest(BaseModel):
     Scrum Master fields are optional and are only populated by the project's
     scrum master.
     """
+
     evaluatee_id: UUID
     project_id: UUID
     week: int
     percent_contribution: int
     positive_feedback: str
     constructive_feedback: str
-    scrum_master_tickets: Optional[str] = None
-    scrum_master_assessment: Optional[str] = None
-    scrum_master_notes: Optional[str] = None
-    assignment_id: Optional[UUID] = None
+    scrum_master_tickets: str | None = None
+    scrum_master_assessment: str | None = None
+    scrum_master_notes: str | None = None
+    assignment_id: UUID | None = None

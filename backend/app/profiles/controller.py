@@ -1,12 +1,15 @@
 """
 Profile business logic
 """
+
 import logging
 import secrets
 import time
+
 from fastapi import HTTPException
 
-from app.database.client import service_client, supabase
+from app.core.db import get_client
+from app.core.errors import DatabaseConflictError
 from app.utils.email import send_email
 
 logger = logging.getLogger(__name__)
@@ -14,12 +17,12 @@ logger = logging.getLogger(__name__)
 PROFILE_FIELDS = "id, email, role, first_name, last_name, linkedin, github, image_url, edu_email"
 
 _ALLOWED_UPDATE_FIELDS = {
-    'first_name',
-    'last_name',
-    'linkedin',
-    'github',
-    'image_url',
-    'edu_email',
+    "first_name",
+    "last_name",
+    "linkedin",
+    "github",
+    "image_url",
+    "edu_email",
 }
 
 # In-memory store for pending edu email verification codes.
@@ -33,14 +36,8 @@ def get_profile(user_id: str) -> dict:
     """
     Fetch a user's full profile row.
     """
-    client = service_client or supabase
-    result = (
-        client.table('profiles')
-        .select(PROFILE_FIELDS)
-        .eq('id', user_id)
-        .limit(1)
-        .execute()
-    )
+    client = get_client()
+    result = client.table("profiles").select(PROFILE_FIELDS).eq("id", user_id).limit(1).execute()
     return result.data[0] if result.data else {}
 
 
@@ -49,10 +46,10 @@ def _user_has_class_access(client, user_id: str, class_id: str, created_by: str)
     if user_id == created_by:
         return True
     enrollment = (
-        client.table('class_enrollments')
-        .select('id')
-        .eq('class_id', class_id)
-        .eq('user_id', user_id)
+        client.table("class_enrollments")
+        .select("id")
+        .eq("class_id", class_id)
+        .eq("user_id", user_id)
         .execute()
     )
     return bool(enrollment.data)
@@ -65,28 +62,23 @@ def get_profile_for_class_member(viewer_id: str, target_user_id: str, class_id: 
     Both viewer and target must belong to the class (instructor via created_by,
     student via class_enrollments).
     """
-    client = service_client or supabase
-    class_result = (
-        client.table('classes')
-        .select('id, created_by')
-        .eq('id', class_id)
-        .execute()
-    )
+    client = get_client()
+    class_result = client.table("classes").select("id, created_by").eq("id", class_id).execute()
     if not class_result.data:
-        raise HTTPException(status_code=404, detail='Class not found')
+        raise HTTPException(status_code=404, detail="Class not found")
 
-    created_by = class_result.data[0]['created_by']
+    created_by = class_result.data[0]["created_by"]
     if not _user_has_class_access(client, viewer_id, class_id, created_by):
         raise HTTPException(
             status_code=403,
-            detail='You do not have access to this class',
+            detail="You do not have access to this class",
         )
     if not _user_has_class_access(client, target_user_id, class_id, created_by):
-        raise HTTPException(status_code=404, detail='User is not in this class')
+        raise HTTPException(status_code=404, detail="User is not in this class")
 
     profile = get_profile(target_user_id)
     if not profile:
-        raise HTTPException(status_code=404, detail='Profile not found')
+        raise HTTPException(status_code=404, detail="Profile not found")
     return profile
 
 
@@ -100,13 +92,8 @@ def update_profile(user_id: str, data: dict) -> dict:
         logger.debug("update_profile: no valid fields to update | user_id=%s", user_id)
         return get_profile(user_id)
 
-    client = service_client or supabase
-    result = (
-        client.table('profiles')
-        .update(payload)
-        .eq('id', user_id)
-        .execute()
-    )
+    client = get_client()
+    result = client.table("profiles").update(payload).eq("id", user_id).execute()
     updated = result.data[0] if result.data else {}
     full_profile = get_profile(user_id) if updated else {}
 
@@ -114,6 +101,7 @@ def update_profile(user_id: str, data: dict) -> dict:
         dismiss_profile_completion_notification,
         ensure_profile_completion_notification,
     )
+
     if full_profile and not _profile_incomplete(full_profile):
         dismiss_profile_completion_notification(user_id)
     else:
@@ -123,16 +111,14 @@ def update_profile(user_id: str, data: dict) -> dict:
 
 
 def _profile_incomplete(profile: dict) -> bool:
-    first = (profile.get('first_name') or '').strip()
-    last = (profile.get('last_name') or '').strip()
+    first = (profile.get("first_name") or "").strip()
+    last = (profile.get("last_name") or "").strip()
     if not first or not last:
         return True
-    role = profile.get('role')
-    email = (profile.get('email') or '').strip().lower()
-    edu_email = (profile.get('edu_email') or '').strip()
-    if role == 'student' and not email.endswith('.edu') and not edu_email:
-        return True
-    return False
+    role = profile.get("role")
+    email = (profile.get("email") or "").strip().lower()
+    edu_email = (profile.get("edu_email") or "").strip()
+    return role == "student" and not email.endswith(".edu") and not edu_email
 
 
 def send_edu_verification(user_id: str, edu_email: str) -> None:
@@ -140,17 +126,17 @@ def send_edu_verification(user_id: str, edu_email: str) -> None:
     Generate a 6-digit verification code and email it to the provided
     .edu address. The code is stored in memory and expires after 10 minutes.
     """
-    if not edu_email.lower().endswith('.edu'):
+    if not edu_email.lower().endswith(".edu"):
         raise HTTPException(status_code=400, detail="Must be a valid .edu email address")
 
     # Check availability before issuing a code so the error surfaces at
     # Save Changes time (inline), not after the user enters the code in the modal.
-    client = service_client or supabase
+    client = get_client()
     conflict = (
-        client.table('profiles')
-        .select('id')
-        .eq('edu_email', edu_email)
-        .neq('id', user_id)
+        client.table("profiles")
+        .select("id")
+        .eq("edu_email", edu_email)
+        .neq("id", user_id)
         .execute()
     )
     if conflict.data:
@@ -195,7 +181,8 @@ def send_edu_verification(user_id: str, edu_email: str) -> None:
         # Log the code so developers can still test the flow.
         logger.warning(
             "edu_verification: SMTP not configured — code for %s is %s (dev only)",
-            edu_email, code,
+            edu_email,
+            code,
         )
         raise HTTPException(
             status_code=503,
@@ -207,7 +194,8 @@ def send_edu_verification(user_id: str, edu_email: str) -> None:
 
     logger.info(
         "edu_verification: code sent | user_id=%s email=%s",
-        user_id, edu_email,
+        user_id,
+        edu_email,
     )
 
 
@@ -243,23 +231,18 @@ def verify_edu_email(user_id: str, edu_email: str, code: str) -> dict:
 
     del _pending_edu_codes[user_id]
 
-    client = service_client or supabase
+    client = get_client()
     try:
         result = (
-            client.table('profiles')
-            .update({'edu_email': edu_email})
-            .eq('id', user_id)
-            .execute()
+            client.table("profiles").update({"edu_email": edu_email}).eq("id", user_id).execute()
         )
-    except Exception as e:
-        # Postgres unique constraint violation — another account claimed this
-        # edu_email between when the code was sent and when it was verified.
-        if '23505' in str(e):
-            raise HTTPException(
-                status_code=409,
-                detail="This .edu email is already linked to another account.",
-            )
-        raise HTTPException(status_code=500, detail="Database error during verification.")
+    except DatabaseConflictError as exc:
+        # Another account claimed this edu_email between when the code was sent
+        # and when it was verified (profiles_edu_email_key).
+        raise HTTPException(
+            status_code=409,
+            detail="This .edu email is already linked to another account.",
+        ) from exc
 
     logger.info("edu_verification: verified and saved | user_id=%s email=%s", user_id, edu_email)
     return result.data[0] if result.data else {}

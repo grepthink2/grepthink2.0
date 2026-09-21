@@ -29,6 +29,20 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
   const [statusError, setStatusError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
+  // Each open (or a switch to another class while open) starts from that
+  // class's saved status with no errors showing. Adjusted during render when
+  // the open class changes, instead of in an effect afterwards.
+  const openClass = isOpen ? classItem : null;
+  const [prevOpenClass, setPrevOpenClass] = useState<Class | null>(null);
+  if (openClass !== prevOpenClass) {
+    setPrevOpenClass(openClass);
+    if (openClass) {
+      setLifecycleStatus(getClassStatus(openClass));
+      setExportError(null);
+      setStatusError(null);
+    }
+  }
+
   const handleClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
@@ -36,14 +50,6 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       onClose();
     }, 200);
   }, [onClose]);
-
-  useEffect(() => {
-    if (isOpen && classItem) {
-      setLifecycleStatus(getClassStatus(classItem));
-      setExportError(null);
-      setStatusError(null);
-    }
-  }, [isOpen, classItem, getClassStatus]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {

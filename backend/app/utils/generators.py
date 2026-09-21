@@ -1,6 +1,7 @@
 """
 Generator utilities for creating unique identifiers
 """
+
 import secrets
 import string
 
@@ -8,10 +9,10 @@ import string
 def generate_course_code(length: int = 8) -> str:
     """
     Generate a random course code using uppercase letters and digits
-    
+
     Args:
         length: Length of the course code (default: 8)
-        
+
     Returns:
         Random course code string
     """
