@@ -202,7 +202,8 @@ def test_list_contacts_for_a_student_in_two_classes(db):
     contacts = messages.list_contacts(caller_id=S1)
     assert [c["id"] for c in contacts] == [S2, INSTR, OTHER_INSTR, TA, S3]
     assert next(c for c in contacts if c["id"] == INSTR)["role"] == "instructor"
-    assert db.executes <= 2, _trace(db)
+    # Peers and their profiles are embedded: no separate enrollment, owner or profile reads.
+    assert _trace(db) == ["class_enrollments:select", "classes:select"]
 
 
 def test_list_contacts_for_an_instructor_who_is_a_ta_elsewhere(db):
@@ -243,12 +244,6 @@ def test_list_contacts_is_empty_without_classes_or_peers(db):
     db.reset_counter()
     assert messages.list_contacts(caller_id="instr-3") == []  # owns a class nobody joined
     assert db.executes <= 2, _trace(db)
-
-
-def test_list_contacts_reads_owned_and_enrolled_classes_once_each(db):
-    """Peers and their profiles are embedded: no separate enrollment, owner or profile reads."""
-    messages.list_contacts(caller_id=S1)
-    assert _trace(db) == ["class_enrollments:select", "classes:select"]
 
 
 # -------------------------------------------------------- _require_participant

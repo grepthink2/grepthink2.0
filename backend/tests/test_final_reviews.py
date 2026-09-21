@@ -114,14 +114,11 @@ def _project(db, pid):
 # --------------------------------------------------------------------------
 
 
-def test_set_review_zoom_updates_class(db):
+def test_set_review_zoom_sets_the_link_and_clears_it_with_none_or_blank(db):
     out = tas.set_review_zoom(INSTR, CLASS, ZOOM)
     assert out["review_zoom_url"] == ZOOM
     assert _class_row(db)["review_zoom_url"] == ZOOM
 
-
-def test_set_review_zoom_clears_with_none_or_blank(db):
-    tas.set_review_zoom(INSTR, CLASS, ZOOM)
     tas.set_review_zoom(INSTR, CLASS, None)
     assert _class_row(db)["review_zoom_url"] is None
     tas.set_review_zoom(INSTR, CLASS, ZOOM)
