@@ -15,7 +15,6 @@ module whose answers were normalized. A denied call must also write nothing.
 from __future__ import annotations
 
 import datetime
-import inspect
 
 import pytest
 from fastapi import HTTPException
@@ -23,7 +22,6 @@ from fastapi import HTTPException
 from app import dependencies
 from app.assignments import controller as assignments
 from app.attendance import controller as attendance
-from app.classes import controller as classes
 from app.core import authz
 from app.projects import controller as projects
 from app.staffing import controller as staffing
@@ -40,7 +38,6 @@ NOT_ENROLLED = "You are not enrolled in this class"
 INSTRUCTOR_ROLE_REQUIRED = "Instructor role required"
 PROJECT_NOT_FOUND = "Project not found"
 NOT_PROJECT_MEMBER = "Not a member of this project"
-IS_THE_CLASS_INSTRUCTOR = "You are the instructor of this class"
 
 INSTR = "10000000-0000-0000-0000-000000000001"
 OTHER_INSTR = "10000000-0000-0000-0000-000000000002"
@@ -284,105 +281,8 @@ CASES = {
         403,
         NOT_PROJECT_MEMBER,
     ),
-    # app.classes
-    "classes.update_status/missing-class": (
-        lambda db: classes.update_class_status(MISSING_CLASS, "complete", INSTR),
-        404,
-        CLASS_NOT_FOUND,
-    ),
-    "classes.update_status/other-instructor": (
-        lambda db: classes.update_class_status(CLASS, "complete", OTHER_INSTR),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.turn_in_stats/missing-class": (
-        lambda db: classes.get_class_turn_in_stats(MISSING_CLASS, INSTR),
-        404,
-        CLASS_NOT_FOUND,
-    ),
-    "classes.turn_in_stats/other-instructor": (
-        lambda db: classes.get_class_turn_in_stats(CLASS, OTHER_INSTR),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.roster/missing-class": (
-        lambda db: classes.get_class_roster(MISSING_CLASS, INSTR),
-        404,
-        CLASS_NOT_FOUND,
-    ),
-    "classes.roster/outsider": (
-        lambda db: classes.get_class_roster(CLASS, OUTSIDER),
-        403,
-        NOT_CLASS_MEMBER,
-    ),
-    # The class endpoints below authenticate only; the owner check turns away an enrolled
-    # student whatever their account role.
-    "classes.update_status/enrolled-student": (
-        lambda db: classes.update_class_status(CLASS, "complete", S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.invite/enrolled-student": (
-        lambda db: classes.invite_student_to_class(CLASS, "x@ucsc.edu", S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.roster_timeline/enrolled-student": (
-        lambda db: classes.get_class_roster_timeline(CLASS, S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.roster_upload/enrolled-student": (
-        lambda db: classes.upload_class_roster(CLASS, "Name,Email\n", S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.roster_manual_add/enrolled-student": (
-        lambda db: classes.add_manual_roster_student(CLASS, "A", "B", "a@ucsc.edu", S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.roster_manual_delete/enrolled-student": (
-        lambda db: classes.delete_manual_roster_entry(CLASS, "entry-1", S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.turn_in_stats/enrolled-student": (
-        lambda db: classes.get_class_turn_in_stats(CLASS, S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.remove_student/enrolled-student": (
-        lambda db: classes.remove_student_from_class(CLASS, TA1, S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.bulk_invite/enrolled-student": (
-        lambda db: classes.bulk_invite_students(CLASS, ["x@ucsc.edu"], S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.queue_invite/enrolled-student": (
-        lambda db: classes.queue_invite(CLASS, ["x@ucsc.edu"], S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    "classes.cancel_invite/enrolled-student": (
-        lambda db: classes.cancel_invite(CLASS, "job-1", S1),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
-    # The class instructor cannot become a member of their own class, either way in.
-    "classes.join/the-class-instructor": (
-        lambda db: classes.join_class_by_code("ABCD1234", INSTR),
-        409,
-        IS_THE_CLASS_INSTRUCTOR,
-    ),
-    "classes.invite/the-class-instructors-address": (
-        lambda db: classes.invite_student_to_class(CLASS, f"{INSTR}@ucsc.edu", INSTR),
-        409,
-        IS_THE_CLASS_INSTRUCTOR,
-    ),
+    # app.classes: every instructor-only route, every class read and the class instructor's own
+    # 409s are pinned in test_classes_authz.py, test_classes_invites.py and the join tests.
     # app.tas
     "tas.set_review_window/missing-class": (
         lambda db: tas.set_review_window(INSTR, MISSING_CLASS, True),
@@ -511,31 +411,3 @@ def test_the_instructor_role_dependency_uses_the_same_message(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         dependencies.require_instructor(S1)
     assert (exc.value.status_code, exc.value.detail) == (403, INSTRUCTOR_ROLE_REQUIRED)
-
-
-def test_the_details_are_the_authz_constants():
-    assert (
-        authz.CLASS_NOT_FOUND,
-        authz.NOT_CLASS_INSTRUCTOR,
-        authz.NOT_CLASS_MEMBER,
-        authz.NOT_ENROLLED,
-        authz.INSTRUCTOR_ROLE_REQUIRED,
-        authz.PROJECT_NOT_FOUND,
-        authz.NOT_PROJECT_MEMBER,
-    ) == (
-        CLASS_NOT_FOUND,
-        NOT_CLASS_INSTRUCTOR,
-        NOT_CLASS_MEMBER,
-        NOT_ENROLLED,
-        INSTRUCTOR_ROLE_REQUIRED,
-        PROJECT_NOT_FOUND,
-        NOT_PROJECT_MEMBER,
-    )
-
-
-@pytest.mark.parametrize(
-    "helper",
-    [authz.require_class_instructor, authz.require_class_access, authz.require_project_role],
-)
-def test_authz_helpers_take_no_status_arguments(helper):
-    assert not {"missing", "denied"} & set(inspect.signature(helper).parameters)

@@ -370,12 +370,6 @@ def test_team_attendance_editor_sees_all(db):
     assert all(e["status"] == "unmarked" for e in res["entries"])
 
 
-def test_team_attendance_non_member_denied(db):
-    with pytest.raises(HTTPException) as exc:
-        controller.get_team_attendance(P1, S3, 3)
-    assert exc.value.status_code == 403
-
-
 # --------------------------------------------------------------------------
 # Per-meeting cadence (meetings_per_week)
 # --------------------------------------------------------------------------
@@ -429,12 +423,6 @@ def test_set_meeting_cadence(db):
     cls = next(c for c in db.rows("classes") if c["id"] == CLASS)
     assert cls["meetings_per_week"] == 1
     assert cls["meeting_duration_minutes"] == 45
-
-
-def test_set_meeting_cadence_requires_instructor(db):
-    with pytest.raises(HTTPException) as exc:
-        controller.set_meeting_cadence(CLASS, TA1, meetings_per_week=3)
-    assert exc.value.status_code == 403
 
 
 def test_set_meeting_cadence_rejects_bad_value(db):

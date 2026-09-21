@@ -378,7 +378,7 @@ def test_project_pending_invites_budget(db, waves):
 # --------------------------------------------------------- get_pending_join_requests
 
 
-def test_pending_join_requests_are_student_initiated_with_requester_details(db):
+def test_pending_join_requests_are_student_initiated_with_requester_details(db, waves):
     expected = {
         R_JOIN_S4_P1: {
             "request_id": R_JOIN_S4_P1,
@@ -400,8 +400,11 @@ def test_pending_join_requests_are_student_initiated_with_requester_details(db):
         },
     }
     for reviewer in (S1, INSTR):
+        db.reset_counter()
+        waves.clear()
         out = projects.get_pending_join_requests(P1, reviewer)
         assert {r["request_id"]: r for r in out} == expected
+        assert db.executes <= 2 and _one_wave(db, waves), (waves, _trace(db))
     # P2 has a pending invite, an approved and a rejected request: none is listed.
     assert projects.get_pending_join_requests(P2, S3) == []
     assert projects.get_pending_join_requests(P3, S5) == []  # admin; only an invite pending
@@ -413,15 +416,6 @@ def test_pending_join_requests_access_rules(db):
     assert _denied(fn, P1, S3) == (403, REVIEW_DENIED)
     assert _denied(fn, P1, OUTSIDER) == (403, REVIEW_DENIED)
     assert _denied(fn, "no-such-project", S1) == (404, "Project not found")
-
-
-def test_pending_join_requests_budget(db, waves):
-    projects.get_pending_join_requests(P1, S1)
-    assert db.executes <= 2 and _one_wave(db, waves), (waves, _trace(db))
-    db.reset_counter()
-    waves.clear()
-    projects.get_pending_join_requests(P1, INSTR)
-    assert db.executes <= 2 and _one_wave(db, waves), (waves, _trace(db))
 
 
 # ------------------------------------------------------------- reject_join_request
