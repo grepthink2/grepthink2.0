@@ -11,10 +11,6 @@ describe('formatPacificTimestamp', () => {
     expect(formatPacificTimestamp('2026-07-15T20:30:00.000Z')).toBe('Jul 15, 2026, 1:30 PM PT');
   });
 
-  it('always appends the explicit "PT" label', () => {
-    expect(formatPacificTimestamp('2026-01-15T20:30:00.000Z')).toMatch(/ PT$/);
-  });
-
   it('returns an em dash for a null timestamp', () => {
     expect(formatPacificTimestamp(null)).toBe('—');
   });

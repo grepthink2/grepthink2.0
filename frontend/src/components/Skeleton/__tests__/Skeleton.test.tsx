@@ -1,39 +1,23 @@
 import { render } from '@testing-library/react';
 import { Skeleton } from '../Skeleton';
 
+const skeleton = (ui: React.ReactElement) =>
+  render(ui).container.querySelector('.skeleton') as HTMLElement;
+
 describe('Skeleton', () => {
-  it('renders a decorative, screen-reader-hidden block', () => {
-    const { container } = render(<Skeleton />);
-    const el = container.querySelector('.skeleton');
-    expect(el).toBeInTheDocument();
+  it('is a decorative block, hidden from screen readers, that keeps a caller\'s class', () => {
+    const el = skeleton(<Skeleton className="avatar" />);
+
     expect(el).toHaveAttribute('aria-hidden', 'true');
+    expect(el).toHaveClass('skeleton', 'avatar');
   });
 
-  it('applies width and height styles', () => {
-    const { container } = render(<Skeleton width="120px" height="12px" />);
-    const el = container.querySelector('.skeleton') as HTMLElement;
-    expect(el.style.width).toBe('120px');
-    expect(el.style.height).toBe('12px');
-  });
+  it('takes the size it is given, and is a square with round corners only when circle is set', () => {
+    const bar = skeleton(<Skeleton width="120px" height="12px" />);
+    expect([bar.style.width, bar.style.height, bar.style.borderRadius]).toEqual(['120px', '12px', '']);
 
-  it('squares the box and rounds fully when circle is set', () => {
-    const { container } = render(<Skeleton circle height="40px" />);
-    const el = container.querySelector('.skeleton') as HTMLElement;
-    // circle uses `height` for width so the box is square.
-    expect(el.style.width).toBe('40px');
-    expect(el.style.borderRadius).toBe('50%');
-  });
-
-  it('merges a custom className', () => {
-    const { container } = render(<Skeleton className="avatar" />);
-    const el = container.querySelector('.skeleton') as HTMLElement;
-    expect(el).toHaveClass('skeleton');
-    expect(el).toHaveClass('avatar');
-  });
-
-  it('omits border-radius styling by default', () => {
-    const { container } = render(<Skeleton />);
-    const el = container.querySelector('.skeleton') as HTMLElement;
-    expect(el.style.borderRadius).toBe('');
+    // circle uses `height` for the width too, so the box is square.
+    const avatar = skeleton(<Skeleton circle height="40px" />);
+    expect([avatar.style.width, avatar.style.borderRadius]).toEqual(['40px', '50%']);
   });
 });
