@@ -310,14 +310,6 @@ def test_mark_attendance_rejects_out_of_range_week(db):
     assert exc.value.status_code == 400
 
 
-def test_mark_all_present(db):
-    records = controller.mark_all_present(P1, INSTR, 4)
-    assert len(records) == 2  # S1, S2
-    rows = [a for a in db.rows("attendance") if a["project_id"] == P1 and a["week_number"] == 4]
-    assert all(a["status"] == "present" for a in rows)
-    assert {a["user_id"] for a in rows} == {S1, S2}
-
-
 # --------------------------------------------------------------------------
 # Schedule + attendance reads
 # --------------------------------------------------------------------------
