@@ -30,9 +30,9 @@
 --     .edu verification flow needs step 8.
 --   * Step 9 closes a hole that is open on PROD right now (any signed-in user can make
 --     themselves an instructor through the public anon key). It does not depend on anything
---     else here: if this whole script cannot run today, run
---     ../2026-09-21_lock_down_direct_table_access.sql on its own today. It runs again here as
---     the last step because step 1 re-grants ALL on conversation_participants.
+--     else here, and it was applied to PROD on its own on 2026-09-21. It runs again here as
+--     the last step because step 1 re-grants ALL on conversation_participants, which does not
+--     exist on PROD yet; re-running it is harmless.
 --   * DELIBERATELY NOT HERE: ../2026-09-21_role_chosen_by_its_owner.sql. It changes what a
 --     Google signup gets, and the code `main` runs today cannot finish such a signup. Apply it
 --     only AFTER beta (with the auth-hardening PR) is live on main.
@@ -847,7 +847,11 @@ REVOKE ALL ON public.edu_email_verifications FROM anon, authenticated;
 -- service-role key, which none of this touches. prod/2026-09-20_align_prod.sql runs it again
 -- as its last step, because the group messaging migration re-grants ALL on one table.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV ____-__-__   PROD 2026-09-21 (by the maintainer, in the SQL editor)
+-- Verified read-only on PROD the same day: `anon` holds nothing; `authenticated` holds SELECT on
+-- conversations, messages and notifications (conversation_participants does not exist there
+-- yet, so it was skipped, as designed); no write policy is left; the four policies named below
+-- are gone; classes_course_code_upper_uq exists; new tables get no client privileges.
 -- Rehearsed on dev 2026-09-21 inside a transaction that was rolled back, then tested as a
 -- signed-in student while it was in effect: changing their own role, creating a class,
 -- reading profiles and writing a message were all denied; their own conversations stayed

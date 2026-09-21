@@ -6,7 +6,11 @@
 -- service-role key, which none of this touches. prod/2026-09-20_align_prod.sql runs it again
 -- as its last step, because the group messaging migration re-grants ALL on one table.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV ____-__-__   PROD 2026-09-21 (by the maintainer, in the SQL editor)
+-- Verified read-only on PROD the same day: `anon` holds nothing; `authenticated` holds SELECT on
+-- conversations, messages and notifications (conversation_participants does not exist there
+-- yet, so it was skipped, as designed); no write policy is left; the four policies named below
+-- are gone; classes_course_code_upper_uq exists; new tables get no client privileges.
 -- Rehearsed on dev 2026-09-21 inside a transaction that was rolled back, then tested as a
 -- signed-in student while it was in effect: changing their own role, creating a class,
 -- reading profiles and writing a message were all denied; their own conversations stayed

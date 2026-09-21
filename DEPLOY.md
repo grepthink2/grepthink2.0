@@ -75,11 +75,11 @@ row, is safe under the code `main` runs today, and **must run before `beta` is m
 `main`**. Dev has had steps 1–7 since 2026-09-20; steps 8 and 9 (2026-09-21) are applied
 nowhere yet.
 
-**Run today, on its own if need be:**
-`backend/database/migrations/2026-09-21_lock_down_direct_table_access.sql`. On PROD any
-signed-in user can currently set their own `profiles.role` to `instructor` with the public anon
-key. The file depends on nothing else, changes nothing the application does (the backend uses
-the service-role key), and is also the bundle's last step.
+**Applied to PROD on 2026-09-21, on its own:**
+`backend/database/migrations/2026-09-21_lock_down_direct_table_access.sql`. Until then any
+signed-in user on PROD could set their own `profiles.role` to `instructor` with the public anon
+key. It is still the bundle's last step, because the group messaging step re-grants ALL on a
+table PROD does not have yet; re-running it is harmless. Not applied to dev.
 
 **Only after `beta` is live on `main`:**
 `backend/database/migrations/2026-09-21_role_chosen_by_its_owner.sql`. It is not an expand — the
