@@ -399,69 +399,50 @@ EXPECTED_ROSTER = [
 ]
 
 
-# ----------------------------------------------------------------- students
+# Each read is open to the instructor, a TA and a student (who is refused is pinned in
+# test_classes_authz.py). One test per read: what each of them gets back, and what it costs.
+# A member who is not the instructor pays one more read, for their enrollment.
+CALLERS = [(INSTR, 0), (TA1, 1), (S1, 1)]
 
 
-def test_students_shape(db):
-    out = students(INSTR)
+@pytest.mark.parametrize(("caller", "extra"), CALLERS)
+def test_students(db, caller, extra):
+    out = students(caller)
+
     assert len(out) == len(EXPECTED_STUDENTS)
     assert {s["id"]: s for s in out} == EXPECTED_STUDENTS
+    assert db.executes <= 3 + extra, _trace(db)
 
 
-@pytest.mark.parametrize(("caller", "budget"), [(INSTR, 3), (TA1, 4), (S1, 4)])
-def test_students_budget(db, caller, budget):
-    students(caller)
-    assert db.executes <= budget, _trace(db)
+@pytest.mark.parametrize(("caller", "extra"), CALLERS)
+def test_roster(db, caller, extra):
+    out = roster(caller)
 
-
-# ------------------------------------------------------------------- roster
-
-
-def test_roster_shape_and_order(db):
-    out = roster(INSTR)
     assert out["uploaded_at"] == "2026-01-07T00:00:00+00:00"  # manual rows count too
     assert out["students"] == EXPECTED_ROSTER
+    assert db.executes <= 4 + extra, _trace(db)
 
 
-@pytest.mark.parametrize(("caller", "budget"), [(INSTR, 4), (TA1, 5), (S1, 5)])
-def test_roster_budget(db, caller, budget):
-    assert roster(caller)["students"] == EXPECTED_ROSTER
-    assert db.executes <= budget, _trace(db)
-
-
-# ----------------------------------------------------------------- projects
-
-
-def test_project_cards_for_the_instructor_and_a_student(db):
+@pytest.mark.parametrize(("caller", "extra"), CALLERS)
+def test_project_cards(db, caller, extra):
     # A project's owner profile is shown even when the owner is not enrolled.
     ghost = ("Gus Ghost", "ghost@ucsc.edu")
-    assert projects(INSTR) == _cards(instructor=True, ghost_owner=ghost)
-    assert projects(S1) == _cards(instructor=False, ghost_owner=ghost)
+
+    assert projects(caller) == _cards(instructor=caller == INSTR, ghost_owner=ghost)
+    assert db.executes <= 2 + extra, _trace(db)
 
 
-@pytest.mark.parametrize(("caller", "budget"), [(INSTR, 2), (TA1, 3), (S1, 3)])
-def test_projects_budget(db, caller, budget):
-    projects(caller)
-    assert db.executes <= budget, _trace(db)
+@pytest.mark.parametrize(("caller", "extra"), CALLERS)
+def test_overview(db, caller, extra):
+    out = overview(caller)
 
-
-# ---------------------------------------------------------------- overview
-
-
-def test_overview_shape(db):
-    out = overview(INSTR)
     assert set(out) == {"projects", "students"}
     # Unlike get_class_projects, the overview names owners from the enrolled
     # profiles only, so the unenrolled owner of Gamma shows no name or email.
-    assert out["projects"] == _cards(instructor=True, ghost_owner=NONE_PAIR)
+    assert out["projects"] == _cards(instructor=caller == INSTR, ghost_owner=NONE_PAIR)
     assert {s["id"]: s for s in out["students"]} == EXPECTED_STUDENTS
     assert len(out["students"]) == len(EXPECTED_STUDENTS)
-
-
-@pytest.mark.parametrize(("caller", "budget"), [(INSTR, 3), (TA1, 4), (S1, 4)])
-def test_overview_budget(db, caller, budget):
-    overview(caller)
-    assert db.executes <= budget, _trace(db)
+    assert db.executes <= 3 + extra, _trace(db)
 
 
 # ------------------------------------------------------------- empty class

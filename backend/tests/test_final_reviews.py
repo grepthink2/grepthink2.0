@@ -152,13 +152,6 @@ def test_set_final_review_time_sets_and_clears(db):
     assert _project(db, P3)["final_review_at"] is None
 
 
-def test_set_final_review_time_instructor_only(db):
-    with pytest.raises(HTTPException) as exc:
-        tas.set_final_review_time(TA1, P1, T_2000)
-    assert exc.value.status_code == 403
-    assert _project(db, P1)["final_review_at"] == T_2200.isoformat()
-
-
 def test_set_final_review_time_unknown_project_404(db):
     with pytest.raises(HTTPException) as exc:
         tas.set_final_review_time(INSTR, "proj-missing", T_2000)

@@ -138,14 +138,18 @@ def test_rows_are_matched_back_to_users_the_way_postgres_compares_uuids():
 # ----------------------------------------------------------------- can_message
 
 
-def test_can_message_student_and_instructor(db):
-    assert messages.can_message(S1, INSTR) is True
-    assert db.executes <= 3, _trace(db)  # roles, then owned classes + enrollments
-
-
-def test_can_message_without_a_shared_class(db):
-    assert messages.can_message(S2, S3) is False
-    assert db.executes <= 3, _trace(db)
+@pytest.mark.parametrize(
+    ("a", "b", "allowed", "reads"),
+    [
+        pytest.param(S1, INSTR, True, 3, id="a-student-and-their-instructor"),
+        pytest.param(S1, S2, True, 3, id="two-students-of-one-class"),
+        pytest.param(S2, S3, False, 3, id="no-shared-class"),
+        pytest.param(S1, S1, False, 0, id="yourself"),
+    ],
+)
+def test_can_message(db, a, b, allowed, reads):
+    assert messages.can_message(a, b) is allowed
+    assert db.executes <= reads, _trace(db)  # roles, then owned classes + enrollments
 
 
 def test_can_message_instructor_pair_stops_after_the_role_read(db):
