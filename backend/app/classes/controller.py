@@ -14,7 +14,7 @@ from app.classes.invite_email import send_class_invite_email, send_class_invite_
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
 from app.utils.class_banner import upload_class_banner
-from app.utils.generators import generate_course_code
+from app.utils.generators import generate_course_code, normalize_course_code
 from app.utils.profiles import profile_display_name
 
 logger = logging.getLogger(__name__)
@@ -610,13 +610,15 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
         HTTPException: If course code is invalid or database error occurs
     """
     try:
-        client = get_client()
+        # Exact match on a validated code. This used to be an ``ilike``, which made ``%``
+        # (or ``Q%``) a valid "code" that joined whichever class PostgREST listed first.
+        code = normalize_course_code(course_code)
+        if code is None:
+            raise HTTPException(status_code=404, detail="Invalid course code")
+        course_code = code
 
-        # Find class by course code
-        course_code = course_code.strip().upper()
-        class_result = (
-            client.table("classes").select("*").ilike("course_code", course_code).execute()
-        )
+        client = get_client()
+        class_result = client.table("classes").select("*").eq("course_code", course_code).execute()
         if not class_result.data or len(class_result.data) == 0:
             raise HTTPException(status_code=404, detail="Invalid course code")
 

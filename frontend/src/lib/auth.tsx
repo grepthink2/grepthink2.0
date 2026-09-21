@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import type { UserRole } from '@/features/app/config/sidebar';
@@ -21,6 +21,14 @@ interface AuthContextValue {
   realRole: UserRole;
   /** Whether "View as Student" preview is currently active. */
   isPreviewing: boolean;
+  /**
+   * The profile answered and carries no role: its owner signed up with Google and has
+   * not chosen one yet. Every role-gated endpoint refuses them, so ProtectedRoute sends
+   * them to /select. Never true just because the profile could not be fetched.
+   */
+  needsRole: boolean;
+  /** Re-read the role from the profile, e.g. right after the user has picked one. */
+  refreshRole: () => Promise<void>;
   getToken: () => Promise<string | null>;
   signOut: () => Promise<void>;
 }
@@ -29,6 +37,22 @@ interface AuthContextValue {
 function toUserRole(value: unknown): UserRole | null {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return normalized === 'instructor' || normalized === 'student' ? normalized : null;
+}
+
+interface ProfileRole {
+  userId: string;
+  role: UserRole | null;
+  /** False when the profile could not be read, which says nothing about the role. */
+  answered: boolean;
+}
+
+/** The role the backend authorizes `userId` by. Never rejects. */
+function fetchProfileRole(userId: string): Promise<ProfileRole> {
+  return apiRequest<ApiProfile>('/api/profiles/me').then(
+    (profile) => ({ userId, role: toUserRole(profile?.role), answered: true }),
+    // The API is unreachable: keep the metadata role rather than blocking the app.
+    () => ({ userId, role: null, answered: false }),
+  );
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -91,25 +115,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // the API treated it as an instructor. Keyed by user id so one account's role
   // never carries over to the next session in this tab.
   const userId = session?.user?.id ?? null;
-  const [profileRole, setProfileRole] = useState<{ userId: string; role: UserRole | null } | null>(
-    null,
-  );
+  const [profileRole, setProfileRole] = useState<ProfileRole | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
-    apiRequest<ApiProfile>('/api/profiles/me')
-      .then((profile) => {
-        if (!cancelled) setProfileRole({ userId, role: toUserRole(profile?.role) });
-      })
-      .catch(() => {
-        // No profile row yet (first OAuth login) or the API is unreachable: keep
-        // the metadata role rather than blocking the app.
-        if (!cancelled) setProfileRole({ userId, role: null });
-      });
+    void fetchProfileRole(userId).then((next) => {
+      if (!cancelled) setProfileRole(next);
+    });
     return () => {
       cancelled = true;
     };
+  }, [userId]);
+
+  const refreshRole = useCallback(async () => {
+    if (!userId) return;
+    setProfileRole(await fetchProfileRole(userId));
   }, [userId]);
 
   const value = useMemo<AuthContextValue>(() => {
@@ -132,6 +153,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role,
       realRole: role,
       isPreviewing: false,
+      needsRole: resolved !== null && resolved.answered && resolved.role === null,
+      refreshRole,
       getToken: async () => {
         // Try the cached session first (cheap, no network).
         const { data } = await supabase.auth.getSession();
@@ -154,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await supabase.auth.signOut({ scope: 'global' });
       },
     };
-  }, [session, loading, profileRole, userId]);
+  }, [session, loading, profileRole, userId, refreshRole]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

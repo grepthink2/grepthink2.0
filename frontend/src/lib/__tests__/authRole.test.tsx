@@ -22,8 +22,14 @@ function sessionFor(userId: string, userMetadata: Record<string, unknown>) {
 }
 
 function Probe() {
-  const { loading, role, realRole } = useAuth();
-  return <output data-testid="auth">{loading ? 'loading' : `${role}:${realRole}`}</output>;
+  const { loading, role, realRole, needsRole, refreshRole } = useAuth();
+  return (
+    <>
+      <output data-testid="auth">{loading ? 'loading' : `${role}:${realRole}`}</output>
+      <output data-testid="needs-role">{String(needsRole)}</output>
+      <button onClick={() => void refreshRole()}>refresh</button>
+    </>
+  );
 }
 
 function renderWithSession(session: unknown) {
@@ -90,6 +96,33 @@ describe('AuthProvider role', () => {
 
     act(() => emit('SIGNED_IN', sessionFor('user-2', {})));
     expect(probe()).toBe('loading');
+  });
+
+  it('reports a profile that answered with no role, so the app can send its owner to pick one', async () => {
+    // A Google signup: the row exists, the role is for the user to choose.
+    client.apiRequest.mockResolvedValue({ id: 'user-1', role: null });
+    renderWithSession(sessionFor('user-1', {}));
+
+    await waitFor(() => expect(screen.getByTestId('needs-role').textContent).toBe('true'));
+  });
+
+  it('does not mistake an unreachable backend for a missing role', async () => {
+    client.apiRequest.mockRejectedValue(new Error('backend unavailable'));
+    renderWithSession(sessionFor('user-1', {}));
+
+    await waitFor(() => expect(probe()).toBe('student:student'));
+    expect(screen.getByTestId('needs-role').textContent).toBe('false');
+  });
+
+  it('picks up the role as soon as it has been chosen', async () => {
+    client.apiRequest.mockResolvedValueOnce({ role: null }).mockResolvedValueOnce({ role: 'instructor' });
+    renderWithSession(sessionFor('user-1', {}));
+    await waitFor(() => expect(screen.getByTestId('needs-role').textContent).toBe('true'));
+
+    await act(async () => screen.getByRole('button', { name: 'refresh' }).click());
+
+    await waitFor(() => expect(probe()).toBe('instructor:instructor'));
+    expect(screen.getByTestId('needs-role').textContent).toBe('false');
   });
 
   it('does not request a profile without a session', async () => {

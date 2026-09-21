@@ -8,6 +8,11 @@ interface EduVerifyModalProps {
   eduEmail: string;
   onVerified: () => void;
   onClose: () => void;
+  /**
+   * The server has no mail settings (a developer machine), so it wrote the code to its
+   * log instead of emailing it. Deployments answer 503 in that case and never get here.
+   */
+  codeWasLogged?: boolean;
 }
 
 const EduVerifyModal: React.FC<EduVerifyModalProps> = ({
@@ -15,6 +20,7 @@ const EduVerifyModal: React.FC<EduVerifyModalProps> = ({
   eduEmail,
   onVerified,
   onClose,
+  codeWasLogged = false,
 }) => {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [submitting, setSubmitting] = useState(false);
@@ -116,6 +122,11 @@ const EduVerifyModal: React.FC<EduVerifyModalProps> = ({
             <br />
             <strong>{eduEmail}</strong>
           </p>
+          {codeWasLogged && (
+            <p className="join-class-modal__subtitle">
+              This server has no email settings, so the code was written to the backend log instead.
+            </p>
+          )}
 
           {error && <div className="join-class-modal__error">{error}</div>}
           {success && <div className="join-class-modal__success">Email verified!</div>}
