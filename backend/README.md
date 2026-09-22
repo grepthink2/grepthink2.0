@@ -56,7 +56,8 @@ backend/
 │   ├── core/
 │   │   ├── db.py            # get_client() (failures raise DatabaseError), fan_out(), retries
 │   │   ├── authz.py         # Class and project access checks
-│   │   └── errors.py        # DatabaseError types; handlers answer {"detail", "code"}
+│   │   ├── errors.py        # DatabaseError types; handlers answer {"detail", "code"}
+│   │   └── sentry.py        # Optional Sentry error reporting (SENTRY_DSN)
 │   ├── jobs/
 │   │   └── pending_invites.py  # Poller that sends queued class-invite emails
 │   ├── database/client.py   # Supabase clients (anon + service role)

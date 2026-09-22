@@ -32,6 +32,7 @@ development reads (only the repo-root `.env` is read — see `README.md`).
 | `FRONTEND_URL` | absolute URL used in transactional emails |
 | `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASSWORD` `SMTP_FROM` | invite / verification / contact emails |
 | `PENDING_INVITES_POLL_SECONDS` | optional; scheduled-invite poll interval (default 5) |
+| `SENTRY_DSN` | optional; turns on error reporting to Sentry (see **Error tracking**). Unset means off |
 
 **Frontend project**
 
@@ -77,6 +78,54 @@ row, is safe under the code `main` runs today, and **must run before `beta` is m
 PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. See
 `docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md` for that and for the rest of
 the deployment gaps (no CI or branch protection on `main`, squash-merged releases, no staging).
+
+## Error tracking (Sentry)
+
+Optional: with `SENTRY_DSN` unset nothing is initialised, so local development, the
+tests and any deployment without it behave as before. With it set, `app/core/sentry.py`:
+
+- sends **error events only**. Tracing, profiling and release-health sessions stay off,
+  which keeps the project inside Sentry's free tier. Unhandled exceptions, 5xx responses
+  (including database failures) and anything logged at `ERROR` become events.
+- tags every event with an `environment` (`ENVIRONMENT`, else Vercel's `VERCEL_ENV`, so
+  `production` or `preview`) and a `release`, the deployed commit (`VERCEL_GIT_COMMIT_SHA`;
+  keep "Automatically expose System Environment Variables" on in the Vercel project).
+- never collects request bodies or local variables, and scrubs each event before it
+  leaves the function: cookies, query strings and every request header except a few
+  harmless ones (`Authorization`, `Cookie`, `apikey`, `X-Forwarded-For`, and Vercel's
+  IP-location and OIDC-token headers are all filtered); the values of credential-like
+  environment variables (any name containing `KEY`, `SECRET`, `TOKEN`, `PASSWORD`, `DSN`,
+  ...); and anything shaped like an email address, IPv4 address, JWT or provider token.
+- delivers events before the response goes out. Vercel can freeze the function as soon
+  as a response is done (its legacy Lambda handler returns once it has read the body),
+  which would strand events the SDK's background thread has not sent yet, so the
+  catch-all 500 handler and `SentryFlushMiddleware` hold the response until delivery:
+  at most 2 s, and only on requests that captured something.
+
+Sentry's own alert rules do the paging: email on a new issue and on an error spike.
+
+**Checking delivery on a preview deployment.** Preview deployments get no environment
+variables today, so the app cannot even start there. For the check:
+
+1. Scope `SENTRY_DSN` to Preview as well as Production, and give Preview the **dev**
+   project's `SUPABASE_URL` and `SUPABASE_KEY`.
+2. On a throwaway branch, add a temporary route that refuses to fail in production:
+
+   ```python
+   @app.get("/__sentry-check")
+   def sentry_check():
+       if os.environ.get("VERCEL_ENV") == "production":
+           raise HTTPException(status_code=404)
+       raise RuntimeError("Sentry delivery check")
+   ```
+
+3. Push the branch, and open `<preview URL>/__sentry-check?email=someone%40example.com`
+   while signed in to Vercel. Expect the fixed 500 body.
+4. In Sentry, the issue `RuntimeError: Sentry delivery check` appears within seconds with
+   environment `preview`, handled `no`, and the preview's commit SHA as its release. The
+   event's request has no query string, and `Cookie` (Vercel's sign-in cookie) and
+   `X-Forwarded-For` show `[Filtered]`.
+5. Delete the branch, and remove the Preview-scoped variables if you do not want them.
 
 ## Known serverless caveats
 
