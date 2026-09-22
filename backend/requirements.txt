@@ -11,4 +11,5 @@ python-dotenv==1.2.3
 supabase==2.31.0
 PyJWT[crypto]==2.13.0      # [crypto] pulls `cryptography`, needed to verify RS256/ES256 tokens
 slowapi==0.1.10
+sentry-sdk[fastapi]==2.69.2   # error reporting; inert unless SENTRY_DSN is set (app/core/sentry.py)
 tzdata==2026.4            # zoneinfo data (America/Los_Angeles) on hosts without a system tz database

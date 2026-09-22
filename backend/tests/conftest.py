@@ -17,6 +17,9 @@ os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
 os.environ.setdefault("SUPABASE_KEY", "test-anon-key")
 os.environ.setdefault("SUPABASE_JWT_SECRET", "test-jwt-secret-please-do-not-use-in-prod")
 os.environ.setdefault("CORS_ORIGINS", "http://localhost:5173")
+# Never report to a real Sentry project, even when the repo-root .env has a DSN
+# (load_dotenv leaves variables that are already set alone).
+os.environ["SENTRY_DSN"] = ""
 
 import jwt  # noqa: E402
 import pytest  # noqa: E402

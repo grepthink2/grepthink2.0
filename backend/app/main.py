@@ -24,6 +24,7 @@ from app.classes.url import router as classes_router
 from app.config import settings
 from app.contact.url import router as contact_router
 from app.core.errors import install_exception_handlers
+from app.core.sentry import SentryFlushMiddleware, init_sentry
 from app.health.url import router as health_router
 from app.jobs.pending_invites import run_forever as run_pending_invites
 from app.limiter import limiter
@@ -51,6 +52,10 @@ async def lifespan(app: FastAPI):
             await task
 
 
+# Error reporting: a no-op unless SENTRY_DSN is set (app/core/sentry.py). It starts
+# before the app is built so the SDK's FastAPI integration can instrument it.
+sentry_enabled = init_sentry()
+
 app = FastAPI(
     title="GrepThink 2.0 API",
     description="Backend API for GrepThink 2.0",
@@ -74,6 +79,11 @@ app.add_middleware(
 # Defensive security headers on every response.
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIMiddleware)
+if sentry_enabled:
+    # Added last, so it is outermost and every response passes through it: a response
+    # waits until the Sentry events it caused are delivered, because Vercel may freeze
+    # the function as soon as the response is complete.
+    app.add_middleware(SentryFlushMiddleware)
 
 for router in (
     health_router,
