@@ -2,12 +2,15 @@
  * AccountDetails — second step of email/password signup.
  *
  * Collects first/last name. Students also provide a roster .edu email when
- * their signup email is not already a .edu address.
+ * their signup email is not already a .edu address. Whoever holds that address owns
+ * the matching roster row, so it is never saved from here: the server emails a code
+ * to it and only `verify-edu-email` writes it. A student can skip that and verify
+ * later from Settings, so signup never depends on an email arriving.
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest, api } from '@/lib/api';
-// import EduVerifyModal from '@features/app/components/Settings/EduVerifyModal';
+import EduVerifyModal from '@features/app/components/Settings/EduVerifyModal';
 import './AccountDetails.scss';
 
 interface AccountDetailsProps {
@@ -31,12 +34,12 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
   const [eduEmail, setEduEmail] = React.useState(primaryIsEdu ? email : '');
   const [error, setError] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
-  // TODO: re-enable edu email verification flow
-  // const [eduVerifyOpen, setEduVerifyOpen] = React.useState(false);
-  // const [pendingEduEmail, setPendingEduEmail] = React.useState('');
+  const [eduVerifyOpen, setEduVerifyOpen] = React.useState(false);
+  const [pendingEduEmail, setPendingEduEmail] = React.useState('');
+  const [codeWasLogged, setCodeWasLogged] = React.useState(false);
+  const mustVerifyRosterEmail = needsRosterEmail && !primaryIsEdu;
 
-  const handleContinue = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const saveDetails = async ({ verifyRosterEmail }: { verifyRosterEmail: boolean }) => {
     setError('');
 
     const trimmedFirst = firstName.trim();
@@ -48,7 +51,7 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
       return;
     }
 
-    if (needsRosterEmail && !primaryIsEdu) {
+    if (verifyRosterEmail) {
       if (!trimmedEdu) {
         setError('Please enter your roster .edu email.');
         return;
@@ -62,7 +65,7 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
     setIsLoading(true);
 
     try {
-      if (needsRosterEmail && !primaryIsEdu) {
+      if (verifyRosterEmail) {
         const checkData = await api.checkEmail(trimmedEdu);
         if (checkData && !checkData.available) {
           setError('This .edu email is already linked to another account.');
@@ -71,34 +74,23 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
         }
       }
 
-      const updatePayload: Record<string, string> = {
-        first_name: trimmedFirst,
-        last_name: trimmedLast,
-      };
-
-      if (needsRosterEmail && !primaryIsEdu) {
-        updatePayload.edu_email = trimmedEdu;
-      }
-
       await apiRequest('/api/profiles/me', {
         method: 'PATCH',
-        body: JSON.stringify(updatePayload),
+        body: JSON.stringify({ first_name: trimmedFirst, last_name: trimmedLast }),
       });
 
-      navigate('/app/home', { replace: true });
+      if (!verifyRosterEmail) {
+        navigate('/app/home', { replace: true });
+        return;
+      }
 
-      // TODO: re-enable edu email verification flow
-      // if (isInstructor || primaryIsEdu) {
-      //   navigate('/app/home', { replace: true });
-      //   return;
-      // }
-      //
-      // await apiRequest('/api/profiles/send-edu-verification', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ edu_email: trimmedEdu }),
-      // });
-      // setPendingEduEmail(trimmedEdu);
-      // setEduVerifyOpen(true);
+      const sent = await apiRequest<{ delivery?: 'email' | 'log' }>(
+        '/api/profiles/send-edu-verification',
+        { method: 'POST', body: JSON.stringify({ edu_email: trimmedEdu }) },
+      );
+      setCodeWasLogged(sent?.delivery === 'log');
+      setPendingEduEmail(trimmedEdu);
+      setEduVerifyOpen(true);
     } catch (err: unknown) {
       console.error('[AccountDetails] continue failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to save your details. Please try again.');
@@ -107,11 +99,15 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
     }
   };
 
-  // TODO: re-enable edu email verification flow
-  // const handleEduVerified = () => {
-  //   setEduVerifyOpen(false);
-  //   navigate('/app/home', { replace: true });
-  // };
+  const handleContinue = (e: React.FormEvent) => {
+    e.preventDefault();
+    void saveDetails({ verifyRosterEmail: mustVerifyRosterEmail });
+  };
+
+  const handleEduVerified = () => {
+    setEduVerifyOpen(false);
+    navigate('/app/home', { replace: true });
+  };
 
   return (
     <>
@@ -186,18 +182,28 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
             >
               {isLoading ? 'Saving...' : 'Continue to Grepthink'}
             </button>
+
+            {mustVerifyRosterEmail && (
+              <button
+                type="button"
+                className="buttonLink"
+                disabled={isLoading}
+                onClick={() => void saveDetails({ verifyRosterEmail: false })}
+              >
+                Verify later in Settings
+              </button>
+            )}
           </form>
         </div>
       </div>
 
-      {/* TODO: re-enable edu email verification flow
       <EduVerifyModal
         isOpen={eduVerifyOpen}
         eduEmail={pendingEduEmail}
+        codeWasLogged={codeWasLogged}
         onVerified={handleEduVerified}
         onClose={() => setEduVerifyOpen(false)}
       />
-      */}
     </>
   );
 };

@@ -5,6 +5,7 @@ import { LinkedinIcon as Linkedin, GithubIcon as Github } from '@/components/ico
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabaseClient';
 import { apiRequest, api, type ApiProfile } from '@/lib/api';
+import EduVerifyModal from '@features/app/components/Settings/EduVerifyModal';
 import './Settings.scss';
 
 interface SettingsProps {
@@ -26,6 +27,10 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const [github, setGithub] = useState('');
   const [eduEmail, setEduEmail] = useState('');
   const originalEduEmailRef = useRef('');
+
+  // A new roster address is only saved by the server once a code sent to it comes back.
+  const [verifyingEduEmail, setVerifyingEduEmail] = useState<string | null>(null);
+  const [codeWasLogged, setCodeWasLogged] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -144,8 +149,9 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         updateData.github = github.trim();
       }
 
-      if (eduEmailChanged) {
-        updateData.edu_email = newEduEmail || null;
+      // Removing the address needs no proof; setting one does (see below).
+      if (eduEmailChanged && !newEduEmail) {
+        updateData.edu_email = null;
       }
 
       await apiRequest('/api/profiles/me', {
@@ -153,8 +159,18 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         body: JSON.stringify(updateData),
       });
 
+      if (eduEmailChanged && newEduEmail) {
+        const sent = await apiRequest<{ delivery?: 'email' | 'log' }>(
+          '/api/profiles/send-edu-verification',
+          { method: 'POST', body: JSON.stringify({ edu_email: newEduEmail }) },
+        );
+        setCodeWasLogged(sent?.delivery === 'log');
+        setVerifyingEduEmail(newEduEmail);
+        return;
+      }
+
       if (eduEmailChanged) {
-        originalEduEmailRef.current = newEduEmail;
+        originalEduEmailRef.current = '';
       }
 
       setSaveStatus('success');
@@ -166,12 +182,28 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleEduVerified = () => {
+    if (verifyingEduEmail) originalEduEmailRef.current = verifyingEduEmail;
+    setSaveStatus('success');
+  };
+
+  const handleEduVerifyClosed = () => {
+    // Closed without a valid code: the saved address is still the old one, so show that.
+    if (verifyingEduEmail && originalEduEmailRef.current !== verifyingEduEmail) {
+      setEduEmail(originalEduEmailRef.current);
+      setSaveStatus('error');
+      setErrorMessage('Your university email was not changed because it was not verified.');
+    }
+    setVerifyingEduEmail(null);
+  };
+
   if (!isOpen) return null;
 
   const displayAvatar = avatarPreview ?? avatarUrl;
   const primaryIsEdu = user?.email?.toLowerCase().endsWith('.edu') ?? false;
 
   return createPortal(
+    <>
     <div className="settings-modal__overlay" onClick={handleClose}>
       <div
         className="settings-modal"
@@ -376,7 +408,15 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
       </div>
-    </div>,
+    </div>
+    <EduVerifyModal
+      isOpen={verifyingEduEmail !== null}
+      eduEmail={verifyingEduEmail ?? ''}
+      codeWasLogged={codeWasLogged}
+      onVerified={handleEduVerified}
+      onClose={handleEduVerifyClosed}
+    />
+    </>,
     document.body,
   );
 };

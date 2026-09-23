@@ -1,9 +1,12 @@
 # supabase/ — schema as code (fresh-build, no migrations)
 
-> **Read this first (2026-09-20).** Two statements below have drifted. *RLS posture:* most
-> tables still have RLS on with no policies, but `profiles`, `classes`, `projects`,
-> `notifications` and the five messaging tables now carry SELECT policies, because the browser
-> subscribes to `conversations`, `messages` and `notifications` over Realtime. *Keeping dev and
+> **Read this first (2026-09-21).** Two statements below have drifted. *RLS posture:* most
+> tables still have RLS on with no policies, but `profiles`, `notifications` and the five
+> messaging tables carry SELECT policies, because the browser subscribes to `messages` and
+> `notifications` over Realtime. RLS is no longer the only line of defence:
+> `2026-09-21_lock_down_direct_table_access.sql` drops the early *write* policies on `profiles`,
+> `classes` and `projects` and revokes every client privilege except `SELECT` on the Realtime
+> tables (see `AUTH.md`, "The browser has no table access"). *Keeping dev and
 > prod in sync:* the "re-run the dump and re-apply by hand" model is what let PROD fall three
 > migrations behind; changes now live in `backend/database/migrations/` and the plan to automate
 > them is in `docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md`. The table and

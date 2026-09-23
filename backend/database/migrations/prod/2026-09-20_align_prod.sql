@@ -5,6 +5,7 @@
 -- verbatim, so every statement here is byte-identical to what dev has already run (steps
 -- 2 and 8 exist only here and were run on dev on 2026-09-20 as a no-op and a check).
 -- If a source file changes before this is applied, re-assemble rather than editing here.
+-- Re-assembled 2026-09-21 to add steps 8 and 9 (the auth review); nothing earlier changed.
 --
 -- How to run: paste the whole file into the Supabase SQL editor and run it once. Steps 1–7
 -- sit inside an explicit BEGIN … COMMIT, so if any statement fails NOTHING is applied and
@@ -25,7 +26,16 @@
 --     filters conversations by user_a/user_b, so the new team channels (NULL/NULL) are
 --     invisible to it, its inserts get type='dm' by default, and it never selects the
 --     three projects columns dropped in step 5. Checked against origin/main 2026-09-20.
---   * Must run BEFORE beta reaches main — the group messaging code needs step 1.
+--   * Must run BEFORE beta reaches main — the group messaging code needs step 1 and the
+--     .edu verification flow needs step 8.
+--   * Step 9 closes a hole that is open on PROD right now (any signed-in user can make
+--     themselves an instructor through the public anon key). It does not depend on anything
+--     else here, and it was applied to PROD on its own on 2026-09-21. It runs again here as
+--     the last step because step 1 re-grants ALL on conversation_participants, which does not
+--     exist on PROD yet; re-running it is harmless.
+--   * DELIBERATELY NOT HERE: ../2026-09-21_role_chosen_by_its_owner.sql. It changes what a
+--     Google signup gets, and the code `main` runs today cannot finish such a signup. Apply it
+--     only AFTER beta (with the auth-hardening PR) is live on main.
 --
 -- ── PROD state measured 2026-09-20 ────────────────────────────────────────────────
 --   * conversations is the pre-group DM shape (no type, no project_id); 0 rows have a
@@ -784,10 +794,153 @@ $$;
 REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM PUBLIC, anon, authenticated;
 
 
+-- ═════════════════════════════════════════════════════════════════════════════
+-- STEP 8 — a table for pending .edu verification codes (expand: safe before the code that uses it)
+--   source: 2026-09-21_edu_email_verifications.sql (verbatim)
+-- ═════════════════════════════════════════════════════════════════════════════
+
+-- 2026-09-21 — pending .edu verification codes move out of process memory
+--
+-- EXPAND: apply BEFORE deploying the code that uses it (the verify-edu-email flow answers 500
+-- without this table); harmless to older code, which never looks at it. Idempotent.
+--
+-- Applied: DEV ____-__-__   PROD ____-__-__ (queued in prod/2026-09-20_align_prod.sql)
+-- Rehearsed on dev 2026-09-21 inside a rolled-back transaction: the upsert keeps one row per
+-- user, and the conditional attempt claim updates one row the first time and none the second.
+--
+-- The roster is matched to accounts by email, and `profiles.edu_email` wins over the login
+-- email, so whoever holds an address there owns that student's roster row. It used to be
+-- writable through PATCH /api/profiles/me with no proof of ownership; it is now written only
+-- by verify_edu_email, after a code emailed to the address comes back.
+--
+-- The codes lived in a module-level dict, which cannot work on serverless (the instance that
+-- checks a code is rarely the one that issued it) and had no limit on guesses. One row per
+-- user: a new code replaces the old one. The code itself is never stored, only
+-- sha256(user_id:edu_email:code); `attempts` is claimed with a conditional UPDATE before each
+-- comparison, so five attempts means five comparisons however requests are timed.
+CREATE TABLE IF NOT EXISTS public.edu_email_verifications (
+  user_id      uuid        PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  edu_email    text        NOT NULL,
+  code_hash    text        NOT NULL,
+  attempts     integer     NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+  expires_at   timestamptz NOT NULL,
+  last_sent_at timestamptz NOT NULL DEFAULT now(),
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+-- Service role only: RLS on with no policy, and no client privileges even where the
+-- 2026-09-21 lockdown has not run yet.
+ALTER TABLE public.edu_email_verifications ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.edu_email_verifications FROM anon, authenticated;
+
+
+-- ═════════════════════════════════════════════════════════════════════════════
+-- STEP 9 — LAST: the browser may read what Realtime delivers, and nothing else
+--   source: 2026-09-21_lock_down_direct_table_access.sql (verbatim)
+-- ═════════════════════════════════════════════════════════════════════════════
+
+-- 2026-09-21 — the browser may read what Realtime delivers to it, and nothing else
+--
+-- SAFE TO RUN ON ITS OWN, ON ANY ENVIRONMENT, AT ANY TIME, AND URGENT ON PROD. It does not
+-- depend on any other migration (tables that do not exist yet are skipped), it is idempotent,
+-- and it changes nothing the application does: the backend reaches every table with the
+-- service-role key, which none of this touches. prod/2026-09-20_align_prod.sql runs it again
+-- as its last step, because the group messaging migration re-grants ALL on one table.
+--
+-- Applied: DEV ____-__-__   PROD 2026-09-21 (by the maintainer, in the SQL editor)
+-- Verified read-only on PROD the same day: `anon` holds nothing; `authenticated` holds SELECT on
+-- conversations, messages and notifications (conversation_participants does not exist there
+-- yet, so it was skipped, as designed); no write policy is left; the four policies named below
+-- are gone; classes_course_code_upper_uq exists; new tables get no client privileges.
+-- Rehearsed on dev 2026-09-21 inside a transaction that was rolled back, then tested as a
+-- signed-in student while it was in effect: changing their own role, creating a class,
+-- reading profiles and writing a message were all denied; their own conversations stayed
+-- readable, other people's conversations and notifications did not; a table created
+-- afterwards had no client privileges. Dev is a shared database, so applying it for real
+-- is the maintainer's call.
+--
+-- ── Why ────────────────────────────────────────────────────────────────────────────────────
+-- The security model is "RLS on every table, the browser never touches a table". Two things
+-- quietly contradicted it, and together they were exploitable with nothing but the public
+-- anon key that ships in the client bundle:
+--
+--   * Supabase grants ALL on every new public table to `anon` and `authenticated`. RLS was
+--     the only thing standing between a signed-in user and every table.
+--   * Four early policies let RLS pass for writes:
+--       profiles_update_own          no column limit, so a student could set their own
+--                                    `role` to 'instructor', and the backend authorises by it
+--       profiles_insert_own          same, at insert
+--       "Creators can manage classes" FOR ALL: any user could insert a class naming themselves
+--                                    creator, including one reusing a real class's join code
+--       "Project creators can manage" FOR ALL: same for a project, in any class
+--     Reproduced on dev under PROD's grants, inside a rolled-back transaction, 2026-09-21.
+--     Dev had already lost the grants on `profiles` by hand, which is why it was never seen.
+--
+-- ── What the browser actually needs ────────────────────────────────────────────────────────
+-- Auth and Storage (neither is in this schema; the storage policies reference no public
+-- table) and Realtime `postgres_changes` on `messages` and `notifications` (`main` also
+-- subscribes to `conversations`). Realtime decides who may see a row by running the table's
+-- SELECT policy as the subscriber, which needs SELECT on the table and on anything the
+-- policy reads: the messaging policies read `conversation_participants` (and, on a database
+-- that has not had group messaging yet, `conversations`).
+--
+-- To let the browser read another table later: add a SELECT policy scoped by auth.uid() AND
+-- `GRANT SELECT ON public.<table> TO authenticated`. Neither alone does anything, which is
+-- the point.
+
+-- 1) The write policies. `profiles_select_own` (read-only, own row) stays; with no SELECT
+--    grant it is inert until someone deliberately grants it.
+DROP POLICY IF EXISTS "Creators can manage classes" ON public.classes;
+DROP POLICY IF EXISTS "Project creators can manage" ON public.projects;
+DROP POLICY IF EXISTS profiles_insert_own ON public.profiles;
+DROP POLICY IF EXISTS profiles_update_own ON public.profiles;
+
+-- 2) Table privileges: nothing for anon, read-only on the Realtime tables for authenticated.
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
+
+DO $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['messages', 'conversations', 'conversation_participants', 'notifications']
+  LOOP
+    IF to_regclass('public.' || t) IS NOT NULL THEN
+      EXECUTE format('GRANT SELECT ON public.%I TO authenticated', t);
+    END IF;
+  END LOOP;
+END
+$$;
+
+-- ...and tables created from now on start with no client privileges at all, instead of ALL.
+-- (Migrations run as `postgres`; `service_role` keeps its default grants.)
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE ALL ON TABLES FROM anon, authenticated;
+
+-- 3) A join code identifies exactly one class. Every code on dev and PROD is already eight
+--    upper-case letters and digits with no duplicates (checked 2026-09-21); this keeps it so,
+--    whatever the case, now that the API matches codes exactly instead of with ILIKE.
+CREATE UNIQUE INDEX IF NOT EXISTS classes_course_code_upper_uq
+  ON public.classes (upper(course_code));
+
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+-- Verification (expect: first query returns only SELECT rows for `authenticated` on the four
+-- Realtime tables and nothing for `anon`; second returns 0 rows; third returns 1 row):
+--
+--   SELECT grantee, table_name, string_agg(privilege_type, ',' ORDER BY privilege_type)
+--     FROM information_schema.role_table_grants
+--    WHERE table_schema = 'public' AND grantee IN ('anon', 'authenticated')
+--    GROUP BY 1, 2 ORDER BY 1, 2;
+--   SELECT tablename, policyname, cmd FROM pg_policies
+--    WHERE schemaname = 'public' AND cmd <> 'SELECT';
+--   SELECT indexname FROM pg_indexes
+--    WHERE schemaname = 'public' AND indexname = 'classes_course_code_upper_uq';
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+
+
 COMMIT;
 
 -- ═════════════════════════════════════════════════════════════════════════════
--- STEP 8 — verification — read the one row this returns against the comments
+-- STEP 10 — verification — read the one row this returns against the comments
 --   source: this file
 -- ═════════════════════════════════════════════════════════════════════════════
 
@@ -816,6 +969,15 @@ SELECT
   (SELECT count(*) FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'projects'
       AND column_name IN ('zoom_url','meeting_day','meeting_time'))          AS legacy_columns,           -- 0
+  (SELECT count(*) FROM information_schema.role_table_grants
+    WHERE table_schema = 'public' AND grantee IN ('anon', 'authenticated')
+      AND NOT (grantee = 'authenticated' AND privilege_type = 'SELECT'
+               AND table_name IN ('messages','conversations',
+                                  'conversation_participants','notifications'))) AS client_privileges_beyond_realtime_reads, -- 0
+  (SELECT count(*) FROM pg_policies
+    WHERE schemaname = 'public' AND cmd <> 'SELECT')                         AS write_policies,           -- 0
+  to_regclass('public.classes_course_code_upper_uq') IS NOT NULL             AS join_codes_unique,        -- t
+  to_regclass('public.edu_email_verifications') IS NOT NULL                  AS edu_verification_table,   -- t
   -- Function bodies byte-identical to dev's (md5 of prosrc, first 8 hex):
   (SELECT string_agg(p.proname || '#' || left(md5(p.prosrc), 8), ' ' ORDER BY p.proname)
      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
