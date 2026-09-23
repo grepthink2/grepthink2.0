@@ -18,6 +18,7 @@ import httpx
 import pytest
 from postgrest.exceptions import APIError
 
+from tests.conftest import header_for, make_token
 from tests.fake_supabase import FakeSupabase
 
 TAKEN = "taken@ucsc.edu"
@@ -28,6 +29,13 @@ SIGNUP = {
     "firstName": " Ann ",
     "lastName": "Lee",
 }
+
+
+@pytest.fixture
+def valid_token() -> str:
+    # create-user takes the address from the verified token, so this module's token
+    # carries the one it signs up with. (Overrides conftest's; ``auth_header`` follows.)
+    return make_token(sub="user-abc", email=SIGNUP["email"])
 
 
 @pytest.fixture
@@ -97,8 +105,10 @@ def test_create_user_provisions_through_the_service_client(client, auth_header, 
     }
 
 
-def test_create_user_checks_edu_conflicts_on_the_service_client(client, auth_header, fake):
-    res = client.post("/api/create-user", headers=auth_header, json={**SIGNUP, "email": TAKEN})
+def test_create_user_checks_edu_conflicts_on_the_service_client(client, fake):
+    res = client.post(
+        "/api/create-user", headers=header_for(TAKEN), json={**SIGNUP, "email": TAKEN}
+    )
     assert res.status_code == 409
     assert res.json()["detail"] == "This .edu email is already linked to another account."
     fake.auth.admin.delete_user.assert_called_once_with("user-abc")

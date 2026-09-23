@@ -30,8 +30,18 @@ from app.main import app  # noqa: E402
 TEST_SECRET = os.environ["SUPABASE_JWT_SECRET"]
 
 
-def make_token(sub: str = "user-abc", *, expired: bool = False, secret: str | None = None) -> str:
-    """Mint an HS256 JWT that mimics Supabase's access token shape."""
+def make_token(
+    sub: str = "user-abc",
+    *,
+    expired: bool = False,
+    secret: str | None = None,
+    email: str | None = None,
+) -> str:
+    """Mint an HS256 JWT that mimics Supabase's access token shape.
+
+    ``email`` is the verified address Supabase puts in every email or OAuth user's token;
+    pass it for the endpoints that read it (``/api/create-user``).
+    """
     now = int(time.time())
     payload = {
         "sub": sub,
@@ -40,7 +50,14 @@ def make_token(sub: str = "user-abc", *, expired: bool = False, secret: str | No
         "aud": "authenticated",
         "role": "authenticated",
     }
+    if email is not None:
+        payload["email"] = email
     return jwt.encode(payload, secret or TEST_SECRET, algorithm="HS256")
+
+
+def header_for(email: str, sub: str = "user-abc") -> dict[str, str]:
+    """An Authorization header for ``sub`` whose token carries ``email``."""
+    return {"Authorization": f"Bearer {make_token(sub=sub, email=email)}"}
 
 
 @pytest.fixture

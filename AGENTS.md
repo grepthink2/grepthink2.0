@@ -126,6 +126,18 @@ The full agent-facing action catalog (method, params, role) lives at
   from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
   designating via TA Management or TA Meetings writes the same `enrollment_role`
   (the legacy `class_tas` table was removed).
+- **The browser gets no table access, by grant as well as by policy.** `anon` holds nothing in
+  `public`; `authenticated` holds `SELECT` on the Realtime tables only, and new tables start with
+  no client privileges (`2026-09-21_lock_down_direct_table_access.sql`). Never add a write policy
+  or a `GRANT` for those roles to make something work: route it through the backend. A table the
+  browser must read over Realtime needs a `SELECT` policy scoped by `auth.uid()` **and**
+  `GRANT SELECT … TO authenticated`.
+- **Identity columns are never taken from a request body.** `profiles.email`, `profiles.edu_email`
+  and `profiles.role` decide whose roster row and whose privileges an account gets. The email
+  comes from the verified token, `edu_email` is written only by `verify_edu_email` (or from the
+  token's `.edu` address), and the role is written once by `create_user`. See `AUTH.md`.
+- **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
+  code once let `%` join any class. Validate the shape first, then match exactly.
 - **`lib/api/*.ts` can drift from routes** — the client is hand-maintained, no codegen.
   Confirm a route exists before adding or calling a client method, and add the method to
   the matching domain file (`lib/api.ts` spreads them all into `api`).

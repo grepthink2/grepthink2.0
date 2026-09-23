@@ -82,8 +82,8 @@ def send_edu_verification(
     Email a 6-digit verification code to the provided .edu address.
     """
     try:
-        controller.send_edu_verification(user_id, data.edu_email)
-        return {"message": "Verification code sent."}
+        sent = controller.send_edu_verification(user_id, data.edu_email)
+        return {"message": "Verification code sent.", **sent}
     except HTTPException:
         raise
     except Exception:

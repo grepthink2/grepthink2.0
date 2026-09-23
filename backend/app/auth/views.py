@@ -11,7 +11,7 @@ from app.auth.controller import get_user_role
 from app.auth.models import CheckEmailRequest, SignupRequest
 from app.core import db as core_db
 from app.core.db import get_client
-from app.core.errors import DatabaseError
+from app.core.errors import DatabaseConflictError, DatabaseError
 from app.database.client import get_authenticated_client
 from app.dependencies import require_user, require_user_payload
 from app.limiter import limiter
@@ -36,7 +36,8 @@ def login_check(request: Request, user_id: str = Depends(require_user)):
     """
     Returns the caller's id and profile role. Used by the frontend
     ``/auth/callback`` route to decide whether to send a first-time user to
-    the role-selection page. ``role`` is ``None`` when no profile row exists.
+    the role-selection page. ``role`` is ``None`` when no profile row exists or its
+    owner has not picked a role yet.
     """
     role = get_user_role(user_id)
     return {
@@ -63,15 +64,20 @@ def create_user(  # noqa: C901
     --------------
     - The JWT's ``sub`` must match ``userId`` in the body; otherwise a
       caller could provision a profile for another user.
-    - This endpoint is INSERT-only. It used to ``upsert`` on conflict with
-      the user id, which meant an authenticated student could re-POST with
-      ``userType: 'instructor'`` and escalate. We now return 409 Conflict
-      when a profile already exists, so role is fixed at signup. Role
+    - The email is the verified token's, never the body's. It is written to
+      ``profiles.email`` and, for a .edu address, to ``edu_email`` — the two
+      columns a roster row is matched by — so a caller who could choose it could
+      take over any classmate's roster row. The body's copy only has to agree.
+    - The role is written once. It used to ``upsert`` on conflict with the user
+      id, which meant an authenticated student could re-POST with
+      ``userType: 'instructor'`` and escalate. A profile whose role is still
+      empty (its owner signed up with Google and has not chosen yet) gets the
+      requested role; any other existing profile answers 409 Conflict. Role
       changes must go through an explicit admin path (not yet built).
     """
-    email = data.email
     user_id = data.userId
     user_type = data.userType
+    email = (payload.get("email") or "").strip().lower()
 
     if payload.get("sub") != user_id:
         logger.warning(
@@ -81,6 +87,15 @@ def create_user(  # noqa: C901
             email,
         )
         raise HTTPException(status_code=403, detail="User ID mismatch between Token and Body")
+
+    if not email or (data.email or "").strip().lower() != email:
+        logger.warning(
+            "create_user: token/body email mismatch | user_id=%s token_email=%s body_email=%s",
+            user_id,
+            email or None,
+            data.email,
+        )
+        raise HTTPException(status_code=403, detail="Email mismatch between Token and Body")
 
     if user_type not in {"student", "instructor"}:
         logger.warning(
@@ -101,7 +116,7 @@ def create_user(  # noqa: C901
 
     def _insert_profile(client):
         row = {"id": user_id, "email": email, "role": user_type}
-        if email.lower().endswith(".edu"):
+        if email.endswith(".edu"):
             row["edu_email"] = email
         if data.firstName:
             row["first_name"] = data.firstName.strip()
@@ -124,11 +139,66 @@ def create_user(  # noqa: C901
             raise HTTPException(status_code=401, detail="Missing authentication token")
         client = core_db.DatabaseClient(get_authenticated_client(parts[1]))
 
+    def _backfill_edu_email(client):
+        # A Supabase trigger may have auto-created the profile row without
+        # edu_email. If the primary email is .edu and edu_email isn't set
+        # yet, backfill it now so the column stays in sync.
+        if not email.endswith(".edu"):
+            return
+        existing_edu = (
+            client.table("profiles").select("edu_email").eq("id", user_id).single().execute()
+        )
+        if existing_edu.data and not existing_edu.data.get("edu_email"):
+            client.table("profiles").update({"edu_email": email}).eq("id", user_id).execute()
+            logger.info("create_user: backfilled edu_email | user_id=%s email=%s", user_id, email)
+
     try:
         existing = _select_profile(client)
         if existing.data:
             current_role = existing.data[0].get("role")
             created_at_str = existing.data[0].get("created_at")
+
+            if current_role is None:
+                # The signup trigger made the row and left the role for its owner to
+                # choose (a Google signup carries none). Conditional on the role still
+                # being empty, so of two racing requests exactly one picks.
+                picked = (
+                    client.table("profiles")
+                    .update({"role": user_type})
+                    .eq("id", user_id)
+                    .is_("role", "null")
+                    .execute()
+                )
+                if not picked.data:
+                    raise HTTPException(
+                        status_code=409, detail="Profile already exists for this user"
+                    )
+                try:
+                    _backfill_edu_email(client)
+                except DatabaseConflictError:
+                    # Someone else holds this address as their roster email. The role is
+                    # chosen; the address can be sorted out from Settings.
+                    logger.warning(
+                        "create_user: edu_email already claimed | user_id=%s email=%s",
+                        user_id,
+                        email,
+                    )
+                from app.auth.controller import invalidate_user_role
+                from app.notifications.controller import ensure_profile_completion_notification
+
+                invalidate_user_role(user_id)
+                ensure_profile_completion_notification(user_id)
+                logger.info(
+                    "create_user: role chosen | user_id=%s email=%s role=%s",
+                    user_id,
+                    email,
+                    user_type,
+                )
+                return {
+                    "message": "User record created successfully.",
+                    "email": email,
+                    "role": user_type,
+                }
             logger.info(
                 "create_user: profile already exists | user_id=%s email=%s current_role=%s requested_role=%s",
                 user_id,
@@ -177,26 +247,7 @@ def create_user(  # noqa: C901
                 except (ValueError, TypeError):
                     pass
 
-            # A Supabase trigger may have auto-created the profile row without
-            # edu_email. If the primary email is .edu and edu_email isn't set
-            # yet, backfill it now so the column stays in sync.
-            if email.lower().endswith(".edu"):
-                existing_edu = (
-                    client.table("profiles")
-                    .select("edu_email")
-                    .eq("id", user_id)
-                    .single()
-                    .execute()
-                )
-                if existing_edu.data and not existing_edu.data.get("edu_email"):
-                    client.table("profiles").update({"edu_email": email}).eq(
-                        "id", user_id
-                    ).execute()
-                    logger.info(
-                        "create_user: backfilled edu_email | user_id=%s email=%s",
-                        user_id,
-                        email,
-                    )
+            _backfill_edu_email(client)
 
             raise HTTPException(
                 status_code=409,
@@ -208,7 +259,7 @@ def create_user(  # noqa: C901
         # the /check-email endpoint handles the common case earlier in SignUp.tsx).
         # Only with the service-role client: `client` is that client here, and it
         # can see (and delete the auth user behind) other accounts' rows.
-        if email.lower().endswith(".edu") and service_configured:
+        if email.endswith(".edu") and service_configured:
             edu_conflict = client.table("profiles").select("id").eq("edu_email", email).execute()
             if edu_conflict.data:
                 try:

@@ -125,12 +125,25 @@ this is a student or an instructor. The flow is:
 3. `AuthCallback.tsx` exchanges the code via
    `supabase.auth.exchangeCodeForSession(window.location.href)`.
 4. It then calls `api.loginCheck()`. `loginCheck` returns `role: null`
-   when no `profiles` row exists for the user.
-5. If `role` is null → navigate to `/select`. If non-null → navigate to
-   `/app/home`.
+   when the profile has no role yet. The `handle_new_user` trigger creates
+   the `profiles` row at signup with the role from the signup form's
+   metadata; a Google signup carries none, so its role stays `NULL`
+   (`2026-09-21_role_chosen_by_its_owner.sql` — before it,
+   `profiles_role_sanitizer` turned that `NULL` into `'student'`, which made
+   this chooser unreachable after Google sign-in).
+5. If `role` is null → navigate to `/select` (or, when the flow started from
+   the login page, back to `/login` with "please sign up first"). If non-null
+   → navigate to `/app/home`.
 6. `RoleSelection.tsx` shows the student/instructor chooser, then POSTs
-   to `/api/create-user` with the chosen `userType`. The endpoint
-   creates the profile and the user is sent to `/app/home`.
+   to `/api/create-user` with the chosen `userType`. The endpoint writes the
+   role once (`UPDATE … WHERE role IS NULL`), the page calls
+   `refreshRole()` on the auth provider, and the user goes on to
+   `/complete-profile` for their name (and a student's roster email).
+
+`ProtectedRoute` enforces the same thing from the other side: a signed-in
+user whose profile answered with no role (`needsRole`) is redirected to
+`/select`, because every role-gated endpoint would refuse them in the app.
+A profile that merely could not be fetched never counts as role-less.
 
 `RoleSelection.tsx` also runs `loginCheck()` on mount and redirects
 users who already have a role, which guards against:
@@ -260,12 +273,21 @@ upsert overwrote their existing `role: student` profile row.
 
 ### The fix
 
-1. **INSERT-only.** The endpoint now does a `select` first and returns
-   `409 Conflict` if a profile already exists. Role is fixed at signup.
+1. **The role is written once.** The endpoint does a `select` first. A
+   profile with a role answers `409 Conflict`; a profile whose role is still
+   empty (a Google signup that has not chosen yet) gets the requested role
+   through an update conditional on `role IS NULL`, so two racing requests
+   cannot both land. No profile at all: insert.
 2. **`userType` whitelist.** Validated server-side against
    `{'student', 'instructor'}` — we don't just echo the body field.
 3. **Token/body id match.** Preserved from the old code.
-4. **Frontend re-entry guard.** `RoleSelection.tsx` calls `loginCheck()`
+4. **The email is the token's.** `profiles.email` and, for a `.edu` address,
+   `profiles.edu_email` are the two columns a roster row is matched by. They
+   used to be copied from the request body, so any signed-in user could claim
+   a classmate's address (and with it their roster row) by POSTing it. The
+   endpoint now takes the address from the verified token's `email` claim and
+   answers 403 when the body disagrees or the token carries none.
+5. **Frontend re-entry guard.** `RoleSelection.tsx` calls `loginCheck()`
    on mount and redirects users who already have a role, so the
    endpoint is never called twice from the happy path.
 
@@ -431,6 +453,53 @@ Frontend (`frontend/.env` or inherited from the monorepo root):
 
 ---
 
+## The roster `.edu` email is proven, never typed in
+
+`profiles.edu_email` wins over the login email when a roster is matched to
+accounts, so whoever holds an address there owns that student's roster row.
+It is written in exactly two places:
+
+- `/api/create-user`, from the **token's** email when that is a `.edu` address;
+- `POST /api/profiles/verify-edu-email`, after a 6-digit code emailed to the
+  address comes back.
+
+`PATCH /api/profiles/me` refuses to set it (400) and can only clear it. The
+code flow (`app/profiles/controller.py`): one pending row per user in
+`edu_email_verifications` (a module-level dict cannot work on serverless),
+only `sha256(user_id:edu_email:code)` is stored, codes expire after ten
+minutes, a new one can be requested once a minute, and five wrong guesses
+delete the code. Each guess claims its attempt with an update conditional on
+the count it read **before** the code is compared, so parallel guesses cannot
+share an attempt. With no SMTP settings a deployment answers 503; a developer
+machine logs the code instead (never returns it) so the flow stays testable.
+
+Still trusting: a `.edu` **login** email is only as verified as Supabase makes
+it. With email confirmation switched off in the Auth settings, a password
+signup can name an address its owner has never seen. That is a dashboard
+setting, not code.
+
+## The browser has no table access
+
+All table access goes through the backend's service-role client. The browser
+uses Supabase for Auth, Storage and Realtime only, and
+`2026-09-21_lock_down_direct_table_access.sql` makes the database agree:
+`anon` holds nothing in `public`, `authenticated` holds `SELECT` on the tables
+Realtime delivers from (`messages`, `notifications`, `conversations`,
+`conversation_participants`) and nothing else, and tables created later start
+with no client privileges. Before it, Supabase's default `GRANT ALL` plus four
+early write policies let any signed-in user set their own
+`profiles.role = 'instructor'` with the public anon key, and create classes or
+projects directly. To let the browser read another table, add a `SELECT`
+policy scoped by `auth.uid()` **and** `GRANT SELECT … TO authenticated`.
+
+## Join codes
+
+`POST /api/classes/join` normalises the code (trim, upper case), requires it to
+be eight characters from the generator's alphabet (`app/utils/generators.py`),
+and matches it with `eq`. It used to be an `ilike`, which made `%` a "code"
+that joined the first class PostgREST returned, and `Q%` a way to aim.
+`classes_course_code_upper_uq` keeps codes unique whatever their case.
+
 ## Open items
 
 These are documented as known gaps so no one re-discovers them:
@@ -445,8 +514,13 @@ These are documented as known gaps so no one re-discovers them:
   is still hand-coded in Python controllers rather than delegated to
   Supabase RLS. The right next step is per-request JWT-authenticated
   clients so RLS enforces access at the DB layer. See CODE_REVIEW.md #4.
-- **No admin path for role changes.** Since `/api/create-user` is
-  INSERT-only, there is currently no supported way to change a user's
+- **No `@ucsc.edu` restriction.** Any Google or email account can sign up;
+  nothing in the code or the database checks the domain (left as it is on
+  purpose, 2026-09-21). Enforcing it belongs in a Supabase
+  "before user created" auth hook, with `hd` on the Google button as a hint.
+- **The instructor role is self-service.** Anyone can pick it at signup.
+- **No admin path for role changes.** Since `/api/create-user` writes the
+  role once, there is currently no supported way to change a user's
   role after signup. A dedicated admin endpoint (gated on
   `require_instructor` + an `is_superadmin` flag we don't have yet) is
   the planned fix.
