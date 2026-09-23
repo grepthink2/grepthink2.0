@@ -62,6 +62,8 @@ htmlcov/
 
 # ---- Supabase CLI machine-local cache ----
 supabase/.temp/
+# scripts/supabase.sh profile: access token + per-environment link state
+.supabase/
 
 # ---- Repo-specific artifacts (should never be committed) ----
 *.xlsx

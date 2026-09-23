@@ -107,6 +107,17 @@ npm run build                               # tsc -b && vite build  (the typeche
 npx vitest run                              # unit + component tests
 ```
 
+## Supabase CLI: always use the project profile
+Run the CLI as `scripts/supabase.sh dev|prod <supabase args>`. Never run bare `supabase`, and
+never run `supabase login`: login keeps its token in the macOS keychain, and after that every
+call from another process (an editor terminal, an agent) asks for the keychain password. The
+script reads a personal access token from `.supabase/access-token` (create it once with
+`scripts/supabase.sh token`). It links each environment in its own working directory, so
+`--linked` means the environment you named. `.supabase/` is gitignored and lives in the main
+checkout, and every worktree shares it. `db dump` needs a running Docker. Dumps hold student
+data, so write them outside the repo. The Supabase MCP connector reaches both projects too;
+in Claude Code's auto mode, calls to PROD need the maintainer's approval.
+
 ## API surface
 Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `login-check`,
 `create-user`, `check-email`), `/api/classes`, `/api/projects`, `/api/assignments`,

@@ -65,8 +65,17 @@ code that depends on a schema change:
    (expand/contract: additive changes first, drops only after the old code is gone).
 3. Verify with a `SELECT` (or the Supabase advisors for index/RLS changes) and
    record the date in the migration's header comment.
-4. Regenerate `supabase/schema.sql` (`npx supabase db dump -f supabase/schema.sql
-   --schema public`) so the schema-as-code stays current.
+4. Regenerate `supabase/schema.sql` from the repo root so the schema-as-code stays current:
+   `scripts/supabase.sh dev db dump --linked --schema public -f supabase/schema.sql`. Always
+   run the CLI through `scripts/supabase.sh` and never `supabase login`; AGENTS.md explains why.
+
+**Through the Supabase connector.** An agent with the Supabase MCP connector can do steps 1–3
+on dev and on PROD. `apply_migration` also records the file in the project's migration
+history, which the SQL editor does not, and `execute_sql` runs the verification. The connector
+works on both projects. In Claude Code's auto mode, a permission check judges each call and may
+refuse PROD reads or writes. That is a setting: approve the call, or add an allow rule for the
+connector's tools. A file that wraps several steps in its own `BEGIN … COMMIT` is safest pasted
+whole into the SQL editor.
 
 **Pending on PROD as of 2026-09-20:** `backend/database/migrations/prod/2026-09-20_align_prod.sql`.
 PROD is three migrations behind dev (group messaging, the `handle_new_user` fix, the perf
