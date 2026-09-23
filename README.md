@@ -28,7 +28,7 @@ SUPABASE_JWK_JSON=
 VITE_SUPABASE_URL=         # frontend: same project as SUPABASE_URL
 VITE_SUPABASE_ANON_KEY=    # frontend: anon key
 VITE_API_BASE_URL=         # ignored in dev (see Nuance 5)
-# optional: CORS_ORIGINS, HOST, PORT, SMTP_*
+# optional: CORS_ORIGINS, HOST, PORT, SMTP_*, SENTRY_DSN (error reporting; off when unset)
 ```
 
 Then install both halves:

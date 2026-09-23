@@ -36,6 +36,7 @@ backend/app/<feature>/{url,views,controller,models}.py   # one module per featur
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
+  core/sentry.py     # optional Sentry reporting (SENTRY_DSN): event scrubbing, delivery before the response
   jobs/pending_invites.py  # poller that sends queued class-invite emails
   main.py            # app wiring: CORS, security headers, rate limiter, routers
   config.py          # settings from the repo-root .env
@@ -152,6 +153,11 @@ The full agent-facing action catalog (method, params, role) lives at
   `__all__`, which stops ruff deleting the import as unused. Keep tool settings out of a
   `backend/pyproject.toml`: Vercel reads that file as a dependency source, and deployments
   install from `requirements.txt`.
+- **Sentry scrubs by name and by shape.** With `SENTRY_DSN` set, `app/core/sentry.py` filters
+  the values of env vars whose names look like credentials (`KEY`, `SECRET`, `TOKEN`,
+  `PASSWORD`, ...) and anything shaped like an email, IP address, JWT or provider token. Name
+  new credentials that way, and keep names, grades and review text out of exception and log
+  messages: nothing can recognise those.
 - **Rate limiting** (slowapi) covers `create_user`, `check_email`, `login_check`,
   `contact`, `stats`. Add `@limiter.limit(...)` (+ a `request: Request` param) for
   new abuse-prone endpoints.

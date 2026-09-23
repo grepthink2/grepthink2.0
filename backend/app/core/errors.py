@@ -10,8 +10,9 @@ Failures reach the client in one of three ways:
   ``database_conflict``, ``database_read_failed``, ``database_write_failed``).
   PostgREST's code and message go to the log only.
 * ``HTTPException`` raised deliberately by a route: answered as raised.
-* Anything else is a bug. It is logged with the request method and path and
-  answered with ``{"detail": "Internal server error", "code": "internal_error"}``.
+* Anything else is a bug. It is reported to Sentry (when ``SENTRY_DSN`` is set),
+  logged with the request method and path, and answered with
+  ``{"detail": "Internal server error", "code": "internal_error"}``.
   Exception text never reaches the client.
 
 ``AppError`` derives from ``HTTPException`` on purpose. Controllers use
@@ -29,6 +30,8 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+
+from app.core.sentry import report_unhandled_exception
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +173,10 @@ async def _app_error(request: Request, exc: AppError) -> JSONResponse:
 
 
 async def _unhandled_exception(request: Request, exc: Exception) -> JSONResponse:
+    # Report first (a no-op without SENTRY_DSN): Sentry then records the error as
+    # unhandled, where the log call below would file it as handled. It also waits for
+    # delivery, because Vercel may freeze the function once this 500 is sent.
+    await report_unhandled_exception(exc)
     logger.error(
         "Unhandled exception | %s %s",
         request.method,
