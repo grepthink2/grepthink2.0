@@ -79,8 +79,8 @@ cli=(npx --yes "vercel@$cli_version" --global-config "$global_dir" --non-interac
 workdir="$profile_dir/$target"
 if [[ "$(cat "$workdir/.linked-project" 2>/dev/null)" != "$project" ]]; then
   mkdir -p "$workdir"
-  "${cli[@]}" link --yes --team "$team" --project "$project" --cwd "$workdir" >&2
-  # Linking can pull the project's development variables into an env file; none is wanted here.
+  "${cli[@]}" link --yes --scope "$team" --project "$project" --cwd "$workdir" >&2
+  # Linking writes .env.local with a short-lived VERCEL_OIDC_TOKEN; nothing here needs it.
   find "$workdir" -maxdepth 2 -name '.env*' -type f -delete
   printf '%s\n' "$project" >"$workdir/.linked-project"
 fi
