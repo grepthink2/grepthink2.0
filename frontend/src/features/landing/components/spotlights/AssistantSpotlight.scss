@@ -125,3 +125,12 @@ $fold-at: 2.6s;
     transform: translateY(0.5px);
   }
 }
+
+// Phones show one still card, so it rests on the suggestion itself (the evidence and the
+// Approve / Dismiss choice) rather than on its outcome.
+@media (max-width: 767px) {
+  .assist-moment__pending {
+    max-height: none;
+    opacity: 1;
+  }
+}

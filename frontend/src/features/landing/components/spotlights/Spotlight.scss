@@ -474,6 +474,14 @@ $avatar-purple: #7d3c98;
   .is-seen .spotlight__stage .stage-card--mobile {
     animation: none;
   }
+
+  // One still card per band: its moments stay off too. The stage has no fixed height here,
+  // so a card that changed size mid-scroll would shove the rest of the page around.
+  .spotlight__stage .stage-card--mobile *,
+  .spotlight__stage .stage-card--mobile *::before,
+  .spotlight__stage .stage-card--mobile *::after {
+    animation: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
