@@ -1,0 +1,406 @@
+// Project assistant surfaces (ported from design/components/assistant/assistant.css).
+//
+// An assistant-authored card is told apart from a person's without a new hue: the spark mark in
+// a green-50 tile where an avatar would be, a "Project assistant" label in green-700, and, in the
+// app, a dashed green hairline instead of the solid border (a proposal, not a fact). The
+// `landing` surface's floating shell is styled with the landing page (AssistantSpotlight.scss),
+// so marketing tokens stay out of the app.
+//
+// A few values have no --gt-* equivalent and are kept verbatim from the design: the task chip's
+// #f7f8f9 well, the stalled dot's #e6a817 amber, the Review pill's #fde9a8 hover and the PR
+// merge purple #7d3c98 (shared with the scrum board's PR chip).
+
+$well: #f7f8f9;
+$stalled-dot: #e6a817;
+$review-hover: #fde9a8;
+$pr-merged: #7d3c98;
+$proposal-hairline: rgba(1, 129, 86, 0.35);
+
+.gt-asst-icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.gt-asst-mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: var(--gt-green-50);
+  color: var(--gt-primary);
+
+  &--sm {
+    width: 20px;
+    height: 20px;
+    border-radius: 7px;
+  }
+
+  &--lg {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+  }
+}
+
+// --- Shell ------------------------------------------------------------------------------------
+.gt-asst {
+  position: relative;
+  box-sizing: border-box;
+  background: var(--gt-gray-0);
+  font-family: var(--gt-font-sans);
+  color: var(--gt-text-primary);
+
+  &--app {
+    padding: 14px;
+    border: 1px dashed $proposal-hairline;
+    border-radius: var(--gt-radius-md);
+    box-shadow: var(--gt-shadow-hairline);
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  &__author,
+  &__title {
+    font-size: 13.5px;
+    font-weight: var(--gt-weight-semibold);
+    letter-spacing: -0.01em;
+  }
+
+  &__author {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--gt-green-700);
+  }
+
+  &__title {
+    color: var(--gt-text-primary);
+  }
+
+  &__time {
+    font-size: 10.5px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-gray-500);
+  }
+
+  &__body {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--gt-text-secondary);
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  &__btn {
+    padding: 7px 14px;
+    border: none;
+    border-radius: 9px;
+    font-family: var(--gt-font-sans);
+    font-size: 11.5px;
+    font-weight: var(--gt-weight-semibold);
+    cursor: pointer;
+    transition:
+      background-color var(--gt-transition-fast),
+      box-shadow var(--gt-transition-fast),
+      transform var(--gt-transition-fast);
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring);
+    }
+
+    &--ok {
+      background: var(--gt-primary);
+      color: var(--gt-gray-0);
+
+      &:hover {
+        background: var(--gt-primary-hover);
+      }
+
+      &:active {
+        transform: translateY(0.5px);
+      }
+    }
+
+    &--no {
+      background: transparent;
+      box-shadow: 0 0 0 1px var(--gt-border);
+      color: var(--gt-text-tertiary);
+
+      &:hover {
+        background: var(--gt-gray-50);
+        color: var(--gt-text-primary);
+      }
+    }
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: none;
+    font-family: var(--gt-font-sans);
+    font-size: 11px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-primary);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--gt-primary-hover);
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring-tight);
+    }
+  }
+}
+
+// --- Suggestion -------------------------------------------------------------------------------
+.gt-asst-suggest {
+  &__text {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--gt-text-secondary);
+
+    b {
+      font-weight: var(--gt-weight-semibold);
+      color: var(--gt-text-primary);
+    }
+  }
+
+  &__task {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 12px;
+    padding: 7px 9px;
+    border-radius: var(--gt-radius-md);
+    background: $well;
+    font-size: 11.5px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__key {
+    font-family: var(--gt-font-mono);
+    font-size: 10px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__to {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 2px 7px;
+    border-radius: var(--gt-radius-pill);
+    background: var(--gt-success-soft);
+    font-size: 9.5px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-success-text);
+  }
+
+  &__done,
+  &__dismissed {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: var(--gt-radius-md);
+  }
+
+  &__done {
+    gap: 8px;
+    background: var(--gt-success-soft);
+    font-size: 12.5px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-success-text);
+  }
+
+  &__dismissed {
+    gap: 10px;
+    background: var(--gt-gray-50);
+    font-size: 12px;
+    color: var(--gt-text-tertiary);
+
+    .gt-asst__link {
+      margin-left: auto;
+    }
+  }
+}
+
+// --- Stalled flag -----------------------------------------------------------------------------
+.gt-asst-stalled {
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: var(--gt-weight-bold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gt-warning-text);
+
+    i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: $stalled-dot;
+    }
+  }
+
+  &__title {
+    margin: 8px 0 3px;
+    font-size: 12.5px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+
+    code {
+      margin-right: 5px;
+      font-family: var(--gt-font-mono);
+      font-size: 10px;
+      font-weight: var(--gt-weight-medium);
+      color: var(--gt-text-tertiary);
+    }
+  }
+
+  &__detail {
+    margin: 0 0 8px;
+    font-size: 11px;
+    color: var(--gt-text-tertiary);
+  }
+}
+
+// --- Report check -----------------------------------------------------------------------------
+.gt-asst-report {
+  &__rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 0;
+    font-size: 11.5px;
+    color: var(--gt-text-secondary);
+
+    & + & {
+      border-top: 1px solid var(--gt-gray-100);
+    }
+  }
+
+  &__mark {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+
+    &--match {
+      background: var(--gt-success-soft);
+      color: var(--gt-primary);
+    }
+
+    &--review {
+      background: var(--gt-warning-soft);
+      color: var(--gt-warning);
+    }
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__review {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 3px 8px;
+    border: none;
+    border-radius: var(--gt-radius-pill);
+    background: var(--gt-warning-soft);
+    font-family: var(--gt-font-sans);
+    font-size: 10px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-warning-text);
+    cursor: pointer;
+    transition: background-color var(--gt-transition-fast);
+
+    &:hover {
+      background: $review-hover;
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring-tight);
+    }
+  }
+}
+
+// --- Unlinked PR chip -------------------------------------------------------------------------
+.gt-asst-unlinked {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border-radius: var(--gt-radius-pill);
+  background: var(--gt-gray-0);
+  font-family: var(--gt-font-sans);
+  font-size: 11.5px;
+  font-weight: var(--gt-weight-medium);
+  color: var(--gt-text-secondary);
+
+  svg {
+    color: $pr-merged;
+  }
+
+  b {
+    font-weight: var(--gt-weight-semibold);
+    color: $pr-merged;
+  }
+
+  &--app {
+    border: 1px dashed $proposal-hairline;
+    box-shadow: var(--gt-shadow-hairline);
+  }
+
+  &--bare {
+    padding: 0;
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-asst__btn,
+  .gt-asst-report__review {
+    transition: none;
+  }
+}
