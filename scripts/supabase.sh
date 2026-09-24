@@ -26,6 +26,10 @@ absolute() {
   if [[ "$1" == /* ]]; then printf '%s' "$1"; else printf '%s/%s' "$PWD" "$1"; fi
 }
 
+# The CLI's own check. Pasting into a hidden prompt gives no feedback, so a second paste
+# is easy to make without noticing: refuse anything that is not exactly one token.
+token_pattern='^sbp_(oauth_)?[0-9a-f]{40}$'
+
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 main_checkout="$(dirname "$(git -C "$here" rev-parse --path-format=absolute --git-common-dir)")"
 profile_dir="$main_checkout/.supabase"
@@ -36,10 +40,12 @@ case "${1:-}" in
     mkdir -p "$profile_dir"
     chmod 700 "$profile_dir"
     echo "Create a token at https://supabase.com/dashboard/account/tokens and paste it here."
-    read -rsp "Access token (input hidden): " token
+    read -rsp "Access token (input hidden, paste once): " token
     echo
-    if [[ -z "$token" ]]; then
-      echo "Nothing entered, nothing saved." >&2
+    token="$(printf '%s' "$token" | tr -d '[:space:]')"
+    if [[ ! "$token" =~ $token_pattern ]]; then
+      echo "That is not one access token: expected sbp_ and 40 hex characters, got ${#token} characters." >&2
+      echo "Nothing saved. Run it again and paste the token once." >&2
       exit 1
     fi
     (umask 077 && printf '%s\n' "$token" >"$token_file")
@@ -59,6 +65,10 @@ if [[ ! -s "$token_file" ]]; then
   exit 1
 fi
 SUPABASE_ACCESS_TOKEN="$(tr -d '[:space:]' <"$token_file")"
+if [[ ! "$SUPABASE_ACCESS_TOKEN" =~ $token_pattern ]]; then
+  echo "$token_file does not hold exactly one access token. Run: scripts/supabase.sh token" >&2
+  exit 1
+fi
 export SUPABASE_ACCESS_TOKEN
 
 # --workdir makes the CLI change into that directory, so a relative `db dump -f` path would
