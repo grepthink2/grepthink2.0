@@ -77,28 +77,40 @@ refuse PROD reads or writes. That is a setting: approve the call, or add an allo
 connector's tools. A file that wraps several steps in its own `BEGIN … COMMIT` is safest pasted
 whole into the SQL editor.
 
-**Pending on PROD as of 2026-09-20:** `backend/database/migrations/prod/2026-09-20_align_prod.sql`.
-PROD is three migrations behind dev (group messaging, the `handle_new_user` fix, the perf
-migration) and its realtime publication is empty, so live messages and notifications do not
-arrive there. The bundle applies all of it in one transaction, drops no table and deletes no
-row, is safe under the code `main` runs today, and **must run before `beta` is merged into
-`main`**. Dev has had steps 1–7 since 2026-09-20; steps 8 and 9 (2026-09-21) are applied
-nowhere yet.
+**Applied to PROD on 2026-09-23:** `backend/database/migrations/prod/2026-09-20_align_prod.sql`
+(group messaging, the realtime publication, the `handle_new_user` fix, the perf migration, the
+cleanup, the `.edu` verification table and the lockdown). It was verified the same day from a
+dump: every check in its step 10 passes. PROD and dev now have the same schema. Do not re-run it:
+after the role migration below, its step 3 would put the old `handle_new_user` back. Dev has had
+steps 1–7 since 2026-09-20 and steps 8–9 since 2026-09-23.
 
 **Applied to PROD on 2026-09-21, on its own:**
 `backend/database/migrations/2026-09-21_lock_down_direct_table_access.sql`. Until then any
 signed-in user on PROD could set their own `profiles.role` to `instructor` with the public anon
 key. It is still the bundle's last step, because the group messaging step re-grants ALL on a
-table PROD does not have yet; re-running it is harmless. Not applied to dev.
+table PROD does not have yet; re-running it is harmless. Applied to dev on 2026-09-23.
 
 **Only after `beta` is live on `main`:**
 `backend/database/migrations/2026-09-21_role_chosen_by_its_owner.sql`. It is not an expand — the
 code `main` runs today cannot finish a Google signup once it is applied — so it is deliberately
-not in the bundle.
+not in the bundle. Applied to dev on 2026-09-23.
 
-PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. See
-`docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md` for that and for the rest of
-the deployment gaps (no CI or branch protection on `main`, squash-merged releases, no staging).
+PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. Take a
+dump before any PROD schema change. It needs Docker (Colima works), and the folder must stay
+outside the repo because the dump holds student data:
+
+```bash
+D=~/grepthink-backups/prod-$(date +%F); mkdir -p "$D" && chmod 700 "$D"
+scripts/supabase.sh prod db dump --linked --role-only -f "$D/roles.sql"
+scripts/supabase.sh prod db dump --linked -f "$D/schema.sql"
+scripts/supabase.sh prod db dump --linked --data-only --use-copy -f "$D/data.sql"
+```
+
+The data dump covers `public`, `auth` (users, identities) and `storage` metadata, not the stored
+files. To restore, load roles, then schema, then data, as in Supabase's "Backup and restore
+using the CLI" guide. `docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md` covers
+the free plan and the rest of the deployment gaps (no CI or branch protection on `main`,
+squash-merged releases, no staging).
 
 ## Error tracking (Sentry)
 
