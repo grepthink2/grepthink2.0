@@ -1,15 +1,11 @@
 @use '@styles/index.scss' as *;
+@use '@features/landing/landing-tokens' as *;
 
-// Spotlight bands: a landing-only marketing surface, like Hero.scss and Solutions.scss.
-// A small bespoke palette the app's --gt-* tokens don't carry: the accent gradient's second
-// stop, the band and stage backdrop tints, the preview stage's near-white, and two avatar
-// colors chosen for 4.5:1 with white initials. The mask gradients' #000 stops set alpha, not
-// color. Spec: docs/superpowers/specs/2026-09-24-landing-new-features-design.md.
+// Spotlight bands: a landing-only marketing surface, like Hero.scss and Solutions.scss. Band,
+// stage and card values come from the marketing tokens ($mkt-*, mirrored from the design
+// system). The two avatar colors are bespoke: the design system's AVATAR_COLORS, all 4.5:1 with
+// white initials. Spec: docs/superpowers/specs/2026-09-24-landing-new-features-design.md.
 
-$accent-end: #02a06b;
-$band-tint: #f8faf9;
-$stage-tint: #f3f7f5;
-$preview-bg: #fbfbfc;
 $avatar-blue: #1b57d6;
 $avatar-purple: #7d3c98;
 
@@ -20,7 +16,7 @@ $avatar-purple: #7d3c98;
   border-top: 1px solid var(--gt-gray-100);
 
   &--tinted {
-    background: $band-tint;
+    background: $mkt-band-alt-bg;
     border-top-color: transparent;
   }
 
@@ -29,7 +25,7 @@ $avatar-purple: #7d3c98;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
     gap: clamp(32px, 5vw, 64px);
     align-items: center;
-    max-width: 1100px;
+    max-width: $mkt-band-max;
     margin: 0 auto;
   }
 
@@ -68,17 +64,17 @@ $avatar-purple: #7d3c98;
     margin: 0 0 18px;
     padding: 6px 13px;
     border-radius: 999px;
-    background: rgba(1, 129, 86, 0.1);
-    color: var(--gt-success-text);
+    background: $mkt-eyebrow-bg;
+    color: $mkt-eyebrow-text;
     font-family: $primary-font;
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
-    letter-spacing: 0.04em;
+    letter-spacing: $mkt-tracking-caps;
     text-transform: uppercase;
 
     &--soon {
-      background: var(--gt-warning-soft);
-      color: var(--gt-warning-text);
+      background: $mkt-eyebrow-amber-bg;
+      color: $mkt-eyebrow-amber-text;
     }
   }
 
@@ -86,29 +82,29 @@ $avatar-purple: #7d3c98;
     margin-left: -8px;
     padding: 2px 7px;
     border-radius: 999px;
-    background: $primary-color;
-    color: $white;
+    background: $mkt-badge-new-bg;
+    color: $mkt-badge-text;
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: $mkt-tracking-badge;
   }
 
   &__eyebrow--soon &__badge {
-    background: var(--gt-warning-text);
+    background: $mkt-badge-soon-bg;
   }
 
   &__title {
     margin: 0 0 16px;
     font-family: $primary-font;
-    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-size: $mkt-band-heading;
     font-weight: 700;
     line-height: 1.1;
-    letter-spacing: -0.02em;
-    color: $text-dark;
+    letter-spacing: $mkt-tracking-display;
+    color: $mkt-ink;
   }
 
   &__accent {
-    background: linear-gradient(135deg, $primary-color, $accent-end);
+    background: $mkt-accent-gradient;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -118,9 +114,9 @@ $avatar-purple: #7d3c98;
     max-width: 460px;
     margin: 0 0 24px;
     font-family: $primary-font;
-    font-size: clamp(15px, 1.3vw, 16.5px);
+    font-size: clamp(15px, 1.3vw, $mkt-band-lead);
     line-height: 1.65;
-    color: $text-tertiary;
+    color: $mkt-slate;
   }
 
   &__points {
@@ -136,17 +132,17 @@ $avatar-purple: #7d3c98;
     align-items: center;
     gap: 12px;
     font-family: $primary-font;
-    font-size: 14.5px;
+    font-size: $mkt-band-bullet;
     font-weight: $font-weight-medium;
     color: $text-secondary;
   }
 
   &__point-icon {
     display: inline-flex;
-    flex: 0 0 34px;
+    flex: 0 0 $mkt-bullet-tile;
     align-items: center;
     justify-content: center;
-    height: 34px;
+    height: $mkt-bullet-tile;
     border-radius: 10px;
     background: var(--gt-primary-soft);
     color: $primary-color;
@@ -167,9 +163,9 @@ $avatar-purple: #7d3c98;
     font-family: $primary-font;
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
-    letter-spacing: 0.04em;
+    letter-spacing: $mkt-tracking-caps;
     text-transform: uppercase;
-    color: $text-tertiary;
+    color: $mkt-slate;
   }
 
   &__aside-text {
@@ -207,30 +203,28 @@ $avatar-purple: #7d3c98;
   // --- Stage backdrops --------------------------------------------------------------------
   &__stage {
     position: relative;
-    height: 470px;
-    border-radius: 28px;
+    height: $mkt-stage-height;
+    border-radius: $mkt-stage-radius;
     pointer-events: none;
 
     &--live {
-      background:
-        radial-gradient(70% 60% at 50% 40%, rgba(1, 129, 86, 0.1), transparent 70%),
-        $stage-tint;
+      background: $mkt-stage-tint, $mkt-stage-bg;
 
       &::before {
         content: '';
         position: absolute;
         inset: 0;
         border-radius: inherit;
-        background-image: radial-gradient(circle, rgba(33, 43, 54, 0.16) 1.2px, transparent 1.5px);
-        background-size: 22px 22px;
-        -webkit-mask-image: radial-gradient(80% 80% at 50% 50%, #000 30%, transparent 85%);
-        mask-image: radial-gradient(80% 80% at 50% 50%, #000 30%, transparent 85%);
+        background-image: radial-gradient(circle, $mkt-stage-dot 1.2px, transparent 1.5px);
+        background-size: $mkt-stage-dot-size $mkt-stage-dot-size;
+        -webkit-mask-image: $mkt-stage-dot-mask;
+        mask-image: $mkt-stage-dot-mask;
       }
     }
 
     &--preview {
-      background: $preview-bg;
-      box-shadow: inset 0 0 0 1.5px var(--gt-gray-300);
+      background: $mkt-preview-bg;
+      box-shadow: inset 0 0 0 1.5px $mkt-preview-outline;
 
       &::after {
         content: 'Preview';
@@ -238,16 +232,25 @@ $avatar-purple: #7d3c98;
         top: 16px;
         left: 18px;
         padding: 3px 9px;
-        border: 1.5px dashed var(--gt-gray-400);
+        border: 1.5px dashed $mkt-preview-tag-border;
         border-radius: 999px;
         font-family: $primary-font;
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--gt-gray-500);
+        color: $mkt-preview-tag;
       }
     }
+  }
+
+  // The tint leans toward the text; a stage on a tinted band sits a shade darker.
+  &--text-right &__stage--live {
+    background-image: $mkt-stage-tint-mirror;
+  }
+
+  &--tinted &__stage--live {
+    background-color: $mkt-stage-alt-bg;
   }
 }
 
@@ -256,18 +259,16 @@ $avatar-purple: #7d3c98;
 // --float-duration on it.
 .stage-card {
   position: absolute;
-  padding: 16px;
-  border-radius: 20px;
+  padding: $mkt-card-pad;
+  border-radius: $mkt-card-radius;
   background: $white;
-  box-shadow:
-    0 2px 6px rgba(33, 43, 54, 0.04),
-    0 24px 48px -12px rgba(33, 43, 54, 0.18);
+  box-shadow: $mkt-shadow-card;
   font-family: $primary-font;
   color: $text-dark;
   text-align: left;
   rotate: var(--tilt, 0deg);
   opacity: 0;
-  transform: translateX(var(--enter-x, 24px));
+  transform: translateX(var(--enter-x, $mkt-reveal-card));
   transition:
     opacity 0.6s ease,
     transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -298,7 +299,7 @@ $avatar-purple: #7d3c98;
 }
 
 .spotlight--text-right .stage-card {
-  --enter-x: -24px;
+  --enter-x: -#{$mkt-reveal-card};
 }
 
 .is-seen .stage-card {

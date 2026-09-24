@@ -1,10 +1,9 @@
 @use '@styles/index.scss' as *;
+@use '@features/landing/landing-tokens' as *;
 
 // Scrum band stage (landing-only; the shell lives in Spotlight.scss): a small-scale mirror of
-// the design system's scrum components. The merged-PR purple is bespoke, kept verbatim from
-// the design system's scrum.css, which has no --gt-* token for it either.
-
-$pr-merged: #7d3c98;
+// the design system's scrum components. The merged-PR purple is the marketing token shared
+// with the design system's PRLinkChip.
 
 .scrum-board-card {
   top: 7%;
@@ -252,10 +251,10 @@ $pr-merged: #7d3c98;
     gap: 4px;
     padding: 2px 7px;
     border-radius: 999px;
-    background: rgba($pr-merged, 0.12);
+    background: $mkt-pr-merged-bg;
     font-size: 10px;
     font-weight: $font-weight-semibold;
-    color: $pr-merged;
+    color: $mkt-pr-merged;
   }
 
   &__audit {

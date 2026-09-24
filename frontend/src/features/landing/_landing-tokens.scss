@@ -1,0 +1,148 @@
+// Marketing tokens for grepthink2.com: the public landing and contact pages only.
+//
+// A verbatim mirror of design/tokens/marketing.css (--gt-mkt-* → $mkt-*), so a change there maps
+// to one line here (see design/PORTING.md). These are the public site's deliberate exceptions to
+// the flat in-app rules: the heading gradient, floating tilted cards, dark chrome, lift on hover.
+// None of them belongs in the signed-in app. The literal values are bespoke to the marketing
+// surface; the mask gradients' #000 stops set alpha, not color.
+
+// ── Dark brand chrome (header bar, footer)
+$mkt-dark: #0c1f18;
+$mkt-dark-translucent: rgba(12, 31, 24, 0.82); // scrolled header pill
+$mkt-on-dark: rgba(255, 255, 255, 0.82); // nav links
+$mkt-on-dark-muted: rgba(255, 255, 255, 0.72); // footer links
+$mkt-on-dark-soft: rgba(255, 255, 255, 0.6); // tagline
+$mkt-on-dark-faint: rgba(255, 255, 255, 0.5); // legal bar
+$mkt-on-dark-label: rgba(255, 255, 255, 0.45); // footer column titles
+$mkt-divider-on-dark: rgba(255, 255, 255, 0.1);
+
+// ── Closing band (dark green, before the footer)
+$mkt-closing-bg: #0f2a20;
+$mkt-closing-tint: radial-gradient(70% 90% at 50% 0%, rgba(2, 160, 107, 0.35), transparent 70%);
+$mkt-closing-dot: rgba(255, 255, 255, 0.14);
+$mkt-closing-dot-size: 20px;
+$mkt-closing-dot-mask: radial-gradient(80% 90% at 50% 100%, #000 10%, transparent 75%);
+$mkt-closing-text: rgba(255, 255, 255, 0.75);
+$mkt-closing-outline: rgba(255, 255, 255, 0.35); // "Talk to us" ghost button
+$mkt-shadow-closing-cta: 0 10px 26px -8px rgba(2, 160, 107, 0.8);
+
+// ── Ink & grays used only on the landing
+$mkt-ink: #212B36; // headlines (= --gt-text-dark)
+$mkt-slate: #637381; // lead paragraphs, card meta (spotlight bands)
+$mkt-muted: #9aa0a6; // placeholders, float-card meta
+$mkt-chip-bg: #f3f4f6; // role chips, window chrome
+$mkt-track: #eef0f2; // progress / ring tracks
+$mkt-hairline: #e5e7eb; // window chrome border
+$mkt-well: #f7f8f9; // mini board columns, task chip
+$mkt-bubble: #f1f3f4; // received bubble on the landing stage
+
+// ── Green accents (heading accents & tints ONLY)
+$mkt-green-light: #02a06b; // 2nd gradient stop — never solo
+$mkt-accent-gradient: linear-gradient(135deg, #018156, #02a06b); // clip-text on headings
+$mkt-green-tint: rgba(1, 129, 86, 0.1); // eyebrow / badge backgrounds
+$mkt-hero-wash: radial-gradient(60% 50% at 50% 0%, rgba(1, 129, 86, 0.08), transparent 70%);
+$mkt-preview-gradient: linear-gradient(160deg, #e8f5f0 0%, #d6eee6 40%, #c8e8dc 100%);
+
+// ── Eyebrows & badges (contrast-corrected)
+$mkt-eyebrow-text: #016547; // on green tint: 6.3:1 (the hero's #018156 was ~4.3:1)
+$mkt-eyebrow-bg: rgba(1, 129, 86, 0.1);
+$mkt-eyebrow-amber-text: #8A5200; // on #FEF3C7: 5.7:1
+$mkt-eyebrow-amber-bg: #FEF3C7;
+$mkt-badge-new-bg: #018156; // white on it: 4.9:1
+$mkt-badge-soon-bg: #8A5200; // white on it: 6.4:1 — NOT #B26A00 (4.2:1)
+$mkt-badge-text: #FFFFFF;
+
+// ── Halftone dot grids
+$mkt-dot: rgba(33, 43, 54, 0.18); // hero
+$mkt-dot-size: 24px;
+$mkt-dot-mask: radial-gradient(90% 70% at 50% 42%, transparent 18%, #000 62%);
+$mkt-stage-dot: rgba(33, 43, 54, 0.16); // band stages
+$mkt-stage-dot-size: 22px;
+$mkt-stage-dot-mask: radial-gradient(80% 80% at 50% 50%, #000 30%, transparent 85%);
+
+// ── Spotlight bands
+$mkt-band-bg: #FFFFFF;
+$mkt-band-alt-bg: #f8faf9;
+$mkt-band-max: 1100px;
+$mkt-band-pad-y: 72px;
+$mkt-band-gap: 48px;
+$mkt-band-cols: 1fr 1.08fr; // text · stage (mirrored on alternate bands)
+$mkt-band-heading: clamp(2rem, 4vw, 2.5rem);
+$mkt-band-lead: 16.5px;
+$mkt-band-bullet: 14.5px;
+$mkt-bullet-tile: 34px; // bullet icon tile, radius 10, green-50
+
+// Stage backdrops
+$mkt-stage-radius: 28px;
+$mkt-stage-height: 470px;
+$mkt-stage-bg: #f5f8f7; // live feature (band on white)
+$mkt-stage-alt-bg: #eef5f2; // live feature (band on alt bg)
+$mkt-stage-tint: radial-gradient(70% 60% at 60% 40%, rgba(1, 129, 86, 0.10), transparent 70%);
+$mkt-stage-tint-mirror: radial-gradient(70% 60% at 40% 40%, rgba(1, 129, 86, 0.10), transparent 70%);
+$mkt-preview-bg: #fbfbfc; // coming-soon preview stage
+$mkt-preview-outline: #d3d8dd; // 1.5px inset
+$mkt-preview-tag: #616161; // "PREVIEW" text (raised from #9aa0a6 for legibility)
+$mkt-preview-tag-border: #c3c9cf; // 1.5px dashed
+
+// ── Floating card shell (hero + stages)
+$mkt-card-radius: 20px; // stage cards (hero cards are 22px — legacy)
+$mkt-card-pad: 16px;
+$mkt-shadow-card: 0 2px 6px rgba(33, 43, 54, 0.04), 0 24px 48px -12px rgba(33, 43, 54, 0.18);
+$mkt-shadow-float: 0 2px 6px rgba(33, 43, 54, 0.04), 0 24px 48px -12px rgba(33, 43, 54, 0.14); // hero
+$mkt-tilt-min: -3deg;
+$mkt-tilt-max: 3deg;
+
+// Other marketing radii / shadows
+$mkt-radius-tile: 12px; // solutions feature icon tile
+$mkt-radius-window: 14px; // preview window
+$mkt-radius-panel: 24px; // preview backdrop
+$mkt-radius-hero-card: 22px;
+$mkt-radius-btn: 8px; // header buttons
+$mkt-shadow-window: 0 4px 12px rgba(33, 43, 54, 0.08), 0 24px 64px rgba(33, 43, 54, 0.16);
+$mkt-shadow-contact: 0 20px 50px rgba(33, 43, 54, 0.08);
+$mkt-shadow-pill: 0 10px 30px rgba(0, 0, 0, 0.28);
+$mkt-shadow-cta: 0 8px 24px rgba(1, 129, 86, 0.28);
+$mkt-shadow-cta-hover: 0 12px 30px rgba(1, 129, 86, 0.34);
+$mkt-shadow-announce: 0 0 0 1px rgba(1, 129, 86, 0.25), 0 6px 16px -8px rgba(1, 129, 86, 0.45);
+
+// ── Motion
+$mkt-morph: 0.38s cubic-bezier(0.4, 0, 0.2, 1); // header bar → pill
+$mkt-lift: -1px; // header / contact button hover
+$mkt-lift-lg: -2px; // hero CTA hover
+$mkt-reveal-text: 16px; // text fades up
+$mkt-reveal-card: 24px; // cards drift in from their side
+$mkt-reveal-dur: 0.6s;
+$mkt-reveal-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+$mkt-reveal-stagger: 80ms;
+$mkt-float-min: 8px; // ±8–10px
+$mkt-float-max: 10px;
+$mkt-float-dur-min: 8s;
+$mkt-float-dur-max: 10s;
+$mkt-moment-delay: 0.4s; // after the reveal settles; plays once
+
+// ── Type (fluid display sizes)
+$mkt-display: clamp(2.75rem, 6vw, 4.75rem);
+$mkt-h2: clamp(2rem, 4vw, 3rem);
+$mkt-h1-contact: clamp(2rem, 4vw, 2.75rem);
+$mkt-closing-h: 32px;
+$mkt-lede: clamp(16px, 2.2vw, 20px);
+$mkt-tracking-display: -0.02em;
+$mkt-tracking-caps: 0.04em;
+$mkt-tracking-badge: 0.06em;
+
+// ── Layout
+$mkt-header-max: 1800px;
+$mkt-pill-max: 960px;
+$mkt-content-max: 1100px;
+$mkt-footer-max: 1080px;
+$mkt-hero-copy-max: 760px;
+$mkt-contact-max: 560px;
+$mkt-anchor-offset: 96px; // scroll-margin-top under the fixed header
+
+// ── Contact form (marketing exception: green focus glow)
+$mkt-focus-glow: 0 0 0 3px var(--gt-green-50);
+$mkt-error-text: #c0392b;
+
+// ── PR / merge purple (shared with scrum PRLinkChip)
+$mkt-pr-merged: #7D3C98;
+$mkt-pr-merged-bg: rgba(125, 60, 152, 0.12);
