@@ -1,6 +1,8 @@
 import React from 'react';
 import { Users, ClipboardList, ListChecks } from 'lucide-react';
-import previewSvg from '@assets/preview.svg';
+import previewPng from '@assets/landing/landing-preview.png';
+import previewWebp from '@assets/landing/landing-preview.webp';
+import previewWebp2x from '@assets/landing/landing-preview@2x.webp';
 import './Solutions.scss';
 
 const FEATURES = [
@@ -54,7 +56,22 @@ const Solutions: React.FC = () => {
               <span />
             </div>
             <div className="preview-window__body">
-              <img src={previewSvg} alt="grepthink app preview" className="preview-window__img" />
+              <picture className="preview-window__picture">
+                <source
+                  type="image/webp"
+                  srcSet={`${previewWebp} 1512w, ${previewWebp2x} 3024w`}
+                  sizes="(max-width: 940px) 100vw, 860px"
+                />
+                <img
+                  src={previewPng}
+                  alt="grepthink app preview: the scrum board for Sprint 3"
+                  width={1512}
+                  height={797}
+                  loading="lazy"
+                  decoding="async"
+                  className="preview-window__img"
+                />
+              </picture>
             </div>
           </div>
         </div>
