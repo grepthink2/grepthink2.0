@@ -1,15 +1,35 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import FloatingCards from './FloatingCards';
+import { ANNOUNCEMENT, sectionLink, type Announcement } from '../landing.config';
 import './Hero.scss';
 
-const Hero: React.FC = () => {
+interface HeroProps {
+  /** Launch announcement shown in place of the eyebrow; null restores the eyebrow. */
+  announcement?: Announcement | null;
+}
+
+const Hero: React.FC<HeroProps> = ({ announcement = ANNOUNCEMENT }) => {
   return (
     <section className="hero">
       <FloatingCards />
 
       <div className="hero__content">
-        <span className="hero__eyebrow">For instructors and student teams</span>
+        {announcement ? (
+          <Link
+            to={sectionLink(announcement.targetId)}
+            className="hero__announce"
+            aria-label={`New: ${announcement.label}. Jump to the section`}
+          >
+            <span className="hero__announce-badge">New</span>
+            {announcement.label}
+            <span className="hero__announce-arrow" aria-hidden="true">
+              →
+            </span>
+          </Link>
+        ) : (
+          <span className="hero__eyebrow">For instructors and student teams</span>
+        )}
 
         <h1 className="hero__title">
           Build better project teams,
@@ -18,8 +38,9 @@ const Hero: React.FC = () => {
         </h1>
 
         <p className="hero__subtitle">
-          grepthink helps classes form balanced teams, track weekly progress, and
-          keep everyone accountable without the spreadsheet chaos.
+          {announcement
+            ? 'grepthink helps instructors and student teams form balanced teams, track weekly progress, and keep everyone accountable without the spreadsheet chaos.'
+            : 'grepthink helps classes form balanced teams, track weekly progress, and keep everyone accountable without the spreadsheet chaos.'}
         </p>
 
         <div className="hero__actions">
