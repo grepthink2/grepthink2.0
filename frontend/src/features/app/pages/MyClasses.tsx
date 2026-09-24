@@ -6,11 +6,18 @@ import { useClass, type Class } from '@/lib/classContext';
 import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
-import CreateClassModal from '@features/app/components/Classes/CreateClassModal';
+import { lazyModal } from '@/lib/lazyModal';
 import ClassSettingsModal from '@features/app/components/Classes/ClassSettingsModal';
 import ConfirmModal from '@features/app/components/Overlays/ConfirmModal';
 import { pickClassBannerPreset, presetToCssBackground } from '@/lib/classBannerGradients';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './MyClasses.scss';
+
+// Loads on first open; the form pulls in the date picker.
+const CreateClassModal = lazyModal(
+  () => import('@features/app/components/Classes/CreateClassModal'),
+  (p) => p.isOpen,
+);
 
 type CourseFilter = 'all' | 'active' | 'complete';
 
@@ -151,7 +158,19 @@ const MyClasses: React.FC = () => {
     };
 
     if (loading) {
-        return <div className="my-classes-loading">Loading classes...</div>;
+        return (
+            <div className="my-classes-list" aria-busy="true">
+                {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="my-classes-card">
+                        <Skeleton height={120} radius={0} />
+                        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <Skeleton width="70%" height={15} />
+                            <Skeleton width="45%" height={12} />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
     }
 
     return (

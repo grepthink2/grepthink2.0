@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { GraduationCap, Plus, X, UserMinus, Search } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import type { ApiClassTA, ApiProject, ApiStudent } from '@/lib/api';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './TAManagement.scss';
 
 function studentName(s: ApiStudent): string {
@@ -12,45 +13,61 @@ function studentName(s: ApiStudent): string {
 
 const TAManagement: React.FC = () => {
   const { selectedClass } = useClass();
+  const classId = selectedClass?.id ?? null;
   const [students, setStudents] = useState<ApiStudent[]>([]);
   const [projects, setProjects] = useState<ApiProject[]>([]);
   const [tas, setTas] = useState<ApiClassTA[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   // Per-TA selected project in the "assign to project" dropdown.
   const [assignSelections, setAssignSelections] = useState<Record<string, string>>({});
 
-  const load = useCallback(async (classId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [studentsRes, projectsRes, tasRes] = await Promise.all([
-        api.getClassStudents(classId),
-        api.getClassProjects(classId),
-        api.getClassTAs(classId),
-      ]);
-      setStudents(studentsRes.students ?? []);
-      setProjects(projectsRes.projects ?? []);
-      setTas(tasRes.tas ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load TA data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Bumped after each successful action so the lists load again.
+  const [reloadCount, setReloadCount] = useState(0);
+  const loadKey = classId ? `${classId}:${reloadCount}` : null;
+  /** The load that last settled, and its error. */
+  const [loaded, setLoaded] = useState<{ key: string; error: string | null } | null>(null);
+  const loading = loadKey !== null && loaded?.key !== loadKey;
+  const error = loading ? null : (loaded?.error ?? null);
 
-  useEffect(() => {
-    if (!selectedClass?.id) {
+  // No class selected: drop the previous class's lists.
+  const [prevClassId, setPrevClassId] = useState(classId);
+  if (prevClassId !== classId) {
+    setPrevClassId(classId);
+    if (!classId) {
       setStudents([]);
       setProjects([]);
       setTas([]);
-      return;
     }
-    void load(selectedClass.id);
-  }, [selectedClass?.id, load]);
+  }
+
+  useEffect(() => {
+    if (!classId || !loadKey) return;
+    let cancelled = false;
+    Promise.all([
+      api.getClassStudents(classId),
+      api.getClassProjects(classId),
+      api.getClassTAs(classId),
+    ])
+      .then(([studentsRes, projectsRes, tasRes]) => {
+        if (cancelled) return;
+        setStudents(studentsRes.students ?? []);
+        setProjects(projectsRes.projects ?? []);
+        setTas(tasRes.tas ?? []);
+        setLoaded({ key: loadKey, error: null });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLoaded({
+          key: loadKey,
+          error: err instanceof Error ? err.message : 'Failed to load TA data',
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [classId, loadKey]);
 
   const taIds = useMemo(() => new Set(tas.map((t) => t.id)), [tas]);
 
@@ -75,7 +92,7 @@ const TAManagement: React.FC = () => {
     setActionError(null);
     try {
       await fn();
-      await load(selectedClass.id);
+      setReloadCount((n) => n + 1);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Action failed');
     } finally {
@@ -144,7 +161,18 @@ const TAManagement: React.FC = () => {
           </div>
 
           {loading ? (
-            <p className="ta-management__hint">Loading…</p>
+            <ul className="ta-management__list" aria-busy="true">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <li key={i} className="ta-card">
+                  <div className="ta-card__top">
+                    <div className="ta-card__identity">
+                      <Skeleton width={120} height={13} />
+                      <Skeleton width={150} height={11} style={{ marginTop: 4 }} />
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
           ) : tas.length === 0 ? (
             <p className="ta-management__hint">
               No TAs yet. Promote a student from the list on the right.
@@ -236,7 +264,16 @@ const TAManagement: React.FC = () => {
           </div>
 
           {loading ? (
-            <p className="ta-management__hint">Loading…</p>
+            <ul className="ta-management__list" aria-busy="true">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="student-row">
+                  <div className="student-row__identity">
+                    <Skeleton width={120} height={13} />
+                    <Skeleton width={150} height={11} style={{ marginTop: 4 }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
           ) : eligibleStudents.length === 0 ? (
             <p className="ta-management__hint">No eligible students found.</p>
           ) : (

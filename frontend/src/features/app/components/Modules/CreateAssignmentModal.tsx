@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import { parse, isValid } from 'date-fns';
 import { X, FileText, Globe } from 'lucide-react';
 import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
@@ -44,10 +44,13 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({
     setTimeout(() => { setIsClosing(false); onClose(); }, 200);
   };
 
+  // Escape uses the latest close handler; the listener only lives while open.
+  const onEscape = useEffectEvent(() => handleClose());
   useEffect(() => {
-    const onEscape = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen) handleClose(); };
-    document.addEventListener('keydown', onEscape);
-    return () => document.removeEventListener('keydown', onEscape);
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onEscape(); };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, [isOpen]);
 
   useEffect(() => {

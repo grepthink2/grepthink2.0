@@ -21,11 +21,11 @@ Environment variables (optional):
     LOG_CONSOLE_LEVEL   Override console handler level (default: DEBUG)
     LOG_FILE_LEVEL      Override app.out handler level (default: INFO)
 """
+
 import logging
 import logging.handlers
 import os
 from pathlib import Path
-
 
 # Formatter used for all handlers: timestamp | level | module:line | message
 _LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s:%(lineno)d | %(message)s"
@@ -35,11 +35,8 @@ _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 def _resolve_log_dir() -> Path:
     """Return the directory where log files are written, creating it if needed."""
     env_dir = os.environ.get("LOG_DIR")
-    if env_dir:
-        log_dir = Path(env_dir)
-    else:
-        # backend/logs relative to this file (backend/app/logging_config.py)
-        log_dir = Path(__file__).resolve().parent.parent / "logs"
+    # Default: backend/logs relative to this file (backend/app/logging_config.py)
+    log_dir = Path(env_dir) if env_dir else Path(__file__).resolve().parent.parent / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     return log_dir
 
@@ -104,5 +101,8 @@ def configure_logging() -> None:
 
     logging.getLogger(__name__).info(
         "Logging configured | root=%s console=%s file=%s | log_dir=%s",
-        root_level, console_level, file_level, log_dir,
+        root_level,
+        console_level,
+        file_level,
+        log_dir,
     )

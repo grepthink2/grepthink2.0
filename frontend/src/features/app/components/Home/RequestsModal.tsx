@@ -1,33 +1,41 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Clock, Loader2, X } from 'lucide-react';
-import { formatDistanceToNow, parseISO } from 'date-fns';
 import { api } from '@/lib/api';
+import {
+  avatarBgFromEmail,
+  displayNameFromEmail,
+  formatAwaitingMeta,
+  formatRequestedMeta,
+  incomingRowsFromApi,
+  initialsFromEmail,
+  outgoingRowsFromApi,
+  type IncomingRequestRow,
+  type OutgoingRequestRow,
+} from '@/features/app/utils/joinRequests';
 import './RequestsModal.scss';
 
 type TabId = 'incoming' | 'outgoing';
-type IncomingKind = 'join_request' | 'team_invite';
 
-export interface IncomingRequestRow {
-  requestId: string;
-  projectId: string;
-  projectName: string;
-  kind: IncomingKind;
-  counterpartyEmail?: string;
-  requestedAt?: string;
-  memberCount: number;
-  message?: string | null;
+interface RequestRows {
+  incoming: IncomingRequestRow[];
+  outgoing: OutgoingRequestRow[];
 }
 
-export interface OutgoingRequestRow {
-  requestId: string;
-  projectId: string;
-  projectName: string;
-  courseLabel?: string;
-  memberCount: number;
-  sponsorCompany?: string;
-  requestedAt?: string;
-  status?: string;
-  imageUrl?: string | null;
+/** Both request directions (incoming includes team invites), or null if a read fails. */
+async function fetchRequestRows(classId: string): Promise<RequestRows | null> {
+  try {
+    const [{ requests: joinRequests }, invitesRes, outgoingRes] = await Promise.all([
+      api.getIncomingJoinRequests(classId),
+      api.getPendingTeamInvites(classId),
+      api.getMyJoinRequests(classId),
+    ]);
+    return {
+      incoming: incomingRowsFromApi(joinRequests, invitesRes.requests ?? []),
+      outgoing: outgoingRowsFromApi(outgoingRes.requests ?? []),
+    };
+  } catch {
+    return null;
+  }
 }
 
 export interface RequestsModalProps {
@@ -35,60 +43,6 @@ export interface RequestsModalProps {
   onClose: () => void;
   classId: string | undefined;
   onRequestsChanged?: () => void;
-}
-
-const JOIN_REVIEW_ROLES = new Set(['owner', 'product owner', 'admin']);
-
-function canReviewJoinRequests(role: string | null | undefined): boolean {
-  if (role == null || role === '') return false;
-  return JOIN_REVIEW_ROLES.has(role.trim().toLowerCase());
-}
-
-function initialsFromEmail(email: string | undefined): string {
-  if (!email) return '?';
-  const local = email.split('@')[0] ?? '';
-  const tokens = local.split(/[._-]+/).filter(Boolean);
-  if (tokens.length >= 2) {
-    return (tokens[0][0] + tokens[1][0]).toUpperCase();
-  }
-  return local.slice(0, 2).toUpperCase() || '?';
-}
-
-function displayNameFromEmail(email: string | undefined): string {
-  if (!email) return 'Member';
-  const local = email.split('@')[0] ?? 'Member';
-  return local
-    .split(/[._-]+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
-}
-
-function avatarBgFromEmail(email: string | undefined): string {
-  if (!email) return '#018156';
-  let h = 0;
-  for (let i = 0; i < email.length; i += 1) {
-    h = (h + email.charCodeAt(i) * (i + 1)) % 360;
-  }
-  return `hsl(${h} 42% 40%)`;
-}
-
-function formatRequestedMeta(iso: string | undefined): string | null {
-  if (!iso) return null;
-  try {
-    return `Requested ${formatDistanceToNow(parseISO(iso), { addSuffix: true })}`;
-  } catch {
-    return null;
-  }
-}
-
-function formatAwaitingMeta(iso: string | undefined): string | null {
-  if (!iso) return 'Awaiting Response';
-  try {
-    return `Awaiting Response • ${formatDistanceToNow(parseISO(iso), { addSuffix: true })}`;
-  } catch {
-    return 'Awaiting Response';
-  }
 }
 
 const RequestsModal: React.FC<RequestsModalProps> = ({
@@ -102,12 +56,60 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
   const [outgoing, setOutgoing] = useState<OutgoingRequestRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The last accept, decline or dismiss that failed. It is kept apart from
+  // `error`, which `refresh` resets, so it survives the reload after the failure.
+  const [actionError, setActionError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<{
     requestId: string;
     action: 'accept' | 'reject';
   } | null>(null);
   const [dismissingId, setDismissingId] = useState<string | null>(null);
 
+  // Opening the modal, or switching class while it is open, starts over on the
+  // Incoming tab with a fresh load. That reset happens while rendering; the
+  // effect below only fetches.
+  const [prevProps, setPrevProps] = useState({ isOpen: false, classId });
+  if (prevProps.isOpen !== isOpen || prevProps.classId !== classId) {
+    setPrevProps({ isOpen, classId });
+    if (isOpen) {
+      setActiveTab('incoming');
+      setActionError(null);
+      if (classId) {
+        setLoading(true);
+        setError(null);
+      } else {
+        setIncoming([]);
+        setOutgoing([]);
+        setLoading(false);
+      }
+    }
+  }
+
+  // Shows a finished load: its rows, or the load error with empty lists.
+  const showLoaded = useCallback((rows: RequestRows | null) => {
+    if (rows) {
+      setIncoming(rows.incoming);
+      setOutgoing(rows.outgoing);
+    } else {
+      setError('Could not load requests. Please try again.');
+      setIncoming([]);
+      setOutgoing([]);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || !classId) return;
+    let cancelled = false;
+    void fetchRequestRows(classId).then((rows) => {
+      if (!cancelled) showLoaded(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, classId, showLoaded]);
+
+  // Reloads after an action fails.
   const refresh = useCallback(async () => {
     if (!classId) {
       setIncoming([]);
@@ -118,86 +120,8 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
 
     setLoading(true);
     setError(null);
-    try {
-      const [{ projects: myAllProjects }, { projects: classProjects }, invitesRes, outgoingRes] =
-        await Promise.all([
-          api.getProjects(),
-          api.getProjects(classId),
-          api.getPendingTeamInvites(classId),
-          api.getMyJoinRequests(classId),
-        ]);
-
-      const myIds = new Set(myAllProjects.map((p) => p.id));
-      const mineInClass = classProjects.filter((p) => myIds.has(p.id));
-      const reviewable = mineInClass.filter((p) => canReviewJoinRequests(p.user_role));
-
-      const joinChunks = await Promise.all(
-        reviewable.map(async (proj) => {
-          try {
-            const { requests } = await api.getProjectJoinRequests(proj.id);
-            return requests.map(
-              (r): IncomingRequestRow => ({
-                requestId: r.request_id,
-                projectId: proj.id,
-                projectName: proj.name,
-                kind: 'join_request',
-                counterpartyEmail: r.email,
-                requestedAt: r.requested_at,
-                memberCount: proj.member_count ?? 0,
-                message: r.message,
-              }),
-            );
-          } catch {
-            return [];
-          }
-        }),
-      );
-
-      const teamInvites: IncomingRequestRow[] = (invitesRes.requests ?? []).map((r) => ({
-        requestId: r.request_id,
-        projectId: r.project_id ?? '',
-        projectName: r.project_name ?? 'Project',
-        kind: 'team_invite',
-        counterpartyEmail: r.email,
-        requestedAt: r.requested_at,
-        memberCount: r.member_count ?? 0,
-      }));
-
-      const incomingRows = [...joinChunks.flat(), ...teamInvites];
-      incomingRows.sort((a, b) => {
-        const ta = a.requestedAt ? parseISO(a.requestedAt).getTime() : 0;
-        const tb = b.requestedAt ? parseISO(b.requestedAt).getTime() : 0;
-        return ta - tb;
-      });
-
-      const outgoingRows: OutgoingRequestRow[] = (outgoingRes.requests ?? []).map((r) => ({
-        requestId: r.request_id,
-        projectId: r.project_id ?? '',
-        projectName: r.project_name ?? 'Project',
-        courseLabel: r.course_label,
-        memberCount: r.member_count ?? 0,
-        sponsorCompany: r.sponsor_company,
-        requestedAt: r.requested_at,
-        status: r.status,
-        imageUrl: r.image_url,
-      }));
-
-      setIncoming(incomingRows);
-      setOutgoing(outgoingRows);
-    } catch {
-      setError('Could not load requests. Please try again.');
-      setIncoming([]);
-      setOutgoing([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [classId]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setActiveTab('incoming');
-    void refresh();
-  }, [isOpen, refresh]);
+    showLoaded(await fetchRequestRows(classId));
+  }, [classId, showLoaded]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -210,14 +134,14 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
 
   const handleAccept = useCallback(
     async (row: IncomingRequestRow) => {
-      setError(null);
+      setActionError(null);
       setProcessing({ requestId: row.requestId, action: 'accept' });
       try {
         await api.acceptProjectJoinRequest(row.requestId);
         setIncoming((prev) => prev.filter((r) => r.requestId !== row.requestId));
         onRequestsChanged?.();
       } catch {
-        setError('Could not accept this request. Please try again.');
+        setActionError('Could not accept this request. Please try again.');
         await refresh();
       } finally {
         setProcessing(null);
@@ -228,14 +152,14 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
 
   const handleReject = useCallback(
     async (row: IncomingRequestRow) => {
-      setError(null);
+      setActionError(null);
       setProcessing({ requestId: row.requestId, action: 'reject' });
       try {
         await api.rejectProjectJoinRequest(row.requestId);
         setIncoming((prev) => prev.filter((r) => r.requestId !== row.requestId));
         onRequestsChanged?.();
       } catch {
-        setError('Could not decline this request. Please try again.');
+        setActionError('Could not decline this request. Please try again.');
         await refresh();
       } finally {
         setProcessing(null);
@@ -246,14 +170,14 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
 
   const handleDismiss = useCallback(
     async (row: OutgoingRequestRow) => {
-      setError(null);
+      setActionError(null);
       setDismissingId(row.requestId);
       try {
         await api.dismissJoinRequest(row.requestId);
         setOutgoing((prev) => prev.filter((r) => r.requestId !== row.requestId));
         onRequestsChanged?.();
       } catch {
-        setError('Could not dismiss this request. Please try again.');
+        setActionError('Could not dismiss this request. Please try again.');
         await refresh();
       } finally {
         setDismissingId(null);
@@ -328,6 +252,11 @@ const RequestsModal: React.FC<RequestsModalProps> = ({
           </button>
         </div>
 
+        {actionError ? (
+          <p className="requests-modal__error" role="alert">
+            {actionError}
+          </p>
+        ) : null}
         {error ? (
           <p className="requests-modal__error" role="alert">
             {error}

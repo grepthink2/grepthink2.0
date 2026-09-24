@@ -12,7 +12,7 @@
   // Error Messages
   &__banner-error {
     padding: 0.875rem 1rem;
-    background-color: rgba($error-color, 0.1);
+    background-color: var(--gt-error-soft);
     border: 1px solid $error-color;
     border-radius: $border-radius-sm;
     color: $error-color;
@@ -22,8 +22,8 @@
 
   &__banner-warning {
     padding: 0.875rem 1rem;
-    background-color: rgba($accent-color, 0.08);
-    border: 1px solid rgba($accent-color, 0.35);
+    background-color: var(--gt-info-soft);
+    border: 1px solid var(--gt-accent);
     border-radius: $border-radius-sm;
     color: $text-primary;
     font-size: 0.875rem;
@@ -75,7 +75,7 @@
     border-radius: 0;
     background: transparent;
     color: $text-primary;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color);
     font-family: inherit;
 
     &:focus {
@@ -144,7 +144,7 @@
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
 
     &.active {
       background: $primary-color;
@@ -163,7 +163,7 @@
     height: 20px;
     background: white;
     border-radius: 50%;
-    transition: transform $transition-fast;
+    @include gt-transition(transform);
 
     .create-project__toggle-button.active & {
       transform: translateX(20px);
@@ -194,7 +194,7 @@
   // Section Styling
   &__section {
     background: $background;
-    box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--gt-shadow-card);
     border-radius: $border-radius-md;
     padding: 1.5rem;
     overflow: visible;
@@ -209,7 +209,7 @@
     h2 {
       font-size: 1.125rem;
       font-weight: 600;
-      color: #424242;
+      color: var(--gt-text-secondary);
       margin: 0;
     }
   }
@@ -217,7 +217,7 @@
   &__section-title {
     font-size: 1rem;
     font-weight: 600;
-    color: #424242;
+    color: var(--gt-text-secondary);
     margin-bottom: 0.75rem;
   }
 
@@ -225,7 +225,7 @@
   &__description-section {
     background: $background;
     border: none;
-    box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--gt-shadow-card);
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -258,7 +258,7 @@
     border-radius: $border-radius-sm;
     color: $text-secondary;
     cursor: pointer;
-    transition: all $transition-fast;
+    @include gt-transition(background, color, border-color);
 
     &:hover {
       background: $background;
@@ -275,7 +275,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all $transition-fast;
+    @include gt-transition(background, color);
 
     &.active {
       background: $primary-color;
@@ -315,7 +315,7 @@
     color: $text-primary;
     resize: vertical;
     font-family: inherit;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color);
 
     &:focus {
       outline: none;
@@ -342,7 +342,7 @@
     border-radius: $border-radius-sm;
     background: white;
     color: $text-primary;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color);
     font-family: inherit;
 
     &:focus {
@@ -389,7 +389,7 @@
     border-radius: $border-radius-sm;
     font-size: 1.5rem;
     cursor: pointer;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -408,7 +408,7 @@
     background: white;
     border: 1px solid $border-color;
     border-radius: $border-radius-sm;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--gt-shadow-pop);
     max-height: 250px;
     overflow-y: auto;
     z-index: 100;
@@ -419,7 +419,7 @@
     cursor: pointer;
     font-size: 0.875rem;
     color: $text-primary;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
 
     &:hover {
       background: $background;
@@ -447,12 +447,14 @@
     font-size: 0.8125rem;
     color: $text-primary;
     cursor: pointer;
-    transition: all $transition-fast;
+    @include gt-transition(background);
     user-select: none;
 
+    // .05 is below --gt-error-soft's ~8-10% intensity; left as a bespoke,
+    // deliberately barely-there hover wash.
     &:hover {
       background: rgba($error-color, 0.05);
-      
+
       .create-project__skill-remove {
         color: $error-color;
       }
@@ -464,7 +466,7 @@
     font-size: 1.25rem;
     line-height: 1;
     margin-left: 0.25rem;
-    transition: color $transition-fast;
+    @include gt-transition(color);
     pointer-events: none;
   }
 
@@ -482,10 +484,12 @@
     font-size: 0.8125rem;
     color: $text-primary;
     cursor: pointer;
-    transition: all $transition-fast;
+    @include gt-transition(background, color, border-color);
     text-align: center;
     font-weight: 500;
 
+    // .05 is below --gt-primary-soft's ~10% intensity; left as a bespoke,
+    // deliberately barely-there hover wash.
     &:hover {
       border-color: $primary-color;
       background: rgba($primary-color, 0.05);
@@ -522,7 +526,7 @@
     font-weight: 500;
     border-radius: $border-radius-sm;
     cursor: pointer;
-    transition: all $transition-fast;
+    @include gt-transition(background, color);
     border: none;
 
     &--primary {
@@ -545,7 +549,7 @@
 
     &--cancel {
       background: white;
-      color: #424242;
+      color: var(--gt-text-secondary);
       border: 1px solid $border-color;
 
       &:hover {

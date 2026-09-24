@@ -9,6 +9,7 @@ wiring, not just the dependency in isolation.
 use it as a probe for every positive/negative case around missing headers,
 malformed headers, bad signatures, and expired tokens.
 """
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -74,7 +75,12 @@ class TestRequireInstructor:
         r = client.post(
             "/api/classes",
             headers=auth_header,
-            json={"name": "115C", "description": "Soft Eng", "term": "Spring", "start_date": "2026-04-01"},
+            json={
+                "name": "115C",
+                "description": "Soft Eng",
+                "term": "Spring",
+                "start_date": "2026-04-01",
+            },
         )
         assert r.status_code == 200
         assert r.json()["class"]["id"] == "cls-1"
@@ -91,7 +97,12 @@ class TestRequireInstructor:
         r = client.post(
             "/api/classes",
             headers=auth_header,
-            json={"name": "115C", "description": "Soft Eng", "term": "Spring", "start_date": "2026-04-01"},
+            json={
+                "name": "115C",
+                "description": "Soft Eng",
+                "term": "Spring",
+                "start_date": "2026-04-01",
+            },
         )
         assert r.status_code == 403
         assert r.json()["detail"] == "Instructor role required"
@@ -108,7 +119,12 @@ class TestRequireInstructor:
         r = client.post(
             "/api/classes",
             headers=auth_header,
-            json={"name": "115C", "description": "Soft Eng", "term": "Spring", "start_date": "2026-04-01"},
+            json={
+                "name": "115C",
+                "description": "Soft Eng",
+                "term": "Spring",
+                "start_date": "2026-04-01",
+            },
         )
         assert r.status_code == 403
 

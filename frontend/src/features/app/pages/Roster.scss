@@ -1,5 +1,7 @@
 @use '@styles/index.scss' as *;
 
+// Kept as a raw hex (not var(--gt-success)) — darken() below is a Sass
+// compile-time function and can't operate on a CSS custom property.
 $success-color: #018156;
 
 // ── Page shell ────────────────────────────────────────────────
@@ -59,14 +61,16 @@ $success-color: #018156;
   animation: roster-msg-in 0.18s ease;
 
   &--success {
-    background: rgba($success-color, 0.1);
+    background: var(--gt-success-soft);
     color: darken($success-color, 10%);
+    // .25 border has no clean token match; left as rgba on the scss var.
     border: 1px solid rgba($success-color, 0.25);
   }
 
   &--error {
-    background: rgba($error-color, 0.08);
+    background: var(--gt-error-soft);
     color: $error-color;
+    // .2 border has no clean token match; left as rgba on the scss var.
     border: 1px solid rgba($error-color, 0.2);
   }
 }
@@ -83,6 +87,8 @@ $success-color: #018156;
   cursor: pointer;
   color: inherit;
   opacity: 0.85;
+  // 0.15s doesn't match either gt-transition mixin's duration (0.2s/0.3s);
+  // left as a literal rather than silently speeding/slowing it.
   transition: opacity 0.15s ease;
   white-space: nowrap;
   margin-left: auto;

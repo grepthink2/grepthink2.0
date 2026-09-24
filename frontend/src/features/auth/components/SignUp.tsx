@@ -209,12 +209,19 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
                 onChange={handleChange}
                 required
               />
-              <img
-                src={showPassword ? eyeSlashIcon : eyeIcon}
-                alt="toggle password visibility"
-                className="eyeIcon"
+              <button
+                type="button"
+                className="eyeToggle"
                 onClick={() => setShowPassword(!showPassword)}
-              />
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+              >
+                <img
+                  src={showPassword ? eyeSlashIcon : eyeIcon}
+                  alt=""
+                  className="eyeIcon"
+                />
+              </button>
             </div>
           </div>
 
@@ -230,12 +237,19 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
                 onChange={handleChange}
                 required
               />
-              <img
-                src={showPassword ? eyeSlashIcon : eyeIcon}
-                alt="toggle password visibility"
-                className="eyeIcon"
+              <button
+                type="button"
+                className="eyeToggle"
                 onClick={() => setShowPassword(!showPassword)}
-              />
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+              >
+                <img
+                  src={showPassword ? eyeSlashIcon : eyeIcon}
+                  alt=""
+                  className="eyeIcon"
+                />
+              </button>
             </div>
           </div>
 
@@ -269,10 +283,10 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
         {/* Login Section */}
         <div className="loginSection">
           <span className="loginText">Already have an account?</span>
-          <div className="signUpLoginLink" onClick={handleLogin}>
+          <button type="button" className="signUpLoginLink" onClick={handleLogin}>
             Login
-            <img src={arrowIcon} alt="arrow" className="arrowIcon" />
-          </div>
+            <img src={arrowIcon} alt="" className="arrowIcon" />
+          </button>
         </div>
       </div>
     </div>

@@ -29,11 +29,11 @@
   font-weight: $font-weight-medium;
   color: $text-secondary;
   cursor: pointer;
-  transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+  @include gt-transition(background, border-color, color);
 
   &:hover {
-    background: #f3f4f6;
-    border-color: darken(#DADADA, 10%);
+    background: var(--gt-gray-100);
+    border-color: darken($border-color, 10%);
     color: $text-primary;
   }
 }
@@ -52,7 +52,7 @@
   font-weight: $font-weight-semibold;
   cursor: pointer;
   white-space: nowrap;
-  transition: background $transition-fast, opacity $transition-fast;
+  @include gt-transition(background, opacity);
   flex-shrink: 0;
 
   &:hover:not(:disabled) {
@@ -66,7 +66,7 @@
 }
 
 .assign-page__error {
-  color: #b91c1c;
+  color: var(--gt-error-text);
   margin: 0;
   font-size: $font-size-sm;
 }

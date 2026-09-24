@@ -1,5 +1,13 @@
 @use '@styles/index.scss' as *;
 
+// This file predates the --gt-* design-token system: the quick-action accent
+// colors below and the various status/priority accents scattered through the
+// rest of the file (reds, ambers, blues, greens, grays used for banners,
+// badges, and cards) are raw hex left over from before the token sweep, not
+// a reviewed bespoke choice. Left as-is (not part of this token sweep's
+// touched scope) rather than churned as a side effect of wiring the
+// adherence lint — a real value sweep is follow-up work.
+
 // Quick actions: solid fills (same pattern as .add-assignment-btn)
 $quick-accent-hover: #1f5cd6;
 $quick-purple: #7d3c98;
@@ -55,10 +63,8 @@ $quick-purple-hover: #6a3382;
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-    outline-offset: 2px;
-  }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 
   &--join {
     background-color: $accent-color;
@@ -155,10 +161,6 @@ $quick-purple-hover: #6a3382;
     text-decoration: underline;
   }
 
-  &:focus-visible {
-    outline: 3px solid rgba($primary-color, 0.35);
-    outline-offset: 2px;
-  }
 }
 
 .student-home__team-project {
@@ -192,10 +194,6 @@ $quick-purple-hover: #6a3382;
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 3px solid rgba($primary-color, 0.35);
-    outline-offset: 2px;
-  }
 }
 
 // —— Deadlines table ——
@@ -257,8 +255,8 @@ $quick-purple-hover: #6a3382;
   }
 
   &:focus-visible {
-    outline: 2px solid $accent-color;
-    outline-offset: -2px;
+    outline: none;
+    box-shadow: inset var(--gt-focus-ring-tight);
   }
 
   &--highlight {
@@ -559,10 +557,6 @@ $quick-purple-hover: #6a3382;
     opacity: 0.85;
   }
 
-  &:focus-visible {
-    outline: 3px solid rgba($primary-color, 0.4);
-    outline-offset: 2px;
-  }
 }
 
 .student-home__btn-deny {
@@ -590,10 +584,6 @@ $quick-purple-hover: #6a3382;
     opacity: 0.85;
   }
 
-  &:focus-visible {
-    outline: 3px solid rgba($error-color, 0.45);
-    outline-offset: 2px;
-  }
 }
 
 .student-home__btn-spinner {
@@ -805,7 +795,8 @@ $quick-purple-hover: #6a3382;
   }
 
   &:focus-visible {
-    outline: 3px solid rgba($accent-color, 0.5);
-    outline-offset: 3px;
+    // Layered ring (A3 idiom): keep the resting elevation under the global
+    // ring so the shadow doesn't eclipse it (dead outline removed).
+    box-shadow: var(--gt-focus-ring), 0 4px 14px rgba(0, 0, 0, 0.2);
   }
 }

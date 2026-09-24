@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--gt-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,7 +21,7 @@
   max-width: 500px;
   width: 90%;
   position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--gt-shadow-modal);
 
   &__close {
     position: absolute;
@@ -36,7 +36,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
 
     &:hover {
       background-color: $background;
@@ -95,7 +95,7 @@
     color: $text-primary;
     background: $white;
     resize: vertical;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color);
 
     &::placeholder {
       color: $text-tertiary;
@@ -129,7 +129,7 @@
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all $transition-fast;
+    @include gt-transition(background, color);
     font-family: $primary-font;
 
     &--cancel {

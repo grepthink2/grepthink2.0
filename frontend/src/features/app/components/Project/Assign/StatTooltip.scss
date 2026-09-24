@@ -24,7 +24,7 @@
   background: $white;
   border: 1px solid $assign-muted-border;
   border-radius: $border-radius-sm;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--gt-shadow-pop);
   font-size: $font-size-sm;
   font-weight: $font-weight-normal;
   color: $text-primary;

@@ -40,8 +40,8 @@
     gap: $spacing-md;
     align-items: flex-end;
     padding: $spacing-md $spacing-lg;
-    background: #f7f8fa;
-    border: 1px solid #e5e7eb;
+    background: var(--gt-gray-50);
+    border: 1px solid var(--gt-gray-200);
     border-radius: $border-radius-md;
   }
 
@@ -66,6 +66,9 @@
     font-weight: $font-weight-semibold;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    // #6b7280 (also below, twice more) is a blue-tinted Tailwind gray with
+    // no close --gt-* equivalent (nearest, --gt-gray-600, is a ~20-unit-off
+    // neutral gray); left as bespoke hex throughout this file.
     color: #6b7280;
   }
 
@@ -78,7 +81,7 @@
   &__mode-btn {
     flex: 1;
     padding: 9px 12px;
-    border: 1.5px solid #e5e7eb;
+    border: 1.5px solid var(--gt-gray-200);
     border-radius: $border-radius-sm;
     background: $white;
     font-family: inherit;
@@ -87,14 +90,14 @@
     color: $text-primary;
     cursor: pointer;
     white-space: nowrap;
-    transition: border-color $transition-fast, background-color $transition-fast;
+    @include gt-transition(border-color, background-color);
 
-    &:hover:not(:disabled) { border-color: #c0c4cb; }
+    &:hover:not(:disabled) { border-color: var(--gt-gray-400); }
     &:disabled { opacity: 0.45; cursor: not-allowed; }
 
     &--active {
       border-color: $primary-color;
-      background: rgba($primary-color, 0.07);
+      background: var(--gt-primary-soft);
       color: $primary-hover;
     }
   }
@@ -122,10 +125,10 @@
 
   &__table-card {
     background: $white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--gt-gray-200);
     border-radius: $border-radius-md;
     overflow-x: auto;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--gt-shadow-hairline);
   }
 
   &__table {
@@ -144,26 +147,28 @@
       }
     }
 
-    thead tr { background: #f5f5f5; }
+    thead tr { background: var(--gt-gray-50); }
 
     th {
       text-align: left;
       padding: 10px $spacing-md;
       font-weight: $font-weight-medium;
+      // #9ca3af (repeats ~7x in this file) is a blue-tinted Tailwind gray
+      // with no close --gt-* equivalent; left as bespoke hex throughout.
       color: #9ca3af;
       white-space: nowrap;
     }
 
     td {
       padding: $spacing-md;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid var(--gt-gray-100);
       color: $text-primary;
       vertical-align: top;
       line-height: 1.5;
     }
 
     tbody tr:last-child td { border-bottom: none; }
-    tbody tr:hover td { background: #fafafa; }
+    tbody tr:hover td { background: var(--gt-gray-50); }
   }
 
   &__td-name {
@@ -223,21 +228,21 @@
     width: 100%;
     padding: 9px 12px;
     background: $white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--gt-gray-200);
     border-radius: $border-radius-sm;
     font-family: inherit;
     font-size: $font-size-sm;
     color: $text-primary;
     cursor: pointer;
     text-align: left;
-    transition: border-color $transition-fast;
+    @include gt-transition(border-color);
 
-    &:hover { border-color: #c0c4cb; }
+    &:hover { border-color: var(--gt-gray-400); }
     &:focus { outline: none; border-color: $primary-color; }
 
     .tsrv-dd--open & {
       border-color: $primary-color;
-      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      box-shadow: 0 0 0 3px var(--gt-primary-soft);
     }
   }
 
@@ -246,7 +251,7 @@
   &__chevron {
     flex-shrink: 0;
     color: #9ca3af;
-    transition: transform $transition-fast;
+    @include gt-transition(transform);
     .tsrv-dd--open & { transform: rotate(180deg); }
   }
 
@@ -256,8 +261,10 @@
     left: 0;
     right: 0;
     background: $white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--gt-gray-200);
     border-radius: $border-radius-sm;
+    // Navy-tinted shadow color (16,24,40, not neutral black); left as-is —
+    // same value as RosterList.scss/ControlBar.scss.
     box-shadow: 0 8px 24px rgba(16, 24, 40, 0.1);
     z-index: $z-index-dropdown;
     overflow: hidden;
@@ -268,7 +275,7 @@
     align-items: center;
     gap: $spacing-xs;
     padding: 8px 10px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--gt-gray-100);
   }
 
   &__search-icon { color: #9ca3af; flex-shrink: 0; }
@@ -311,13 +318,13 @@
     border-radius: 6px;
     cursor: pointer;
     text-align: left;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
 
     &:hover,
-    &--highlighted { background: #f7f8fa; }
+    &--highlighted { background: var(--gt-gray-50); }
 
     &--active {
-      background: rgba($primary-color, 0.06);
+      background: var(--gt-primary-soft);
       .tsrv-dd__item-name { color: $primary-hover; }
     }
   }

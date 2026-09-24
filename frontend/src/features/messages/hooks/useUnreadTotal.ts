@@ -5,8 +5,7 @@ import { useConversations } from './useConversations';
  * Total unread message count across all conversations. Drives the sidebar
  * badge AND the browser tab title prefix.
  *
- * Sums per-conversation counts from the inbox; the inbox is polled every
- * 15s so this value is at most that stale.
+ * Sums per-conversation counts from the realtime-maintained inbox provider.
  */
 export function useUnreadTotal(): number {
   const { conversations } = useConversations();

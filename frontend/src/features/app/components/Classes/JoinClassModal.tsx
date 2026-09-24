@@ -20,12 +20,20 @@ const JoinClassModal: React.FC<JoinClassModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { refreshClasses, setSuccessMessage } = useClass();
 
-  // Reset state when modal opens
-  useEffect(() => {
+  // Reset state when modal opens. The modal stays mounted between opens, so
+  // this is adjusted during render when isOpen flips rather than in an effect.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
       setCode(['', '', '', '', '', '', '', '']);
       setError(null);
       setSuccess(false);
+    }
+  }
+
+  useEffect(() => {
+    if (isOpen) {
       // Focus first input after a brief delay
       setTimeout(() => {
         inputRefs.current[0]?.focus();

@@ -15,6 +15,7 @@ import { clearDraft, loadDraft, saveDraft } from './draftStorage';
 import ProjectInterestsSection from './sections/ProjectInterestsSection';
 import PreviousProjectSection from './sections/PreviousProjectSection';
 import TeamPreferencesSection from './sections/TeamPreferencesSection';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import NotesSection from './sections/NotesSection';
 import SubmittedConfirmation from './SubmittedConfirmation';
 import './InterestForm.scss';
@@ -70,10 +71,19 @@ function fromSubmission(sub: ApiStaffingSubmission): InterestFormState {
   };
 }
 
+/** Where the roster load stands for one class and signed-in user. */
+interface RosterLoad {
+  classId: string | undefined;
+  userId: string | undefined;
+  settled: boolean;
+  error: string | null;
+}
+
 const InterestForm: React.FC<InterestFormProps> = ({ assignment }) => {
   const navigate = useNavigate();
   const { user } = useUser();
   const classId = assignment.classId;
+  const userId = user?.id;
 
   const [form, setForm] = useState<InterestFormState>(
     () => loadDraft(assignment.id) ?? defaultForm(),
@@ -85,21 +95,26 @@ const InterestForm: React.FC<InterestFormProps> = ({ assignment }) => {
   // Roster data loaded from the backend so the dropdowns reflect this class.
   const [projects, setProjects] = useState<MockProject[]>([]);
   const [students, setStudents] = useState<MockStudent[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // The load starts over whenever the class or user changes. That reset happens
+  // here during render (not in the effect), so the skeleton shows until the
+  // load for the new class and user settles.
+  const [load, setLoad] = useState<RosterLoad>({ classId, userId, settled: false, error: null });
+  if (load.classId !== classId || load.userId !== userId) {
+    setLoad({ classId, userId, settled: false, error: null });
+  }
+  const loading = Boolean(classId) && !load.settled;
+  const loadError = load.error;
 
   // Fetch projects + classmates + existing submission whenever the class changes.
   // The existing submission (if any) takes precedence over the local draft so a
-  // user that already submitted sees their answers reflected exactly.
+  // user that already submitted sees their answers reflected exactly. The load
+  // is only marked settled once the requests finish, tagged with the class and
+  // user it was for, so a late result for older inputs resets above.
   useEffect(() => {
-    if (!classId) {
-      setLoading(false);
-      return;
-    }
+    if (!classId) return;
     let cancelled = false;
     (async () => {
-      setLoading(true);
-      setLoadError(null);
       try {
         const [projRes, studRes, subRes] = await Promise.all([
           api.getClassProjects(classId),
@@ -118,7 +133,7 @@ const InterestForm: React.FC<InterestFormProps> = ({ assignment }) => {
         setStudents(
           studRes.students
             // Hide the current user from peer-preference dropdowns.
-            .filter((s) => s.id !== user?.id)
+            .filter((s) => s.id !== userId)
             .map((s) => ({
               id:    s.id,
               name:  s.email ?? 'Classmate',
@@ -134,20 +149,22 @@ const InterestForm: React.FC<InterestFormProps> = ({ assignment }) => {
         } else if (sub && (sub.ranked_projects?.length || sub.notes)) {
           setForm(fromSubmission(sub));
         }
+        setLoad({ classId, userId, settled: true, error: null });
       } catch (err) {
         if (!cancelled) {
-          setLoadError(
-            err instanceof Error ? err.message : 'Failed to load form',
-          );
+          setLoad({
+            classId,
+            userId,
+            settled: true,
+            error: err instanceof Error ? err.message : 'Failed to load form',
+          });
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [classId, user?.id]);
+  }, [classId, userId]);
 
   // Auto-save draft on every change so refreshes don't lose work.
   useEffect(() => {
@@ -255,7 +272,20 @@ const InterestForm: React.FC<InterestFormProps> = ({ assignment }) => {
     return (
       <div className="interest-form">
         <div className="if-shell">
-          <p>Loading interest form…</p>
+          <div className="if-section" aria-busy="true">
+            <div className="if-section__header">
+              <Skeleton width={200} height={20} />
+              <Skeleton width={280} height={13} style={{ marginTop: 8 }} />
+            </div>
+            <div className="if-section__body">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div className="if-field" key={i}>
+                  <Skeleton width={120} height={12} />
+                  <Skeleton height={40} radius={7} style={{ marginTop: 6 }} />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );

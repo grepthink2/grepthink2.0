@@ -1,10 +1,14 @@
 """
 TSR business logic
 """
+
 import logging
 from uuid import UUID
+
 from fastapi import HTTPException
-from app.database.client import service_client, supabase
+
+from app.core import authz
+from app.core.db import get_client
 from app.tsr.models import CreateTSRRequest
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
@@ -12,49 +16,50 @@ logger = logging.getLogger(__name__)
 
 
 TSR_FIELDS = (
-    'id, evaluator_id, evaluatee_id, project_id, week, '
-    'percent_contribution, positive_feedback, constructive_feedback, '
-    'scrum_master_tickets, scrum_master_assessment, scrum_master_notes, '
-    'assignment_id, created_at'
+    "id, evaluator_id, evaluatee_id, project_id, week, "
+    "percent_contribution, positive_feedback, constructive_feedback, "
+    "scrum_master_tickets, scrum_master_assessment, scrum_master_notes, "
+    "assignment_id, created_at"
 )
-
-
-def _client():
-    return service_client if service_client else supabase
 
 
 def _enrich_tsrs(client, tsrs: list) -> list:
     """Attach evaluator_email and evaluatee_email to each TSR dict."""
     all_ids = list(
-        {r['evaluator_id'] for r in tsrs if r.get('evaluator_id')} |
-        {r['evaluatee_id'] for r in tsrs if r.get('evaluatee_id')}
+        {r["evaluator_id"] for r in tsrs if r.get("evaluator_id")}
+        | {r["evaluatee_id"] for r in tsrs if r.get("evaluatee_id")}
     )
     if not all_ids:
         return tsrs
-    profiles = client.table('profiles').select(PROFILE_SELECT).in_('id', all_ids).execute()
-    profile_map = {p['id']: p for p in (profiles.data or [])}
+    profiles = client.table("profiles").select(PROFILE_SELECT).in_("id", all_ids).execute()
+    profile_map = {p["id"]: p for p in (profiles.data or [])}
     for tsr in tsrs:
-        ev_profile = profile_map.get(tsr.get('evaluator_id'), {})
-        ee_profile = profile_map.get(tsr.get('evaluatee_id'), {})
-        tsr['evaluator_email'] = ev_profile.get('email')
-        tsr['evaluator_name'] = profile_display_name(ev_profile)
-        tsr['evaluatee_email'] = ee_profile.get('email')
-        tsr['evaluatee_name'] = profile_display_name(ee_profile)
+        ev_profile = profile_map.get(tsr.get("evaluator_id"), {})
+        ee_profile = profile_map.get(tsr.get("evaluatee_id"), {})
+        tsr["evaluator_email"] = ev_profile.get("email")
+        tsr["evaluator_name"] = profile_display_name(ev_profile)
+        tsr["evaluatee_email"] = ee_profile.get("email")
+        tsr["evaluatee_name"] = profile_display_name(ee_profile)
     return tsrs
 
 
 def _get_project_role(client, project_id: str, user_id: str) -> str:
-    """Return the user's role in a project, or raise 403 if not a member."""
+    """Return the user's role in a project.
+
+    Raises 403 if the user is not a member, or 404 if the project does not exist
+    (read only when denying: a missing project has no members either).
+    """
     membership = (
-        client.table('project_members')
-        .select('role')
-        .eq('project_id', project_id)
-        .eq('user_id', user_id)
+        client.table("project_members")
+        .select("role")
+        .eq("project_id", project_id)
+        .eq("user_id", user_id)
         .execute()
     )
     if not membership.data:
-        raise HTTPException(status_code=403, detail="Not a member of this project")
-    return membership.data[0]['role']
+        authz.load_project(client, project_id, columns="id")
+        raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
+    return membership.data[0]["role"]
 
 
 def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
@@ -67,49 +72,47 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
     - If assignment_id is provided, it must belong to the same class and have assignment_type='tsr'.
     """
     try:
-        client = _client()
+        client = get_client()
 
         # Resolve project → class
         project_result = (
-            client.table('projects')
-            .select('id, class_id')
-            .eq('id', str(data.project_id))
-            .execute()
+            client.table("projects").select("id, class_id").eq("id", str(data.project_id)).execute()
         )
         if not project_result.data:
-            raise HTTPException(status_code=404, detail="Project not found")
+            raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
 
-        class_id = project_result.data[0].get('class_id')
+        class_id = project_result.data[0].get("class_id")
 
         # Evaluator must be enrolled in the class
         enrollment = (
-            client.table('class_enrollments')
-            .select('id')
-            .eq('class_id', str(class_id))
-            .eq('user_id', user_id)
+            client.table("class_enrollments")
+            .select("id")
+            .eq("class_id", str(class_id))
+            .eq("user_id", user_id)
             .execute()
         )
         if not enrollment.data:
-            raise HTTPException(
-                status_code=403,
-                detail="You must be enrolled in this project's class to submit a TSR",
-            )
+            raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
 
         # Validate assignment_id if provided
         if data.assignment_id:
             assignment_result = (
-                client.table('assignments')
-                .select('id, assignment_type, class_id')
-                .eq('id', str(data.assignment_id))
+                client.table("assignments")
+                .select("id, assignment_type, class_id")
+                .eq("id", str(data.assignment_id))
                 .execute()
             )
             if not assignment_result.data:
                 raise HTTPException(status_code=404, detail="Assignment not found")
             assignment = assignment_result.data[0]
-            if assignment.get('assignment_type') != 'tsr':
-                raise HTTPException(status_code=400, detail="Assignment is not a TSR-type assignment")
-            if assignment.get('class_id') != str(class_id):
-                raise HTTPException(status_code=400, detail="Assignment does not belong to this project's class")
+            if assignment.get("assignment_type") != "tsr":
+                raise HTTPException(
+                    status_code=400, detail="Assignment is not a TSR-type assignment"
+                )
+            if assignment.get("class_id") != str(class_id):
+                raise HTTPException(
+                    status_code=400, detail="Assignment does not belong to this project's class"
+                )
 
         tsr_data = {
             "evaluator_id": user_id,
@@ -131,47 +134,50 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
 
         # Upsert: one row per evaluator + evaluatee + project (+ assignment or week).
         existing_query = (
-            client.table('TSRs')
-            .select('id')
-            .eq('evaluator_id', user_id)
-            .eq('evaluatee_id', str(data.evaluatee_id))
-            .eq('project_id', str(data.project_id))
+            client.table("TSRs")
+            .select("id")
+            .eq("evaluator_id", user_id)
+            .eq("evaluatee_id", str(data.evaluatee_id))
+            .eq("project_id", str(data.project_id))
         )
         if data.assignment_id:
-            existing_query = existing_query.eq('assignment_id', str(data.assignment_id))
+            existing_query = existing_query.eq("assignment_id", str(data.assignment_id))
         else:
-            existing_query = existing_query.eq('week', data.week)
+            existing_query = existing_query.eq("week", data.week)
 
         existing_result = existing_query.limit(1).execute()
-        existing_id = existing_result.data[0]['id'] if existing_result.data else None
+        existing_id = existing_result.data[0]["id"] if existing_result.data else None
 
         if existing_id:
             update_fields = {
-                k: v for k, v in tsr_data.items()
-                if k not in ('evaluator_id', 'evaluatee_id', 'project_id', 'assignment_id')
+                k: v
+                for k, v in tsr_data.items()
+                if k not in ("evaluator_id", "evaluatee_id", "project_id", "assignment_id")
             }
-            result = (
-                client.table('TSRs')
-                .update(update_fields)
-                .eq('id', existing_id)
-                .execute()
-            )
+            result = client.table("TSRs").update(update_fields).eq("id", existing_id).execute()
             if not result.data:
                 raise HTTPException(status_code=500, detail="Failed to update TSR")
             logger.info(
                 "TSR updated | tsr_id=%s project_id=%s evaluator=%s evaluatee=%s",
-                existing_id, data.project_id, user_id, data.evaluatee_id,
+                existing_id,
+                data.project_id,
+                user_id,
+                data.evaluatee_id,
             )
             return result.data[0]
 
         # WARN: Table name is 'TSRs' (mixed case) here but 'tsrs' elsewhere
         # depending on the Postgres identifier quoting. See CODE_REVIEW.md #20.
-        result = client.table('TSRs').insert(tsr_data).execute()
+        result = client.table("TSRs").insert(tsr_data).execute()
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to create TSR")
         logger.info(
             "TSR created | tsr_id=%s project_id=%s evaluator=%s evaluatee=%s week=%s",
-            result.data[0].get('id'), data.project_id, user_id, data.evaluatee_id, data.week,
+            result.data[0].get("id"),
+            data.project_id,
+            user_id,
+            data.evaluatee_id,
+            data.week,
         )
         return result.data[0]
     except HTTPException:
@@ -179,7 +185,9 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
     except Exception:
         logger.exception(
             "Error creating TSR | project_id=%s evaluator=%s evaluatee=%s",
-            data.project_id, user_id, data.evaluatee_id,
+            data.project_id,
+            user_id,
+            data.evaluatee_id,
         )
         raise HTTPException(status_code=500, detail="Failed to create TSR")
 
@@ -190,27 +198,27 @@ def view_tsrs(user_id: str, project_id: UUID) -> list:
     Admin / scrum master see everything; others see only their own submitted TSRs.
     """
     try:
-        client = _client()
+        client = get_client()
 
         user_role = _get_project_role(client, str(project_id), user_id)
 
         if user_role in ("admin", "scrum master"):
             result = (
-                client.table('TSRs')
+                client.table("TSRs")
                 .select(TSR_FIELDS)
-                .eq('project_id', str(project_id))
-                .order('week')
-                .order('created_at')
+                .eq("project_id", str(project_id))
+                .order("week")
+                .order("created_at")
                 .execute()
             )
         else:
             result = (
-                client.table('TSRs')
+                client.table("TSRs")
                 .select(TSR_FIELDS)
-                .eq('project_id', str(project_id))
-                .eq('evaluator_id', user_id)
-                .order('week')
-                .order('created_at')
+                .eq("project_id", str(project_id))
+                .eq("evaluator_id", user_id)
+                .order("week")
+                .order("created_at")
                 .execute()
             )
 
@@ -218,9 +226,7 @@ def view_tsrs(user_id: str, project_id: UUID) -> list:
     except HTTPException:
         raise
     except Exception:
-        logger.exception(
-            "Error fetching TSRs | project_id=%s user_id=%s", project_id, user_id
-        )
+        logger.exception("Error fetching TSRs | project_id=%s user_id=%s", project_id, user_id)
         raise HTTPException(status_code=500, detail="Failed to fetch TSRs")
 
 
@@ -236,34 +242,37 @@ def get_tsrs_submitted_by(
     Optionally filtered by week.
     """
     try:
-        client = _client()
+        client = get_client()
 
         requester_role = _get_project_role(client, str(project_id), requester_id)
         subject_id = target_user_id or requester_id
 
-        if subject_id != requester_id and requester_role not in ('admin', 'scrum master'):
+        if subject_id != requester_id and requester_role not in ("admin", "scrum master"):
             raise HTTPException(
                 status_code=403,
                 detail="Only admins and scrum masters can view another member's submitted TSRs",
             )
 
         query = (
-            client.table('TSRs')
+            client.table("TSRs")
             .select(TSR_FIELDS)
-            .eq('project_id', str(project_id))
-            .eq('evaluator_id', subject_id)
+            .eq("project_id", str(project_id))
+            .eq("evaluator_id", subject_id)
         )
         if week is not None:
-            query = query.eq('week', week)
+            query = query.eq("week", week)
 
-        result = query.order('week').order('created_at').execute()
+        result = query.order("week").order("created_at").execute()
         return _enrich_tsrs(client, result.data or [])
     except HTTPException:
         raise
     except Exception:
         logger.exception(
             "Error fetching submitted TSRs | project_id=%s requester=%s subject=%s week=%s",
-            project_id, requester_id, target_user_id or requester_id, week,
+            project_id,
+            requester_id,
+            target_user_id or requester_id,
+            week,
         )
         raise HTTPException(status_code=500, detail="Failed to fetch submitted TSRs")
 
@@ -280,33 +289,36 @@ def get_tsrs_received_by(
     Optionally filtered by week.
     """
     try:
-        client = _client()
+        client = get_client()
 
         requester_role = _get_project_role(client, str(project_id), requester_id)
         subject_id = target_user_id or requester_id
 
-        if subject_id != requester_id and requester_role not in ('admin', 'scrum master'):
+        if subject_id != requester_id and requester_role not in ("admin", "scrum master"):
             raise HTTPException(
                 status_code=403,
                 detail="Only admins and scrum masters can view another member's received TSRs",
             )
 
         query = (
-            client.table('TSRs')
+            client.table("TSRs")
             .select(TSR_FIELDS)
-            .eq('project_id', str(project_id))
-            .eq('evaluatee_id', subject_id)
+            .eq("project_id", str(project_id))
+            .eq("evaluatee_id", subject_id)
         )
         if week is not None:
-            query = query.eq('week', week)
+            query = query.eq("week", week)
 
-        result = query.order('week').order('created_at').execute()
+        result = query.order("week").order("created_at").execute()
         return _enrich_tsrs(client, result.data or [])
     except HTTPException:
         raise
     except Exception:
         logger.exception(
             "Error fetching received TSRs | project_id=%s requester=%s subject=%s week=%s",
-            project_id, requester_id, target_user_id or requester_id, week,
+            project_id,
+            requester_id,
+            target_user_id or requester_id,
+            week,
         )
         raise HTTPException(status_code=500, detail="Failed to fetch received TSRs")

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock, Video, Plus, Users, CircleCheck, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 import { getInitials } from '@features/app/utils/memberUtils';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import {
   ATTENDANCE_OPTIONS,
   STATUS_LABEL,
@@ -209,7 +210,14 @@ const TeamMeetingCard: React.FC<TeamMeetingCardProps> = ({
             )}
           </div>
           {rosterLoading ? (
-            <p className="ta-card__roster-empty">Loading roster…</p>
+            <div aria-busy="true">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div className="ta-card__student" key={i}>
+                  <Skeleton circle height={24} />
+                  <Skeleton width="40%" height={12} />
+                </div>
+              ))}
+            </div>
           ) : roster && roster.length > 0 ? (
             roster.map((r) => (
               <div className="ta-card__student" key={r.personId}>

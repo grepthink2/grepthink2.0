@@ -32,7 +32,7 @@
   padding: 2px;
   border: 1.5px dashed transparent;
   border-radius: $border-radius-sm;
-  transition: border-color $transition-fast, background-color $transition-fast;
+  @include gt-transition(border-color, background-color);
 
   &--drag-over {
     border-color: $primary-color;

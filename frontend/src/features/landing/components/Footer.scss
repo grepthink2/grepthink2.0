@@ -1,5 +1,7 @@
 @use '@styles/index.scss' as *;
 
+// Landing-only bespoke dark surface (matches Header.scss's $header-dark) —
+// no --gt-* equivalent.
 $footer-dark: #0c1f18;
 
 .landing-footer {
@@ -57,15 +59,14 @@ $footer-dark: #0c1f18;
       font-size: $font-size-base;
       color: rgba(255, 255, 255, 0.72);
       text-decoration: none;
-      transition: color $transition-fast;
+      @include gt-transition(color);
 
       &:hover {
         color: $white;
       }
 
       &:focus-visible {
-        outline: 2px solid rgba(255, 255, 255, 0.6);
-        outline-offset: 3px;
+        // dead outline removed (global !important ring); radius rounds the ring
         border-radius: 3px;
       }
     }

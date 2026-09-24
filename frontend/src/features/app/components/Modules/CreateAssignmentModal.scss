@@ -4,7 +4,7 @@
 .create-assignment-modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--gt-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -28,13 +28,13 @@
 
 // ── Modal shell ────────────────────────────────────────────────
 .create-assignment-modal {
-  background-color: #eeeeee;
+  background-color: var(--gt-canvas);
   border-radius: $border-radius-md;
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--gt-shadow-modal);
   animation: createAssignmentSlideIn 0.2s ease-out;
 
   &.closing {
@@ -57,7 +57,7 @@
   align-items: center;
   justify-content: space-between;
   padding: $spacing-lg $spacing-xl;
-  background-color: #eeeeee;
+  background-color: var(--gt-canvas);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -82,9 +82,10 @@
   justify-content: center;
   border-radius: $border-radius-sm;
 
-  &:hover { background-color: rgba(0, 0, 0, 0.05); }
+  &:hover { background-color: var(--gt-gray-200); }
   &:focus { outline: none; }
-  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 }
 
 // ── Content ────────────────────────────────────────────────────
@@ -189,10 +190,10 @@
   border-radius: $border-radius-md;
   cursor: pointer;
   text-align: left;
-  transition: border-color $transition-fast, background-color $transition-fast;
+  @include gt-transition(border-color, background-color);
 
   &:hover {
-    border-color: darken(#dadada, 12%);
+    border-color: darken($border-color, 12%);
   }
 
   &:focus {
@@ -201,6 +202,8 @@
 
   &--selected {
     border-color: $primary-color;
+    // Intentionally much lighter than --gt-primary-soft (~10%): a barely-
+    // there selected-state wash, distinct from the icon badge fill below.
     background-color: rgba($primary-color, 0.04);
 
     .create-assignment-modal__status-radio {
@@ -223,7 +226,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: border-color $transition-fast;
+  @include gt-transition(border-color);
 }
 
 .create-assignment-modal__status-radio-dot {
@@ -232,7 +235,7 @@
   border-radius: 50%;
   background-color: transparent;
   transform: scale(0);
-  transition: background-color $transition-fast, transform $transition-fast;
+  @include gt-transition(background-color, transform);
 }
 
 .create-assignment-modal__status-card-body {
@@ -252,12 +255,13 @@
   flex-shrink: 0;
 
   &--draft {
+    // No --gt-* soft pair exists for plain gray; left as raw rgba.
     background-color: rgba(#616161, 0.12);
-    color: #616161;
+    color: var(--gt-text-tertiary);
   }
 
   &--published {
-    background-color: rgba($primary-color, 0.12);
+    background-color: var(--gt-primary-soft);
     color: $primary-color;
   }
 }
@@ -302,7 +306,8 @@
 
   &:hover { background-color: $background; }
   &:focus { outline: none; }
-  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 }
 
 .create-assignment-modal__submit-button {
@@ -318,16 +323,17 @@
 
   &:hover { background-color: $primary-hover; }
   &:focus { outline: none; }
-  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
   &:disabled { background-color: $disabled-bg; cursor: not-allowed; }
 }
 
 .create-assignment-modal__error {
   padding: 12px;
-  background-color: #fee;
-  border: 1px solid #fcc;
+  background-color: var(--gt-error-soft);
+  border: 1px solid var(--gt-error);
   border-radius: $border-radius-sm;
-  color: #c33;
+  color: var(--gt-error);
   font-size: $font-size-sm;
 }
 

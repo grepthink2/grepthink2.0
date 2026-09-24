@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
@@ -7,6 +7,7 @@ import type { ApiStaffingProjectRank } from '@/lib/api';
 import AssignSummaryBar from './AssignSummaryBar';
 import StaffingTable from './StaffingTable';
 import type { RankedStaffingProject } from './assignTypes';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './Staffing.scss';
 
 /**
@@ -32,6 +33,18 @@ function toRankedStaffingProject(row: ApiStaffingProjectRank): RankedStaffingPro
   };
 }
 
+/** The ranked projects and the number of students not yet placed, for one class. */
+async function fetchStaffingSummary(classId: string) {
+  const [rankRes, assignRes] = await Promise.all([
+    api.getStaffingProjectRank(classId),
+    api.getStaffingAssignments(classId),
+  ]);
+  return {
+    rankedProjects: rankRes.projects.map(toRankedStaffingProject),
+    unassignedCount: assignRes.assignments.filter((a) => !a.assigned_project_id).length,
+  };
+}
+
 const Staffing: React.FC = () => {
   const navigate = useNavigate();
   const { selectedClass } = useClass();
@@ -39,10 +52,49 @@ const Staffing: React.FC = () => {
 
   const [rankedProjects, setRankedProjects] = useState<RankedStaffingProject[]>([]);
   const [unassignedCount, setUnassignedCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(classId !== null);
   const [error, setError] = useState<string | null>(null);
+  // The last seat change that failed. It is kept apart from `error`, which
+  // `refresh` resets, so it survives the reload after the failure.
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  // A different class loads from scratch; with no class, drop the old class's data.
+  const [prevClassId, setPrevClassId] = useState(classId);
+  if (prevClassId !== classId) {
+    setPrevClassId(classId);
+    setActionError(null);
+    if (classId) {
+      setLoading(true);
+      setError(null);
+    } else {
+      setRankedProjects([]);
+      setUnassignedCount(0);
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!classId) return;
+    let ignore = false;
+    fetchStaffingSummary(classId)
+      .then((summary) => {
+        if (ignore) return;
+        setRankedProjects(summary.rankedProjects);
+        setUnassignedCount(summary.unassignedCount);
+      })
+      .catch((err: unknown) => {
+        if (!ignore) setError(err instanceof Error ? err.message : 'Failed to load staffing data');
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [classId]);
+
+  // Reload with the skeleton, to reconcile after a failed seat change.
+  const refresh = async () => {
     if (!classId) {
       setRankedProjects([]);
       setUnassignedCount(0);
@@ -52,24 +104,15 @@ const Staffing: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [rankRes, assignRes] = await Promise.all([
-        api.getStaffingProjectRank(classId),
-        api.getStaffingAssignments(classId),
-      ]);
-      setRankedProjects(rankRes.projects.map(toRankedStaffingProject));
-      setUnassignedCount(
-        assignRes.assignments.filter((a) => !a.assigned_project_id).length,
-      );
+      const summary = await fetchStaffingSummary(classId);
+      setRankedProjects(summary.rankedProjects);
+      setUnassignedCount(summary.unassignedCount);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load staffing data');
     } finally {
       setLoading(false);
     }
-  }, [classId]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  };
 
   const totalSeats = useMemo(
     () => rankedProjects.reduce((sum, p) => sum + p.totalSeats, 0),
@@ -92,13 +135,14 @@ const Staffing: React.FC = () => {
     const target = rankedProjects.find((p) => p.id === projectId);
     if (!target) return;
     const newTotal = target.totalSeats + 1;
+    setActionError(null);
     setRankedProjects((prev) =>
       prev.map((p) => (p.id === projectId ? { ...p, totalSeats: newTotal } : p)),
     );
     try {
       await api.updateProject(projectId, { team_size: newTotal });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add seat');
+      setActionError(err instanceof Error ? err.message : 'Failed to add seat');
       void refresh();
     }
   };
@@ -111,13 +155,14 @@ const Staffing: React.FC = () => {
     // would render a negative availability that's confusing.
     if (target.totalSeats - 1 < target.seatsTaken) return;
     const newTotal = Math.max(target.totalSeats - 1, 0);
+    setActionError(null);
     setRankedProjects((prev) =>
       prev.map((p) => (p.id === projectId ? { ...p, totalSeats: newTotal } : p)),
     );
     try {
       await api.updateProject(projectId, { team_size: newTotal });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove seat');
+      setActionError(err instanceof Error ? err.message : 'Failed to remove seat');
       void refresh();
     }
   };
@@ -157,8 +202,28 @@ const Staffing: React.FC = () => {
         }}
       />
 
+      {actionError && (
+        <p className="staffing-page__error" role="alert">
+          {actionError}
+        </p>
+      )}
+
       {loading ? (
-        <p>Loading project rankings…</p>
+        <div className="staffing-table" aria-busy="true">
+          <table>
+            <tbody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr className="staffing-table__row" key={i}>
+                  <td className="staffing-table__td staffing-table__td--name"><Skeleton width="60%" height={13} /></td>
+                  <td className="staffing-table__td staffing-table__td--seats"><Skeleton width={48} height={13} style={{ margin: '0 auto' }} /></td>
+                  <td className="staffing-table__td staffing-table__td--center"><Skeleton width={36} height={13} style={{ margin: '0 auto' }} /></td>
+                  <td className="staffing-table__td staffing-table__td--center"><Skeleton width={36} height={13} style={{ margin: '0 auto' }} /></td>
+                  <td className="staffing-table__td staffing-table__td--center"><Skeleton width={36} height={13} style={{ margin: '0 auto' }} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : error ? (
         <p className="staffing-page__error">{error}</p>
       ) : (

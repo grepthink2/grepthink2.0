@@ -1,0 +1,6 @@
+# Development + CI: runtime deps plus test and lint tooling.
+#   pip install -r requirements-dev.txt
+-r requirements.txt
+pytest==9.1.1
+httpx2==2.12.0   # starlette.testclient's preferred transport (plain httpx is deprecated there)
+ruff==0.16.6

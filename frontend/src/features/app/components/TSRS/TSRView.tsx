@@ -8,6 +8,7 @@ import { ChevronDown, Search, Shield, Users } from 'lucide-react';
 import { api, type ApiAssignmentTsrEntry } from '@/lib/api';
 import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
 import NonSubmittersList from '@features/app/components/NonSubmittersList/NonSubmittersList';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './TSRView.scss';
 
 export type TsrViewMode = 'about' | 'from';
@@ -126,9 +127,11 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
     );
   }, [options, query]);
 
-  useEffect(() => {
-    setHighlightIdx((p) => Math.min(p, Math.max(results.length - 1, 0)));
-  }, [results]);
+  // Keep the highlight on a row that exists when the results shrink.
+  const maxHighlightIdx = Math.max(results.length - 1, 0);
+  if (highlightIdx > maxHighlightIdx) {
+    setHighlightIdx(maxHighlightIdx);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -249,7 +252,14 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [members, setMembers] = useState<TsrViewMember[]>([]);
   const [scrumMasterIds, setScrumMasterIds] = useState<ReadonlySet<string>>(new Set());
-  const [membersLoading, setMembersLoading] = useState(false);
+  /** The team (and overview entries) the member list last settled for. */
+  const [membersLoadedFor, setMembersLoadedFor] = useState<{
+    projectId: string;
+    entries: ApiAssignmentTsrEntry[];
+  } | null>(null);
+  const membersLoading =
+    selectedProjectId !== '' &&
+    (membersLoadedFor?.projectId !== selectedProjectId || membersLoadedFor.entries !== entries);
   const [focalMemberId, setFocalMemberId] = useState('');
   const [viewMode, setViewMode] = useState<TsrViewMode>('about');
   const [nonSubmittersByProject, setNonSubmittersByProject] = useState<Record<string, { id: string; name: string }[]>>({});
@@ -287,18 +297,22 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
   }, [assignmentId]);
 
   // ── Load members for selected project ────────────────────────
-  useEffect(() => {
+  // No team selected: clear the member picker.
+  const [prevProjectId, setPrevProjectId] = useState(selectedProjectId);
+  if (prevProjectId !== selectedProjectId) {
+    setPrevProjectId(selectedProjectId);
     if (!selectedProjectId) {
       setMembers([]);
       setScrumMasterIds(new Set());
       setFocalMemberId('');
-      return;
     }
+  }
+
+  useEffect(() => {
+    if (!selectedProjectId) return;
     let cancelled = false;
-    setMembersLoading(true);
-    (async () => {
-      try {
-        const { members: apiMembers } = await api.getProjectMembers(selectedProjectId);
+    api.getProjectMembers(selectedProjectId)
+      .then(({ members: apiMembers }) => {
         if (cancelled) return;
 
         const roster: TsrViewMember[] = apiMembers.map((m) => ({
@@ -326,15 +340,14 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
           ),
         );
         setFocalMemberId(ALL_MEMBERS_ID);
-      } catch {
-        if (!cancelled) {
-          setMembers([]);
-          setScrumMasterIds(new Set());
-        }
-      } finally {
-        if (!cancelled) setMembersLoading(false);
-      }
-    })();
+        setMembersLoadedFor({ projectId: selectedProjectId, entries });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setMembers([]);
+        setScrumMasterIds(new Set());
+        setMembersLoadedFor({ projectId: selectedProjectId, entries });
+      });
     return () => { cancelled = true; };
   }, [selectedProjectId, entries]);
 
@@ -404,7 +417,27 @@ const TSRView: React.FC<TSRViewProps> = ({ assignmentId }) => {
     [members],
   );
 
-  if (loading) return <div className="tsr-view tsr-view--loading">Loading TSR responses…</div>;
+  if (loading) {
+    return (
+      <div className="tsr-view" aria-busy="true">
+        <div className="tsr-view__controls">
+          <div className="tsr-view__control">
+            <Skeleton width={60} height={11} />
+            <Skeleton height={38} radius={7} style={{ marginTop: 6 }} />
+          </div>
+          <div className="tsr-view__control">
+            <Skeleton width={70} height={11} />
+            <Skeleton height={38} radius={7} style={{ marginTop: 6 }} />
+          </div>
+        </div>
+        <div className="tsr-view__table-card" style={{ marginTop: 16, padding: 16 }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} height={44} radius={6} style={{ marginTop: i === 0 ? 0 : 8 }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className="tsr-view tsr-view--error"><p>{error}</p></div>;
 
   const focalName = focalMember?.name ?? 'this member';

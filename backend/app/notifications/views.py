@@ -1,4 +1,5 @@
 """HTTP handlers for notifications."""
+
 from __future__ import annotations
 
 from fastapi import Depends, Response, status

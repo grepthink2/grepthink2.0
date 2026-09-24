@@ -3,6 +3,7 @@
 Validates a submission and forwards it as an email to the support inbox via
 the shared ``send_email`` utility.
 """
+
 from __future__ import annotations
 
 import html
@@ -56,11 +57,7 @@ def submit_contact(*, name: str, email: str, message: str, website: str = "") ->
         raise HTTPException(status_code=400, detail="A valid email is required")
 
     subject = f"New contact message from {name}"
-    body_text = (
-        f"Name: {name}\n"
-        f"Email: {email}\n\n"
-        f"{message}\n"
-    )
+    body_text = f"Name: {name}\nEmail: {email}\n\n{message}\n"
     body_html = (
         f"<p><strong>Name:</strong> {html.escape(name)}</p>"
         f"<p><strong>Email:</strong> {html.escape(email)}</p>"

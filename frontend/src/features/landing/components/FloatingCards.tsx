@@ -5,6 +5,11 @@ import React from 'react';
  * real artifacts (a project team, milestones, a weekly TSR, a roster) standing
  * in for the generic sticky-notes of the reference. Purely visual: no data, no
  * behavior, hidden from assistive tech.
+ *
+ * The per-card/per-team avatar colors below predate the --gt-* design-token
+ * system and are a marketing-only decorative set (needs more distinct hues
+ * than the token set provides) — left as-is rather than churned as a side
+ * effect of wiring the adherence lint.
  */
 
 const TEAM = [

@@ -65,4 +65,3 @@ supabase/.temp/
 
 # ---- Repo-specific artifacts (should never be committed) ----
 *.xlsx
-backend/requirements-dev.txt

@@ -1,5 +1,11 @@
-@use '@styles/colors' as *;
-@use '@styles/variables' as *;
+@use '@styles/index.scss' as *;
+
+// This file predates the design-token system (no $primary-color/$accent-color
+// usage) and keeps its own legacy palette. Two accent colors are deliberately
+// left as raw hex, not tokenized: #4a90e2 (+ #357abd hover, #2a5aa5 text) is
+// a muted blue ~30 units/channel off --gt-accent/--gt-info (#2771FF); #28a745
+// (+ #218838 hover) is a Bootstrap green, similarly far from --gt-primary
+// (#018156). Forcing either onto a --gt-* token would be a visible recolor.
 
 .class-management {
   padding: 2rem;
@@ -8,26 +14,28 @@
 
   h1 {
     margin-bottom: 0.5rem;
-    color: #333;
+    color: var(--gt-text-primary);
   }
 
   .user-role {
-    color: #666;
+    color: var(--gt-text-tertiary);
     font-size: 0.9rem;
     margin-bottom: 2rem;
   }
 
   .error-message {
-    background-color: #fee;
-    color: #c33;
+    background-color: var(--gt-error-soft);
+    color: var(--gt-error);
     padding: 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
-    border: 1px solid #fcc;
+    border: 1px solid var(--gt-error);
   }
 
   .success-message {
-    background-color: #efe;
+    background-color: var(--gt-success-soft);
+    // #3c3/#cfc are a bright generic green, far from --gt-primary (#018156)
+    // and --gt-success-soft — left as bespoke hex, unlike the background above.
     color: #3c3;
     padding: 1rem;
     border-radius: 8px;
@@ -51,17 +59,17 @@
     background: white;
     border-radius: 12px;
     padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--gt-shadow-hover);
   }
 
   .create-class-section {
     margin-bottom: 2rem;
     padding-bottom: 2rem;
-    border-bottom: 2px solid #f0f0f0;
+    border-bottom: 2px solid var(--gt-gray-100);
 
     h2 {
       margin-bottom: 1rem;
-      color: #333;
+      color: var(--gt-text-primary);
       font-size: 1.5rem;
     }
 
@@ -73,18 +81,18 @@
           display: block;
           margin-bottom: 0.5rem;
           font-weight: 600;
-          color: #555;
+          color: var(--gt-text-tertiary);
         }
 
         input,
         textarea {
           width: 100%;
           padding: 0.75rem;
-          border: 1px solid #ddd;
+          border: 1px solid var(--gt-border);
           border-radius: 8px;
           font-size: 1rem;
           font-family: inherit;
-          transition: border-color 0.2s;
+          @include gt-transition(border-color);
 
           &:focus {
             outline: none;
@@ -106,13 +114,15 @@
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
-        transition: background-color 0.2s;
+        @include gt-transition(background-color);
 
         &:hover:not(:disabled) {
           background: #357abd;
         }
 
         &:disabled {
+          // #ccc sits ~15 units off --gt-gray-400 (#BDBDBD) on every channel —
+          // same borderline call as #999 below; left as bespoke (repeats 3x).
           background: #ccc;
           cursor: not-allowed;
         }
@@ -123,11 +133,11 @@
   .join-class-section {
     margin-bottom: 2rem;
     padding-bottom: 2rem;
-    border-bottom: 2px solid #f0f0f0;
+    border-bottom: 2px solid var(--gt-gray-100);
 
     h2 {
       margin-bottom: 1rem;
-      color: #333;
+      color: var(--gt-text-primary);
       font-size: 1.5rem;
     }
 
@@ -139,17 +149,17 @@
           display: block;
           margin-bottom: 0.5rem;
           font-weight: 600;
-          color: #555;
+          color: var(--gt-text-tertiary);
         }
 
         input {
           width: 100%;
           padding: 0.75rem;
-          border: 1px solid #ddd;
+          border: 1px solid var(--gt-border);
           border-radius: 8px;
           font-size: 1rem;
           font-family: inherit;
-          transition: border-color 0.2s;
+          @include gt-transition(border-color);
 
           &:focus {
             outline: none;
@@ -167,7 +177,7 @@
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
-        transition: background-color 0.2s;
+        @include gt-transition(background-color);
 
         &:hover:not(:disabled) {
           background: #357abd;
@@ -184,11 +194,13 @@
   .classes-list-section {
     h2 {
       margin-bottom: 1rem;
-      color: #333;
+      color: var(--gt-text-primary);
       font-size: 1.5rem;
     }
 
     .no-classes {
+      // #999 sits ~15 units off --gt-gray-500 (#8A8A8A) on every channel —
+      // outside the imperceptible band; left as bespoke hex (repeats 5x).
       color: #999;
       font-style: italic;
       text-align: center;
@@ -202,35 +214,37 @@
 
       .class-card {
         padding: 1rem;
-        border: 2px solid #e0e0e0;
+        border: 2px solid var(--gt-gray-200);
         border-radius: 8px;
         cursor: pointer;
-        transition: all 0.2s;
+        @include gt-transition(border-color, box-shadow, background-color);
 
         &:hover {
           border-color: #4a90e2;
+          // Focus ring in the legacy blue — left alone entirely (color and
+          // shape), consistent with leaving #4a90e2 itself unconverted.
           box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
         }
 
         &.selected {
           border-color: #4a90e2;
-          background-color: #f0f7ff;
+          background-color: var(--gt-info-soft);
         }
 
         h3 {
           margin: 0 0 0.5rem 0;
-          color: #333;
+          color: var(--gt-text-primary);
           font-size: 1.1rem;
         }
 
         p {
           margin: 0 0 0.5rem 0;
-          color: #666;
+          color: var(--gt-text-tertiary);
           font-size: 0.9rem;
         }
 
         .teacher-email {
-          color: #444;
+          color: var(--gt-text-secondary);
           font-weight: 500;
         }
 
@@ -260,19 +274,19 @@
     .class-details {
       margin-bottom: 2rem;
       padding-bottom: 2rem;
-      border-bottom: 2px solid #f0f0f0;
+      border-bottom: 2px solid var(--gt-gray-100);
 
       h2 {
         margin-bottom: 0.5rem;
-        color: #333;
+        color: var(--gt-text-primary);
       }
 
       p {
-        color: #666;
+        color: var(--gt-text-tertiary);
       }
 
       .teacher-email {
-        color: #444;
+        color: var(--gt-text-secondary);
         font-weight: 500;
       }
 
@@ -285,11 +299,11 @@
     .invite-section {
       margin-bottom: 2rem;
       padding-bottom: 2rem;
-      border-bottom: 2px solid #f0f0f0;
+      border-bottom: 2px solid var(--gt-gray-100);
 
       h3 {
         margin-bottom: 1rem;
-        color: #333;
+        color: var(--gt-text-primary);
         font-size: 1.3rem;
       }
 
@@ -301,16 +315,16 @@
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 600;
-            color: #555;
+            color: var(--gt-text-tertiary);
           }
 
           input {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid #ddd;
+            border: 1px solid var(--gt-border);
             border-radius: 8px;
             font-size: 1rem;
-            transition: border-color 0.2s;
+            @include gt-transition(border-color);
 
             &:focus {
               outline: none;
@@ -328,7 +342,7 @@
           font-size: 1rem;
           font-weight: 600;
           cursor: pointer;
-          transition: background-color 0.2s;
+          @include gt-transition(background-color);
 
           &:hover:not(:disabled) {
             background: #218838;
@@ -345,7 +359,7 @@
     .students-section {
       h3 {
         margin-bottom: 1rem;
-        color: #333;
+        color: var(--gt-text-primary);
         font-size: 1.3rem;
       }
 
@@ -363,13 +377,13 @@
 
         .student-card {
           padding: 1rem;
-          border: 1px solid #e0e0e0;
+          border: 1px solid var(--gt-gray-200);
           border-radius: 8px;
-          background-color: #fafafa;
+          background-color: var(--gt-gray-50);
 
           .student-email {
             margin: 0 0 0.25rem 0;
-            color: #333;
+            color: var(--gt-text-primary);
             font-weight: 500;
           }
 

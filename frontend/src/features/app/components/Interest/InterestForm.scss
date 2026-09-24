@@ -12,7 +12,7 @@
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
   cursor: pointer;
-  transition: background-color $transition-fast, opacity $transition-fast;
+  @include gt-transition(background-color, opacity);
 
   &--primary {
     background-color: $primary-color;
@@ -40,7 +40,7 @@
 .if-shell {
   background: $white;
   border-radius: $border-radius-md;
-  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--gt-shadow-card);
   overflow: visible;
 }
 
@@ -127,13 +127,13 @@
   color: $text-primary;
   outline: none;
   box-sizing: border-box;
-  transition: border-color $transition-fast, box-shadow $transition-fast;
+  @include gt-transition(border-color, box-shadow);
 
   &::placeholder { color: $text-tertiary; }
 
   &:focus {
     border-color: $primary-color;
-    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    box-shadow: 0 0 0 3px var(--gt-primary-soft);
   }
 
   &--with-icon { padding-left: 36px; }
@@ -165,14 +165,14 @@
   resize: vertical;
   outline: none;
   box-sizing: border-box;
-  transition: border-color $transition-fast, box-shadow $transition-fast;
+  @include gt-transition(border-color, box-shadow);
   line-height: 1.5;
 
   &::placeholder { color: $text-tertiary; }
 
   &:focus {
     border-color: $primary-color;
-    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    box-shadow: 0 0 0 3px var(--gt-primary-soft);
   }
 
   &:disabled {
@@ -194,9 +194,9 @@
   border-radius: $border-radius-sm;
   background: $white;
   cursor: text;
-  transition: border-color $transition-fast, box-shadow $transition-fast;
+  @include gt-transition(border-color, box-shadow);
 
-  &:hover:not(.if-slot__trigger--disabled) { border-color: darken(#DADADA, 15%); }
+  &:hover:not(.if-slot__trigger--disabled) { border-color: darken($border-color, 15%); }
 
   &--open {
     border-color: $border-color;
@@ -227,7 +227,7 @@
 .if-chevron {
   color: $text-tertiary;
   flex-shrink: 0;
-  transition: transform $transition-fast;
+  @include gt-transition(transform);
 
   &--open { transform: rotate(180deg); }
 }
@@ -248,7 +248,7 @@
   max-height: 220px;
   overflow-y: auto;
   z-index: $z-index-dropdown;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--gt-shadow-pop);
 
   &__empty {
     padding: $spacing-md;
@@ -269,8 +269,12 @@
     cursor: pointer;
     font-family: $primary-font;
     text-align: left;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
 
+    // hover (.05) / focus-visible (.08) form a deliberate 2-step highlight
+    // pair on this row; left as rgba on $primary-color rather than
+    // collapsed onto one --gt-primary-soft token, which would erase the
+    // distinction between the two states.
     &:first-child { border-top: none; }
     &:hover { background-color: rgba($primary-color, 0.05); }
     &:focus { outline: none; }
@@ -353,7 +357,7 @@ $rank-offset-top:   10px;       // aligns rank badge vertically with picker top-
   font-weight: $font-weight-semibold;
   flex-shrink: 0;
   user-select: none;
-  transition: background-color $transition-fast, color $transition-fast;
+  @include gt-transition(background-color, color);
   position: relative;
   z-index: 2;
 
@@ -368,7 +372,7 @@ $rank-offset-top:   10px;       // aligns rank badge vertically with picker top-
   border: 1px solid $border-color;
   border-radius: $border-radius-sm;
   background: $white;
-  transition: border-color $transition-fast;
+  @include gt-transition(border-color);
   overflow: visible;
   min-width: 0;
 
@@ -431,11 +435,11 @@ $rank-offset-top:   10px;       // aligns rank badge vertically with picker top-
   color: $text-tertiary;
   border-radius: $border-radius-sm;
   flex-shrink: 0;
-  transition: color $transition-fast, background-color $transition-fast;
+  @include gt-transition(color, background-color);
 
   &:hover {
     color: $error-color;
-    background-color: rgba($error-color, 0.08);
+    background-color: var(--gt-error-soft);
   }
 }
 
@@ -445,6 +449,7 @@ $rank-offset-top:   10px;       // aligns rank badge vertically with picker top-
   padding: $spacing-sm $spacing-md;
 
   .if-slot--filled & {
+    // .3 border has no clean token match; left as rgba on the scss var.
     border-top-color: rgba($primary-color, 0.3);
   }
 }
@@ -478,7 +483,7 @@ $rank-offset-top:   10px;       // aligns rank badge vertically with picker top-
   align-items: center;
   gap: 5px;
   padding: 5px 8px 5px 11px;
-  background-color: rgba($primary-color, 0.1);
+  background-color: var(--gt-primary-soft);
   color: $primary-color;
   border-radius: $border-radius-lg;
   font-size: $font-size-sm;
@@ -495,7 +500,7 @@ $rank-offset-top:   10px;       // aligns rank badge vertically with picker top-
     color: $primary-color;
     border-radius: 50%;
     opacity: 0.65;
-    transition: opacity $transition-fast;
+    @include gt-transition(opacity);
 
     &:hover { opacity: 1; }
   }
@@ -524,7 +529,7 @@ $rank-offset-top:   10px;       // aligns rank badge vertically with picker top-
   font-weight: $font-weight-medium;
   color: $text-secondary;
   cursor: pointer;
-  transition: background-color $transition-fast, border-color $transition-fast, color $transition-fast;
+  @include gt-transition(background-color, border-color, color);
 
   &:hover:not(.if-toggle--active) {
     border-color: $primary-color;
@@ -572,7 +577,7 @@ $rank-offset-top:   10px;       // aligns rank badge vertically with picker top-
   padding: $spacing-xxl $spacing-lg;
   background: $white;
   border-radius: $border-radius-md;
-  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--gt-shadow-card);
   text-align: center;
 }
 
@@ -583,7 +588,7 @@ $rank-offset-top:   10px;       // aligns rank badge vertically with picker top-
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background-color: rgba($primary-color, 0.12);
+  background-color: var(--gt-primary-soft);
   color: $primary-color;
   font-size: 2rem;
   font-weight: $font-weight-semibold;

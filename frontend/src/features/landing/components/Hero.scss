@@ -1,5 +1,14 @@
 @use '@styles/index.scss' as *;
 
+// Landing-only marketing surface, same self-contained-palette treatment as
+// Solutions.scss/Header.scss/Footer.scss: the mask-image `#000` stops only
+// need full opacity (mask alpha, not hue — any color reads identically
+// there, black is just the convention), the `&__title-accent` gradient needs
+// two distinct greens for a visible clip-text gradient (one is --gt-primary,
+// the other a bespoke lighter green with no token equivalent), and the
+// remaining grays predate the --gt-* design-token system. Left as-is rather
+// than churned as a side effect of wiring the adherence lint.
+
 .hero {
   position: relative;
   overflow: hidden;
@@ -117,8 +126,8 @@
     }
 
     &:focus-visible {
-      outline: 3px solid rgba(1, 129, 86, 0.5);
-      outline-offset: 3px;
+      outline: none;
+      box-shadow: var(--gt-focus-ring), 0 8px 24px rgba(1, 129, 86, 0.28);
     }
   }
 
@@ -144,8 +153,8 @@
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(1, 129, 86, 0.5);
-      outline-offset: 3px;
+      // outline lines removed: dead under the global !important focus ring
+      // (index.css); border-radius stays — it rounds that ring's corners.
       border-radius: 4px;
     }
   }

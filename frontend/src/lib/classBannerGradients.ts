@@ -1,6 +1,11 @@
 /**
  * Preset gradient palettes for class banners.
  * The first preset matches GradientBackgroundWrapper (auth signup background).
+ *
+ * All hex literals below predate the --gt-* design-token system and are a
+ * decorative, self-contained palette (background + 3-particle gradients need
+ * far more distinct hues than the small semantic token set provides) — left
+ * as-is rather than churned as a side effect of wiring the adherence lint.
  */
 export interface ClassBannerGradientPreset {
   id: string;

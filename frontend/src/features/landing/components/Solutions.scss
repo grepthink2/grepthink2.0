@@ -53,7 +53,7 @@
     height: 44px;
     border-radius: 12px;
     color: $primary-color;
-    background: rgba(1, 129, 86, 0.1);
+    background: var(--gt-primary-soft);
     margin-bottom: $spacing-md;
   }
 
@@ -76,8 +76,14 @@
 }
 
 // ── Product preview ──────────────────────────────────────────────────────────
+// This block (through .preview-team-row below) illustrates a fake product
+// screenshot — its own self-contained, deliberately bespoke mini-palette
+// (window chrome, sidebar, stat cards) rather than the live app's real
+// surfaces, so none of its hex/rgba literals are swapped for --gt-* tokens.
 
 .solutions__preview {
+  // Bespoke 3-stop decorative gradient for the preview backdrop; no
+  // equivalent progression exists in the flat --gt-* ramp.
   background: linear-gradient(160deg, #e8f5f0 0%, #d6eee6 40%, #c8e8dc 100%);
   border-radius: 24px;
   padding: clamp(24px, 4vw, 48px);
@@ -89,6 +95,8 @@
 .preview-window {
   background: $white;
   border-radius: 14px;
+  // Compound two-layer shadow (doesn't reduce to one token layer) and
+  // navy-tinted (33,43,54, not neutral black) — left as-is.
   box-shadow:
     0 4px 12px rgba(33, 43, 54, 0.08),
     0 24px 64px rgba(33, 43, 54, 0.16);

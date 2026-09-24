@@ -1,13 +1,18 @@
-import { GoHomeFill } from "react-icons/go";
-import { BiSolidDashboard } from "react-icons/bi";
-import { RiGraduationCapFill } from "react-icons/ri";
-import { IoIosCreate } from "react-icons/io";
-import { TiThList } from "react-icons/ti";
-import { FaFolder, FaListUl } from "react-icons/fa6";
-import { TbSettingsFilled } from "react-icons/tb";
-import { IoHelpCircle } from "react-icons/io5";
-import { MdAssignment, MdFactCheck, MdGroups } from "react-icons/md";
-import type { IconType } from 'react-icons';
+import {
+  CircleQuestionMark,
+  ClipboardCheck,
+  ClipboardList,
+  Folder,
+  GraduationCap,
+  House,
+  LayoutDashboard,
+  LayoutList,
+  List,
+  Settings,
+  SquarePen,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 
 // Custom SVG icons
 import MessagesIcon from '@assets/icon_messages.svg?url';
@@ -21,7 +26,7 @@ export type UserRole = 'instructor' | 'student';
 export interface SidebarItem {
   label: string;
   path: string;
-  icon?: IconType;
+  icon?: LucideIcon;
   iconSvg?: string; // For custom SVG icons
   /** Expandable item: chevron + nested child links (children have no icons). */
   children?: SidebarItem[];
@@ -36,29 +41,29 @@ export const instructorSidebarConfig: SidebarSection[] = [
   {
     title: 'Main',
     items: [
-      { label: 'Home', path: '/app/home', icon: GoHomeFill },
+      { label: 'Home', path: '/app/home', icon: House },
       { label: 'Messages', path: '/app/messages', iconSvg: MessagesIcon },
       { label: 'My Classes', path: '/app/my-classes', iconSvg: MyClassesIcon },
-      { label: 'Create Class', path: '/app/create-class', icon: IoIosCreate },
+      { label: 'Create Class', path: '/app/create-class', icon: SquarePen },
     ],
   },
   {
     title: 'Class',
     items: [
-      { label: 'Dashboard', path: '/app/dashboard', icon: BiSolidDashboard },
-      { label: 'Projects', path: '/app/projects', icon: FaListUl },
+      { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
+      { label: 'Projects', path: '/app/projects', icon: List },
       { label: 'Roster', path: '/app/roster', iconSvg: RosterIcon },
       { label: 'Modules', path: '/app/modules', iconSvg: ModulesIcon },
       { label: 'TA Management', path: '/app/ta-management', iconSvg: TaManagementIcon },
-      { label: 'TA Meetings', path: '/app/ta-meetings', icon: MdGroups },
-      { label: 'Final Reviews', path: '/app/ta-review/final-reviews', icon: MdFactCheck },
+      { label: 'TA Meetings', path: '/app/ta-meetings', icon: Users },
+      { label: 'Final Reviews', path: '/app/ta-review/final-reviews', icon: ClipboardCheck },
     ],
   },
   {
     title: 'Settings',
     items: [
-      { label: 'Settings', path: '/app/settings', icon: TbSettingsFilled },
-      { label: 'Help Center', path: '/app/help-center', icon: IoHelpCircle },
+      { label: 'Settings', path: '/app/settings', icon: Settings },
+      { label: 'Help Center', path: '/app/help-center', icon: CircleQuestionMark },
     ],
   },
 ];
@@ -67,28 +72,28 @@ export const studentSidebarConfig: SidebarSection[] = [
   {
     title: 'Main',
     items: [
-      { label: 'Home', path: '/app/home', icon: GoHomeFill },
+      { label: 'Home', path: '/app/home', icon: House },
       { label: 'Messages', path: '/app/messages', iconSvg: MessagesIcon },
-      { label: 'Join Class', path: '/app/join-class', icon: RiGraduationCapFill },
+      { label: 'Join Class', path: '/app/join-class', icon: GraduationCap },
       { label: 'My Classes', path: '/app/my-classes', iconSvg: MyClassesIcon },
     ],
   },
   {
     title: 'Class',
     items: [
-      { label: 'Create Project', path: '/app/create-project', icon: IoIosCreate },
-      { label: 'Browse Projects', path: '/app/browse-projects', icon: TiThList },
-      { label: 'My Project', path: '/app/my-project', icon: FaFolder },
-      { label: 'Assignments', path: '/app/assignments', icon: MdAssignment },
+      { label: 'Create Project', path: '/app/create-project', icon: SquarePen },
+      { label: 'Browse Projects', path: '/app/browse-projects', icon: LayoutList },
+      { label: 'My Project', path: '/app/my-project', icon: Folder },
+      { label: 'Assignments', path: '/app/assignments', icon: ClipboardList },
       { label: 'Roster', path: '/app/roster', iconSvg: RosterIcon },
-      { label: 'TA Meetings', path: '/app/ta-meetings', icon: MdGroups },
+      { label: 'TA Meetings', path: '/app/ta-meetings', icon: Users },
     ],
   },
   {
     title: 'Settings',
     items: [
-      { label: 'Settings', path: '/app/settings', icon: TbSettingsFilled },
-      { label: 'Help Center', path: '/app/help-center', icon: IoHelpCircle },
+      { label: 'Settings', path: '/app/settings', icon: Settings },
+      { label: 'Help Center', path: '/app/help-center', icon: CircleQuestionMark },
     ],
   },
 ];

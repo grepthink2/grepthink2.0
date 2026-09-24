@@ -48,7 +48,7 @@
     font-weight: $font-weight-semibold;
     cursor: pointer;
     white-space: nowrap;
-    transition: background $transition-fast;
+    @include gt-transition(background);
     flex-shrink: 0;
 
     &:hover {

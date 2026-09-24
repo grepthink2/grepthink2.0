@@ -3,10 +3,10 @@
  *
  * 1. New users who are NOT authenticated yet. Clicking a role routes them
  *    to the matching email/password signup form.
- * 2. Users who just finished Google OAuth and don't yet have a profiles row
- *    (AuthCallback sends them here when `api.loginCheck()` returns
- *    `role: null`). Clicking a role calls `/api/create-user` to provision
- *    the row and drops them on `/app/home`.
+ * 2. Users who just finished Google OAuth and have no role yet (AuthCallback and
+ *    ProtectedRoute send them here when the profile's role is empty). Clicking a
+ *    role calls `/api/create-user`, which writes it exactly once, and moves them on
+ *    to `/complete-profile`.
  *
  * The single page handles both flows so the OAuth callback doesn't need a
  * separate "pick role" screen.
@@ -16,8 +16,9 @@ import { useNavigate } from 'react-router-dom';
 import { Presentation, GraduationCap } from 'lucide-react';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import arrowIcon from '@assets/Arrow.svg?url';
-import { useUser } from '@/lib/auth';
+import { useAuth, useUser } from '@/lib/auth';
 import { api } from '@/lib/api';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './RoleSelection.scss';
 
 type Role = 'instructor' | 'student';
@@ -25,9 +26,13 @@ type Role = 'instructor' | 'student';
 const RoleSelection: React.FC = () => {
   const navigate = useNavigate();
   const { user, isLoaded } = useUser();
+  const { refreshRole } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string>('');
-  const [isChecking, setIsChecking] = React.useState(false);
+  // The signed-in user whose profile check below has finished; until it is
+  // the current `user`, that check is still running.
+  const [checkedUser, setCheckedUser] = React.useState<typeof user>(null);
+  const isChecking = isLoaded && user !== null && checkedUser !== user;
 
   // If an authenticated user already has a profile row, don't let them sit
   // on the role picker — send them to the app. This guards against users
@@ -36,7 +41,6 @@ const RoleSelection: React.FC = () => {
   React.useEffect(() => {
     if (!isLoaded || !user) return;
     let cancelled = false;
-    setIsChecking(true);
     (async () => {
       try {
         const me = await api.loginCheck();
@@ -50,7 +54,7 @@ const RoleSelection: React.FC = () => {
         // surface any real backend problem with a readable error.
         console.warn('[RoleSelection] loginCheck failed:', err);
       } finally {
-        if (!cancelled) setIsChecking(false);
+        if (!cancelled) setCheckedUser(user);
       }
     })();
     return () => {
@@ -87,7 +91,12 @@ const RoleSelection: React.FC = () => {
         lastName: meta.family_name || meta.last_name || undefined,
         avatarUrl: meta.avatar_url || meta.picture || undefined,
       });
-      navigate('/app/home', { replace: true });
+      // The provider read "no role" when this session started; without a refresh the
+      // route guard would bounce them straight back here. Then the usual next step:
+      // /complete-profile collects the name (and a student's roster email) and forwards
+      // to the app when there is nothing left to ask.
+      await refreshRole();
+      navigate('/complete-profile', { replace: true });
     } catch (err) {
       console.error('[RoleSelection] createUser failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to finish sign-up. Please try again.');
@@ -106,8 +115,8 @@ const RoleSelection: React.FC = () => {
       <>
         <GradientBackgroundWrapper />
         <div className="pageWrapper">
-          <div className="container">
-            <p className="subtext">Loading...</p>
+          <div className="container" aria-busy="true">
+            <Skeleton width={180} height={16} />
           </div>
         </div>
       </>

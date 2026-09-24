@@ -29,32 +29,40 @@ const STATUS_PILL_LABEL: Record<AssignmentStatus, string> = {
   closed: 'Closed',
 };
 
+/** A completed dashboard load, and the class it was made for. */
+interface DashboardLoad {
+  classId: string;
+  projects: ApiProject[];
+  assignments: ApiAssignment[];
+  roster: ApiRosterStudent[];
+  error: string | null;
+}
+
+const NO_PROJECTS: ApiProject[] = [];
+const NO_ASSIGNMENTS: ApiAssignment[] = [];
+const NO_ROSTER: ApiRosterStudent[] = [];
+
 const Dashboard: React.FC = () => {
   const { selectedClass } = useClass();
   const navigate = useNavigate();
   const { turnInRate, stats: turnInStats } = useClassTurnInStats(selectedClass?.id);
 
-  const [projects, setProjects] = useState<ApiProject[]>([]);
-  const [assignments, setAssignments] = useState<ApiAssignment[]>([]);
-  const [roster, setRoster] = useState<ApiRosterStudent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const classId = selectedClass?.id;
 
+  // The last completed load. Its lists stay on screen while another class loads.
+  const [loaded, setLoaded] = useState<DashboardLoad | null>(null);
+  const loading = Boolean(classId) && loaded?.classId !== classId;
+  const error = loading ? null : (loaded?.error ?? null);
+  const projects = loaded?.projects ?? NO_PROJECTS;
+  const assignments = loaded?.assignments ?? NO_ASSIGNMENTS;
+  const roster = loaded?.roster ?? NO_ROSTER;
+
   useEffect(() => {
-    if (!classId) {
-      setProjects([]);
-      setAssignments([]);
-      setRoster([]);
-      return;
-    }
+    if (!classId) return;
 
     let cancelled = false;
 
     const load = async () => {
-      setLoading(true);
-      setError(null);
       try {
         const [projectsRes, assignmentsRes, rosterRes] = await Promise.all([
           api.getProjects(classId).catch(() => ({ projects: [] as ApiProject[] })),
@@ -64,15 +72,25 @@ const Dashboard: React.FC = () => {
             .catch(() => ({ students: [] as ApiRosterStudent[], uploaded_at: null })),
         ]);
         if (cancelled) return;
-        setProjects(projectsRes.projects ?? []);
-        setAssignments(assignmentsRes.assignments ?? []);
-        setRoster(rosterRes.students ?? []);
+        setLoaded({
+          classId,
+          projects: projectsRes.projects ?? [],
+          assignments: assignmentsRes.assignments ?? [],
+          roster: rosterRes.students ?? [],
+          error: null,
+        });
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load dashboard');
+          const message = err instanceof Error ? err.message : 'Failed to load dashboard';
+          // A failed load keeps the previous lists on screen.
+          setLoaded((prev) => ({
+            classId,
+            projects: prev?.projects ?? [],
+            assignments: prev?.assignments ?? [],
+            roster: prev?.roster ?? [],
+            error: message,
+          }));
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     };
 

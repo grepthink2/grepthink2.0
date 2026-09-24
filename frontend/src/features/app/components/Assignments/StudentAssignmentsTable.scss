@@ -1,6 +1,13 @@
 @use 'sass:color';
 @use '@styles/index.scss' as *;
 
+// This file predates the --gt-* design-token system: the table-row grays
+// (#eeeeee/#fafafa/#f3f3f3/#f5f5f5) and the not-started/in-progress/submitted
+// status-badge palette below are raw hex left over from before the token
+// sweep, not a reviewed bespoke choice. Left as-is (not part of this token
+// sweep's touched scope) rather than churned as a side effect of wiring the
+// adherence lint — a real value sweep is follow-up work.
+
 // ── Floating header ───────────────────────────────────────────
 .student-assignments__header {
   display: flex;
@@ -156,6 +163,12 @@ $status-submitted-text: #018156;
 
     &:hover {
       background-color: color.adjust($primary-color, $lightness: -4%);
+    }
+
+    // Inset ring: sits inside the overflow-clipped table card/scroller.
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset var(--gt-focus-ring-tight), 0 1px 2px rgba(0, 0, 0, 0.1);
     }
   }
 

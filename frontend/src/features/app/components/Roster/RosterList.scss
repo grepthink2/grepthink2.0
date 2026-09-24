@@ -1,19 +1,22 @@
 @use '@styles/index.scss' as *;
 
 // ── Status badge color tokens ─────────────────────────────────
+// *-bg values that are a genuinely distinct bespoke shade (delta beyond the
+// imperceptible band vs. the nearest --gt-*-soft) are left as raw hex;
+// their text pairs are similarly bespoke except where byte-exact.
 $enrolled-bg:         #d4f5ee;
-$enrolled-text:       #018156;
-$waitlisted-bg:       #fef3c7;
+$enrolled-text:       var(--gt-primary);
+$waitlisted-bg:       var(--gt-warning-soft);
 $waitlisted-text:     #d97706;
-$dropped-bg:          #fee2e2;
+$dropped-bg:          var(--gt-error-soft);
 $dropped-text:        #ef4444;
-$not-on-roster-bg:    #f3f4f6;
+$not-on-roster-bg:    var(--gt-gray-100);
 $not-on-roster-text:  #6b7280;
-$manual-bg:           #fef9c3;
+$manual-bg:           var(--gt-warning-soft);
 $manual-text:         #a16207;
 $gt-registered-bg:    #d4f5ee;
-$gt-registered-text:  #018156;
-$gt-not-reg-bg:       #f3f4f6;
+$gt-registered-text:  var(--gt-primary);
+$gt-not-reg-bg:       var(--gt-gray-100);
 $gt-not-reg-text:     #6b7280;
 
 // ── Wrapper ───────────────────────────────────────────────────
@@ -43,7 +46,7 @@ $gt-not-reg-text:     #6b7280;
     font-weight: $font-weight-medium;
     cursor: pointer;
     white-space: nowrap;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
 
     &:hover {
       background-color: $primary-hover;
@@ -76,7 +79,7 @@ $gt-not-reg-text:     #6b7280;
     background: $white;
     border-radius: $border-radius-md;
     overflow: hidden;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--gt-shadow-hairline);
   }
 
   &__table-wrapper {
@@ -124,7 +127,7 @@ $gt-not-reg-text:     #6b7280;
     }
 
     tbody tr:hover td {
-      background-color: #fafafa;
+      background-color: var(--gt-gray-50);
     }
 
     // Name + email absorb all remaining horizontal space
@@ -213,7 +216,7 @@ $gt-not-reg-text:     #6b7280;
     margin-left: $spacing-sm;
     padding: 1px 7px;
     border-radius: $border-radius-lg;
-    background: rgba($primary-color, 0.12);
+    background: var(--gt-primary-soft);
     color: $primary-color;
     font-size: 10px;
     font-weight: $font-weight-semibold;
@@ -270,7 +273,7 @@ $gt-not-reg-text:     #6b7280;
     display: inline-flex;
     align-items: center;
     padding: 2px 6px;
-    background-color: rgba($accent-color, 0.1);
+    background-color: var(--gt-info-soft);
     color: $accent-color;
     border-radius: $border-radius-sm;
     font-size: 0.72rem;
@@ -305,7 +308,7 @@ $gt-not-reg-text:     #6b7280;
     font-size: 0.72rem;
     font-weight: $font-weight-medium;
     cursor: pointer;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
     white-space: nowrap;
     max-width: 100%;
 
@@ -348,6 +351,9 @@ $gt-not-reg-text:     #6b7280;
     background: $white;
     border: 1px solid $border-color;
     border-radius: $border-radius-sm;
+    // Navy-tinted shadow color (16,24,40, not neutral black) — a
+    // deliberately different hue from the --gt-shadow-* ramp, not just a
+    // size/alpha difference; left as-is.
     box-shadow: 0 8px 24px rgba(16, 24, 40, 0.15);
     padding: 4px;
   }
@@ -367,7 +373,7 @@ $gt-not-reg-text:     #6b7280;
     color: $text-primary;
     cursor: pointer;
     text-align: left;
-    transition: background-color $transition-fast;
+    @include gt-transition(background-color);
 
     &:hover {
       background: $background;

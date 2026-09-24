@@ -5,6 +5,7 @@ These lock in three fixes so they can't silently regress again:
   - the diagnostic ``GET /api/test-auth`` endpoint is gone,
   - the previously-broken ``remove-product-owner`` route is now registered.
 """
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient

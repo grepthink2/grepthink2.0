@@ -1,11 +1,14 @@
 @use '@styles/index.scss' as *;
 
+// active-bg/closed-bg/bar-orange are a bespoke 3-tone status palette with no
+// visually-indistinguishable --gt-* equivalent (deltas exceed the ~10-unit
+// imperceptible band used elsewhere in this sweep) — left as raw hex.
 $status-active-bg: #d4f5ee;
-$status-active-text: #018156;
-$status-draft-bg: #eeeeee;
-$status-draft-text: #616161;
+$status-active-text: var(--gt-primary);
+$status-draft-bg: var(--gt-gray-100);
+$status-draft-text: var(--gt-gray-600);
 $status-closed-bg: #dce8f5;
-$status-closed-text: #2771ff;
+$status-closed-text: var(--gt-blue-500);
 $bar-orange: #e6a817;
 
 // ── Floating header ───────────────────────────────────────────
@@ -48,7 +51,7 @@ $bar-orange: #e6a817;
   background: $white;
   border-radius: $border-radius-md;
   overflow: hidden;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--gt-shadow-hairline);
 }
 
 .assignment-list__table-wrapper {
@@ -62,7 +65,7 @@ $bar-orange: #e6a817;
   font-size: 0.875rem;
 
   thead tr {
-    background-color: #eeeeee;
+    background-color: var(--gt-surface-sunken);
   }
 
   th {
@@ -88,7 +91,7 @@ $bar-orange: #e6a817;
   }
 
   tbody tr:hover td {
-    background-color: #fafafa;
+    background-color: var(--gt-surface-muted);
   }
 }
 
@@ -121,9 +124,8 @@ $bar-orange: #e6a817;
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-  }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 }
 
 .assignment-list__td-date {
@@ -159,7 +161,7 @@ $bar-orange: #e6a817;
   height: 100%;
   background-color: $bar-orange;
   border-radius: 10px;
-  transition: width $transition-medium;
+  @include gt-transition-medium(width);
 }
 
 // ── Status badges ─────────────────────────────────────────────
@@ -291,7 +293,7 @@ $bar-orange: #e6a817;
     tbody tr.assignment-list__row--clickable {
       cursor: pointer;
       touch-action: manipulation;
-      &:active { background-color: #f5f5f5; }
+      &:active { background-color: var(--gt-gray-50); }
     }
   }
 }
@@ -310,10 +312,10 @@ $bar-orange: #e6a817;
   font-weight: $font-weight-medium;
   cursor: pointer;
   border-radius: $border-radius-sm;
-  transition: background-color $transition-fast;
+  @include gt-transition(background-color);
 
   &:hover {
-    background-color: rgba($accent-color, 0.08);
+    background-color: var(--gt-info-soft);
   }
 
   &:focus {

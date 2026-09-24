@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import type { ApiFeedbackSubmission } from '@/lib/api';
 import NonSubmittersList from '@features/app/components/NonSubmittersList/NonSubmittersList';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './FeedbackView.scss';
 
 const QUESTIONS: { key: keyof ApiFeedbackSubmission; label: string }[] = [
@@ -43,7 +44,40 @@ const FeedbackView: React.FC<FeedbackViewProps> = ({ assignmentId }) => {
     return () => { cancelled = true; };
   }, [assignmentId]);
 
-  if (loading) return <div className="feedback-view feedback-view--loading">Loading responses…</div>;
+  if (loading) {
+    return (
+      <div className="feedback-view" aria-busy="true">
+        <div className="feedback-view__header">
+          <Skeleton width={240} height={22} />
+          <Skeleton width={160} height={13} style={{ marginTop: 6 }} />
+        </div>
+        <div className="feedback-view__table-card">
+          <div className="feedback-view__table-wrapper">
+            <table className="feedback-view__table">
+              <thead>
+                <tr>
+                  <th className="feedback-view__th">Student</th>
+                  {QUESTIONS.slice(0, 2).map((q) => (
+                    <th key={q.key} className="feedback-view__th">{q.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <tr className="feedback-view__row" key={i}>
+                    <td className="feedback-view__name"><Skeleton width="70%" height={13} /></td>
+                    {QUESTIONS.slice(0, 2).map((q) => (
+                      <td className="feedback-view__answer" key={q.key}><Skeleton width="85%" height={13} /></td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (error)   return <div className="feedback-view feedback-view--error"><p>{error}</p></div>;
 
   return (

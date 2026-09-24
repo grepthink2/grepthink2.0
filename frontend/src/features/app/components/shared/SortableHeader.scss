@@ -20,8 +20,8 @@
     }
 
     &:focus-visible {
-      outline: 2px solid currentColor;
-      outline-offset: -2px;
+      outline: none;
+      box-shadow: inset var(--gt-focus-ring-tight);
       border-radius: 4px;
     }
   }

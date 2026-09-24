@@ -2,7 +2,7 @@
 
 .app-view {
   min-height: 100vh;
-  background-color: $white;
+  background-color: var(--gt-surface);
   position: relative;
 }
 
@@ -28,7 +28,9 @@
 .app-main {
   margin-left: 256px; // Account for sidebar width
   min-height: 100vh;
-  transition: margin-left 0.3s ease, width 0.3s ease;
+  // Both properties move together when the sidebar collapses/expands, so
+  // both stay under the same medium transition (see gt-transition-medium).
+  @include gt-transition-medium(margin-left, width);
   // Handle collapsed sidebar (if you implement that feature)
   .sidebar.collapsed ~ & {
     margin-left: 64px;
@@ -40,8 +42,18 @@
 .app-nav-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--gt-scrim);
   z-index: 999;
+  animation: app-nav-backdrop-fade-in 0.15s ease both;
+}
+
+@keyframes app-nav-backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Mobile: sidebar floats as a drawer, so content spans the full width */
@@ -57,6 +69,11 @@
 }
 
 /* Dev Mode Toggle - Top Right Outside Navbar */
+// This whole widget is a gated dev-only debug tool, intentionally styled
+// outside the product's visual language (glassy dark panel, bright warning
+// yellow, Material-style toggle) rather than the brand palette — none of
+// its non-white colors have a --gt-* semantic fit, so they're kept literal
+// as a group instead of a half-tokenized mix. See remaining-literals audit.
 .dev-mode-toggle {
   position: fixed;
   bottom: 1rem;
@@ -88,7 +105,7 @@
   border-radius: 12px;
   border: none;
   cursor: pointer;
-  transition: background-color 0.3s;
+  @include gt-transition-medium(background-color);
 
   &.active {
     background-color: #4caf50;
@@ -105,9 +122,9 @@
   left: 2px;
   width: 20px;
   height: 20px;
-  background-color: #ffffff;
+  background-color: var(--gt-surface);
   border-radius: 50%;
-  transition: transform 0.3s;
+  @include gt-transition-medium(transform);
 
   .active & {
     transform: translateX(24px);

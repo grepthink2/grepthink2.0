@@ -1,18 +1,21 @@
 @use '@styles/index.scss' as *;
 
-// Local tokens shared by components on the Assign page.
+// Local tokens shared by components on the Assign page. Most of these are
+// near/byte-exact matches to shared --gt-* tokens and were converted;
+// $assign-muted-text/$assign-subtle-text are Tailwind-adjacent grays with a
+// blue tint (~15-20 units off the nearest --gt-gray step) and stay local.
 $assign-card-bg: $white;
-$assign-card-border: #e5e7eb;
-$assign-surface-bg: #f7f8fa;
-$assign-muted-border: #e5e7eb;
+$assign-card-border: var(--gt-gray-200);
+$assign-surface-bg: var(--gt-gray-50);
+$assign-muted-border: var(--gt-gray-200);
 $assign-muted-text: #6b7280;
 $assign-subtle-text: #9ca3af;
-$assign-green-soft-bg: #ecfdf3;
-$assign-green-soft-text: #027a48;
-$assign-red-soft-bg: #fef3f2;
-$assign-red-soft-text: #b42318;
-$assign-yellow-star: #f5b400;
-$assign-primary-soft-bg: #e8f5ee;
+$assign-green-soft-bg: var(--gt-primary-soft);
+$assign-green-soft-text: var(--gt-primary);
+$assign-red-soft-bg: var(--gt-error-soft);
+$assign-red-soft-text: var(--gt-error-text);
+$assign-yellow-star: var(--gt-gold);
+$assign-primary-soft-bg: var(--gt-primary-soft);
 
 // Shared sizes
 $assign-row-min-height: 60px;

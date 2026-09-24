@@ -1,14 +1,17 @@
 @use '@styles/index.scss' as *;
 
-// Local tokens with no global equivalent (match the Figma design).
-$ta-card-border: #e6e6e6;
+// Local tokens (match the Figma design). Two of these turned out to be
+// byte/near-exact matches to shared --gt-* tokens and were converted below;
+// $ta-label/$ta-amber/$ta-amber-bg are a genuinely bespoke amber/gray with
+// no close --gt-* equivalent and stay local.
+$ta-card-border: var(--gt-gray-200);
 $ta-card-radius: 12px;
 $ta-btn-radius: 9px;
 $ta-label: #9a9a9a;
 $ta-amber: #e8833a;
 $ta-amber-bg: rgba(232, 131, 58, 0.15);
-$ta-amber-text: #b26a00;
-$ta-pill-green-bg: rgba(1, 129, 86, 0.12);
+$ta-amber-text: var(--gt-warning-text);
+$ta-pill-green-bg: var(--gt-primary-soft);
 
 .ta-card {
   display: flex;
@@ -176,7 +179,7 @@ $ta-pill-green-bg: rgba(1, 129, 86, 0.12);
   cursor: pointer;
   border: 1px solid transparent;
   text-decoration: none;
-  transition: filter $transition-fast;
+  @include gt-transition(filter);
 
   &--join {
     background: $accent-color;
@@ -209,7 +212,7 @@ $ta-pill-green-bg: rgba(1, 129, 86, 0.12);
 
 // ── Roster (expanded check-in) ──────────────────────────────────
 .ta-card__roster {
-  border-top: 1px solid #eeeeee;
+  border-top: 1px solid var(--gt-gray-100);
   padding-top: $spacing-md;
   display: flex;
   flex-direction: column;
@@ -252,7 +255,7 @@ $ta-pill-green-bg: rgba(1, 129, 86, 0.12);
   padding: 7px 0;
 
   & + .ta-card__student {
-    border-top: 1px solid #f4f4f4;
+    border-top: 1px solid var(--gt-gray-50);
   }
 }
 
@@ -275,6 +278,9 @@ $ta-pill-green-bg: rgba(1, 129, 86, 0.12);
   border-radius: $border-radius-sm;
   border: 1px solid $border-color;
   background: $white;
+  // #7a7a7a sits ~16 units off --gt-gray-500/600 on every channel — outside
+  // the imperceptible band used elsewhere in this sweep; left as bespoke,
+  // like $ta-label above.
   color: #7a7a7a;
   font-size: 0.6875rem;
   font-weight: $font-weight-medium;
@@ -301,8 +307,8 @@ $ta-pill-green-bg: rgba(1, 129, 86, 0.12);
 
   &--present { background: $ta-pill-green-bg; color: $primary-color; }
   &--late { background: $ta-amber-bg; color: $ta-amber-text; }
-  &--absent { background: rgba($error-color, 0.12); color: $error-color; }
-  &--unmarked { background: #f1f1f1; color: $ta-label; }
+  &--absent { background: var(--gt-error-soft); color: $error-color; }
+  &--unmarked { background: var(--gt-gray-50); color: $ta-label; }
 }
 
 // ── Responsive ──────────────────────────────────────────────────

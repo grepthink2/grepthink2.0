@@ -24,38 +24,57 @@ export function mapTurnInStats(stats: ApiTurnInStats): TurnInRateData {
   };
 }
 
+interface TurnInResult {
+  classId: string;
+  stats: ApiTurnInStats | null;
+  turnInRate: TurnInRateData;
+}
+
+/** One read of a class's turn-in stats; a failed read counts as no stats. */
+async function fetchTurnInStats(classId: string): Promise<TurnInResult> {
+  const response = await api.getClassTurnInStats(classId).catch(() => null);
+  const stats = response?.turn_in ?? null;
+  return {
+    classId,
+    stats,
+    turnInRate: stats ? mapTurnInStats(stats) : EMPTY_TURN_IN_RATE,
+  };
+}
+
 export function useClassTurnInStats(classId: string | undefined) {
-  const [turnInRate, setTurnInRate] = useState<TurnInRateData>(EMPTY_TURN_IN_RATE);
-  const [stats, setStats] = useState<ApiTurnInStats | null>(null);
-  const [loading, setLoading] = useState(false);
+  // The latest read, tagged with its class. It stays on screen while another
+  // class loads; with no class selected it is cleared.
+  const [result, setResult] = useState<TurnInResult | null>(null);
+  const [refetching, setRefetching] = useState(false);
+  if (!classId && result !== null) {
+    setResult(null);
+  }
+
+  useEffect(() => {
+    if (!classId) return;
+    let cancelled = false;
+    void fetchTurnInStats(classId).then((next) => {
+      if (!cancelled) setResult(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [classId]);
 
   const refetch = useCallback(async () => {
-    if (!classId) {
-      setTurnInRate(EMPTY_TURN_IN_RATE);
-      setStats(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
+    if (!classId) return;
+    setRefetching(true);
     try {
-      const response = await api.getClassTurnInStats(classId).catch(() => null);
-      const turnIn = response?.turn_in;
-      if (turnIn) {
-        setTurnInRate(mapTurnInStats(turnIn));
-        setStats(turnIn);
-      } else {
-        setTurnInRate(EMPTY_TURN_IN_RATE);
-        setStats(null);
-      }
+      setResult(await fetchTurnInStats(classId));
     } finally {
-      setLoading(false);
+      setRefetching(false);
     }
   }, [classId]);
 
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
-  return { turnInRate, stats, loading, refetch };
+  return {
+    turnInRate: result?.turnInRate ?? EMPTY_TURN_IN_RATE,
+    stats: result?.stats ?? null,
+    loading: Boolean(classId) && (result?.classId !== classId || refetching),
+    refetch,
+  };
 }

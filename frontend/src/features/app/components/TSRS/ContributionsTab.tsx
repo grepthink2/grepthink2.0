@@ -4,6 +4,11 @@ import { AlertCircle } from 'lucide-react';
 import type { TeamMember, ContributionMap } from './tsrsTypes';
 import './ContributionsTab.scss';
 
+// Chart palette (Recharts `Cell` fills) predates the --gt-* design-token
+// system. Some values happen to match a --gt-* token exactly; others (the
+// violet/pink tail) don't, since a multi-member pie needs more distinct hues
+// than the token set provides. Left as-is rather than churned as a side
+// effect of wiring the adherence lint.
 const CHART_COLORS = ['#018156', '#2771FF', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 interface ContributionsTabProps {
@@ -48,7 +53,7 @@ function redistributeProportionally(
     id,
     val: Math.round((remaining * (contributions[id] ?? 0)) / othersTotal),
   }));
-  let sum = raw.reduce((s, r) => s + r.val, 0);
+  const sum = raw.reduce((s, r) => s + r.val, 0);
   let diff = remaining - sum;
   // Hand out rounding remainder: when diff > 0 add 1 to members (prioritize larger current share); when diff < 0 subtract 1 (prioritize smaller).
   const sorted =

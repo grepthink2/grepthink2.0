@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useEffectEvent, useState } from 'react';
 import { X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { WEEKDAYS, formatMeeting, type TeamMeetingItem } from './taTypes';
@@ -21,15 +21,21 @@ const AddZoomModal: React.FC<AddZoomModalProps> = ({ isOpen, team, meetingInWeek
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Seed fields whenever a team is opened.
-  useEffect(() => {
+  // Seed fields whenever a team is opened. The modal stays mounted while
+  // closed, so compare against the open state and team of the last render.
+  const [prevOpen, setPrevOpen] = useState<{ isOpen: boolean; team: TeamMeetingItem | null }>({
+    isOpen: false,
+    team: null,
+  });
+  if (prevOpen.isOpen !== isOpen || prevOpen.team !== team) {
+    setPrevOpen({ isOpen, team });
     if (isOpen && team) {
       setZoomUrl(team.zoomUrl ?? '');
       setMeetingDay(team.meetingDay ?? '');
       setMeetingTime(team.meetingTime ?? '');
       setError(null);
     }
-  }, [isOpen, team]);
+  }
 
   const handleClose = () => {
     setIsClosing(true);
@@ -39,14 +45,16 @@ const AddZoomModal: React.FC<AddZoomModalProps> = ({ isOpen, team, meetingInWeek
     }, 200);
   };
 
+  // Reads the latest isOpen / handleClose without re-subscribing.
+  const onEscape = useEffectEvent((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && isOpen) handleClose();
+  });
+
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) handleClose();
-    };
+    const handleEscape = (e: KeyboardEvent) => onEscape(e);
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : 'unset';

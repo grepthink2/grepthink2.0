@@ -8,6 +8,10 @@ interface PieChartsProps {
   students: UiStudent[];
 }
 
+// Chart palette (Recharts `Cell`/legend-dot fills) predates the --gt-*
+// design-token system. Some values happen to match a --gt-* token exactly
+// (enrolled/registered = --gt-primary); others don't. Left as-is rather than
+// churned as a side effect of wiring the adherence lint.
 const CLASS_STATUS_COLORS: Record<ClassStatus, string> = {
   enrolled: '#018156',
   waitlisted: '#F59E0B',

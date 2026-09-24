@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { HiDotsVertical } from 'react-icons/hi';
+import { EllipsisVertical as EllipsisVerticalIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useConversations } from '../hooks/useConversations';
 
@@ -55,7 +55,6 @@ export const ConversationMenu: React.FC<Props> = ({
       await api.markConversationRead(conversationId);
       await refetch();
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error('[ConversationMenu] mark read failed:', err);
     } finally {
       setBusy(false);
@@ -73,7 +72,6 @@ export const ConversationMenu: React.FC<Props> = ({
       setOpen(false);
       onDeleted?.();
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error('[ConversationMenu] delete failed:', err);
       window.alert('Could not delete the conversation. Please try again.');
     } finally {
@@ -97,7 +95,7 @@ export const ConversationMenu: React.FC<Props> = ({
           setOpen(o => !o);
         }}
       >
-        <HiDotsVertical size={18} aria-hidden="true" />
+        <EllipsisVerticalIcon size={18} aria-hidden="true" />
       </button>
       {open && (
         <div className="conversation-menu__dropdown" role="menu">

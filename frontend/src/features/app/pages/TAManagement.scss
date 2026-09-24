@@ -38,7 +38,7 @@
     margin-bottom: $spacing-md;
     padding: $spacing-sm $spacing-md;
     border-radius: $border-radius-sm;
-    background: rgba($error-color, 0.08);
+    background: var(--gt-error-soft);
     color: $error-color;
     font-size: $font-size-sm;
   }
@@ -81,7 +81,7 @@
     margin-left: $spacing-xs;
     padding: 1px 8px;
     border-radius: $border-radius-lg;
-    background: rgba($primary-color, 0.12);
+    background: var(--gt-primary-soft);
     color: $primary-color;
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
@@ -159,10 +159,10 @@
     font-size: $font-size-sm;
     padding: 4px $spacing-sm;
     cursor: pointer;
-    transition: background $transition-fast;
+    @include gt-transition(background);
 
     &:hover:not(:disabled) {
-      background: rgba($error-color, 0.08);
+      background: var(--gt-error-soft);
     }
 
     &:disabled {
@@ -212,7 +212,7 @@
     font-weight: $font-weight-medium;
     padding: 6px $spacing-md;
     cursor: pointer;
-    transition: background $transition-fast;
+    @include gt-transition(background);
 
     &:hover:not(:disabled) {
       background: $primary-hover;
@@ -231,7 +231,7 @@
   gap: 4px;
   padding: 3px $spacing-sm;
   border-radius: $border-radius-lg;
-  background: rgba($primary-color, 0.1);
+  background: var(--gt-primary-soft);
   color: $primary-color;
   font-size: $font-size-sm;
 
@@ -292,7 +292,7 @@
     font-weight: $font-weight-medium;
     padding: 5px $spacing-md;
     cursor: pointer;
-    transition: all $transition-fast;
+    @include gt-transition(background, color);
     white-space: nowrap;
 
     &:hover:not(:disabled) {

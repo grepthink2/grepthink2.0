@@ -4,12 +4,13 @@
   &__overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--gt-scrim);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: $z-index-modal;
     padding: $spacing-md;
+    animation: roster-timeline-modal-fade-in 0.15s ease both;
   }
 
   background: $white;
@@ -19,7 +20,8 @@
   max-height: min(85vh, 720px);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--gt-shadow-modal);
+  @include gt-popover-enter;
 
   &__header {
     display: flex;
@@ -57,7 +59,7 @@
     align-items: center;
     padding: $spacing-xs;
     border-radius: $border-radius-sm;
-    transition: color $transition-fast, background $transition-fast;
+    @include gt-transition(color, background);
     flex-shrink: 0;
 
     &:hover {
@@ -73,15 +75,10 @@
     min-height: 0;
   }
 
-  &__state {
+  &__skeleton {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     gap: $spacing-sm;
-    padding: $spacing-xl 0;
-    color: $text-secondary;
-    font-family: $primary-font;
-    font-size: 0.875rem;
   }
 
   &__error {
@@ -140,7 +137,7 @@
     }
 
     tbody tr:hover td {
-      background: rgba($background, 0.6);
+      background: var(--gt-surface-muted);
     }
   }
 
@@ -180,7 +177,7 @@
     padding: 8px $spacing-md;
     cursor: pointer;
     border: 1px solid transparent;
-    transition: background $transition-fast;
+    @include gt-transition(background);
 
     &--close {
       background: $white;
@@ -192,12 +189,9 @@
       }
     }
   }
-
-  &__spinner {
-    animation: roster-timeline-modal-spin 0.75s linear infinite;
-  }
 }
 
-@keyframes roster-timeline-modal-spin {
-  to { transform: rotate(360deg); }
+@keyframes roster-timeline-modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

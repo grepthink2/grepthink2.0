@@ -4,6 +4,13 @@
 // (components/TAManagement/TAManagement.scss) and mirrors the TeamMeetingCard
 // look for rows: white cards, labeled columns, initials avatars.
 
+.final-reviews {
+  // .ta-page already sets padding: $spacing-lg (all sides) — pass it through
+  // so the floating Messages tab (>=768px) gets clearance ON TOP OF that
+  // gutter instead of replacing it (matches AssignmentDetail.scss's call).
+  @include bottom-clearance-for-message-widget($spacing-lg);
+}
+
 .final-reviews .ta-page__title {
   display: inline-flex;
   align-items: center;
@@ -12,21 +19,39 @@
   svg { color: $primary-color; }
 }
 
+// ── Loading skeleton ──────────────────────────────────────────────
+// Title-bar block + three day-section stubs (a day-label block + three
+// row-shaped blocks each) — roughly page-shaped so nothing jumps once the
+// real schedule arrives.
+.fr-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-lg);
+  padding-top: var(--gt-space-xs);
+}
+
+.fr-skeleton__day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-sm);
+}
+
 // ── Viewer badge + window state ─────────────────────────────────
 .fr-badge {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba($primary-color, 0.1);
+  background: var(--gt-primary-soft);
   color: $primary-color;
-  font-size: 0.75rem;
+  font-size: var(--gt-text-caption);
   font-weight: $font-weight-semibold;
   white-space: nowrap;
 }
 
 .fr-window {
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step (nearest of caption/body).
+  font-size: var(--gt-text-caption);
   font-weight: $font-weight-medium;
   color: $text-tertiary;
 
@@ -44,13 +69,16 @@
   background: $white;
   border: 1px solid $border-color;
   border-radius: $border-radius-md;
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step.
+  font-size: var(--gt-text-caption);
 }
 
 .fr-zoom__label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  // 6px sits equidistant between the xs/sm steps; rounded up to match the
+  // $spacing-sm gap already dominant elsewhere in this file.
+  gap: var(--gt-space-sm);
   font-weight: $font-weight-semibold;
   color: $text-secondary;
   white-space: nowrap;
@@ -84,9 +112,15 @@
   background: $white;
   color: $text-primary;
   font-family: $primary-font;
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step.
+  font-size: var(--gt-text-caption);
 
-  &:focus { outline: none; border-color: $accent-color; }
+  // The global focus-visible rule (index.css) already forces a visible
+  // outline; this just swaps in the tighter ring for a plain bordered input.
+  &:focus-visible {
+    border-color: var(--gt-accent);
+    box-shadow: var(--gt-focus-ring-tight);
+  }
 }
 
 // ── Action-failure banner ───────────────────────────────────────
@@ -97,11 +131,12 @@
   gap: $spacing-sm;
   margin-bottom: $spacing-md;
   padding: $spacing-sm $spacing-md;
-  border: 1px solid rgba($error-color, 0.4);
+  border: 1px solid var(--gt-error);
   border-radius: $border-radius-md;
-  background: rgba($error-color, 0.08);
+  background: var(--gt-error-soft);
   color: $error-color;
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step.
+  font-size: var(--gt-text-caption);
 }
 
 .fr-error__close {
@@ -126,7 +161,8 @@
 }
 
 .fr-day__title {
-  font-size: 1rem;
+  // 16px — exact match for the body-lg step.
+  font-size: var(--gt-text-body-lg);
   font-weight: $font-weight-semibold;
   color: $text-primary;
 }
@@ -135,14 +171,18 @@
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  // 6px sits equidistant between the xs/sm steps; rounded up to match the
+  // $spacing-sm gap already dominant elsewhere in this file.
+  gap: var(--gt-space-sm);
   padding: 5px 12px;
   border-radius: $border-radius-sm;
   background: $primary-color;
   color: $white;
-  font-size: 0.75rem;
+  font-size: var(--gt-text-caption);
   font-weight: $font-weight-medium;
   text-decoration: none;
+  @include gt-transition(background-color, color, border-color);
+  @include gt-press;
 
   &:hover { background: $primary-hover; color: $white; }
 }
@@ -156,7 +196,10 @@
 // ── One team's row ──────────────────────────────────────────────
 .fr-row {
   display: grid;
-  grid-template-columns: 170px minmax(160px, 1.2fr) minmax(140px, 1fr) minmax(200px, 1.2fr) auto;
+  // Time column widened 170→220px: the confirm ✓ button added alongside the
+  // existing clear ✕ button means the native datetime-local input plus two
+  // icon buttons (~213px measured) no longer fit in the old 170px track.
+  grid-template-columns: 220px minmax(160px, 1.2fr) minmax(140px, 1fr) minmax(200px, 1.2fr) auto;
   gap: $spacing-md;
   align-items: center;
   padding: $spacing-sm $spacing-md;
@@ -169,17 +212,21 @@
 .fr-row__open-btn {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  // 3px rounds down to the xs step (nearest of xs/sm).
+  gap: var(--gt-space-xs);
   padding: 6px 10px;
   border: 1px solid $border-color;
   border-radius: $border-radius-sm;
   background: $white;
   color: $text-secondary;
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step.
+  font-size: var(--gt-text-caption);
   font-weight: $font-weight-medium;
   font-family: $primary-font;
   cursor: pointer;
   white-space: nowrap;
+  @include gt-transition(background-color, color, border-color);
+  @include gt-press;
 
   &:hover { background: $background; color: $text-primary; }
 }
@@ -187,14 +234,17 @@
 .fr-row__cell {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  // 3px rounds down to the xs step (nearest of xs/sm).
+  gap: var(--gt-space-xs);
   min-width: 0;
 }
 
 .fr-row__label {
-  font-size: 0.65rem;
+  // 10.4px rounds up to the 12px caption step (nearest available; there's
+  // no smaller token).
+  font-size: var(--gt-text-caption);
   font-weight: $font-weight-semibold;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--gt-tracking-caps);
   text-transform: uppercase;
   color: $text-tertiary;
 }
@@ -202,8 +252,11 @@
 .fr-row__value {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.875rem;
+  // 6px sits equidistant between the xs/sm steps; rounded up to match the
+  // $spacing-sm gap already dominant elsewhere in this file.
+  gap: var(--gt-space-sm);
+  // 14px — exact match for the body step.
+  font-size: var(--gt-text-body);
   color: $text-primary;
   min-width: 0;
 }
@@ -219,14 +272,16 @@
 .fr-row__icon { color: $text-tertiary; flex-shrink: 0; }
 
 .fr-row__hint {
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step.
+  font-size: var(--gt-text-caption);
   color: $text-tertiary;
 }
 
 .fr-row__you { color: $primary-color; font-weight: $font-weight-medium; }
 
 .fr-row__open {
-  font-size: 0.875rem;
+  // 14px — exact match for the body step.
+  font-size: var(--gt-text-body);
   color: $text-tertiary;
   font-style: italic;
 }
@@ -240,7 +295,9 @@
   border-radius: 50%;
   background: $primary-color;
   color: $white;
-  font-size: 0.6rem;
+  // 9.6px rounds up to the 12px caption step (nearest available; there's no
+  // smaller token) — two-letter initials still fit inside the 22px circle.
+  font-size: var(--gt-text-caption);
   font-weight: $font-weight-semibold;
   flex-shrink: 0;
 }
@@ -248,8 +305,11 @@
 .fr-row__reviewer {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.875rem;
+  // 6px sits equidistant between the xs/sm steps; rounded up to match the
+  // $spacing-sm gap already dominant elsewhere in this file.
+  gap: var(--gt-space-sm);
+  // 14px — exact match for the body step.
+  font-size: var(--gt-text-body);
   color: $text-primary;
   flex-wrap: wrap;
 }
@@ -267,16 +327,21 @@
 .fr-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  // 6px sits equidistant between the xs/sm steps; rounded up to match the
+  // $spacing-sm gap already dominant elsewhere in this file.
+  gap: var(--gt-space-sm);
   padding: 6px 12px;
   border: 1px solid $border-color;
   border-radius: $border-radius-sm;
   background: $white;
   color: $text-secondary;
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step.
+  font-size: var(--gt-text-caption);
   font-weight: $font-weight-medium;
   font-family: $primary-font;
   cursor: pointer;
+  @include gt-transition(background-color, color, border-color);
+  @include gt-press;
 
   &:hover:not(:disabled) { background: $background; }
   &:disabled { opacity: 0.55; cursor: default; }
@@ -293,16 +358,17 @@
 
 .fr-btn--release {
   color: $error-color;
-  border-color: rgba($error-color, 0.45);
+  border-color: var(--gt-error);
 
-  &:hover:not(:disabled) { background: rgba($error-color, 0.07); }
+  &:hover:not(:disabled) { background: var(--gt-error-soft); }
 }
 
 // ── Instructor editors ──────────────────────────────────────────
 .fr-row__ta-select,
 .fr-row__time-input {
   font-family: $primary-font;
-  font-size: 0.8125rem;
+  // 13px rounded down to the 12px caption step.
+  font-size: var(--gt-text-caption);
   padding: 6px 8px;
   border: 1px solid $border-color;
   border-radius: $border-radius-sm;
@@ -311,16 +377,28 @@
   color-scheme: light; // Keep the native picker legible under a dark OS theme.
   max-width: 100%;
 
-  &:focus { outline: none; border-color: $accent-color; }
+  // The global focus-visible rule (index.css) already forces a visible
+  // outline; this just swaps in the tighter ring for a plain bordered input.
+  &:focus-visible {
+    border-color: var(--gt-accent);
+    box-shadow: var(--gt-focus-ring-tight);
+  }
   &:disabled { opacity: 0.6; }
+
+  // Instructor typed an unparseable time draft — flagged instead of sent.
+  &[aria-invalid='true'] {
+    border-color: var(--gt-error);
+  }
 }
 
 .fr-row__time-edit {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  // 4px — exact match for the xs step.
+  gap: var(--gt-space-xs);
 }
 
+.fr-row__time-confirm,
 .fr-row__time-clear {
   display: inline-flex;
   border: none;
@@ -329,9 +407,18 @@
   cursor: pointer;
   padding: 4px;
   border-radius: $border-radius-sm;
+  @include gt-transition(background-color, color, border-color);
+  @include gt-press;
 
-  &:hover:not(:disabled) { color: $error-color; background: $background; }
   &:disabled { opacity: 0.55; cursor: default; }
+}
+
+.fr-row__time-confirm {
+  &:hover:not(:disabled) { color: var(--gt-primary); background: var(--gt-primary-soft); }
+}
+
+.fr-row__time-clear {
+  &:hover:not(:disabled) { color: $error-color; background: $background; }
 }
 
 // ── Mobile ──────────────────────────────────────────────────────

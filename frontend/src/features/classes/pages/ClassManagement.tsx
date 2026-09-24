@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import { useAuth } from '@/lib/auth';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './ClassManagement.scss';
 
 // Dev: relative path so the Vite proxy routes /api to the backend.
@@ -23,12 +24,16 @@ interface Student {
   role: string;
 }
 
+const getErrorMessage = (err: unknown, fallback: string) =>
+  err instanceof Error ? err.message : fallback;
+
 const ClassManagement: React.FC = () => {
   const { getToken } = useAuth();
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Starts true: the class list loads on mount.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
 
@@ -41,20 +46,6 @@ const ClassManagement: React.FC = () => {
   // Success messages
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const getErrorMessage = (err: unknown, fallback: string) =>
-    err instanceof Error ? err.message : fallback;
-
-  useEffect(() => {
-    checkUserRole();
-    fetchClasses();
-  }, []);
-
-  useEffect(() => {
-    if (selectedClass) {
-      fetchStudents(selectedClass.id);
-    }
-  }, [selectedClass]);
-
   const getAccessToken = async () => {
     const token = await getToken();
     if (!token) {
@@ -63,44 +54,120 @@ const ClassManagement: React.FC = () => {
     return token;
   };
 
-  const checkUserRole = async () => {
-    try {
-      const token = await getAccessToken();
-      const response = await fetch(`${API_BASE_URL}/api/login-check`, {
+  const requestUserRole = async (): Promise<string | null> => {
+    const token = await getAccessToken();
+    const response = await fetch(`${API_BASE_URL}/api/login-check`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    return data.role;
+  };
+
+  const requestClasses = async (): Promise<Class[]> => {
+    const token = await getAccessToken();
+    const response = await fetch(`${API_BASE_URL}/api/classes`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch classes');
+    }
+
+    const data = await response.json();
+    return data.classes || [];
+  };
+
+  const requestStudents = async (classId: string): Promise<Student[]> => {
+    const token = await getAccessToken();
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/students`,
+      {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
-      const data = await response.json();
-      setUserRole(data.role);
-    } catch (err) {
-      console.error('Error checking user role:', err);
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch students');
     }
+
+    const data = await response.json();
+    return data.students || [];
   };
 
+  /** Reloads the class list after a create or a join. */
   const fetchClasses = async () => {
     setLoading(true);
     setError(null);
     try {
-      const token = await getAccessToken();
-      const response = await fetch(`${API_BASE_URL}/api/classes`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch classes');
-      }
-
-      const data = await response.json();
-      setClasses(data.classes || []);
+      setClasses(await requestClasses());
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'Failed to fetch classes'));
     } finally {
       setLoading(false);
     }
   };
+
+  /** Reloads the selected class's students after an invite. */
+  const fetchStudents = async (classId: string) => {
+    try {
+      setStudents(await requestStudents(classId));
+    } catch (err: unknown) {
+      console.error('Error fetching students:', err);
+    }
+  };
+
+  // The effects below read the latest token getter through these, so a
+  // refreshed auth context does not re-run them (and repeat the requests).
+  const loadUserRole = useEffectEvent(requestUserRole);
+  const loadClasses = useEffectEvent(requestClasses);
+  const loadStudents = useEffectEvent(requestStudents);
+
+  // Role and class list, once on mount (`loading` starts true for this).
+  useEffect(() => {
+    let cancelled = false;
+    loadUserRole()
+      .then((role) => {
+        if (!cancelled) setUserRole(role);
+      })
+      .catch((err: unknown) => {
+        console.error('Error checking user role:', err);
+      });
+    loadClasses()
+      .then((list) => {
+        if (!cancelled) setClasses(list);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(getErrorMessage(err, 'Failed to fetch classes'));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Students of the class picked in the list.
+  useEffect(() => {
+    if (!selectedClass) return;
+    let cancelled = false;
+    loadStudents(selectedClass.id)
+      .then((list) => {
+        if (!cancelled) setStudents(list);
+      })
+      .catch((err: unknown) => {
+        console.error('Error fetching students:', err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClass]);
 
   const createClass = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,29 +281,6 @@ const ClassManagement: React.FC = () => {
     }
   };
 
-  const fetchStudents = async (classId: string) => {
-    try {
-      const token = await getAccessToken();
-      const response = await fetch(
-        `${API_BASE_URL}/api/classes/${classId}/students`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch students');
-      }
-
-      const data = await response.json();
-      setStudents(data.students || []);
-    } catch (err: unknown) {
-      console.error('Error fetching students:', err);
-    }
-  };
-
   const selectClass = (cls: Class) => {
     setSelectedClass(cls);
     setError(null);
@@ -310,12 +354,18 @@ const ClassManagement: React.FC = () => {
 
           <div className="classes-list-section">
             <h2>My Classes</h2>
-            {loading && <p>Loading classes...</p>}
             {classes.length === 0 && !loading && (
               <p className="no-classes">No classes found.</p>
             )}
-            <div className="classes-list">
-              {classes.map((cls) => (
+            <div className="classes-list" aria-busy={loading}>
+              {loading &&
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div className="class-card" key={i}>
+                    <Skeleton width="50%" height={16} />
+                    <Skeleton width="80%" height={13} style={{ marginTop: 8 }} />
+                  </div>
+                ))}
+              {!loading && classes.map((cls) => (
                 <div
                   key={cls.id}
                   className={`class-card ${selectedClass?.id === cls.id ? 'selected' : ''}`}

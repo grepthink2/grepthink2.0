@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import {
   BookOpen,
@@ -13,14 +13,24 @@ import {
 import {
   differenceInCalendarDays,
   format,
-  formatDistanceToNow,
   parseISO,
   startOfDay,
 } from 'date-fns';
 import { formatAssignmentDueDate } from '@/lib/dateUtils';
 import { useClass } from '@/lib/classContext';
 import { useUser } from '@/lib/auth';
-import { api, type ApiAssignment } from '@/lib/api';
+import { emptyMySubmissions, api, type ApiAssignment } from '@/lib/api';
+import {
+  avatarBgFromEmail,
+  displayNameFromEmail,
+  formatAwaitingMeta,
+  formatRequestedMeta,
+  incomingRowsFromApi,
+  initialsFromEmail,
+  outgoingRowsFromApi,
+  type IncomingRequestRow,
+  type OutgoingRequestRow,
+} from '@/features/app/utils/joinRequests';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import {
   // MOCK_SCHEDULE,
@@ -106,14 +116,6 @@ function initialsFromName(
     return (tokens[0][0] + tokens[1][0]).toUpperCase();
   }
   return local.slice(0, 2).toUpperCase() || '?';
-}
-
-function initialsFromEmail(email: string | undefined): string {
-  return initialsFromName(undefined, undefined, email);
-}
-
-function displayNameFromEmail(email: string | undefined): string {
-  return displayNameFromParts(undefined, undefined, email);
 }
 
 function displayNameFromParts(
@@ -250,62 +252,47 @@ const statusPillClass: Record<DeadlineDisplayStatus, string> = {
   completed: 'student-home__pill--submitted',
 };
 
-const JOIN_REVIEW_ROLES = new Set(['owner', 'product owner', 'admin']);
-
-function canReviewJoinRequests(role: string | null | undefined): boolean {
-  if (role == null || role === '') return false;
-  return JOIN_REVIEW_ROLES.has(role.trim().toLowerCase());
+/** The caller's teams in a class: all of my projects intersected with the class's projects. */
+async function fetchMyClassProjects(classId: string): Promise<{ id: string; name: string }[]> {
+  const [{ projects: mine }, { projects: inClass }] = await Promise.all([
+    api.getProjects(),
+    api.getProjects(classId),
+  ]);
+  const myIds = new Set(mine.map((p) => p.id));
+  return inClass.filter((p) => myIds.has(p.id)).map((p) => ({ id: p.id, name: p.name }));
 }
 
-function avatarBgFromEmail(email: string | undefined): string {
-  if (!email) return '#018156';
-  let h = 0;
-  for (let i = 0; i < email.length; i += 1) {
-    h = (h + email.charCodeAt(i) * (i + 1)) % 360;
-  }
-  return `hsl(${h} 42% 40%)`;
-}
-
-interface OutgoingJoinRequestRow {
-  requestId: string;
-  projectId: string;
-  projectName: string;
-  courseLabel?: string;
-  memberCount: number;
-  sponsorCompany?: string;
-  requestedAt?: string;
-  status?: string;
-  imageUrl?: string | null;
-}
-
-interface IncomingJoinRequestRow {
-  requestId: string;
-  projectId: string;
-  projectName: string;
-  kind: 'join_request' | 'team_invite';
-  requesterEmail?: string;
-  requestedAt?: string;
-  memberCount: number;
-  message?: string | null;
-}
-
-function formatAwaitingMeta(iso: string | undefined): string | null {
-  if (!iso) return 'Awaiting Response';
+/** Join requests to my projects plus team invites to me; empty if a read fails. */
+async function fetchIncomingRequestRows(classId: string): Promise<IncomingRequestRow[]> {
   try {
-    return `Awaiting Response • ${formatDistanceToNow(parseISO(iso), { addSuffix: true })}`;
+    const [{ requests }, invitesRes] = await Promise.all([
+      api.getIncomingJoinRequests(classId),
+      api.getPendingTeamInvites(classId),
+    ]);
+    return incomingRowsFromApi(requests, invitesRes.requests ?? []);
   } catch {
-    return 'Awaiting Response';
+    return [];
   }
 }
 
-function formatRequestedMeta(iso: string | undefined): string | null {
-  if (!iso) return null;
+/** My own join requests; empty if the read fails. */
+async function fetchOutgoingRequestRows(classId: string): Promise<OutgoingRequestRow[]> {
   try {
-    return `Requested ${formatDistanceToNow(parseISO(iso), { addSuffix: true })}`;
+    const { requests } = await api.getMyJoinRequests(classId);
+    return outgoingRowsFromApi(requests ?? []);
   } catch {
-    return null;
+    return [];
   }
 }
+
+interface ClassTeams {
+  classId: string;
+  projects: { id: string; name: string }[];
+}
+
+const NO_DEADLINES: DeadlineRow[] = [];
+const NO_TEAM_PROJECTS: ClassTeams['projects'] = [];
+const NO_TEAM_MEMBERS: TeamMemberRow[] = [];
 
 const StudentHomeDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -314,180 +301,151 @@ const StudentHomeDashboard: React.FC = () => {
   const { selectedClass } = useClass();
   const { user } = useUser();
 
-  const [deadlineRows, setDeadlineRows] = useState<DeadlineRow[]>([]);
-  const [deadlinesLoading, setDeadlinesLoading] = useState(false);
-  const [teamMembers, setTeamMembers] = useState<TeamMemberRow[]>([]);
-  const [teamProjectsInClass, setTeamProjectsInClass] = useState<{ id: string; name: string }[]>([]);
-  const [selectedTeamProjectId, setSelectedTeamProjectId] = useState<string | null>(null);
-  const [teamLoading, setTeamLoading] = useState(false);
+  const classId = selectedClass?.id;
+  const courseLabel = selectedClass ? courseLabelFromClass(selectedClass) : '';
 
-  const [incomingRequests, setIncomingRequests] = useState<IncomingJoinRequestRow[]>([]);
+  // The caller's teams, tagged with the class they were loaded for so the
+  // deadlines never pair one class's teams with another class.
+  const [myClassProjects, setMyClassProjects] = useState<ClassTeams | null>(null);
+  const [selectedTeamProjectId, setSelectedTeamProjectId] = useState<string | null>(null);
+  // Loaded results, tagged with the inputs they were loaded for: a load is in
+  // flight while its tag doesn't match the current inputs.
+  const [loadedDeadlines, setLoadedDeadlines] = useState<{
+    teams: ClassTeams;
+    courseLabel: string;
+    rows: DeadlineRow[];
+  } | null>(null);
+  const [loadedMembers, setLoadedMembers] = useState<{
+    projectId: string;
+    rows: TeamMemberRow[];
+  } | null>(null);
+
+  const [incomingRequests, setIncomingRequests] = useState<IncomingRequestRow[]>([]);
   const [incomingLoading, setIncomingLoading] = useState(false);
   const [incomingProcessing, setIncomingProcessing] = useState<{
     requestId: string;
     action: 'accept' | 'reject';
   } | null>(null);
   const [incomingRequestError, setIncomingRequestError] = useState<string | null>(null);
-  const [outgoingRequests, setOutgoingRequests] = useState<OutgoingJoinRequestRow[]>([]);
+  const [outgoingRequests, setOutgoingRequests] = useState<OutgoingRequestRow[]>([]);
   const [outgoingLoading, setOutgoingLoading] = useState(false);
   const [dismissingRequestId, setDismissingRequestId] = useState<string | null>(null);
   const [requestsModalOpen, setRequestsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const state = location.state as { openRequests?: boolean } | null;
-    if (state?.openRequests) {
-      setRequestsModalOpen(true);
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [location.state]);
+  // A notification can send the user here asking for the requests modal. It
+  // opens while rendering; the effect below then clears the flag from history.
+  const openRequestsFromNav = Boolean(
+    (location.state as { openRequests?: boolean } | null)?.openRequests,
+  );
+  const [prevOpenRequestsFromNav, setPrevOpenRequestsFromNav] = useState(false);
+  if (prevOpenRequestsFromNav !== openRequestsFromNav) {
+    setPrevOpenRequestsFromNav(openRequestsFromNav);
+    if (openRequestsFromNav) setRequestsModalOpen(true);
+  }
 
-  const displayDeadlines = deadlineRows.map((d) => ({ ...d, isMock: false as const }));
+  useEffect(() => {
+    if (openRequestsFromNav) navigate(location.pathname, { replace: true, state: {} });
+  }, [openRequestsFromNav, navigate, location.pathname]);
+
+  // A class switch reloads both request lists (see the effect below) and
+  // clears the last accept/deny error; with no class the lists are empty.
+  const [requestsClassId, setRequestsClassId] = useState<string | undefined>(undefined);
+  if (requestsClassId !== classId) {
+    setRequestsClassId(classId);
+    setIncomingRequestError(null);
+    setIncomingLoading(classId !== undefined);
+    setOutgoingLoading(classId !== undefined);
+    if (classId === undefined) {
+      setIncomingRequests([]);
+      setOutgoingRequests([]);
+    }
+  }
+
+  const teamsForClass =
+    classId !== undefined && myClassProjects?.classId === classId ? myClassProjects : null;
+  const teamProjectsInClass = teamsForClass?.projects ?? NO_TEAM_PROJECTS;
+  // Members show only for one of the selected class's teams.
+  const teamProjectId =
+    selectedTeamProjectId !== null &&
+    teamProjectsInClass.some((p) => p.id === selectedTeamProjectId)
+      ? selectedTeamProjectId
+      : null;
+  const teamMembers =
+    teamProjectId !== null && loadedMembers?.projectId === teamProjectId
+      ? loadedMembers.rows
+      : NO_TEAM_MEMBERS;
+  const teamLoading =
+    (classId !== undefined && teamsForClass === null) ||
+    (teamProjectId !== null && loadedMembers?.projectId !== teamProjectId);
+
+  const deadlinesCurrent =
+    loadedDeadlines !== null &&
+    loadedDeadlines.teams === teamsForClass &&
+    loadedDeadlines.courseLabel === courseLabel;
+  const deadlineRows = deadlinesCurrent ? loadedDeadlines.rows : NO_DEADLINES;
+  const deadlinesLoading = classId !== undefined && !deadlinesCurrent;
+
+  const displayDeadlines = useMemo(
+    () => deadlineRows.map((d) => ({ ...d, isMock: false as const })),
+    [deadlineRows],
+  );
 
   const showEmptyDeadlines = !deadlinesLoading && deadlineRows.length === 0;
 
   const refreshIncomingRequests = useCallback(async () => {
-    const classId = selectedClass?.id;
     if (!classId) {
       setIncomingRequests([]);
       setIncomingLoading(false);
       return;
     }
     setIncomingLoading(true);
-    try {
-      const [{ projects: myAllProjects }, { projects: classProjects }, invitesRes] = await Promise.all([
-        api.getProjects(),
-        api.getProjects(classId),
-        api.getPendingTeamInvites(classId),
-      ]);
-      const myIds = new Set(myAllProjects.map((p) => p.id));
-      const mineInClass = classProjects.filter((p) => myIds.has(p.id));
-      const reviewable = mineInClass.filter((p) => canReviewJoinRequests(p.user_role));
-
-      const chunks = await Promise.all(
-        reviewable.map(async (proj) => {
-          try {
-            const { requests } = await api.getProjectJoinRequests(proj.id);
-            return requests.map(
-              (r): IncomingJoinRequestRow => ({
-                requestId: r.request_id,
-                projectId: proj.id,
-                projectName: proj.name,
-                kind: 'join_request',
-                requesterEmail: r.email,
-                requestedAt: r.requested_at,
-                memberCount: proj.member_count ?? 0,
-                message: r.message,
-              }),
-            );
-          } catch {
-            return [];
-          }
-        }),
-      );
-
-      const teamInvites: IncomingJoinRequestRow[] = (invitesRes.requests ?? []).map((r) => ({
-        requestId: r.request_id,
-        projectId: r.project_id ?? '',
-        projectName: r.project_name ?? 'Project',
-        kind: 'team_invite',
-        requesterEmail: r.email,
-        requestedAt: r.requested_at,
-        memberCount: r.member_count ?? 0,
-      }));
-
-      const collected = [...chunks.flat(), ...teamInvites];
-      collected.sort((a, b) => {
-        const ta = a.requestedAt ? parseISO(a.requestedAt).getTime() : 0;
-        const tb = b.requestedAt ? parseISO(b.requestedAt).getTime() : 0;
-        return ta - tb;
-      });
-      setIncomingRequests(collected);
-    } catch {
-      setIncomingRequests([]);
-    } finally {
-      setIncomingLoading(false);
-    }
-  }, [selectedClass?.id]);
+    setIncomingRequests(await fetchIncomingRequestRows(classId));
+    setIncomingLoading(false);
+  }, [classId]);
 
   const refreshOutgoingRequests = useCallback(async () => {
-    const classId = selectedClass?.id;
     if (!classId) {
       setOutgoingRequests([]);
       setOutgoingLoading(false);
       return;
     }
     setOutgoingLoading(true);
-    try {
-      const { requests } = await api.getMyJoinRequests(classId);
-      setOutgoingRequests(
-        (requests ?? []).map(
-          (r): OutgoingJoinRequestRow => ({
-            requestId: r.request_id,
-            projectId: r.project_id ?? '',
-            projectName: r.project_name ?? 'Project',
-            courseLabel: r.course_label,
-            memberCount: r.member_count ?? 0,
-            sponsorCompany: r.sponsor_company,
-            requestedAt: r.requested_at,
-            status: r.status,
-            imageUrl: r.image_url,
-          }),
-        ),
-      );
-    } catch {
-      setOutgoingRequests([]);
-    } finally {
-      setOutgoingLoading(false);
-    }
-  }, [selectedClass?.id]);
+    setOutgoingRequests(await fetchOutgoingRequestRows(classId));
+    setOutgoingLoading(false);
+  }, [classId]);
 
   const refreshAllRequests = useCallback(async () => {
     await Promise.all([refreshIncomingRequests(), refreshOutgoingRequests()]);
   }, [refreshIncomingRequests, refreshOutgoingRequests]);
 
+  // Deadlines pair assignments with this class's teams, so they wait for those.
   useEffect(() => {
-    if (!selectedClass) {
-      setDeadlineRows([]);
-      return;
-    }
+    if (!classId || !teamsForClass) return;
+    const teams = teamsForClass;
 
     let cancelled = false;
 
     const load = async () => {
-      setDeadlinesLoading(true);
       try {
-        const { assignments } = await api.getAssignments(selectedClass.id);
-        const { projects: myAllProjects } = await api.getProjects();
-        const { projects: classProjects } = await api.getProjects(selectedClass.id);
+        const [{ assignments }, mySubmissions] = await Promise.all([
+          api.getAssignments(classId),
+          api.getMySubmissions(classId).catch(emptyMySubmissions),
+        ]);
 
-        const myProjectIds = new Set(myAllProjects.map((p) => p.id));
-        const myClassProjects = classProjects
-          .filter((p) => myProjectIds.has(p.id))
-          .map((p) => ({ id: p.id, name: p.name }));
-
+        // Only the caller's own submissions count: a scrum master's project TSR
+        // list also contains teammates' rows, which marked deadlines done early.
         const tsrsByProject: Record<string, string[]> = {};
-        await Promise.all(
-          myClassProjects.map(async (p) => {
-            try {
-              const { tsrs } = await api.getProjectTsrs(p.id);
-              tsrsByProject[p.id] = tsrs
-                .map((t) => t.assignment_id)
-                .filter((id): id is string => Boolean(id));
-            } catch {
-              tsrsByProject[p.id] = [];
-            }
-          }),
-        );
+        for (const p of teams.projects) tsrsByProject[p.id] = [];
+        for (const t of mySubmissions.tsrs) {
+          if (t.project_id && tsrsByProject[t.project_id]) tsrsByProject[t.project_id].push(t.assignment_id);
+        }
 
         if (cancelled) return;
 
-        const cl = courseLabelFromClass(selectedClass);
-        const rows = buildDeadlineRows(assignments, myClassProjects, tsrsByProject, cl);
-        setDeadlineRows(rows);
+        const rows = buildDeadlineRows(assignments, teams.projects, tsrsByProject, courseLabel);
+        setLoadedDeadlines({ teams, courseLabel, rows });
       } catch {
-        if (!cancelled) setDeadlineRows([]);
-      } finally {
-        if (!cancelled) setDeadlinesLoading(false);
+        if (!cancelled) setLoadedDeadlines({ teams, courseLabel, rows: [] });
       }
     };
 
@@ -495,51 +453,48 @@ const StudentHomeDashboard: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [selectedClass?.id, selectedClass?.name, selectedClass?.description, selectedClass?.term, selectedClass?.year]);
+  }, [classId, courseLabel, teamsForClass]);
 
   useEffect(() => {
-    void refreshIncomingRequests();
-    void refreshOutgoingRequests();
-  }, [refreshIncomingRequests, refreshOutgoingRequests]);
+    if (!classId) return;
+
+    let cancelled = false;
+
+    void fetchIncomingRequestRows(classId).then((rows) => {
+      if (cancelled) return;
+      setIncomingRequests(rows);
+      setIncomingLoading(false);
+    });
+    void fetchOutgoingRequestRows(classId).then((rows) => {
+      if (cancelled) return;
+      setOutgoingRequests(rows);
+      setOutgoingLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [classId]);
 
   useEffect(() => {
-    setIncomingRequestError(null);
-  }, [selectedClass?.id]);
-
-  useEffect(() => {
-    if (!selectedClass) {
-      setTeamProjectsInClass([]);
-      setSelectedTeamProjectId(null);
-      setTeamMembers([]);
-      return;
-    }
+    if (!classId) return;
 
     let cancelled = false;
 
     const loadTeamProjects = async () => {
-      setTeamLoading(true);
       try {
-        const { projects: myAllProjects } = await api.getProjects();
-        const { projects: classProjects } = await api.getProjects(selectedClass.id);
-        const myIds = new Set(myAllProjects.map((p) => p.id));
-        const mineInClass = classProjects
-          .filter((p) => myIds.has(p.id))
-          .map((p) => ({ id: p.id, name: p.name }));
-
+        const projects = await fetchMyClassProjects(classId);
         if (cancelled) return;
-
-        setTeamProjectsInClass(mineInClass);
+        setMyClassProjects({ classId, projects });
         setSelectedTeamProjectId((prev) => {
-          if (prev && mineInClass.some((p) => p.id === prev)) return prev;
-          return mineInClass[0]?.id ?? null;
+          if (prev && projects.some((p) => p.id === prev)) return prev;
+          return projects[0]?.id ?? null;
         });
       } catch {
         if (!cancelled) {
-          setTeamProjectsInClass([]);
+          // Deadlines still load (without team rows) if the teams read fails.
+          setMyClassProjects({ classId, projects: [] });
           setSelectedTeamProjectId(null);
         }
-      } finally {
-        if (!cancelled) setTeamLoading(false);
       }
     };
 
@@ -547,20 +502,16 @@ const StudentHomeDashboard: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [selectedClass?.id]);
+  }, [classId]);
 
   useEffect(() => {
-    if (!selectedClass || !selectedTeamProjectId) {
-      setTeamMembers([]);
-      return;
-    }
+    if (!teamProjectId) return;
 
     let cancelled = false;
 
     const loadMembers = async () => {
-      setTeamLoading(true);
       try {
-        const { members } = await api.getProjectMembers(selectedTeamProjectId);
+        const { members } = await api.getProjectMembers(teamProjectId);
         if (cancelled) return;
 
         const presenceCycle: Array<'green' | 'orange' | 'gray' | 'none'> = [
@@ -581,11 +532,9 @@ const StudentHomeDashboard: React.FC = () => {
           avatarUrl: m.image_url,
         }));
 
-        setTeamMembers(rows);
+        setLoadedMembers({ projectId: teamProjectId, rows });
       } catch {
-        if (!cancelled) setTeamMembers([]);
-      } finally {
-        if (!cancelled) setTeamLoading(false);
+        if (!cancelled) setLoadedMembers({ projectId: teamProjectId, rows: [] });
       }
     };
 
@@ -593,7 +542,7 @@ const StudentHomeDashboard: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [selectedClass?.id, selectedTeamProjectId]);
+  }, [teamProjectId]);
 
   const handleDeadlineNavigate = useCallback(
     (row: (typeof displayDeadlines)[number]) => {
@@ -617,23 +566,19 @@ const StudentHomeDashboard: React.FC = () => {
   );
 
   const handleAcceptIncoming = useCallback(
-    async (row: IncomingJoinRequestRow) => {
+    async (row: IncomingRequestRow) => {
       setIncomingRequestError(null);
       setIncomingProcessing({ requestId: row.requestId, action: 'accept' });
       try {
         await api.acceptProjectJoinRequest(row.requestId);
         setIncomingRequests((prev) => prev.filter((r) => r.requestId !== row.requestId));
         if (selectedClass) {
-          const { projects: myAllProjects } = await api.getProjects();
-          const { projects: classProjects } = await api.getProjects(selectedClass.id);
-          const myIds = new Set(myAllProjects.map((p) => p.id));
-          const mineInClass = classProjects
-            .filter((p) => myIds.has(p.id))
-            .map((p) => ({ id: p.id, name: p.name }));
-          setTeamProjectsInClass(mineInClass);
+          const classId = selectedClass.id;
+          const projects = await fetchMyClassProjects(classId);
+          setMyClassProjects({ classId, projects });
           setSelectedTeamProjectId((prev) => {
-            if (prev && mineInClass.some((p) => p.id === prev)) return prev;
-            return mineInClass[0]?.id ?? null;
+            if (prev && projects.some((p) => p.id === prev)) return prev;
+            return projects[0]?.id ?? null;
           });
         }
       } catch {
@@ -647,7 +592,7 @@ const StudentHomeDashboard: React.FC = () => {
   );
 
   const handleRejectIncoming = useCallback(
-    async (row: IncomingJoinRequestRow) => {
+    async (row: IncomingRequestRow) => {
       setIncomingRequestError(null);
       setIncomingProcessing({ requestId: row.requestId, action: 'reject' });
       try {
@@ -664,7 +609,7 @@ const StudentHomeDashboard: React.FC = () => {
   );
 
   const handleDismissOutgoing = useCallback(
-    async (row: OutgoingJoinRequestRow) => {
+    async (row: OutgoingRequestRow) => {
       setDismissingRequestId(row.requestId);
       try {
         await api.dismissJoinRequest(row.requestId);
@@ -809,7 +754,7 @@ const StudentHomeDashboard: React.FC = () => {
               ) : null}
               {!incomingLoading &&
                 incomingRequests.map((row) => {
-                  const who = displayNameFromEmail(row.requesterEmail);
+                  const who = displayNameFromEmail(row.counterpartyEmail);
                   const requestedMeta = formatRequestedMeta(row.requestedAt);
                   const rowBusy = incomingProcessing?.requestId === row.requestId;
                   const accepting = rowBusy && incomingProcessing?.action === 'accept';
@@ -819,9 +764,9 @@ const StudentHomeDashboard: React.FC = () => {
                       <div className="student-home__request-top">
                         <div
                           className="student-home__avatar"
-                          style={{ backgroundColor: avatarBgFromEmail(row.requesterEmail) }}
+                          style={{ backgroundColor: avatarBgFromEmail(row.counterpartyEmail) }}
                         >
-                          {initialsFromEmail(row.requesterEmail)}
+                          {initialsFromEmail(row.counterpartyEmail)}
                         </div>
                         <div className="student-home__request-main">
                           <h3 className="student-home__request-title">{row.projectName}</h3>
@@ -1059,12 +1004,12 @@ const StudentHomeDashboard: React.FC = () => {
               {teamProjectsInClass.length === 1 && (
                 <span className="student-home__team-project">{teamProjectsInClass[0].name}</span>
               )}
-              {teamProjectsInClass.length >= 2 && selectedTeamProjectId ? (
+              {teamProjectsInClass.length >= 2 && teamProjectId ? (
                 <select
                   id="team-project-select"
                   className="student-home__team-project-select"
                   aria-label="Select project to view team"
-                  value={selectedTeamProjectId}
+                  value={teamProjectId}
                   onChange={(e) => setSelectedTeamProjectId(e.target.value || null)}
                 >
                   {teamProjectsInClass.map((p) => (

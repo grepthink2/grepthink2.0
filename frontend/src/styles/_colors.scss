@@ -25,6 +25,9 @@ $border-color: #DADADA;
 $button-secondary: #DADADA;
 $button-secondary-hover: #CCCCCC;
 
-// Status Colors
-$error-color: #ff3b30;
+// Status Colors — semantic values match src/styles/tokens/colors.css (--gt-error etc.)
+$error-color: #DC2626;
+$error-soft: #FDECEA;
+$error-text: #B91C1C;
+$success-soft: #E6F4EF;
 $disabled-bg: #cccccc;

@@ -6,7 +6,7 @@ $panel-width: 420px;
 .aem-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.35);
+  background-color: var(--gt-scrim);
   z-index: $z-index-modal;
   animation: aemBackdropIn 0.25s ease-out;
 
@@ -29,6 +29,9 @@ $panel-width: 420px;
   z-index: $z-index-modal + 1;
   display: flex;
   flex-direction: column;
+  // Directional side-panel shadow (cast left, toward the content) — no
+  // --gt-shadow-* token carries an x-offset, so substituting one would
+  // erase the drawer's directionality. Left as-is.
   box-shadow: -6px 0 32px rgba(0, 0, 0, 0.12);
   animation: aemSlideIn 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -93,7 +96,8 @@ $panel-width: 420px;
 
   &:hover { background-color: $background; color: $text-primary; }
   &:focus { outline: none; }
-  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
 }
 
 // ── Body ───────────────────────────────────────────────────────
@@ -138,7 +142,7 @@ $panel-width: 420px;
   font-family: $primary-font;
   color: $text-primary;
   box-sizing: border-box;
-  transition: border-color $transition-fast;
+  @include gt-transition(border-color);
 
   &::placeholder { color: $text-secondary; }
   &:focus { outline: none; border-color: $primary-color; }
@@ -156,13 +160,15 @@ $panel-width: 420px;
   border-radius: $border-radius-md;
   cursor: pointer;
   text-align: left;
-  transition: border-color $transition-fast, background-color $transition-fast;
+  @include gt-transition(border-color, background-color);
 
-  &:hover { border-color: darken(#DADADA, 12%); }
+  &:hover { border-color: darken($border-color, 12%); }
   &:focus { outline: none; }
 
   &--selected {
     border-color: $primary-color;
+    // Intentionally much lighter than --gt-primary-soft (~10%): a barely-
+    // there selected-state wash, distinct from the icon badge fill below.
     background-color: rgba($primary-color, 0.04);
 
     .aem__status-radio {
@@ -184,7 +190,7 @@ $panel-width: 420px;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: border-color $transition-fast;
+  @include gt-transition(border-color);
 }
 
 .aem__status-radio-dot {
@@ -193,7 +199,7 @@ $panel-width: 420px;
   border-radius: 50%;
   background-color: transparent;
   transform: scale(0);
-  transition: background-color $transition-fast, transform $transition-fast;
+  @include gt-transition(background-color, transform);
 }
 
 .aem__status-card-body {
@@ -213,12 +219,13 @@ $panel-width: 420px;
   flex-shrink: 0;
 
   &--draft {
+    // No --gt-* soft pair exists for plain gray; left as raw rgba.
     background-color: rgba(#616161, 0.12);
-    color: #616161;
+    color: var(--gt-text-tertiary);
   }
 
   &--published {
-    background-color: rgba($primary-color, 0.12);
+    background-color: var(--gt-primary-soft);
     color: $primary-color;
   }
 }
@@ -246,10 +253,10 @@ $panel-width: 420px;
 // ── Error ──────────────────────────────────────────────────────
 .aem__error {
   padding: 12px;
-  background-color: #fee;
-  border: 1px solid #fcc;
+  background-color: var(--gt-error-soft);
+  border: 1px solid var(--gt-error);
   border-radius: $border-radius-sm;
-  color: #c33;
+  color: var(--gt-error);
   font-size: $font-size-sm;
   font-family: $primary-font;
 }
@@ -290,7 +297,8 @@ $panel-width: 420px;
 
   &:hover { background-color: $background; }
   &:focus { outline: none; }
-  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
@@ -308,7 +316,8 @@ $panel-width: 420px;
 
   &:hover { background-color: $primary-hover; }
   &:focus { outline: none; }
-  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
   &:disabled { background-color: $disabled-bg; cursor: not-allowed; }
 }
 
@@ -325,20 +334,21 @@ $panel-width: 420px;
   font-family: $primary-font;
   color: $text-secondary;
   cursor: pointer;
-  transition: color $transition-fast, border-color $transition-fast;
+  @include gt-transition(color, border-color);
 
   &:hover {
-    color: #dc2626;
-    border-color: #dc2626;
+    color: var(--gt-error);
+    border-color: var(--gt-error);
   }
   &:focus { outline: none; }
-  &:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
+  // Dead: the global :focus-visible rule (index.css) already forces a ring;
+  // no resting box-shadow here to layer with.
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .aem__delete-confirm-btn {
   padding: 8px 14px;
-  background: #dc2626;
+  background: var(--gt-error);
   border: none;
   border-radius: $border-radius-sm;
   font-size: $font-size-sm;
@@ -347,7 +357,7 @@ $panel-width: 420px;
   color: $white;
   cursor: pointer;
 
-  &:hover { background: #b91c1c; }
+  &:hover { background: var(--gt-error-text); }
   &:focus { outline: none; }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 }

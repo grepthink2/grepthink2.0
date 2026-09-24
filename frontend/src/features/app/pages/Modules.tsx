@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { formatAssignmentDueDate } from '@/lib/dateUtils';
@@ -10,10 +10,19 @@ import AssignmentList, { type Assignment, type AssignmentStatus } from '@feature
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import AssignmentTurnInRate from '@/features/app/components/Stats/AssignmentTurnInRate';
 // import ProjectHealth, { type ProjectHealthItem } from '@/features/app/components/Stats/ProjectHealth';
-import CreateAssignmentModal from '@features/app/components/Modules/CreateAssignmentModal';
-import AssignmentEditorModal from '@features/app/components/Modules/AssignmentEditorModal';
+import { lazyModal } from '@/lib/lazyModal';
 import { useClassTurnInStats } from '@features/app/hooks/useClassTurnInStats';
 import './Modules.scss';
+
+// Both load on first open; the assignment forms pull in the date picker.
+const CreateAssignmentModal = lazyModal(
+  () => import('@features/app/components/Modules/CreateAssignmentModal'),
+  (p) => p.isOpen,
+);
+const AssignmentEditorModal = lazyModal(
+  () => import('@features/app/components/Modules/AssignmentEditorModal'),
+  (p) => p.assignment !== null,
+);
 
 // const mockProjectHealth: ProjectHealthItem[] = [
 //   {
@@ -68,37 +77,67 @@ function mapApiAssignment(a: ApiAssignment): Assignment {
   };
 }
 
+/** A class's assignments, soonest due first, or the message from a failed read. */
+async function loadAssignments(
+  classId: string,
+): Promise<{ assignments: Assignment[] } | { error: string }> {
+  try {
+    const result = await api.getAssignments(classId);
+    return {
+      assignments: (result.assignments ?? [])
+        .sort((a, b) => a.close_date.localeCompare(b.close_date))
+        .map(mapApiAssignment),
+    };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Failed to load assignments' };
+  }
+}
+
 const Modules: React.FC = () => {
   const navigate = useNavigate();
   const { selectedClass } = useClass();
-  const { turnInRate, refetch: refetchTurnInStats } = useClassTurnInStats(selectedClass?.id);
+  const classId = selectedClass?.id;
+  const { turnInRate, refetch: refetchTurnInStats } = useClassTurnInStats(classId);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(classId));
   const [error, setError] = useState<string | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
 
-  const fetchAssignments = useCallback(async () => {
-    if (!selectedClass) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await api.getAssignments(selectedClass.id);
-      setAssignments(
-        (result.assignments ?? [])
-          .sort((a, b) => a.close_date.localeCompare(b.close_date))
-          .map(mapApiAssignment),
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load assignments');
-    } finally {
-      setLoading(false);
+  // A different class starts loading from its first render.
+  const [prevClassId, setPrevClassId] = useState(classId);
+  if (prevClassId !== classId) {
+    setPrevClassId(classId);
+    if (classId) {
+      setLoading(true);
+      setError(null);
     }
-  }, [selectedClass?.id]);
+  }
 
   useEffect(() => {
-    fetchAssignments();
-  }, [fetchAssignments]);
+    if (!classId) return;
+    let ignore = false;
+    void loadAssignments(classId).then((result) => {
+      if (ignore) return;
+      if ('error' in result) setError(result.error);
+      else setAssignments(result.assignments);
+      setLoading(false);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [classId]);
+
+  // Reload after a change, with the skeleton up until the list is back.
+  const reloadAssignments = async () => {
+    if (!classId) return;
+    setLoading(true);
+    setError(null);
+    const result = await loadAssignments(classId);
+    if ('error' in result) setError(result.error);
+    else setAssignments(result.assignments);
+    setLoading(false);
+  };
 
   const handleCreateAssignment = async (data: {
     name: string;
@@ -122,7 +161,7 @@ const Modules: React.FC = () => {
       status: data.status === 'published' ? 'publish' : 'draft',
       assignment_type,
     });
-    await fetchAssignments();
+    await reloadAssignments();
     await refetchTurnInStats();
   };
 
@@ -136,13 +175,13 @@ const Modules: React.FC = () => {
       close_date: data.dueDate.split(' ')[0],
       status: data.status === 'published' ? 'publish' : 'draft',
     });
-    await fetchAssignments();
+    await reloadAssignments();
     await refetchTurnInStats();
   };
 
   const handleDeleteAssignment = async (id: string) => {
     await api.deleteAssignment(id);
-    await fetchAssignments();
+    await reloadAssignments();
     await refetchTurnInStats();
     setEditingAssignment(null);
   };

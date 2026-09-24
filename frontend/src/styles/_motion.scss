@@ -1,0 +1,42 @@
+/**
+ * Motion primitives — the design system's calm spec:
+ * 0.2s ease (fast) / 0.3s ease (medium); fades and small slides only;
+ * press = 0.5px nudge; NO scale transforms. A global reduced-motion
+ * kill switch lives in index.css.
+ */
+@use './variables' as *;
+
+@mixin gt-transition($props...) {
+  transition-property: $props;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+@mixin gt-transition-medium($props...) {
+  transition-property: $props;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+
+/// Press feedback: a 0.5px downward nudge, never a shrink.
+@mixin gt-press {
+  &:active {
+    transform: translateY(0.5px);
+  }
+}
+
+/// Popover/dropdown entrance: 6px slide + fade, 0.15s.
+@mixin gt-popover-enter {
+  animation: gt-pop-in 0.15s ease both;
+}
+
+@keyframes gt-pop-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/// Message/list-item entrance: 4px rise + fade.
+@keyframes gt-rise-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import './MemberManagerModal.scss';
 
 import { emailToDisplayName, getInitials } from '@/features/app/utils/memberUtils';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { MessageButton } from '@features/messages/components/MessageButton';
 
 function projectRoleLabel(role: string): string {
@@ -68,6 +69,36 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
   const [unsendingId, setUnsendingId] = useState<string | null>(null);
 
   const isInstructor = role === 'instructor';
+  const showingAddTab = isOpen && activeTab === 'add';
+
+  // Each opening, and each fresh member list from the parent, starts from that
+  // list with an empty search and no stale error; the effect below refetches.
+  const [openedWith, setOpenedWith] = useState({ isOpen, projectId, initialMembers });
+  if (
+    openedWith.isOpen !== isOpen ||
+    openedWith.projectId !== projectId ||
+    openedWith.initialMembers !== initialMembers
+  ) {
+    setOpenedWith({ isOpen, projectId, initialMembers });
+    if (isOpen) {
+      setMembers(initialMembers);
+      setActionError(null);
+      setSearchQuery('');
+    }
+  }
+
+  // The Add tab reloads the class roster whenever it comes into view or its
+  // inputs change while shown; the skeleton stays up until that request settles.
+  const [addTabInputs, setAddTabInputs] = useState({ showingAddTab, classId, projectId, isInstructor });
+  if (
+    addTabInputs.showingAddTab !== showingAddTab ||
+    addTabInputs.classId !== classId ||
+    addTabInputs.projectId !== projectId ||
+    addTabInputs.isInstructor !== isInstructor
+  ) {
+    setAddTabInputs({ showingAddTab, classId, projectId, isInstructor });
+    if (showingAddTab) setLoadingStudents(true);
+  }
 
   const teamSize = typeof project.team_size === 'number' && Number.isFinite(project.team_size)
     ? project.team_size
@@ -96,41 +127,39 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
     }
   };
 
-  const fetchClassStudents = async () => {
-    setLoadingStudents(true);
-    try {
-      const res = await api.getClassStudents(classId);
-      setClassStudents(res.students ?? []);
-    } catch {
-      setClassStudents([]);
-    } finally {
-      setLoadingStudents(false);
-    }
-  };
-
+  // Refetch on open, and whenever the parent hands over a new member list
+  // (it has just refetched after a change).
   useEffect(() => {
     if (!isOpen) return;
-    setMembers(initialMembers);
-    setActionError(null);
-    setSearchQuery('');
-    fetchMembers();
-    fetchRequests();
+    api
+      .getProjectMembers(projectId)
+      .then((res) => setMembers(res.members ?? []))
+      .catch(() => {
+        // keep current state
+      });
+    api
+      .getProjectJoinRequests(projectId)
+      .then((res) => setRequests(res.requests ?? []))
+      .catch(() => setRequests([]));
   }, [isOpen, projectId, initialMembers]);
 
   useEffect(() => {
-    if (isOpen && activeTab === 'add') {
-      fetchClassStudents();
-      if (!isInstructor) {
-        api.getProjectPendingInvites(projectId).then(({ invites }) => {
-          const map: Record<string, string> = {};
-          for (const inv of invites) {
-            map[inv.user_id] = inv.request_id;
-          }
-          setInvitedMap(map);
-        }).catch(() => {/* keep existing map */});
-      }
+    if (!showingAddTab) return;
+    api
+      .getClassStudents(classId)
+      .then((res) => setClassStudents(res.students ?? []))
+      .catch(() => setClassStudents([]))
+      .finally(() => setLoadingStudents(false));
+    if (!isInstructor) {
+      api.getProjectPendingInvites(projectId).then(({ invites }) => {
+        const map: Record<string, string> = {};
+        for (const inv of invites) {
+          map[inv.user_id] = inv.request_id;
+        }
+        setInvitedMap(map);
+      }).catch(() => {/* keep existing map */});
     }
-  }, [isOpen, activeTab, classId, projectId, isInstructor]);
+  }, [showingAddTab, classId, projectId, isInstructor]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -434,7 +463,19 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                 />
               </div>
               {loadingStudents ? (
-                <p className="member-manager__muted">Loading class members...</p>
+                <ul className="member-manager__list" aria-busy="true">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <li key={i} className="member-manager__card">
+                      <div className="member-manager__avatar member-manager__avatar--grey">
+                        <Skeleton circle height={40} />
+                      </div>
+                      <div className="member-manager__card-main">
+                        <Skeleton width="45%" height={13} />
+                        <Skeleton width="60%" height={11} style={{ marginTop: 4 }} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               ) : (
                 <ul className="member-manager__list">
                   {filteredStudents.length === 0 ? (

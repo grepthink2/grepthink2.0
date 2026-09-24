@@ -2,6 +2,10 @@ import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 import '@features/app/components/Roster/PieCharts.scss';
 
+// Chart palette (Recharts `Cell` fills) predates the --gt-* design-token
+// system. Some values happen to match a --gt-* token exactly; others don't.
+// Left as-is rather than churned as a side effect of wiring the adherence
+// lint.
 const IN_PROJECT_COLOR = '#018156';
 const REGISTERED_NO_PROJECT_COLOR = '#F59E0B';
 const NOT_REGISTERED_COLOR = '#DADADA';
@@ -62,7 +66,11 @@ const ProjectMembershipChart: React.FC<ProjectMembershipChartProps> = ({
   registeredNoProject,
   notRegistered,
 }) => {
-  const counts: Record<string, number> = { inProject, registeredNoProject, notRegistered };
+  // Memoised on the three counts so chartData below can list it as a dependency.
+  const counts = useMemo<Record<string, number>>(
+    () => ({ inProject, registeredNoProject, notRegistered }),
+    [inProject, registeredNoProject, notRegistered],
+  );
   const total = inProject + registeredNoProject + notRegistered;
 
   const chartData: ChartEntry[] = useMemo(
@@ -70,7 +78,7 @@ const ProjectMembershipChart: React.FC<ProjectMembershipChartProps> = ({
       LEGEND_ENTRIES.map((e) => ({ name: e.name, value: counts[e.key], color: e.color })).filter(
         (entry) => entry.value > 0,
       ),
-    [inProject, registeredNoProject, notRegistered],
+    [counts],
   );
 
   return (

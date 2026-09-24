@@ -39,7 +39,7 @@
   min-height: 0;
   background: $background;
   border-radius: $border-radius-md;
-  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--gt-shadow-card);
   padding: $spacing-lg;
   display: flex;
   flex-direction: column;
@@ -96,8 +96,11 @@
     border-radius: 50%;
     background: var(--thumb-color, #{$primary-color});
     cursor: pointer;
+    // Crisp small shadow for a circular slider thumb — doesn't fit any
+    // --gt-shadow-* role (too tight for card, too strong for hairline);
+    // left as-is.
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    transition: transform $transition-fast;
+    @include gt-transition(transform);
 
     &:hover {
       transform: scale(1.15);
@@ -111,6 +114,9 @@
     border: none;
     background: var(--thumb-color, #{$primary-color});
     cursor: pointer;
+    // Crisp small shadow for a circular slider thumb — doesn't fit any
+    // --gt-shadow-* role (too tight for card, too strong for hairline);
+    // left as-is.
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 }
@@ -188,7 +194,7 @@
   min-height: 0;
   background: $background;
   border-radius: $border-radius-md;
-  box-shadow: 0 0 2.61px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--gt-shadow-card);
   padding: $spacing-lg;
   display: flex;
   flex-direction: column;
@@ -254,7 +260,7 @@
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
   cursor: pointer;
-  transition: background-color $transition-fast, opacity $transition-fast;
+  @include gt-transition(background-color, opacity);
 
   &--primary {
     background-color: $primary-color;

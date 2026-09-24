@@ -2,6 +2,7 @@
 Staffing views — parameter handling and HTTP responses.
 
 """
+
 from uuid import UUID
 
 from fastapi import Depends
@@ -15,8 +16,8 @@ from app.staffing.models import (
     UnassignUserRequest,
 )
 
-
 # --------------------------------------------------------------------------- student-facing
+
 
 def submit_interest(
     data: SubmitInterestRequest,
@@ -74,6 +75,7 @@ def get_my_submission(
 
 # --------------------------------------------------------------------------- instructor-facing
 
+
 def get_pref_by_student(
     class_id: UUID,
     user_id: str = Depends(require_user),
@@ -124,9 +126,7 @@ def get_students_with_interest(
     user_id: str = Depends(require_user),
 ):
     """Instructor view: full per-student data for the Assign UI."""
-    rows = controller.get_class_students_with_interest(
-        user_id=user_id, class_id=class_id
-    )
+    rows = controller.get_class_students_with_interest(user_id=user_id, class_id=class_id)
     return {"students": rows}
 
 

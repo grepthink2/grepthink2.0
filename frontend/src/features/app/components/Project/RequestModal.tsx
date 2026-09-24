@@ -17,6 +17,16 @@ const RequestModal: React.FC<RequestModalProps> = ({ isOpen, projectId, onClose,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Closing discards the draft and any error, however the modal was closed.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
+    if (!isOpen) {
+      setMessage('');
+      setError(null);
+    }
+  }
+
   useEffect(() => {
     if (!isOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
@@ -25,13 +35,6 @@ const RequestModal: React.FC<RequestModalProps> = ({ isOpen, projectId, onClose,
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setMessage('');
-      setError(null);
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 

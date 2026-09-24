@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { SubmitFeedbackPayload } from '@/lib/api';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './FeedbackForm.scss';
 
 export interface FeedbackFormAssignment {
@@ -61,6 +62,16 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   const [isEditMode, setIsEditMode] = useState(isSubmitted);
   const [error, setError] = useState<string | null>(null);
 
+  // An Effect Event reads the latest isSubmitted without making a change to it
+  // a reason to fetch the submission again.
+  const onLoadError = useEffectEvent((err: unknown) => {
+    // If the student is already known to have submitted (isSubmitted prop),
+    // keep showing the success screen. Otherwise surface the load error.
+    if (!isSubmitted) {
+      console.error('getMyFeedback failed:', err);
+    }
+  });
+
   useEffect(() => {
     let cancelled = false;
     api.getMyFeedback(assignment.id)
@@ -75,13 +86,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
         });
         setIsEditMode(true);
       })
-      .catch((err) => {
-        // If the student is already known to have submitted (isSubmitted prop),
-        // keep showing the success screen. Otherwise surface the load error.
-        if (!isSubmitted) {
-          console.error('getMyFeedback failed:', err);
-        }
-      })
+      .catch((err) => onLoadError(err))
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [assignment.id]);
@@ -108,7 +113,24 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   };
 
   if (loading) {
-    return <div className="feedback-form feedback-form--loading">Loading…</div>;
+    return (
+      <div className="feedback-form" aria-busy="true">
+        <div className="feedback-form__card">
+          <div className="feedback-form__header">
+            <Skeleton width={220} height={22} />
+            <Skeleton width={120} height={13} style={{ marginTop: 8 }} />
+          </div>
+          <div className="feedback-form__questions">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div className="feedback-form__question" key={i}>
+                <Skeleton width="60%" height={13} />
+                <Skeleton height={72} radius={8} style={{ marginTop: 8 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (justSubmitted) {

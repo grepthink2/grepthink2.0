@@ -1,13 +1,15 @@
-supabase
-python-dotenv
-fastapi
-python-multipart
-uvicorn
-watchfiles  # Native-event reload backend; required for run.py reload_excludes to take effect
-pydantic
-PyJWT
-slowapi
-
-# Test-only
-pytest
-httpx
+# Runtime dependencies — pinned so Vercel/Docker/CI builds are reproducible.
+# Upgrade deliberately: bump here, run `pip install -r requirements-dev.txt`,
+# then `python -m pytest`. Dev/test-only tools live in requirements-dev.txt.
+fastapi==0.141.1
+starlette==1.6.0
+pydantic==2.13.5
+uvicorn==0.52.4
+watchfiles==1.2.0          # native-event reload backend; required for run.py reload_excludes
+python-multipart==0.0.32   # UploadFile (roster CSV upload)
+python-dotenv==1.2.3
+supabase==2.31.0
+PyJWT[crypto]==2.13.0      # [crypto] pulls `cryptography`, needed to verify RS256/ES256 tokens
+slowapi==0.1.10
+sentry-sdk[fastapi]==2.69.2   # error reporting; inert unless SENTRY_DSN is set (app/core/sentry.py)
+tzdata==2026.4            # zoneinfo data (America/Los_Angeles) on hosts without a system tz database

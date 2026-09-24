@@ -3,6 +3,7 @@ import { useUser, useAuth } from '@/lib/auth';
 import { useNavigate } from 'react-router-dom';
 import StudentHomeDashboard from '@features/app/components/Home/StudentHomeDashboard';
 import InstructorHomeDashboard from '@features/app/components/Home/InstructorHomeDashboard';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './Home.scss';
 
 const Home: React.FC = () => {
@@ -11,7 +12,14 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
 
   if (!isLoaded) {
-    return <div className="home-page home-page--loading">Loading...</div>;
+    return (
+      <div className="home-page home-page--loading" aria-busy="true">
+        <div className="home-page__welcome-card">
+          <Skeleton width={220} height={22} />
+          <Skeleton width={280} height={14} style={{ marginTop: 10 }} />
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
