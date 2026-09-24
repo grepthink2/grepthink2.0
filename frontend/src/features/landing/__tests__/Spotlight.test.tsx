@@ -50,10 +50,11 @@ describe('Spotlight', () => {
     expect(within(band).queryByText('Soon')).not.toBeInTheDocument();
   });
 
-  it('hides the decorative stage from assistive tech', () => {
+  it('hides the decorative stage from assistive tech and keeps focus out of it', () => {
     renderBand();
     const stage = screen.getByTestId('stage-child').parentElement;
     expect(stage).toHaveAttribute('aria-hidden', 'true');
+    expect(stage).toHaveAttribute('inert');
   });
 
   it('renders the staff note and the link when given', () => {

@@ -1,39 +1,57 @@
-@use '@styles/index.scss' as *;
+@use '@features/landing/landing-tokens' as *;
 
-// Project assistant band stage (landing-only; the shell lives in Spotlight.scss). Placeholder
-// widgets until Claude Design delivers the assistant's components (see the handoff in
-// docs/superpowers/handoffs/2026-09-24-landing-claude-design/). The PR purple is bespoke, kept
-// verbatim from the design system's scrum.css.
+// Project assistant band stage (landing-only; the band shell lives in Spotlight.scss). The cards
+// are the app's assistant components (features/app/components/Assistant) on their `landing`
+// surface, each in a StageCard that supplies the floating shell: tilt, float, reveal, shadow.
 
-$pr-purple: #7d3c98;
+// --- The components' landing surface ----------------------------------------------------------
+// Styled here rather than with the components, so marketing tokens stay out of the app.
+.gt-asst--landing {
+  padding: $mkt-card-pad;
+  border-radius: $mkt-card-radius;
+  box-shadow: $mkt-shadow-card;
+}
 
+.gt-asst-unlinked--landing {
+  box-shadow: $mkt-shadow-card;
+}
+
+// A StageCard is already the shell; a second shadow would double it.
+.stage-card .gt-asst--landing {
+  box-shadow: none;
+}
+
+// --- Placement --------------------------------------------------------------------------------
+// After the design kit's layout: the suggestion's top-right corner tucks under the stalled
+// flag's left edge without reaching "Nudge Sam", and folds clear of the report card.
 .assist-suggest-card {
-  top: 30%;
+  top: 25%;
   left: 4%;
   z-index: 2;
-  width: 312px;
+  width: 288px;
+  padding: 0;
   --tilt: -2deg;
   --float-duration: 8s;
   --float-y: -10px;
-  --swap-duration: 2.4s;
-  --swap-delay: 1.2s;
 }
 
 .assist-stall-card {
-  top: 5%;
-  right: 4%;
+  top: 4%;
+  right: 3%;
   z-index: 1;
   width: 226px;
+  padding: 0;
   --tilt: 3deg;
   --float-duration: 9s;
   --float-y: 9px;
 }
 
 .assist-report-card {
-  right: 4%;
+  right: 3%;
   bottom: 6%;
   z-index: 3;
   width: 272px;
+  padding: 0;
   --tilt: -2.5deg;
   --float-duration: 9.5s;
   --float-y: -8px;
@@ -43,232 +61,67 @@ $pr-purple: #7d3c98;
   bottom: 5%;
   left: 4%;
   z-index: 4;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
   padding: 9px 13px;
   border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: $font-weight-medium;
-  color: $text-secondary;
   white-space: nowrap;
   --tilt: 2deg;
   --float-duration: 10s;
   --float-y: 9px;
-
-  b {
-    font-weight: $font-weight-semibold;
-    color: $pr-purple;
-  }
 }
 
-.assist-chip__icon {
-  color: $pr-purple;
-}
+// --- The moment -------------------------------------------------------------------------------
+// Approve presses, then the pending card folds away to reveal the approved one beneath it. Both
+// share one grid cell, so the StageCard shrinks as the pending card folds. The pending card's white
+// background hides the approved card until then, and their heads are identical, so the head holds
+// still while the body changes. The base styles are the final frame: approved.
+$press-at: 2.2s;
+$fold-at: 2.6s;
 
-// --- Suggestion -------------------------------------------------------------------------------
-.assist-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 9px;
-  background: var(--gt-primary-soft);
-  color: $primary-color;
-}
+.assist-moment {
+  display: grid;
 
-.assist-suggest__text {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: $text-secondary;
-}
-
-.assist-task {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 8px 0 12px;
-  padding: 7px 9px;
-  border-radius: 10px;
-  background: var(--gt-gray-50);
-  font-size: 11.5px;
-  font-weight: $font-weight-semibold;
-  color: $text-dark;
-
-  code {
-    font-family: var(--gt-font-mono);
-    font-size: 10px;
-    color: $text-tertiary;
-    white-space: nowrap;
+  > * {
+    grid-area: 1 / 1;
+    align-self: start;
   }
 
-  &__target {
-    margin-left: auto;
-    white-space: nowrap;
-
-    > * {
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: var(--gt-success-soft);
-      color: var(--gt-success-text);
-      font-size: 9.5px;
-      font-weight: $font-weight-semibold;
-    }
-  }
-}
-
-.assist-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.assist-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
-  border-radius: 9px;
-  font-size: 11.5px;
-  font-weight: $font-weight-semibold;
-
-  &--primary {
-    background: $primary-color;
-    color: $white;
-  }
-
-  &--done {
-    background: var(--gt-success-soft);
-    color: var(--gt-success-text);
-  }
-
-  // Resting state: dismissed from view once the suggestion is approved.
-  &--ghost {
-    box-shadow: 0 0 0 1px var(--gt-gray-300);
-    color: $text-tertiary;
+  &__pending {
+    z-index: 1;
+    max-height: 0;
+    overflow: hidden;
     opacity: 0;
   }
 }
 
-.is-seen .assist-btn--primary {
-  animation: assist-press 2.4s ease 1.2s both;
+.is-seen .assist-moment__pending {
+  animation: assist-fold 0.5s cubic-bezier(0.4, 0, 0.2, 1) $fold-at both;
 }
 
-.is-seen .assist-btn--ghost {
-  animation: assist-dismiss-out 2.4s ease 1.2s both;
+.is-seen .assist-moment__pending .gt-asst__btn--ok {
+  animation: assist-press 0.35s ease $press-at both;
+}
+
+@keyframes assist-fold {
+  from {
+    max-height: 240px;
+    opacity: 1;
+  }
+
+  to {
+    max-height: 0;
+    opacity: 0;
+  }
 }
 
 @keyframes assist-press {
   0%,
-  42% {
+  100% {
     box-shadow: none;
     transform: none;
   }
-  48% {
+
+  40% {
     box-shadow: 0 0 0 3px rgba(1, 129, 86, 0.25);
     transform: translateY(0.5px);
-  }
-  54%,
-  100% {
-    box-shadow: none;
-    transform: none;
-  }
-}
-
-@keyframes assist-dismiss-out {
-  0%,
-  57% {
-    opacity: 1;
-  }
-  64%,
-  100% {
-    opacity: 0;
-  }
-}
-
-// --- Stalled flag -----------------------------------------------------------------------------
-.assist-flag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--gt-warning-text);
-
-  i {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--gt-warning-text);
-  }
-}
-
-.assist-stall {
-  &__title {
-    margin: 8px 0 3px;
-    font-size: 12.5px;
-    font-weight: $font-weight-semibold;
-
-    code {
-      margin-right: 5px;
-      font-family: var(--gt-font-mono);
-      font-size: 10px;
-      color: $text-tertiary;
-    }
-  }
-
-  &__detail {
-    margin: 0 0 8px;
-    font-size: 11px;
-    color: $text-tertiary;
-  }
-}
-
-.assist-link {
-  font-size: 11px;
-  font-weight: $font-weight-semibold;
-  color: var(--gt-success-text);
-}
-
-// --- Report check -----------------------------------------------------------------------------
-.assist-report {
-  &__row {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 7px 0;
-    font-size: 11.5px;
-    color: $text-secondary;
-
-    & + & {
-      border-top: 1px solid var(--gt-gray-100);
-    }
-  }
-
-  &__review {
-    margin-left: auto;
-  }
-}
-
-.assist-check {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-
-  &--ok {
-    background: var(--gt-success-soft);
-    color: var(--gt-success-text);
-  }
-
-  &--warn {
-    background: var(--gt-warning-soft);
-    color: var(--gt-warning-text);
   }
 }

@@ -96,7 +96,8 @@ const Spotlight: React.FC<SpotlightProps> = ({
             </Link>
           )}
         </div>
-        <div className={`spotlight__stage spotlight__stage--${stage}`} aria-hidden="true">
+        {/* Decorative: hidden from assistive tech, and inert so the cards' buttons take no focus. */}
+        <div className={`spotlight__stage spotlight__stage--${stage}`} aria-hidden="true" inert>
           {children}
         </div>
       </div>
