@@ -1,22 +1,19 @@
 import React from 'react';
+import { AVATAR_COLORS } from '@/lib/avatarColors';
 
 /**
  * Static, decorative product mocks that float around the hero — grepthink's
  * real artifacts (a project team, milestones, a weekly TSR, a roster) standing
  * in for the generic sticky-notes of the reference. Purely visual: no data, no
- * behavior, hidden from assistive tech.
- *
- * The per-card/per-team avatar colors below predate the --gt-* design-token
- * system and are a marketing-only decorative set (needs more distinct hues
- * than the token set provides) — left as-is rather than churned as a side
- * effect of wiring the adherence lint.
+ * behavior, hidden from assistive tech. Avatar and team colors come from the
+ * design system's AVATAR_COLORS, so white initials stay readable.
  */
 
 const TEAM = [
-  { initials: 'AP', color: '#018156' },
-  { initials: 'JF', color: '#2771FF' },
-  { initials: 'RK', color: '#d9822b' },
-  { initials: 'MS', color: '#9b51e0' },
+  { initials: 'AP', color: AVATAR_COLORS[0] },
+  { initials: 'JF', color: AVATAR_COLORS[1] },
+  { initials: 'RK', color: AVATAR_COLORS[2] },
+  { initials: 'MS', color: AVATAR_COLORS[3] },
 ];
 
 const ROLES = ['Lead', 'Frontend', 'Backend', 'Design'];
@@ -27,9 +24,9 @@ const MILESTONES = [
 ];
 
 const TEAMS = [
-  { label: 'ShoeShopper', count: 8, color: '#018156' },
-  { label: 'Chatcut', count: 6, color: '#2771FF' },
-  { label: 'Anylog', count: 7, color: '#d9822b' },
+  { label: 'ShoeShopper', count: 8, color: AVATAR_COLORS[0] },
+  { label: 'Chatcut', count: 6, color: AVATAR_COLORS[1] },
+  { label: 'Anylog', count: 7, color: AVATAR_COLORS[2] },
 ];
 
 const FloatingCards: React.FC = () => {
