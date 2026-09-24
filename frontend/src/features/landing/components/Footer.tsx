@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import logo from '@assets/grepthink l logo.svg?url';
-import { SECTION_IDS, sectionLink } from '../landing.config';
+import SectionLink from './SectionLink';
+import { SECTION_IDS } from '../landing.config';
 import './Footer.scss';
 
 const Footer: React.FC = () => {
@@ -19,10 +20,10 @@ const Footer: React.FC = () => {
           <div className="landing-footer__col">
             <span className="landing-footer__col-title">Product</span>
             <Link to="/select">Get started</Link>
-            <Link to={sectionLink('solutions')}>Solutions</Link>
-            <Link to={sectionLink(SECTION_IDS.scrum)}>Scrum board</Link>
-            <Link to={sectionLink(SECTION_IDS.messaging)}>Messaging</Link>
-            <Link to={sectionLink(SECTION_IDS.assistant)}>Project assistant</Link>
+            <SectionLink sectionId="solutions">Solutions</SectionLink>
+            <SectionLink sectionId={SECTION_IDS.scrum}>Scrum board</SectionLink>
+            <SectionLink sectionId={SECTION_IDS.messaging}>Messaging</SectionLink>
+            <SectionLink sectionId={SECTION_IDS.assistant}>Project assistant</SectionLink>
           </div>
           <div className="landing-footer__col">
             <span className="landing-footer__col-title">Account</span>

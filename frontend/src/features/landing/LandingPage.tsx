@@ -8,19 +8,17 @@ import MessagingSpotlight from './components/spotlights/MessagingSpotlight';
 import AssistantSpotlight from './components/spotlights/AssistantSpotlight';
 import ClosingBand from './components/ClosingBand';
 import Footer from './components/Footer';
+import { scrollToSection } from './sectionScroll';
 import './LandingPage.scss';
 
 const LandingPage: React.FC = () => {
   const { hash, key } = useLocation();
 
-  // React Router doesn't scroll to hashes; the header, footer and hero pill link here with one.
-  // `key` changes on every navigation, so following the same link twice scrolls again.
+  // React Router doesn't scroll to hashes. This covers arriving with one (a reload, or a
+  // SectionLink followed from another page or to another band); a click on the link the page
+  // is already at never reaches the router, so SectionLink scrolls for that case itself.
   useEffect(() => {
-    if (!hash) return;
-    const target = document.getElementById(decodeURIComponent(hash.slice(1)));
-    if (!target) return;
-    const reduceMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    if (hash) scrollToSection(decodeURIComponent(hash.slice(1)));
   }, [hash, key]);
 
   return (

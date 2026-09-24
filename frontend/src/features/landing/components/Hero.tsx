@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import FloatingCards from './FloatingCards';
-import { ANNOUNCEMENT, sectionLink, type Announcement } from '../landing.config';
+import SectionLink from './SectionLink';
+import { ANNOUNCEMENT, type Announcement } from '../landing.config';
 import './Hero.scss';
 
 interface HeroProps {
@@ -16,8 +17,8 @@ const Hero: React.FC<HeroProps> = ({ announcement = ANNOUNCEMENT }) => {
 
       <div className="hero__content">
         {announcement ? (
-          <Link
-            to={sectionLink(announcement.targetId)}
+          <SectionLink
+            sectionId={announcement.targetId}
             className="hero__announce"
             aria-label={`New: ${announcement.label}. Jump to the section`}
           >
@@ -26,7 +27,7 @@ const Hero: React.FC<HeroProps> = ({ announcement = ANNOUNCEMENT }) => {
             <span className="hero__announce-arrow" aria-hidden="true">
               →
             </span>
-          </Link>
+          </SectionLink>
         ) : (
           <span className="hero__eyebrow">For instructors and student teams</span>
         )}
