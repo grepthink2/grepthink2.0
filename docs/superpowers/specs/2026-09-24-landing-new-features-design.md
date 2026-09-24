@@ -126,16 +126,17 @@ system's anatomy (`components/scrum/*`, `components/domain/ConversationListItem`
 3. *Report check* (272px, −2.5°): "Week 5 status reports · ShoeShopper"; "4 reports match
    closed work" (green check); "Alex: reports 35%, closed 1 of 6 tasks" + Review (amber).
 4. *Unlinked PR chip* (pill, +2°): "PR #44 isn't on the board · Add task".
-- Moment: Approve is pressed and the suggestion collapses into "GT-12 moved to Done · approved
-  by you".
+- Moment: Approve is pressed and becomes "Approved", Dismiss fades, and the task chip's target
+  reads "Moved to Done". The suggestion text stays, so the still frame keeps its context.
 
 ## Motion
 
-- **Reveal:** when a band is first 30% visible, its text fades up 16px and its cards drift 24px in
-  from their side, 80ms apart. Once per page view.
+- **Reveal:** when a band first enters the upper 80% of the viewport (a root margin, not a
+  visibility ratio, so bands taller than the screen still trigger), its text fades up 16px and
+  its cards drift 24px in from their side, 80ms apart. Once per page view.
 - **Float:** cards float ±8–10px on 8–10s ease-in-out loops, tilt preserved (the CSS `translate`
   property composes with `rotate`). Floating pauses while the band is off-screen.
-- **Moment:** plays once when the band is first 50% visible, 0.4s after the reveal settles.
+- **Moment:** plays once, starting 0.9–1.2s after the reveal begins, when the cards have settled.
 - **Reduced motion:** no reveal, no float, no moment; the band renders its final frame.
 - Only `transform`, `translate` and `opacity` animate (plus `max-height` in the thread moment and
   `stroke-dashoffset` in the burnup). No animation library.
@@ -146,7 +147,7 @@ system's anatomy (`components/scrum/*`, `components/domain/ConversationListItem`
 |---|---|
 | ≥ 1080px | Two columns, alternating; all cards |
 | 768–1079px | Text above the stage; two cards (band 1 drops the burnup; band 3 drops the stalled flag and the chip) |
-| < 768px | Text, then one card untilted and still (task card, thread, suggestion); the moment still plays |
+| < 768px | Text, then one card untilted and still (task card, thread, suggestion); the thread's and the suggestion's moments still play (the task card has none) |
 
 Anchors get `scroll-margin-top` to clear the fixed header; smooth scrolling only without reduced
 motion. The hero's own cards keep today's behavior.
@@ -170,15 +171,20 @@ frontend/src/features/landing/
   landing.config.ts                     launch settings: announcement on/off, band badges
   hooks/useInView.ts                    IntersectionObserver: `seen` latches true once (reveal,
                                         moment); `visible` tracks live (pauses floats)
-  components/Spotlight.tsx (+ .scss)    band shell: eyebrow, heading with accent, paragraph,
-                                        bullets, optional staff note and link, side, variant, stage
+  sectionScroll.ts                      scrollToSection(): smooth unless reduced motion
+  components/SectionLink.tsx            Link to a section from any page; scrolls itself when the
+                                        page is already at it (BrowserRouter ignores that click)
   components/spotlights/
+    Spotlight.tsx (+ .scss)             band shell: eyebrow, heading with accent, paragraph,
+                                        bullets, optional staff note and link, side, variant, stage;
+                                        the .scss also holds the card shell and shared parts
     StageCard.tsx                       floating-card shell (tilt, float, reveal order)
-    ScrumStage.tsx (+ .scss)            board, task card, burnup
-    MessagingStage.tsx (+ .scss)        inbox, thread
-    AssistantStage.tsx (+ .scss)        suggestion, stalled flag, report check, unlinked chip
+    StageSwap.tsx                       two stacked values that trade places mid-moment
+    ScrumSpotlight.tsx (+ .scss)        band 1: copy, board, task card, burnup
+    MessagingSpotlight.tsx (+ .scss)    band 2: copy, inbox, thread
+    AssistantSpotlight.tsx (+ .scss)    band 3: copy, suggestion, stalled flag, report check, chip
   components/ClosingBand.tsx (+ .scss)
-  (edited) LandingPage.tsx, Hero.tsx, Header.tsx, Footer.tsx
+  (edited) LandingPage.tsx (composition, hash scroll), Hero.tsx, Header.tsx, Footer.tsx
 frontend/index.html                     description + Open Graph / Twitter meta
 ```
 
@@ -186,8 +192,9 @@ frontend/index.html                     description + Open Graph / Twitter meta
   and stage.
 - `landing.config.ts` is the single place to flip scrum from NEW to plain, the assistant from
   SOON to NEW, or the announcement off.
-- The landing route stays eagerly loaded; the new code is static markup and CSS. The build size
-  of the landing entry is recorded before and after.
+- The landing route stays eagerly loaded; the new code is static markup and CSS. Measured: the
+  entry JS grew 253.10 → 273.51 kB (68.84 → 74.25 kB gzip) and the CSS 146.36 → 167.22 kB
+  (22.64 → 26.50 kB gzip).
 
 ## Styling
 
