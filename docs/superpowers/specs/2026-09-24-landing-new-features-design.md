@@ -96,9 +96,12 @@ above is white, so band 1 opens with a top hairline instead of a color change.
 
 ## Stages (decorative widgets)
 
-All widgets are static, fictional and hidden from assistive tech. They mirror the design
-system's anatomy (`components/scrum/*`, `components/domain/ConversationListItem`,
-`MessageBubble`) and the app's channel colors; they do not import app components.
+All widgets are static, fictional and hidden from assistive tech. Bands 1 and 2 mirror the
+design system's anatomy (`components/scrum/*`, `components/domain/ConversationListItem`,
+`MessageBubble`, `TypingIndicator`) and the app's channel colors without importing app
+components. Band 3 renders the app's Project assistant components
+(`features/app/components/Assistant/`, ported from the design system) on their `landing` surface.
+Avatars use the design system's `AVATAR_COLORS`, all 4.5:1 behind white initials.
 
 **Band 1** — backdrop: soft green radial tint over `#f5f8f7` with a masked dot grid.
 1. *Board* (360px, −2°): "Sprint 3 · 4 days left"; TODO / In Progress / Done columns with the
@@ -110,7 +113,8 @@ system's anatomy (`components/scrum/*`, `components/domain/ConversationListItem`
 3. *Burnup* (250px, −3°): "Sprint burnup · 18/24 pts", completed line and area, dashed scope.
 - Moment: GT-12 slides from In Progress to Done, the Done count goes 3 → 4, the burnup line draws.
 
-**Band 2** — same backdrop, mirrored.
+**Band 2** — backdrop `#eef5f2` (a shade darker, since the band itself is tinted) with the tint
+mirrored toward the text.
 1. *Inbox* (318px, −2°): "Messages · 3 unread"; ShoeShopper with Team (green), TA (blue) and
    Instructor (amber) pills, previews and times; one direct message (Priya Shah).
 2. *Thread* (300px, +2.5°): "ShoeShopper · Team · 5 members"; Priya's question, your reply
@@ -118,16 +122,21 @@ system's anatomy (`components/scrum/*`, `components/domain/ConversationListItem`
 - Moment: Jordan's row appears with typing dots; the dots give way to "Merged, thanks!" in the
   same row (one avatar); the Team row's preview and unread badge update (2 → 3).
 
-**Band 3** — preview backdrop: flat `#fbfbfc`, 1.5px outline, "PREVIEW" tag top-left.
-1. *Suggestion* (296px, −2°): sparkle tile + "Project assistant · just now"; "PR #41 was merged
-   into main. Move this task to Done?"; task chip `GT-12` → Done; Approve / Dismiss.
-2. *Stalled flag* (226px, +3°): amber "Stalled"; `GT-9` Attendance tab; "In Progress for 6
-   days · no commits"; "Nudge Sam →".
-3. *Report check* (272px, −2.5°): "Week 5 status reports · ShoeShopper"; "4 reports match
-   closed work" (green check); "Alex: reports 35%, closed 1 of 6 tasks" + Review (amber).
-4. *Unlinked PR chip* (pill, +2°): "PR #44 isn't on the board · Add task".
-- Moment: Approve is pressed and becomes "Approved", Dismiss fades, and the task chip's target
-  reads "Moved to Done". The suggestion text stays, so the still frame keeps its context.
+**Band 3** — preview backdrop: flat `#fbfbfc`, 1.5px `#d3d8dd` outline, "PREVIEW" tag top-left
+(`#616161` on a dashed `#c3c9cf` border).
+1. *Suggestion* (`AssistantSuggestionCard`, 288px, −2°): the spark mark in a green-50 tile +
+   "Project assistant" in green-700 · just now; "PR #41 was merged into main. Move this task to
+   Done?"; task chip `GT-12` → Done; Approve / Dismiss.
+2. *Stalled flag* (`StalledFlag`, 226px, +3°): amber "Stalled"; `GT-9` Attendance tab; "In
+   Progress for 6 days · no commits"; "Nudge Sam →".
+3. *Report check* (`ReportCheckCard`, 272px, −2.5°): "Week 5 status reports · ShoeShopper";
+   "4 reports match closed work" (green check); "Alex: reports 35%, closed 1 of 6 tasks" + Review
+   (amber).
+4. *Unlinked PR chip* (`UnlinkedPRChip`, bare, in a pill card, +2°): "PR #44 isn't on the
+   board · Add task".
+- Moment: Approve presses, then the card folds to its approved state, "GT-12 moved to Done ·
+  approved by you". Both states share one grid cell with identical heads, so the head holds
+  still while the body changes.
 
 ## Motion
 
@@ -138,8 +147,9 @@ system's anatomy (`components/scrum/*`, `components/domain/ConversationListItem`
   property composes with `rotate`). Floating pauses while the band is off-screen.
 - **Moment:** plays once, starting 0.9–1.2s after the reveal begins, when the cards have settled.
 - **Reduced motion:** no reveal, no float, no moment; the band renders its final frame.
-- Only `transform`, `translate` and `opacity` animate (plus `max-height` in the thread moment and
-  `stroke-dashoffset` in the burnup). No animation library.
+- **Phones:** no moments either (see Responsive).
+- Only `transform`, `translate` and `opacity` animate (plus `max-height` in the thread and
+  suggestion moments and `stroke-dashoffset` in the burnup). No animation library.
 
 ## Responsive
 
@@ -147,14 +157,15 @@ system's anatomy (`components/scrum/*`, `components/domain/ConversationListItem`
 |---|---|
 | ≥ 1080px | Two columns, alternating; all cards |
 | 768–1079px | Text above the stage; two cards (band 1 drops the burnup; band 3 drops the stalled flag and the chip) |
-| < 768px | Text, then one card untilted and still (task card, thread, suggestion); the thread's and the suggestion's moments still play (the task card has none) |
+| < 768px | Text, then one card untilted and still (task card, thread, suggestion), its moment off: the stage has no fixed height here, so a card that changed size mid-scroll would shift the page (measured CLS 0.089 before, 0 after). The thread rests on its final frame; the suggestion rests on its pending state, the one that shows the evidence |
 
 Anchors get `scroll-margin-top` to clear the fixed header; smooth scrolling only without reduced
 motion. The hero's own cards keep today's behavior.
 
 ## Accessibility
 
-- Stages are `aria-hidden="true"` with `pointer-events: none`; the band text is real content:
+- Stages are `aria-hidden="true"`, `inert` (band 3's cards contain real buttons) and
+  `pointer-events: none`; the band text is real content:
   `<section aria-labelledby>`, one `<h2>` per band, bullets as a `<ul>`.
 - The eyebrow, with its badge, comes right before the heading in reading order ("New · Scrum board").
 - The announcement pill is a link with an accessible name ("New: scrum boards and team
@@ -184,8 +195,14 @@ frontend/src/features/landing/
     MessagingSpotlight.tsx (+ .scss)    band 2: copy, inbox, thread
     AssistantSpotlight.tsx (+ .scss)    band 3: copy, suggestion, stalled flag, report check, chip
   components/ClosingBand.tsx (+ .scss)
-  (edited) LandingPage.tsx (composition, hash scroll), Hero.tsx, Header.tsx, Footer.tsx
-frontend/index.html                     description + Open Graph / Twitter meta
+  _landing-tokens.scss                  $mkt-* mirror of design/tokens/marketing.css
+  (edited) LandingPage.tsx (composition, hash scroll), Hero.tsx, Header.tsx, Footer.tsx,
+           Solutions.tsx (product screenshot), FloatingCards.tsx (avatar palette)
+frontend/src/features/app/components/Assistant/   the assistant's mark and cards (app + landing)
+frontend/src/lib/avatarColors.ts        the design system's AVATAR_COLORS
+frontend/src/assets/landing/            landing-preview.png, .webp, @2x.webp
+frontend/public/og-image.png            1200×630 share image
+frontend/index.html                     description + Open Graph / Twitter meta, og:image
 ```
 
 - `Spotlight` gets its text as props and its stage as a child, so bands differ only in data
@@ -193,14 +210,16 @@ frontend/index.html                     description + Open Graph / Twitter meta
 - `landing.config.ts` is the single place to flip scrum from NEW to plain, the assistant from
   SOON to NEW, or the announcement off.
 - The landing route stays eagerly loaded; the new code is static markup and CSS. Measured: the
-  entry JS grew 253.10 → 273.51 kB (68.84 → 74.25 kB gzip) and the CSS 146.36 → 167.22 kB
-  (22.64 → 26.50 kB gzip).
+  entry JS grew 253.10 → 277.61 kB (68.84 → 75.29 kB gzip) and the CSS 146.36 → 169.01 kB
+  (22.64 → 26.76 kB gzip). The product screenshot replaced a 622 kB `preview.svg`; it loads lazily
+  as a 67.5 kB (1×) or 162 kB (2×) WebP.
 
 ## Styling
 
-- Tokens (`$primary-color`, `--gt-*`) wherever a token exists. Marketing-only literals (accent
-  gradient, backdrop tints, stage shadows, PR purple, the closing band's dark green) carry the
-  in-file ledger comment `lint:design` expects, as `Hero.scss` does.
+- Tokens (`$primary-color`, `--gt-*`) wherever a token exists. Marketing values (accent
+  gradient, backdrops, card shell, badges, PR purple, the closing band) come from
+  `_landing-tokens.scss`, a verbatim `$mkt-*` mirror of `design/tokens/marketing.css`, so a change
+  on the design side maps to one line here. They never cross into the app.
 - Card radius 20px and the hero's shadow; eyebrow and heading type as in the mockups (heading
   `clamp(2rem, 4vw, 2.5rem)`, 700, −0.02em).
 
@@ -210,7 +229,9 @@ Vitest + Testing Library:
 - the three bands render with their ids, headings and badges from the config;
 - the announcement pill links to `#scrum-board`, and switching it off restores the eyebrow and the
   original subtitle;
-- every stage is `aria-hidden`;
+- every stage is `aria-hidden` and `inert`;
+- the assistant components: each state of the suggestion card, the stalled flag's wording and
+  nudge, the report rows, the chip's surfaces and actions;
 - `useInView` latches `seen` at the reveal threshold and keeps reporting live `visible`; with
   reduced motion `seen` is true immediately;
 - header and footer links point at the right anchors.
@@ -227,16 +248,22 @@ that isn't there. After launch, `landing.config.ts` can retire the announcement.
 
 ## Assets from Claude Design
 
-Handoff: `docs/superpowers/handoffs/2026-09-24-landing-claude-design/`. The page ships without
-waiting for them; each has a placeholder.
+Handoff: `docs/superpowers/handoffs/2026-09-24-landing-claude-design/`. Delivered 2026-09-24 and
+imported as `design/` (`git show` on the import commit is the changelog; the return notes are
+`design/design_handoff_landing/NOTES.md`).
 
-| Asset | Placeholder until it arrives |
+| Asset | Where it went |
 |---|---|
-| Marketing-surface guidelines (gradient, backdrops, card shell, band rhythm, closing band, motion, mobile) | This spec |
-| Project assistant identity and components (icon, color, suggestion card and its approved state, stalled flag, report check, unlinked chip) | The widgets in this spec |
-| New product screenshot for the Solutions preview (WebP/AVIF 1× and 2×, PNG fallback) | The current `preview.svg` |
-| Social share image, 1200×630 | No `og:image`; description and title tags ship now |
-| Confirmations: preview/SOON treatment, announcement pill, typing indicator, one marketing avatar palette | As designed here |
+| Marketing-surface guidelines + `--gt-mkt-*` tokens | `design/guidelines/marketing-*.html`; tokens mirrored in `_landing-tokens.scss` |
+| Project assistant identity and components | `features/app/components/Assistant/` (typed ports), used by band 3 |
+| Product screenshot (PNG + WebP, 1× and 2×) | `assets/landing/`; Solutions serves WebP with a 1× PNG fallback. AVIF was not delivered |
+| Social share image, 1200×630 | `public/og-image.png`, with `og:image` and `twitter:card` `summary_large_image` |
+| Confirmations: preview/SOON treatment, announcement pill, typing indicator, avatar palette | Applied: preview tag `#616161`, received bubble and typing `#f1f3f4`, `AVATAR_COLORS` |
+
+Open: the screenshot shows two features that won't ship with the scrum release ("Draft story
+with AI" and a Project assistant card); the share image's headline runs into its tilted card.
+Both are re-snapshots in Claude Design (`design/ui_kits/grepthink-landing/preview-frame.html`,
+`og-image.html`).
 
 ## Out of scope
 
