@@ -62,8 +62,10 @@ htmlcov/
 
 # ---- Supabase CLI machine-local cache ----
 supabase/.temp/
-# scripts/supabase.sh profile: access token + per-environment link state
+# scripts/supabase.sh and scripts/vercel.sh profiles: tokens + per-target link state
+# (.vercel/ also covers any directory the Vercel CLI links on its own)
 .supabase/
+.vercel/
 
 # ---- Repo-specific artifacts (should never be committed) ----
 *.xlsx

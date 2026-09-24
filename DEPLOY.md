@@ -45,6 +45,15 @@ development reads (only the repo-root `.env` is read — see `README.md`).
 Only `VITE_`-prefixed variables reach the browser bundle. Never add
 `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_JWT_SECRET` to the **frontend** project.
 
+To check what a project has, without values, or to act on a deployment, use the project's
+Vercel CLI profile (AGENTS.md explains it):
+
+```bash
+scripts/vercel.sh backend env ls production      # variable names per environment
+scripts/vercel.sh backend logs <deployment-url>  # a deployment's runtime logs
+scripts/vercel.sh backend rollback               # instant rollback; `frontend` likewise
+```
+
 ## Supabase dashboard (once per project)
 
 `supabase/auth_glue.sql` §5 lists the dashboard steps a schema dump cannot capture:

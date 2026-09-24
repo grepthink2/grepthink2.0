@@ -107,7 +107,7 @@ npm run build                               # tsc -b && vite build  (the typeche
 npx vitest run                              # unit + component tests
 ```
 
-## Supabase CLI: always use the project profile
+## Supabase and Vercel CLIs: always use the project profiles
 Run the CLI as `scripts/supabase.sh dev|prod <supabase args>`. Never run bare `supabase`, and
 never run `supabase login`: login keeps its token in the macOS keychain, and after that every
 call from another process (an editor terminal, an agent) asks for the keychain password. The
@@ -117,6 +117,13 @@ script reads a personal access token from `.supabase/access-token` (create it on
 checkout, and every worktree shares it. `db dump` needs a running Docker. Dumps hold student
 data, so write them outside the repo. The Supabase MCP connector reaches both projects too;
 in Claude Code's auto mode, calls to PROD need the maintainer's approval.
+
+The same goes for Vercel: `scripts/vercel.sh frontend|backend <vercel args>` (once:
+`scripts/vercel.sh token`), never bare `vercel` and never `vercel login`. The token lives in
+`.vercel/global/auth.json`, a repo-local global config (`--global-config`), so your
+account-wide login is never used. Each project is linked under `.vercel/<frontend|backend>`.
+The script refuses deploys (PROD deploys by merging to `main`). Use it for what the Vercel
+connector cannot do: `env ls production`, `logs`, `rollback`.
 
 ## API surface
 Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `login-check`,
