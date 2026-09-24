@@ -10,4 +10,9 @@
   main {
     display: block;
   }
+
+  // Anchored sections land below the fixed header (its floating pill is ~64px plus margin).
+  section[id] {
+    scroll-margin-top: 88px;
+  }
 }
