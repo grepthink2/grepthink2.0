@@ -1,0 +1,360 @@
+@use '@styles/index.scss' as *;
+
+// Scrum band stage (landing-only; the shell lives in Spotlight.scss): a small-scale mirror of
+// the design system's scrum components. The merged-PR purple is bespoke, kept verbatim from
+// the design system's scrum.css, which has no --gt-* token for it either.
+
+$pr-merged: #7d3c98;
+
+.scrum-board-card {
+  top: 7%;
+  left: 4%;
+  z-index: 2;
+  width: 360px;
+  --tilt: -2deg;
+  --float-duration: 8s;
+  --float-y: -10px;
+}
+
+.scrum-task-card {
+  top: 41%;
+  right: 3%;
+  z-index: 3;
+  width: 262px;
+  --tilt: 3deg;
+  --float-duration: 9s;
+  --float-y: 9px;
+}
+
+.scrum-burnup-card {
+  bottom: 5%;
+  left: 12%;
+  z-index: 1;
+  width: 250px;
+  --tilt: -3deg;
+  --float-duration: 9.5s;
+  --float-y: -8px;
+}
+
+// --- Board ------------------------------------------------------------------------------------
+.scrum-board {
+  &__cols {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  &__col {
+    min-height: 164px;
+    padding: 8px 6px 6px;
+    border-radius: 10px;
+    background: var(--gt-gray-50);
+  }
+
+  &__col-head {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 2px 7px;
+    font-size: 10px;
+    font-weight: $font-weight-semibold;
+    color: $text-secondary;
+  }
+
+  &__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+
+    &--todo {
+      background: var(--gt-gray-400);
+    }
+
+    &--doing {
+      background: var(--gt-accent);
+    }
+
+    &--done {
+      background: $primary-color;
+    }
+  }
+
+  &__count {
+    margin-left: auto;
+    font-size: 9.5px;
+    font-weight: $font-weight-semibold;
+    color: var(--gt-gray-500);
+  }
+
+  &__slot {
+    height: 40px;
+  }
+}
+
+.scrum-mini {
+  display: block;
+  margin-bottom: 5px;
+  padding: 6px 6px 5px;
+  border-radius: 7px;
+  background: $white;
+  box-shadow: 0 0 0 1px var(--gt-gray-200);
+
+  &__key {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--gt-font-mono);
+    font-size: 8.5px;
+    color: var(--gt-gray-500);
+
+    b {
+      padding: 0 4px;
+      border-radius: 4px;
+      background: var(--gt-success-soft);
+      color: var(--gt-success-text);
+      font-weight: 700;
+    }
+  }
+
+  &__title {
+    display: block;
+    margin-top: 2px;
+    font-size: 9.5px;
+    font-weight: $font-weight-medium;
+    line-height: 1.3;
+    color: $text-dark;
+  }
+
+  // GT-12 rests in Done (the still frame); the moment starts it one column to the left.
+  &--mover {
+    position: absolute;
+    top: 30px;
+    left: calc((100% - 16px) / 3 * 2 + 16px + 6px);
+    z-index: 1;
+    width: calc((100% - 16px) / 3 - 12px);
+    box-shadow:
+      0 0 0 1.5px $primary-color,
+      0 8px 18px -8px rgba(1, 129, 86, 0.45);
+  }
+}
+
+.is-seen .scrum-mini--mover {
+  animation: scrum-move 2.2s cubic-bezier(0.65, 0, 0.35, 1) 0.9s both;
+}
+
+@keyframes scrum-move {
+  0%,
+  20% {
+    transform: translateX(calc(-100% - 20px));
+    box-shadow:
+      0 0 0 1.5px var(--gt-accent),
+      0 8px 18px -6px rgba(39, 113, 255, 0.45);
+  }
+  38% {
+    transform: translateX(calc(-50% - 10px)) translateY(-6px) rotate(2deg);
+  }
+  55%,
+  100% {
+    transform: none;
+    box-shadow:
+      0 0 0 1.5px $primary-color,
+      0 8px 18px -8px rgba(1, 129, 86, 0.45);
+  }
+}
+
+// --- Task card --------------------------------------------------------------------------------
+.scrum-task {
+  &__top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  &__key {
+    font-family: var(--gt-font-mono);
+    font-size: 10.5px;
+    font-weight: $font-weight-semibold;
+    color: $text-tertiary;
+  }
+
+  &__story {
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: var(--gt-gray-100);
+    font-family: var(--gt-font-mono);
+    font-size: 9.5px;
+    color: $text-tertiary;
+  }
+
+  &__estimate {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: auto;
+    font-size: 10px;
+    color: $text-tertiary;
+  }
+
+  &__points {
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: var(--gt-success-soft);
+    font-family: var(--gt-font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--gt-success-text);
+  }
+
+  &__title {
+    margin: 0 0 9px;
+    font-size: 13.5px;
+    font-weight: $font-weight-semibold;
+    line-height: 1.35;
+  }
+
+  &__tags {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 11px;
+  }
+
+  &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__pair {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--gt-gray-500);
+  }
+
+  &__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  &__comments {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: $text-tertiary;
+  }
+
+  &__pr {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba($pr-merged, 0.12);
+    font-size: 10px;
+    font-weight: $font-weight-semibold;
+    color: $pr-merged;
+  }
+
+  &__audit {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+    padding-top: 9px;
+    border-top: 1px dashed var(--gt-gray-200);
+    font-size: 10px;
+    color: $text-tertiary;
+
+    b {
+      font-weight: $font-weight-semibold;
+      color: var(--gt-success-text);
+    }
+  }
+}
+
+// --- Burnup -----------------------------------------------------------------------------------
+.scrum-burnup {
+  &__stat {
+    font-size: 11px;
+    color: $text-tertiary;
+
+    strong {
+      font-size: 13px;
+      color: $text-dark;
+    }
+  }
+
+  &__plot {
+    display: block;
+    width: 100%;
+    height: 86px;
+  }
+
+  &__grid {
+    stroke: var(--gt-gray-100);
+  }
+
+  &__area {
+    fill: rgba(1, 129, 86, 0.1);
+  }
+
+  &__scope {
+    fill: none;
+    stroke: var(--gt-gray-500);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
+  }
+
+  &__done {
+    fill: none;
+    stroke: $primary-color;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 260;
+    stroke-dashoffset: 0;
+  }
+
+  &__legend {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+    font-size: 9.5px;
+    color: $text-tertiary;
+
+    i {
+      display: inline-block;
+      width: 10px;
+      height: 3px;
+      margin-right: 4px;
+      border-radius: 2px;
+      vertical-align: middle;
+    }
+  }
+
+  &__swatch--done {
+    background: $primary-color;
+  }
+
+  &__swatch--scope {
+    background: var(--gt-gray-500);
+  }
+}
+
+.is-seen .scrum-burnup__done {
+  animation: scrum-draw 2.2s ease 0.9s both;
+}
+
+@keyframes scrum-draw {
+  0%,
+  30% {
+    stroke-dashoffset: 260;
+  }
+  90%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
