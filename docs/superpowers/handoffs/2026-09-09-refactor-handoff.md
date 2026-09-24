@@ -61,7 +61,9 @@ before and after.
    publication is empty, so live messages and notifications do not arrive there — installs the
    current `handle_new_user`, then runs this whole file and the 2026-09-20 cleanup. Dev has had
    all of it since 2026-09-20. It has to run on PROD before beta reaches main, regardless of
-   this PR. An agent cannot do it: the auto-mode classifier blocks schema writes to PROD.
+   this PR. (Corrected 2026-09-23: this line used to say an agent cannot run it. The Supabase
+   connector does reach PROD. What refused agent calls was Claude Code's auto-mode permission
+   check, which the maintainer can approve per call or allow in settings.)
 4. **Decisions.** D1–D16, plus: rename
    `react-day-picker` to `@daypicker/react` (same API); drop the unused staffing endpoints (D5
    keeps them); `num_members` as a DB trigger; a shared `Modal` primitive; react-query; serverless

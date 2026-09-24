@@ -6,7 +6,8 @@
 -- service-role key, which none of this touches. prod/2026-09-20_align_prod.sql runs it again
 -- as its last step, because the group messaging migration re-grants ALL on one table.
 --
--- Applied: DEV ____-__-__   PROD 2026-09-21 (by the maintainer, in the SQL editor)
+-- Applied: DEV 2026-09-23   PROD 2026-09-21 (by the maintainer, in the SQL editor; again on
+-- 2026-09-23 as step 9 of prod/2026-09-20_align_prod.sql)
 -- Verified read-only on PROD the same day: `anon` holds nothing; `authenticated` holds SELECT on
 -- conversations, messages and notifications (conversation_participants does not exist there
 -- yet, so it was skipped, as designed); no write policy is left; the four policies named below
