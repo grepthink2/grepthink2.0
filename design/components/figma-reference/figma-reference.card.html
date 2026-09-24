@@ -1,0 +1,51 @@
+<!-- @dsCard group="Figma Reference" viewport="700x300" name="Materialized Figma components" subtitle="Library artifacts from the .fig — kept for fidelity, not part of the gt-* product API" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: #fff; font-family: var(--gt-font-sans); }
+  .row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-bottom: 14px; }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 0 0 8px; }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .cell small { font-size: 9px; color: var(--gt-gray-500); font-family: var(--gt-font-mono); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { ToggleSwitch, Arrow, Icons, Calendar, DateActive, DateInactive, Favorite, Month } = window.GrepThinkDesignSystem_36e7e3;
+
+function Cell({ label, children }) {
+  return <div className="cell">{children}<small>{label}</small></div>;
+}
+
+function Demo() {
+  return (
+    <div>
+      <p className="lbl">From the .fig file — Toggle, Arrows, Icons, Calendar pieces</p>
+      <div className="row">
+        <Cell label="ToggleSwitch on"><ToggleSwitch state="on" /></Cell>
+        <Cell label="ToggleSwitch off"><ToggleSwitch state="off" /></Cell>
+        <Cell label="Favorite"><Favorite /></Cell>
+        <Cell label="Arrow up"><Arrow direction="up" variant="pixelised" /></Cell>
+        <Cell label="Arrow down"><Arrow direction="down" variant="pixelised" /></Cell>
+        <Cell label="Date active"><DateActive /></Cell>
+        <Cell label="Date inactive"><DateInactive /></Cell>
+        <Cell label="Month"><Month /></Cell>
+      </div>
+      <div className="row">
+        <Cell label="Calendar"><Calendar /></Cell>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

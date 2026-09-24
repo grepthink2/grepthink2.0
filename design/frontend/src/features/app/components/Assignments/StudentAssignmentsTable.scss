@@ -1,0 +1,289 @@
+@use 'sass:color';
+@use '@styles/index.scss' as *;
+
+// ── Floating header ───────────────────────────────────────────
+.student-assignments__header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+.student-assignments__title {
+  font-size: 1.1rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  margin: 0;
+}
+
+.student-assignments__count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  background-color: $primary-color;
+  color: $white;
+  border-radius: 13px;
+  font-size: 0.8rem;
+  font-weight: $font-weight-semibold;
+}
+
+// ── Outer wrapper (header + card as a unit) ───────────────────
+.student-assignments {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+// ── White card ────────────────────────────────────────────────
+.student-assignments__table-card {
+  background: $white;
+  border-radius: $border-radius-md;
+  overflow: hidden;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.08);
+}
+
+.student-assignments__table-wrapper {
+  overflow-x: auto;
+}
+
+// ── Table ─────────────────────────────────────────────────────
+.student-assignments__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  thead tr {
+    background-color: #eeeeee;
+  }
+
+  th {
+    text-align: left;
+    padding: 10px $spacing-md;
+    color: $text-tertiary;
+    font-weight: $font-weight-medium;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: $spacing-md;
+    color: $text-primary;
+    border-bottom: 1px solid $border-color;
+    vertical-align: middle;
+    background-color: $white;
+    font-weight: 500;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover td {
+    background-color: #fafafa;
+  }
+}
+
+.student-assignments__td-name {
+  font-weight: $font-weight-medium;
+  color: $text-primary;
+}
+
+.student-assignments__td-date {
+  color: $text-secondary;
+  white-space: nowrap;
+}
+
+.student-assignments__td-project {
+  color: $text-primary;
+}
+
+// ── Status badges (student-specific variants) ─────────────────
+$status-not-started-bg: #eeeeee;
+$status-not-started-text: #616161;
+$status-in-progress-bg: #dce8f5;
+$status-in-progress-text: #2771ff;
+$status-submitted-bg: #d4f5ee;
+$status-submitted-text: #018156;
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+
+  &--not-started {
+    background-color: $status-not-started-bg;
+    color: $status-not-started-text;
+  }
+
+  &--in-progress {
+    background-color: $status-in-progress-bg;
+    color: $status-in-progress-text;
+  }
+
+  &--submitted {
+    background-color: $status-submitted-bg;
+    color: $status-submitted-text;
+  }
+}
+
+// ── Action buttons ────────────────────────────────────────────
+.student-assignments__action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: $border-radius-sm;
+  border: none;
+  font-family: $primary-font;
+  font-size: 0.8125rem;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition:
+    background-color $transition-fast,
+    color $transition-fast,
+    box-shadow $transition-fast;
+
+  &--start {
+    background-color: $primary-color;
+    color: $white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+    &:hover {
+      background-color: color.adjust($primary-color, $lightness: -4%);
+    }
+  }
+
+  &--edit_submission {
+    background-color: rgba($primary-color, 0.08);
+    color: $primary-color;
+
+    &:hover {
+      background-color: rgba($primary-color, 0.14);
+    }
+  }
+
+  &--closed,
+  &--opens_later {
+    background-color: #f3f3f3;
+    color: $text-tertiary;
+    cursor: default;
+  }
+
+  &:disabled {
+    cursor: default;
+    box-shadow: none;
+  }
+}
+
+.student-assignments__row--clickable {
+  cursor: default;
+}
+
+// ── Mobile card layout ────────────────────────────────────────
+@media (max-width: 768px) {
+  .student-assignments__table-wrapper {
+    overflow-x: visible;
+  }
+
+  .student-assignments__table {
+    display: block;
+
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-sm;
+      padding: $spacing-sm;
+    }
+
+    // Each row becomes a 2-col grid card:
+    //   Name                [Status badge]
+    //   Due date              Project
+    tbody tr {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      column-gap: $spacing-sm;
+      row-gap: 4px;
+      border: 1px solid $border-color;
+      border-radius: $border-radius-md;
+      padding: $spacing-md;
+      background: $white;
+      cursor: default;
+      transition: background-color $transition-fast, box-shadow $transition-fast;
+
+      td {
+        padding: 0;
+        border-bottom: none;
+        background: transparent !important;
+      }
+
+      // Name — top-left, large
+      td:nth-child(1) {
+        grid-column: 1;
+        grid-row: 1;
+        font-size: 1rem;
+        font-weight: $font-weight-semibold;
+        color: $text-primary;
+      }
+
+      // Due date — bottom-left, muted
+      td:nth-child(2) {
+        grid-column: 1;
+        grid-row: 2;
+        font-size: 0.8rem;
+        color: $text-secondary;
+        white-space: nowrap;
+      }
+
+      // Project name — bottom-right, muted
+      td:nth-child(3) {
+        grid-column: 2;
+        grid-row: 2;
+        font-size: 0.8rem;
+        color: $text-tertiary;
+        text-align: right;
+        white-space: nowrap;
+        align-self: center;
+      }
+
+      // Status badge — top-right
+      td:nth-child(4) {
+        grid-column: 2;
+        grid-row: 1;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+      }
+
+      // Actions hidden — whole card is the tap target
+      td:nth-child(5) {
+        display: none;
+      }
+    }
+
+    tbody tr:hover td {
+      background: transparent !important;
+    }
+
+    tbody tr.student-assignments__row--clickable {
+      cursor: pointer;
+      touch-action: manipulation;
+
+      &:active {
+        background-color: #f5f5f5;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      }
+    }
+  }
+}
+

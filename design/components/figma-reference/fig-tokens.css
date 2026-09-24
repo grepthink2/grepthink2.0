@@ -1,0 +1,223 @@
+/* Generated from Figma Variables. First mode = :root default.
+   FLOAT tokens are unitless — multiply by 1px in calc() where a length is needed. */
+
+:root {
+  --accents-blue: rgb(0,136,255); /* @kind color */
+  --accents-green: rgb(52,199,89); /* @kind color */
+  --accents-indigo: rgb(97,85,245); /* @kind color */
+  --accents-red: rgb(255,56,60); /* @kind color */
+  --background-brand-default: var(--brand-800); /* @kind color */
+  --brand-100-2: rgb(245,245,245); /* @kind color */
+  --brand-100: rgb(245,245,245); /* @kind color */
+  --brand-800: rgb(44,44,44); /* @kind color */
+  --brand-900: rgb(30,30,30); /* @kind color */
+  --brand-b-800: rgb(119,0,0); /* @kind color */
+  --component-fill: rgb(245,245,245); /* @kind color */
+  --component-stroke: var(--accents-indigo); /* @kind color */
+  --depth-025: 1; /* @kind other */
+  --fills-tertiary: rgba(118,118,128,0.12); /* @kind color */
+  --gray-900: rgb(30,30,30); /* @kind color */
+  --grays-white: rgb(255,255,255); /* @kind color */
+  --icon-brand-on-brand: var(--brand-100); /* @kind color */
+  --icon-default-default: var(--gray-900); /* @kind color */
+  --icon-neutral-on-neutral: var(--slate-100); /* @kind color */
+  --labels-primary: rgb(0,0,0); /* @kind color */
+  --labels-tertiary: rgba(60,60,67,0.3); /* @kind color */
+  --miscellaneous-buttons-bg-destructive-prominent: rgba(255,56,60,0.2); /* @kind color */
+  --miscellaneous-buttons-bg-destructive: rgba(255,56,60,0.14); /* @kind color */
+  --miscellaneous-buttons-label-destructive-disabled: rgba(255,56,60,0.5); /* @kind color */
+  --miscellaneous-toggle-ax-label-off: rgb(179,179,179); /* @kind color */
+  --schemes-background: rgb(254,247,255); /* @kind color */
+  --schemes-on-surface: rgb(29,27,32); /* @kind color */
+  --slate-1000: rgb(36,36,36); /* @kind color */
+  --slate-100: rgb(243,243,243); /* @kind color */
+  --white-1000: rgb(255,255,255); /* @kind color */
+}
+
+:root[data-theme="dark"], .dark {
+  --accents-blue: rgb(0,145,255); /* @kind color */
+  --accents-blue: rgb(92,184,255); /* @kind color */
+  --accents-green: rgb(48,209,88); /* @kind color */
+  --accents-green: rgb(74,233,104); /* @kind color */
+  --accents-indigo: rgb(109,124,255); /* @kind color */
+  --accents-indigo: rgb(167,170,255); /* @kind color */
+  --accents-red: rgb(255,66,69); /* @kind color */
+  --accents-red: rgb(255,97,101); /* @kind color */
+  --background-brand-default: var(--brand-100); /* @kind color */
+  --fills-tertiary: rgba(118,118,128,0.24); /* @kind color */
+  --fills-tertiary: rgba(118,118,128,0.32); /* @kind color */
+  --grays-white: rgb(255,255,255); /* @kind color */
+  --grays-white: rgb(255,255,255); /* @kind color */
+  --icon-brand-on-brand: var(--brand-900); /* @kind color */
+  --icon-default-default: var(--white-1000); /* @kind color */
+  --icon-neutral-on-neutral: var(--slate-1000); /* @kind color */
+  --labels-primary: rgb(255,255,255); /* @kind color */
+  --labels-primary: rgb(255,255,255); /* @kind color */
+  --labels-tertiary: rgba(235,235,245,0.3); /* @kind color */
+  --labels-tertiary: rgba(235,235,245,0.55); /* @kind color */
+  --miscellaneous-buttons-bg-destructive-prominent: rgba(255,66,69,0.2); /* @kind color */
+  --miscellaneous-buttons-bg-destructive-prominent: rgba(255,97,101,0.2); /* @kind color */
+  --miscellaneous-buttons-bg-destructive: rgba(255,66,69,0.14); /* @kind color */
+  --miscellaneous-buttons-bg-destructive: rgba(255,97,101,0.14); /* @kind color */
+  --miscellaneous-buttons-label-destructive-disabled: rgba(255,66,69,0.5); /* @kind color */
+  --miscellaneous-buttons-label-destructive-disabled: rgba(255,97,101,0.5); /* @kind color */
+  --miscellaneous-toggle-ax-label-off: rgb(166,166,166); /* @kind color */
+  --miscellaneous-toggle-ax-label-off: rgb(255,255,255); /* @kind color */
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(230,224,233); /* @kind color */
+  --schemes-on-surface: rgb(255,249,255); /* @kind color */
+  --schemes-on-surface: rgb(255,255,255); /* @kind color */
+}
+
+:root[data-theme="light"], .light {
+  --accents-blue: rgb(30,110,244); /* @kind color */
+  --accents-green: rgb(0,137,50); /* @kind color */
+  --accents-indigo: rgb(86,74,222); /* @kind color */
+  --accents-red: rgb(233,21,45); /* @kind color */
+  --background-brand-default: var(--brand-b-800); /* @kind color */
+  --fills-tertiary: rgba(118,118,128,0.2); /* @kind color */
+  --grays-white: rgb(255,255,255); /* @kind color */
+  --icon-default-default: var(--gray-900); /* @kind color */
+  --labels-primary: rgb(0,0,0); /* @kind color */
+  --labels-tertiary: rgba(60,60,67,0.7); /* @kind color */
+  --miscellaneous-buttons-bg-destructive-prominent: rgba(233,21,45,0.2); /* @kind color */
+  --miscellaneous-buttons-bg-destructive: rgba(233,21,45,0.14); /* @kind color */
+  --miscellaneous-buttons-label-destructive-disabled: rgba(233,21,45,0.5); /* @kind color */
+  --miscellaneous-toggle-ax-label-off: rgb(255,255,255); /* @kind color */
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(0,0,0); /* @kind color */
+  --schemes-on-surface: rgb(29,27,32); /* @kind color */
+}
+
+:root[data-mode="monochrome-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(27,27,27); /* @kind color */
+}
+
+:root[data-mode="monochrome-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(226,226,226); /* @kind color */
+}
+
+:root[data-mode="pink-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(33,25,28); /* @kind color */
+}
+
+:root[data-mode="pink-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(238,223,227); /* @kind color */
+}
+
+:root[data-mode="rose-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(34,25,26); /* @kind color */
+}
+
+:root[data-mode="rose-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(240,222,223); /* @kind color */
+}
+
+:root[data-mode="red-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(35,25,24); /* @kind color */
+}
+
+:root[data-mode="red-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(241,222,220); /* @kind color */
+}
+
+:root[data-mode="orange-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(34,26,21); /* @kind color */
+}
+
+:root[data-mode="orange-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(240,223,215); /* @kind color */
+}
+
+:root[data-mode="yellow-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(31,27,19); /* @kind color */
+}
+
+:root[data-mode="yellow-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(235,225,212); /* @kind color */
+}
+
+:root[data-mode="chartreuse-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(27,28,20); /* @kind color */
+}
+
+:root[data-mode="chartreuse-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(229,227,214); /* @kind color */
+}
+
+:root[data-mode="green-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(24,29,24); /* @kind color */
+}
+
+:root[data-mode="green-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(224,228,219); /* @kind color */
+}
+
+:root[data-mode="teal-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(23,29,27); /* @kind color */
+}
+
+:root[data-mode="teal-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(221,228,225); /* @kind color */
+}
+
+:root[data-mode="cyan-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(23,28,30); /* @kind color */
+}
+
+:root[data-mode="cyan-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(222,227,230); /* @kind color */
+}
+
+:root[data-mode="blue-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(26,27,33); /* @kind color */
+}
+
+:root[data-mode="blue-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(226,226,233); /* @kind color */
+}
+
+:root[data-mode="indigo-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(28,27,33); /* @kind color */
+}
+
+:root[data-mode="indigo-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(229,225,233); /* @kind color */
+}
+
+:root[data-mode="purple-lt"] {
+  --schemes-background: rgb(253,247,255); /* @kind color */
+  --schemes-on-surface: rgb(29,26,32); /* @kind color */
+}
+
+:root[data-mode="purple-dt"] {
+  --schemes-background: rgb(20,18,24); /* @kind color */
+  --schemes-on-surface: rgb(231,224,232); /* @kind color */
+}
