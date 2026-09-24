@@ -8,10 +8,10 @@
 $pr-purple: #7d3c98;
 
 .assist-suggest-card {
-  top: 24%;
-  left: 5%;
+  top: 30%;
+  left: 4%;
   z-index: 2;
-  width: 296px;
+  width: 312px;
   --tilt: -2deg;
   --float-duration: 8s;
   --float-y: -10px;
@@ -101,6 +101,7 @@ $pr-purple: #7d3c98;
     font-family: var(--gt-font-mono);
     font-size: 10px;
     color: $text-tertiary;
+    white-space: nowrap;
   }
 
   &__target {
