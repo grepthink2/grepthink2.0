@@ -1,0 +1,273 @@
+@use '@styles/index.scss' as *;
+
+// Project assistant band stage (landing-only; the shell lives in Spotlight.scss). Placeholder
+// widgets until Claude Design delivers the assistant's components (see the handoff in
+// docs/superpowers/handoffs/2026-09-24-landing-claude-design/). The PR purple is bespoke, kept
+// verbatim from the design system's scrum.css.
+
+$pr-purple: #7d3c98;
+
+.assist-suggest-card {
+  top: 24%;
+  left: 5%;
+  z-index: 2;
+  width: 296px;
+  --tilt: -2deg;
+  --float-duration: 8s;
+  --float-y: -10px;
+  --swap-duration: 2.4s;
+  --swap-delay: 1.2s;
+}
+
+.assist-stall-card {
+  top: 5%;
+  right: 4%;
+  z-index: 1;
+  width: 226px;
+  --tilt: 3deg;
+  --float-duration: 9s;
+  --float-y: 9px;
+}
+
+.assist-report-card {
+  right: 4%;
+  bottom: 6%;
+  z-index: 3;
+  width: 272px;
+  --tilt: -2.5deg;
+  --float-duration: 9.5s;
+  --float-y: -8px;
+}
+
+.assist-chip-card {
+  bottom: 5%;
+  left: 4%;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: $font-weight-medium;
+  color: $text-secondary;
+  white-space: nowrap;
+  --tilt: 2deg;
+  --float-duration: 10s;
+  --float-y: 9px;
+
+  b {
+    font-weight: $font-weight-semibold;
+    color: $pr-purple;
+  }
+}
+
+.assist-chip__icon {
+  color: $pr-purple;
+}
+
+// --- Suggestion -------------------------------------------------------------------------------
+.assist-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: var(--gt-primary-soft);
+  color: $primary-color;
+}
+
+.assist-suggest__text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: $text-secondary;
+}
+
+.assist-task {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 12px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: var(--gt-gray-50);
+  font-size: 11.5px;
+  font-weight: $font-weight-semibold;
+  color: $text-dark;
+
+  code {
+    font-family: var(--gt-font-mono);
+    font-size: 10px;
+    color: $text-tertiary;
+  }
+
+  &__target {
+    margin-left: auto;
+    white-space: nowrap;
+
+    > * {
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--gt-success-soft);
+      color: var(--gt-success-text);
+      font-size: 9.5px;
+      font-weight: $font-weight-semibold;
+    }
+  }
+}
+
+.assist-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.assist-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 11.5px;
+  font-weight: $font-weight-semibold;
+
+  &--primary {
+    background: $primary-color;
+    color: $white;
+  }
+
+  &--done {
+    background: var(--gt-success-soft);
+    color: var(--gt-success-text);
+  }
+
+  // Resting state: dismissed from view once the suggestion is approved.
+  &--ghost {
+    box-shadow: 0 0 0 1px var(--gt-gray-300);
+    color: $text-tertiary;
+    opacity: 0;
+  }
+}
+
+.is-seen .assist-btn--primary {
+  animation: assist-press 2.4s ease 1.2s both;
+}
+
+.is-seen .assist-btn--ghost {
+  animation: assist-dismiss-out 2.4s ease 1.2s both;
+}
+
+@keyframes assist-press {
+  0%,
+  42% {
+    box-shadow: none;
+    transform: none;
+  }
+  48% {
+    box-shadow: 0 0 0 3px rgba(1, 129, 86, 0.25);
+    transform: translateY(0.5px);
+  }
+  54%,
+  100% {
+    box-shadow: none;
+    transform: none;
+  }
+}
+
+@keyframes assist-dismiss-out {
+  0%,
+  57% {
+    opacity: 1;
+  }
+  64%,
+  100% {
+    opacity: 0;
+  }
+}
+
+// --- Stalled flag -----------------------------------------------------------------------------
+.assist-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gt-warning-text);
+
+  i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--gt-warning-text);
+  }
+}
+
+.assist-stall {
+  &__title {
+    margin: 8px 0 3px;
+    font-size: 12.5px;
+    font-weight: $font-weight-semibold;
+
+    code {
+      margin-right: 5px;
+      font-family: var(--gt-font-mono);
+      font-size: 10px;
+      color: $text-tertiary;
+    }
+  }
+
+  &__detail {
+    margin: 0 0 8px;
+    font-size: 11px;
+    color: $text-tertiary;
+  }
+}
+
+.assist-link {
+  font-size: 11px;
+  font-weight: $font-weight-semibold;
+  color: var(--gt-success-text);
+}
+
+// --- Report check -----------------------------------------------------------------------------
+.assist-report {
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 0;
+    font-size: 11.5px;
+    color: $text-secondary;
+
+    & + & {
+      border-top: 1px solid var(--gt-gray-100);
+    }
+  }
+
+  &__review {
+    margin-left: auto;
+  }
+}
+
+.assist-check {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+
+  &--ok {
+    background: var(--gt-success-soft);
+    color: var(--gt-success-text);
+  }
+
+  &--warn {
+    background: var(--gt-warning-soft);
+    color: var(--gt-warning-text);
+  }
+}
