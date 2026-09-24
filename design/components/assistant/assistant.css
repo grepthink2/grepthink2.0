@@ -1,0 +1,177 @@
+/* ============================================================
+   GrepThink · Project assistant layer (.gt-asst*)
+   Assistant-authored surfaces are told apart from people's without a
+   new hue: the spark mark in a green-50 tile where an avatar would be,
+   a "Project assistant" label in green-700, and — in-app — a dashed
+   green hairline instead of the solid #DADADA border (a proposal, not
+   a fact). Two surfaces: --app (flat, 10px, whisper shadow) and
+   --landing (floating 20px shell, marketing only).
+   ============================================================ */
+
+.gt-asst-icon { display: inline-block; vertical-align: middle; }
+.gt-asst-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 9px;
+  background: var(--gt-green-50);
+  color: var(--gt-primary);
+  flex-shrink: 0;
+}
+.gt-asst-mark--sm { width: 20px; height: 20px; border-radius: 7px; }
+.gt-asst-mark--lg { width: 34px; height: 34px; border-radius: 11px; }
+
+/* ── Shell ──────────────────────────────────────────────── */
+.gt-asst {
+  position: relative;
+  background: var(--gt-gray-0);
+  font-family: var(--gt-font-sans);
+  color: var(--gt-text-primary);
+  box-sizing: border-box;
+}
+.gt-asst--app {
+  border-radius: var(--gt-radius-md);
+  border: 1px dashed rgba(1, 129, 86, 0.35);
+  box-shadow: var(--gt-shadow-hairline);
+  padding: 14px;
+}
+.gt-asst--landing {
+  border-radius: var(--gt-mkt-card-radius, 20px);
+  border: none;
+  box-shadow: var(--gt-mkt-shadow-card, 0 2px 6px rgba(33,43,54,.04), 0 24px 48px -12px rgba(33,43,54,.18));
+  padding: var(--gt-mkt-card-pad, 16px);
+}
+.gt-asst__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+.gt-asst__author { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: var(--gt-weight-semibold); letter-spacing: -0.01em; color: var(--gt-green-700); }
+.gt-asst__title { font-size: 13.5px; font-weight: var(--gt-weight-semibold); letter-spacing: -0.01em; color: var(--gt-text-primary); }
+.gt-asst__time { font-size: 10.5px; font-weight: var(--gt-weight-medium); color: var(--gt-gray-500); }
+.gt-asst__body { font-size: 12.5px; line-height: 1.5; color: var(--gt-text-secondary); }
+.gt-asst__actions { display: flex; gap: 8px; }
+.gt-asst__btn {
+  font-family: var(--gt-font-sans);
+  font-size: 11.5px; font-weight: var(--gt-weight-semibold);
+  padding: 7px 14px;
+  border-radius: 9px;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast), transform var(--gt-transition-fast);
+}
+.gt-asst__btn:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.gt-asst__btn--ok { background: var(--gt-primary); color: var(--gt-gray-0); }
+.gt-asst__btn--ok:hover { background: var(--gt-primary-hover); }
+.gt-asst__btn--ok:active { transform: translateY(0.5px); }
+.gt-asst__btn--no { background: transparent; color: var(--gt-text-tertiary); box-shadow: 0 0 0 1px var(--gt-border); }
+.gt-asst__btn--no:hover { background: var(--gt-gray-50); color: var(--gt-text-primary); }
+.gt-asst__link {
+  display: inline-flex; align-items: center;
+  background: none; border: none; padding: 0;
+  font-family: var(--gt-font-sans);
+  font-size: 11px; font-weight: var(--gt-weight-semibold);
+  color: var(--gt-primary);
+  cursor: pointer;
+  border-radius: 3px;
+}
+.gt-asst__link:hover { color: var(--gt-primary-hover); text-decoration: underline; }
+.gt-asst__link:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+
+/* ── Suggestion ─────────────────────────────────────────── */
+.gt-asst-suggest__text { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--gt-text-secondary); }
+.gt-asst-suggest__text b { color: var(--gt-text-primary); font-weight: var(--gt-weight-semibold); }
+.gt-asst-suggest__task {
+  display: flex; gap: 6px; align-items: center;
+  margin: 8px 0 12px;
+  padding: 7px 9px;
+  border-radius: var(--gt-radius-md);
+  background: var(--gt-mkt-well, #f7f8f9);
+  font-size: 11.5px; font-weight: var(--gt-weight-semibold);
+  color: var(--gt-text-primary);
+}
+.gt-asst-suggest__key { font-family: var(--gt-font-mono); font-size: 10px; font-weight: 500; color: var(--gt-text-tertiary); }
+.gt-asst-suggest__title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gt-asst-suggest__to { margin-left: auto; flex-shrink: 0; font-size: 9.5px; font-weight: var(--gt-weight-semibold); color: var(--gt-success-text); background: var(--gt-success-soft); padding: 2px 7px; border-radius: var(--gt-radius-pill); }
+.gt-asst-suggest__done {
+  display: flex; gap: 8px; align-items: center;
+  font-size: 12.5px; font-weight: var(--gt-weight-semibold);
+  color: var(--gt-success-text);
+  background: var(--gt-success-soft);
+  padding: 10px 12px;
+  border-radius: var(--gt-radius-md);
+}
+.gt-asst-suggest__dismissed {
+  display: flex; gap: 10px; align-items: center;
+  font-size: 12px; color: var(--gt-text-tertiary);
+  background: var(--gt-gray-50);
+  padding: 10px 12px;
+  border-radius: var(--gt-radius-md);
+}
+.gt-asst-suggest__dismissed .gt-asst__link { margin-left: auto; }
+
+/* ── Stalled flag ───────────────────────────────────────── */
+.gt-asst-stalled__label {
+  display: inline-flex; gap: 5px; align-items: center;
+  font-size: 10px; font-weight: var(--gt-weight-bold);
+  letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--gt-warning-text);
+}
+.gt-asst-stalled__label i { width: 7px; height: 7px; border-radius: 50%; background: var(--gt-amber-500, #E6A817); }
+.gt-asst-stalled__title { margin: 8px 0 3px; font-size: 12.5px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
+.gt-asst-stalled__title code { font-family: var(--gt-font-mono); font-size: 10px; font-weight: 500; color: var(--gt-text-tertiary); margin-right: 5px; }
+.gt-asst-stalled__detail { margin: 0 0 8px; font-size: 11px; color: var(--gt-text-tertiary); }
+
+/* ── Report check ───────────────────────────────────────── */
+.gt-asst-report__rows { list-style: none; margin: 0; padding: 0; }
+.gt-asst-report__row { display: flex; gap: 9px; align-items: center; padding: 7px 0; font-size: 11.5px; color: var(--gt-text-secondary); }
+.gt-asst-report__row + .gt-asst-report__row { border-top: 1px solid var(--gt-gray-100); }
+.gt-asst-report__mark { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gt-asst-report__mark--match { background: var(--gt-success-soft); color: var(--gt-primary); }
+.gt-asst-report__mark--review { background: var(--gt-warning-soft); color: var(--gt-warning); }
+.gt-asst-report__text { flex: 1; min-width: 0; }
+.gt-asst-report__review {
+  margin-left: auto; flex-shrink: 0;
+  border: none; cursor: pointer;
+  font-family: var(--gt-font-sans);
+  font-size: 10px; font-weight: var(--gt-weight-semibold);
+  color: var(--gt-warning-text);
+  background: var(--gt-warning-soft);
+  padding: 3px 8px;
+  border-radius: var(--gt-radius-pill);
+  transition: background-color var(--gt-transition-fast);
+}
+.gt-asst-report__review:hover { background: #fde9a8; }
+.gt-asst-report__review:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+
+/* ── Unlinked PR chip ───────────────────────────────────── */
+.gt-asst-unlinked {
+  display: inline-flex; gap: 7px; align-items: center;
+  padding: 9px 13px;
+  border-radius: var(--gt-radius-pill);
+  background: var(--gt-gray-0);
+  font-family: var(--gt-font-sans);
+  font-size: 11.5px; font-weight: var(--gt-weight-medium);
+  color: var(--gt-text-secondary);
+}
+.gt-asst-unlinked svg { color: var(--gt-mkt-pr-merged, #7D3C98); }
+.gt-asst-unlinked b { color: var(--gt-mkt-pr-merged, #7D3C98); font-weight: var(--gt-weight-semibold); }
+.gt-asst-unlinked--app { border: 1px dashed rgba(1, 129, 86, 0.35); box-shadow: var(--gt-shadow-hairline); }
+.gt-asst-unlinked--landing { box-shadow: var(--gt-mkt-shadow-card, 0 2px 6px rgba(33,43,54,.04), 0 24px 48px -12px rgba(33,43,54,.18)); }
+.gt-asst-unlinked--bare { padding: 0; background: transparent; }
+
+/* ── Preview / coming-soon stage treatment ──────────────── */
+.gt-asst-preview {
+  position: relative;
+  background: var(--gt-mkt-preview-bg, #fbfbfc);
+  box-shadow: inset 0 0 0 1.5px var(--gt-mkt-preview-outline, #d3d8dd);
+  border-radius: var(--gt-mkt-stage-radius, 28px);
+}
+.gt-asst-preview__tag {
+  position: absolute; left: 18px; top: 16px;
+  font-family: var(--gt-font-sans);
+  font-size: 10px; font-weight: var(--gt-weight-bold); letter-spacing: 0.08em;
+  color: var(--gt-mkt-preview-tag, #616161);
+  border: 1.5px dashed var(--gt-mkt-preview-tag-border, #c3c9cf);
+  border-radius: var(--gt-radius-pill);
+  padding: 3px 9px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-asst__btn { transition: none; }
+}

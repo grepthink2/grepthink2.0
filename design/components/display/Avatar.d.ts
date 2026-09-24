@@ -20,5 +20,11 @@ export interface AvatarGroupProps {
   className?: string;
 }
 
+/** Initials-avatar palette — all six pass 4.5:1 with white text. */
+export const AVATAR_COLORS: string[];
+/** Deterministic palette color for a name/email. */
+export function hashColor(name?: string): string;
+/** "Ashton Liu" → "AL", "aliu@ucsc.edu" → "AL". */
+export function initialsOf(name?: string): string;
 export function Avatar(props: AvatarProps): React.JSX.Element;
 export function AvatarGroup(props: AvatarGroupProps): React.JSX.Element;

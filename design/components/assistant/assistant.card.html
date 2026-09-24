@@ -1,0 +1,95 @@
+<!-- @dsCard group="Components" viewport="700x900" name="Project assistant — mark & cards" subtitle="AssistantIcon (2 directions, spark chosen), SuggestionCard states, StalledFlag, ReportCheckCard, UnlinkedPRChip · in-app and landing sizes · preview treatment" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); color: var(--gt-gray-800); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 18px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .dir { flex: 1; background: #fff; border: 1px solid var(--gt-gray-300); border-radius: 10px; padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start; }
+  .dir--chosen { border-color: var(--gt-green-500); box-shadow: 0 0 0 1px var(--gt-green-500); }
+  .dir__glyphs { display: flex; gap: 8px; align-items: center; color: var(--gt-green-500); }
+  .dir__glyphs span { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: var(--gt-green-50); }
+  .dir h4 { margin: 0 0 3px; font-size: 12px; }
+  .dir h4 em { font-style: normal; font-size: 9.5px; font-weight: 700; color: #fff; background: var(--gt-green-500); padding: 1px 6px; border-radius: 99px; margin-left: 6px; letter-spacing: .04em; }
+  .dir p { margin: 0; font-size: 11px; line-height: 1.5; color: var(--gt-gray-600); }
+  .person { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600; }
+  .stage { position: relative; height: 300px; }
+  .stage .gt-asst, .stage .gt-asst-unlinked { position: absolute; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { AssistantIcon, AssistantMark, AssistantSuggestionCard, StalledFlag, ReportCheckCard, UnlinkedPRChip, Avatar } = NS;
+
+function Demo() {
+  const [state, setState] = React.useState('pending');
+  const evidence = <React.Fragment>PR <b>#41</b> was merged into main.</React.Fragment>;
+  return (
+    <div>
+      <p className="lbl">Mark — two directions, one chosen</p>
+      <div className="row">
+        <div className="dir dir--chosen">
+          <div className="dir__glyphs"><span><AssistantIcon size={18} /></span><AssistantIcon size={16} /><AssistantIcon size={13} /></div>
+          <div><h4>A · Spark, drawn in Lucide's line<em>CHOSEN</em></h4><p>Evolves the "Draft with AI" sparkle the scrum board already taught users, but as a 2px stroke so it weighs the same as the icons beside it. Green only; the tile is what marks it as the assistant.</p></div>
+        </div>
+        <div className="dir">
+          <div className="dir__glyphs"><span><AssistantIcon variant="merge" size={18} /></span><AssistantIcon variant="merge" size={16} /><AssistantIcon variant="merge" size={13} /></div>
+          <div><h4>B · Merge-check</h4><p>Literal for "PR merged → task done", but at 13–16px it collides with PRLinkChip's branch glyph and reads as a PR state rather than an author. Kept as <code>variant="merge"</code> for comparison.</p></div>
+        </div>
+      </div>
+
+      <p className="lbl">Same green, different author — person vs assistant</p>
+      <div className="row" style={{gap: 28}}>
+        <span className="person"><Avatar name="Jordan L." size="sm" />Jordan L.</span>
+        <span className="gt-asst__author"><AssistantMark />Project assistant</span>
+        <span style={{fontSize: 11, color: 'var(--gt-gray-600)'}}>mark tile · green-700 label · dashed hairline in-app</span>
+      </div>
+
+      <p className="lbl">SuggestionCard — in-app (click Approve / Dismiss)</p>
+      <div className="cols">
+        <AssistantSuggestionCard state={state} evidence={evidence} taskKey="GT-12" taskTitle="Connect the class roster API" target="Done"
+          onApprove={() => setState('approved')} onDismiss={() => setState('dismissed')} onUndo={() => setState('pending')} />
+        <div className="stack">
+          <AssistantSuggestionCard state="approved" evidence={evidence} taskKey="GT-12" />
+          <AssistantSuggestionCard state="dismissed" evidence={evidence} taskKey="GT-12" onUndo={() => {}} />
+        </div>
+      </div>
+
+      <p className="lbl">StalledFlag · ReportCheckCard (staff) · UnlinkedPRChip — in-app</p>
+      <div className="cols">
+        <div className="stack">
+          <StalledFlag taskKey="GT-9" title="Attendance tab" days={6} detail="no commits" assignee="Sam" onNudge={() => {}} />
+          <UnlinkedPRChip pr="PR #44" onAdd={() => {}} />
+        </div>
+        <ReportCheckCard week="Week 5" project="ShoeShopper" rows={[
+          { kind: 'match', text: '4 reports match closed work' },
+          { kind: 'review', text: 'Alex: reports 35%, closed 1 of 6 tasks', onReview: () => {} },
+        ]} />
+      </div>
+
+      <p className="lbl">Landing size on the preview stage — outlined backdrop + PREVIEW tag</p>
+      <div className="gt-asst-preview stage" aria-hidden="true">
+        <span className="gt-asst-preview__tag">PREVIEW</span>
+        <StalledFlag surface="landing" taskKey="GT-9" title="Attendance tab" assignee="Sam" className="" style={{right: 18, top: 18, width: 226, transform: 'rotate(3deg)'}} />
+        <AssistantSuggestionCard surface="landing" evidence={evidence} taskKey="GT-12" taskTitle="Connect the class roster API" style={{left: 18, top: 62, width: 296, transform: 'rotate(-2deg)'}} />
+        <UnlinkedPRChip surface="landing" pr="PR #44" style={{right: 30, bottom: 22, transform: 'rotate(2deg)'}} />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

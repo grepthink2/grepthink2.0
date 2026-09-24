@@ -22,6 +22,9 @@ then ported into `frontend/src/` — the reverse of `/design-sync`. This file is
 | `tokens/colors.css` semantic aliases | `frontend/src/styles/_colors.scss` |
 | `tokens/typography.css` | `frontend/src/styles/_fonts.scss` |
 | `tokens/spacing.css` | `frontend/src/styles/_variables.scss` |
+| `tokens/marketing.css` (`--gt-mkt-*`) | landing-only SCSS (`Hero.scss`, `Spotlight.scss`, … — mirror as `$mkt-*`; carry the `lint:design` ledger comment) |
+| `components/marketing/*` | `frontend/src/features/landing/components/**` (`gt-landing-header` ↔ `landing-header`, `gt-hero` ↔ `hero`, `gt-float-card` ↔ `float-card`, `gt-spotlight` ↔ `Spotlight.tsx`, `gt-stage-card` ↔ `StageCard.tsx`, `gt-closing` ↔ `ClosingBand.tsx`) |
+| `components/assistant/*` | new `frontend/src/features/app/components/Assistant/` (coming-soon feature) |
 | runtime `--gt-*` custom props | `frontend/src/styles/theme.scss` |
 | `components/**/*.css` (BEM `.gt-*`) | feature/component SCSS (same class names) |
 | `components/**/<Name>.jsx` + `.d.ts` | React TSX components (typed props match `.d.ts`) |
@@ -34,6 +37,10 @@ then ported into `frontend/src/` — the reverse of `/design-sync`. This file is
 
 ## Known deltas (deliberate, don't "fix" silently)
 
+- **Avatar palette (2026-09):** `AVATAR_COLORS` in `components/display/Avatar.jsx` swapped `#2771FF` → `#1B57D6`
+  and `#B26A00` → `#8A5200` for 4.5:1 with white initials; port to the codebase's avatar hashing and to the
+  landing's `FloatingCards.tsx` (drop `#d9822b` / `#9b51e0`).
+- **Landing eyebrow text:** `#016547` (was `$primary-color` on the tint, ~4.3:1).
 - **Error red:** design solid is `--gt-error #DC2626` (spec target); the codebase keeps legacy
   `$error-color #ff3b30` for icons/unread badges (108 refs). Design side exposes it as
   `--gt-error-icon`. Converge when the codebase migrates.
@@ -49,4 +56,5 @@ then ported into `frontend/src/` — the reverse of `/design-sync`. This file is
 
 When tokens change in the repo first: update `tokens/*.css` here to match
 `frontend/src/styles/` (that layer is the source of truth), and refresh the reference copies
-under `frontend/` in this folder. Last parity check: 2026-08-08 against the local working tree.
+under `frontend/` in this folder. Last parity check: 2026-09-24 against the local working tree
+(`frontend/src/features/landing/**` read for the marketing layer).

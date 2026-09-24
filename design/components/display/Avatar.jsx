@@ -1,8 +1,13 @@
 import React from 'react';
 
-const AVATAR_COLORS = ['#018156', '#2771FF', '#B26A00', '#7D3C98', '#016547', '#1543A8'];
+/**
+ * Shared initials-avatar palette. Every color passes 4.5:1 with white
+ * initials (2026-09 contrast fix: #2771FF → #1B57D6 6.2:1, #B26A00 → #8A5200 6.4:1).
+ * The landing page's decorative avatars use this same set — one palette everywhere.
+ */
+export const AVATAR_COLORS = ['#018156', '#1B57D6', '#8A5200', '#7D3C98', '#016547', '#1543A8'];
 
-function initialsOf(name = '') {
+export function initialsOf(name = '') {
   const clean = name.includes('@') ? name.split('@')[0].replace(/[._-]+/g, ' ') : name;
   const parts = clean.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
@@ -10,7 +15,7 @@ function initialsOf(name = '') {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function hashColor(name = '') {
+export function hashColor(name = '') {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
   return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];

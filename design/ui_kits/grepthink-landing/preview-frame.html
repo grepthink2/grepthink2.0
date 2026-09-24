@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>landing-preview source — 1512×797</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  /* Source composition for the Solutions preview screenshot. Snapshot `.frame`
+     at 1× (1512×797) and 2× (3024×1594). Everything that matters sits in the
+     top 560px — the landing crops from the top (560 / 640 / 760 by breakpoint). */
+  html, body { margin: 0; background: #555; }
+  .frame { width: 1512px; height: 797px; overflow: hidden; display: flex; font-family: var(--gt-font-sans); background: var(--gt-gray-100); }
+  .side { width: 256px; flex-shrink: 0; background: var(--gt-green-500); display: flex; flex-direction: column; padding: 14px 19px; box-sizing: border-box; }
+  .side__logo { width: 170px; filter: brightness(0) invert(1); margin: 4px 0 18px; }
+  .side__class { margin: 0 0 14px; padding: 9px 12px; border-radius: 8px; background: rgba(255,255,255,0.12); color: #fff; font-size: 12.5px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
+  .side__class small { font-size: 10px; opacity: 0.75; display: block; font-weight: 400; }
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; background: var(--gt-gray-0); border-bottom: 1px solid var(--gt-border); }
+  .header h1 { margin: 0; font-size: 20px; font-weight: 600; color: var(--gt-gray-800); }
+  .header__right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .content { flex: 1; padding: 18px 24px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+  .stories { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .rail { display: flex; flex-direction: column; gap: 14px; }
+  .panel { background: var(--gt-gray-0); border: 1px solid var(--gt-border); border-radius: 10px; padding: 14px; box-shadow: var(--gt-shadow-hairline); }
+  .scale-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .scale-row .gt-scalepicker { flex: 1; max-width: 520px; }
+  .scale-label { font-size: 11px; font-weight: 600; color: var(--gt-gray-600); text-transform: uppercase; letter-spacing: 0.03em; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { SidebarNavItem, SidebarSectionTitle, Select, Button, AIDraftButton, ScalePicker, StoryCard, ScrumBoard, BurnupChart, Badge } = NS;
+// Transitional: until the bundle recompiles with the 2026-09 palette fix, map the old avatar hues to the new ones for the capture.
+const PALETTE_FIX = { 'rgb(39, 113, 255)': '#1B57D6', 'rgb(178, 106, 0)': '#8A5200' };
+
+const STORIES = [
+  { storyKey: 'GT-2', title: 'As an instructor, I can import a roster from CSV', points: 5, estimate: '2d', reporter: 'Priya Shah', assignee: 'Alex Kim', tasksDone: 2, tasksTotal: 3, pointsDone: 6 },
+  { storyKey: 'GT-4', title: "As a student, I can see my team's roster in the app", points: 8, estimate: '3d', reporter: 'Priya Shah', assignee: 'Jordan L.', tasksDone: 2, tasksTotal: 4, pointsDone: 5 },
+  { storyKey: 'GT-5', title: 'As a TA, I can see sprint progress per team', points: 5, estimate: '2d', reporter: 'Sam Ortiz', assignee: 'Priya Shah', tasksDone: 1, tasksTotal: 3, pointsDone: 2 },
+];
+const TASKS = [
+  { id: 1, taskKey: 'GT-15', storyKey: 'GT-4', title: 'Invite flow copy', tags: ['docs'], points: 2, estimate: '2h', reporter: 'Priya Shah', assignee: 'Jordan L.', status: 'todo' },
+  { id: 2, taskKey: 'GT-16', storyKey: 'GT-2', title: 'Export grades CSV', tags: ['backend'], points: 5, estimate: '1d', reporter: 'Alex Kim', assignee: 'Sam Ortiz', status: 'todo' },
+  { id: 3, taskKey: 'GT-14', storyKey: 'GT-5', title: 'Points scale picker', tags: ['frontend', 'ui/ux'], points: 2, estimate: '3h', reporter: 'Sam Ortiz', assignee: 'Alex Kim', status: 'todo' },
+  { id: 4, taskKey: 'GT-9', storyKey: 'GT-5', title: 'Attendance tab', tags: ['frontend'], points: 3, estimate: '5h', reporter: 'Sam Ortiz', assignee: 'Sam Ortiz', status: 'in_progress', moved: { to: 'In Progress', by: 'Sam', at: '6 days ago' } },
+  { id: 5, taskKey: 'GT-13', storyKey: 'GT-5', title: 'Sprint burnup chart', tags: ['frontend', 'design'], points: 5, estimate: '1d', reporter: 'Priya Shah', assignee: 'Priya Shah', status: 'in_progress', moved: { to: 'In Progress', by: 'Priya', at: '2h ago' }, pr: { label: 'PR #43', url: '#', state: 'open' }, commentCount: 2 },
+  { id: 6, taskKey: 'GT-11', storyKey: 'GT-2', title: 'Row-level errors in import preview', tags: ['bug', 'frontend'], points: 3, estimate: '5h', reporter: 'Alex Kim', assignee: 'Alex Kim', status: 'in_progress', moved: { to: 'In Progress', by: 'Alex', at: 'Mon' } },
+  { id: 7, taskKey: 'GT-12', storyKey: 'GT-4', title: 'Connect the class roster API', tags: ['backend', 'frontend'], points: 3, estimate: '6h', reporter: 'Priya Shah', assignee: 'Jordan L.', status: 'done', moved: { to: 'Done', by: 'Jordan', at: 'just now' }, pr: { label: '#41 merged', url: '#', state: 'merged' }, commentCount: 4 },
+  { id: 8, taskKey: 'GT-8', storyKey: 'GT-4', title: 'Team channels', tags: ['backend'], points: 3, estimate: '5h', reporter: 'Priya Shah', assignee: 'Jordan L.', status: 'done', moved: { to: 'Done', by: 'Jordan', at: 'Tue' }, pr: { label: '#38 merged', url: '#', state: 'merged' } },
+  { id: 9, taskKey: 'GT-10', storyKey: 'GT-2', title: 'Roster CSV import', tags: ['backend'], points: 5, estimate: '1d', reporter: 'Alex Kim', assignee: 'Priya Shah', status: 'done', moved: { to: 'Done', by: 'Priya', at: 'Mon' }, pr: { label: '!17 merged', url: '#', state: 'merged', provider: 'gitlab' } },
+  { id: 10, taskKey: 'GT-7', storyKey: 'GT-2', title: 'Login page', tags: ['frontend'], points: 2, estimate: '3h', reporter: 'Sam Ortiz', assignee: 'Sam Ortiz', status: 'done', moved: { to: 'Done', by: 'Sam', at: 'Jan 14' } },
+];
+const Home = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const Folder = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const Board = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M9 3v18M15 3v12" stroke="currentColor" strokeWidth="2"/></svg>;
+const Msg = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const Clip = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/></svg>;
+
+function Frame() {
+  React.useEffect(() => {
+    document.querySelectorAll('.gt-avatar').forEach((el) => { const fix = PALETTE_FIX[el.style.backgroundColor]; if (fix) el.style.backgroundColor = fix; });
+  }, []);
+  return (
+    <div className="frame">
+      <aside className="side">
+        <img className="side__logo" src="../../assets/grepthink-logo.svg" alt="" />
+        <div className="side__class"><span>CSE 115B<small>Winter 2026 · ShoeShopper</small></span><span>▾</span></div>
+        <SidebarSectionTitle>Main</SidebarSectionTitle>
+        <SidebarNavItem icon={<Home />} label="Home" />
+        <SidebarNavItem icon={<Folder />} label="Projects" />
+        <SidebarNavItem icon={<Board />} label="Scrum Board" active />
+        <SidebarNavItem icon={<Clip />} label="Assignments" />
+        <SidebarNavItem icon={<Msg />} label="Messages" badge={3} />
+      </aside>
+      <div className="main">
+        <header className="header">
+          <h1>Scrum Board</h1>
+          <Badge tone="neutral">ShoeShopper · Team 2</Badge>
+          <div className="header__right">
+            <Select value="s3" onChange={() => {}} options={[{ value: 's3', label: 'Sprint 3 · Jan 12 – Jan 25' }]} />
+            <AIDraftButton>Draft story with AI</AIDraftButton>
+            <Button size="md">New Story</Button>
+          </div>
+        </header>
+        <div className="content">
+          <div className="scale-row"><span className="scale-label">Estimate scale</span><ScalePicker value="fibonacci" onChange={() => {}} /></div>
+          <div className="grid">
+            <div>
+              <div className="stories">{STORIES.map((s) => <StoryCard key={s.storyKey} {...s} onOpen={() => {}} />)}</div>
+              <ScrumBoard tasks={TASKS} onMove={() => {}} />
+            </div>
+            <div className="rail">
+              <div className="panel">
+                <BurnupChart title="Sprint 3 burnup" subtitle="Jan 12 – Jan 25" height={110}
+                  labels={['M','T','W','T','F','M','T','W','T','F']}
+                  scope={[21,21,21,24,24,24,24,24,24,24]}
+                  completed={[0,2,5,5,9,12,15,18,18,18]} />
+              </div>
+              <div className="gt-asst gt-asst-suggest gt-asst--app">
+                <div className="gt-asst__head">
+                  <span className="gt-asst__author"><span className="gt-asst-mark"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4c.5 3.9 3.1 6.5 7 7-3.9.5-6.5 3.1-7 7-.5-3.9-3.1-6.5-7-7 3.9-.5 6.5-3.1 7-7Z"/><path d="M19 3v4M17 5h4"/></svg></span>Project assistant</span>
+                  <span className="gt-asst__time">2m ago</span>
+                </div>
+                <div className="gt-asst__body">
+                  <p className="gt-asst-suggest__text">PR <b>#43</b> has 2 approvals. Move this task to Done when it merges?</p>
+                  <div className="gt-asst-suggest__task"><code className="gt-asst-suggest__key">GT-13</code><span className="gt-asst-suggest__title">Sprint burnup chart</span><span className="gt-asst-suggest__to">→ Done</span></div>
+                  <div className="gt-asst__actions"><button type="button" className="gt-asst__btn gt-asst__btn--ok">Approve</button><button type="button" className="gt-asst__btn gt-asst__btn--no">Dismiss</button></div>
+                </div>
+              </div>
+              <div className="panel">
+                <BurnupChart title="Cumulative burnup" subtitle="All sprints" height={100}
+                  labels={['S1','S2','S3','S4','S5']}
+                  scope={[21,40,64,64,64]}
+                  completed={[18,36,54,54,54]} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Frame />);
+</script>
+</body>
+</html>

@@ -390,6 +390,23 @@
 .gt-bubble__author { font-size: 11px; font-weight: var(--gt-weight-semibold); color: var(--gt-primary); }
 .gt-bubble__time { font-size: 10px; opacity: 0.65; align-self: flex-end; }
 
+/* ── TypingIndicator ────────────────────────────────────── */
+.gt-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 9px 11px;
+  border-radius: 12px 12px 12px 4px;
+  background: var(--gt-gray-0);
+  border: 1px solid var(--gt-border-subtle);
+}
+.gt-typing--soft { background: #f1f3f4; border-color: transparent; border-radius: 14px 14px 14px 4px; }
+.gt-typing__dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gt-gray-500); animation: gt-typing-blink 1.2s infinite; }
+.gt-typing__dot:nth-child(2) { animation-delay: 0.2s; }
+.gt-typing__dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes gt-typing-blink { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { .gt-typing__dot { animation: none; opacity: 0.6; } }
+
 /* ── MessageComposer ────────────────────────────────────── */
 .gt-composer {
   display: flex;

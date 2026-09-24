@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"UnreadBadge","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"Arrow","sourcePath":"components/figma-reference/Arrow.jsx"},{"name":"ButtonContentArea","sourcePath":"components/figma-reference/ButtonContentArea.jsx"},{"name":"Calendar","sourcePath":"components/figma-reference/Calendar.jsx"},{"name":"DAvatars223","sourcePath":"components/figma-reference/DAvatars223.jsx"},{"name":"DAvatars63","sourcePath":"components/figma-reference/DAvatars63.jsx"},{"name":"DateActive","sourcePath":"components/figma-reference/DateActive.jsx"},{"name":"DateInactive","sourcePath":"components/figma-reference/DateInactive.jsx"},{"name":"Favorite","sourcePath":"components/figma-reference/Favorite.jsx"},{"name":"Grid","sourcePath":"components/figma-reference/Grid.jsx"},{"name":"Icons","sourcePath":"components/figma-reference/Icons.jsx"},{"name":"Monitor","sourcePath":"components/figma-reference/Monitor.jsx"},{"name":"Month","sourcePath":"components/figma-reference/Month.jsx"},{"name":"Navigation","sourcePath":"components/figma-reference/Navigation.jsx"},{"name":"Scrollbar","sourcePath":"components/figma-reference/Scrollbar.jsx"},{"name":"Thumb","sourcePath":"components/figma-reference/Thumb.jsx"},{"name":"ToggleSwitch","sourcePath":"components/figma-reference/ToggleSwitch.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"}],"sourceHashes":{"components/display/Avatar.jsx":"7243c6b9e724","components/display/Badge.jsx":"180509dfc2c9","components/display/Card.jsx":"4ba0490439c9","components/display/ProgressBar.jsx":"0b4aaf2c1290","components/display/StatCard.jsx":"57f73bd82bca","components/display/Table.jsx":"ca3970dc13d3","components/display/Tag.jsx":"e3ab4e532516","components/display/Tooltip.jsx":"fdf93185ec4e","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"497141765f63","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"cee7f6e18f47","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMemberCard.jsx":"6df7ada471d5","components/feedback/Alert.jsx":"9fd839b8885b","components/feedback/EmptyState.jsx":"ade9686d1d6c","components/feedback/Menu.jsx":"f2803bde1913","components/feedback/Modal.jsx":"b3423627eb3e","components/feedback/Popover.jsx":"5c61a414f282","components/feedback/Toast.jsx":"7cea98a32e2b","components/figma-reference/Arrow.jsx":"b47fae3b397e","components/figma-reference/ButtonContentArea.jsx":"d04e8778b0cd","components/figma-reference/Calendar.jsx":"e9b4e8547380","components/figma-reference/DAvatars223.jsx":"f8a6724e71c1","components/figma-reference/DAvatars63.jsx":"eabe483d1087","components/figma-reference/DateActive.jsx":"98368642fc18","components/figma-reference/DateInactive.jsx":"aa5b005439e4","components/figma-reference/Favorite.jsx":"cf904bbc095e","components/figma-reference/Grid.jsx":"ffce96c170ef","components/figma-reference/Icons.jsx":"8c100167f4e4","components/figma-reference/Monitor.jsx":"fed77441cdb3","components/figma-reference/Month.jsx":"753bdc051edd","components/figma-reference/Navigation.jsx":"4ca43ce20a81","components/figma-reference/Scrollbar.jsx":"2c920accb1b9","components/figma-reference/Thumb.jsx":"fe01d87bb4eb","components/figma-reference/ToggleSwitch.jsx":"4eaaaf74364f","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"18c33813ee4c","components/navigation/SidebarNavItem.jsx":"da5237605ea2","components/navigation/Tabs.jsx":"a1cbfe065547","components/primitives/Button.jsx":"5eacee058949","components/primitives/Checkbox.jsx":"a9a0b92b227a","components/primitives/DatePickerField.jsx":"ad63bc301a8b","components/primitives/IconButton.jsx":"ab72be8fcc12","components/primitives/Input.jsx":"89d3caa5e496","components/primitives/RadioGroup.jsx":"b3bb3e033eb8","components/primitives/Select.jsx":"8dec7dc350d7","components/primitives/Textarea.jsx":"40b57e72e0b1","components/primitives/Toggle.jsx":"cbbe66982d51","components/scrum/AIDraftButton.jsx":"0fdfb1b48daf","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","ui_kits/grepthink/App.jsx":"b4731ebd95d5","ui_kits/grepthink/Screens.jsx":"ee94282eb492","ui_kits/grepthink/Shell.jsx":"c8070c465885"},"inlinedExternals":[],"unexposedExports":[]} */
+/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"UnreadBadge","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"Arrow","sourcePath":"components/figma-reference/Arrow.jsx"},{"name":"ButtonContentArea","sourcePath":"components/figma-reference/ButtonContentArea.jsx"},{"name":"Calendar","sourcePath":"components/figma-reference/Calendar.jsx"},{"name":"DAvatars223","sourcePath":"components/figma-reference/DAvatars223.jsx"},{"name":"DAvatars63","sourcePath":"components/figma-reference/DAvatars63.jsx"},{"name":"DateActive","sourcePath":"components/figma-reference/DateActive.jsx"},{"name":"DateInactive","sourcePath":"components/figma-reference/DateInactive.jsx"},{"name":"Favorite","sourcePath":"components/figma-reference/Favorite.jsx"},{"name":"Grid","sourcePath":"components/figma-reference/Grid.jsx"},{"name":"Icons","sourcePath":"components/figma-reference/Icons.jsx"},{"name":"Monitor","sourcePath":"components/figma-reference/Monitor.jsx"},{"name":"Month","sourcePath":"components/figma-reference/Month.jsx"},{"name":"Navigation","sourcePath":"components/figma-reference/Navigation.jsx"},{"name":"Scrollbar","sourcePath":"components/figma-reference/Scrollbar.jsx"},{"name":"Thumb","sourcePath":"components/figma-reference/Thumb.jsx"},{"name":"ToggleSwitch","sourcePath":"components/figma-reference/ToggleSwitch.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"}],"sourceHashes":{"components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"e87694c0f32c","components/display/Badge.jsx":"180509dfc2c9","components/display/Card.jsx":"4ba0490439c9","components/display/ProgressBar.jsx":"0b4aaf2c1290","components/display/StatCard.jsx":"57f73bd82bca","components/display/Table.jsx":"ca3970dc13d3","components/display/Tag.jsx":"e3ab4e532516","components/display/Tooltip.jsx":"fdf93185ec4e","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"497141765f63","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"cee7f6e18f47","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMemberCard.jsx":"6df7ada471d5","components/domain/TypingIndicator.jsx":"87abba71cd36","components/feedback/Alert.jsx":"9fd839b8885b","components/feedback/EmptyState.jsx":"ade9686d1d6c","components/feedback/Menu.jsx":"f2803bde1913","components/feedback/Modal.jsx":"b3423627eb3e","components/feedback/Popover.jsx":"5c61a414f282","components/feedback/Toast.jsx":"7cea98a32e2b","components/figma-reference/Arrow.jsx":"b47fae3b397e","components/figma-reference/ButtonContentArea.jsx":"d04e8778b0cd","components/figma-reference/Calendar.jsx":"e9b4e8547380","components/figma-reference/DAvatars223.jsx":"f8a6724e71c1","components/figma-reference/DAvatars63.jsx":"eabe483d1087","components/figma-reference/DateActive.jsx":"98368642fc18","components/figma-reference/DateInactive.jsx":"aa5b005439e4","components/figma-reference/Favorite.jsx":"cf904bbc095e","components/figma-reference/Grid.jsx":"ffce96c170ef","components/figma-reference/Icons.jsx":"8c100167f4e4","components/figma-reference/Monitor.jsx":"fed77441cdb3","components/figma-reference/Month.jsx":"753bdc051edd","components/figma-reference/Navigation.jsx":"4ca43ce20a81","components/figma-reference/Scrollbar.jsx":"2c920accb1b9","components/figma-reference/Thumb.jsx":"fe01d87bb4eb","components/figma-reference/ToggleSwitch.jsx":"4eaaaf74364f","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"afe9162f88b8","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"18c33813ee4c","components/navigation/SidebarNavItem.jsx":"da5237605ea2","components/navigation/Tabs.jsx":"a1cbfe065547","components/primitives/Button.jsx":"5eacee058949","components/primitives/Checkbox.jsx":"a9a0b92b227a","components/primitives/DatePickerField.jsx":"ad63bc301a8b","components/primitives/IconButton.jsx":"ab72be8fcc12","components/primitives/Input.jsx":"89d3caa5e496","components/primitives/RadioGroup.jsx":"b3bb3e033eb8","components/primitives/Select.jsx":"8dec7dc350d7","components/primitives/Textarea.jsx":"40b57e72e0b1","components/primitives/Toggle.jsx":"cbbe66982d51","components/scrum/AIDraftButton.jsx":"0fdfb1b48daf","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","ui_kits/grepthink-landing/Landing.jsx":"80212b278288","ui_kits/grepthink-landing/Stages.jsx":"e71486049434","ui_kits/grepthink/App.jsx":"b4731ebd95d5","ui_kits/grepthink/Screens.jsx":"ee94282eb492","ui_kits/grepthink/Shell.jsx":"c8070c465885"},"inlinedExternals":[],"unexposedExports":[{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"}]} */
 
 (() => {
 
@@ -8,10 +8,331 @@ const __ds_scope = {};
 
 (__ds_ns.__errors = __ds_ns.__errors || []);
 
+// components/assistant/AssistantIcon.jsx
+try { (() => {
+/**
+ * The Project assistant's mark. Two directions were explored:
+ *  - 'spark'  (CHOSEN) — the AIDraftButton sparkle redrawn in Lucide's line
+ *    (24 viewBox, 2px stroke, round caps): one four-point star + a small
+ *    cross-spark. Keeps the recognition the scrum board already built
+ *    around "Draft with AI", and its stroke weight now matches the icons
+ *    beside it (the filled version read heavier than everything else).
+ *  - 'merge'  (runner-up) — a git-merge line that ends in a check: literal
+ *    for "PR merged → task done", but at 16px it collides with PRLinkChip's
+ *    branch glyph and reads as a PR state, not an assistant.
+ */
+function AssistantIcon({
+  size = 16,
+  variant = 'spark',
+  title,
+  className = '',
+  ...rest
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    className: ['gt-asst-icon', className].filter(Boolean).join(' '),
+    'aria-hidden': title ? undefined : true,
+    role: title ? 'img' : undefined,
+    ...rest
+  };
+  if (variant === 'merge') {
+    return /*#__PURE__*/React.createElement("svg", common, title && /*#__PURE__*/React.createElement("title", null, title), /*#__PURE__*/React.createElement("circle", {
+      cx: "6",
+      cy: "5",
+      r: "2.5"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M6 7.5v6.5a4 4 0 0 0 4 4h2"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "m13.5 16.5 2.5 2.5L21 13"
+    }));
+  }
+  return /*#__PURE__*/React.createElement("svg", common, title && /*#__PURE__*/React.createElement("title", null, title), /*#__PURE__*/React.createElement("path", {
+    d: "M11 4c.5 3.9 3.1 6.5 7 7-3.9.5-6.5 3.1-7 7-.5-3.9-3.1-6.5-7-7 3.9-.5 6.5-3.1 7-7Z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M19 3v4M17 5h4"
+  }));
+}
+
+/** 26px green-50 tile holding the mark — the assistant's "avatar". */
+function AssistantMark({
+  size = 'md',
+  variant = 'spark',
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-asst-mark', `gt-asst-mark--${size}`, className].filter(Boolean).join(' '),
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement(AssistantIcon, {
+    size: size === 'sm' ? 13 : size === 'lg' ? 18 : 15,
+    variant: variant
+  }));
+}
+Object.assign(__ds_scope, { AssistantIcon, AssistantMark });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/assistant/AssistantIcon.jsx", error: String((e && e.message) || e) }); }
+
+// components/assistant/AssistantSuggestionCard.jsx
+try { (() => {
+const Check = () => /*#__PURE__*/React.createElement("svg", {
+  width: "15",
+  height: "15",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M20 6L9 17l-5-5",
+  stroke: "currentColor",
+  strokeWidth: "2.6",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}));
+
+/**
+ * A board change the assistant proposes from repository evidence.
+ * States: pending (Approve / Dismiss) → approved (collapsed confirmation)
+ * or dismissed (muted line + Undo). Nothing changes until a person approves.
+ * `surface="app"` is the flat in-app card; `surface="landing"` is the
+ * floating marketing shell.
+ */
+function AssistantSuggestionCard({
+  state = 'pending',
+  evidence,
+  question = 'Move this task to Done?',
+  taskKey,
+  taskTitle,
+  target = 'Done',
+  time = 'just now',
+  approvedBy = 'you',
+  onApprove,
+  onDismiss,
+  onUndo,
+  surface = 'app',
+  className = '',
+  style
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: style,
+    className: ['gt-asst', 'gt-asst-suggest', `gt-asst--${surface}`, `gt-asst-suggest--${state}`, className].filter(Boolean).join(' '),
+    role: "group",
+    "aria-label": "Project assistant suggestion"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-asst__head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-asst__author"
+  }, /*#__PURE__*/React.createElement(__ds_scope.AssistantMark, null), "Project assistant"), time && /*#__PURE__*/React.createElement("span", {
+    className: "gt-asst__time"
+  }, time)), state === 'pending' && /*#__PURE__*/React.createElement("div", {
+    className: "gt-asst__body"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "gt-asst-suggest__text"
+  }, evidence, " ", question), taskKey && /*#__PURE__*/React.createElement("div", {
+    className: "gt-asst-suggest__task"
+  }, /*#__PURE__*/React.createElement("code", {
+    className: "gt-asst-suggest__key"
+  }, taskKey), /*#__PURE__*/React.createElement("span", {
+    className: "gt-asst-suggest__title"
+  }, taskTitle), /*#__PURE__*/React.createElement("span", {
+    className: "gt-asst-suggest__to"
+  }, "\u2192 ", target)), /*#__PURE__*/React.createElement("div", {
+    className: "gt-asst__actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-asst__btn gt-asst__btn--ok",
+    onClick: onApprove
+  }, "Approve"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-asst__btn gt-asst__btn--no",
+    onClick: onDismiss
+  }, "Dismiss"))), state === 'approved' && /*#__PURE__*/React.createElement("div", {
+    className: "gt-asst-suggest__done",
+    role: "status"
+  }, /*#__PURE__*/React.createElement(Check, null), taskKey, " moved to ", target, " \xB7 approved by ", approvedBy), state === 'dismissed' && /*#__PURE__*/React.createElement("div", {
+    className: "gt-asst-suggest__dismissed",
+    role: "status"
+  }, "Suggestion dismissed", onUndo && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-asst__link",
+    onClick: onUndo
+  }, "Undo")));
+}
+Object.assign(__ds_scope, { AssistantSuggestionCard });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/assistant/AssistantSuggestionCard.jsx", error: String((e && e.message) || e) }); }
+
+// components/assistant/ReportCheckCard.jsx
+try { (() => {
+const Tick = () => /*#__PURE__*/React.createElement("svg", {
+  width: "11",
+  height: "11",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M20 6L9 17l-5-5",
+  stroke: "currentColor",
+  strokeWidth: "3",
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+}));
+const Bang = () => /*#__PURE__*/React.createElement("svg", {
+  width: "11",
+  height: "11",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M12 8v5M12 16.5v.5",
+  stroke: "currentColor",
+  strokeWidth: "3",
+  strokeLinecap: "round"
+}));
+
+/**
+ * Staff-only: a week's status reports compared with the work each student
+ * actually closed. Rows either match (green) or need review (amber).
+ * It flags, never accuses — rows state the numbers and offer "Review".
+ */
+function ReportCheckCard({
+  week = 'Week 5',
+  project,
+  rows = [],
+  surface = 'app',
+  className = '',
+  style
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: style,
+    className: ['gt-asst', 'gt-asst-report', `gt-asst--${surface}`, className].filter(Boolean).join(' '),
+    role: "group",
+    "aria-label": `${week} status reports`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-asst__head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-asst__title"
+  }, week, " status reports"), project && /*#__PURE__*/React.createElement("span", {
+    className: "gt-asst__time"
+  }, project)), /*#__PURE__*/React.createElement("ul", {
+    className: "gt-asst-report__rows"
+  }, rows.map((r, i) => /*#__PURE__*/React.createElement("li", {
+    key: i,
+    className: `gt-asst-report__row gt-asst-report__row--${r.kind || 'match'}`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `gt-asst-report__mark gt-asst-report__mark--${r.kind || 'match'}`,
+    "aria-hidden": "true"
+  }, r.kind === 'review' ? /*#__PURE__*/React.createElement(Bang, null) : /*#__PURE__*/React.createElement(Tick, null)), /*#__PURE__*/React.createElement("span", {
+    className: "gt-asst-report__text"
+  }, r.text), r.kind === 'review' && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-asst-report__review",
+    onClick: r.onReview
+  }, "Review")))));
+}
+Object.assign(__ds_scope, { ReportCheckCard });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/assistant/ReportCheckCard.jsx", error: String((e && e.message) || e) }); }
+
+// components/assistant/StalledFlag.jsx
+try { (() => {
+/**
+ * Stalled-work flag: a task that has sat in a column with no repository
+ * activity. Amber label, task key + title, the evidence line, and a nudge.
+ */
+function StalledFlag({
+  taskKey,
+  title,
+  status = 'In Progress',
+  days = 6,
+  detail = 'no commits',
+  assignee,
+  onNudge,
+  surface = 'app',
+  className = '',
+  style
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: style,
+    className: ['gt-asst', 'gt-asst-stalled', `gt-asst--${surface}`, className].filter(Boolean).join(' '),
+    role: "group",
+    "aria-label": `Stalled: ${taskKey}`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-asst-stalled__label"
+  }, /*#__PURE__*/React.createElement("i", {
+    "aria-hidden": "true"
+  }), "Stalled"), /*#__PURE__*/React.createElement("h4", {
+    className: "gt-asst-stalled__title"
+  }, /*#__PURE__*/React.createElement("code", null, taskKey), title), /*#__PURE__*/React.createElement("p", {
+    className: "gt-asst-stalled__detail"
+  }, status, " for ", days, " ", days === 1 ? 'day' : 'days', " \xB7 ", detail), assignee && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-asst__link",
+    onClick: onNudge
+  }, "Nudge ", assignee, " \u2192"));
+}
+Object.assign(__ds_scope, { StalledFlag });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/assistant/StalledFlag.jsx", error: String((e && e.message) || e) }); }
+
+// components/assistant/UnlinkedPRChip.jsx
+try { (() => {
+/**
+ * Pill for a pull request that has no task on the board.
+ * surface: 'app' (dashed hairline) · 'landing' (floating shadow) · 'bare' (no chrome — for embedding in a StageCard).
+ */
+function UnlinkedPRChip({
+  pr = 'PR #44',
+  onAdd,
+  addLabel = 'Add task',
+  surface = 'app',
+  className = '',
+  style
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    style: style,
+    className: ['gt-asst-unlinked', `gt-asst-unlinked--${surface}`, className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "12",
+    height: "12",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "18",
+    cy: "18",
+    r: "3",
+    stroke: "currentColor",
+    strokeWidth: "2.5"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "6",
+    cy: "6",
+    r: "3",
+    stroke: "currentColor",
+    strokeWidth: "2.5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M6 9v6a3 3 0 003 3h6M18 15V9",
+    stroke: "currentColor",
+    strokeWidth: "2.5",
+    strokeLinecap: "round"
+  })), /*#__PURE__*/React.createElement("b", null, pr), " isn't on the board \xB7", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-asst__link",
+    onClick: onAdd
+  }, addLabel));
+}
+Object.assign(__ds_scope, { UnlinkedPRChip });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/assistant/UnlinkedPRChip.jsx", error: String((e && e.message) || e) }); }
+
 // components/display/Avatar.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-const AVATAR_COLORS = ['#018156', '#2771FF', '#B26A00', '#7D3C98', '#016547', '#1543A8'];
+/**
+ * Shared initials-avatar palette. Every color passes 4.5:1 with white
+ * initials (2026-09 contrast fix: #2771FF → #1B57D6 6.2:1, #B26A00 → #8A5200 6.4:1).
+ * The landing page's decorative avatars use this same set — one palette everywhere.
+ */
+const AVATAR_COLORS = ['#018156', '#1B57D6', '#8A5200', '#7D3C98', '#016547', '#1543A8'];
 function initialsOf(name = '') {
   const clean = name.includes('@') ? name.split('@')[0].replace(/[._-]+/g, ' ') : name;
   const parts = clean.trim().split(/\s+/).filter(Boolean);
@@ -74,7 +395,7 @@ function AvatarGroup({
     className: `gt-avatar gt-avatar--${size} gt-avatar--extra`
   }, "+", extra));
 }
-Object.assign(__ds_scope, { Avatar, AvatarGroup });
+Object.assign(__ds_scope, { AVATAR_COLORS, initialsOf, hashColor, Avatar, AvatarGroup });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Avatar.jsx", error: String((e && e.message) || e) }); }
 
 // components/display/Badge.jsx
@@ -1013,6 +1334,35 @@ function RoleSelect({
 }
 Object.assign(__ds_scope, { TeamMemberCard, RoleSelect });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/TeamMemberCard.jsx", error: String((e && e.message) || e) }); }
+
+// components/domain/TypingIndicator.jsx
+try { (() => {
+/**
+ * Typing indicator — three pulsing dots inside a received-bubble shape.
+ * `tone="app"` matches MessageBubble (white, hairline border, 12/4 radius);
+ * `tone="soft"` is the landing stage's grey bubble (#f1f3f4, radius 14/4).
+ * Reduced motion: dots render static at 60% opacity.
+ */
+function TypingIndicator({
+  tone = 'app',
+  label = 'Someone is typing',
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-typing', `gt-typing--${tone}`, className].filter(Boolean).join(' '),
+    role: "status",
+    "aria-live": "polite",
+    "aria-label": label
+  }, /*#__PURE__*/React.createElement("i", {
+    className: "gt-typing__dot"
+  }), /*#__PURE__*/React.createElement("i", {
+    className: "gt-typing__dot"
+  }), /*#__PURE__*/React.createElement("i", {
+    className: "gt-typing__dot"
+  }));
+}
+Object.assign(__ds_scope, { TypingIndicator });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/TypingIndicator.jsx", error: String((e && e.message) || e) }); }
 
 // components/feedback/Alert.jsx
 try { (() => {
@@ -8708,6 +9058,803 @@ function ToggleSwitch(_p = {}) {
 Object.assign(__ds_scope, { ToggleSwitch, __ds_default_components_figma_reference_ToggleSwitch_gr5rfh: ToggleSwitch });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/figma-reference/ToggleSwitch.jsx", error: String((e && e.message) || e) }); }
 
+// components/marketing/ClosingBand.jsx
+try { (() => {
+/**
+ * Dark green closing band before the footer: heading, one line, primary
+ * CTA + outlined "Talk to us".
+ */
+function ClosingBand({
+  heading = 'Ready to run your class on grepthink?',
+  text,
+  ctaLabel = 'Get started',
+  ctaHref = '/select',
+  secondaryLabel = 'Talk to us',
+  secondaryHref = '/contact',
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("section", {
+    className: ['gt-closing', className].filter(Boolean).join(' '),
+    "aria-labelledby": "gt-closing-heading"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-closing__inner"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "gt-closing__heading",
+    id: "gt-closing-heading"
+  }, heading), text && /*#__PURE__*/React.createElement("p", {
+    className: "gt-closing__text"
+  }, text), /*#__PURE__*/React.createElement("div", {
+    className: "gt-closing__actions"
+  }, /*#__PURE__*/React.createElement("a", {
+    className: "gt-closing__cta",
+    href: ctaHref
+  }, ctaLabel), secondaryLabel && /*#__PURE__*/React.createElement("a", {
+    className: "gt-closing__ghost",
+    href: secondaryHref
+  }, secondaryLabel))));
+}
+Object.assign(__ds_scope, { ClosingBand });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/ClosingBand.jsx", error: String((e && e.message) || e) }); }
+
+// components/marketing/Eyebrow.jsx
+try { (() => {
+/**
+ * Uppercase pill label above a marketing headline. Optional NEW / SOON
+ * badge; `tone="amber"` for coming-soon features. Text is #016547 on the
+ * green tint (6.3:1) — the hero's old #018156 was ~4.3:1.
+ */
+function Eyebrow({
+  children,
+  badge,
+  tone = 'green',
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-eyebrow', tone === 'amber' ? 'gt-eyebrow--amber' : '', className].filter(Boolean).join(' ')
+  }, badge && /*#__PURE__*/React.createElement("b", {
+    className: "gt-eyebrow__badge"
+  }, badge), children);
+}
+
+/** Standalone NEW / SOON badge (white on #018156 / #8A5200). */
+function MarketingBadge({
+  children = 'NEW',
+  tone = 'new',
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("b", {
+    className: ['gt-mkt-badge', tone === 'soon' ? 'gt-mkt-badge--soon' : '', className].filter(Boolean).join(' ')
+  }, children);
+}
+Object.assign(__ds_scope, { Eyebrow, MarketingBadge });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/Eyebrow.jsx", error: String((e && e.message) || e) }); }
+
+// components/marketing/AnnouncementPill.jsx
+try { (() => {
+/**
+ * Hero announcement pill — a link with a NEW badge, text and an arrow.
+ * Replaces the eyebrow while a launch announcement is on; scrolls to the
+ * feature band. The whole pill is the link.
+ */
+function AnnouncementPill({
+  children,
+  href = '#scrum-board',
+  badge = 'NEW',
+  ariaLabel,
+  onClick,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("a", {
+    className: ['gt-announce', className].filter(Boolean).join(' '),
+    href: href,
+    onClick: onClick,
+    "aria-label": ariaLabel
+  }, /*#__PURE__*/React.createElement(__ds_scope.MarketingBadge, null, badge), /*#__PURE__*/React.createElement("span", {
+    className: "gt-announce__text"
+  }, children), /*#__PURE__*/React.createElement("span", {
+    className: "gt-announce__arrow",
+    "aria-hidden": "true"
+  }, "\u2192"));
+}
+Object.assign(__ds_scope, { AnnouncementPill });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/AnnouncementPill.jsx", error: String((e && e.message) || e) }); }
+
+// components/marketing/ContactCard.jsx
+try { (() => {
+/**
+ * Contact page card: eyebrow, title, lede, name/email/message form with
+ * honeypot, submit, and success/error status. Presentational — the page
+ * owns the POST. Note the marketing exception: fields focus with a green glow.
+ */
+function ContactCard({
+  eyebrow = 'Contact',
+  title = 'Get in touch',
+  subtitle,
+  status = 'idle',
+  values = {
+    name: '',
+    email: '',
+    message: ''
+  },
+  onChange,
+  onSubmit,
+  className = ''
+}) {
+  const sending = status === 'sending';
+  const set = k => e => onChange && onChange({
+    ...values,
+    [k]: e.target.value
+  });
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-contact-card', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement(__ds_scope.Eyebrow, null, eyebrow), /*#__PURE__*/React.createElement("h1", {
+    className: "gt-contact-card__title"
+  }, title), subtitle && /*#__PURE__*/React.createElement("p", {
+    className: "gt-contact-card__sub"
+  }, subtitle), /*#__PURE__*/React.createElement("form", {
+    className: "gt-contact-card__form",
+    onSubmit: e => {
+      e.preventDefault();
+      if (!sending && onSubmit) onSubmit(values);
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "gt-contact-card__field"
+  }, /*#__PURE__*/React.createElement("span", null, "Name"), /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    name: "name",
+    autoComplete: "name",
+    placeholder: "Your name",
+    value: values.name,
+    onChange: set('name'),
+    required: true
+  })), /*#__PURE__*/React.createElement("label", {
+    className: "gt-contact-card__field"
+  }, /*#__PURE__*/React.createElement("span", null, "Email"), /*#__PURE__*/React.createElement("input", {
+    type: "email",
+    name: "email",
+    autoComplete: "email",
+    placeholder: "you@university.edu",
+    value: values.email,
+    onChange: set('email'),
+    required: true
+  })), /*#__PURE__*/React.createElement("label", {
+    className: "gt-contact-card__field"
+  }, /*#__PURE__*/React.createElement("span", null, "Message"), /*#__PURE__*/React.createElement("textarea", {
+    name: "message",
+    rows: 5,
+    placeholder: "How can we help?",
+    value: values.message,
+    onChange: set('message'),
+    required: true
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-contact-card__honeypot",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("label", null, "Website", /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    name: "website",
+    tabIndex: -1,
+    autoComplete: "off",
+    defaultValue: ""
+  }))), /*#__PURE__*/React.createElement("button", {
+    type: "submit",
+    className: "gt-contact-card__submit",
+    disabled: sending
+  }, sending ? 'Sending…' : 'Send message'), status === 'success' && /*#__PURE__*/React.createElement("p", {
+    className: "gt-contact-card__status gt-contact-card__status--success",
+    role: "status"
+  }, "Thanks! Your message is on its way, we'll be in touch soon."), status === 'error' && /*#__PURE__*/React.createElement("p", {
+    className: "gt-contact-card__status gt-contact-card__status--error",
+    role: "alert"
+  }, "Something went wrong sending your message. Please try again.")));
+}
+Object.assign(__ds_scope, { ContactCard });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/ContactCard.jsx", error: String((e && e.message) || e) }); }
+
+// components/marketing/FeatureColumn.jsx
+try { (() => {
+/** Solutions feature column: 44px icon tile, title, description. */
+function FeatureColumn({
+  icon,
+  title,
+  children,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-feature-col', className].filter(Boolean).join(' ')
+  }, icon && /*#__PURE__*/React.createElement("span", {
+    className: "gt-feature-col__icon",
+    "aria-hidden": "true"
+  }, icon), /*#__PURE__*/React.createElement("h3", {
+    className: "gt-feature-col__title"
+  }, title), /*#__PURE__*/React.createElement("p", {
+    className: "gt-feature-col__desc"
+  }, children));
+}
+
+/** Browser-chrome frame for the product screenshot (masked crop from the top). */
+function PreviewWindow({
+  src,
+  alt = 'grepthink app preview',
+  unmasked = false,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "gt-preview-panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: ['gt-preview-window', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-preview-window__chrome",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("span", null), /*#__PURE__*/React.createElement("span", null), /*#__PURE__*/React.createElement("span", null)), /*#__PURE__*/React.createElement("div", {
+    className: ['gt-preview-window__body', unmasked ? 'gt-preview-window__body--unmasked' : ''].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("img", {
+    src: src,
+    alt: alt,
+    className: "gt-preview-window__img"
+  }))));
+}
+Object.assign(__ds_scope, { FeatureColumn, PreviewWindow });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/FeatureColumn.jsx", error: String((e && e.message) || e) }); }
+
+// components/marketing/FloatCard.jsx
+try { (() => {
+// One palette everywhere: the hero's decorative avatars use the product's
+// AVATAR_COLORS (green, blue-600, amber-700, purple) — no marketing-only hues.
+const DEFAULT_TEAM = [{
+  initials: 'AP',
+  color: __ds_scope.AVATAR_COLORS[0]
+}, {
+  initials: 'JF',
+  color: __ds_scope.AVATAR_COLORS[1]
+}, {
+  initials: 'RK',
+  color: __ds_scope.AVATAR_COLORS[2]
+}, {
+  initials: 'MS',
+  color: __ds_scope.AVATAR_COLORS[3]
+}];
+const DEFAULT_ROLES = ['Lead', 'Frontend', 'Backend', 'Design'];
+const DEFAULT_MILESTONES = [{
+  name: 'Design review',
+  pct: 72
+}, {
+  name: 'API integration',
+  pct: 45
+}];
+const DEFAULT_TEAMS = [{
+  label: 'ShoeShopper',
+  count: 8,
+  color: __ds_scope.AVATAR_COLORS[0]
+}, {
+  label: 'Chatcut',
+  count: 6,
+  color: __ds_scope.AVATAR_COLORS[1]
+}, {
+  label: 'Anylog',
+  count: 7,
+  color: __ds_scope.AVATAR_COLORS[2]
+}];
+
+/**
+ * One decorative product-mock card that floats around the hero.
+ * kind: 'team' | 'tasks' | 'tsr' | 'roster'. Purely visual, aria-hidden by
+ * the parent layer. `inline` drops the absolute placement (galleries).
+ */
+function FloatCard({
+  kind = 'team',
+  title,
+  meta,
+  team = DEFAULT_TEAM,
+  roles = DEFAULT_ROLES,
+  milestones = DEFAULT_MILESTONES,
+  submitted = 8,
+  total = 12,
+  caption = 'reports submitted',
+  teams = DEFAULT_TEAMS,
+  inline = false,
+  still = false,
+  className = ''
+}) {
+  const cls = ['gt-float-card', `gt-float-card--${kind}`, inline ? 'gt-float-card--inline' : '', still ? 'gt-float-card--still' : '', className].filter(Boolean).join(' ');
+  if (kind === 'tasks') {
+    return /*#__PURE__*/React.createElement("div", {
+      className: cls
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-float-card__head"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-float-card__title"
+    }, title ?? 'Milestones'), /*#__PURE__*/React.createElement("span", {
+      className: "gt-float-card__meta"
+    }, meta ?? 'This sprint')), /*#__PURE__*/React.createElement("ul", {
+      className: "gt-float-card__bars"
+    }, milestones.map(m => /*#__PURE__*/React.createElement("li", {
+      key: m.name
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-float-card__bar-top"
+    }, /*#__PURE__*/React.createElement("span", null, m.name), /*#__PURE__*/React.createElement("strong", null, m.pct, "%")), /*#__PURE__*/React.createElement("div", {
+      className: "gt-float-card__bar-track"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-float-card__bar-fill",
+      style: {
+        width: `${m.pct}%`
+      }
+    }))))));
+  }
+  if (kind === 'tsr') {
+    const radius = 26;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference * (1 - (total ? submitted / total : 0));
+    return /*#__PURE__*/React.createElement("div", {
+      className: cls
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-float-card__title"
+    }, title ?? "This week's TSR"), /*#__PURE__*/React.createElement("div", {
+      className: "gt-float-card__ring"
+    }, /*#__PURE__*/React.createElement("svg", {
+      width: "84",
+      height: "84",
+      viewBox: "0 0 84 84"
+    }, /*#__PURE__*/React.createElement("circle", {
+      cx: "42",
+      cy: "42",
+      r: radius,
+      className: "gt-float-card__ring-track"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: "42",
+      cy: "42",
+      r: radius,
+      className: "gt-float-card__ring-value",
+      strokeDasharray: circumference,
+      strokeDashoffset: offset,
+      transform: "rotate(-90 42 42)"
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "gt-float-card__ring-center"
+    }, /*#__PURE__*/React.createElement("strong", null, submitted), /*#__PURE__*/React.createElement("span", null, "/ ", total))), /*#__PURE__*/React.createElement("span", {
+      className: "gt-float-card__caption"
+    }, caption));
+  }
+  if (kind === 'roster') {
+    const students = teams.reduce((s, t) => s + t.count, 0);
+    return /*#__PURE__*/React.createElement("div", {
+      className: cls
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-float-card__head"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-float-card__title"
+    }, title ?? 'Class Roster'), /*#__PURE__*/React.createElement("span", {
+      className: "gt-float-card__meta"
+    }, meta ?? `${students} students`)), /*#__PURE__*/React.createElement("ul", {
+      className: "gt-float-card__rows"
+    }, teams.map(t => /*#__PURE__*/React.createElement("li", {
+      key: t.label,
+      className: "gt-float-card__row"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-float-card__row-dot",
+      style: {
+        background: t.color
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "gt-float-card__row-text"
+    }, /*#__PURE__*/React.createElement("strong", null, t.label)), /*#__PURE__*/React.createElement("span", {
+      className: "gt-float-card__row-badge"
+    }, t.count, " students")))));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: cls
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-float-card__head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-float-card__title"
+  }, title ?? 'Project Team'), /*#__PURE__*/React.createElement("span", {
+    className: "gt-float-card__meta"
+  }, meta ?? `${team.length} members`)), /*#__PURE__*/React.createElement("div", {
+    className: "gt-float-card__avatars"
+  }, team.map(m => /*#__PURE__*/React.createElement("span", {
+    key: m.initials,
+    className: "gt-float-card__avatar",
+    style: {
+      background: m.color
+    }
+  }, m.initials))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-float-card__chips"
+  }, roles.map(r => /*#__PURE__*/React.createElement("span", {
+    key: r,
+    className: "gt-float-card__chip"
+  }, r))));
+}
+
+/**
+ * The hero's default arrangement: team (upper-left), tasks (lower-left),
+ * tsr (upper-right), roster (lower-right). Drop into <Hero decor={…}>.
+ */
+function FloatingCards({
+  still = false
+}) {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(FloatCard, {
+    kind: "team",
+    still: still
+  }), /*#__PURE__*/React.createElement(FloatCard, {
+    kind: "tasks",
+    still: still
+  }), /*#__PURE__*/React.createElement(FloatCard, {
+    kind: "tsr",
+    still: still
+  }), /*#__PURE__*/React.createElement(FloatCard, {
+    kind: "roster",
+    still: still
+  }));
+}
+Object.assign(__ds_scope, { FloatCard, FloatingCards });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/FloatCard.jsx", error: String((e && e.message) || e) }); }
+
+// components/marketing/Hero.jsx
+try { (() => {
+/**
+ * Landing hero: eyebrow OR announcement pill, two-line display title with
+ * gradient accent, lede, CTA + text sign-in, and a `decor` layer behind
+ * the copy. Halftone dots + green wash come from the CSS.
+ */
+function Hero({
+  eyebrow,
+  announcement = null,
+  title,
+  titleAccent,
+  subtitle,
+  ctaLabel = 'Get started',
+  ctaHref = '/select',
+  onCta,
+  signInLabel = 'Sign in',
+  signInHref = '/login',
+  onSignIn,
+  decor = null,
+  compact = false,
+  className = ''
+}) {
+  const CtaTag = onCta ? 'button' : 'a';
+  const SignTag = onSignIn ? 'button' : 'a';
+  return /*#__PURE__*/React.createElement("section", {
+    className: ['gt-hero', compact ? 'gt-hero--compact' : '', className].filter(Boolean).join(' ')
+  }, decor && /*#__PURE__*/React.createElement("div", {
+    className: "gt-hero__cards",
+    "aria-hidden": "true"
+  }, decor), /*#__PURE__*/React.createElement("div", {
+    className: "gt-hero__content"
+  }, announcement ? announcement : eyebrow ? /*#__PURE__*/React.createElement(__ds_scope.Eyebrow, null, eyebrow) : null, /*#__PURE__*/React.createElement("h1", {
+    className: "gt-hero__title"
+  }, title, titleAccent && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+    className: "gt-hero__title-accent"
+  }, titleAccent))), subtitle && /*#__PURE__*/React.createElement("p", {
+    className: "gt-hero__subtitle"
+  }, subtitle), /*#__PURE__*/React.createElement("div", {
+    className: "gt-hero__actions"
+  }, /*#__PURE__*/React.createElement(CtaTag, {
+    className: "gt-hero__cta",
+    href: onCta ? undefined : ctaHref,
+    onClick: onCta,
+    type: onCta ? 'button' : undefined
+  }, ctaLabel), /*#__PURE__*/React.createElement(SignTag, {
+    className: "gt-hero__signin",
+    href: onSignIn ? undefined : signInHref,
+    onClick: onSignIn,
+    type: onSignIn ? 'button' : undefined
+  }, signInLabel, " ", /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true"
+  }, "\u2192")))));
+}
+Object.assign(__ds_scope, { Hero });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/Hero.jsx", error: String((e && e.message) || e) }); }
+
+// components/marketing/LandingFooter.jsx
+try { (() => {
+const DEFAULT_COLUMNS = [{
+  title: 'Product',
+  links: [{
+    label: 'Get started',
+    href: '/select'
+  }, {
+    label: 'Solutions',
+    href: '#solutions'
+  }, {
+    label: 'Scrum board',
+    href: '#scrum-board'
+  }, {
+    label: 'Messaging',
+    href: '#messaging'
+  }, {
+    label: 'Project assistant',
+    href: '#project-assistant'
+  }]
+}, {
+  title: 'Account',
+  links: [{
+    label: 'Sign in',
+    href: '/login'
+  }, {
+    label: 'Create account',
+    href: '/select'
+  }]
+}, {
+  title: 'Company',
+  links: [{
+    label: 'Contact',
+    href: '/contact'
+  }]
+}];
+
+/** Dark landing footer: logo + tagline, link columns, legal bar. */
+function LandingFooter({
+  logoSrc,
+  tagline = 'Think in teams.',
+  columns = DEFAULT_COLUMNS,
+  year = new Date().getFullYear(),
+  compact = false,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("footer", {
+    className: ['gt-landing-footer', compact ? 'gt-landing-footer--compact' : '', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-landing-footer__inner"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-landing-footer__brand"
+  }, logoSrc ? /*#__PURE__*/React.createElement("img", {
+    src: logoSrc,
+    alt: "grepthink",
+    className: "gt-landing-footer__logo"
+  }) : /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#fff',
+      fontWeight: 700,
+      fontSize: 22,
+      marginBottom: 16
+    }
+  }, "grepthink"), /*#__PURE__*/React.createElement("p", {
+    className: "gt-landing-footer__tagline"
+  }, tagline)), /*#__PURE__*/React.createElement("nav", {
+    className: "gt-landing-footer__links",
+    "aria-label": "Footer"
+  }, columns.map(col => /*#__PURE__*/React.createElement("div", {
+    key: col.title,
+    className: "gt-landing-footer__col"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-landing-footer__col-title"
+  }, col.title), col.links.map(l => /*#__PURE__*/React.createElement("a", {
+    key: l.href + l.label,
+    href: l.href
+  }, l.label)))))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-landing-footer__bar"
+  }, /*#__PURE__*/React.createElement("span", null, "\xA9 ", year, " grepthink")));
+}
+Object.assign(__ds_scope, { LandingFooter });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/LandingFooter.jsx", error: String((e && e.message) || e) }); }
+
+// components/marketing/LandingHeader.jsx
+try { (() => {
+/**
+ * Public landing header (grepthink2.com). Full-width dark bar that morphs
+ * into a centered translucent pill once the page scrolls past 64px.
+ * Pass `scrolled` to control the morph, or leave it undefined to let the
+ * component track window scroll itself. `fixed={false}` renders in-flow
+ * (galleries, previews).
+ */
+function LandingHeader({
+  logoSrc,
+  homeHref = '/',
+  links = [{
+    label: 'Features',
+    href: '#scrum-board'
+  }, {
+    label: 'Contact',
+    href: '/contact'
+  }],
+  signInHref = '/login',
+  signInLabel = 'Sign in',
+  ctaHref = '/select',
+  ctaLabel = 'Get started',
+  scrolled,
+  fixed = true,
+  scrollThreshold = 64,
+  className = ''
+}) {
+  const [autoScrolled, setAutoScrolled] = React.useState(false);
+  const controlled = typeof scrolled === 'boolean';
+  React.useEffect(() => {
+    if (controlled || !fixed) return undefined;
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        setAutoScrolled(window.scrollY > scrollThreshold);
+        frame = 0;
+      });
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, {
+      passive: true
+    });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [controlled, fixed, scrollThreshold]);
+  const isScrolled = controlled ? scrolled : autoScrolled;
+  const cls = ['gt-landing-header', isScrolled ? 'gt-landing-header--scrolled' : '', fixed ? '' : 'gt-landing-header--static', className].filter(Boolean).join(' ');
+  return /*#__PURE__*/React.createElement("header", {
+    className: cls
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-landing-header__inner"
+  }, /*#__PURE__*/React.createElement("a", {
+    href: homeHref,
+    className: "gt-landing-header__logo",
+    "aria-label": "grepthink home"
+  }, logoSrc ? /*#__PURE__*/React.createElement("img", {
+    src: logoSrc,
+    alt: "grepthink"
+  }) : /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#fff',
+      fontWeight: 700,
+      fontSize: 18,
+      letterSpacing: '0.02em'
+    }
+  }, "grepthink")), /*#__PURE__*/React.createElement("nav", {
+    className: "gt-landing-header__nav",
+    "aria-label": "Primary"
+  }, links.map(l => /*#__PURE__*/React.createElement("a", {
+    key: l.href,
+    href: l.href,
+    className: "gt-landing-header__link"
+  }, l.label)), /*#__PURE__*/React.createElement("a", {
+    href: signInHref,
+    className: "gt-landing-header__btn gt-landing-header__btn--ghost"
+  }, signInLabel), /*#__PURE__*/React.createElement("a", {
+    href: ctaHref,
+    className: "gt-landing-header__btn gt-landing-header__btn--primary"
+  }, ctaLabel))));
+}
+Object.assign(__ds_scope, { LandingHeader });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/LandingHeader.jsx", error: String((e && e.message) || e) }); }
+
+// components/marketing/Spotlight.jsx
+try { (() => {
+/**
+ * Spotlight band: one full-width feature section. Text (eyebrow with
+ * badge, heading with gradient accent, lead, bullets, optional staff note
+ * and link) on one side, a decorative Stage on the other. `side` says
+ * where the stage sits; bands alternate. `reveal` drives the once-per-view
+ * entrance ('idle' → 'seen' → 'settled'); omit it for static rendering.
+ */
+function Spotlight({
+  id,
+  eyebrow,
+  badge,
+  tone = 'green',
+  heading,
+  headingAccent,
+  lead,
+  bullets = [],
+  note,
+  link,
+  side = 'right',
+  alt = false,
+  hairline = false,
+  reveal,
+  children,
+  className = ''
+}) {
+  const headingId = id ? `${id}-heading` : undefined;
+  return /*#__PURE__*/React.createElement("section", {
+    id: id,
+    "aria-labelledby": headingId,
+    "data-reveal": reveal || undefined,
+    className: ['gt-spotlight', alt ? 'gt-spotlight--alt' : '', hairline ? 'gt-spotlight--hairline' : '', side === 'left' ? 'gt-spotlight--stage-left' : '', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-spotlight__inner"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-spotlight__text"
+  }, eyebrow && /*#__PURE__*/React.createElement(__ds_scope.Eyebrow, {
+    badge: badge,
+    tone: tone
+  }, eyebrow), /*#__PURE__*/React.createElement("h2", {
+    className: "gt-spotlight__heading",
+    id: headingId
+  }, heading, headingAccent && /*#__PURE__*/React.createElement(React.Fragment, null, " ", /*#__PURE__*/React.createElement("span", {
+    className: "gt-mkt-accent"
+  }, headingAccent))), lead && /*#__PURE__*/React.createElement("p", {
+    className: "gt-spotlight__lead"
+  }, lead), bullets.length > 0 && /*#__PURE__*/React.createElement("ul", {
+    className: "gt-spotlight__bullets"
+  }, bullets.map((b, i) => /*#__PURE__*/React.createElement("li", {
+    key: i,
+    className: "gt-spotlight__bullet"
+  }, b.icon && /*#__PURE__*/React.createElement("span", {
+    className: "gt-spotlight__bullet-icon",
+    "aria-hidden": "true"
+  }, b.icon), /*#__PURE__*/React.createElement("span", null, b.text ?? b)))), note && /*#__PURE__*/React.createElement("div", {
+    className: "gt-spotlight__note"
+  }, note.title && /*#__PURE__*/React.createElement("strong", {
+    className: "gt-spotlight__note-title"
+  }, note.title), /*#__PURE__*/React.createElement("p", null, note.text)), link && /*#__PURE__*/React.createElement("a", {
+    className: "gt-spotlight__link",
+    href: link.href
+  }, link.label, " ", /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true"
+  }, "\u2192"))), children));
+}
+Object.assign(__ds_scope, { Spotlight });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/Spotlight.jsx", error: String((e && e.message) || e) }); }
+
+// components/marketing/StageCard.jsx
+try { (() => {
+/**
+ * Floating-card shell for spotlight-band stages: white, 20px radius,
+ * two-layer shadow, a tilt (−3°…+3°) and a slow float (8–10s). Position
+ * it with `style` inside a <Stage>. `order` drives the reveal stagger
+ * (80ms apart). `pill` = pill-shaped chip shell. `mobile` marks the one
+ * card that survives below 768px (untilted, still).
+ */
+function StageCard({
+  tilt = 0,
+  floatY = -9,
+  floatDur = 9,
+  floatDelay = 0,
+  order = 0,
+  pill = false,
+  still = false,
+  inline = false,
+  mobile = false,
+  tabletHide = false,
+  title,
+  meta,
+  children,
+  style,
+  className = ''
+}) {
+  const vars = {
+    '--tilt': `${tilt}deg`,
+    '--float-y': `${floatY}px`,
+    '--float-dur': `${floatDur}s`,
+    '--float-delay': `${floatDelay}s`,
+    '--i': order,
+    ...style
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-stage-card', pill ? 'gt-stage-card--pill' : '', still ? 'gt-stage-card--still' : '', inline ? 'gt-stage-card--inline' : '', mobile ? 'gt-stage-card--mobile' : '', tabletHide ? 'gt-stage-card--tablet-hide' : '', className].filter(Boolean).join(' '),
+    style: vars
+  }, (title || meta) && /*#__PURE__*/React.createElement("div", {
+    className: "gt-stage-card__head"
+  }, title && /*#__PURE__*/React.createElement("span", {
+    className: "gt-stage-card__title"
+  }, title), meta && /*#__PURE__*/React.createElement("span", {
+    className: "gt-stage-card__meta"
+  }, meta)), children);
+}
+
+/**
+ * Stage backdrop for a band: green-tinted with a masked dot grid for live
+ * features, or the outlined flat "preview" for coming-soon ones (adds a
+ * PREVIEW tag). Children are StageCards. Always aria-hidden — the band
+ * text is the real content.
+ */
+function Stage({
+  variant = 'live',
+  mirror = false,
+  paused = false,
+  tag = 'PREVIEW',
+  children,
+  className = '',
+  style
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-stage', variant === 'preview' ? 'gt-stage--preview' : '', mirror ? 'gt-stage--mirror' : '', paused ? 'gt-stage--paused' : '', className].filter(Boolean).join(' '),
+    "aria-hidden": "true",
+    style: style
+  }, variant === 'preview' && /*#__PURE__*/React.createElement("span", {
+    className: "gt-stage__tag"
+  }, tag), children);
+}
+Object.assign(__ds_scope, { StageCard, Stage });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/StageCard.jsx", error: String((e && e.message) || e) }); }
+
 // components/navigation/Pagination.jsx
 try { (() => {
 /**
@@ -10617,6 +11764,895 @@ function ScrumBoard({
 Object.assign(__ds_scope, { BOARD_COLUMNS, ScrumBoard });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/scrum/ScrumBoard.jsx", error: String((e && e.message) || e) }); }
 
+// ui_kits/grepthink-landing/Landing.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/* grepthink2.com — full landing page composed from components/marketing + the stages. */
+const NS2 = window.GrepThinkDesignSystem_36e7e3;
+const {
+  LandingHeader,
+  Hero,
+  FloatingCards,
+  AnnouncementPill,
+  FeatureColumn,
+  PreviewWindow,
+  Spotlight,
+  ClosingBand,
+  LandingFooter
+} = NS2;
+const {
+  ScrumStage,
+  MessagingStage,
+  AssistantStage
+} = window;
+const LOGO = '../../assets/grepthink-logo.svg';
+const PREVIEW = '../../assets/landing/landing-preview.png';
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Launch settings — mirrors landing.config.ts */
+const CONFIG = {
+  announcement: true,
+  badges: {
+    scrum: 'NEW',
+    messaging: 'NEW',
+    assistant: 'SOON'
+  }
+};
+const L = ({
+  d,
+  size = 17
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, d.split('|').map((p, i) => /*#__PURE__*/React.createElement("path", {
+  key: i,
+  d: p
+})));
+const ICONS = {
+  move: 'M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20',
+  scale: 'M4 9h16M4 15h16M10 3L8 21M16 3l-2 18',
+  branch: 'M6 9v6a3 3 0 003 3h6M18 15V9|M18 21a3 3 0 100-6 3 3 0 000 6z|M6 9a3 3 0 100-6 3 3 0 000 6z',
+  trend: 'M22 7l-8.5 8.5-5-5L2 17|M16 7h6v6',
+  users: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2|M9 11a4 4 0 100-8 4 4 0 000 8z|M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75',
+  chat: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
+  link: 'M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5',
+  bell: 'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0',
+  clock: 'M12 22a10 10 0 100-20 10 10 0 000 20z|M12 6v6l4 2',
+  check: 'M20 6L9 17l-5-5',
+  users20: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2|M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z|M22 21v-2a4 4 0 0 0-3-3.87|M16 3.13a4 4 0 0 1 0 7.75',
+  listchecks: 'm3 17 2 2 4-4|m3 7 2 2 4-4|M13 6h8|M13 12h8|M13 18h8',
+  clipboard: 'M8 2h8a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z|M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2|M12 11h4|M12 16h4|M8 11h.01|M8 16h.01'
+};
+
+/* IntersectionObserver: `seen` latches once at `threshold`; `visible` tracks live. */
+function useInView(ref, threshold) {
+  const [seen, setSeen] = React.useState(REDUCED);
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el || REDUCED || !('IntersectionObserver' in window)) {
+      setSeen(true);
+      setVisible(true);
+      return undefined;
+    }
+    const io = new IntersectionObserver(([e]) => {
+      setVisible(e.isIntersecting);
+      if (e.intersectionRatio >= threshold) setSeen(true);
+    }, {
+      threshold: [0, threshold]
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, threshold]);
+  return {
+    seen,
+    visible
+  };
+}
+
+/* One band: reveal (30%) → settle → moment (50%, +0.4s, once). */
+function Band({
+  children,
+  renderStage,
+  ...spot
+}) {
+  const ref = React.useRef(null);
+  const reveal = useInView(ref, 0.3);
+  const moment = useInView(ref, 0.5);
+  const [phase, setPhase] = React.useState(REDUCED ? 'settled' : 'idle');
+  const [play, setPlay] = React.useState(REDUCED);
+  React.useEffect(() => {
+    if (reveal.seen && phase === 'idle') {
+      setPhase('seen');
+      const t = setTimeout(() => setPhase('settled'), 700);
+      return () => clearTimeout(t);
+    }
+  }, [reveal.seen, phase]);
+  React.useEffect(() => {
+    if (moment.seen && phase === 'settled' && !play) {
+      const t = setTimeout(() => setPlay(true), 400);
+      return () => clearTimeout(t);
+    }
+  }, [moment.seen, phase, play]);
+  return /*#__PURE__*/React.createElement("div", {
+    ref: ref
+  }, /*#__PURE__*/React.createElement(Spotlight, _extends({
+    reveal: phase
+  }, spot), renderStage({
+    play,
+    paused: !reveal.visible
+  })));
+}
+function LandingPage() {
+  const [approved, setApproved] = React.useState(REDUCED);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "lk-page"
+  }, /*#__PURE__*/React.createElement(LandingHeader, {
+    logoSrc: LOGO,
+    homeHref: "#",
+    ctaHref: "#",
+    signInHref: "#",
+    links: [{
+      label: 'Features',
+      href: '#scrum-board'
+    }, {
+      label: 'Contact',
+      href: 'contact.html'
+    }]
+  }), /*#__PURE__*/React.createElement("main", null, /*#__PURE__*/React.createElement(Hero, {
+    announcement: CONFIG.announcement ? /*#__PURE__*/React.createElement(AnnouncementPill, {
+      href: "#scrum-board",
+      badge: "NEW",
+      ariaLabel: "New: scrum boards and team channels. Jump to the scrum board section"
+    }, "Scrum boards and team channels") : null,
+    eyebrow: CONFIG.announcement ? null : 'For instructors and student teams',
+    title: "Build better project teams,",
+    titleAccent: "all in one place",
+    subtitle: CONFIG.announcement ? 'grepthink helps instructors and student teams form balanced teams, track weekly progress, and keep everyone accountable without the spreadsheet chaos.' : 'grepthink helps classes form balanced teams, track weekly progress, and keep everyone accountable without the spreadsheet chaos.',
+    ctaHref: "#",
+    signInHref: "#",
+    decor: /*#__PURE__*/React.createElement(FloatingCards, null)
+  }), /*#__PURE__*/React.createElement("section", {
+    className: "gt-solutions",
+    id: "solutions"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-solutions__inner"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "gt-solutions__heading"
+  }, "Everything your class needs"), /*#__PURE__*/React.createElement("p", {
+    className: "gt-solutions__sub"
+  }, "From the first roster to the final demo, grepthink keeps team projects organized and accountable."), /*#__PURE__*/React.createElement("div", {
+    className: "gt-solutions__columns"
+  }, /*#__PURE__*/React.createElement(FeatureColumn, {
+    icon: /*#__PURE__*/React.createElement(L, {
+      d: ICONS.users20,
+      size: 20
+    }),
+    title: "Smart team formation"
+  }, "Balance teams by interests and skills, so no group is stacked and no student is stranded."), /*#__PURE__*/React.createElement(FeatureColumn, {
+    icon: /*#__PURE__*/React.createElement(L, {
+      d: ICONS.listchecks,
+      size: 20
+    }),
+    title: "Rosters & assignments"
+  }, "Manage enrollment, projects, and coursework from one place, no more juggling spreadsheets."), /*#__PURE__*/React.createElement(FeatureColumn, {
+    icon: /*#__PURE__*/React.createElement(L, {
+      d: ICONS.clipboard,
+      size: 20
+    }),
+    title: "Weekly status reports"
+  }, "Students log progress each week with TSRs; instructors see exactly who is on track at a glance.")), /*#__PURE__*/React.createElement(PreviewWindow, {
+    src: PREVIEW,
+    alt: "grepthink app preview \u2014 the scrum board for Sprint 3"
+  }))), /*#__PURE__*/React.createElement(Band, {
+    id: "scrum-board",
+    eyebrow: "Scrum board",
+    badge: CONFIG.badges.scrum,
+    heading: "Run every sprint from",
+    headingAccent: "one board",
+    lead: "Break your project into sprints, user stories and tasks. Drag work across the board, estimate it in points, and link each task to its pull request. Every move is logged, so your TA sees progress as it happens.",
+    bullets: [{
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.move
+      }),
+      text: 'Drag-and-drop board with a history of every move'
+    }, {
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.scale
+      }),
+      text: "Story points and time estimates, on your team's own scale"
+    }, {
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.branch
+      }),
+      text: 'Tasks linked to GitHub and git.ucsc.edu pull requests'
+    }, {
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.trend
+      }),
+      text: 'Burnup charts for each sprint and the whole project'
+    }],
+    side: "right",
+    hairline: true,
+    renderStage: ({
+      play
+    }) => /*#__PURE__*/React.createElement(ScrumStage, {
+      play: play
+    })
+  }), /*#__PURE__*/React.createElement(Band, {
+    id: "messaging",
+    eyebrow: "Messaging",
+    badge: CONFIG.badges.messaging,
+    heading: "One inbox for your team and",
+    headingAccent: "course staff",
+    lead: "Every project gets three channels: one for the team, one with your TA and one with your instructor. Direct messages cover everything else. Messages and notifications arrive live, with unread counts wherever you are in the app.",
+    bullets: [{
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.users
+      }),
+      text: 'Team, TA and Instructor channels for every project'
+    }, {
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.chat
+      }),
+      text: 'Direct messages with classmates and course staff'
+    }, {
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.link
+      }),
+      text: "Channels follow the roster: join a team and you're in"
+    }, {
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.bell
+      }),
+      text: 'Live notifications for messages, join requests and team changes'
+    }],
+    side: "left",
+    alt: true,
+    renderStage: ({
+      play
+    }) => /*#__PURE__*/React.createElement(MessagingStage, {
+      play: play
+    })
+  }), /*#__PURE__*/React.createElement(Band, {
+    id: "project-assistant",
+    eyebrow: "Project assistant",
+    badge: CONFIG.badges.assistant,
+    tone: "amber",
+    heading: "A board that keeps up with",
+    headingAccent: "your code",
+    lead: "The assistant will read your pull requests and commits and suggest the board updates they imply: move a task to Done when its PR merges, flag work that has stalled, link PRs that aren't on the board. Nothing changes until someone on the team approves it.",
+    bullets: [{
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.branch
+      }),
+      text: 'Suggests board moves from merged PRs and commits'
+    }, {
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.clock
+      }),
+      text: 'Flags stalled tasks and PRs with no task'
+    }, {
+      icon: /*#__PURE__*/React.createElement(L, {
+        d: ICONS.check
+      }),
+      text: 'Proposes changes, never makes them on its own'
+    }],
+    note: {
+      title: 'For TAs and instructors',
+      text: "Each week it compares status reports with the tasks and PRs each student actually closed, and points out where they don't line up, so reviews start from evidence."
+    },
+    link: {
+      label: 'Want early access? Get in touch',
+      href: 'contact.html'
+    },
+    side: "right",
+    renderStage: ({
+      play
+    }) => /*#__PURE__*/React.createElement(AssistantMoment, {
+      play: play,
+      approved: approved,
+      setApproved: setApproved
+    })
+  }), /*#__PURE__*/React.createElement(ClosingBand, {
+    text: "Create a class and import your roster. Every team gets a scrum board and its own channels from day one.",
+    ctaHref: "#",
+    secondaryHref: "contact.html"
+  })), /*#__PURE__*/React.createElement(LandingFooter, {
+    logoSrc: LOGO,
+    columns: [{
+      title: 'Product',
+      links: [{
+        label: 'Get started',
+        href: '#'
+      }, {
+        label: 'Solutions',
+        href: '#solutions'
+      }, {
+        label: 'Scrum board',
+        href: '#scrum-board'
+      }, {
+        label: 'Messaging',
+        href: '#messaging'
+      }, {
+        label: 'Project assistant',
+        href: '#project-assistant'
+      }]
+    }, {
+      title: 'Account',
+      links: [{
+        label: 'Sign in',
+        href: '#'
+      }, {
+        label: 'Create account',
+        href: '#'
+      }]
+    }, {
+      title: 'Company',
+      links: [{
+        label: 'Contact',
+        href: 'contact.html'
+      }]
+    }]
+  }));
+}
+
+/* The assistant moment: Approve "presses" at 0.8s, the card collapses at 1.3s. */
+function AssistantMoment({
+  play,
+  approved,
+  setApproved
+}) {
+  React.useEffect(() => {
+    if (play && !approved) {
+      const t = setTimeout(() => setApproved(true), 1300);
+      return () => clearTimeout(t);
+    }
+  }, [play, approved]);
+  return /*#__PURE__*/React.createElement(AssistantStage, {
+    play: play,
+    approved: approved
+  });
+}
+ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(LandingPage, null));
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink-landing/Landing.jsx", error: String((e && e.message) || e) }); }
+
+// ui_kits/grepthink-landing/Stages.jsx
+try { (() => {
+/* Decorative stage compositions for the three spotlight bands (grepthink2.com).
+   Static, fictional, aria-hidden by <Stage>. They wrap design-system anatomy
+   (TagBadge, PointsChip, EstimateChip, PRLinkChip, UserPair, TypingIndicator,
+   assistant cards) in StageCard shells. `play` fires each band's one moment. */
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const {
+  Stage,
+  StageCard,
+  TagBadge,
+  PointsChip,
+  EstimateChip,
+  PRLinkChip,
+  UserPair,
+  TypingIndicator,
+  AssistantSuggestionCard,
+  StalledFlag,
+  ReportCheckCard,
+  UnlinkedPRChip,
+  AVATAR_COLORS
+} = NS;
+const Icon = ({
+  d,
+  size = 11,
+  sw = 2.5
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: sw,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: d
+}));
+const CHAT = 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z';
+const HISTORY = 'M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3';
+const SEND = 'M22 2L11 13M22 2l-7 20-4-9-9-4z';
+const MiniRow = ({
+  k,
+  pts,
+  title,
+  className = ''
+}) => /*#__PURE__*/React.createElement("div", {
+  className: `lk-row ${className}`
+}, /*#__PURE__*/React.createElement("div", {
+  className: "lk-row__k"
+}, k, /*#__PURE__*/React.createElement("b", null, pts)), /*#__PURE__*/React.createElement("div", {
+  className: "lk-row__t"
+}, title));
+
+/* ── Band 1 · Scrum board ─────────────────────────────────── */
+function ScrumStage({
+  play,
+  done
+}) {
+  return /*#__PURE__*/React.createElement(Stage, {
+    className: play ? 'is-playing' : '',
+    "data-done": done || undefined
+  }, /*#__PURE__*/React.createElement(StageCard, {
+    tilt: -2,
+    floatY: -10,
+    floatDur: 8,
+    order: 0,
+    title: "Sprint 3",
+    meta: "4 days left",
+    style: {
+      left: 18,
+      top: 34,
+      width: 360,
+      zIndex: 2
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-cols"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-col"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-col__h"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-dot",
+    style: {
+      background: 'var(--gt-gray-400)'
+    }
+  }), "TODO", /*#__PURE__*/React.createElement("span", {
+    className: "lk-col__n"
+  }, "2")), /*#__PURE__*/React.createElement(MiniRow, {
+    k: "GT-15",
+    pts: 2,
+    title: "Invite flow copy"
+  }), /*#__PURE__*/React.createElement(MiniRow, {
+    k: "GT-16",
+    pts: 5,
+    title: "Export grades CSV"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "lk-col"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-col__h"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-dot",
+    style: {
+      background: 'var(--gt-accent)'
+    }
+  }), "In Progress", /*#__PURE__*/React.createElement("span", {
+    className: "lk-col__n"
+  }, "2")), /*#__PURE__*/React.createElement("div", {
+    className: "lk-spacer"
+  }), /*#__PURE__*/React.createElement(MiniRow, {
+    k: "GT-9",
+    pts: 3,
+    title: "Attendance tab"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "lk-col"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-col__h"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-dot",
+    style: {
+      background: 'var(--gt-primary)'
+    }
+  }), "Done", /*#__PURE__*/React.createElement("span", {
+    className: "lk-col__n lk-count"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-count__a"
+  }, "3"), /*#__PURE__*/React.createElement("span", {
+    className: "lk-count__b"
+  }, "4"), "\xA0")), /*#__PURE__*/React.createElement("div", {
+    className: "lk-spacer"
+  }), /*#__PURE__*/React.createElement(MiniRow, {
+    k: "GT-7",
+    pts: 2,
+    title: "Login page"
+  }), /*#__PURE__*/React.createElement(MiniRow, {
+    k: "GT-8",
+    pts: 3,
+    title: "Team channels"
+  })), /*#__PURE__*/React.createElement(MiniRow, {
+    k: "GT-12",
+    pts: 3,
+    title: "Roster API",
+    className: "lk-mover"
+  }))), /*#__PURE__*/React.createElement(StageCard, {
+    tilt: 3,
+    floatY: 9,
+    floatDur: 9,
+    order: 1,
+    mobile: true,
+    style: {
+      right: 14,
+      top: 196,
+      width: 262,
+      zIndex: 3
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-task__top"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-task__key"
+  }, "GT-12"), /*#__PURE__*/React.createElement("span", {
+    className: "lk-task__story"
+  }, "GT-4"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      marginLeft: 'auto'
+    }
+  }, /*#__PURE__*/React.createElement(EstimateChip, {
+    estimate: "6h"
+  })), /*#__PURE__*/React.createElement(PointsChip, {
+    points: 3,
+    size: "sm"
+  })), /*#__PURE__*/React.createElement("p", {
+    className: "lk-task__title"
+  }, "Connect the class roster API"), /*#__PURE__*/React.createElement("div", {
+    className: "lk-task__tags"
+  }, /*#__PURE__*/React.createElement(TagBadge, {
+    tag: "backend"
+  }), /*#__PURE__*/React.createElement(TagBadge, {
+    tag: "frontend"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "lk-task__foot"
+  }, /*#__PURE__*/React.createElement(UserPair, {
+    reporter: "Priya Shah",
+    assignee: "Jordan L."
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "lk-task__right"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-task__cm"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    d: CHAT
+  }), "4"), /*#__PURE__*/React.createElement(PRLinkChip, {
+    label: "#41 merged",
+    url: "#",
+    state: "merged"
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "lk-task__audit"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    d: HISTORY,
+    size: 10
+  }), "Moved to ", /*#__PURE__*/React.createElement("b", null, "Done"), " \xB7 Jordan \xB7 just now")), /*#__PURE__*/React.createElement(StageCard, {
+    tilt: -3,
+    floatY: -8,
+    floatDur: 9.5,
+    order: 2,
+    tabletHide: true,
+    title: "Sprint burnup",
+    meta: /*#__PURE__*/React.createElement("span", {
+      className: "lk-burn__stat"
+    }, /*#__PURE__*/React.createElement("strong", null, "18"), "/24 pts"),
+    style: {
+      left: 58,
+      bottom: 22,
+      width: 250,
+      zIndex: 1
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 200 86",
+    preserveAspectRatio: "none",
+    className: "lk-burn__svg"
+  }, /*#__PURE__*/React.createElement("line", {
+    x1: "0",
+    x2: "200",
+    y1: "21",
+    y2: "21",
+    stroke: "#f0f1f3"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "0",
+    x2: "200",
+    y1: "43",
+    y2: "43",
+    stroke: "#f0f1f3"
+  }), /*#__PURE__*/React.createElement("line", {
+    x1: "0",
+    x2: "200",
+    y1: "64",
+    y2: "64",
+    stroke: "#f0f1f3"
+  }), /*#__PURE__*/React.createElement("polygon", {
+    className: "lk-burn__area",
+    points: "0,86 0,78 33,70 66,58 100,44 133,36 166,28 166,86"
+  }), /*#__PURE__*/React.createElement("polyline", {
+    className: "lk-burn__scope",
+    points: "0,26 66,26 66,14 200,14"
+  }), /*#__PURE__*/React.createElement("polyline", {
+    className: "lk-burn__done",
+    points: "0,78 33,70 66,58 100,44 133,36 166,28"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "lk-burn__legend"
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("i", {
+    style: {
+      background: 'var(--gt-primary)'
+    }
+  }), "Completed"), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("i", {
+    style: {
+      background: 'var(--gt-mkt-muted)'
+    }
+  }), "Scope"))));
+}
+
+/* ── Band 2 · Messaging ───────────────────────────────────── */
+const Pill = ({
+  kind,
+  children
+}) => /*#__PURE__*/React.createElement("span", {
+  className: `lk-pill lk-pill--${kind}`
+}, children);
+const Av = ({
+  bg,
+  sq,
+  sm,
+  children
+}) => /*#__PURE__*/React.createElement("span", {
+  className: ['lk-av', sq ? 'lk-av--sq' : '', sm ? 'lk-av--sm' : ''].filter(Boolean).join(' '),
+  style: {
+    background: bg
+  }
+}, children);
+function MessagingStage({
+  play
+}) {
+  return /*#__PURE__*/React.createElement(Stage, {
+    mirror: true,
+    className: play ? 'is-playing' : ''
+  }, /*#__PURE__*/React.createElement(StageCard, {
+    tilt: -2,
+    floatY: -10,
+    floatDur: 8,
+    order: 0,
+    title: "Messages",
+    meta: "3 unread",
+    style: {
+      left: 24,
+      top: 40,
+      width: 318,
+      zIndex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv lk-conv--hl"
+  }, /*#__PURE__*/React.createElement(Av, {
+    bg: AVATAR_COLORS[0],
+    sq: true
+  }, "SS"), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__b"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__n"
+  }, "ShoeShopper ", /*#__PURE__*/React.createElement(Pill, {
+    kind: "team"
+  }, "Team")), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__p"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-swap-a"
+  }, "Standup moved to 3pm"), /*#__PURE__*/React.createElement("span", {
+    className: "lk-swap-b"
+  }, "Jordan: Merged, thanks!"))), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__r"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-conv__tm"
+  }, "2m"), /*#__PURE__*/React.createElement("span", {
+    className: "lk-ub"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-swap-a"
+  }, "2"), /*#__PURE__*/React.createElement("span", {
+    className: "lk-swap-b"
+  }, "3"), "\xA0"))), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv"
+  }, /*#__PURE__*/React.createElement(Av, {
+    bg: AVATAR_COLORS[1],
+    sq: true
+  }, "SS"), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__b"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__n"
+  }, "ShoeShopper ", /*#__PURE__*/React.createElement(Pill, {
+    kind: "ta"
+  }, "TA")), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__p"
+  }, "Great demo today, see notes")), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__r"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-conv__tm"
+  }, "1h"))), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv"
+  }, /*#__PURE__*/React.createElement(Av, {
+    bg: AVATAR_COLORS[2],
+    sq: true
+  }, "SS"), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__b"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__n"
+  }, "ShoeShopper ", /*#__PURE__*/React.createElement(Pill, {
+    kind: "ins"
+  }, "Instructor")), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__p"
+  }, "Final review slot confirmed")), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__r"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-conv__tm"
+  }, "Tue"))), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv"
+  }, /*#__PURE__*/React.createElement(Av, {
+    bg: AVATAR_COLORS[3]
+  }, "PS"), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__b"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__n"
+  }, "Priya Shah"), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__p"
+  }, "Can you look at my PR?")), /*#__PURE__*/React.createElement("div", {
+    className: "lk-conv__r"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lk-conv__tm"
+  }, "Mon")))), /*#__PURE__*/React.createElement(StageCard, {
+    tilt: 2.5,
+    floatY: 9,
+    floatDur: 9,
+    order: 1,
+    mobile: true,
+    title: /*#__PURE__*/React.createElement("span", null, "ShoeShopper ", /*#__PURE__*/React.createElement(Pill, {
+      kind: "team"
+    }, "Team")),
+    meta: "5 members",
+    style: {
+      right: 22,
+      top: 176,
+      width: 300,
+      zIndex: 2
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-msgs"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-mrow"
+  }, /*#__PURE__*/React.createElement(Av, {
+    bg: AVATAR_COLORS[3],
+    sm: true
+  }, "PS"), /*#__PURE__*/React.createElement("div", {
+    className: "lk-bub"
+  }, "Can someone review GT-12 before standup?", /*#__PURE__*/React.createElement("small", null, "Priya \xB7 10:02"))), /*#__PURE__*/React.createElement("div", {
+    className: "lk-mrow lk-mrow--me"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-bub lk-bub--me"
+  }, "On it. PR #41 is up.", /*#__PURE__*/React.createElement("small", null, "You \xB7 10:04"))), /*#__PURE__*/React.createElement("div", {
+    className: "lk-mrow lk-live"
+  }, /*#__PURE__*/React.createElement(Av, {
+    bg: AVATAR_COLORS[1],
+    sm: true
+  }, "JL"), /*#__PURE__*/React.createElement("div", {
+    className: "lk-slot"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "lk-typing"
+  }, /*#__PURE__*/React.createElement(TypingIndicator, {
+    tone: "soft",
+    label: "Jordan is typing"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "lk-bub lk-landed"
+  }, "Merged, thanks!", /*#__PURE__*/React.createElement("small", null, "Jordan \xB7 10:09"))))), /*#__PURE__*/React.createElement("div", {
+    className: "lk-comp"
+  }, "Message the team\u2026", /*#__PURE__*/React.createElement("b", null, /*#__PURE__*/React.createElement(Icon, {
+    d: SEND,
+    size: 12
+  })))));
+}
+
+/* ── Band 3 · Project assistant (preview) ─────────────────── */
+function AssistantStage({
+  play,
+  approved
+}) {
+  const evidence = /*#__PURE__*/React.createElement(React.Fragment, null, "PR ", /*#__PURE__*/React.createElement("b", null, "#41"), " was merged into main.");
+  return /*#__PURE__*/React.createElement(Stage, {
+    variant: "preview",
+    className: play ? 'is-playing' : ''
+  }, /*#__PURE__*/React.createElement(StageCard, {
+    tilt: 3,
+    floatY: 9,
+    floatDur: 9,
+    order: 1,
+    style: {
+      right: 20,
+      top: 20,
+      width: 226,
+      zIndex: 1,
+      padding: 0
+    }
+  }, /*#__PURE__*/React.createElement(StalledFlag, {
+    surface: "landing",
+    taskKey: "GT-9",
+    title: "Attendance tab",
+    days: 6,
+    detail: "no commits",
+    assignee: "Sam",
+    style: {
+      boxShadow: 'none'
+    }
+  })), /*#__PURE__*/React.createElement(StageCard, {
+    tilt: -2,
+    floatY: -10,
+    floatDur: 8,
+    order: 0,
+    mobile: true,
+    className: approved ? '' : 'lk-press',
+    style: {
+      left: 22,
+      top: 112,
+      width: 296,
+      zIndex: 2,
+      padding: 0
+    }
+  }, /*#__PURE__*/React.createElement(AssistantSuggestionCard, {
+    surface: "landing",
+    state: approved ? 'approved' : 'pending',
+    evidence: evidence,
+    taskKey: "GT-12",
+    taskTitle: "Connect the class roster API",
+    target: "Done",
+    approvedBy: "you",
+    style: {
+      boxShadow: 'none'
+    }
+  })), /*#__PURE__*/React.createElement(StageCard, {
+    tilt: -2.5,
+    floatY: -8,
+    floatDur: 9.5,
+    order: 2,
+    tabletHide: true,
+    style: {
+      right: 18,
+      bottom: 30,
+      width: 272,
+      zIndex: 3,
+      padding: 0
+    }
+  }, /*#__PURE__*/React.createElement(ReportCheckCard, {
+    surface: "landing",
+    week: "Week 5",
+    project: "ShoeShopper",
+    rows: [{
+      kind: 'match',
+      text: '4 reports match closed work'
+    }, {
+      kind: 'review',
+      text: 'Alex: reports 35%, closed 1 of 6 tasks'
+    }],
+    style: {
+      boxShadow: 'none'
+    }
+  })), /*#__PURE__*/React.createElement(StageCard, {
+    pill: true,
+    tilt: 2,
+    floatY: 9,
+    floatDur: 10,
+    order: 3,
+    tabletHide: true,
+    style: {
+      left: 16,
+      bottom: 22,
+      zIndex: 4
+    }
+  }, /*#__PURE__*/React.createElement(UnlinkedPRChip, {
+    surface: "bare",
+    pr: "PR #44"
+  })));
+}
+Object.assign(window, {
+  ScrumStage,
+  MessagingStage,
+  AssistantStage
+});
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink-landing/Stages.jsx", error: String((e && e.message) || e) }); }
+
 // ui_kits/grepthink/App.jsx
 try { (() => {
 const {
@@ -11730,6 +13766,20 @@ window.GTKShell = {
 };
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/Shell.jsx", error: String((e && e.message) || e) }); }
 
+__ds_ns.AssistantIcon = __ds_scope.AssistantIcon;
+
+__ds_ns.AssistantMark = __ds_scope.AssistantMark;
+
+__ds_ns.AssistantSuggestionCard = __ds_scope.AssistantSuggestionCard;
+
+__ds_ns.ReportCheckCard = __ds_scope.ReportCheckCard;
+
+__ds_ns.StalledFlag = __ds_scope.StalledFlag;
+
+__ds_ns.UnlinkedPRChip = __ds_scope.UnlinkedPRChip;
+
+__ds_ns.AVATAR_COLORS = __ds_scope.AVATAR_COLORS;
+
 __ds_ns.Avatar = __ds_scope.Avatar;
 
 __ds_ns.AvatarGroup = __ds_scope.AvatarGroup;
@@ -11782,6 +13832,8 @@ __ds_ns.TeamMemberCard = __ds_scope.TeamMemberCard;
 
 __ds_ns.RoleSelect = __ds_scope.RoleSelect;
 
+__ds_ns.TypingIndicator = __ds_scope.TypingIndicator;
+
 __ds_ns.Alert = __ds_scope.Alert;
 
 __ds_ns.EmptyState = __ds_scope.EmptyState;
@@ -11833,6 +13885,36 @@ __ds_ns.Scrollbar = __ds_scope.Scrollbar;
 __ds_ns.Thumb = __ds_scope.Thumb;
 
 __ds_ns.ToggleSwitch = __ds_scope.ToggleSwitch;
+
+__ds_ns.AnnouncementPill = __ds_scope.AnnouncementPill;
+
+__ds_ns.ClosingBand = __ds_scope.ClosingBand;
+
+__ds_ns.ContactCard = __ds_scope.ContactCard;
+
+__ds_ns.Eyebrow = __ds_scope.Eyebrow;
+
+__ds_ns.MarketingBadge = __ds_scope.MarketingBadge;
+
+__ds_ns.FeatureColumn = __ds_scope.FeatureColumn;
+
+__ds_ns.PreviewWindow = __ds_scope.PreviewWindow;
+
+__ds_ns.FloatCard = __ds_scope.FloatCard;
+
+__ds_ns.FloatingCards = __ds_scope.FloatingCards;
+
+__ds_ns.Hero = __ds_scope.Hero;
+
+__ds_ns.LandingFooter = __ds_scope.LandingFooter;
+
+__ds_ns.LandingHeader = __ds_scope.LandingHeader;
+
+__ds_ns.Spotlight = __ds_scope.Spotlight;
+
+__ds_ns.StageCard = __ds_scope.StageCard;
+
+__ds_ns.Stage = __ds_scope.Stage;
 
 __ds_ns.Pagination = __ds_scope.Pagination;
 

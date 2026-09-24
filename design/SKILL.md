@@ -9,3 +9,5 @@ If creating visual artifacts (slides, mocks, throwaway prototypes, etc), copy as
 If the user invokes this skill without any other guidance, ask them what they want to build or design, ask some questions, and act as an expert designer who outputs HTML artifacts _or_ production code, depending on the need.
 
 Quick facts: brand green #018156 (hover #016547), accent blue #2771FF (links/focus only), canvas #EEEEEE, borders #DADADA, Poppins 400–700, radii 7/10/20, signature card shadow 0 0 2.61px rgba(0,0,0,.25), flat & calm (no gradients), focus = 2px accent-blue ring. Link `styles.css` for all tokens; components use BEM `gt-*` classes matching the grepthink2.0 codebase.
+
+Public site (grepthink2.com) is the one exception: `--gt-mkt-*` tokens + `components/marketing/` allow the heading gradient, floating tilted cards, dark #0c1f18 chrome and lift-on-hover — see readme "MARKETING SURFACE". Never use them inside the signed-in app.

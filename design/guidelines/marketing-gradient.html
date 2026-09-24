@@ -1,0 +1,20 @@
+<!-- @dsCard group="Marketing" viewport="700x200" name="Gradient, wash, dots & band backgrounds" subtitle="#018156 → #02a06b on heading accents only · hero radial tint · masked dot grid · white / #f8faf9 bands" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+body{margin:0;padding:16px;font-family:var(--gt-font-sans);color:var(--gt-gray-800);background:#fff;display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:12px}
+.sw{border-radius:10px;height:126px;position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px var(--gt-gray-200)}
+.sw small{position:absolute;left:10px;bottom:8px;font-size:9px;font-family:var(--gt-font-mono);color:var(--gt-gray-600);background:rgba(255,255,255,.85);padding:2px 6px;border-radius:4px}
+.hero{background:var(--gt-mkt-hero-wash),var(--gt-canvas);display:flex;align-items:center;justify-content:center}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,var(--gt-mkt-dot) 1.4px,transparent 1.6px);background-size:var(--gt-mkt-dot-size) var(--gt-mkt-dot-size);-webkit-mask-image:var(--gt-mkt-dot-mask);mask-image:var(--gt-mkt-dot-mask)}
+.hero b{position:relative;font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--gt-mkt-ink);text-align:center;line-height:1.1}
+.hero b span{background:var(--gt-mkt-accent-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stage{background:var(--gt-mkt-stage-tint),var(--gt-mkt-stage-bg)}
+.stage::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,var(--gt-mkt-stage-dot) 1.2px,transparent 1.5px);background-size:22px 22px;-webkit-mask-image:var(--gt-mkt-stage-dot-mask);mask-image:var(--gt-mkt-stage-dot-mask)}
+.bands{display:grid;grid-template-rows:1fr 1fr 1fr}
+.bands div{display:flex;align-items:center;padding:0 12px;font-size:10px;color:var(--gt-gray-600);font-family:var(--gt-font-mono)}
+.bands div+div{border-top:1px solid var(--gt-gray-100)}
+</style></head><body>
+<div class="sw hero"><b>one<br><span>board</span></b><small>accent: heading words only</small></div>
+<div class="sw stage"><small>stage: tint + dots, 22px</small></div>
+<div class="sw bands"><div style="background:#fff">band 1 · #FFFFFF (+hairline)</div><div style="background:var(--gt-mkt-band-alt-bg)">band 2 · #f8faf9</div><div style="background:#fff">band 3 · #FFFFFF</div></div>
+</body></html>

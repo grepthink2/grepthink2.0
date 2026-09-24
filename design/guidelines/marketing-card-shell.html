@@ -1,0 +1,16 @@
+<!-- @dsCard group="Marketing" viewport="700x210" name="Floating card shell" subtitle="White · 20px radius · two-layer navy shadow · tilt −3…+3° · float ±8–10px over 8–10s" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+body{margin:0;padding:18px 22px;font-family:var(--gt-font-sans);color:var(--gt-gray-800);background:var(--gt-mkt-stage-bg);display:flex;gap:26px;align-items:center}
+.c{background:#fff;border-radius:var(--gt-mkt-card-radius);box-shadow:var(--gt-mkt-shadow-card);padding:14px 16px;width:150px;height:96px;box-sizing:border-box;font-size:11px;color:var(--gt-gray-700);display:flex;flex-direction:column;justify-content:space-between}
+.c b{font-size:12.5px;color:var(--gt-mkt-ink);letter-spacing:-.01em}
+.c code{font-size:8.5px;color:var(--gt-gray-500);font-family:var(--gt-font-mono)}
+.spec{font-size:11px;line-height:1.7;color:var(--gt-gray-700);margin-left:auto;max-width:230px}
+.spec code{font-family:var(--gt-font-mono);font-size:10px;color:var(--gt-gray-600)}
+</style></head><body>
+<div class="c" style="rotate:-3deg"><b>−3°</b><code>rotate · min tilt</code></div>
+<div class="c" style="rotate:0deg;animation:f 9s ease-in-out infinite"><b>0° · floats</b><code>translate ±9px · 9s</code></div>
+<div class="c" style="rotate:3deg"><b>+3°</b><code>rotate · max tilt</code></div>
+<div class="spec"><code>--gt-mkt-card-radius 20px</code><br><code>--gt-mkt-shadow-card</code> 0 2px 6px .04 + 0 24px 48px −12px .18<br>Tilt via <code>rotate</code>, float via <code>translate</code> — they compose, so tilt survives the loop. Hero cards keep their legacy 22px.</div>
+<style>@keyframes f{0%,100%{translate:0 0}50%{translate:0 -9px}}@media(prefers-reduced-motion:reduce){.c{animation:none!important}}</style>
+</body></html>
