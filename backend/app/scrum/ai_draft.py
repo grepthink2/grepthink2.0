@@ -3,6 +3,7 @@
 Provider-agnostic: AI_BASE_URL/AI_API_KEY/AI_MODEL point at Cloudflare Workers AI by
 default (free tier, hard-capped), but Groq/Gemini/OpenRouter drop in unchanged.
 """
+
 from __future__ import annotations
 
 import json
@@ -35,11 +36,13 @@ def snap_points(value, allowed: list[int]):
     return min(allowed, key=lambda a: (abs(a - v), a))
 
 
-def request_draft(*, kind: str, prompt: str, scale_values: list[int],
-                  tags: tuple, story_context: str | None) -> dict:
+def request_draft(
+    *, kind: str, prompt: str, scale_values: list[int], tags: tuple, story_context: str | None
+) -> dict:
     """Call the LLM; return the parsed JSON dict. Raises httpx errors / ValueError."""
     system = SYSTEM_PROMPT.replace("{tags}", ", ".join(tags)).replace(
-        "{scale}", ", ".join(str(v) for v in scale_values))
+        "{scale}", ", ".join(str(v) for v in scale_values)
+    )
     user = f"kind={kind}\n"
     if story_context:
         user += f"story: {story_context}\n"
@@ -48,10 +51,16 @@ def request_draft(*, kind: str, prompt: str, scale_values: list[int],
         r = http.post(
             f"{settings.AI_BASE_URL.rstrip('/')}/chat/completions",
             headers={"Authorization": f"Bearer {settings.AI_API_KEY}"},
-            json={"model": settings.AI_MODEL, "temperature": 0.3, "max_tokens": 900,
-                  "response_format": {"type": "json_object"},
-                  "messages": [{"role": "system", "content": system},
-                               {"role": "user", "content": user}]},
+            json={
+                "model": settings.AI_MODEL,
+                "temperature": 0.3,
+                "max_tokens": 900,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+            },
         )
         r.raise_for_status()
         content = r.json()["choices"][0]["message"]["content"]

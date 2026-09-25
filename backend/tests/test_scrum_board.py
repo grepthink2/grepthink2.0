@@ -1,16 +1,28 @@
 """Board GET shape via TestClient with the controller mocked."""
+
 from unittest.mock import patch
 
 BOARD = {
     "project": {"id": "p1", "name": "GrepThink 2.0", "estimate_scale": "fibonacci"},
     "ai_enabled": False,
-    "sprints": [{"id": "s1", "name": "Sprint 1", "starts_at": "2026-08-10",
-                 "ends_at": "2026-08-23", "status": "active"}],
+    "sprints": [
+        {
+            "id": "s1",
+            "name": "Sprint 1",
+            "starts_at": "2026-08-10",
+            "ends_at": "2026-08-23",
+            "status": "active",
+        }
+    ],
     "sprint_id": "s1",
-    "stories": [], "backlog": [],
-    "burnup": {"sprint": {"labels": [], "scope": [], "completed": [], "subtitle": None},
-               "cumulative": {"labels": ["S1"], "scope": [0], "completed": [0], "subtitle": None}},
-    "members": [], "access": "member",
+    "stories": [],
+    "backlog": [],
+    "burnup": {
+        "sprint": {"labels": [], "scope": [], "completed": [], "subtitle": None},
+        "cumulative": {"labels": ["S1"], "scope": [0], "completed": [0], "subtitle": None},
+    },
+    "members": [],
+    "access": "member",
 }
 
 

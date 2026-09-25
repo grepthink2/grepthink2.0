@@ -1,24 +1,31 @@
 """PR URL parsing accept/reject table + state mapping."""
+
 import pytest
 
-from app.scrum.pr_links import parse_pr_url, map_github_state, map_gitlab_state
+from app.scrum.pr_links import map_github_state, map_gitlab_state, parse_pr_url
 
 
-@pytest.mark.parametrize("url,provider", [
-    ("https://github.com/ucsc/grepthink2.0/pull/42", "github"),
-    ("https://git.ucsc.edu/cse115a/team1/project/-/merge_requests/17", "gitlab"),
-])
+@pytest.mark.parametrize(
+    "url,provider",
+    [
+        ("https://github.com/ucsc/grepthink2.0/pull/42", "github"),
+        ("https://git.ucsc.edu/cse115a/team1/project/-/merge_requests/17", "gitlab"),
+    ],
+)
 def test_parse_accepts(url, provider):
     parsed = parse_pr_url(url)
     assert parsed is not None and parsed["provider"] == provider
 
 
-@pytest.mark.parametrize("url", [
-    "https://gitlab.com/x/y/-/merge_requests/1",     # wrong GitLab host
-    "https://github.com/onlyowner/pull/42",           # malformed
-    "http://github.com/o/r/pull/42",                  # not https
-    "https://evil.example/github.com/o/r/pull/42",
-])
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://gitlab.com/x/y/-/merge_requests/1",  # wrong GitLab host
+        "https://github.com/onlyowner/pull/42",  # malformed
+        "http://github.com/o/r/pull/42",  # not https
+        "https://evil.example/github.com/o/r/pull/42",
+    ],
+)
 def test_parse_rejects(url):
     assert parse_pr_url(url) is None
 

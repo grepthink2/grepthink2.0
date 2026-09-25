@@ -3,6 +3,7 @@
 All fetches are best-effort with a 3 s timeout: a network failure returns None and
 the caller keeps the stored state (spec D8 — the campus GitLab may be VPN-gated).
 """
+
 from __future__ import annotations
 
 import logging
@@ -44,7 +45,12 @@ def pr_repo_prefix(parsed: dict) -> str:
 def parse_pr_url(url: str) -> dict | None:
     m = GITHUB_RE.match(url or "")
     if m:
-        return {"provider": "github", "owner": m.group(1), "repo": m.group(2), "number": int(m.group(3))}
+        return {
+            "provider": "github",
+            "owner": m.group(1),
+            "repo": m.group(2),
+            "number": int(m.group(3)),
+        }
     m = GITLAB_RE.match(url or "")
     if m:
         return {"provider": "gitlab", "path": m.group(1), "iid": int(m.group(2))}
@@ -78,8 +84,10 @@ def fetch_pr_state(parsed: dict, token: str | None = None) -> str | None:
                 auth = token or settings.GITHUB_TOKEN
                 if auth:
                     headers["Authorization"] = f"Bearer {auth}"
-                r = http.get(f"https://api.github.com/repos/{parsed['owner']}/{parsed['repo']}/pulls/{parsed['number']}",
-                             headers=headers)
+                r = http.get(
+                    f"https://api.github.com/repos/{parsed['owner']}/{parsed['repo']}/pulls/{parsed['number']}",
+                    headers=headers,
+                )
                 if r.status_code != 200:
                     return None
                 return map_github_state(r.json())
@@ -87,8 +95,10 @@ def fetch_pr_state(parsed: dict, token: str | None = None) -> str | None:
             auth = token or settings.GITLAB_UCSC_TOKEN
             if auth:
                 headers["PRIVATE-TOKEN"] = auth
-            r = http.get(f"https://git.ucsc.edu/api/v4/projects/{quote(parsed['path'], safe='')}/merge_requests/{parsed['iid']}",
-                         headers=headers)
+            r = http.get(
+                f"https://git.ucsc.edu/api/v4/projects/{quote(parsed['path'], safe='')}/merge_requests/{parsed['iid']}",
+                headers=headers,
+            )
             if r.status_code != 200:
                 return None
             return map_gitlab_state(r.json())

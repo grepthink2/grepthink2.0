@@ -8,6 +8,7 @@ always carries forward between snapshots. Today is always the live recomputation
 Labels cover the whole sprint; value arrays stop at today (the chart draws the
 remainder as empty).
 """
+
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -17,9 +18,16 @@ def _label(d: date) -> str:
     return f"{d.month}/{d.day}"
 
 
-def build_sprint_series(*, snapshots: list[dict], starts_at: date, ends_at: date,
-                        today: date, live_scope: int, live_completed: int,
-                        completed_by_day: dict[str, int] | None = None) -> dict:
+def build_sprint_series(
+    *,
+    snapshots: list[dict],
+    starts_at: date,
+    ends_at: date,
+    today: date,
+    live_scope: int,
+    live_completed: int,
+    completed_by_day: dict[str, int] | None = None,
+) -> dict:
     labels = []
     d = starts_at
     while d <= ends_at:
