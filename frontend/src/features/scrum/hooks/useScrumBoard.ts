@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import type {
   ApiBoardStatus, ApiCreateStoryBody, ApiCreateTaskBody, ApiEstimateScale,
-  ApiScrumBoard, ApiScrumStory, ApiScrumTask, ApiUpdateStoryBody, ApiUpdateTaskBody,
+  ApiScrumBoard, ApiScrumStory, ApiScrumTask, ApiUpdateSprintBody, ApiUpdateStoryBody,
+  ApiUpdateTaskBody,
 } from '@/lib/api';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
 import {
@@ -39,6 +40,17 @@ export function useScrumBoard(
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<BoardNotice | null>(null);
 
+  // A different project starts from a blank board with the spinner up. Reset
+  // during render (react.dev, "adjusting state when a prop changes") rather than
+  // in the load effect, so that effect never sets state synchronously.
+  const [boardFor, setBoardFor] = useState(projectId);
+  if (boardFor !== projectId) {
+    setBoardFor(projectId);
+    setBoard(null);
+    setError(null);
+    setLoading(true);
+  }
+
   /** Mirrors `board` so callbacks can read it without depending on it —
    *  a changing `moveTask` identity would re-render every card on every drop. */
   const boardRef = useRef<ApiScrumBoard | null>(null);
@@ -64,29 +76,39 @@ export function useScrumBoard(
   /** Sprint currently being viewed; null = let the server pick the active one. */
   const sprintRef = useRef<string | null>(null);
 
+  /** Fetch the board. It never raises the spinner itself: the initial state and
+   *  `selectSprint` do, so the mount effect below sets no state synchronously. */
   const load = useCallback(
-    async (sprintId: string | null, opts: { quiet?: boolean } = {}) => {
-      if (!projectId) return;
+    (sprintId: string | null): Promise<void> => {
+      if (!projectId) return Promise.resolve();
       const seq = ++requestSeq.current;
-      if (!opts.quiet) setLoading(true);
-      try {
-        const next = await api.getScrumBoard(projectId, sprintId ?? undefined);
-        if (seq < committedSeq.current) return; // a newer load already won
-        committedSeq.current = seq;
-        sprintRef.current = next.sprint_id;
-        setBoard(next);
-        setError(null);
-      } catch (err) {
-        if (seq < committedSeq.current) return;
-        setError(err instanceof Error ? err.message : 'Failed to load the board');
-      } finally {
-        if (seq === requestSeq.current && !opts.quiet) setLoading(false);
-      }
+      // A promise chain, as classContext's loader: state changes only in its
+      // callbacks, which react-hooks/set-state-in-effect accepts for the mount
+      // effect below (it does not for an async function's catch/finally).
+      return api
+        .getScrumBoard(projectId, sprintId ?? undefined)
+        .then((next) => {
+          if (seq < committedSeq.current) return; // a newer load already won
+          committedSeq.current = seq;
+          sprintRef.current = next.sprint_id;
+          setBoard(next);
+          setError(null);
+        })
+        .catch((err: unknown) => {
+          if (seq < committedSeq.current) return;
+          setError(err instanceof Error ? err.message : 'Failed to load the board');
+        })
+        .finally(() => {
+          // The newest request ends loading. Background refreshes used to skip this,
+          // so one that overtook a sprint switch left the spinner up for good.
+          if (seq === requestSeq.current) setLoading(false);
+        });
     },
     [projectId],
   );
 
   useEffect(() => {
+    // `loading` is already true here: the initial state, or the reset above.
     void load(null);
   }, [load]);
 
@@ -115,17 +137,20 @@ export function useScrumBoard(
 
   /** Pick up teammates' changes when the tab regains focus (no realtime in v1, D11). */
   useEffect(() => {
-    const onFocus = () => void load(sprintRef.current, { quiet: true });
+    const onFocus = () => void load(sprintRef.current);
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [load]);
 
-  const refresh = useCallback(
-    () => load(sprintRef.current, { quiet: true }),
+  const refresh = useCallback(() => load(sprintRef.current), [load]);
+
+  const selectSprint = useCallback(
+    (sprintId: string) => {
+      setLoading(true); // a sprint switch shows the spinner; background refreshes don't
+      return load(sprintId);
+    },
     [load],
   );
-
-  const selectSprint = useCallback((sprintId: string) => load(sprintId), [load]);
 
   /** Optimistic status change; rolls the card back and explains if the write fails. */
   const moveTask = useCallback(
@@ -262,7 +287,7 @@ export function useScrumBoard(
     [mutate, projectId],
   );
   const updateSprint = useCallback(
-    (sprintId: string, body: Parameters<typeof api.updateSprint>[1]) =>
+    (sprintId: string, body: ApiUpdateSprintBody) =>
       mutate(() => api.updateSprint(sprintId, body), 'Couldn’t save the sprint'),
     [mutate],
   );

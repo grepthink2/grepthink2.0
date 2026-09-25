@@ -185,6 +185,7 @@ export default function StoryModal({
           <section className="story-modal__comments">
             <h3 className="story-modal__section-title">Comments on {focusedTask.key}</h3>
             <CommentThread
+              key={focusedTask.id}
               taskId={focusedTask.id}
               taskKey={focusedTask.key}
               members={members}

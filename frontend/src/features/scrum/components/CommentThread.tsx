@@ -30,9 +30,10 @@ export default function CommentThread({ taskId, taskKey, members, onError, onPos
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
 
+  // StoryModal keys this component by task, so each task starts with an empty
+  // thread and no leftover draft; nothing needs resetting here.
   useEffect(() => {
     let alive = true;
-    setComments(null);
     api.getScrumComments('tasks', taskId)
       .then(({ comments: rows }) => { if (alive) setComments(rows); })
       .catch(() => { if (alive) setComments([]); });

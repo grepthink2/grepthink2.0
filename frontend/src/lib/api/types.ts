@@ -773,6 +773,10 @@ export interface ApiScrumRepo {
   has_token: boolean;   // tokens are write-only; the API never returns them
 }
 
+export type ApiUpdateSprintBody = Partial<
+  Pick<ApiScrumSprint, 'name' | 'starts_at' | 'ends_at' | 'status'>
+>;
+
 export interface ApiCreateStoryBody {
   title: string;
   description_md?: string;

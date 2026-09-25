@@ -12,6 +12,7 @@ import type {
   ApiScrumSprint,
   ApiScrumStory,
   ApiScrumTask,
+  ApiUpdateSprintBody,
   ApiUpdateStoryBody,
   ApiUpdateTaskBody,
 } from './types';
@@ -44,7 +45,7 @@ export const scrumApi = {
 
   updateSprint: async (
     sprintId: string,
-    body: Partial<Pick<ApiScrumSprint, 'name' | 'starts_at' | 'ends_at' | 'status'>>,
+    body: ApiUpdateSprintBody,
   ) => {
     return apiRequest<{ message: string; sprint: ApiScrumSprint }>(
       `/api/scrum/sprints/${sprintId}`,

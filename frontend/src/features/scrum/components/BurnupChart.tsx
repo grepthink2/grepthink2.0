@@ -1,3 +1,5 @@
+import { H, W, seriesPoints } from '../utils/burnupGeometry';
+
 interface Props {
   /** X labels — days within a sprint, or S1…Sn cumulatively. */
   labels: string[];
@@ -8,16 +10,6 @@ interface Props {
   height?: number;
   title?: string;
   subtitle?: string | null;
-}
-
-const W = 100;
-const H = 100;
-
-/** Points string for a polyline/polygon in the 100x100 viewBox. */
-export function seriesPoints(values: number[], steps: number, maxY: number): string {
-  return values
-    .map((v, i) => `${steps > 1 ? (i / (steps - 1)) * W : 0},${H - (v / maxY) * H}`)
-    .join(' ');
 }
 
 /**
