@@ -6,6 +6,8 @@ and the controller's owner check decides (pinned per endpoint, with an enrolled 
 ``test_authz_status_policy.py``). Here the controller is replaced, so a 200 proves the route no
 longer looks at the account role, and the recorded arguments prove the caller's id reaches the
 owner check.
+
+The roster-upload reminder follows the same rule: it goes to whoever created the class.
 """
 
 from __future__ import annotations
@@ -13,7 +15,9 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from app.notifications.controller import ensure_roster_upload_notifications
 from tests.conftest import make_token
+from tests.fake_supabase import FakeSupabase
 
 OWNER = "0e3c2f9e-0000-4000-8000-000000000001"
 MEMBER = "0e3c2f9e-0000-4000-8000-000000000002"
@@ -187,3 +191,38 @@ def test_creating_a_class_still_needs_the_instructor_role(client: TestClient, mo
         json={"name": "CSE 115A", "term": "Fall", "start_date": "2026-09-24"},
     )
     assert (res.status_code, res.json()["detail"]) == (403, "Instructor role required")
+
+
+# ------------------------------------------------------------ the roster reminder
+
+
+@pytest.fixture
+def roster_db(monkeypatch):
+    """OWNER's account is a student but owns CLASS, which has no roster yet; MEMBER's account
+    is an instructor that owns no class (a TA somewhere, say)."""
+    fake = FakeSupabase(
+        profiles=[
+            {"id": OWNER, "email": "owner@ucsc.edu", "role": "student"},
+            {"id": MEMBER, "email": "member@ucsc.edu", "role": "instructor"},
+        ],
+        classes=[{"id": CLASS, "name": "CSE 115A", "created_by": OWNER}],
+        roster_entries=[],
+        notifications=[],
+    )
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    return fake
+
+
+def test_the_roster_reminder_goes_to_the_class_instructor_whatever_the_account_role(roster_db):
+    ensure_roster_upload_notifications(OWNER)
+    ensure_roster_upload_notifications(MEMBER)
+
+    reminders = [(n["user_id"], n["type"], n["entity_id"]) for n in roster_db.rows("notifications")]
+    assert reminders == [(OWNER, "upload_roster", CLASS)]
+    # Decided by classes.created_by alone: the account role is never read.
+    assert "profiles" not in {q["table"] for q in roster_db.queries}
+
+
+def test_an_account_that_owns_no_class_costs_the_roster_reminder_one_read(roster_db):
+    ensure_roster_upload_notifications(MEMBER)
+    assert [(q["table"], q["op"]) for q in roster_db.queries] == [("classes", "select")]

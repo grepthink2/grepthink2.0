@@ -338,11 +338,13 @@ def _class_has_roster(client, class_id: str) -> bool:
 
 
 def ensure_roster_upload_notifications(user_id: str) -> None:
-    """Remind instructors to upload roster CSV for each class that has none."""
-    profile = _get_profile(user_id)
-    if profile.get("role") != "instructor":
-        return
+    """Remind a class's instructor to upload the roster CSV for each of their classes without one.
 
+    Decided by ``classes.created_by`` alone, like every other class-instructor check, never by
+    ``profiles.role``: an account whose role is ``student`` can own a class, and an
+    ``instructor`` account that is only a TA or student somewhere owns none. An account that
+    owns no class costs one read.
+    """
     client = _client()
     classes_res = client.table("classes").select("id, name").eq("created_by", user_id).execute()
     for cls in classes_res.data or []:
