@@ -14,6 +14,10 @@
 -- such a pair sees an enabled composer whose send answers 403 until the release is live.
 -- Harmless (the server still enforces its own rule), and gone once the new code is deployed.
 --
+-- ⚠️  ORDER: apply it on PROD before prod/2026-09-25_scott_class_creation.sql. Once Scott's
+--     account is an instructor, the function this replaces disables the composer of their DM
+--     with the UCSC instructor they TA for, although the backend allows the send.
+--
 -- Before applying, run the Check at the end on its own: body_hash must be a434e227, the function
 -- from 2026-07-14_group_messaging.sql. Any other value means the live function was changed since;
 -- compare it with that file before replacing it.

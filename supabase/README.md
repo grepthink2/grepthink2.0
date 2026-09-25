@@ -80,25 +80,35 @@ trigger/function/Auth-hook/bucket changed.
 
 ## Institutions and class creation (maintainer steps)
 
-Apply `backend/database/migrations/2026-09-25_institutions.sql` and then
-`2026-09-25_seed_istinye.sql` — DEV, then PROD — before anyone creates a class outside UC Santa
-Cruz. Until the first file runs, no class can be given a school, and that file's one-time backfill
-labels every existing class UC Santa Cruz; a non-UCSC class created before both files have run
-would be mislabeled the same way, and re-running the backfill afterwards is not a fix (see the
-migration's own header). The backend works on either schema (the institutions loader in
-`app/institutions/controller.py` falls back to "no schools" while the table is missing), so the
-institutions migration, and `2026-09-25_messages_inbox_class_roles.sql` (the inbox's `can_send`
-now follows shared classes, not the account role), may each be applied before or after the
-per-class-roles release. The role flip below is different: it must wait until *after* the release
-is live on PROD and after the İstinye seed has run there.
+In this order (the SQL files are in `backend/database/migrations/`):
+
+1. `2026-09-25_institutions.sql`, then `2026-09-25_seed_istinye.sql`, DEV then PROD, before anyone
+   creates a class outside UC Santa Cruz. Until the first file runs, no class can be given a school,
+   and that file's one-time backfill labels every existing class UC Santa Cruz; a non-UCSC class
+   created before both files have run would be mislabeled the same way, and re-running the backfill
+   afterwards is not a fix (see the migration's own header). The backend works on either schema (the
+   institutions loader in `app/institutions/controller.py` falls back to "no schools" while the
+   table is missing), so both may be applied before or after the per-class-roles release.
+2. `2026-09-25_messages_inbox_class_roles.sql` (the inbox's `can_send` now follows shared classes,
+   not the account role), DEV then PROD. It is independent of the release and may be applied on
+   either side of it, but it must run before the role flip in step 4: until it does, the inbox
+   disables the composer of every DM between two instructor accounts, so once Scott is flipped,
+   their thread with the UCSC instructor they TA for shows sending disabled, although the backend
+   would allow the send.
+3. Release beta → main.
+4. Only once steps 1–3 are done on PROD: the role flip, `prod/2026-09-25_scott_class_creation.sql`
+   (below).
 
 - **Add a school:** copy `backend/database/migrations/2026-09-25_seed_istinye.sql`, change the name,
   slug (lower-case, hyphens) and base email domains, run it on DEV then PROD. The app shows it within
-  five minutes. Subdomains of a listed domain count automatically — never list a public suffix
+  about ten minutes: the backend caches the list for five minutes, and browsers keep it for another
+  five (`Cache-Control: max-age=300`). An app tab that is already open keeps the list it loaded until
+  it is reloaded. Subdomains of a listed domain count automatically — never list a public suffix
   (`edu.tr`, `ac.uk`, `com`, ...) in `email_domains`, since that would make every address under it
   a school email. (The loader also drops a small denylist of two-part public suffixes and any
   domain with no dot, logging an error (so Sentry reports it) rather than failing.)
 - **Letting an existing account create classes:** edit and run
   `backend/database/migrations/prod/2026-09-25_scott_class_creation.sql` (it flips `student → instructor`
-  for one email and refuses to change anything else). It takes effect within a minute; the user sees
-  "Create Class" after reloading. Their classes as a TA or student are unaffected.
+  for one email and refuses to change anything else). Run it only once steps 1–3 above are done on
+  PROD. It takes effect within a minute; the user sees "Create Class" after reloading. Their classes
+  as a TA or student are unaffected.

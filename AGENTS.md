@@ -87,9 +87,13 @@ supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
 - **Frontend** dev server proxies `/api` to the backend (`uvicorn app.main:app`).
 
 ## Roles
-- **Account** (`profiles.role`): `instructor` | `student`. It only decides who may create a class
-  (`POST /api/classes`, `require_instructor`). Nothing else reads it: never branch on it for a
-  class decision, in the backend or the UI.
+- **Account** (`profiles.role`): `instructor` | `student`. It decides who may create a class
+  (`POST /api/classes` through `require_instructor`; `useAuth().canCreateClasses` in the web
+  client), and it is never used for a class decision, in the backend or the UI. Its other readers
+  are account-level: joining a class checks that a role has been chosen, `/api/login-check`
+  returns it, the roster-email reminder (`needs_roster_email`) asks student accounts only, and the
+  web client falls back on it when no class is selected (Home's dashboard, the sidebar while the
+  classes load).
 - **Class-scoped** (every other decision): instructor = `classes.created_by`; **TA** =
   `class_enrollments.enrollment_role = 'ta'` (single source of truth — see TA gotcha); student =
   any other enrollment. One account can hold a different role in each class. `GET /api/classes`

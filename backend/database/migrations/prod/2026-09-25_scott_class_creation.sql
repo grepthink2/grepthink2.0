@@ -2,12 +2,18 @@
 --
 -- STAGED, NOT APPLIED. Nothing runs the files in this directory. Target: PROD.
 --
--- ⚠️  ORDER: run only AFTER the per-class-roles release is live on PROD (beta → main deployed).
---     On the code PROD runs before that release, an instructor account sees only the classes it
---     created, so Scott's UCSC TA classes would disappear from their class list.
---     And only AFTER ../2026-09-25_institutions.sql and ../2026-09-25_seed_istinye.sql are
---     applied on PROD: a class Scott creates before them cannot be given İstinye, and the
---     institutions backfill would label it UC Santa Cruz.
+-- ⚠️  ORDER: run only AFTER all three of these are done on PROD (supabase/README.md,
+--     "Institutions and class creation"):
+--     1. ../2026-09-25_institutions.sql and ../2026-09-25_seed_istinye.sql are applied. A class
+--        Scott creates before them cannot be given İstinye, and the institutions backfill would
+--        label it UC Santa Cruz.
+--     2. ../2026-09-25_messages_inbox_class_roles.sql is applied. Until it is, messages_inbox()
+--        sets can_send = false for every DM between two instructor accounts, so once Scott is
+--        one, their thread with the UCSC instructor they TA for shows a disabled composer,
+--        although the backend would allow the send.
+--     3. The per-class-roles release is live (beta → main deployed). On the code PROD runs
+--        before that release, an instructor account sees only the classes it created, so
+--        Scott's UCSC TA classes would disappear from their class list.
 --
 -- profiles.role now means only "may create classes". The classes Scott TAs keep working through
 -- their class_enrollments rows. The backend caches roles, so this takes effect within 60 seconds

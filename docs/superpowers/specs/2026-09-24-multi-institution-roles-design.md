@@ -34,7 +34,7 @@ verify a school email.
 
 1. One account holds a different role in each class: instructor, TA or student.
 2. Classes belong to an institution; school-email rules come from the institution's domains.
-3. Single-role, single-school users see no change beyond the two listed under Frontend → "Visible
+3. Single-role, single-school users see no change beyond those listed under Frontend → "Visible
    changes".
 4. Scott TAs at UCSC and teaches at İstinye with one login.
 
@@ -65,7 +65,7 @@ verify a school email.
 ## Architecture at a glance
 
 ```
-profiles.role ──────────────► canCreateClasses        (gates Create Class, nothing else)
+profiles.role ──────────────► canCreateClasses        (gates Create Class; never a class decision)
 
 institutions ─< classes ─┬─ created_by ─────────────► my_role = instructor
                          └─< class_enrollments ─────► my_role = ta | student
@@ -105,18 +105,21 @@ SET institution_id = (SELECT id FROM public.institutions WHERE slug = 'ucsc')
 WHERE institution_id IS NULL;
 ```
 
-- The header follows the repo convention (`Applied: DEV ____-__-__   PROD ____-__-__`). The PROD copy
-  is staged under `migrations/prod/`, which nothing runs automatically.
+- The header follows the repo convention (`Applied: DEV ____-__-__   PROD ____-__-__`). The one file
+  serves DEV and PROD: there is no staged copy under `migrations/prod/`, and nothing applies it
+  automatically.
 - `institution_id` stays nullable until the contract step (Rollout 6).
-- İstinye is added by a maintainer when Scott needs it (Rollout 3).
+- İstinye is added by a maintainer, with its own seed file, right after this migration (Rollout 1).
 
 ## Backend
 
 ### What still reads the account role
 
-Only `POST /api/classes`, through `require_instructor`. `POST /api/classes/join` also requires that
-a role has been chosen (either one), so the `/select` onboarding step keeps its meaning.
-`/api/login-check` keeps returning the role.
+It decides only who may create a class: `POST /api/classes`, through `require_instructor`.
+`POST /api/classes/join` also requires that a role has been chosen (either one), so the `/select`
+onboarding step keeps its meaning.
+`/api/login-check` keeps returning the role, and the roster-email reminder (`needs_roster_email`)
+keeps asking only student accounts for a school email. None of these is a class decision.
 
 ### Endpoints that drop `require_instructor`
 
@@ -209,8 +212,8 @@ The matching `api.ts` methods and `.well-known/grepthink-actions.json` entries a
   `selectSchool(id)`.
 - **Landing rule** (`routePermissions.ts`: `isPathAllowedForClassRole`, `classLandingPath`): stay on
   the page when the new class role allows it, else instructor → `/app/dashboard`, TA →
-  `/app/ta-meetings`, student → `/app/my-project`. The class switcher, the school switcher and My
-  Classes cards all use it.
+  `/app/ta-meetings`, student → `/app/my-project`. The class switcher, the school switcher, My
+  Classes cards and the route guard all use it.
 - **Route guard:** moves from `AppView`, which runs before `ClassProvider` exists, into
   `ClassProvider`. It waits for the class list and checks the path against the selected class's
   role; with no class selected, class pages redirect to My Classes. The instructor-only and
@@ -244,8 +247,13 @@ The matching `api.ts` methods and `.well-known/grepthink-actions.json` entries a
 
 ### Visible changes for existing users
 
-TAs land on TA Meetings instead of My Project, and the sidebar's class section is hidden when no
-class is selected. Everything else looks the same for single-role, single-school accounts.
+- TAs land on TA Meetings instead of My Project.
+- The sidebar's class section is hidden when no class is selected.
+- Accounts that can create classes get a Join Class button in My Classes too, next to Create Class.
+- A class page your role in the selected class doesn't allow sends you to that role's landing page
+  (Dashboard, TA Meetings or My Project; see the landing rule) instead of Home.
+
+Everything else looks the same for single-role, single-school accounts.
 
 ## Edge cases
 
@@ -271,7 +279,8 @@ Backend (pytest with `FakeSupabase`, in the existing files where they fit):
 - Join: an account instructor can join; the owner → 409; a role-less account → 403.
 - An account instructor enrolled as TA: sentiment hidden; the assignments list returns published
   items instead of 403.
-- Invite and bulk invite enrol an account instructor; inviting the owner → 400.
+- Invite and bulk invite enrol an account instructor; inviting the owner → 409, the same answer as
+  joining one's own class (bulk invite reports that address as `class_instructor`).
 - `test_messages_can_message.py`, `test_messages_contacts.py`: an account-instructor TA and the class
   instructor can message and find each other.
 - `is_school_email`: `.edu`, `istinye.edu.tr`, `stu.istinye.edu.tr` pass; `evil-istinye.edu.tr`,
@@ -295,27 +304,29 @@ Frontend (Vitest; `npm run build` is the completeness check for D8):
 
 ## Rollout
 
-1. Apply the institutions migration to DEV, then PROD (maintainer; staged file). The backend runs
-   on either schema (the institutions loader falls back while the table is missing), so this can
-   happen before or after the release; `2026-09-25_messages_inbox_class_roles.sql` (the inbox's
-   `can_send` follows shared classes, not the account role) is independent of both and may land on
-   either side too. Apply the İstinye seed (step 3) on the same DEV-then-PROD schedule before
+1. Apply `2026-09-25_institutions.sql` and then `2026-09-25_seed_istinye.sql`, DEV then PROD, before
    anyone creates a class outside UC Santa Cruz: until the migration runs no class can be given a
    school, and its one-time backfill labels every class without one UC Santa Cruz, so an earlier
-   non-UCSC class would be mislabeled the same way.
-2. Merge and release (beta → main). The backend works with the current frontend, and the new
+   non-UCSC class would be mislabeled the same way. The backend runs on either schema (the
+   institutions loader falls back while the table is missing), so both can land before or after the
+   release. Confirm İstinye's base domain with Scott before seeding; student subdomains match
+   automatically.
+2. Apply `2026-09-25_messages_inbox_class_roles.sql` (the inbox's `can_send` follows shared
+   classes, not the account role), DEV then PROD. It can go on either side of the release, but must
+   come before the flip (step 4): until it runs, `messages_inbox()` sets `can_send = false` for
+   every DM between two instructor accounts, so once Scott is flipped, their thread with the UCSC
+   instructor shows a disabled composer, although the backend would allow the send.
+3. Merge and release (beta → main). The backend works with the current frontend, and the new
    frontend tolerates a missing `my_role` (see Role source).
-3. Seed İstinye: `INSERT INTO public.institutions (name, slug, email_domains) VALUES ('İstinye
-   University', 'istinye', '{istinye.edu.tr}');`. Confirm the base domain with Scott first; student
-   subdomains match automatically.
-4. Flip Scott: `UPDATE public.profiles SET role = 'instructor' WHERE id = '<Scott''s profile id>' AND
-   role = 'student';`. Only after step 2 is live on PROD and step 3 has run: before that, either
-   their UCSC classes disappear, or İstinye is not yet there for their new class to pick.
+4. Flip Scott: run `prod/2026-09-25_scott_class_creation.sql` (`role = 'instructor'` for their
+   email, only while it is `'student'`), only after steps 1–3 are done on PROD. Before the release
+   their UCSC classes disappear; before the seed İstinye is not there for their new class to pick;
+   before the inbox migration their DM with the UCSC instructor cannot be answered from the thread.
 5. Scott creates the İstinye class and picks İstinye in the dialog.
 6. Contract, later: assign any NULL `institution_id`, `ALTER COLUMN institution_id SET NOT NULL`,
    and make `institution_id` required in `CreateClassRequest`.
 
-Steps 1 and 3–6 are maintainer steps; their runbook goes in `supabase/README.md`.
+Steps 1, 2, 4 and 6 are maintainer steps; the runbook for 1–4 is in `supabase/README.md`.
 
 ## Docs to update
 
