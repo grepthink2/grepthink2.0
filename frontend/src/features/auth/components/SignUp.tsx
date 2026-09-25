@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
+import { fetchInstitutions } from '@/lib/institutions';
+import { isSchoolEmail } from '@/lib/schoolEmail';
 import './SignUp.scss';
 import eyeIcon from '@assets/ph_eye.svg?url';
 import eyeSlashIcon from '@assets/eye-slash.svg?url';
@@ -96,12 +98,12 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
       return;
     }
 
-    // If signing up with a .edu email, check it isn't already claimed as
+    // If signing up with a school email, check it isn't already claimed as
     // another account's verified edu_email before creating the auth account.
-    if (formData.email.toLowerCase().endsWith('.edu')) {
+    if (isSchoolEmail(formData.email, (await fetchInstitutions()) ?? [])) {
       const checkData = await api.checkEmail(formData.email);
       if (checkData && !checkData.available) {
-        setError('This .edu email is already linked to another account.');
+        setError('This school email is already linked to another account.');
         setIsLoading(false);
         return;
       }

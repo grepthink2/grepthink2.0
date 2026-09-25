@@ -2,11 +2,14 @@ import React, { useState, useEffect, useMemo, type KeyboardEvent } from 'react';
 import { ArrowRight, Check, Copy, GraduationCap, LogOut, Pencil, PlusCircle } from 'lucide-react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
-import { useClass, type Class } from '@/lib/classContext';
+import { useClass, type Class, type ClassRole } from '@/lib/classContext';
+import { distinctSchools } from '@/lib/classMembership';
 import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useAuth } from '@/lib/auth';
+import { usePreview } from '@/lib/previewContext';
 import { api } from '@/lib/api';
 import { lazyModal } from '@/lib/lazyModal';
+import { CLASS_ROLE_LABELS, classLandingPath } from '@features/app/config/routePermissions';
 import ClassSettingsModal from '@features/app/components/Classes/ClassSettingsModal';
 import ConfirmModal from '@features/app/components/Overlays/ConfirmModal';
 import { pickClassBannerPreset, presetToCssBackground } from '@/lib/classBannerGradients';
@@ -62,6 +65,36 @@ function ClassStatusTag({ status }: { status: ClassLifecycleStatus }) {
     );
 }
 
+/** The class's status, and your role in it when given (your classes mix roles). */
+function ClassTags({ status, role }: { status: ClassLifecycleStatus; role: ClassRole | null }) {
+    return (
+        <span className="my-classes-card-tags">
+            <ClassStatusTag status={status} />
+            {role && <span className="my-classes-card-role-tag">{CLASS_ROLE_LABELS[role]}</span>}
+        </span>
+    );
+}
+
+interface SchoolSection {
+    key: string;
+    name: string;
+    classes: Class[];
+}
+
+/** `classes` by school, schools by name, then the classes with no school as "Other classes". */
+function groupBySchool(classes: Class[]): SchoolSection[] {
+    const sections: SchoolSection[] = distinctSchools(classes).map((school) => ({
+        key: school.id,
+        name: school.name,
+        classes: classes.filter((c) => c.institution?.id === school.id),
+    }));
+    const withoutSchool = classes.filter((c) => !c.institution);
+    if (withoutSchool.length > 0) {
+        sections.push({ key: 'no-school', name: 'Other classes', classes: withoutSchool });
+    }
+    return sections;
+}
+
 const MyClasses: React.FC = () => {
     const {
         visibleClasses,
@@ -72,7 +105,10 @@ const MyClasses: React.FC = () => {
         getClassStatus,
         refreshClasses,
     } = useClass();
-    const { role } = useAuth();
+    const { canCreateClasses: accountCanCreateClasses } = useAuth();
+    const { isPreviewing } = usePreview();
+    // "View class as student" shows what a student account can do, as the sidebar does.
+    const canCreateClasses = accountCanCreateClasses && !isPreviewing;
     const navigate = useNavigate();
     const { openJoinClassModal } = useOutletContext<AppOutletContext>();
     const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -81,11 +117,16 @@ const MyClasses: React.FC = () => {
     const [settingsClass, setSettingsClass] = useState<Class | null>(null);
     const [leavingClass, setLeavingClass] = useState<Class | null>(null);
 
-    const isInstructor = role === 'instructor';
-
     const filteredClasses = useMemo(
         () => visibleClasses.filter((c) => classMatchesFilter(c, courseFilter, getClassStatus)),
         [visibleClasses, courseFilter, getClassStatus],
+    );
+    // Label each card with your role only when your classes mix roles.
+    const mixedRoles = new Set(visibleClasses.map((c) => c.my_role)).size > 1;
+    // A section per school when your classes span two or more schools.
+    const schoolSections = useMemo(
+        () => (distinctSchools(visibleClasses).length > 1 ? groupBySchool(filteredClasses) : null),
+        [visibleClasses, filteredClasses],
     );
 
     useEffect(() => {
@@ -97,20 +138,13 @@ const MyClasses: React.FC = () => {
         }
     }, [successMessage, setSuccessMessage]);
 
-    // Keep enrollment counts fresh while this page is open.
+    // Keep enrollment counts fresh while this page is open. (The class list also refreshes itself
+    // when the tab regains focus.)
     useEffect(() => {
-        const refresh = () => {
+        const interval = window.setInterval(() => {
             void refreshClasses(false);
-        };
-        const interval = window.setInterval(refresh, 30_000);
-        const onVisibility = () => {
-            if (document.visibilityState === 'visible') refresh();
-        };
-        document.addEventListener('visibilitychange', onVisibility);
-        return () => {
-            window.clearInterval(interval);
-            document.removeEventListener('visibilitychange', onVisibility);
-        };
+        }, 30_000);
+        return () => window.clearInterval(interval);
     }, [refreshClasses]);
 
     const handleCopyCode = (_e: React.MouseEvent, cls: Class) => {
@@ -120,22 +154,18 @@ const MyClasses: React.FC = () => {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    const handleStudentCardActivate = (cls: Class) => {
+    // A card opens its class on the page for your role in it.
+    const handleCardActivate = (cls: Class) => {
         setSelectedClass(cls);
-        navigate('/app/my-project');
+        navigate(classLandingPath(cls.my_role));
     };
 
-    const handleInstructorCardActivate = (cls: Class) => {
-        setSelectedClass(cls);
-        navigate('/app/dashboard');
-    };
-
-    const handleStudentCardKeyDown = (e: KeyboardEvent<HTMLDivElement>, cls: Class) => {
+    const handleCardKeyDown = (e: KeyboardEvent<HTMLDivElement>, cls: Class) => {
         // Ignore keys originating from inner controls (e.g. the leave button).
         if (e.target !== e.currentTarget) return;
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            handleStudentCardActivate(cls);
+            handleCardActivate(cls);
         }
     };
 
@@ -157,6 +187,136 @@ const MyClasses: React.FC = () => {
         }
     };
 
+    // Each card follows your role in its class: the owner card (code and settings) for a class you
+    // teach, the learner card (Leave) for one you TA or take.
+    const renderCard = (cls: Class) => {
+        const tags = <ClassTags status={getClassStatus(cls)} role={mixedRoles ? cls.my_role : null} />;
+        if (cls.my_role === 'instructor') {
+            return (
+                <div key={cls.id} className="my-classes-card my-classes-card--instructor">
+                    <div
+                        className="my-classes-card-hero my-classes-card-hero--instructor"
+                        style={classHeroStyle(cls)}
+                    >
+                        {cls.course_code ? (
+                            <button
+                                type="button"
+                                className={`my-classes-card-code-tag${
+                                    copiedId === cls.id ? ' my-classes-card-code-tag--copied' : ''
+                                }`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopyCode(e, cls);
+                                }}
+                                aria-label={
+                                    copiedId === cls.id
+                                        ? 'Access code copied'
+                                        : `Copy access code ${cls.course_code}`
+                                }
+                            >
+                                {copiedId === cls.id ? (
+                                    <>
+                                        <Check size={12} strokeWidth={2.5} aria-hidden />
+                                        <span>Copied</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="my-classes-card-code-tag__text">
+                                            {cls.course_code}
+                                        </span>
+                                        <Copy
+                                            size={13}
+                                            strokeWidth={2}
+                                            className="my-classes-card-code-tag__copy-icon"
+                                            aria-hidden
+                                        />
+                                    </>
+                                )}
+                            </button>
+                        ) : null}
+                        <button
+                            type="button"
+                            className="my-classes-card-hero-edit"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenSettings(cls);
+                            }}
+                            aria-label="Class settings"
+                        >
+                            <Pencil size={18} strokeWidth={2} />
+                        </button>
+                    </div>
+                    <div className="my-classes-card-body my-classes-card-body--instructor">
+                        <button
+                            type="button"
+                            className="my-classes-card-instructor-main"
+                            aria-label={`Open ${cls.name} dashboard`}
+                            onClick={() => handleCardActivate(cls)}
+                        >
+                            <div className="my-classes-card-title">{cls.name}</div>
+                            {cls.description && (
+                                <div className="my-classes-card-subtitle">{cls.description}</div>
+                            )}
+                            {tags}
+                            <div className="my-classes-card-row">
+                                <div className="my-classes-card-enrollment">
+                                    {formatEnrolledLabel(cls.enrolled_count)}
+                                </div>
+                                <span className="my-classes-select-cta">
+                                    Select <ArrowRight size={16} />
+                                </span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        return (
+            <div
+                key={cls.id}
+                className="my-classes-card my-classes-card--student"
+                role="button"
+                tabIndex={0}
+                aria-label={`Open ${cls.name} and go to ${cls.my_role === 'ta' ? 'TA Meetings' : 'My Project'}`}
+                onClick={() => handleCardActivate(cls)}
+                onKeyDown={(e) => handleCardKeyDown(e, cls)}
+            >
+                <div
+                    className="my-classes-card-hero my-classes-card-hero--student"
+                    style={classHeroStyle(cls)}
+                >
+                    <button
+                        type="button"
+                        className="my-classes-card-hero-leave"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setLeavingClass(cls);
+                        }}
+                        aria-label={`Leave ${cls.name}`}
+                        data-tooltip="Leave Class"
+                    >
+                        <LogOut size={18} strokeWidth={2} />
+                    </button>
+                </div>
+                <div className="my-classes-card-body my-classes-card-body--student">
+                    <div className="my-classes-card-title">{cls.name}</div>
+                    {cls.description && (
+                        <div className="my-classes-card-subtitle">{cls.description}</div>
+                    )}
+                    {tags}
+                    <div className="my-classes-card-row">
+                        <div className="my-classes-card-enrollment">
+                            {formatEnrolledLabel(cls.enrolled_count)}
+                        </div>
+                        <span className="my-classes-select-cta">
+                            Select <ArrowRight size={16} />
+                        </span>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     if (loading) {
         return (
             <div className="my-classes-list" aria-busy="true">
@@ -172,6 +332,13 @@ const MyClasses: React.FC = () => {
             </div>
         );
     }
+
+    const joinClassButton = (className: string) => (
+        <button type="button" className={className} onClick={() => openJoinClassModal()}>
+            <GraduationCap size={16} aria-hidden />
+            Join Class
+        </button>
+    );
 
     return (
         <div className="my-classes">
@@ -198,197 +365,76 @@ const MyClasses: React.FC = () => {
                         </button>
                     ))}
                 </div>
-                {isInstructor ? (
-                    <button
-                        type="button"
-                        className="add-assignment-btn projects__add-project-btn my-classes-toolbar__create-btn"
-                        onClick={() => setIsCreateClassOpen(true)}
-                    >
-                        <PlusCircle size={16} aria-hidden />
-                        Create Class
-                    </button>
+                {canCreateClasses ? (
+                    <div className="my-classes-toolbar__actions">
+                        {joinClassButton('add-assignment-btn my-classes-toolbar__join-btn')}
+                        <button
+                            type="button"
+                            className="add-assignment-btn projects__add-project-btn my-classes-toolbar__create-btn"
+                            onClick={() => setIsCreateClassOpen(true)}
+                        >
+                            <PlusCircle size={16} aria-hidden />
+                            Create Class
+                        </button>
+                    </div>
                 ) : (
-                    <button
-                        type="button"
-                        className="add-assignment-btn projects__add-project-btn my-classes-toolbar__create-btn"
-                        onClick={() => openJoinClassModal()}
-                    >
-                        <GraduationCap size={16} aria-hidden />
-                        Join Class
-                    </button>
+                    joinClassButton('add-assignment-btn projects__add-project-btn my-classes-toolbar__create-btn')
                 )}
             </div>
 
             <div className="my-classes-list-scroll">
-                <div className="my-classes-list">
-                    {visibleClasses.length === 0 ? (
-                        <div className="my-classes-empty">
-                            <p>You are not in any classes yet.</p>
-                            {isInstructor ? (
-                                <p>Use &quot;Create Class&quot; above or in the sidebar to add one.</p>
-                            ) : (
-                                <p>Use &quot;Join Class&quot; above or in the sidebar to join with a course code.</p>
-                            )}
-                        </div>
-                    ) : filteredClasses.length === 0 ? (
-                        <div className="my-classes-empty">
-                            <p>No {FILTER_LABELS[courseFilter].toLowerCase()} courses match this filter.</p>
-                            {isInstructor ? (
-                                <p>Try another filter or create a new class.</p>
-                            ) : (
-                                <p>Try another filter or join a class.</p>
-                            )}
-                        </div>
-                    ) : (
-                        filteredClasses.map((cls) =>
-                            isInstructor ? (
-                                <div key={cls.id} className="my-classes-card my-classes-card--instructor">
-                                <div
-                                    className="my-classes-card-hero my-classes-card-hero--instructor"
-                                    style={classHeroStyle(cls)}
-                                >
-                                    {cls.course_code ? (
-                                        <button
-                                            type="button"
-                                            className={`my-classes-card-code-tag${
-                                                copiedId === cls.id ? ' my-classes-card-code-tag--copied' : ''
-                                            }`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleCopyCode(e, cls);
-                                            }}
-                                            aria-label={
-                                                copiedId === cls.id
-                                                    ? 'Access code copied'
-                                                    : `Copy access code ${cls.course_code}`
-                                            }
-                                        >
-                                            {copiedId === cls.id ? (
-                                                <>
-                                                    <Check size={12} strokeWidth={2.5} aria-hidden />
-                                                    <span>Copied</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="my-classes-card-code-tag__text">
-                                                        {cls.course_code}
-                                                    </span>
-                                                    <Copy
-                                                        size={13}
-                                                        strokeWidth={2}
-                                                        className="my-classes-card-code-tag__copy-icon"
-                                                        aria-hidden
-                                                    />
-                                                </>
-                                            )}
-                                        </button>
-                                    ) : null}
-                                    <button
-                                        type="button"
-                                        className="my-classes-card-hero-edit"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenSettings(cls);
-                                        }}
-                                        aria-label="Class settings"
-                                    >
-                                        <Pencil size={18} strokeWidth={2} />
-                                    </button>
-                                </div>
-                                <div className="my-classes-card-body my-classes-card-body--instructor">
-                                    <button
-                                        type="button"
-                                        className="my-classes-card-instructor-main"
-                                        aria-label={`Open ${cls.name} dashboard`}
-                                        onClick={() => handleInstructorCardActivate(cls)}
-                                    >
-                                        <div className="my-classes-card-title">{cls.name}</div>
-                                        {cls.description && (
-                                            <div className="my-classes-card-subtitle">{cls.description}</div>
-                                        )}
-                                        <ClassStatusTag status={getClassStatus(cls)} />
-                                        <div className="my-classes-card-row">
-                                            <div className="my-classes-card-enrollment">
-                                                {formatEnrolledLabel(cls.enrolled_count)}
-                                            </div>
-                                            <span className="my-classes-select-cta">
-                                                Select <ArrowRight size={16} />
-                                            </span>
-                                        </div>
-                                    </button>
-                                </div>
-                                </div>
-                            ) : (
-                                <div
-                                    key={cls.id}
-                                    className="my-classes-card my-classes-card--student"
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-label={`Open ${cls.name} and go to My Project`}
-                                    onClick={() => handleStudentCardActivate(cls)}
-                                    onKeyDown={(e) => handleStudentCardKeyDown(e, cls)}
-                                >
-                                    <div
-                                        className="my-classes-card-hero my-classes-card-hero--student"
-                                        style={classHeroStyle(cls)}
-                                    >
-                                        <button
-                                            type="button"
-                                            className="my-classes-card-hero-leave"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setLeavingClass(cls);
-                                            }}
-                                            aria-label={`Leave ${cls.name}`}
-                                            data-tooltip="Leave Class"
-                                        >
-                                            <LogOut size={18} strokeWidth={2} />
-                                        </button>
-                                    </div>
-                                    <div className="my-classes-card-body my-classes-card-body--student">
-                                        <div className="my-classes-card-title">{cls.name}</div>
-                                        {cls.description && (
-                                            <div className="my-classes-card-subtitle">{cls.description}</div>
-                                        )}
-                                        <ClassStatusTag status={getClassStatus(cls)} />
-                                        <div className="my-classes-card-row">
-                                            <div className="my-classes-card-enrollment">
-                                                {formatEnrolledLabel(cls.enrolled_count)}
-                                            </div>
-                                            <span className="my-classes-select-cta">
-                                                Select <ArrowRight size={16} />
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        )
-                    )}
-                </div>
+                {schoolSections && filteredClasses.length > 0 ? (
+                    schoolSections.map((section) => (
+                        <section key={section.key} className="my-classes-school">
+                            <h2 className="my-classes-school__heading">{section.name}</h2>
+                            <div className="my-classes-list">{section.classes.map(renderCard)}</div>
+                        </section>
+                    ))
+                ) : (
+                    <div className="my-classes-list">
+                        {visibleClasses.length === 0 ? (
+                            <div className="my-classes-empty">
+                                <p>You are not in any classes yet.</p>
+                                {canCreateClasses ? (
+                                    <p>Use &quot;Create Class&quot; above or in the sidebar to add one.</p>
+                                ) : (
+                                    <p>Use &quot;Join Class&quot; above or in the sidebar to join with a course code.</p>
+                                )}
+                            </div>
+                        ) : filteredClasses.length === 0 ? (
+                            <div className="my-classes-empty">
+                                <p>No {FILTER_LABELS[courseFilter].toLowerCase()} courses match this filter.</p>
+                                {canCreateClasses ? (
+                                    <p>Try another filter or create a new class.</p>
+                                ) : (
+                                    <p>Try another filter or join a class.</p>
+                                )}
+                            </div>
+                        ) : (
+                            filteredClasses.map(renderCard)
+                        )}
+                    </div>
+                )}
             </div>
 
-            {isInstructor && (
-                <>
-                    <CreateClassModal isOpen={isCreateClassOpen} onClose={() => setIsCreateClassOpen(false)} />
-                    <ClassSettingsModal
-                        isOpen={settingsClass !== null}
-                        classItem={settingsClass}
-                        onClose={() => setSettingsClass(null)}
-                    />
-                </>
+            {canCreateClasses && (
+                <CreateClassModal isOpen={isCreateClassOpen} onClose={() => setIsCreateClassOpen(false)} />
             )}
-
-            {!isInstructor && (
-                <ConfirmModal
-                    isOpen={leavingClass !== null}
-                    onClose={() => setLeavingClass(null)}
-                    onConfirm={() => void handleConfirmLeave()}
-                    title={leavingClass ? `Leave ${leavingClass.name}?` : 'Leave class?'}
-                    message="You'll be removed from this class, along with any project you're assigned to in it and any pending project requests. You can rejoin later with the course code."
-                    confirmText="Leave class"
-                    cancelText="Cancel"
-                />
-            )}
+            {/* Each opens only from its own kind of card. */}
+            <ClassSettingsModal
+                isOpen={settingsClass !== null}
+                classItem={settingsClass}
+                onClose={() => setSettingsClass(null)}
+            />
+            <ConfirmModal
+                isOpen={leavingClass !== null}
+                onClose={() => setLeavingClass(null)}
+                onConfirm={() => void handleConfirmLeave()}
+                title={leavingClass ? `Leave ${leavingClass.name}?` : 'Leave class?'}
+                message="You'll be removed from this class, along with any project you're assigned to in it and any pending project requests. You can rejoin later with the course code."
+                confirmText="Leave class"
+                cancelText="Cancel"
+            />
         </div>
     );
 };

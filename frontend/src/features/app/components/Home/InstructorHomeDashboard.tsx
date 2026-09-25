@@ -66,9 +66,10 @@ const InstructorHomeDashboard: React.FC = () => {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(loadDismissedAlerts);
   const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
 
-  // Active classes are the ones worth triaging for "needs attention".
+  // The active classes you teach are the ones worth triaging for "needs attention" (the summary
+  // covers only classes you created); classes you TA or take are not listed here.
   const activeClasses = useMemo(
-    () => visibleClasses.filter((c) => getClassStatus(c) === 'active'),
+    () => visibleClasses.filter((c) => c.my_role === 'instructor' && getClassStatus(c) === 'active'),
     [visibleClasses, getClassStatus],
   );
 

@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarCheck, Check, ChevronRight, Clock, Video, X } from 'lucide-react';
-import { useClass } from '@/lib/classContext';
+import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
-import { fetchEnrollmentRole } from '@/lib/enrollmentRole';
 import { api, type ApiClassTA, type ApiFinalReviewSchedule, type ApiFinalReviewTeam } from '@/lib/api';
 import { getInitials } from '@features/app/utils/memberUtils';
 import { formatReviewTime as formatTime } from './finalReviewTemplate';
@@ -11,8 +10,6 @@ import { groupByDay } from './finalReviewsGrouping';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import '../components/TAManagement/TAManagement.scss';
 import './FinalReviews.scss';
-
-type ViewerRole = 'instructor' | 'ta' | 'student' | null;
 
 /** ISO timestamptz → value for <input type="datetime-local"> (local wall clock). */
 const toInputValue = (iso: string | null): string => {
@@ -22,13 +19,6 @@ const toInputValue = (iso: string | null): string => {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-
-/** The class's review schedule plus the viewer's role in it (null when the role lookup fails). */
-const fetchScheduleAndRole = (classId: string, userId: string | null) =>
-  Promise.all([
-    api.getFinalReviewSchedule(classId),
-    fetchEnrollmentRole(classId, userId ?? undefined).catch(() => null),
-  ]);
 
 const Avatar: React.FC<{ name: string; email?: string | null }> = ({ name, email }) => (
   <span className="fr-avatar" aria-hidden="true">{getInitials(name || '', email || '')}</span>
@@ -65,13 +55,13 @@ const FinalReviewsSkeleton: React.FC = () => (
 
 const FinalReviews: React.FC = () => {
   const { selectedClass } = useClass();
+  const viewerRole = useSelectedClassRole();
   const { user } = useAuth();
   const navigate = useNavigate();
   const classId = selectedClass?.id ?? null;
   const viewerId = user?.id ?? null;
 
   const [schedule, setSchedule] = useState<ApiFinalReviewSchedule | null>(null);
-  const [role, setRole] = useState<ViewerRole>(null);
   const loadKey = classId ? JSON.stringify([classId, viewerId]) : null;
   /** The schedule request that last settled, and its error. */
   const [loaded, setLoaded] = useState<{ key: string; error: string | null } | null>(null);
@@ -100,13 +90,12 @@ const FinalReviews: React.FC = () => {
    * to ✓ fires a real blur before any click/keypress on the button would). */
   const confirmBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  const isInstructor = role === 'instructor';
-  const isTa = role === 'ta';
+  const isInstructor = viewerRole === 'instructor';
+  const isTa = viewerRole === 'ta';
 
   /** Stores a fetched schedule and resets the per-row time drafts from it. */
-  const applySchedule = useCallback((scheduleRes: ApiFinalReviewSchedule, viewerRole: ViewerRole) => {
+  const applySchedule = useCallback((scheduleRes: ApiFinalReviewSchedule) => {
     setSchedule(scheduleRes);
-    setRole(viewerRole);
     setTimeDrafts(Object.fromEntries(
       scheduleRes.teams.map((t) => [t.project_id, toInputValue(t.final_review_at)]),
     ));
@@ -117,17 +106,16 @@ const FinalReviews: React.FC = () => {
   /** Refetches after a mutation; the page stays on screen while it runs. */
   const loadSchedule = useCallback(async () => {
     if (!classId) return;
-    const [scheduleRes, viewerRole] = await fetchScheduleAndRole(classId, viewerId);
-    applySchedule(scheduleRes, viewerRole);
-  }, [classId, viewerId, applySchedule]);
+    applySchedule(await api.getFinalReviewSchedule(classId));
+  }, [classId, applySchedule]);
 
   useEffect(() => {
     if (!classId || !loadKey) return;
     let cancelled = false;
-    fetchScheduleAndRole(classId, viewerId)
-      .then(([scheduleRes, viewerRole]) => {
+    api.getFinalReviewSchedule(classId)
+      .then((scheduleRes) => {
         if (cancelled) return;
-        applySchedule(scheduleRes, viewerRole);
+        applySchedule(scheduleRes);
         setLoaded({ key: loadKey, error: null });
       })
       .catch((err) => {
@@ -140,7 +128,7 @@ const FinalReviews: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [classId, viewerId, loadKey, applySchedule]);
+  }, [classId, loadKey, applySchedule]);
 
   // Instructor: class TAs for the appoint/override dropdown. Anyone else (or
   // no class) gets an empty list.

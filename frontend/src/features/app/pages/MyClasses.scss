@@ -70,6 +70,32 @@ $my-classes-app-header-height: 64px;
   align-self: center;
 }
 
+// Join Class beside Create Class, for accounts that can create classes.
+.my-classes-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+}
+
+// Secondary to Create Class: the same button, outlined. Scoped to the toolbar so it outranks
+// .add-assignment-btn wherever that stylesheet lands in the bundle.
+.my-classes-toolbar .my-classes-toolbar__join-btn {
+  flex-shrink: 0;
+  align-self: center;
+  // The border sits inside the filled button's size.
+  padding: 9px calc(#{$spacing-md} - 1px);
+  background-color: $white;
+  color: $primary-color;
+  border: 1px solid $primary-color;
+
+  &:hover {
+    background-color: var(--gt-primary-soft);
+    color: $primary-hover;
+    border-color: $primary-hover;
+  }
+}
+
 .my-classes-list-scroll {
   flex: 1;
   min-height: 0;
@@ -82,6 +108,30 @@ $my-classes-app-header-height: 64px;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: $spacing-lg;
   padding: $spacing-lg $spacing-lg $spacing-xl;
+}
+
+// A section per school, when your classes span two or more schools.
+.my-classes-school {
+  padding-top: $spacing-lg;
+
+  &:last-child {
+    padding-bottom: $spacing-xl;
+  }
+
+  .my-classes-list {
+    padding-top: $spacing-md;
+    padding-bottom: 0;
+  }
+}
+
+.my-classes-school__heading {
+  margin: 0;
+  padding: 0 $spacing-lg;
+  font-family: $primary-font;
+  font-size: 1rem;
+  font-weight: $font-weight-semibold;
+  color: $text-primary;
+  line-height: 1.3;
 }
 
 .my-classes-empty {
@@ -396,6 +446,30 @@ $my-classes-app-header-height: 64px;
     background-color: #dce8f5;
     color: #2771ff;
   }
+}
+
+// The status tag, plus the role tag beside it when your classes mix roles.
+.my-classes-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+// Your role in the class; shaped like .my-classes-card-status-tag, in neutral tokens.
+.my-classes-card-role-tag {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  margin-top: 2px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: $font-weight-medium;
+  font-family: $primary-font;
+  line-height: 1.2;
+  background-color: var(--gt-surface-sunken);
+  color: var(--gt-text-secondary);
 }
 
 // Match .project-grid__row + .project-grid__see-all (ProjectGrid.scss)
