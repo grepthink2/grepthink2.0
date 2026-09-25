@@ -1106,7 +1106,7 @@ def get_attention_summary(user_id: str) -> dict:
 
 
 def get_class_roster_timeline(class_id: UUID, instructor_id: str) -> dict:
-    """Enrollment, team-join, and drop timestamps for roster students (instructor only).
+    """Enrollment, team-join, and drop timestamps for roster students (class instructor only).
 
     - ``enrolled_at``: from ``class_enrollments.enrolled_at`` when the student joined
       the course on GrepThink.
@@ -1457,7 +1457,7 @@ def add_manual_roster_student(
     instructor_id: str,
 ) -> dict:
     """
-    Manually add a student to the class roster (instructor only).
+    Manually add a student to the class roster (class instructor only).
 
     Manual rows are flagged with ``is_manual = true`` so a later CSV roster
     upload — which replaces non-manual rows — never deletes them. Class
@@ -1527,7 +1527,7 @@ def add_manual_roster_student(
 
 def delete_manual_roster_entry(class_id: UUID, entry_id: str, instructor_id: str) -> dict:
     """
-    Delete a manually-added roster row (instructor only).
+    Delete a manually-added roster row (class instructor only).
 
     Only rows with ``is_manual = true`` may be deleted this way — CSV-sourced
     rows are managed exclusively via roster re-upload.
@@ -1626,7 +1626,7 @@ def _purge_student_from_class(client, class_id: UUID, student_id: str) -> None:
 
 def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: str) -> dict:
     """
-    Remove a student's enrollment from a class (instructor only).
+    Remove a student's enrollment from a class (class instructor only).
 
     Cleans up all class-related state for the student via
     :func:`_purge_student_from_class`.
@@ -1692,7 +1692,7 @@ def leave_class(class_id: UUID, user_id: str) -> dict:
 
 def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) -> dict:
     """
-    Invite a batch of roster students by email (instructor only).
+    Invite a batch of roster students by email (class instructor only).
 
     For each email the possible statuses are:
     - ``enrolled``         – existing GrepThink account enrolled + email sent.
@@ -2067,7 +2067,7 @@ def get_class_projects_overview(class_id: UUID, user_id: str) -> dict:
 
 def get_class_turn_in_stats(class_id: UUID, user_id: str) -> dict:
     """
-    Turn-in stats for the class's current TSR assignment (instructor only).
+    Turn-in stats for the class's current TSR assignment (class instructor only).
 
     A team is fully submitted when every project member has at least one TSR
     row for the assignment (one evaluator_id per member). Partial means some

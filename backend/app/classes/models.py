@@ -37,13 +37,13 @@ class JoinClassRequest(BaseModel):
 
 
 class UpdateClassStatusRequest(BaseModel):
-    """Request model for updating a class lifecycle status (instructor only)."""
+    """Request model for updating a class lifecycle status (class instructor only)."""
 
     status: ClassStatus
 
 
 class AddManualRosterStudentRequest(BaseModel):
-    """Request model for manually adding a student to the roster (instructor only)."""
+    """Request model for manually adding a student to the roster (class instructor only)."""
 
     first_name: str
     last_name: str

@@ -31,6 +31,7 @@ OWNER = "0e3c2f9e-0000-4000-8000-000000000001"
 MEMBER = "0e3c2f9e-0000-4000-8000-000000000002"
 CLASS = "0e3c2f9e-0000-4000-8000-0000000000c1"
 PROJECT = "0e3c2f9e-0000-4000-8000-0000000000b1"
+JOB = "0e3c2f9e-0000-4000-8000-0000000000f1"  # a pending_invites id
 CLASSES = "app.classes.views.controller"
 TAS = "app.tas.views.controller"
 
@@ -127,7 +128,7 @@ ROUTES = [
     ),
     pytest.param(
         "delete",
-        f"/api/classes/{CLASS}/invites/job-1",
+        f"/api/classes/{CLASS}/invites/{JOB}",
         {},
         f"{CLASSES}.cancel_invite",
         {"cancelled": True},
@@ -223,6 +224,17 @@ def test_a_class_owner_whose_account_is_a_student_reaches_the_owner_check(
     # themselves by posting the owner's id, and must fail here.
     assert str(call.arguments[owner]) == OWNER
     assert str(call.arguments[scope]) == SCOPES[scope]
+
+
+def test_cancelling_an_invite_with_a_job_id_that_is_not_a_uuid_answers_422(
+    client: TestClient, monkeypatch
+):
+    # pending_invites.id is a uuid: anything else would only fail in the database, as a 500.
+    calls = []
+    monkeypatch.setattr(f"{CLASSES}.cancel_invite", lambda *args, **kwargs: calls.append(args))
+    res = client.delete(f"/api/classes/{CLASS}/invites/job-1", headers=_as(OWNER))
+    assert res.status_code == 422, res.text
+    assert calls == []
 
 
 def test_creating_a_class_still_needs_the_instructor_role(client: TestClient, monkeypatch):

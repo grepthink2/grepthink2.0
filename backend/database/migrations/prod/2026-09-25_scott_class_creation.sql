@@ -5,6 +5,9 @@
 -- ⚠️  ORDER: run only AFTER the per-class-roles release is live on PROD (beta → main deployed).
 --     On the code PROD runs before that release, an instructor account sees only the classes it
 --     created, so Scott's UCSC TA classes would disappear from their class list.
+--     And only AFTER ../2026-09-25_institutions.sql and ../2026-09-25_seed_istinye.sql are
+--     applied on PROD: a class Scott creates before them cannot be given İstinye, and the
+--     institutions backfill would label it UC Santa Cruz.
 --
 -- profiles.role now means only "may create classes". The classes Scott TAs keep working through
 -- their class_enrollments rows. The backend caches roles, so this takes effect within 60 seconds

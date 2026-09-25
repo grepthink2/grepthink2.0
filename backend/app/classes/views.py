@@ -211,9 +211,10 @@ def queue_invite(
 
 def cancel_invite(
     class_id: UUID,
-    job_id: str,
+    job_id: UUID,
     user_id: str = Depends(require_user),
 ) -> CancelInviteResponse:
     """Cancel a queued invite batch before it is sent (the class instructor; checked in the
-    controller)."""
-    return controller.cancel_invite(class_id, job_id, user_id)
+    controller). ``job_id`` is a ``pending_invites`` id: anything but a UUID answers 422 here
+    instead of failing in the database."""
+    return controller.cancel_invite(class_id, str(job_id), user_id)
