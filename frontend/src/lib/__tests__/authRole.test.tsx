@@ -22,10 +22,10 @@ function sessionFor(userId: string, userMetadata: Record<string, unknown>) {
 }
 
 function Probe() {
-  const { loading, role, realRole, needsRole, refreshRole, canCreateClasses } = useAuth();
+  const { loading, needsRole, refreshRole, canCreateClasses } = useAuth();
   return (
     <>
-      <output data-testid="auth">{loading ? 'loading' : `${role}:${realRole}:${canCreateClasses}`}</output>
+      <output data-testid="auth">{loading ? 'loading' : String(canCreateClasses)}</output>
       <output data-testid="needs-role">{String(needsRole)}</output>
       <button onClick={() => void refreshRole()}>refresh</button>
     </>
@@ -47,7 +47,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('AuthProvider role', () => {
+describe('AuthProvider class-creation right', () => {
   it('uses the profile role when the session carries no role metadata', async () => {
     // Accounts created outside the signup flow (seeded QA users) have no
     // user_metadata.role; the backend authorizes them by profiles.role.
@@ -59,21 +59,21 @@ describe('AuthProvider role', () => {
     expect(probe()).toBe('loading');
 
     await act(async () => resolveProfile({ role: 'instructor' }));
-    expect(probe()).toBe('instructor:instructor:true');
+    expect(probe()).toBe('true');
   });
 
   it('prefers the profile role over the role metadata', async () => {
     client.apiRequest.mockResolvedValue({ role: 'student' });
     renderWithSession(sessionFor('user-1', { role: 'instructor' }));
 
-    await waitFor(() => expect(probe()).toBe('student:student:false'));
+    await waitFor(() => expect(probe()).toBe('false'));
   });
 
   it('does not wait for the profile when the metadata already has a role', async () => {
     client.apiRequest.mockReturnValue(new Promise(() => {}));
     renderWithSession(sessionFor('user-1', { role: 'instructor' }));
 
-    await waitFor(() => expect(probe()).toBe('instructor:instructor:true'));
+    await waitFor(() => expect(probe()).toBe('true'));
   });
 
   it('falls back to the metadata role when the profile request fails', async () => {
@@ -81,7 +81,7 @@ describe('AuthProvider role', () => {
     renderWithSession(sessionFor('user-1', {}));
 
     await waitFor(() => expect(client.apiRequest).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(probe()).toBe('student:student:false'));
+    await waitFor(() => expect(probe()).toBe('false'));
   });
 
   it('does not reuse the previous account’s profile role after switching accounts', async () => {
@@ -92,7 +92,7 @@ describe('AuthProvider role', () => {
     });
     client.apiRequest.mockResolvedValueOnce({ role: 'instructor' }).mockReturnValueOnce(new Promise(() => {}));
     renderWithSession(sessionFor('user-1', {}));
-    await waitFor(() => expect(probe()).toBe('instructor:instructor:true'));
+    await waitFor(() => expect(probe()).toBe('true'));
 
     act(() => emit('SIGNED_IN', sessionFor('user-2', {})));
     expect(probe()).toBe('loading');
@@ -110,7 +110,7 @@ describe('AuthProvider role', () => {
     client.apiRequest.mockRejectedValue(new Error('backend unavailable'));
     renderWithSession(sessionFor('user-1', {}));
 
-    await waitFor(() => expect(probe()).toBe('student:student:false'));
+    await waitFor(() => expect(probe()).toBe('false'));
     expect(screen.getByTestId('needs-role').textContent).toBe('false');
   });
 
@@ -121,14 +121,14 @@ describe('AuthProvider role', () => {
 
     await act(async () => screen.getByRole('button', { name: 'refresh' }).click());
 
-    await waitFor(() => expect(probe()).toBe('instructor:instructor:true'));
+    await waitFor(() => expect(probe()).toBe('true'));
     expect(screen.getByTestId('needs-role').textContent).toBe('false');
   });
 
   it('does not request a profile without a session', async () => {
     renderWithSession(null);
 
-    await waitFor(() => expect(probe()).toBe('student:student:false'));
+    await waitFor(() => expect(probe()).toBe('false'));
     expect(client.apiRequest).not.toHaveBeenCalled();
   });
 });

@@ -14,7 +14,9 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
-  const { user, role } = useAuth();
+  const { user, canCreateClasses } = useAuth();
+  // The roster email and portfolio fields are for student accounts.
+  const showStudentFields = !canCreateClasses;
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -123,7 +125,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
       }
 
       const primaryIsEdu = user.email?.toLowerCase().endsWith('.edu') ?? false;
-      const isStudent = role === 'student';
+      const isStudent = showStudentFields;
       const newEduEmail = isStudent && !primaryIsEdu ? eduEmail.trim() : '';
       const origEduEmail = isStudent && !primaryIsEdu ? originalEduEmailRef.current : '';
       const eduEmailChanged = isStudent && !primaryIsEdu && newEduEmail !== origEduEmail;
@@ -144,7 +146,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         image_url: resolvedAvatarUrl ?? null,
       };
 
-      if (role === 'student') {
+      if (showStudentFields) {
         updateData.linkedin = linkedIn.trim();
         updateData.github = github.trim();
       }
@@ -313,7 +315,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Roster .edu email — students only */}
-            {role === 'student' && (
+            {showStudentFields && (
               primaryIsEdu ? (
                 <div className="settings-modal__field">
                   <label className="settings-modal__label">.edu Email</label>
@@ -342,7 +344,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
             )}
 
             {/* Portfolio — students only, no subtitle */}
-            {role === 'student' && (
+            {showStudentFields && (
               <>
                 <div className="settings-modal__field">
                   <label className="settings-modal__label" htmlFor="sm-linkedin">LinkedIn Username</label>

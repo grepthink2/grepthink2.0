@@ -65,7 +65,7 @@ export const PreviewProvider: React.FC<{ children: ReactNode }> = ({ children })
 
 /**
  * Read preview state. Returns a safe default (not previewing) when no provider
- * is mounted, so components and the `useAuth` hook can call it unconditionally.
+ * is mounted, so components can call it unconditionally.
  */
 // eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
 export const usePreview = (): PreviewContextValue => {

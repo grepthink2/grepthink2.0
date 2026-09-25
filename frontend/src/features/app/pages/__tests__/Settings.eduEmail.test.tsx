@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // One stable object, as the real provider gives: Settings reloads the profile whenever `user` changes.
 const session = vi.hoisted(() => ({
   user: { id: 'u1', email: 'ann@gmail.com', user_metadata: {} },
-  role: 'student',
+  canCreateClasses: false,
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => session }));
 vi.mock('@/lib/supabaseClient', () => ({ supabase: { storage: { from: vi.fn() } } }));
