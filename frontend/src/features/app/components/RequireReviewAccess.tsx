@@ -21,13 +21,15 @@ type GuardStatus = 'checking' | 'allow' | 'deny';
  * same verdict, so only the nested `<Outlet />` content changes.
  */
 export const RequireReviewAccess: React.FC = () => {
-  const { selectedClass, loading } = useClass();
+  const { selectedClass } = useClass();
   const role = useSelectedClassRole();
 
   let status: GuardStatus;
-  // Wait for the class list: treating "classes still loading" as "no class"
-  // would flash-redirect a real TA off the page on a hard refresh.
-  if (loading || role === undefined) status = 'checking';
+  // Wait for the first class list, as ClassRouteGuard does: treating "classes
+  // still loading" as "no class" would flash-redirect a real TA off the page on
+  // a hard refresh. The role is undefined only then; a later refresh with a
+  // spinner keeps it, so it never unmounts the page mid-edit.
+  if (role === undefined) status = 'checking';
   else if (!selectedClass) status = 'deny';
   else status = role === 'instructor' || role === 'ta' ? 'allow' : 'deny';
 

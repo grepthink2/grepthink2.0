@@ -62,10 +62,9 @@ const FinalReviews: React.FC = () => {
   const viewerId = user?.id ?? null;
 
   const [schedule, setSchedule] = useState<ApiFinalReviewSchedule | null>(null);
-  const loadKey = classId ? JSON.stringify([classId, viewerId]) : null;
-  /** The schedule request that last settled, and its error. */
-  const [loaded, setLoaded] = useState<{ key: string; error: string | null } | null>(null);
-  const loading = loadKey !== null && loaded?.key !== loadKey;
+  /** The class of the schedule request that last settled, and its error. */
+  const [loaded, setLoaded] = useState<{ classId: string; error: string | null } | null>(null);
+  const loading = classId !== null && loaded?.classId !== classId;
   const error = loading ? null : (loaded?.error ?? null);
   /** Transient failure of a sign-up/edit action (the schedule itself is fine). */
   const [actionError, setActionError] = useState<string | null>(null);
@@ -110,25 +109,25 @@ const FinalReviews: React.FC = () => {
   }, [classId, applySchedule]);
 
   useEffect(() => {
-    if (!classId || !loadKey) return;
+    if (!classId) return;
     let cancelled = false;
     api.getFinalReviewSchedule(classId)
       .then((scheduleRes) => {
         if (cancelled) return;
         applySchedule(scheduleRes);
-        setLoaded({ key: loadKey, error: null });
+        setLoaded({ classId, error: null });
       })
       .catch((err) => {
         if (cancelled) return;
         setLoaded({
-          key: loadKey,
+          classId,
           error: err instanceof Error ? err.message : 'Failed to load the schedule',
         });
       });
     return () => {
       cancelled = true;
     };
-  }, [classId, loadKey, applySchedule]);
+  }, [classId, applySchedule]);
 
   // Instructor: class TAs for the appoint/override dropdown. Anyone else (or
   // no class) gets an empty list.

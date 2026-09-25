@@ -9,11 +9,18 @@ import type {
 } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useClassRole } from '@/lib/classContext';
+import { CLASS_ROLE_LABELS } from '@features/app/config/routePermissions';
 import './MemberManagerModal.scss';
 
 import { emailToDisplayName, getInitials } from '@/features/app/utils/memberUtils';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { MessageButton } from '@features/messages/components/MessageButton';
+
+/** Their role in this class (Student or TA), not the account role: an account that may create
+ * classes can be a student or TA in this one. '' when an older backend leaves it out. */
+function classRoleLabel(student: ApiStudent): string {
+  return student.enrollment_role ? CLASS_ROLE_LABELS[student.enrollment_role] : '';
+}
 
 function projectRoleLabel(role: string): string {
   switch (role) {
@@ -180,7 +187,7 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
       if (!studentId) return false;
       if (!q) return true;
       const email = (s.email ?? '').toLowerCase();
-      const role = (s.role ?? '').toLowerCase();
+      const role = classRoleLabel(s).toLowerCase();
       const name = emailToDisplayName(s.email).toLowerCase();
       return name.includes(q) || email.includes(q) || role.includes(q);
     });
@@ -497,6 +504,7 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                       const isHoveringUnsend = unsendHoverId === studentId;
                       const canInvite = spotsRemaining > 0 && !isAlreadyMember && !isInvited;
                       const actionLabel = isInviting ? 'Adding...' : isInstructor ? 'Add' : 'Invite';
+                      const roleLabel = classRoleLabel(s);
                       return (
                         <li key={studentId} className="member-manager__card">
                           <div className="member-manager__avatar member-manager__avatar--grey">
@@ -505,9 +513,9 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
                           <div className="member-manager__card-main">
                             <span className="member-manager__name">{name}</span>
                             <span className="member-manager__email">{s.email}</span>
-                            {s.role && (
+                            {roleLabel && (
                               <div className="member-manager__skills">
-                                <span className="member-manager__skill-tag">{s.role}</span>
+                                <span className="member-manager__skill-tag">{roleLabel}</span>
                               </div>
                             )}
                           </div>

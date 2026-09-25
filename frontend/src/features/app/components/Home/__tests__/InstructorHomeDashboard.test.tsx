@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Stable across renders, as the real provider's are: the dashboard derives its list from them.
 const classContext = vi.hoisted(() => ({
@@ -13,12 +13,19 @@ const classContext = vi.hoisted(() => ({
   getClassStatus: () => 'active',
 }));
 
+const auth = vi.hoisted(() => ({ canCreateClasses: true }));
+
 vi.mock('@/lib/classContext', () => ({ useClass: () => classContext }));
+vi.mock('@/lib/auth', () => ({ useAuth: () => auth }));
 vi.mock('@/lib/api', () => ({
   api: { getClassesAttentionSummary: vi.fn(() => Promise.resolve({ classes: [] })) },
 }));
 
 import InstructorHomeDashboard from '../InstructorHomeDashboard';
+
+beforeEach(() => {
+  auth.canCreateClasses = true;
+});
 
 describe('InstructorHomeDashboard', () => {
   it('lists only the classes you teach, not the ones you TA or take', async () => {
@@ -31,5 +38,26 @@ describe('InstructorHomeDashboard', () => {
     expect(screen.getByRole('button', { name: 'Open SE 301 dashboard' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Open CSE 115C dashboard' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Open MATH 19A dashboard' })).not.toBeInTheDocument();
+  });
+
+  it('offers Create Class only to an account that may create classes', async () => {
+    const { unmount } = render(
+      <MemoryRouter>
+        <InstructorHomeDashboard />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('All caught up')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create class/i })).toBeInTheDocument();
+    unmount();
+
+    // Teaches the selected class, but POST /api/classes would answer 403.
+    auth.canCreateClasses = false;
+    render(
+      <MemoryRouter>
+        <InstructorHomeDashboard />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('All caught up')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /create class/i })).not.toBeInTheDocument();
   });
 });

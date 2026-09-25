@@ -3,7 +3,7 @@ import { ArrowRight, Check, Copy, GraduationCap, LogOut, Pencil, PlusCircle } fr
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import { useClass, type Class, type ClassRole } from '@/lib/classContext';
-import { distinctSchools } from '@/lib/classMembership';
+import { distinctSchools, roleInView } from '@/lib/classMembership';
 import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useAuth } from '@/lib/auth';
 import { usePreview } from '@/lib/previewContext';
@@ -104,6 +104,7 @@ const MyClasses: React.FC = () => {
         setSelectedClass,
         getClassStatus,
         refreshClasses,
+        previewClassId,
     } = useClass();
     const { canCreateClasses: accountCanCreateClasses } = useAuth();
     const { isPreviewing } = usePreview();
@@ -121,8 +122,11 @@ const MyClasses: React.FC = () => {
         () => visibleClasses.filter((c) => classMatchesFilter(c, courseFilter, getClassStatus)),
         [visibleClasses, courseFilter, getClassStatus],
     );
+    // Every card follows the role the UI shows: the class "View class as student" previews is a
+    // student's, as it is everywhere else while the preview lasts.
+    const roleOf = (cls: Class): ClassRole => roleInView(cls, previewClassId);
     // Label each card with your role only when your classes mix roles.
-    const mixedRoles = new Set(visibleClasses.map((c) => c.my_role)).size > 1;
+    const mixedRoles = new Set(visibleClasses.map(roleOf)).size > 1;
     // A section per school when your classes span two or more schools.
     const schoolSections = useMemo(
         () => (distinctSchools(visibleClasses).length > 1 ? groupBySchool(filteredClasses) : null),
@@ -157,7 +161,7 @@ const MyClasses: React.FC = () => {
     // A card opens its class on the page for your role in it.
     const handleCardActivate = (cls: Class) => {
         setSelectedClass(cls);
-        navigate(classLandingPath(cls.my_role));
+        navigate(classLandingPath(roleOf(cls)));
     };
 
     const handleCardKeyDown = (e: KeyboardEvent<HTMLDivElement>, cls: Class) => {
@@ -190,8 +194,9 @@ const MyClasses: React.FC = () => {
     // Each card follows your role in its class: the owner card (code and settings) for a class you
     // teach, the learner card (Leave) for one you TA or take.
     const renderCard = (cls: Class) => {
-        const tags = <ClassTags status={getClassStatus(cls)} role={mixedRoles ? cls.my_role : null} />;
-        if (cls.my_role === 'instructor') {
+        const role = roleOf(cls);
+        const tags = <ClassTags status={getClassStatus(cls)} role={mixedRoles ? role : null} />;
+        if (role === 'instructor') {
             return (
                 <div key={cls.id} className="my-classes-card my-classes-card--instructor">
                     <div
@@ -277,7 +282,7 @@ const MyClasses: React.FC = () => {
                 className="my-classes-card my-classes-card--student"
                 role="button"
                 tabIndex={0}
-                aria-label={`Open ${cls.name} and go to ${cls.my_role === 'ta' ? 'TA Meetings' : 'My Project'}`}
+                aria-label={`Open ${cls.name} and go to ${role === 'ta' ? 'TA Meetings' : 'My Project'}`}
                 onClick={() => handleCardActivate(cls)}
                 onKeyDown={(e) => handleCardKeyDown(e, cls)}
             >
