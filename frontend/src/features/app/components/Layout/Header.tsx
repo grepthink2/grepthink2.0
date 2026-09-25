@@ -172,6 +172,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
 
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const profileButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -473,6 +474,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
         {/* Profile Dropdown */}
         <div className="app-header__profile-container" ref={profileRef}>
           <button
+            ref={profileButtonRef}
             className="app-header__profile-button"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             aria-label="Profile menu"
@@ -493,7 +495,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
 
           {showProfileMenu && (
             <div className="app-header__dropdown app-header__profile-dropdown">
-              <SchoolSwitcher onPicked={() => setShowProfileMenu(false)} />
+              {/* The picked option goes away with the menu: focus returns to the profile button. */}
+              <SchoolSwitcher
+                onPicked={() => {
+                  setShowProfileMenu(false);
+                  profileButtonRef.current?.focus();
+                }}
+              />
               {/* Only in a class you own: the class's own role, which preview does not change. */}
               {selectedClass?.my_role === 'instructor' && (
                 <button

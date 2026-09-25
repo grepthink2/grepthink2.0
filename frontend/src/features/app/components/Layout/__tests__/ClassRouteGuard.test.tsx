@@ -50,12 +50,31 @@ describe('ClassRouteGuard', () => {
     expect(page()).toBe('/app/home');
   });
 
-  it('waits for the classes before deciding on a class page', () => {
+  it('waits for the classes before deciding on a class page, showing the page fallback', () => {
     ctx.selectedClass = null;
     ctx.role = undefined;
     const { container } = renderAt('/app/dashboard');
     expect(page()).toBeUndefined();
-    expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument();
+    expect(container.querySelector('.page-fallback[aria-busy="true"]')).toBeInTheDocument();
+  });
+
+  it.each(['/app/dashboard/', '/app/Dashboard', '/APP/DASHBOARD//'])(
+    'guards %s as the router matches it: like /app/dashboard',
+    (path) => {
+      renderAt(path);
+      expect(page()).toBe('/app/my-project');
+    },
+  );
+
+  it('guards a detail page by its list', () => {
+    ctx.role = 'instructor';
+    const { unmount } = renderAt('/app/assignments/a1');
+    expect(page()).toBe('/app/dashboard');
+    unmount();
+
+    ctx.role = 'ta';
+    renderAt('/app/modules/tsr/t1');
+    expect(page()).toBe('/app/ta-meetings');
   });
 
   it('sends class pages to My Classes when no class is selected', () => {
@@ -89,8 +108,8 @@ describe('ClassRouteGuard', () => {
     expect(page()).toBe('/app/my-project');
   });
 
-  it('treats a class previewed as a student like a student class', () => {
-    // useSelectedClassRole reports 'student' for the class "view class as student" previews.
+  it('lands a student on My Project from an instructor page', () => {
+    // Also the role useSelectedClassRole reports for a class previewed as a student.
     ctx.role = 'student';
     renderAt('/app/ta-management');
     expect(page()).toBe('/app/my-project');

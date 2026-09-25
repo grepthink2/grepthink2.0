@@ -6,6 +6,7 @@ import { useClass, type Class, type ClassRole } from '@/lib/classContext';
 import { distinctSchools } from '@/lib/classMembership';
 import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useAuth } from '@/lib/auth';
+import { usePreview } from '@/lib/previewContext';
 import { api } from '@/lib/api';
 import { lazyModal } from '@/lib/lazyModal';
 import { CLASS_ROLE_LABELS, classLandingPath } from '@features/app/config/routePermissions';
@@ -104,7 +105,10 @@ const MyClasses: React.FC = () => {
         getClassStatus,
         refreshClasses,
     } = useClass();
-    const { canCreateClasses } = useAuth();
+    const { canCreateClasses: accountCanCreateClasses } = useAuth();
+    const { isPreviewing } = usePreview();
+    // "View class as student" shows what a student account can do, as the sidebar does.
+    const canCreateClasses = accountCanCreateClasses && !isPreviewing;
     const navigate = useNavigate();
     const { openJoinClassModal } = useOutletContext<AppOutletContext>();
     const [copiedId, setCopiedId] = useState<string | null>(null);

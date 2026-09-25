@@ -24,8 +24,8 @@ export const taOnlyPaths: readonly string[] = ['/app/ta-review'];
 const FINAL_REVIEWS_PATH = '/app/ta-review/final-reviews';
 
 /**
- * Detail pages (`<prefix><id>`) and the list each belongs to. They pair the id in the path with the
- * selected class, so after a class switch the id means nothing.
+ * Detail pages (`<prefix><id>`) and the list each belongs to, whose rule they follow. They pair the
+ * id in the path with the selected class, so after a class switch the id means nothing.
  */
 const DETAIL_PAGES: readonly { prefix: string; list: string }[] = [
   { prefix: '/app/assignments/', list: '/app/assignments' },
@@ -40,31 +40,45 @@ export const CLASS_ROLE_LABELS: Record<ClassRole, string> = {
   student: 'Student',
 };
 
+/**
+ * `path` as the rules compare it: lower-case, without trailing slashes. React Router matches paths
+ * case-insensitively and accepts a trailing slash, so `/app/Dashboard/` opens the Dashboard too.
+ */
+function normalizePath(path: string): string {
+  return path.toLowerCase().replace(/\/+$/, '') || '/';
+}
+
 function isFinalReviewsPath(path: string): boolean {
   return path === FINAL_REVIEWS_PATH || path.startsWith(`${FINAL_REVIEWS_PATH}/`);
 }
 
 /** The list a detail page belongs to; null for every other page. */
-function detailPageList(path: string): string | null {
-  if (isFinalReviewsPath(path)) return null;
-  const page = DETAIL_PAGES.find(({ prefix }) => path.startsWith(prefix) && path.length > prefix.length);
+export function detailPageList(path: string): string | null {
+  const normalized = normalizePath(path);
+  if (isFinalReviewsPath(normalized)) return null;
+  const page = DETAIL_PAGES.find(
+    ({ prefix }) => normalized.startsWith(prefix) && normalized.length > prefix.length,
+  );
   return page?.list ?? null;
 }
 
-function isTaOnlyPath(path: string): boolean {
-  return taOnlyPaths.includes(path) || detailPageList(path) === '/app/ta-review';
+/** The page whose rule applies to `path`: a detail page follows its list. */
+function rulePath(path: string): string {
+  return detailPageList(path) ?? normalizePath(path);
 }
 
 /** A page that only makes sense with a class selected and a matching role in it. */
 export function isClassScopedPath(path: string): boolean {
-  return instructorOnlyPaths.includes(path) || learnerOnlyPaths.includes(path) || isTaOnlyPath(path);
+  const page = rulePath(path);
+  return instructorOnlyPaths.includes(page) || learnerOnlyPaths.includes(page) || taOnlyPaths.includes(page);
 }
 
 /** True if your role in the selected class may open `path` (every other page is shared). */
 export function isPathAllowedForClassRole(path: string, role: ClassRole | null | undefined): boolean {
-  if (instructorOnlyPaths.includes(path)) return role === 'instructor';
-  if (learnerOnlyPaths.includes(path)) return role === 'student' || role === 'ta';
-  if (isTaOnlyPath(path)) return role === 'ta';
+  const page = rulePath(path);
+  if (instructorOnlyPaths.includes(page)) return role === 'instructor';
+  if (learnerOnlyPaths.includes(page)) return role === 'student' || role === 'ta';
+  if (taOnlyPaths.includes(page)) return role === 'ta';
   return true;
 }
 

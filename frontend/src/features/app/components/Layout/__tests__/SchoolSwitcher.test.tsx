@@ -53,6 +53,14 @@ describe('SchoolSwitcher', () => {
     expect(screen.getByRole('button', { name: 'İstinye University' })).toHaveAttribute('aria-current', 'true');
   });
 
+  it('points the toggle at the school list only while the list is there', () => {
+    renderAt('/app/home');
+    const toggle = screen.getByRole('button', { name: 'School: İstinye University' });
+    expect(toggle).not.toHaveAttribute('aria-controls');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-controls', screen.getByRole('list', { name: 'Schools' }).id);
+  });
+
   it('picks a school, closes the menu and lands on the page for the role there', () => {
     ctx.selectSchool.mockReturnValue({ id: 'c1', my_role: 'ta' });
     const onPicked = renderAt('/app/dashboard');

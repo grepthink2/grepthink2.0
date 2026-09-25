@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   classLandingPath,
+  detailPageList,
   isClassScopedPath,
   isPathAllowedForClassRole,
   pathAfterClassSwitch,
@@ -55,6 +56,9 @@ describe('class route rules', () => {
       '/app/staff-projects',
       '/app/my-project',
       '/app/assignments',
+      '/app/assignments/a1',
+      '/app/modules/tsr/t1',
+      '/app/modules/feedback/f1',
       '/app/ta-review',
       '/app/ta-review/a1',
     ]) {
@@ -67,12 +71,42 @@ describe('class route rules', () => {
       '/app/ta-meetings',
       '/app/create-project',
       '/app/projects/p1',
-      '/app/assignments/a1',
       '/app/ta-review/final-reviews',
       '/app/ta-review/final-reviews/p1',
     ]) {
       expect(isClassScopedPath(path), path).toBe(false);
     }
+  });
+
+  it('guards a detail page by the rule of its list', () => {
+    expect(isPathAllowedForClassRole('/app/assignments/a1', 'student')).toBe(true);
+    expect(isPathAllowedForClassRole('/app/assignments/a1', 'ta')).toBe(true);
+    expect(isPathAllowedForClassRole('/app/assignments/a1', 'instructor')).toBe(false);
+    expect(isPathAllowedForClassRole('/app/modules/tsr/t1', 'instructor')).toBe(true);
+    expect(isPathAllowedForClassRole('/app/modules/tsr/t1', 'ta')).toBe(false);
+    expect(isPathAllowedForClassRole('/app/modules/feedback/f1', 'student')).toBe(false);
+  });
+
+  it('matches paths as the router does: in any case, with or without trailing slashes', () => {
+    expect(isClassScopedPath('/app/Dashboard/')).toBe(true);
+    expect(isPathAllowedForClassRole('/app/dashboard/', 'student')).toBe(false);
+    expect(isPathAllowedForClassRole('/app/Dashboard', 'student')).toBe(false);
+    expect(isPathAllowedForClassRole('/APP/TA-REVIEW/', 'student')).toBe(false);
+    expect(isPathAllowedForClassRole('/app/ta-review/Final-Reviews/', 'instructor')).toBe(true);
+    expect(pathAfterClassSwitch('/app/Dashboard/', 'ta')).toBe('/app/ta-meetings');
+    expect(pathAfterClassSwitch('/app/Assignments/A1/', 'student')).toBe('/app/assignments');
+  });
+
+  it('names the list each detail page belongs to', () => {
+    expect(detailPageList('/app/assignments/a1')).toBe('/app/assignments');
+    expect(detailPageList('/app/modules/tsr/t1')).toBe('/app/modules');
+    expect(detailPageList('/app/modules/feedback/f1')).toBe('/app/modules');
+    expect(detailPageList('/app/ta-review/a1')).toBe('/app/ta-review');
+    expect(detailPageList('/app/ta-review/final-reviews')).toBeNull();
+    expect(detailPageList('/app/ta-review/final-reviews/p1')).toBeNull();
+    expect(detailPageList('/app/projects/p1')).toBeNull();
+    expect(detailPageList('/app/assignments')).toBeNull();
+    expect(detailPageList('/app/assignments/')).toBeNull();
   });
 
   it('lands each role on its page', () => {

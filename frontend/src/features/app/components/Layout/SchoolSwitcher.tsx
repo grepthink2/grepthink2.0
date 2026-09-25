@@ -5,7 +5,7 @@ import { useClass } from '@/lib/classContext';
 import { pathAfterClassSwitch } from '@features/app/config/routePermissions';
 
 interface SchoolSwitcherProps {
-  /** Close the profile menu after a school is picked. */
+  /** Close the profile menu after a school is picked (and move focus off the closing menu). */
   onPicked: () => void;
 }
 
@@ -43,7 +43,7 @@ const SchoolSwitcher: React.FC<SchoolSwitcherProps> = ({ onPicked }) => {
         type="button"
         className="app-header__dropdown-item app-header__school-toggle"
         aria-expanded={open}
-        aria-controls={listId}
+        aria-controls={open ? listId : undefined}
         onClick={() => setOpen((value) => !value)}
       >
         <School size={18} aria-hidden />

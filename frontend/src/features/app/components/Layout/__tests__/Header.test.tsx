@@ -102,6 +102,18 @@ describe('Header', () => {
     ]);
   });
 
+  it('returns focus to the profile button after a school is picked', () => {
+    state.ctx.showSchoolSwitcher = true;
+    renderAt('/app/home');
+    const profileButton = screen.getByRole('button', { name: 'Profile menu' });
+    fireEvent.click(profileButton);
+    fireEvent.click(screen.getByRole('button', { name: /^School:/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'UC Santa Cruz' }));
+    expect(state.ctx.selectSchool).toHaveBeenCalledWith('ucsc');
+    expect(document.querySelector('.app-header__profile-dropdown')).not.toBeInTheDocument();
+    expect(profileButton).toHaveFocus();
+  });
+
   it('offers "View class as student" in a class you own and starts the preview from Home', () => {
     renderAt('/app/dashboard');
     expect(openProfileMenu()).toEqual(['View class as student', 'Settings', 'Log Out']);

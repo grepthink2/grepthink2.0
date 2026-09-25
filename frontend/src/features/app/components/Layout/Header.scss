@@ -603,7 +603,7 @@ $app-header-text: var(--gt-text-secondary);
     border-radius: $border-radius-sm;
     text-align: left;
     cursor: pointer;
-    @include gt-transition(background-color);
+    @include gt-transition(background-color, box-shadow);
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     font-family: $primary-font;
@@ -615,7 +615,12 @@ $app-header-text: var(--gt-text-secondary);
 
     &:focus {
       outline: none;
+    }
+
+    // The canvas tint alone is too faint to show keyboard focus; the ring is not.
+    &:focus-visible {
       background-color: var(--gt-canvas);
+      box-shadow: var(--gt-focus-ring-tight);
     }
   }
 

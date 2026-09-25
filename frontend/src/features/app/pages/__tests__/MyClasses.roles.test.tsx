@@ -7,7 +7,7 @@ const mixed = vi.hoisted(() => [
   { id: 'taught', name: 'SE 301', created_by: 'me', created_at: '', status: 'active', my_role: 'instructor', institution: { id: 'ist', name: 'İstinye University', slug: 'istinye' } },
   { id: 'assisted', name: 'CSE 115C', created_by: 'prof', created_at: '', status: 'active', my_role: 'ta', institution: { id: 'ucsc', name: 'UC Santa Cruz', slug: 'ucsc' } },
 ]);
-const state = vi.hoisted(() => ({ classes: [] as unknown[], canCreateClasses: true }));
+const state = vi.hoisted(() => ({ classes: [] as unknown[], canCreateClasses: true, previewing: false }));
 const setSelectedClass = vi.hoisted(() => vi.fn());
 
 vi.mock('@/lib/classContext', () => ({
@@ -22,6 +22,7 @@ vi.mock('@/lib/classContext', () => ({
   }),
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ canCreateClasses: state.canCreateClasses }) }));
+vi.mock('@/lib/previewContext', () => ({ usePreview: () => ({ isPreviewing: state.previewing }) }));
 vi.mock('@/lib/api', () => ({ api: { leaveClass: vi.fn() } }));
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react-router-dom')>()),
@@ -33,6 +34,7 @@ import MyClasses from '../MyClasses';
 beforeEach(() => {
   state.classes = mixed;
   state.canCreateClasses = true;
+  state.previewing = false;
   setSelectedClass.mockClear();
 });
 
@@ -47,6 +49,13 @@ describe('My Classes with mixed roles', () => {
     expect(screen.getByRole('heading', { name: 'UC Santa Cruz' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create class/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /join class/i })).toBeInTheDocument();
+  });
+
+  it('offers Join Class only while you view a class as a student, like the sidebar', () => {
+    state.previewing = true;
+    render(<MemoryRouter><MyClasses /></MemoryRouter>);
+    expect(screen.getByRole('button', { name: /join class/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /create class/i })).not.toBeInTheDocument();
   });
 
   it('opens a class on the page for your role in it', async () => {

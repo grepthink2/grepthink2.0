@@ -64,6 +64,13 @@ describe('Home', () => {
     expect(screen.getByText('student home')).toBeInTheDocument();
   });
 
+  it('keeps the dashboard while the class list refreshes with a spinner', () => {
+    state.role = 'instructor';
+    state.classesLoading = true; // a refresh; the selected class is still known
+    renderHome();
+    expect(screen.getByText('instructor home')).toBeInTheDocument();
+  });
+
   it('waits for the classes before choosing', () => {
     state.selectedClass = null;
     state.role = undefined;
