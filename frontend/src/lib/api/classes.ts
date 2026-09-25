@@ -21,6 +21,7 @@ export const classesApi = {
     term: string;
     start_date: string;
     tsr_count?: number;
+    institution_id?: string;
   }) => {
     return apiRequest<{ message: string; class: ApiClass }>('/api/classes', {
       method: 'POST',
