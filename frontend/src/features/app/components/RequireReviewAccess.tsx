@@ -1,48 +1,35 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '@/lib/auth';
-import { useClass } from '@/lib/classContext';
-import { useEnrollmentRole } from '@/lib/enrollmentRole';
+import { useClass, useSelectedClassRole } from '@/lib/classContext';
 
 type GuardStatus = 'checking' | 'allow' | 'deny';
 
 /**
  * Route guard for the Final Reviews pages (`/app/ta-review/final-reviews…`).
  *
- * Instructors always get through. A student only gets through when they're
- * the class TA for the selected class — the same `getMyEnrollmentRole`
- * signal Sidebar.tsx uses to decide whether to show the "TA Review" nav
- * group at all. This is the direct-URL backstop for that same check: without
- * it, a plain student who navigates (or has an old link) straight to the
- * route reaches the page and gets a raw backend error instead of a friendly
- * bounce.
+ * The instructor and the TAs of the selected class get through, by your role
+ * in that class (useSelectedClassRole), not the account role: an account can
+ * teach one class and TA another. This is the direct-URL backstop for the
+ * sidebar, which offers Final Reviews only to those roles: without it, a
+ * student who navigates (or has an old link) straight to the route reaches
+ * the page and gets a raw backend error instead of a friendly bounce.
  *
  * A pathless layout route (`<Route element={<RequireReviewAccess />}>`
  * wrapping both final-reviews routes, rendering `<Outlet />` on allow) —
- * NOT a per-route wrapper around `{children}`. Wrapping each route
- * individually would mount a fresh RequireReviewAccess (and re-run its
- * enrollment-role fetch) on every navigation between the list and detail
- * pages, even though both share the exact same access verdict; as a layout
- * route it stays mounted across that navigation so only the nested
- * `<Outlet />` content changes.
+ * NOT a per-route wrapper around `{children}`. As a layout route it stays
+ * mounted while you move between the list and detail pages, which share the
+ * same verdict, so only the nested `<Outlet />` content changes.
  */
 export const RequireReviewAccess: React.FC = () => {
-  const { role } = useAuth();
-  const { selectedClass, loading: classesLoading } = useClass();
-  // Ask only once ClassProvider has settled: treating "classes still loading"
-  // as "no class" would flash-redirect a real TA off the page on a hard refresh.
-  const classRole = useEnrollmentRole(
-    role === 'instructor' || classesLoading ? undefined : selectedClass?.id,
-  );
+  const { selectedClass, loading } = useClass();
+  const role = useSelectedClassRole();
 
   let status: GuardStatus;
-  if (role === 'instructor') status = 'allow';
-  else if (classesLoading) status = 'checking';
-  // No class selected and nothing left to load: the same "not a TA for this
-  // class" signal Sidebar.tsx falls back to.
-  else if (!selectedClass?.id) status = 'deny';
-  else if (classRole === undefined) status = 'checking';
-  else status = classRole === 'ta' ? 'allow' : 'deny';
+  // Wait for the class list: treating "classes still loading" as "no class"
+  // would flash-redirect a real TA off the page on a hard refresh.
+  if (loading || role === undefined) status = 'checking';
+  else if (!selectedClass) status = 'deny';
+  else status = role === 'instructor' || role === 'ta' ? 'allow' : 'deny';
 
   if (status === 'checking') {
     return <div className="require-review-access" aria-busy="true" />;

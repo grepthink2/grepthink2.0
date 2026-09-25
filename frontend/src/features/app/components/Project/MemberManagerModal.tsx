@@ -8,6 +8,7 @@ import type {
   ApiStudent,
 } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useClassRole } from '@/lib/classContext';
 import './MemberManagerModal.scss';
 
 import { emailToDisplayName, getInitials } from '@/features/app/utils/memberUtils';
@@ -48,7 +49,7 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
   initialMembers,
   onMembersChange,
 }) => {
-  const { user, role } = useAuth();
+  const { user } = useAuth();
   const currentUserId = user?.id ?? null;
   const [activeTab, setActiveTab] = useState<TabId>('current');
   const [members, setMembers] = useState<ApiProjectMember[]>(initialMembers);
@@ -68,7 +69,7 @@ const MemberManagerModal: React.FC<MemberManagerModalProps> = ({
   const [unsendHoverId, setUnsendHoverId] = useState<string | null>(null);
   const [unsendingId, setUnsendingId] = useState<string | null>(null);
 
-  const isInstructor = role === 'instructor';
+  const isInstructor = useClassRole(classId) === 'instructor';
   const showingAddTab = isOpen && activeTab === 'add';
 
   // Each opening, and each fresh member list from the parent, starts from that

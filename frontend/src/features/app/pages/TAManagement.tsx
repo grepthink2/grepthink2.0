@@ -71,11 +71,13 @@ const TAManagement: React.FC = () => {
 
   const taIds = useMemo(() => new Set(tas.map((t) => t.id)), [tas]);
 
-  // Registered students who are not already TAs, matching the search query.
+  // Registered students who are not already TAs, matching the search query. The account role is
+  // not checked: someone who teaches another class may TA this one (and the class's own
+  // instructor is never in its enrollment list).
   const eligibleStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
     return students
-      .filter((s) => s.role !== 'instructor' && !taIds.has(s.id))
+      .filter((s) => !taIds.has(s.id))
       .filter((s) => {
         if (!q) return true;
         return (
