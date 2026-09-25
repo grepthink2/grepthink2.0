@@ -35,6 +35,8 @@ describe('getInstitutions', () => {
     ['a 503', () => jsonResponse(503, { detail: 'Database unavailable', code: 'database_unavailable' })],
     ['a body that is not JSON', () => new Response('<html>', { status: 200 })],
     ['a body without the list', () => jsonResponse(200, {})],
+    ['a school without email domains', () => jsonResponse(200, { institutions: [UCSC, { id: 'x', name: 'X', slug: 'x' }] })],
+    ['a school with a domain that is not text', () => jsonResponse(200, { institutions: [{ ...UCSC, email_domains: [42] }] })],
   ])('answers null for %s', async (_case, response) => {
     fetchMock.mockResolvedValue(response());
     await expect(institutionsApi.getInstitutions()).resolves.toBeNull();

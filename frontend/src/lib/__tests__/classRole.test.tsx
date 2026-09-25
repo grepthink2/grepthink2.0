@@ -22,11 +22,16 @@ function cls(id: string, extra: Partial<ApiClass>): ApiClass {
 
 function deferred<T>() {
   let resolve: (value: T) => void = () => {};
-  const promise = new Promise<T>((r) => {
-    resolve = r;
+  let reject: (reason: unknown) => void = () => {};
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
 }
+
+/** A failed load logs; keep the expected error out of the test output. */
+const quietErrors = () => vi.spyOn(console, 'error').mockImplementation(() => {});
 
 function Probe() {
   const {
@@ -38,12 +43,14 @@ function Probe() {
     showSchoolSwitcher,
     selectSchool,
     previewClassId,
+    loading,
   } = useClass();
   const selectedRole = useSelectedClassRole();
   const taughtRole = useClassRole('taught');
   const [picked, setPicked] = useState('');
   return (
     <>
+      <output data-testid="loading">{String(loading)}</output>
       <output data-testid="selected">{selectedClass?.id ?? 'none'}</output>
       <output data-testid="selected-role">{String(selectedRole)}</output>
       <output data-testid="taught-role">{String(taughtRole)}</output>
@@ -61,14 +68,28 @@ function Probe() {
   );
 }
 
-/** What pages do: refresh after a join or create, refresh on a timer, change a class's status. */
+/** Where Join Class lands once `await refreshClasses(false, id)` returns: the class it opened on. */
+function Landing() {
+  const { selectedClass } = useClass();
+  const [openedOn] = useState(selectedClass?.id ?? 'none');
+  return <output data-testid="landed">{openedOn}</output>;
+}
+
+/** What pages do: refresh on a timer or with a spinner, join a class, change a class's status. */
 function Controls() {
   const { refreshClasses, setClassLifecycleStatus } = useClass();
+  const [joined, setJoined] = useState(false);
+  const join = async () => {
+    await refreshClasses(false, 'new'); // JoinClassModal / CreateClassModal
+    setJoined(true); // ...then they navigate
+  };
   return (
     <>
       <button onClick={() => void refreshClasses(false)}>refresh</button>
-      <button onClick={() => void refreshClasses(false, 'new')}>refresh selecting new</button>
+      <button onClick={() => void refreshClasses(true)}>refresh with spinner</button>
+      <button onClick={() => void join()}>join new</button>
       <button onClick={() => void setClassLifecycleStatus('x', 'complete')}>complete x</button>
+      {joined && <Landing />}
     </>
   );
 }
@@ -104,7 +125,10 @@ beforeEach(() => {
   seenSelected.clear();
   seenLists.clear();
 });
-afterEach(() => vi.resetAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.resetAllMocks();
+});
 
 describe('class roles', () => {
   it('reads my_role per class and derives it when an older backend omits it', async () => {
@@ -396,7 +420,7 @@ describe('refreshes', () => {
     api.getClasses.mockResolvedValueOnce({
       classes: [cls('x', { my_role: 'student' }), cls('new', { my_role: 'instructor' })],
     });
-    await act(async () => screen.getByText('refresh selecting new').click()); // after Create Class
+    await act(async () => screen.getByText('join new').click());
     await waitFor(() => expect(text('selected')).toBe('new'));
     await act(async () => stale.resolve({ classes: [cls('x', { my_role: 'student' })] }));
     expect(text('selected')).toBe('new');
@@ -427,7 +451,7 @@ describe('refreshes', () => {
     await waitFor(() => expect(text('selected')).toBe('x'));
     const superseded = deferred<unknown>();
     api.getClasses.mockReturnValueOnce(superseded.promise);
-    act(() => screen.getByText('refresh selecting new').click()); // Create Class asks for "new"...
+    act(() => screen.getByText('join new').click()); // Join Class asks for "new"...
     api.getClasses.mockResolvedValueOnce({
       classes: [cls('x', { my_role: 'student' }), cls('new', { my_role: 'instructor' })],
     });
@@ -435,5 +459,95 @@ describe('refreshes', () => {
     await waitFor(() => expect(text('selected')).toBe('new'));
     await act(async () => superseded.resolve({ classes: [cls('x', { my_role: 'student' })] }));
     expect(text('selected')).toBe('new');
+  });
+
+  it('resolves a refresh only once the class it asked for is selected', async () => {
+    api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'student' })] });
+    renderProvider(<Controls />);
+    await waitFor(() => expect(text('selected')).toBe('x'));
+    const joinLoad = deferred<unknown>();
+    const timerLoad = deferred<unknown>();
+    api.getClasses.mockReturnValueOnce(joinLoad.promise).mockReturnValueOnce(timerLoad.promise);
+    act(() => screen.getByText('join new').click());
+    act(() => screen.getByText('refresh').click()); // My Classes' timer, meanwhile
+    const both = { classes: [cls('x', { my_role: 'student' }), cls('new', { my_role: 'student' })] };
+    await act(async () => joinLoad.resolve(both));
+    expect(screen.queryByTestId('landed')).toBeNull(); // waits for the newer load too
+    await act(async () => timerLoad.resolve(both));
+    expect(text('landed')).toBe('new');
+  });
+
+  it('keeps an older answer when the newer load fails', async () => {
+    quietErrors();
+    api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'student' })] });
+    renderProvider(<Controls />);
+    await waitFor(() => expect(text('selected')).toBe('x'));
+    const joinLoad = deferred<unknown>();
+    const timerLoad = deferred<unknown>();
+    api.getClasses.mockReturnValueOnce(joinLoad.promise).mockReturnValueOnce(timerLoad.promise);
+    act(() => screen.getByText('join new').click());
+    act(() => screen.getByText('refresh').click());
+    await act(async () => timerLoad.reject(new TypeError('Failed to fetch')));
+    await act(async () =>
+      joinLoad.resolve({ classes: [cls('x', { my_role: 'student' }), cls('new', { my_role: 'student' })] }),
+    );
+    expect(text('selected')).toBe('new');
+    expect(text('landed')).toBe('new');
+  });
+
+  it('clears the spinner when a status change retires the load showing it', async () => {
+    api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'instructor' })] });
+    api.updateClassStatus.mockResolvedValue({
+      message: 'Class status updated',
+      class: cls('x', { my_role: 'instructor', status: 'complete' }),
+    });
+    renderProvider(<Controls />);
+    await waitFor(() => expect(text('loading')).toBe('false'));
+    const slow = deferred<unknown>();
+    api.getClasses.mockReturnValueOnce(slow.promise);
+    act(() => screen.getByText('refresh with spinner').click());
+    expect(text('loading')).toBe('true');
+    await act(async () => screen.getByText('complete x').click());
+    await act(async () => slow.resolve({ classes: [cls('x', { my_role: 'instructor' })] }));
+    expect(text('loading')).toBe('false');
+    expect(text('statuses')).toBe('x:complete');
+  });
+
+  it("does not let a retired load's class override a class the user picked since", async () => {
+    const withNew = {
+      classes: [cls('x', { my_role: 'instructor' }), cls('y', { my_role: 'ta' }), cls('new', { my_role: 'student' })],
+    };
+    api.getClasses.mockResolvedValue({
+      classes: [cls('x', { my_role: 'instructor' }), cls('y', { my_role: 'ta' })],
+    });
+    api.updateClassStatus.mockResolvedValue({
+      message: 'Class status updated',
+      class: cls('x', { my_role: 'instructor', status: 'complete' }),
+    });
+    renderProvider(<Controls />);
+    await waitFor(() => expect(text('selected')).toBe('x'));
+    const joinLoad = deferred<unknown>();
+    api.getClasses.mockReturnValueOnce(joinLoad.promise);
+    act(() => screen.getByText('join new').click()); // asks for "new"
+    await act(async () => screen.getByText('complete x').click()); // retires that load
+    await act(async () => joinLoad.resolve(withNew));
+    act(() => screen.getByText('select y').click()); // the user moves on
+    api.getClasses.mockResolvedValue(withNew);
+    at(300);
+    await regainFocus();
+    await waitFor(() => expect(screen.getByText('select new')).toBeInTheDocument());
+    expect(text('selected')).toBe('y');
+  });
+
+  it('retries on the next focus when the last load failed', async () => {
+    quietErrors();
+    api.getClasses.mockRejectedValueOnce(new TypeError('Failed to fetch')); // backend down at startup
+    renderProvider();
+    await waitFor(() => expect(text('loading')).toBe('false'));
+    api.getClasses.mockResolvedValue({ classes: [cls('a', { my_role: 'student' })] });
+    at(1);
+    await regainFocus();
+    await waitFor(() => expect(text('selected')).toBe('a'));
+    expect(api.getClasses).toHaveBeenCalledTimes(2);
   });
 });

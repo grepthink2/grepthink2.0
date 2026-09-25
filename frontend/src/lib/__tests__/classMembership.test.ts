@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiClass } from '../api';
-import type { Class } from '../classContext';
 import {
+  type Class,
   classesForSchool,
   distinctSchools,
   loadLastClassBySchool,

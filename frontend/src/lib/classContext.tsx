@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { api, type ApiInstitutionSummary, type ClassRole } from './api';
+import { api, type ClassRole } from './api';
 import { useAuth } from './auth';
 import { usePreview } from './previewContext';
 import {
@@ -18,7 +18,11 @@ import {
   reuseUnchangedClasses,
   roleInView,
   toClass,
+  type Class,
+  type School,
 } from './classMembership';
+
+export type { Class, ClassRole, School };
 
 function getPreferencesSnapshot(): ClassPreferenceMap {
   return loadClassPreferences();
@@ -57,31 +61,13 @@ function resolveSelectedClass(classes: Class[], preferredId: string | null): Cla
   return classes.length > 0 ? classes[0] : null;
 }
 
-export type { ClassRole };
-export type School = ApiInstitutionSummary;
-
-export interface Class {
-  id: string;
-  name: string;
-  description?: string;
-  course_code?: string;
-  created_by: string;
-  created_at: string;
-  teacher_email?: string;
-  /** Present for instructor-owned classes from API (used for course lifecycle filters). */
-  term?: string;
-  start_date?: string;
-  year?: number;
-  image_url?: string;
-  /** Lifecycle status from classes.status — active or complete. */
-  status?: ClassLifecycleStatus;
-  /** My Classes: number of students in class_enrollments. */
-  enrolled_count?: number;
-  /** The signed-in user's role in this class. */
-  my_role: ClassRole;
-  /** The school the class belongs to, when known. */
-  institution: School | null;
-  institution_id?: string | null;
+/** Resolves once the newest load has settled, following any load started while it waits. */
+async function untilSettled(newestLoad: { current: Promise<void> }): Promise<void> {
+  let load: Promise<void>;
+  do {
+    load = newestLoad.current;
+    await load;
+  } while (load !== newestLoad.current);
 }
 
 interface ClassContextValue {
@@ -105,9 +91,11 @@ interface ClassContextValue {
   /** The class "view class as student" previews (the one selected when it began); else null. */
   previewClassId: string | null;
   selectedClass: Class | null;
+  /** The user picks a class; it wins over a class that a load in flight was asked to select. */
   setSelectedClass: (classItem: Class | null) => void;
   // Accept showLoading param to avoid blocking UI when refreshing after join.
   // Pass selectClassId to force the sidebar selection (e.g. after creating a class).
+  // Resolves once the newest load has settled, so that class is selected by then.
   refreshClasses: (showLoading?: boolean, selectClassId?: string | null) => Promise<void>;
   loading: boolean;
   // Success message state for cross-component notifications (e.g., after joining class)
@@ -141,6 +129,19 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [preferences, setPreferences] = useState<ClassPreferenceMap>(() => loadClassPreferences());
   const [previewClassId, setPreviewClassId] = useState<string | null>(null);
 
+  // Loads overlap (a focus refresh, My Classes' timer, a join or create), numbered as they start.
+  // An answer is applied unless a later-started load's answer already was, or a status change
+  // retired it; so an older success still lands when a newer load fails. A class a load was asked
+  // to select waits until a load started since applies it, or the user picks a class.
+  const loadSeq = useRef(0);
+  const appliedSeq = useRef(0);
+  const requestedClass = useRef<{ id: string | null; seq: number } | null>(null);
+  const newestLoad = useRef<Promise<void>>(Promise.resolve());
+  const lastLoadStartedAt = useRef(0);
+  // Read by a load when it lands; the effects below keep them current.
+  const classesRef = useRef<Class[]>([]);
+  const lastSelectedClassId = useRef<string | undefined>(undefined);
+
   const visibleClasses = useMemo(
     () => filterVisibleClasses(classes, preferences),
     [classes, preferences],
@@ -151,10 +152,19 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     [classes, preferences],
   );
 
-  const setSelectedClass = useCallback((classItem: Class | null) => {
+  // Select a class and save it for the next visit.
+  const selectClass = useCallback((classItem: Class | null) => {
     setSelectedClassState(classItem);
     persistSelectedClassId(classItem?.id ?? null);
   }, []);
+
+  const setSelectedClass = useCallback(
+    (classItem: Class | null) => {
+      requestedClass.current = null;
+      selectClass(classItem);
+    },
+    [selectClass],
+  );
 
   const reselectSidebarClass = useCallback(
     (preferredId: string | null) => {
@@ -164,56 +174,55 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     [activeClasses, setSelectedClass],
   );
 
-  // Read by a load when it lands; the effects below keep them current.
-  const classesRef = useRef<Class[]>([]);
-  const lastSelectedClassId = useRef<string | undefined>(undefined);
-
-  // Fetches the roster and re-resolves the selection. Loads overlap (a focus refresh, My Classes'
-  // timer, a join or create), so only the newest request's answer is applied, and a status change
-  // retires the loads in flight. A class that a dropped load was asked to select carries over.
-  const loadSeq = useRef(0);
-  const requestedClassId = useRef<string | null | undefined>(undefined);
-  const lastLoadStartedAt = useRef(0);
+  // Fetches the roster and re-resolves the selection; resolves once the newest load has settled.
   const loadClasses = useCallback(
-    (selectClassId?: string | null) => {
+    (selectClassId?: string | null): Promise<void> => {
       const seq = ++loadSeq.current;
       lastLoadStartedAt.current = Date.now();
-      if (selectClassId !== undefined) requestedClassId.current = selectClassId;
-      return api
+      if (selectClassId !== undefined) requestedClass.current = { id: selectClassId, seq };
+      let failed = false;
+      const load = api
         .getClasses()
         .then((response) => {
-          if (seq !== loadSeq.current) return;
-          const requested = requestedClassId.current;
+          if (seq <= appliedSeq.current) return;
+          appliedSeq.current = seq;
           const all = reuseUnchangedClasses(
             classesRef.current,
             response.classes.map((c) => toClass(c, userId)),
           );
           setClasses(all);
 
+          // A load that started before the request may not know the class yet.
+          const request = requestedClass.current;
+          const honorsRequest = request !== null && seq >= request.seq;
+          if (honorsRequest) requestedClass.current = null;
           const prefs = getPreferencesSnapshot();
           const visible = filterVisibleClasses(all, prefs);
           const active = filterActiveClasses(all, prefs);
           // Unless a class was asked for, keep this tab's class: storage is shared by every tab, so
           // it only seeds the first load.
-          const preferredId =
-            requested !== undefined
-              ? requested
-              : (lastSelectedClassId.current ?? getStoredSelectedClassId());
+          const preferredId = honorsRequest
+            ? request.id
+            : (lastSelectedClassId.current ?? getStoredSelectedClassId());
           // Keep focus on completed classes chosen from My Classes; fall back to an active class.
           const resolved =
             resolveSelectedClass(visible, preferredId) ?? resolveSelectedClass(active, null);
-          setSelectedClass(resolved);
+          selectClass(resolved);
         })
         .catch((error: unknown) => {
+          failed = true;
           console.error('Failed to fetch classes:', error);
         })
         .finally(() => {
+          // The newest load settles the spinner; after a failure the next focus retries at once.
           if (seq !== loadSeq.current) return;
-          requestedClassId.current = undefined;
+          if (failed) lastLoadStartedAt.current = 0;
           setLoading(false);
         });
+      newestLoad.current = load;
+      return untilSettled(newestLoad);
     },
-    [setSelectedClass, userId],
+    [selectClass, userId],
   );
 
   const refreshClasses = useCallback(
@@ -231,8 +240,8 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const setClassLifecycleStatus = useCallback(async (classId: string, status: ClassLifecycleStatus) => {
     const { class: updated } = await api.updateClassStatus(classId, status);
-    // A load already in flight may answer the old status; it must not undo this change.
-    loadSeq.current += 1;
+    // Retire the loads in flight: one may answer the old status and undo this change.
+    appliedSeq.current = loadSeq.current;
     setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...updated } : c)));
     setSelectedClassState((prev) => (prev?.id === classId ? { ...prev, ...updated } : prev));
   }, []);

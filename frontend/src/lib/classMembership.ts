@@ -1,10 +1,36 @@
 /**
- * What a class membership means to the UI: the API row → `Class` mapping, the role the UI shows,
- * the schools, and the class switcher's per-school list. Pure helpers for ClassProvider, plus the
- * last-class-per-school storage the school switcher reads.
+ * What a class membership means to the UI: the `Class` type and its mapping from the API row, the
+ * role the UI shows, the schools, and the class switcher's per-school list. Pure helpers for
+ * ClassProvider, plus the last-class-per-school storage the school switcher reads.
  */
-import type { ApiClass, ClassRole } from './api';
-import type { Class, School } from './classContext';
+import type { ApiClass, ApiInstitutionSummary, ClassRole } from './api';
+import type { ClassLifecycleStatus } from './classPreferences';
+
+export type School = ApiInstitutionSummary;
+
+export interface Class {
+  id: string;
+  name: string;
+  description?: string;
+  course_code?: string;
+  created_by: string;
+  created_at: string;
+  teacher_email?: string;
+  /** Present for instructor-owned classes from API (used for course lifecycle filters). */
+  term?: string;
+  start_date?: string;
+  year?: number;
+  image_url?: string;
+  /** Lifecycle status from classes.status — active or complete. */
+  status?: ClassLifecycleStatus;
+  /** My Classes: number of students in class_enrollments. */
+  enrolled_count?: number;
+  /** The signed-in user's role in this class. */
+  my_role: ClassRole;
+  /** The school the class belongs to, when known. */
+  institution: School | null;
+  institution_id?: string | null;
+}
 
 /** API row → Class. An older backend omits `my_role`: a class you created is yours to teach. */
 export function toClass(raw: ApiClass, userId: string | undefined): Class {
