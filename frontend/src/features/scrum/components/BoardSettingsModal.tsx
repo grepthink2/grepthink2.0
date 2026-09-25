@@ -101,9 +101,11 @@ export default function BoardSettingsModal({
           <h3 className="board-settings__section-title">Repositories</h3>
           <p className="board-settings__hint">
             Link the team’s repositories so pull requests show their status on task cards.
-            A token is optional and write-only — it is never shown again, and adding the same
-            repository replaces it. Status checks for git.ucsc.edu may not reach the campus
-            server yet; those links still open normally.
+            Public GitHub repositories need no token. For a private one, create a fine-grained
+            personal access token limited to that repository with read-only access to pull
+            requests. git.ucsc.edu works the same way with a token that has the read_api scope.
+            Tokens are write-only: never shown again, and adding the same repository replaces
+            its token.
           </p>
 
           {repos === null && <p className="board-settings__loading">Loading repositories…</p>}
@@ -150,7 +152,7 @@ export default function BoardSettingsModal({
                   type="password"
                   value={token}
                   autoComplete="off"
-                  placeholder="Leave blank for public repositories"
+                  placeholder="Only for private repositories"
                   onChange={(e) => setToken(e.target.value)}
                 />
               </label>
