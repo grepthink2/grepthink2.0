@@ -1,0 +1,38 @@
+// Popover — ported from design/components/feedback/feedback.css so the two stay diffable.
+// Shared, not scrum-local: Menu and future listboxes compose on it.
+
+.gt-popover-anchor { position: relative; display: inline-flex; }
+.gt-popover {
+  position: absolute;
+  min-width: 180px;
+  background: var(--gt-gray-0);
+  border: 1px solid var(--gt-border);
+  border-radius: var(--gt-radius-md);
+  box-shadow: var(--gt-shadow-pop);
+  padding: var(--gt-space-md);
+  font-family: var(--gt-font-sans);
+  z-index: var(--gt-z-dropdown);
+  box-sizing: border-box;
+}
+
+.gt-popover--bottom { top: calc(100% + 6px); animation: gt-pop-down 0.15s ease-out; }
+.gt-popover--top { bottom: calc(100% + 6px); animation: gt-pop-up 0.15s ease-out; }
+.gt-popover--start { left: 0; }
+.gt-popover--end { right: 0; }
+.gt-popover--sm { border-radius: var(--gt-radius-sm); padding: var(--gt-space-sm); }
+.gt-popover--flush { padding: 0; }
+
+@keyframes gt-pop-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes gt-pop-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes gt-popover-fade-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-popover--bottom,
+  .gt-popover--top { animation: gt-popover-fade-in 0.15s ease-out; }
+}
