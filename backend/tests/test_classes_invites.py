@@ -282,7 +282,7 @@ def test_bulk_invite_reports_the_class_instructor_and_leaves_them_out(db, mail):
     _make_the_instructor_a_student_account(db)
     out = classes.bulk_invite_students(CLASS, ["ina@ucsc.edu", "s2@ucsc.edu"], INSTR)
     assert {r["email"]: r["status"] for r in out["results"]} == {
-        "ina@ucsc.edu": "not_a_student",
+        "ina@ucsc.edu": "class_instructor",
         "s2@ucsc.edu": "enrolled",
     }
     assert _enrolled(db)[INSTR] == 0
@@ -345,12 +345,38 @@ def test_invite_refuses_the_class_instructor(db, mail):
     _make_the_instructor_a_student_account(db)
     with pytest.raises(HTTPException) as exc:
         classes.invite_student_to_class(CLASS, "ina@ucsc.edu", INSTR)
+    # The same answer as joining one's own class by code (test_authz_status_policy.py).
     assert (exc.value.status_code, exc.value.detail) == (
-        400,
+        409,
         "You are the instructor of this class",
     )
     assert mail.sent == []
     assert not [q for q in db.queries if q["op"] in WRITE_OPS]
+
+
+NO_ROLE = "no-role"  # signed up with Google and has not picked a role on /select yet
+
+
+def _add_an_account_without_a_role(db) -> None:
+    db.rows("profiles").append(_profile(NO_ROLE, "norole@gmail.com", role=None))
+
+
+def test_invite_enrolls_an_account_that_has_not_picked_a_role(db, mail):
+    # Unlike joining by code (403 until a role is picked), an invite names the address, and the
+    # app sends a role-less user to /select before anything else.
+    _add_an_account_without_a_role(db)
+    out = classes.invite_student_to_class(CLASS, "norole@gmail.com", INSTR)
+    assert out == {"message": "Student invited successfully", "student_email": "norole@gmail.com"}
+    assert _enrolled(db)[NO_ROLE] == 1
+    assert mail.recipients() == Counter({("norole@gmail.com", True): 1})
+
+
+def test_bulk_invite_enrolls_an_account_that_has_not_picked_a_role(db, mail):
+    _add_an_account_without_a_role(db)
+    out = classes.bulk_invite_students(CLASS, ["norole@gmail.com"], INSTR)
+    assert out["results"] == [{"email": "norole@gmail.com", "status": "enrolled"}]
+    assert _enrolled(db)[NO_ROLE] == 1
+    assert mail.recipients() == Counter({("norole@gmail.com", True): 1})
 
 
 def test_invite_email_failure_answers(db, mail):

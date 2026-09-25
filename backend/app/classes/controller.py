@@ -701,8 +701,12 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
     If the student already has a GrepThink account, enroll them and send a
     notification email. If they are on the roster but not registered yet, send
     a signup invitation with the class access code instead of returning 404.
-    Any account can be enrolled, whatever its role (an instructor elsewhere can
-    assist here), except the class instructor's own: 400.
+    Any account can be enrolled, whatever its role (an account that teaches
+    elsewhere can be enrolled here, and made a TA later), except the class
+    instructor's own: 409, the answer ``join_class_by_code`` gives them too. That
+    includes an account that has not picked a role yet, which joining by code
+    refuses: here the instructor named the address, and the app sends such a user
+    to /select before they can use anything.
 
     Round trips: the class with its instructor's profile, the profile lookup, and
     one enrollment upsert (was 6).
@@ -734,7 +738,7 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
             }
 
         if str(student["id"]) == str(class_row.get("created_by")):
-            raise HTTPException(status_code=400, detail="You are the instructor of this class")
+            raise HTTPException(status_code=409, detail="You are the instructor of this class")
 
         already_enrolled = str(student["id"]) not in _enroll_students(client, cid, [student["id"]])
 
@@ -1691,12 +1695,16 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
     Invite a batch of roster students by email (instructor only).
 
     For each email the possible statuses are:
-    - ``enrolled``         – existing GrepThink student enrolled + email sent.
+    - ``enrolled``         – existing GrepThink account enrolled + email sent.
     - ``invited``          – no account yet; signup invitation email sent.
     - ``already_enrolled`` – student was already in the class; reminder email sent.
-    - ``not_a_student``    – the address belongs to the class instructor.
+    - ``class_instructor`` – the address belongs to the class instructor; nothing done.
     - ``email_failed``     – SMTP/delivery error for this address.
     - ``error``            – the profile lookup or the enrollment failed for this email.
+
+    Any account but the class instructor's is enrolled, whatever its role, including one
+    that has not picked a role yet (joining by code refuses those): the instructor named
+    the address, and the app sends such a user to /select before they can use anything.
 
     Addresses are handled in the order given, duplicates dropped. Two addresses of
     the same student report ``enrolled`` then ``already_enrolled`` and both are
@@ -1770,7 +1778,7 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
                 continue
 
             if str(profile["id"]) == owner_id:
-                results.append({"email": email, "status": "not_a_student"})
+                results.append({"email": email, "status": "class_instructor"})
                 continue
 
             uid = str(profile["id"])

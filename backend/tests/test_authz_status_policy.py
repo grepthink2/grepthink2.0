@@ -3,7 +3,9 @@
 The policy is written down in ``app/core/authz.py``: 404 means the class or
 project the request addresses does not exist; 403 means it exists and the
 signed-in caller lacks the relationship or role the action needs. Existence is
-not hidden, and one condition answers one ``detail`` everywhere.
+not hidden, and one condition answers one status and one ``detail`` everywhere
+(409 when the class instructor would enrol in their own class, by code or by
+invite).
 
 Each row runs a real controller (or an authz helper) against ``FakeSupabase``
 and pins the exact status and detail for a representative endpoint of every
@@ -38,6 +40,7 @@ NOT_ENROLLED = "You are not enrolled in this class"
 INSTRUCTOR_ROLE_REQUIRED = "Instructor role required"
 PROJECT_NOT_FOUND = "Project not found"
 NOT_PROJECT_MEMBER = "Not a member of this project"
+IS_THE_CLASS_INSTRUCTOR = "You are the instructor of this class"
 
 INSTR = "10000000-0000-0000-0000-000000000001"
 OTHER_INSTR = "10000000-0000-0000-0000-000000000002"
@@ -99,6 +102,7 @@ def db(monkeypatch):
                 "id": CLASS,
                 "created_by": INSTR,
                 "name": "CSE 115A",
+                "course_code": "ABCD1234",
                 "status": "active",
                 "term": "fall",
                 "start_date": "2026-09-24",
@@ -367,6 +371,17 @@ CASES = {
         lambda db: classes.cancel_invite(CLASS, "job-1", S1),
         403,
         NOT_CLASS_INSTRUCTOR,
+    ),
+    # The class instructor cannot become a member of their own class, either way in.
+    "classes.join/the-class-instructor": (
+        lambda db: classes.join_class_by_code("ABCD1234", INSTR),
+        409,
+        IS_THE_CLASS_INSTRUCTOR,
+    ),
+    "classes.invite/the-class-instructors-address": (
+        lambda db: classes.invite_student_to_class(CLASS, f"{INSTR}@ucsc.edu", INSTR),
+        409,
+        IS_THE_CLASS_INSTRUCTOR,
     ),
     # app.tas
     "tas.set_review_window/missing-class": (

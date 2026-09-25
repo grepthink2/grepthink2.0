@@ -46,11 +46,12 @@ All routes require auth unless stated otherwise.
 
 | Method | Path | Who | Description |
 |--------|------|-----|-------------|
-| `POST` | `/api/classes` | **Instructor** | Create a course. Body: `name`, `description?`, `term`, `start_date` (date). |
-| `GET` | `/api/classes` | Any logged-in user | List classes the user can see (depends on role and enrollment). |
+| `POST` | `/api/classes` | **Instructor account** | Create a course. Body: `name`, `description?`, `term`, `start_date` (date), `institution_id?` (from `GET /api/institutions`; an unknown id → **400**). The only route the account role (`profiles.role`) opens; every other class route checks the caller's role in that class. |
+| `GET` | `/api/classes` | Any logged-in user | Every class the caller created or is enrolled in, each with the caller's `my_role` (`instructor` \| `ta` \| `student`) and its `institution` (`{id, name, slug}` or `null`). |
 | `GET` | `/api/classes/{class_id}` | Any logged-in user | Single class details. |
-| `POST` | `/api/classes/join` | **Student** | Enroll using a course code. Body: `course_code`. Non-students get **403**. |
-| `POST` | `/api/classes/{class_id}/invite` | **Instructor** | Invite a student by email. Body: `student_email`. |
+| `POST` | `/api/classes/join` | Any account that has picked a role | Enroll (as a student) using a course code. Body: `course_code`. **403** until the account has picked a role; **409** "You are the instructor of this class" for the class's own instructor. |
+| `POST` | `/api/classes/{class_id}/invite` | **Class instructor** | Invite by email. Body: `student_email`. An existing account is enrolled whatever its role, even one that has not picked a role yet (the app sends that user to `/select` first); an unknown address gets a signup email. **409** "You are the instructor of this class" for the instructor's own address. |
+| `POST` | `/api/classes/{class_id}/students/bulk-invite` | **Class instructor** | The same for a list. Body: `emails`. Returns `results[]` of `{email, status}` with `status` one of `enrolled`, `invited`, `already_enrolled`, `class_instructor` (the instructor's own address; nothing done), `email_failed`, `error`; plus `enrolled_count` and `invited_count`. |
 | `GET` | `/api/classes/{class_id}/students` | Authenticated | Roster: enrolled students for the class. |
 | `GET` | `/api/classes/{class_id}/projects` | Authenticated | Projects in this class, filtered by what the user is allowed to see. |
 
