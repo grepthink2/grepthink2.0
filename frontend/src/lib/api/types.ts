@@ -37,7 +37,10 @@ export interface ApiClass {
   institution_id?: string | null;
 }
 
-/** Class-level role on a class_enrollments row. TAs keep global role 'student'. */
+/**
+ * Class-level role on a class_enrollments row. A TA is an enrollment with 'ta', whatever the
+ * account role (profiles.role) is.
+ */
 export type EnrollmentRole = 'student' | 'ta';
 
 export interface ApiStudent {

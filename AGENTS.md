@@ -176,9 +176,9 @@ The full agent-facing action catalog (method, params, role) lives at
 - **Rate limiting** (slowapi) covers `create_user`, `check_email`, `login_check`,
   `contact`, `stats`, `list_institutions` (`GET /api/institutions`, 60/min). Add
   `@limiter.limit(...)` (+ a `request: Request` param) for new abuse-prone endpoints.
-- **Preview / "View as student"** is a frontend-only read-only simulation
-  (`previewContext` + `previewGuard`) — no backend act-as, so it does not show a
-  specific student's real data.
+- **Preview / "View class as student"** (offered only in a class you teach) is a frontend-only
+  read-only simulation of that class as its students see it (`previewContext` + `previewGuard`) —
+  no backend act-as, so it does not show a specific student's real data.
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@pages/`→`src/pages/`,

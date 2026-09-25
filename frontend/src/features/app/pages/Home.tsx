@@ -10,8 +10,10 @@ import './Home.scss';
 const Home: React.FC = () => {
   const { user, isLoaded } = useUser();
   const { canCreateClasses } = useAuth();
-  // `undefined` only until the first class list is known (as the class route guard waits), so a
-  // later refresh with a spinner never unmounts the dashboards.
+  // `undefined` until the first class list is known (as the class route guard waits). While a
+  // class is selected it keeps that class's role, so a later refresh with a spinner does not
+  // unmount the dashboards; with no class selected, such a refresh reads as loading again and
+  // shows the skeleton until the list is back.
   const classRole = useSelectedClassRole();
   const navigate = useNavigate();
 
