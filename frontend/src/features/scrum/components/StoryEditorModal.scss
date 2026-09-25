@@ -1,9 +1,10 @@
 @use '@styles/index.scss' as *;
+@use '../layers' as *;
 
 .story-editor-backdrop {
   position: fixed;
   inset: 0;
-  z-index: var(--gt-z-modal);
+  z-index: $scrum-modal-z; // above the sidebar; see ../_layers.scss
   display: flex;
   align-items: center;
   justify-content: center;
