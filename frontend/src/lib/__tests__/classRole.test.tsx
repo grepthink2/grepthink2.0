@@ -1,5 +1,5 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiClass } from '@/lib/api';
 
@@ -318,6 +318,15 @@ describe('refreshes', () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  /** Ten minutes on, with no pick in between: a refresh that finds "new" keeps the tab's class. */
+  async function laterRefreshKeeps(selected: string, classes: ApiClass[]) {
+    api.getClasses.mockResolvedValue({ classes });
+    at(600);
+    await regainFocus();
+    await waitFor(() => expect(screen.getByText('select new')).toBeInTheDocument());
+    expect(text('selected')).toBe(selected);
+  }
+
   it('re-reads the class list when the tab regains focus, at most every 30 s', async () => {
     api.getClasses.mockResolvedValue({ classes: [cls('a', { my_role: 'student' })] });
     renderProvider();
@@ -512,6 +521,47 @@ describe('refreshes', () => {
     expect(text('selected')).toBe('x');
   });
 
+  it.each([
+    ['the newer one fails first', ['timer', 'join'] as const],
+    ['the one that asked fails first', ['join', 'timer'] as const],
+  ])('drops the requested class when it and a newer load both fail (%s)', async (_, order) => {
+    quietErrors();
+    api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'student' })] });
+    renderProvider(<Controls />);
+    await waitFor(() => expect(text('selected')).toBe('x'));
+    const loads = { join: deferred<unknown>(), timer: deferred<unknown>() };
+    api.getClasses.mockReturnValueOnce(loads.join.promise).mockReturnValueOnce(loads.timer.promise);
+    act(() => screen.getByText('join new').click());
+    act(() => screen.getByText('refresh').click()); // My Classes' timer, meanwhile
+    for (const load of order) {
+      await act(async () => loads[load].reject(new TypeError('Failed to fetch')));
+    }
+    expect(text('landed')).toBe('x');
+    await laterRefreshKeeps('x', [cls('x', { my_role: 'student' }), cls('new', { my_role: 'student' })]);
+  });
+
+  it('drops the requested class when a status change retires the load that asked for it', async () => {
+    api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'instructor' })] });
+    api.updateClassStatus.mockResolvedValue({
+      message: 'Class status updated',
+      class: cls('x', { my_role: 'instructor', status: 'complete' }),
+    });
+    renderProvider(<Controls />);
+    await waitFor(() => expect(text('selected')).toBe('x'));
+    const joinLoad = deferred<unknown>();
+    api.getClasses.mockReturnValueOnce(joinLoad.promise);
+    act(() => screen.getByText('join new').click()); // asks for "new"
+    await act(async () => screen.getByText('complete x').click()); // retires that load
+    await act(async () =>
+      joinLoad.resolve({ classes: [cls('x', { my_role: 'instructor' }), cls('new', { my_role: 'student' })] }),
+    );
+    expect(text('landed')).toBe('x');
+    await laterRefreshKeeps('x', [
+      cls('x', { my_role: 'instructor', status: 'complete' }),
+      cls('new', { my_role: 'student' }),
+    ]);
+  });
+
   it('keeps an older answer when the newer load fails', async () => {
     quietErrors();
     api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'student' })] });
@@ -584,5 +634,81 @@ describe('refreshes', () => {
     await regainFocus();
     await waitFor(() => expect(text('selected')).toBe('a'));
     expect(api.getClasses).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('answers landing between a commit and its effects', () => {
+  // Once a render outlasts the scheduler's 5 ms frame, React runs that commit's passive effects in
+  // a later task, so a network answer can land in between. These tests use React's real scheduler.
+  const page = {
+    slow: false,
+    onCommit: null as null | ((id: string | undefined) => void),
+  };
+  const events: string[] = [];
+  const actGlobal = globalThis as { IS_REACT_ACT_ENVIRONMENT?: unknown };
+  let actEnvironment: unknown;
+
+  /** Keeps the CPU busy for `ms`, like rendering a big page. */
+  function busyFor(ms: number) {
+    const start = performance.now();
+    while (performance.now() - start < ms) {
+      // spin
+    }
+  }
+
+  function SlowPage() {
+    const { selectedClass } = useClass();
+    if (page.slow) busyFor(8);
+    const id = selectedClass?.id;
+    useLayoutEffect(() => {
+      page.onCommit?.(id);
+    }, [id]);
+    return null;
+  }
+
+  beforeEach(() => {
+    events.length = 0;
+    actEnvironment = actGlobal.IS_REACT_ACT_ENVIRONMENT;
+  });
+  afterEach(() => {
+    actGlobal.IS_REACT_ACT_ENVIRONMENT = actEnvironment;
+    page.slow = false;
+    page.onCommit = null;
+  });
+
+  it("keeps a class selected before an older commit's effects run", async () => {
+    const first = deferred<unknown>();
+    const joinLoad = deferred<unknown>();
+    const timerLoad = deferred<unknown>();
+    api.getClasses
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(joinLoad.promise)
+      .mockReturnValueOnce(timerLoad.promise);
+    renderProvider(
+      <>
+        <Controls />
+        <SlowPage />
+      </>,
+    );
+    // A slow first load; meanwhile the user joins a class and My Classes' timer refreshes.
+    act(() => screen.getByText('join new').click());
+    act(() => screen.getByText('refresh').click());
+
+    const both = { classes: [cls('a', { my_role: 'student' }), cls('new', { my_role: 'student' })] };
+    page.slow = true;
+    // Each answer lands right after the previous one's commit, before that commit's effects run:
+    // the join's selects "new" after "a" commits, then the timer's lands after "new" commits.
+    page.onCommit = (id) => {
+      if (id === 'a') joinLoad.resolve(both);
+      if (id === 'new') {
+        events.push('timer answered');
+        timerLoad.resolve(both);
+      }
+    };
+    actGlobal.IS_REACT_ACT_ENVIRONMENT = false; // schedule as React does in a browser
+    first.resolve({ classes: [cls('a', { my_role: 'student' })] }); // selects "a"
+    await waitFor(() => expect(events).toContain('timer answered'), { timeout: 5000 });
+    await new Promise((resolve) => setTimeout(resolve, 100)); // React finishes with that answer
+    expect(text('selected')).toBe('new');
   });
 });

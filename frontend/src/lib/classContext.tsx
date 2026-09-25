@@ -132,10 +132,12 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Loads overlap (a focus refresh, My Classes' timer, a join or create), numbered as they start.
   // An answer is applied unless a later-started load's answer already was, or a status change
   // retired it; so an older success still lands when a newer load fails. A class a load was asked
-  // to select waits until a load started since applies it, the user picks a class, or the load
-  // that asked fails.
+  // to select waits until a load started since applies it or the user picks a class, and is
+  // dropped once no load in flight could still apply it (they failed or were retired), so a
+  // refresh minutes later never jumps to it.
   const loadSeq = useRef(0);
   const appliedSeq = useRef(0);
+  const loadsInFlight = useRef(new Set<number>());
   const requestedClass = useRef<{ id: string | null; seq: number } | null>(null);
   const newestLoad = useRef<Promise<void>>(Promise.resolve());
   const lastLoadStartedAt = useRef(0);
@@ -144,6 +146,9 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // the effects below also sync them after a status change or a fallback picked while rendering.
   const classesRef = useRef<Class[]>([]);
   const tabClassId = useRef<string | undefined>(undefined);
+  // The class the effect below last synced `tabClassId` to: a different `tabClassId` was written
+  // by a selection since, which an older commit's effect must not overwrite.
+  const syncedTabClassId = useRef<string | undefined>(undefined);
   // The class selected at the last commit, to end "view class as student" on a class switch.
   const lastSelectedClassId = useRef<string | undefined>(undefined);
 
@@ -184,6 +189,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const loadClasses = useCallback(
     (selectClassId?: string | null): Promise<void> => {
       const seq = ++loadSeq.current;
+      loadsInFlight.current.add(seq);
       lastLoadStartedAt.current = Date.now();
       if (selectClassId !== undefined) requestedClass.current = { id: selectClassId, seq };
       let failed = false;
@@ -221,13 +227,16 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           console.error('Failed to fetch classes:', error);
         })
         .finally(() => {
-          // The newest load settles the spinner. After a failure the next focus retries at once,
-          // and a class this load asked for is dropped rather than jumped to by a later refresh.
-          if (seq !== loadSeq.current) return;
-          if (failed) {
-            lastLoadStartedAt.current = 0;
-            if (requestedClass.current?.seq === seq) requestedClass.current = null;
+          // Only a load started since the request can apply it; with none left in flight, the
+          // class is dropped rather than jumped to by a later refresh.
+          loadsInFlight.current.delete(seq);
+          const request = requestedClass.current;
+          if (request && ![...loadsInFlight.current].some((s) => s >= request.seq)) {
+            requestedClass.current = null;
           }
+          // The newest load settles the spinner. After a failure the next focus retries at once.
+          if (seq !== loadSeq.current) return;
+          if (failed) lastLoadStartedAt.current = 0;
           setLoading(false);
         });
       newestLoad.current = load;
@@ -325,8 +334,11 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [classes]);
 
   // Keep this tab's class and storage on the selected class, including a fallback picked above.
+  // An answer can land between a commit and its effects and select a newer class; this older
+  // commit's effect then leaves that selection alone.
   useEffect(() => {
-    tabClassId.current = selectedClassId;
+    if (tabClassId.current === syncedTabClassId.current) tabClassId.current = selectedClassId;
+    syncedTabClassId.current = selectedClassId;
     if (selectedClassId) persistSelectedClassId(selectedClassId);
   }, [selectedClassId]);
 
