@@ -11,7 +11,7 @@ $avatar-purple: #7d3c98;
 
 .spotlight {
   position: relative;
-  padding: clamp(72px, 9vw, 112px) $spacing-lg;
+  padding: $mkt-band-pad-y $spacing-lg;
   background: $white;
   border-top: 1px solid var(--gt-gray-100);
 
@@ -183,7 +183,7 @@ $avatar-purple: #7d3c98;
     font-family: $primary-font;
     font-size: 15px;
     font-weight: $font-weight-semibold;
-    color: var(--gt-success-text);
+    color: $mkt-band-link;
     text-decoration: none;
 
     span {
@@ -294,7 +294,7 @@ $avatar-purple: #7d3c98;
   &__meta {
     font-size: 10.5px;
     font-weight: $font-weight-medium;
-    color: var(--gt-gray-500);
+    color: $mkt-card-meta;
   }
 }
 
