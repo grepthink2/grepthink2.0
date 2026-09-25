@@ -38,12 +38,12 @@
   }
 }
 
-/* Dimmed overlay behind the mobile nav drawer (sidebar is z-index 1000). */
+/* Dimmed overlay behind the mobile nav drawer, one layer under the sidebar. */
 .app-nav-backdrop {
   position: fixed;
   inset: 0;
   background: var(--gt-scrim);
-  z-index: 999;
+  z-index: $z-index-modal - 2;
   animation: app-nav-backdrop-fade-in 0.15s ease both;
 }
 
