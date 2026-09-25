@@ -10,6 +10,7 @@ Roles (see AGENTS.md):
 - class TA          = ``class_enrollments.enrollment_role == 'ta'``
 - enrolled student  = ``class_enrollments.enrollment_role == 'student'``
 - project roles     = ``project_members.role``
+- account role (``profiles.role``) = may create classes; never used for a class decision
 
 Not found versus not allowed
 ----------------------------
