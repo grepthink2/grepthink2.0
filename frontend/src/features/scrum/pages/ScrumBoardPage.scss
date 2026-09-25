@@ -1,0 +1,283 @@
+@use '@styles/index.scss' as *;
+
+// Per-project scrum board shell. L2: no right rail — every sub-view is
+// full width, which gives the three DnD columns maximum room.
+.scrum-board {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  min-height: 100%;
+  font-family: $primary-font;
+  @include bottom-clearance-for-message-widget(20px);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gt-text-primary);
+  }
+
+  // Sub-view switch — Board | Backlog | Burnup
+  &__views {
+    display: inline-flex;
+    gap: 4px;
+    padding: 3px;
+    background: var(--gt-gray-100);
+    border-radius: var(--gt-radius-sm);
+    align-self: flex-start;
+  }
+
+  &__view {
+    padding: 5px 14px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    font-family: $primary-font;
+    font-size: 12.5px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-secondary);
+    cursor: pointer;
+    transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
+
+    &:hover { color: var(--gt-text-primary); }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring);
+    }
+
+    &--active {
+      background: var(--gt-gray-0);
+      color: var(--gt-text-primary);
+      box-shadow: var(--gt-shadow-hairline);
+    }
+  }
+
+  // 3-across story strip (L1 — design-doc grid)
+  &__stories {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gt-space-md);
+    align-items: start;
+  }
+
+  &__panel {
+    min-height: 220px;
+  }
+
+  &__placeholder {
+    margin: 0;
+    padding: 24px;
+    background: var(--gt-gray-0);
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-md);
+    box-shadow: var(--gt-shadow-hairline);
+    color: var(--gt-text-tertiary);
+    font-size: 13px;
+  }
+
+  // The board is its own route (reached from the project page's tab strip),
+  // so it carries an explicit way back rather than relying on browser history.
+  &__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-tertiary);
+    text-decoration: none;
+    @include gt-transition(color);
+
+    &:hover { color: var(--gt-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); border-radius: 4px; }
+  }
+
+  &__subtitle {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: var(--gt-text-tertiary);
+  }
+
+  // 3-across story strip (L1) — collapses before the columns do.
+  &__stories {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  &__clear-filter {
+    align-self: flex-start;
+    margin-bottom: 10px;
+    padding: 4px 10px;
+    border: 1px solid var(--gt-primary);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-green-50);
+    font-family: $primary-font;
+    font-size: 11px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-green-700);
+    cursor: pointer;
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__sprint-select select,
+  &__icon-button,
+  &__primary {
+    height: 34px;
+    border-radius: var(--gt-radius-sm);
+    font-family: $primary-font;
+    font-size: 12.5px;
+    cursor: pointer;
+    @include gt-transition(background-color, border-color, color, opacity);
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__sprint-select select {
+    padding: 0 10px;
+    border: 1px solid var(--gt-border);
+    background: var(--gt-gray-0);
+    color: var(--gt-text-primary);
+  }
+
+  &__icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    // Must be explicit: the global scaffold `button` rule sets 0.6em/1.2em,
+    // which leaves a 4px content box in a 34px square and squeezes the icon
+    // to a 2px sliver. `&__primary` below sets its own padding for the same
+    // reason.
+    padding: 0;
+    border: 1px solid var(--gt-border);
+    background: var(--gt-gray-0);
+    color: var(--gt-text-secondary);
+
+    &:hover:not(:disabled) { border-color: var(--gt-primary); color: var(--gt-primary); }
+  }
+
+  &__primary {
+    padding: 0 16px;
+    border: none;
+    background: var(--gt-primary);
+    color: var(--gt-gray-0);
+    font-weight: var(--gt-weight-medium);
+
+    &:hover:not(:disabled) { background: var(--gt-primary-hover); }
+  }
+
+  &__backlog {
+    background: var(--gt-gray-0);
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-md);
+    box-shadow: var(--gt-shadow-hairline);
+    overflow: hidden;
+  }
+
+  // Burnup tab (L2): both charts share the full width the rail used to take.
+  &__charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  &__chart-panel {
+    padding: 14px;
+    background: var(--gt-gray-0);
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-md);
+    box-shadow: var(--gt-shadow-hairline);
+  }
+
+  &__empty-state,
+  &__error {
+    padding: 40px 24px;
+    text-align: center;
+    background: var(--gt-gray-0);
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-md);
+
+    h2 { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--gt-text-primary); }
+    p { margin: 0; font-size: 12.5px; color: var(--gt-text-tertiary); }
+  }
+}
+
+// Emitted once here rather than per component sheet: the scrum feature is the
+// only current user, this codebase has no global utility stylesheet (the shared
+// partials export mixins only), and every scrum view mounts beneath this page.
+// Without it the labels render as ordinary visible text.
+.sr-only { @include gt-visually-hidden; }
+
+// Story card + its open control. The card body is a button (toggles the board
+// filter), so the control that opens the story detail has to be a sibling —
+// nested buttons are invalid. Added 2026-09-10 when task cards stopped opening
+// their parent story and stories needed their own way in.
+.story-slot {
+  position: relative;
+  display: flex;
+
+  > .gt-story { flex: 1; min-width: 0; }
+
+  &:hover .story-slot__open,
+  .story-slot__open:focus-visible { opacity: 1; }
+}
+
+.story-slot__open {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  // Explicit: the global scaffold `button` rule would otherwise pad this to a
+  // pill and crush the glyph (the same bug that hid the settings gear).
+  padding: 0;
+  border: 1px solid var(--gt-border);
+  border-radius: var(--gt-radius-sm);
+  background: var(--gt-gray-0);
+  color: var(--gt-text-tertiary);
+  cursor: pointer;
+  // Quiet until the card is hovered, so the card stays clean at rest.
+  opacity: 0;
+  @include gt-transition(opacity, color, border-color);
+
+  &:hover { color: var(--gt-primary); border-color: var(--gt-primary); }
+  &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+}
+
+// Coarse pointers have no hover: keep the control permanently visible there.
+@media (hover: none) {
+  .story-slot__open { opacity: 1; }
+}

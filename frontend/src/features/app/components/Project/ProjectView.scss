@@ -689,3 +689,42 @@
     }
   }
 }
+
+// ── View tabs (Overview | Scrum Board) ──────────────────────────
+.project-view {
+  &__tabs {
+    display: inline-flex;
+    gap: 4px;
+    padding: 3px;
+    margin: 0 0 4px;
+    background: var(--gt-gray-100);
+    border-radius: var(--gt-radius-sm);
+    align-self: flex-start;
+  }
+
+  &__tab {
+    padding: 5px 14px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    font-family: $primary-font;
+    font-size: 12.5px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-secondary);
+    cursor: pointer;
+    transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
+
+    &:hover { color: var(--gt-text-primary); }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring);
+    }
+
+    &--active {
+      background: var(--gt-gray-0);
+      color: var(--gt-text-primary);
+      box-shadow: var(--gt-shadow-hairline);
+    }
+  }
+}

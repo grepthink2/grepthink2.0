@@ -660,3 +660,163 @@ export interface ApiStaffingPlacement {
   project_name: string | null;
   interest_value: number;
 }
+
+// ----- Scrum board (app/scrum backend) --------------------------------------
+
+export type ApiEstimateScale = 'linear' | 'exponential' | 'fibonacci';
+export type ApiBoardStatus = 'todo' | 'in_progress' | 'done';
+
+export interface ApiScrumMember {
+  user_id: string;
+  name: string;
+  image_url: string | null;
+  project_role: string | null;
+}
+
+export interface ApiScrumSprint {
+  id: string;
+  name: string;
+  /** ISO date "YYYY-MM-DD". */
+  starts_at: string;
+  ends_at: string;
+  status: 'planned' | 'active' | 'completed';
+}
+
+export interface ApiScrumTask {
+  id: string;
+  story_id: string;
+  /** Per-project human key, e.g. "T-12". */
+  key: string;
+  title: string;
+  description_md: string | null;
+  points: number | null;
+  time_estimate: string | null;
+  status: ApiBoardStatus;
+  reporter_id: string;
+  assignee_id: string | null;
+  tags: string[];
+  pr_url: string | null;
+  pr_provider: string | null;
+  pr_state: string | null;
+  moved_by: string | null;
+  moved_by_name: string | null;
+  moved_at: string | null;
+  comment_count: number;
+}
+
+export interface ApiScrumStory {
+  id: string;
+  /** null = backlog. */
+  sprint_id: string | null;
+  /** Per-project human key, e.g. "US-3". */
+  key: string;
+  title: string;
+  description_md: string | null;
+  points: number | null;
+  time_estimate: string | null;
+  reporter_id: string;
+  assignee_id: string | null;
+  /** Set = story lives in the archive view. */
+  archived_at: string | null;
+  comment_count: number;
+  tasks: ApiScrumTask[];
+}
+
+export interface ApiBurnupSeries {
+  labels: string[];
+  scope: number[];
+  completed: number[];
+  subtitle: string | null;
+}
+
+export interface ApiScrumBoard {
+  project: { id: string; name: string; estimate_scale: ApiEstimateScale };
+  ai_enabled: boolean;
+  sprints: ApiScrumSprint[];
+  /** Sprint being viewed (null = no sprints yet / backlog only). */
+  sprint_id: string | null;
+  stories: ApiScrumStory[];
+  backlog: ApiScrumStory[];
+  burnup: { sprint: ApiBurnupSeries | null; cumulative: ApiBurnupSeries };
+  members: ApiScrumMember[];
+  /** 'member' = full read/write; 'staff' = read + comments. */
+  access: 'member' | 'staff';
+}
+
+export interface ApiScrumComment {
+  id: string;
+  author_id: string;
+  author_name: string;
+  body_md: string;
+  created_at: string;
+}
+
+export interface ApiAiDraftTask {
+  title: string;
+  tags: string[];
+  points: number | null;
+  time_estimate: string | null;
+}
+
+export interface ApiAiDraft {
+  title: string | null;
+  description_md: string | null;
+  points: number | null;
+  time_estimate: string | null;
+  tasks: ApiAiDraftTask[];
+}
+
+export interface ApiScrumRepo {
+  id: string;
+  repo_url: string;
+  provider: 'github' | 'gitlab';
+  has_token: boolean;   // tokens are write-only; the API never returns them
+}
+
+export type ApiUpdateSprintBody = Partial<
+  Pick<ApiScrumSprint, 'name' | 'starts_at' | 'ends_at' | 'status'>
+>;
+
+export interface ApiCreateStoryBody {
+  title: string;
+  description_md?: string;
+  points?: number;
+  time_estimate?: string;
+  assignee_id?: string;
+  /** Omit for backlog. */
+  sprint_id?: string;
+}
+
+export interface ApiUpdateStoryBody {
+  title?: string;
+  /** Explicit null clears it (an omitted key leaves it as it is). */
+  description_md?: string | null;
+  points?: number;
+  time_estimate?: string;
+  assignee_id?: string;
+  /** Explicit null moves the story to the backlog. */
+  sprint_id?: string | null;
+  /** true sets archived_at, false clears it. */
+  archived?: boolean;
+}
+
+export interface ApiCreateTaskBody {
+  title: string;
+  description_md?: string;
+  points?: number;
+  time_estimate?: string;
+  assignee_id?: string;
+  tags?: string[];
+}
+
+export interface ApiUpdateTaskBody {
+  title?: string;
+  /** Explicit null clears it (an omitted key leaves it as it is). */
+  description_md?: string | null;
+  points?: number;
+  time_estimate?: string | null;
+  assignee_id?: string | null;
+  tags?: string[];
+  /** Explicit null unlinks the PR. */
+  pr_url?: string | null;
+}

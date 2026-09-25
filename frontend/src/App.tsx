@@ -47,6 +47,7 @@ const FinalReviewDetail = lazy(() => import('@features/app/pages/FinalReviewDeta
 const TSRViewPage = lazy(() => import('@features/app/pages/TSRViewPage'));
 const FeedbackViewPage = lazy(() => import('@features/app/pages/FeedbackViewPage'));
 const ProjectDetails = lazy(() => import('@features/app/pages/ProjectDetails'));
+const ScrumBoardPage = lazy(() => import('@features/scrum/pages/ScrumBoardPage'));
 const CreateProject = lazy(() => import('@features/app/pages/CreateProject'));
 // Assign is Staffing's sibling in the same folder/pattern — same size
 // profile, fully isolated component subtree (no other route imports it).
@@ -113,6 +114,7 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="projects" element={<Projects />} />
               <Route path="projects/:projectId" element={<ProjectDetails />} />
+              <Route path="projects/:projectId/board" element={<ScrumBoardPage />} />
               <Route path="roster" element={<Roster />} />
               <Route path="modules" element={<Modules />} />
               <Route path="modules/tsr/:assignmentId" element={<TSRViewPage />} />
