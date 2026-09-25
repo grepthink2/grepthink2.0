@@ -7,6 +7,13 @@
 --
 -- Applied: DEV ____-__-__   PROD ____-__-__
 --
+-- ⚠️  ORDER: apply this file, then 2026-09-25_seed_istinye.sql, BEFORE anyone creates a class
+--     at a school other than UC Santa Cruz. Until this file runs no class can be given a
+--     school, and its backfill labels every class that has none as UC Santa Cruz, so an
+--     İstinye class created earlier would become a UCSC class. Until the seed runs, İstinye is
+--     not there to pick. Either way the class then needs a hand-written UPDATE: re-running
+--     this file is not a fix (see the last point below).
+--
 --   * institutions (name, slug, email_domains): one row per school, added by a maintainer
 --     (supabase/README.md, "Institutions"). RLS on with no policies and no client privileges:
 --     only the service role reads it; the backend serves the list at GET /api/institutions.

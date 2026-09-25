@@ -14,7 +14,7 @@ import secrets
 from fastapi import HTTPException
 
 from app.core.db import get_client
-from app.core.errors import DatabaseConflictError, DatabaseError
+from app.core.errors import DatabaseConflictError, DatabaseError, DatabaseUnavailableError
 from app.institutions.controller import is_school_email
 from app.utils.email import send_email
 from app.utils.profiles import needs_roster_email
@@ -43,9 +43,11 @@ _MAX_ATTEMPTS = 5
 # One plain-ASCII mailbox: no whitespace or punctuation that could carry a header injection
 # through the ``To:`` line (a comma, for instance, can turn one address into several) or get
 # echoed unescaped into the email's HTML, and no non-ASCII lookalikes (a Turkish lower-cased
-# "İ" is two code points, one of them a combining mark this rejects). Whether the host is a
-# school is is_school_email's call (.edu, or an institution's email_domains).
-_MAILBOX = re.compile(r"[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+")
+# "İ" is two code points, one of them a combining mark this rejects). An apostrophe is allowed
+# in the local part (o'brien@...): Google Workspace and Microsoft 365 hand such addresses out,
+# it is ordinary text in a header, and ``html.escape`` quotes it in the HTML body. Whether the
+# host is a school is is_school_email's call (.edu, or an institution's email_domains).
+_MAILBOX = re.compile(r"[a-z0-9._%+'-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+")
 
 
 def get_profile(user_id: str) -> dict:
@@ -137,7 +139,9 @@ def _refresh_completion_reminder(user_id: str, profile: dict) -> None:
     has already been saved (here, or by ``verify_edu_email``), so an institutions-table outage
     inside ``is_school_email`` must not turn that successful save into a 500. Logged and
     skipped instead — neither dismissed nor (re-)created — and the next call with a healthy
-    read catches the reminder up.
+    read catches the reminder up. The log level follows ``app.core.errors``: WARNING for an
+    outage, ERROR for anything lasting (a missing grant, say), which Sentry records as an
+    event rather than a breadcrumb.
     """
     from app.notifications.controller import (
         dismiss_profile_completion_notification,
@@ -147,8 +151,9 @@ def _refresh_completion_reminder(user_id: str, profile: dict) -> None:
     if profile:
         try:
             incomplete = _profile_incomplete(profile)
-        except DatabaseError:
-            logger.warning(
+        except DatabaseError as exc:
+            log = logger.warning if isinstance(exc, DatabaseUnavailableError) else logger.error
+            log(
                 "_refresh_completion_reminder: completeness check failed, skipping | user_id=%s",
                 user_id,
                 exc_info=True,

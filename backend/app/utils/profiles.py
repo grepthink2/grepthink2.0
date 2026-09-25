@@ -1,7 +1,5 @@
 """Helpers for reading profile rows (first_name / last_name schema)."""
 
-from app.institutions.controller import is_school_email
-
 PROFILE_SELECT = "id, email, first_name, last_name"
 
 
@@ -24,6 +22,10 @@ def needs_roster_email(profile: dict) -> bool:
     then whether a roster email is already on file — run first and short-circuit the common
     case (a student who already has one never reaches it).
     """
+    # Imported here, not at the top: most controllers import this module, and a helper module
+    # must not depend on a feature module (app.institutions) at import time.
+    from app.institutions.controller import is_school_email
+
     role = profile.get("role")
     edu_email = (profile.get("edu_email") or "").strip()
     email = (profile.get("email") or "").strip().lower()

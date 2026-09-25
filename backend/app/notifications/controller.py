@@ -9,7 +9,7 @@ from fastapi import HTTPException
 
 from app.core import db as core_db
 from app.core.db import get_client
-from app.core.errors import DatabaseError
+from app.core.errors import DatabaseError, DatabaseUnavailableError
 from app.utils.profiles import needs_roster_email, profile_display_name
 
 logger = logging.getLogger(__name__)
@@ -216,7 +216,9 @@ def ensure_profile_completion_notification(user_id: str) -> None:
     Best-effort on the roster-email check itself (``needs_roster_email``, which can read the
     institutions table): this runs on every ``GET /api/notifications``, so an outage there is
     logged and skipped rather than turning an otherwise-successful list into a 500. The
-    reminder catches up next time this runs with a healthy read.
+    reminder catches up next time this runs with a healthy read. The log level follows
+    ``app.core.errors``: WARNING for an outage, ERROR for anything lasting (a missing grant,
+    say), which Sentry records as an event rather than a breadcrumb.
     """
     profile = _get_profile(user_id)
     if not profile:
@@ -231,8 +233,9 @@ def ensure_profile_completion_notification(user_id: str) -> None:
 
     try:
         roster_email_missing = needs_roster_email(profile)
-    except DatabaseError:
-        logger.warning(
+    except DatabaseError as exc:
+        log = logger.warning if isinstance(exc, DatabaseUnavailableError) else logger.error
+        log(
             "ensure_profile_completion_notification: roster-email check failed, "
             "skipping | user_id=%s",
             user_id,

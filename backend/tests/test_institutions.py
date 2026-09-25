@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 
 import pytest
@@ -90,37 +91,109 @@ def test_domains_are_trimmed_and_lower_cased(db):
     assert ist == ISTINYE_INSTITUTION
 
 
-def test_domains_without_a_dot_are_dropped(monkeypatch):
+SKETCHY_DOMAINS = [
+    "  @Example.EDU ",
+    ".ucsc.edu",
+    ".@stu.sketchy.edu",
+    "com",
+    "admin@istinye.edu.tr",
+    "istinye .edu.tr",
+    "",
+    "   ",
+    "@.",
+]
+
+
+@pytest.fixture
+def sketchy(monkeypatch):
     fake = FakeSupabase(
         institutions=[
             {
                 "id": "55555555-5555-4555-8555-555555555555",
                 "name": "Sketchy U",
                 "slug": "sketchy",
-                "email_domains": ["  @Example.EDU ", ".ucsc.edu", "com", "", "   ", "@."],
+                "email_domains": SKETCHY_DOMAINS,
             }
         ]
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     institutions.clear_institutions_cache()
 
-    sketchy = next(i for i in institutions.load_institutions() if i["slug"] == "sketchy")
-    # "com" and the blank/punctuation-only entries are dropped: under the subdomain rule in
-    # is_school_email, a bare "com" would make every ".com" address a school email.
-    assert sketchy["email_domains"] == ["example.edu", "ucsc.edu"]
+
+def test_only_hostname_shaped_domains_are_kept(sketchy):
+    row = next(i for i in institutions.load_institutions() if i["slug"] == "sketchy")
+    # Dropped: a bare "com" (under the subdomain rule in is_school_email it would make every
+    # ".com" address a school email), a whole address, a domain with a space in it, and the
+    # blank or punctuation-only entries. None of them could ever match an address.
+    assert row["email_domains"] == ["example.edu", "ucsc.edu", "stu.sketchy.edu"]
 
 
-def test_a_trailing_dot_is_stripped_too():
-    assert institutions._normalized_domain("ucsc.edu.") == "ucsc.edu"
+def test_each_dropped_domain_is_logged_with_its_school(sketchy, caplog):
+    with caplog.at_level(logging.WARNING, logger="app.institutions.controller"):
+        institutions.load_institutions()
+
+    dropped = [
+        r for r in caplog.records if r.name == "app.institutions.controller" and "dropped" in r.msg
+    ]
+    assert [r.levelno for r in dropped] == [logging.WARNING] * 6
+    for record, entry in zip(
+        dropped, ["com", "admin@istinye.edu.tr", "istinye .edu.tr", "", "   ", "@."], strict=True
+    ):
+        assert "'sketchy'" in record.getMessage()
+        assert repr(entry) in record.getMessage()
 
 
-@pytest.mark.parametrize("suffix", sorted(institutions._DENYLISTED_SUFFIXES))
-def test_a_bare_public_suffix_is_dropped(suffix):
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("ucsc.edu.", "ucsc.edu"),
+        ("@ucsc.edu", "ucsc.edu"),
+        (".@ucsc.edu", "ucsc.edu"),
+        ("@.ucsc.edu", "ucsc.edu"),
+        ("..ucsc.edu..", "ucsc.edu"),
+    ],
+)
+def test_leading_at_signs_and_dots_and_trailing_dots_are_stripped(raw, expected):
+    assert institutions._normalized_domain(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "suffix",
+    [
+        "edu.tr",
+        "com.tr",
+        "org.tr",
+        "k12.tr",
+        "ac.uk",
+        "co.uk",
+        "gov.uk",
+        "sch.uk",
+        "edu.au",
+        "com.au",
+        "net.au",
+        "ac.jp",
+        "co.jp",
+        "edu.cn",
+        "com.cn",
+        "ac.in",
+        "edu.pl",
+    ],
+)
+def test_a_bare_two_label_public_suffix_is_dropped(suffix):
     assert institutions._normalized_domain(suffix) is None
     assert institutions._normalized_domain(suffix.upper()) is None
+    assert institutions._normalized_domain(f"@{suffix}") is None
 
 
-def test_a_denylisted_suffix_does_not_grant_every_school_under_it(monkeypatch):
+@pytest.mark.parametrize(
+    "domain",
+    ["istinye.edu.tr", "stu.istinye.edu.tr", "ox.ac.uk", "u-tokyo.ac.jp", "ucsc.edu", "co.edu"],
+)
+def test_a_school_domain_under_a_public_suffix_is_kept(domain):
+    assert institutions._normalized_domain(domain) == domain
+
+
+def test_a_public_suffix_does_not_grant_every_school_under_it(monkeypatch):
     fake = FakeSupabase(
         institutions=[
             {
@@ -175,6 +248,50 @@ def test_a_failed_read_keeps_serving_the_last_good_list(monkeypatch):
 
     again = institutions.load_institutions()
     assert again == first
+
+
+@pytest.mark.parametrize(
+    ("failure", "level"),
+    [
+        (
+            lambda: DatabaseError(
+                operation="read", target="institutions", pg_code="42501", pg_message="no grant"
+            ),
+            logging.ERROR,
+        ),
+        (
+            lambda: DatabaseUnavailableError(
+                operation="read", target="institutions", pg_message="timed out"
+            ),
+            logging.WARNING,
+        ),
+    ],
+    ids=["lasting-failure", "outage"],
+)
+def test_serving_the_last_list_logs_a_lasting_failure_as_an_error_and_an_outage_as_a_warning(
+    monkeypatch, caplog, failure, level
+):
+    # Sentry files a WARNING as a breadcrumb only: a missing grant must reach it as an ERROR even
+    # though the stale list keeps the request working; a timeout is expected to clear by itself.
+    institutions.clear_institutions_cache()
+    fake = FakeSupabase(institutions=[dict(UCSC)])
+    monkeypatch.setattr(institutions, "get_client", lambda: fake)
+    first = institutions.load_institutions()
+
+    class _Raises:
+        def table(self, _name):
+            raise failure()
+
+    monkeypatch.setattr(institutions, "get_client", lambda: _Raises())
+    monkeypatch.setattr(institutions, "_cache", (0.0, first))  # looks expired, has a fallback
+    with caplog.at_level(logging.WARNING, logger="app.institutions.controller"):
+        assert institutions.load_institutions() == first
+
+    [record] = [r for r in caplog.records if r.name == "app.institutions.controller"]
+    assert (record.levelno, record.getMessage()) == (
+        level,
+        "institutions: read failed, serving the last known list",
+    )
 
 
 def test_a_failed_read_is_not_retried_within_the_stale_window_then_recovers(monkeypatch):

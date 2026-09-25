@@ -19,6 +19,7 @@ failure as "no role": a dropped connection or a missing grant is an outage, and 
 from __future__ import annotations
 
 import logging
+import re
 import threading
 import time
 from uuid import UUID
@@ -50,51 +51,51 @@ _lock = threading.Lock()
 _cache: tuple[float, list[dict] | None] | None = None
 
 
-#: Multi-label public suffixes a maintainer could paste as if they were one school's domain
-#: (typing "edu.tr" to mean "our .edu.tr address"). Under the subdomain rule in
-#: ``is_school_email`` an unfiltered one of these would grant every school under it — every
+#: A usable email domain once normalized: two or more dot-separated labels of ASCII letters,
+#: digits and hyphens. Anything else (a whole address pasted in, a space inside, a bare TLD
+#: like ``com``) could never match an address, or would match far too many.
+_HOSTNAME = re.compile(r"[a-z0-9-]+(?:\.[a-z0-9-]+)+")
+
+#: A two-label public suffix: a registry category under a two-letter country code (``edu.tr``,
+#: ``ac.uk``, ``co.jp``, ...). A maintainer could paste one meaning "our .edu.tr address", and
+#: under the subdomain rule in ``is_school_email`` it would grant every school under it — every
 #: Turkish university for ``edu.tr``, not just the one the maintainer meant.
-_DENYLISTED_SUFFIXES = frozenset(
-    {
-        "edu.tr",
-        "com.tr",
-        "ac.uk",
-        "co.uk",
-        "edu.au",
-        "com.au",
-        "ac.jp",
-        "co.jp",
-        "edu.cn",
-        "com.cn",
-    }
-)
+_PUBLIC_SUFFIX = re.compile(r"(?:ac|co|com|edu|gov|net|org|sch|k12)\.[a-z]{2}")
 
 
 def _normalized_domain(raw: object) -> str | None:
     """A domain the way ``is_school_email`` matches it, or ``None`` when it is not usable.
 
-    Trimmed, lower-cased, and stripped of a leading ``@`` and any leading or trailing ``.``
-    (someone pastes ``@ucsc.edu``, ``.ucsc.edu`` or ``ucsc.edu.`` into the maintainer's insert).
-    ``None`` when nothing with a dot in it is left — under the subdomain rule in
-    ``is_school_email``, a bare TLD like ``"com"`` would otherwise make every ``.com`` address a
-    school email — or when the whole domain is one of ``_DENYLISTED_SUFFIXES``.
+    Trimmed, lower-cased, and stripped of leading ``@`` and ``.`` characters in any order and of
+    trailing dots (someone pastes ``@ucsc.edu``, ``.@ucsc.edu`` or ``ucsc.edu.`` into the
+    maintainer's insert). ``None`` when what is left is not hostname-shaped (``_HOSTNAME``) or is
+    a bare two-label public suffix (``_PUBLIC_SUFFIX``).
     """
-    domain = str(raw).strip().lower().lstrip("@").strip(".")
-    if "." not in domain or domain in _DENYLISTED_SUFFIXES:
+    domain = str(raw).strip().lower().lstrip("@.").rstrip(".")
+    if not _HOSTNAME.fullmatch(domain) or _PUBLIC_SUFFIX.fullmatch(domain):
         return None
     return domain
 
 
 def _normalized(row: dict) -> dict:
-    domains = [
-        domain
-        for domain in (_normalized_domain(raw) for raw in row.get("email_domains") or [])
-        if domain is not None
-    ]
+    slug = row.get("slug") or ""
+    domains = []
+    for raw in row.get("email_domains") or []:
+        domain = _normalized_domain(raw)
+        if domain is None:
+            # A maintainer's typo in the row. Logged so it can be fixed, because it grants
+            # nothing: an entry nothing can match, or a public suffix that would match too much.
+            logger.warning(
+                "institutions: dropped email domain %r of %r: not one school's own domain",
+                raw,
+                slug,
+            )
+            continue
+        domains.append(domain)
     return {
         "id": str(row["id"]),
         "name": row.get("name") or "",
-        "slug": row.get("slug") or "",
+        "slug": slug,
         "email_domains": domains,
     }
 

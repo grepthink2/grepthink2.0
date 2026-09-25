@@ -263,6 +263,33 @@ def test_send_refuses_anything_but_one_plain_edu_mailbox(client, auth_header, db
     mailer.assert_not_called()
 
 
+def test_an_apostrophe_in_the_mailbox_is_accepted_and_escaped_in_the_email(
+    client, auth_header, db, mailer
+):
+    # Google Workspace and Microsoft 365 both allow "'" in the local part (o'brien@...), and it
+    # is plain atext in a To: header; the HTML body escapes it.
+    res = client.post(
+        "/api/profiles/send-edu-verification",
+        headers=auth_header,
+        json={"edu_email": "O'Brien@ucsc.edu"},
+    )
+
+    assert res.status_code == 200, res.text
+    sent = mailer.call_args.kwargs
+    assert sent["to"] == "o'brien@ucsc.edu"
+    assert "<strong>o&#x27;brien@ucsc.edu</strong>" in sent["body_html"]
+    assert "o'brien" not in sent["body_html"]
+    assert _pending(db)[0]["edu_email"] == "o'brien@ucsc.edu"
+
+    verified = client.post(
+        "/api/profiles/verify-edu-email",
+        headers=auth_header,
+        json={"edu_email": "o'brien@ucsc.edu", "code": mailer.code()},
+    )
+    assert verified.status_code == 200, verified.text
+    assert _profile(db)["edu_email"] == "o'brien@ucsc.edu"
+
+
 def test_send_answers_409_when_another_account_holds_the_address(client, auth_header, db, mailer):
     res = client.post(
         "/api/profiles/send-edu-verification",
