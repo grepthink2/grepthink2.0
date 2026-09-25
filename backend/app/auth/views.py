@@ -109,6 +109,11 @@ def create_user(  # noqa: C901
 
     logger.info("Creating profile record | user_id=%s email=%s role=%s", user_id, email, user_type)
 
+    # Computed once, before the first write, so the insert below, the backfill and the
+    # conflict check all agree — instead of each re-reading (and risking a mid-request change
+    # to) the institutions list.
+    school = is_school_email(email)
+
     # Prefer the service-role client (bypasses RLS) so we can deterministically
     # detect an existing row without depending on policy. Falls back to the
     # caller's JWT-authenticated client if no service key is configured.
@@ -117,7 +122,7 @@ def create_user(  # noqa: C901
 
     def _insert_profile(client):
         row = {"id": user_id, "email": email, "role": user_type}
-        if is_school_email(email):
+        if school:
             row["edu_email"] = email
         if data.firstName:
             row["first_name"] = data.firstName.strip()
@@ -144,7 +149,7 @@ def create_user(  # noqa: C901
         # A Supabase trigger may have auto-created the profile row without
         # edu_email. If the primary email is a school email and edu_email isn't
         # set yet, backfill it now so the column stays in sync.
-        if not is_school_email(email):
+        if not school:
             return
         existing_edu = (
             client.table("profiles").select("edu_email").eq("id", user_id).single().execute()
@@ -260,7 +265,7 @@ def create_user(  # noqa: C901
         # the /check-email endpoint handles the common case earlier in SignUp.tsx).
         # Only with the service-role client: `client` is that client here, and it
         # can see (and delete the auth user behind) other accounts' rows.
-        if is_school_email(email) and service_configured:
+        if school and service_configured:
             edu_conflict = client.table("profiles").select("id").eq("edu_email", email).execute()
             if edu_conflict.data:
                 try:

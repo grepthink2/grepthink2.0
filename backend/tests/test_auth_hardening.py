@@ -2,7 +2,7 @@
 
 - A join code is eight characters from the generator's alphabet and is matched exactly,
   so ``%`` or ``Q%`` no longer joins whichever class PostgREST lists first.
-- The roster .edu address is written only after its owner proves they hold it. Codes live
+- The roster school email address is written only after its owner proves they hold it. Codes live
   in the database (serverless instances share no memory), are stored hashed, expire, can
   be re-sent at most once a minute, and die after five wrong guesses.
 - A profile's role stays empty until its owner picks one, and is picked exactly once.
@@ -233,6 +233,8 @@ def test_send_keeps_a_hashed_code_in_the_database(client, auth_header, db, maile
         "@ucsc.edu",
         "ann@@ucsc.edu",
         "<b>ann</b>@ucsc.edu",
+        "ann@evil.com,ucsc.edu",  # a comma can turn one address into several downstream
+        "İpek@ucsc.edu",  # lower-cases to "i̇pek@..." — a combining mark, not plain ASCII
     ],
 )
 def test_send_refuses_anything_but_one_plain_edu_mailbox(client, auth_header, db, mailer, address):
@@ -340,21 +342,6 @@ def test_send_without_smtp_on_a_deployment_answers_503_and_keeps_nothing(
 
 
 # ── school email: .edu or an institution's domains ───────────────────────────────
-
-IST = {
-    "id": "11111111-1111-4111-8111-111111111111",
-    "name": "İstinye University",
-    "slug": "istinye",
-    "email_domains": ["istinye.edu.tr"],
-}
-
-
-@pytest.fixture
-def with_istinye(monkeypatch):
-    from app.institutions import controller as institutions
-    from tests.conftest import UCSC_INSTITUTION
-
-    monkeypatch.setattr(institutions, "_cache", (float("inf"), [dict(UCSC_INSTITUTION), dict(IST)]))
 
 
 def test_an_institution_domain_can_be_verified_as_a_school_email(

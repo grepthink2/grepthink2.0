@@ -79,7 +79,7 @@ def send_edu_verification(
     user_id: str = Depends(require_user),
 ):
     """
-    Email a 6-digit verification code to the provided .edu address.
+    Email a 6-digit verification code to the provided school email address.
     """
     try:
         sent = controller.send_edu_verification(user_id, data.edu_email)
@@ -96,7 +96,7 @@ def verify_edu_email(
     user_id: str = Depends(require_user),
 ):
     """
-    Verify a .edu email code and save the email to the profile.
+    Verify a school email code and save the email to the profile.
     """
     try:
         return controller.verify_edu_email(user_id, data.edu_email, data.code)

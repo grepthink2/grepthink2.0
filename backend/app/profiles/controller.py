@@ -14,9 +14,10 @@ import secrets
 from fastapi import HTTPException
 
 from app.core.db import get_client
-from app.core.errors import DatabaseConflictError
+from app.core.errors import DatabaseConflictError, DatabaseError
 from app.institutions.controller import is_school_email
 from app.utils.email import send_email
+from app.utils.profiles import needs_roster_email
 
 logger = logging.getLogger(__name__)
 
@@ -31,18 +32,20 @@ _ALLOWED_UPDATE_FIELDS = {
     "edu_email",
 }
 
-# Pending school-email verifications live in the ``edu_email_verifications`` table, one row per user.
-# They used to live in a module-level dict, which on serverless meant the instance that
-# verified a code was rarely the one that had issued it.
+# Pending school-email verifications live in the ``edu_email_verifications`` table, one row
+# per user. They used to live in a module-level dict, which on serverless meant the instance
+# that verified a code was rarely the one that had issued it.
 _PENDING_TABLE = "edu_email_verifications"
 _CODE_TTL = datetime.timedelta(minutes=10)
 _RESEND_INTERVAL = datetime.timedelta(seconds=60)
 _MAX_ATTEMPTS = 5
 
-# One mailbox: no whitespace (so no header injection through the ``To:`` line), no angle
-# brackets (the address is echoed into the email's HTML), a single ``@``. Whether the host is a
+# One plain-ASCII mailbox: no whitespace or punctuation that could carry a header injection
+# through the ``To:`` line (a comma, for instance, can turn one address into several) or get
+# echoed unescaped into the email's HTML, and no non-ASCII lookalikes (a Turkish lower-cased
+# "İ" is two code points, one of them a combining mark this rejects). Whether the host is a
 # school is is_school_email's call (.edu, or an institution's email_domains).
-_MAILBOX = re.compile(r"[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+")
+_MAILBOX = re.compile(r"[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+")
 
 
 def get_profile(user_id: str) -> dict:
@@ -107,7 +110,7 @@ def update_profile(user_id: str, data: dict) -> dict:
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    "A university email has to be verified before it is saved. "
+                    "A school email has to be verified before it is saved. "
                     "Request a verification code for it instead."
                 ),
             )
@@ -128,16 +131,33 @@ def update_profile(user_id: str, data: dict) -> dict:
 
 
 def _refresh_completion_reminder(user_id: str, profile: dict) -> None:
-    """Drop the complete-your-profile reminder once nothing is missing, else make sure it exists."""
+    """Drop the complete-your-profile reminder once nothing is missing, else make sure it exists.
+
+    Best-effort on the completeness check itself: this runs right after the write it follows
+    has already been saved (here, or by ``verify_edu_email``), so an institutions-table outage
+    inside ``is_school_email`` must not turn that successful save into a 500. Logged and
+    skipped instead — neither dismissed nor (re-)created — and the next call with a healthy
+    read catches the reminder up.
+    """
     from app.notifications.controller import (
         dismiss_profile_completion_notification,
         ensure_profile_completion_notification,
     )
 
-    if profile and not _profile_incomplete(profile):
-        dismiss_profile_completion_notification(user_id)
-    else:
-        ensure_profile_completion_notification(user_id)
+    if profile:
+        try:
+            incomplete = _profile_incomplete(profile)
+        except DatabaseError:
+            logger.warning(
+                "_refresh_completion_reminder: completeness check failed, skipping | user_id=%s",
+                user_id,
+                exc_info=True,
+            )
+            return
+        if not incomplete:
+            dismiss_profile_completion_notification(user_id)
+            return
+    ensure_profile_completion_notification(user_id)
 
 
 def _profile_incomplete(profile: dict) -> bool:
@@ -145,10 +165,7 @@ def _profile_incomplete(profile: dict) -> bool:
     last = (profile.get("last_name") or "").strip()
     if not first or not last:
         return True
-    role = profile.get("role")
-    email = (profile.get("email") or "").strip().lower()
-    edu_email = (profile.get("edu_email") or "").strip()
-    return role == "student" and not is_school_email(email) and not edu_email
+    return needs_roster_email(profile)
 
 
 def _normalize_edu_email(raw: str | None) -> str:
@@ -237,14 +254,14 @@ def send_edu_verification(user_id: str, edu_email: str) -> dict:
 
     body_text = (
         f"Your GrepThink school email verification code is: {code}\n\n"
-        f"Enter this code in GrepThink to confirm your university email address.\n"
+        f"Enter this code in GrepThink to confirm your school email address.\n"
         f"This code expires in 10 minutes.\n\n"
         f"If you did not request this, you can safely ignore this message."
     )
     body_html = f"""
 <html>
   <body style="font-family:sans-serif;color:#1a1a1a;max-width:480px;margin:0 auto;padding:24px">
-    <h2 style="margin-bottom:8px">Verify your university email</h2>
+    <h2 style="margin-bottom:8px">Verify your school email</h2>
     <p>Enter the code below in GrepThink to confirm <strong>{html.escape(email)}</strong>.</p>
     <div style="font-size:2rem;font-weight:700;letter-spacing:0.25em;
                 background:#f4f4f5;border-radius:8px;padding:16px 24px;
