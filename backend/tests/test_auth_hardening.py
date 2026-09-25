@@ -169,18 +169,21 @@ def test_an_account_without_a_role_cannot_join(client, db):
     assert db.rows("class_enrollments") == []
 
 
+STAFF_ONLY_CLASS_COLUMNS = {"review_zoom_url", "review_period_open", "can_students_make_project"}
+
+
 def test_join_response_never_carries_staff_only_columns(client, auth_header, db):
-    # class-1 has a real review_zoom_url (staff-only, hidden from students elsewhere); a
-    # joiner must not get it back, on first join or on a repeat "Already enrolled" post.
+    # class-1 has real values in all three staff-only columns (hidden from students elsewhere);
+    # a joiner must not get them back, on first join or on a repeat "Already enrolled" post.
     first = client.post("/api/classes/join", headers=auth_header, json={"course_code": "QASBX26A"})
     assert first.status_code == 200, first.text
     assert first.json()["message"] == "Joined class successfully"
-    assert "review_zoom_url" not in first.json()["class"]
+    assert STAFF_ONLY_CLASS_COLUMNS.isdisjoint(first.json()["class"])
 
     again = client.post("/api/classes/join", headers=auth_header, json={"course_code": "QASBX26A"})
     assert again.status_code == 200
     assert again.json()["message"] == "Already enrolled"
-    assert "review_zoom_url" not in again.json()["class"]
+    assert STAFF_ONLY_CLASS_COLUMNS.isdisjoint(again.json()["class"])
 
 
 # ── the profile endpoint can no longer claim a roster address ────────────────────

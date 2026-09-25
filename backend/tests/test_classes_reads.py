@@ -461,6 +461,13 @@ def test_overview_shape(db):
     assert len(out["students"]) == len(EXPECTED_STUDENTS)
 
 
+def test_only_the_class_instructor_sees_sentiment_in_the_overview_whatever_the_account_role(db):
+    next(p for p in db.rows("profiles") if p["id"] == TA1)["role"] = "instructor"
+    assert {c["sentiment"] for c in overview(TA1)["projects"]} == {None}
+    assert {c["sentiment"] for c in overview(S1)["projects"]} == {None}
+    assert any(c["sentiment"] is not None for c in overview(INSTR)["projects"])
+
+
 @pytest.mark.parametrize(("caller", "budget"), [(INSTR, 3), (TA1, 4), (S1, 4)])
 def test_overview_budget(db, caller, budget):
     overview(caller)

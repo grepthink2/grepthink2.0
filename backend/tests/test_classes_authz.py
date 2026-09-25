@@ -2,7 +2,8 @@
 answer everyone else gets.
 
 Instructor-only routes answer 404 "Class not found" when the class does not
-exist and 403 "Only the class instructor can do this" to everyone else. Class
+exist and 403 "Only the class instructor can do this" to everyone else, including
+a TA of the class whose account is an instructor's (with a class of its own). Class
 reads (students, roster, projects) are open to the class instructor and to
 enrolled students and TAs: 404 for a missing class, 403 for everyone else.
 
@@ -26,6 +27,7 @@ from tests.fake_supabase import FakeSupabase
 INSTR, OTHER_INSTR = "instr", "instr-2"
 TA1, S1, OUTSIDER = "ta-1", "s1", "outsider"
 CLASS, MISSING = "class-1", "no-such-class"
+TA1_CLASS = "class-ta1"  # TA1 teaches it: a TA in CLASS, an instructor elsewhere
 P1 = "proj-1"
 MANUAL_ENTRY = "roster-manual"
 JOB = "job-1"
@@ -59,12 +61,13 @@ def _profile(uid: str, role: str = "student") -> dict:
 
 
 def _world() -> dict:
-    """CLASS belongs to INSTR; TA1 (ta) and S1 (student) are enrolled; S1 is on P1."""
+    """CLASS belongs to INSTR; TA1 (ta) and S1 (student) are enrolled; S1 is on P1.
+    TA1's account is an instructor's, and TA1 created TA1_CLASS."""
     return {
         "profiles": [
             _profile(INSTR, "instructor"),
             _profile(OTHER_INSTR, "instructor"),
-            _profile(TA1),
+            _profile(TA1, "instructor"),
             _profile(S1),
             _profile(OUTSIDER),
         ],
@@ -75,7 +78,14 @@ def _world() -> dict:
                 "name": "CSE 115C",
                 "course_code": "ABCD1234",
                 "status": "active",
-            }
+            },
+            {
+                "id": TA1_CLASS,
+                "created_by": TA1,
+                "name": "CSE 101",
+                "course_code": "WXYZ5678",
+                "status": "active",
+            },
         ],
         "class_enrollments": [
             {"id": "e-ta", "class_id": CLASS, "user_id": TA1, "enrollment_role": "ta"},
@@ -181,9 +191,10 @@ INSTRUCTOR_ONLY = {
     [
         (OTHER_INSTR, CLASS, 403, NOT_CLASS_INSTRUCTOR),
         (S1, CLASS, 403, NOT_CLASS_INSTRUCTOR),
+        (TA1, CLASS, 403, NOT_CLASS_INSTRUCTOR),
         (INSTR, MISSING, 404, CLASS_NOT_FOUND),
     ],
-    ids=["other-instructor", "enrolled-student", "missing-class"],
+    ids=["other-instructor", "enrolled-student", "ta-instructor-elsewhere", "missing-class"],
 )
 def test_instructor_only_routes_answer_404_for_a_missing_class_and_403_otherwise(
     db, emails, name, caller, cid, status, detail

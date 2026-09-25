@@ -45,6 +45,7 @@ TA1 = "20000000-0000-0000-0000-000000000001"
 S1 = "30000000-0000-0000-0000-000000000001"
 OUTSIDER = "40000000-0000-0000-0000-000000000001"
 CLASS = "c0000000-0000-0000-0000-000000000001"
+TA1_CLASS = "c0000000-0000-0000-0000-000000000002"  # TA1 teaches it
 MISSING_CLASS = "c0000000-0000-0000-0000-00000000dead"
 P1 = "d0000000-0000-0000-0000-000000000001"
 MISSING_PROJECT = "d0000000-0000-0000-0000-00000000dead"
@@ -54,7 +55,9 @@ A_ORPHAN = "a0000000-0000-0000-0000-000000000002"  # its class row no longer exi
 ROLES = {
     INSTR: "instructor",
     OTHER_INSTR: "instructor",
-    TA1: "student",
+    # This branch's main scenario: a TA in CLASS whose account is an instructor's, teaching a
+    # class of their own. Every "enrolled-ta" row below is that caller.
+    TA1: "instructor",
     S1: "student",
     OUTSIDER: "student",
 }
@@ -77,7 +80,8 @@ def _feedback_assignment(aid: str, class_id: str) -> dict:
 @pytest.fixture
 def db(monkeypatch):
     """CLASS belongs to INSTR. TA1 (ta) and S1 (student) are enrolled; S1 is on P1,
-    whose assigned TA is TA1. OTHER_INSTR and OUTSIDER have no tie to CLASS."""
+    whose assigned TA is TA1, who also created TA1_CLASS. OTHER_INSTR and OUTSIDER have no
+    tie to CLASS."""
     fake = FakeSupabase(
         profiles=[
             {
@@ -102,7 +106,8 @@ def db(monkeypatch):
                 "meeting_duration_minutes": 30,
                 "review_period_open": False,
                 "review_zoom_url": None,
-            }
+            },
+            {"id": TA1_CLASS, "created_by": TA1, "name": "CSE 101", "status": "active"},
         ],
         class_enrollments=[
             {"id": "e-ta", "class_id": CLASS, "user_id": TA1, "enrollment_role": "ta"},
@@ -379,6 +384,21 @@ CASES = {
         403,
         NOT_CLASS_INSTRUCTOR,
     ),
+    "tas.promote/enrolled-ta": (
+        lambda db: tas.promote_to_ta(TA1, CLASS, S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "tas.demote/enrolled-ta": (
+        lambda db: tas.demote_ta(TA1, CLASS, TA1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "tas.list_class_tas/enrolled-ta": (
+        lambda db: tas.list_class_tas(TA1, CLASS),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
     "tas.promote/enrolled-student": (
         lambda db: tas.promote_to_ta(S1, CLASS, TA1),
         403,
@@ -429,6 +449,12 @@ CASES = {
     ),
     "projects.create/not-enrolled": (
         lambda db: projects.create_project(CLASS, "New", "d", OUTSIDER, 4),
+        403,
+        NOT_ENROLLED,
+    ),
+    # An instructor account is not enrolled anywhere by being one.
+    "projects.create/other-instructor": (
+        lambda db: projects.create_project(CLASS, "New", "d", OTHER_INSTR, 4),
         403,
         NOT_ENROLLED,
     ),
