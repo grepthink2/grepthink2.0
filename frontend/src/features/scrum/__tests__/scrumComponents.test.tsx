@@ -6,6 +6,7 @@ import StoryCard from '../components/StoryCard';
 import BurnupChart from '../components/BurnupChart';
 import { seriesPoints } from '../utils/burnupGeometry';
 import { PointPicker } from '../components/ScalePicker';
+import { UserPair } from '../components/Chips';
 import { buildMemberMap } from '../scrumTypes';
 import { makeMembers, makeStory, makeTask } from './fixtures';
 
@@ -48,6 +49,23 @@ describe('StoryCard', () => {
     render(<StoryCard story={story} members={members} onSelect={onSelect} />);
     await userEvent.click(screen.getByRole('button'));
     expect(onSelect).toHaveBeenCalledOnce();
+  });
+});
+
+describe('UserPair', () => {
+  const tony = { user_id: 'u1', name: 'Tony Wu', image_url: null };
+  const qa = { user_id: 'u2', name: 'QA Student', image_url: null };
+
+  it('names both people in design-system tooltips, not the delayed native title', () => {
+    const { container } = render(<UserPair reporter={tony} assignee={qa} />);
+    const tips = screen.getAllByRole('tooltip').map((t) => t.textContent);
+    expect(tips).toEqual(['Reporter: Tony Wu', 'Assignee: QA Student']);
+    expect(container.querySelector('[title]')).toBeNull();
+  });
+
+  it('keeps the avatars out of the tab order, since cards are the control', () => {
+    const { container } = render(<UserPair reporter={tony} assignee={qa} />);
+    expect(container.querySelector('[tabindex]')).toBeNull();
   });
 });
 

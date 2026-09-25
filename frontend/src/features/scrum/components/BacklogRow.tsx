@@ -28,7 +28,7 @@ export default function BacklogRow({ story, members, onOpen, onRestore }: Props)
       <span className="gt-backlog-row__meta">
         {story.time_estimate && <EstimateChip estimate={story.time_estimate} />}
         {story.points != null && <PointsChip points={story.points} size="sm" />}
-        <UserPair reporter={reporter} assignee={assignee} />
+        <UserPair reporter={reporter} assignee={assignee} tooltipSide="left" />
       </span>
       {onRestore && (
         <button type="button" className="gt-backlog-row__restore" onClick={onRestore}>
