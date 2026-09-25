@@ -1,10 +1,9 @@
 @use '@styles/index.scss' as *;
-@use '../layers' as *;
 
 .board-settings-backdrop {
   position: fixed;
   inset: 0;
-  z-index: $scrum-modal-z; // above the sidebar; see ../_layers.scss
+  z-index: var(--gt-z-modal);
   display: flex;
   align-items: center;
   justify-content: center;

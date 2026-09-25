@@ -9,7 +9,7 @@
   position: fixed;
   top: 0;
   bottom: 0;
-  z-index: 1000;
+  z-index: $z-index-modal - 1; // over the page and its dropdowns, under every modal
   font-family: $primary-font; // Use Poppins from system
 
   &.collapsed {
