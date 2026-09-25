@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PanelLeft } from 'lucide-react';
 import { ChevronDown } from 'lucide-react';
@@ -107,15 +107,19 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
   };
 
   const handleClassSelect = (classItem: (typeof sidebarClasses)[number]) => {
-    const switching = classItem.id !== selectedClass?.id;
-    setSelectedClass(classItem);
     setShowClassDropdown(false);
     // Stay on this page when your role in the new class allows it, else go to that role's page.
     // The class you are already in needs neither (a preview of it goes on, so its own role
     // would not be the one the page follows).
-    if (!switching) return;
-    const next = pathAfterClassSwitch(location.pathname, classItem.my_role);
-    if (next) navigate(next);
+    const next =
+      classItem.id === selectedClass?.id ? null : pathAfterClassSwitch(location.pathname, classItem.my_role);
+    // One transition for the class and the page. The router navigates in a transition, so a class
+    // committed on its own would first show the old page with the new class (a detail page would
+    // fetch its id in the wrong class) or meet the class route guard there.
+    startTransition(() => {
+      setSelectedClass(classItem);
+      if (next) navigate(next);
+    });
   };
 
   // Close dropdown when clicking outside

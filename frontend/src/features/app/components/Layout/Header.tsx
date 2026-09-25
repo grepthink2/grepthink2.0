@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, startTransition } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu, Eye } from 'lucide-react';
@@ -219,13 +219,16 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
       return;
     }
 
-    if (notification.type === 'upload_roster' && notification.entity_id) {
-      const cls = classes.find(c => c.id === notification.entity_id);
-      if (cls) setSelectedClass(cls);
-    }
-
+    const target =
+      notification.type === 'upload_roster' && notification.entity_id
+        ? classes.find((c) => c.id === notification.entity_id)
+        : undefined;
     const path = notificationPath(notification);
-    if (path) navigate(path);
+    // The class and the page commit together (see handleViewAsStudent).
+    startTransition(() => {
+      if (target) setSelectedClass(target);
+      if (path) navigate(path);
+    });
   };
 
   // Close dropdowns when clicking outside
@@ -263,13 +266,14 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
 
   const handleViewAsStudent = () => {
     setShowProfileMenu(false);
-    if (isPreviewing) {
-      exitPreview();
+    // One transition for the preview and the page. The router navigates in a transition, so a
+    // preview committed on its own would meet the class route guard on the old page, which would
+    // redirect from there (the Dashboard to My Project, My Project to the Dashboard).
+    startTransition(() => {
+      if (isPreviewing) exitPreview();
+      else enterPreview();
       navigate('/app/home');
-    } else {
-      enterPreview();
-      navigate('/app/home');
-    }
+    });
   };
 
   // Lightweight search: "leave class" (and close variants) jumps to My Classes,

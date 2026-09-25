@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { startTransition, useId, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Check, ChevronDown, School } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
@@ -25,13 +25,16 @@ const SchoolSwitcher: React.FC<SchoolSwitcherProps> = ({ onPicked }) => {
 
   const pick = (schoolId: string) => {
     setOpen(false);
-    const target = selectSchool(schoolId);
     onPicked();
-    // Still in the same class (its school picked again): the page already fits, and a preview
-    // of that class goes on, so its own role would not be the one the page follows.
-    if (!target || target.id === selectedClass?.id) return;
-    const next = pathAfterClassSwitch(pathname, target.my_role);
-    if (next) navigate(next);
+    // One transition for the class and the page (see the sidebar's class switcher).
+    startTransition(() => {
+      const target = selectSchool(schoolId);
+      // Still in the same class (its school picked again): the page already fits, and a preview
+      // of that class goes on, so its own role would not be the one the page follows.
+      if (!target || target.id === selectedClass?.id) return;
+      const next = pathAfterClassSwitch(pathname, target.my_role);
+      if (next) navigate(next);
+    });
   };
 
   return (
