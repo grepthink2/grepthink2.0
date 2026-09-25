@@ -9,7 +9,6 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from app.auth.controller import get_user_role
 from app.core import authz
 from app.core.db import fan_out, get_client
 from app.database.client import (
@@ -137,8 +136,8 @@ def create_project(
     """
     Create a new project within a class.
 
-    Instructors who own the class may create projects with full sponsor information.
-    Enrolled students may also create projects, but sponsor fields are excluded.
+    The class instructor (its creator) may create projects with sponsor information; anyone
+    enrolled (student or TA) may create one without it.
 
     Args:
         class_id: Class unique identifier
@@ -181,10 +180,6 @@ def create_project(
                 .execute()
             )
         )
-        # ``get_user_role`` is itself in-process cached, so this is usually
-        # a memory hit. Calling it directly (rather than via the executor)
-        # keeps the cache check off the worker thread.
-        user_role = get_user_role(user_id)
 
         class_result = class_future.result()
         if not class_result.data or len(class_result.data) == 0:
@@ -192,14 +187,9 @@ def create_project(
 
         class_row = class_result.data[0]
 
-        is_instructor = user_role == "instructor" and class_row.get("created_by") == user_id
+        is_instructor = str(class_row.get("created_by")) == str(user_id)
 
         if not is_instructor:
-            if user_role != "student":
-                raise HTTPException(
-                    status_code=403,
-                    detail="Only the class instructor or enrolled students can create projects",
-                )
             enrollment = enrollment_future.result()
             if not enrollment.data:
                 raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
@@ -304,7 +294,7 @@ def update_project(
 
     Who can edit:
     - Product owner or admin (project members with elevated roles)
-    - Instructors who own the class the project belongs to
+    - The class instructor (whoever created the project's class)
 
     At least one field must be provided.
     """
@@ -336,20 +326,7 @@ def update_project(
 
         class_id = project_result.data[0].get("class_id")
 
-        # Check if the user is an instructor who owns the class
-        is_class_instructor = False
-        if class_id:
-            profile = client.table("profiles").select("role").eq("id", user_id).execute()
-            user_role = profile.data[0].get("role") if profile.data else None
-            if user_role == "instructor":
-                class_check = (
-                    client.table("classes")
-                    .select("id")
-                    .eq("id", str(class_id))
-                    .eq("created_by", user_id)
-                    .execute()
-                )
-                is_class_instructor = bool(class_check.data)
+        is_class_instructor = bool(class_id) and _is_instructor(user_id, class_id)
 
         if not is_class_instructor:
             _require_member_role(

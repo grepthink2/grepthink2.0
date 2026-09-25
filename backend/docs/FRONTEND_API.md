@@ -169,12 +169,12 @@ All routes require the caller to be the class instructor: **404** if the class d
 
 ## Messages (`/api/messages`)
 
-Direct peer-to-peer messaging between enrolled users. A **conversation** is a canonical (user_a, user_b) pair; messages nest inside a conversation. Instructors can message any student they share a class with; students can message other students and instructors in shared classes. Instructor-to-instructor messaging is not permitted.
+Direct peer-to-peer messaging between enrolled users. A **conversation** is a canonical (user_a, user_b) pair; messages nest inside a conversation. Any two people who share a class (as its instructor, a TA or a student) can message each other, whatever their account roles.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/api/messages/conversations` | Yes | Inbox: all conversations the current user participates in, sorted by `last_message_at` desc. Each row includes `other_user` (id, name, email), `last_message` preview, `unread_count`, `other_user_last_read_at`, `can_send`, and `last_message_at`. Conversations with no messages are omitted. |
-| `POST` | `/api/messages` | Yes | Send a message. Body: `to_user_id` (string), `body` (string, max 1 024 chars). Returns `{"conversation_id": "...", "message": {...}}`. **403** if the two users are not eligible to message each other (no shared class, or instructor↔instructor). |
+| `POST` | `/api/messages` | Yes | Send a message. Body: `to_user_id` (string), `body` (string, max 1 024 chars). Returns `{"conversation_id": "...", "message": {...}}`. **403** if the two users share no class. |
 | `GET` | `/api/messages/conversations/{conversation_id}/messages` | Yes | Latest 50 messages in the conversation (newest first). **403** if the caller is not a participant; **404** if the conversation doesn't exist. |
 | `POST` | `/api/messages/conversations/{conversation_id}/read` | Yes | Mark the conversation as read up to now (upserts the caller's `last_read_at` row). Returns **204 No Content**. |
 

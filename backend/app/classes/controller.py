@@ -108,7 +108,7 @@ def _resolve_roster_display_name(
 #: Addresses or ids per ``in.(...)`` filter. Keeps every lookup URL short even when
 #: an instructor invites a whole roster at once.
 _LOOKUP_BATCH = 100
-_PROFILE_LOOKUP_COLUMNS = "id, role, email, edu_email, first_name, last_name"
+_PROFILE_LOOKUP_COLUMNS = "id, email, edu_email, first_name, last_name"
 
 
 def _postgrest_value(value: str) -> str:
@@ -701,6 +701,8 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
     If the student already has a GrepThink account, enroll them and send a
     notification email. If they are on the roster but not registered yet, send
     a signup invitation with the class access code instead of returning 404.
+    Any account can be enrolled, whatever its role (an instructor elsewhere can
+    assist here), except the class instructor's own: 400.
 
     Round trips: the class with its instructor's profile, the profile lookup, and
     one enrollment upsert (was 6).
@@ -731,8 +733,8 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
                 "student_email": normalized_email,
             }
 
-        if student["role"] != "student":
-            raise HTTPException(status_code=400, detail="User is not a student")
+        if str(student["id"]) == str(class_row.get("created_by")):
+            raise HTTPException(status_code=400, detail="You are the instructor of this class")
 
         already_enrolled = str(student["id"]) not in _enroll_students(client, cid, [student["id"]])
 
@@ -1692,7 +1694,7 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
     - ``enrolled``         – existing GrepThink student enrolled + email sent.
     - ``invited``          – no account yet; signup invitation email sent.
     - ``already_enrolled`` – student was already in the class; reminder email sent.
-    - ``not_a_student``    – profile exists but the role is not 'student'.
+    - ``not_a_student``    – the address belongs to the class instructor.
     - ``email_failed``     – SMTP/delivery error for this address.
     - ``error``            – the profile lookup or the enrollment failed for this email.
 
@@ -1710,6 +1712,7 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
         cid = str(class_id)
         class_row = _require_owner(client, instructor_id, cid, columns=_INVITE_CLASS_COLUMNS)
         email_ctx = _invite_email_context(class_row)
+        owner_id = str(class_row.get("created_by"))
 
         clean_emails = list(dict.fromkeys(e.strip().lower() for e in emails if e.strip()))
 
@@ -1722,7 +1725,7 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
             lookup_failed = True
 
         student_ids = list(
-            dict.fromkeys(str(p["id"]) for p in profiles.values() if p.get("role") == "student")
+            dict.fromkeys(str(p["id"]) for p in profiles.values() if str(p["id"]) != owner_id)
         )
         enrolled_before: set[str] = set()
         newly_enrolled: set[str] = set()
@@ -1766,7 +1769,7 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
                     results.append({"email": email, "status": "email_failed"})
                 continue
 
-            if profile.get("role") != "student":
+            if str(profile["id"]) == owner_id:
                 results.append({"email": email, "status": "not_a_student"})
                 continue
 

@@ -140,25 +140,26 @@ def test_rows_are_matched_back_to_users_the_way_postgres_compares_uuids():
 
 def test_can_message_student_and_instructor(db):
     assert messages.can_message(S1, INSTR) is True
-    assert db.executes <= 3, _trace(db)  # roles, then owned classes + enrollments
+    assert db.executes <= 2, _trace(db)  # owned classes + enrollments; no role read
 
 
 def test_can_message_without_a_shared_class(db):
     assert messages.can_message(S2, S3) is False
-    assert db.executes <= 3, _trace(db)
+    assert db.executes <= 2, _trace(db)
 
 
-def test_can_message_instructor_pair_stops_after_the_role_read(db):
-    assert messages.can_message(INSTR, OTHER_INSTR) is False  # they do share C1
-    assert _trace(db) == ["profiles:select"]
+def test_can_message_two_instructor_accounts_who_share_a_class(db):
+    """OTHER_INSTR is a TA in INSTR's C1: two instructor accounts, one shared class."""
+    assert messages.can_message(INSTR, OTHER_INSTR) is True
+    assert _trace(db) == ["class_enrollments:select", "classes:select"]
 
 
 # --------------------------------------------------------------- list_contacts
 
 
 def test_list_contacts_shape_and_order_for_an_instructor(db):
-    """INSTR owns C1 and C3. From C1: S2, S1 and TA. OTHER_INSTR is left out
-    (instructor pair), ORPHAN has no profiles row, the caller is never listed.
+    """INSTR owns C1 and C3. From C1: S2, OTHER_INSTR (an instructor account, a TA
+    here), S1 and TA. ORPHAN has no profiles row, the caller is never listed.
     Sorted by name, else email, case-insensitively."""
     assert messages.list_contacts(caller_id=INSTR) == [
         {
@@ -169,6 +170,15 @@ def test_list_contacts_shape_and_order_for_an_instructor(db):
             "email": "bea@ucsc.edu",
             "image_url": f"https://img.example/{S2}.png",
             "role": "student",
+        },
+        {
+            "id": OTHER_INSTR,
+            "name": "Ivo Olsen",
+            "first_name": "Ivo",
+            "last_name": "Olsen",
+            "email": f"{OTHER_INSTR}@ucsc.edu",
+            "image_url": f"https://img.example/{OTHER_INSTR}.png",
+            "role": "instructor",
         },
         {
             "id": S1,
@@ -202,13 +212,14 @@ def test_list_contacts_for_a_student_in_two_classes(db):
 
 
 def test_list_contacts_for_an_instructor_who_is_a_ta_elsewhere(db):
-    """OTHER_INSTR owns C2 and is a TA in C1: peers from both classes, never INSTR."""
-    assert [c["id"] for c in messages.list_contacts(caller_id=OTHER_INSTR)] == [S2, S1, TA, S3]
+    """OTHER_INSTR owns C2 and is a TA in C1: peers from both classes, C1's instructor too."""
+    contacts = [c["id"] for c in messages.list_contacts(caller_id=OTHER_INSTR)]
+    assert contacts == [S2, INSTR, S1, TA, S3]
     assert db.executes <= 2, _trace(db)
 
 
 def test_list_contacts_for_a_caller_without_a_profile_row(db):
-    """No caller role to compare, so no instructor filtering."""
+    """A caller without a profiles row still gets every nameable peer."""
     contacts = messages.list_contacts(caller_id=ORPHAN)
     assert [c["id"] for c in contacts] == [S2, INSTR, OTHER_INSTR, S1, TA]
     assert db.executes <= 2, _trace(db)
@@ -219,7 +230,7 @@ def test_list_contacts_breaks_name_ties_by_user_id(db):
         db.rows("profiles").append(_profile(uid, "Alex", "Kim"))
         _enroll(db, uid, C3)
     contacts = messages.list_contacts(caller_id=INSTR)
-    assert [c["id"] for c in contacts] == ["stu-a", "stu-b", S2, S1, TA]
+    assert [c["id"] for c in contacts] == ["stu-a", "stu-b", S2, OTHER_INSTR, S1, TA]
 
 
 def test_list_contacts_query_matches_name_or_email(db):

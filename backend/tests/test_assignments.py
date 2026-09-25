@@ -206,7 +206,8 @@ def test_instructor_list_has_stats_and_is_bounded(db):
     ]
     db.reset_counter()
     assignments.get_assignments_for_class(INSTR, CLASS)
-    assert db.executes <= 8, _trace(db)
+    # the class, the enrollment and the assignments, then the four stat reads
+    assert db.executes <= 7, _trace(db)
 
 
 def test_stat_keys_are_absent_when_a_type_has_no_assignments(db):
@@ -220,22 +221,32 @@ def test_student_list_is_published_only_and_bounded(db):
     out = assignments.get_assignments_for_class(S1, CLASS)
     assert [a["id"] for a in out] == [A_FORM, A_FB, A_TSR]
     assert all("teams_total" not in a and "feedback_total" not in a for a in out)
-    assert db.executes <= 4, _trace(db)
+    assert db.executes <= 3, _trace(db)
 
 
 def test_list_access_rules(db):
-    with pytest.raises(HTTPException) as other:
-        assignments.get_assignments_for_class(OTHER_INSTR, CLASS)
-    assert (other.value.status_code, other.value.detail) == (
-        403,
-        "Only the class instructor can do this",
-    )
-    with pytest.raises(HTTPException) as outsider:
-        assignments.get_assignments_for_class(OUTSIDER, CLASS)
-    assert (outsider.value.status_code, outsider.value.detail) == (
-        403,
-        "You are not enrolled in this class",
-    )
+    # Another class's instructor is not enrolled here: the account role opens nothing.
+    for caller in (OTHER_INSTR, OUTSIDER):
+        with pytest.raises(HTTPException) as exc:
+            assignments.get_assignments_for_class(caller, CLASS)
+        assert (exc.value.status_code, exc.value.detail) == (
+            403,
+            "You are not enrolled in this class",
+        )
+
+
+def test_a_ta_whose_account_is_an_instructor_sees_published_assignments(db):
+    # Make TA1's account an instructor: the list must still treat them as enrolled, not refuse.
+    next(p for p in db.rows("profiles") if p["id"] == TA1)["role"] = "instructor"
+    out = assignments.get_assignments_for_class(TA1, CLASS)
+    assert out and all(a["status"] == "publish" for a in out)
+
+
+def test_the_class_owner_sees_every_status_whatever_the_account_role(db):
+    next(p for p in db.rows("profiles") if p["id"] == INSTR)["role"] = "student"
+    out = {a["id"]: a for a in assignments.get_assignments_for_class(INSTR, CLASS)}
+    assert set(out) == {A_TSR, A_DRAFT, A_FB, A_FORM}
+    assert out[A_TSR]["teams_total"] == 2
 
 
 # ------------------------------------------------------------ TSR entry edit

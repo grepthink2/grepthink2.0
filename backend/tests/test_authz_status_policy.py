@@ -136,8 +136,6 @@ def db(monkeypatch):
         },
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
-    # create_project reads the role through the process-wide role cache.
-    monkeypatch.setattr(projects, "get_user_role", ROLES.get)
     return fake
 
 
@@ -188,7 +186,7 @@ CASES = {
     "assignments.list/other-instructor": (
         lambda db: assignments.get_assignments_for_class(OTHER_INSTR, CLASS),
         403,
-        NOT_CLASS_INSTRUCTOR,
+        NOT_ENROLLED,
     ),
     "assignments.list/not-enrolled": (
         lambda db: assignments.get_assignments_for_class(OUTSIDER, CLASS),
