@@ -7,10 +7,12 @@
 --     created, so Scott's UCSC TA classes would disappear from their class list.
 --
 -- profiles.role now means only "may create classes". The classes Scott TAs keep working through
--- their class_enrollments rows. The backend caches roles, so this takes effect within 60 seconds.
+-- their class_enrollments rows. The backend caches roles, so this takes effect within 60 seconds
+-- of running — Scott should reload the app after that to see Create Class.
 --
--- Replace <scott-login-email> (twice below, plus the check) with the email of Scott's GrepThink
--- account, then run the whole file. It changes at most one row and rolls back otherwise.
+-- Replace every <scott-login-email> in this file (twice below, plus the check) with the email of
+-- Scott's GrepThink account, then run the whole file. It changes at most one row and rolls back
+-- otherwise.
 --
 -- Applied: PROD ____-__-__
 
@@ -21,11 +23,23 @@ UPDATE public.profiles
  WHERE lower(email) = lower('<scott-login-email>')
    AND role = 'student';
 
+-- If this raises, the transaction rolls back and nothing was changed — but in the SQL editor
+-- the read-only check query below does not run either, so the counts are in the message itself.
 DO $$
+DECLARE
+  instructor_count int;
+  total_count int;
 BEGIN
-  IF (SELECT count(*) FROM public.profiles
-       WHERE lower(email) = lower('<scott-login-email>') AND role = 'instructor') <> 1 THEN
-    RAISE EXCEPTION 'expected exactly one instructor profile for that email; nothing was changed';
+  SELECT count(*) FILTER (WHERE role = 'instructor'), count(*)
+    INTO instructor_count, total_count
+    FROM public.profiles
+   WHERE lower(email) = lower('<scott-login-email>');
+
+  IF instructor_count <> 1 THEN
+    RAISE EXCEPTION
+      'expected exactly one instructor profile for that email; found % instructor profile(s) '
+      'among % profile(s) with that email; nothing was changed',
+      instructor_count, total_count;
   END IF;
 END $$;
 
