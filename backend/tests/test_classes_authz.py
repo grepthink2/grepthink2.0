@@ -146,10 +146,6 @@ def emails(monkeypatch):
     return sent
 
 
-def _role(caller: str) -> str:
-    return "instructor" if caller in (INSTR, OTHER_INSTR) else "student"
-
-
 # ------------------------------------------------------ instructor-only routes
 
 CSV = "Email Address,Status\na@ucsc.edu,Enrolled\n"
@@ -269,11 +265,11 @@ CLASS_READS = {
         NO_CLASS_ACCESS,
     ),
     "get_class_projects": (
-        lambda caller, cid: classes.get_class_projects(cid, caller, _role(caller)),
+        lambda caller, cid: classes.get_class_projects(cid, caller),
         NO_CLASS_ACCESS,
     ),
     "get_class_projects_overview": (
-        lambda caller, cid: classes.get_class_projects_overview(cid, caller, _role(caller)),
+        lambda caller, cid: classes.get_class_projects_overview(cid, caller),
         NO_CLASS_ACCESS,
     ),
 }
@@ -321,8 +317,8 @@ class _DisconnectOnce(FakeSupabase):
     [
         lambda: classes.queue_invite(CLASS, ["new@ucsc.edu"], INSTR),
         lambda: classes.cancel_invite(CLASS, JOB, INSTR),
-        lambda: classes.get_class_projects(CLASS, INSTR, "instructor"),
-        lambda: classes.get_class_projects_overview(CLASS, INSTR, "instructor"),
+        lambda: classes.get_class_projects(CLASS, INSTR),
+        lambda: classes.get_class_projects_overview(CLASS, INSTR),
     ],
     ids=["queue_invite", "cancel_invite", "get_class_projects", "get_class_projects_overview"],
 )

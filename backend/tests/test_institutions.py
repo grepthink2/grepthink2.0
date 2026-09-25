@@ -259,7 +259,9 @@ def test_a_dropped_connection_is_retried_once(monkeypatch):
 
 
 def test_summaries_and_known_ids(db):
-    assert institutions.institution_summaries()[ISTINYE_INSTITUTION["id"]] == {
+    assert institutions.institution_summaries(institutions.load_institutions())[
+        ISTINYE_INSTITUTION["id"]
+    ] == {
         "id": ISTINYE_INSTITUTION["id"],
         "name": "İstinye University",
         "slug": "istinye",

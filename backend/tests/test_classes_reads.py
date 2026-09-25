@@ -155,10 +155,6 @@ def db(monkeypatch):
     return fake
 
 
-def _role(caller: str) -> str:
-    return "instructor" if caller == INSTR else "student"
-
-
 def students(caller, class_id=CLASS):
     return classes.get_class_students(class_id, caller)
 
@@ -168,11 +164,11 @@ def roster(caller, class_id=CLASS):
 
 
 def projects(caller, class_id=CLASS):
-    return classes.get_class_projects(class_id, caller, _role(caller))
+    return classes.get_class_projects(class_id, caller)
 
 
 def overview(caller, class_id=CLASS):
-    return classes.get_class_projects_overview(class_id, caller, _role(caller))
+    return classes.get_class_projects_overview(class_id, caller)
 
 
 def _student(uid, email, first, last, enrollment_role="student", project=None):
@@ -437,6 +433,13 @@ def test_project_cards_for_the_instructor_and_a_student(db):
     ghost = ("Gus Ghost", "ghost@ucsc.edu")
     assert projects(INSTR) == _cards(instructor=True, ghost_owner=ghost)
     assert projects(S1) == _cards(instructor=False, ghost_owner=ghost)
+
+
+def test_only_the_class_instructor_sees_sentiment_whatever_the_account_role(db):
+    # TA1's account can be an instructor elsewhere; here they assist, so no sentiment.
+    next(p for p in db.rows("profiles") if p["id"] == TA1)["role"] = "instructor"
+    assert {c["sentiment"] for c in projects(TA1)} == {None}
+    assert any(c["sentiment"] is not None for c in projects(INSTR))
 
 
 @pytest.mark.parametrize(("caller", "budget"), [(INSTR, 2), (TA1, 3), (S1, 3)])

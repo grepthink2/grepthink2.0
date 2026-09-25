@@ -13,7 +13,11 @@ from fastapi import HTTPException
 from app.classes.invite_email import send_class_invite_email, send_class_invite_email_or_raise
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
-from app.institutions.controller import is_known_institution, load_institutions
+from app.institutions.controller import (
+    institution_summaries,
+    is_known_institution,
+    load_institutions,
+)
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code, normalize_course_code
 from app.utils.profiles import profile_display_name
@@ -150,7 +154,7 @@ def _find_student_profiles_by_email(client, emails) -> dict[str, dict]:
 
 
 def _find_student_profile_by_email(client, email: str) -> dict | None:
-    """Look up a student profile by UCSC edu_email first, then primary email (one read)."""
+    """Look up a student profile by school email (edu_email) first, then primary email (one read)."""
     normalized = email.strip().lower()
     return _find_student_profiles_by_email(client, [normalized]).get(normalized)
 
@@ -369,7 +373,7 @@ def create_class(
     start_date: datetime.date,
     user_id: str,
     tsr_count: int | None = None,
-    institution_id=None,
+    institution_id: UUID | str | None = None,
 ) -> dict:
     """
     Create a new class with a unique course code and auto-generate TSR assignments.
@@ -536,10 +540,7 @@ def get_classes_for_user(user_id: str) -> list:
         if not classes:
             return []
 
-        summaries = {
-            i["id"]: {"id": i["id"], "name": i["name"], "slug": i["slug"]}
-            for i in institutions or []
-        }
+        summaries = institution_summaries(institutions)
         for cls in classes:
             institution_id = cls.get("institution_id")
             cls["institution"] = summaries.get(str(institution_id)) if institution_id else None
@@ -625,7 +626,7 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
 
     Args:
         course_code: Course code to join
-        user_id: Student's unique identifier
+        user_id: the caller's user id
 
     Returns:
         Dictionary with message and class data
@@ -642,7 +643,15 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
         course_code = code
 
         client = get_client()
-        class_result = client.table("classes").select("*").eq("course_code", course_code).execute()
+        # The columns an enrolled student or TA may see: the instructor-only ones
+        # (review_zoom_url, review_period_open, can_students_make_project, ...) never reach the
+        # joiner, on this call or by re-posting the same code once already enrolled.
+        class_result = (
+            client.table("classes")
+            .select(_ENROLLED_CLASS_COLUMNS)
+            .eq("course_code", course_code)
+            .execute()
+        )
         if not class_result.data or len(class_result.data) == 0:
             raise HTTPException(status_code=404, detail="Invalid course code")
 
@@ -672,7 +681,7 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
         client.table("class_enrollments").insert(enrollment_data).execute()
 
         logger.info(
-            "Student joined class | user_id=%s class_id=%s course_code=%s",
+            "User joined class | user_id=%s class_id=%s course_code=%s",
             user_id,
             class_row["id"],
             course_code,
@@ -1889,14 +1898,14 @@ def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
 
 
 @retry_on_disconnect()
-def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
+def get_class_projects(class_id: UUID, user_id: str) -> list:
     """
     Get all projects for a class.
 
     Access rules: the class instructor and students / TAs enrolled in the class.
 
     Each project returns:
-    - name, team_size, image_url, member_count, sentiment (instructors only)
+    - name, team_size, image_url, member_count, sentiment (class instructor only)
     - product_owner_name, product_owner_email
     - scrum_master_name, scrum_master_email (None if no scrum master assigned)
 
@@ -1904,7 +1913,10 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
     on every navigation. The access check runs alongside one projects read that
     embeds every member with their profile, so the call is a single concurrent
     wave: 2 queries for the instructor, 3 for a member (was 5 in 3 waves).
-    ``sentiment`` is always selected so that read does not wait on the role.
+    ``sentiment`` is always selected so that read does not wait on the access check; whether it
+    is shown depends on ``reads["access"]["is_instructor"]`` — this class's instructor, never the
+    caller's global ``profiles.role`` (an account can be an instructor elsewhere and only a
+    student or TA here).
     """
     try:
         client = get_client()
@@ -1927,7 +1939,8 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
                 ),
             }
         )
-        return _project_cards(reads["projects"], role, lambda m: m.get("profile") or {})
+        show_sentiment = reads["access"]["is_instructor"]
+        return _project_cards(reads["projects"], show_sentiment, lambda m: m.get("profile") or {})
     except HTTPException:
         raise
     except Exception:
@@ -1947,12 +1960,14 @@ def _key_role_name(profile: dict) -> str | None:
     return full or profile.get("email")
 
 
-def _project_cards(projects: list[dict], role: str, lead_profile) -> list[dict]:
+def _project_cards(projects: list[dict], show_sentiment: bool, lead_profile) -> list[dict]:
     """Project cards in the shape ``get_class_projects`` returns.
 
     ``projects`` embed ``project_members(user_id, role, ...)``. ``lead_profile(member)``
     returns the profile that names an owner or scrum master (``{}`` when unknown).
-    ``sentiment`` is shown to instructors only.
+    ``sentiment`` is shown only when ``show_sentiment`` — pass the caller's ``is_instructor``
+    for *this class*, never their account-wide ``profiles.role``: an instructor-role account
+    that is only a TA or student here must not see the room's sentiment.
     """
     key_roles = {"product owner", "owner", "scrum master"}
     cards = []
@@ -1968,7 +1983,7 @@ def _project_cards(projects: list[dict], role: str, lead_profile) -> list[dict]:
                 "team_size": project.get("team_size"),
                 "image_url": project.get("image_url"),
                 "member_count": len(members),
-                "sentiment": project.get("sentiment") if role == "instructor" else None,
+                "sentiment": project.get("sentiment") if show_sentiment else None,
                 "product_owner_name": _key_role_name(owner_profile),
                 "product_owner_email": owner_profile.get("email"),
                 "scrum_master_name": _key_role_name(scrum_profile) if scrum_profile else None,
@@ -1979,13 +1994,14 @@ def _project_cards(projects: list[dict], role: str, lead_profile) -> list[dict]:
 
 
 @retry_on_disconnect()
-def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict:
+def get_class_projects_overview(class_id: UUID, user_id: str) -> dict:
     """Projects list + enrolled-student list for the Projects page in one call.
 
     Returns ``{"projects": [...], "students": [...]}`` in the shapes of
     ``get_class_projects`` and ``get_class_students``. Owners and scrum masters
     are named from the enrolled users' profiles, so a lead who is not enrolled in
-    the class shows no name or email here.
+    the class shows no name or email here. ``sentiment`` is shown only to this class's
+    instructor (``reads["access"]["is_instructor"]``), never by the caller's account-wide role.
 
     Round trips: the access check (1 for the instructor, 2 for a member), the
     enrollments with profiles, and the projects with their members, all in one
@@ -2016,9 +2032,10 @@ def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict
         )
         enrollments, projects = reads["enrollments"], reads["projects"]
         profile_by_id = {p["id"]: p for p in _enrolled_profiles(enrollments)}
+        show_sentiment = reads["access"]["is_instructor"]
         return {
             "projects": _project_cards(
-                projects, role, lambda m: profile_by_id.get(m.get("user_id"), {})
+                projects, show_sentiment, lambda m: profile_by_id.get(m.get("user_id"), {})
             ),
             "students": _student_rows(enrollments, projects),
         }

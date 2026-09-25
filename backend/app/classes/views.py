@@ -138,16 +138,18 @@ def delete_manual_roster_entry(
 
 
 def get_class_projects(class_id: UUID, user_id: str = Depends(require_user)):
-    """Get all projects for a class (visible to enrolled students and class teacher)."""
-    role = get_user_role(user_id)
-    projects = controller.get_class_projects(class_id, user_id, role)
+    """Get all projects for a class (visible to enrolled students and class teacher).
+
+    Sentiment visibility is this class's instructor relationship, not the caller's account-wide
+    role — the controller decides it from the access check, not from ``get_user_role``.
+    """
+    projects = controller.get_class_projects(class_id, user_id)
     return {"projects": projects}
 
 
 def get_class_projects_overview(class_id: UUID, user_id: str = Depends(require_user)):
     """Projects + enrolled-student list for the Projects page in a single call."""
-    role = get_user_role(user_id)
-    return controller.get_class_projects_overview(class_id, user_id, role)
+    return controller.get_class_projects_overview(class_id, user_id)
 
 
 def get_class_turn_in_stats(

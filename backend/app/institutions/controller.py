@@ -159,15 +159,16 @@ def clear_institutions_cache() -> None:
         _cache = None
 
 
-def institution_summaries() -> dict[str, dict]:
+def institution_summaries(institutions: list[dict] | None) -> dict[str, dict]:
     """``{id: {id, name, slug}}`` for every institution: what a class row embeds.
 
-    Can raise ``DatabaseError`` (see ``load_institutions``) when the list can't be read and
-    nothing is cached.
+    Takes a ``load_institutions()`` snapshot (``None`` counts as no institutions) rather than
+    loading one itself, so a caller that already has one — as ``get_classes_for_user`` does, to
+    decide whether ``institution_id`` is even selectable — is not charged a second cache lookup,
+    or, mid-outage, a second failed read for an answer it already has.
     """
     return {
-        i["id"]: {"id": i["id"], "name": i["name"], "slug": i["slug"]}
-        for i in load_institutions() or []
+        i["id"]: {"id": i["id"], "name": i["name"], "slug": i["slug"]} for i in institutions or []
     }
 
 
