@@ -212,7 +212,7 @@ frontend/index.html                     description + Open Graph / Twitter meta,
 - The landing route stays eagerly loaded; the new code is static markup and CSS. Measured: the
   entry JS grew 253.10 → 277.61 kB (68.84 → 75.29 kB gzip) and the CSS 146.36 → 169.01 kB
   (22.64 → 26.76 kB gzip). The product screenshot replaced a 622 kB `preview.svg`; it loads lazily
-  as a 67.5 kB (1×) or 162 kB (2×) WebP.
+  as a 78.5 kB (1×) or 162 kB (2×) WebP.
 
 ## Styling
 
@@ -248,8 +248,9 @@ that isn't there. After launch, `landing.config.ts` can retire the announcement.
 
 ## Assets from Claude Design
 
-Handoff: `docs/superpowers/handoffs/2026-09-24-landing-claude-design/`. Delivered 2026-09-24 and
-imported as `design/` (`git show` on the import commit is the changelog; the return notes are
+Handoff: `docs/superpowers/handoffs/2026-09-24-landing-claude-design/`. Delivered 2026-09-24,
+followed by a round of fixes the same day, and imported as `design/` (`git show` on each import
+commit is its changelog; the return notes, with a "Round 2" section, are
 `design/design_handoff_landing/NOTES.md`).
 
 | Asset | Where it went |
@@ -260,10 +261,15 @@ imported as `design/` (`git show` on the import commit is the changelog; the ret
 | Social share image, 1200×630 | `public/og-image.png`, with `og:image` and `twitter:card` `summary_large_image` |
 | Confirmations: preview/SOON treatment, announcement pill, typing indicator, avatar palette | Applied: preview tag `#616161`, received bubble and typing `#f1f3f4`, `AVATAR_COLORS` |
 
-Open: the screenshot shows two features that won't ship with the scrum release ("Draft story
-with AI" and a Project assistant card); the share image's headline runs into its tilted card.
-Both are re-snapshots in Claude Design (`design/ui_kits/grepthink-landing/preview-frame.html`,
-`og-image.html`).
+Round 2 fixed the share image (its headline now clears the tilted card), added the missing 1×
+WebP, gave `AIDraftButton` the assistant's spark mark and synced the build's values back into
+the design side. The new `--gt-mkt-*` tokens that came with it (band padding, band link, card
+meta, anchor offset) now style the build. The screenshot keeps "Draft story with AI" and the
+Project assistant card: the maintainer's decision.
+
+One difference remains, too small to chase: the kit's phone cards rest on their pre-moment
+frame, while the build rests band 2's thread on its final frame, with the reply landed. Band 3
+rests on the pending suggestion in both.
 
 ## Out of scope
 

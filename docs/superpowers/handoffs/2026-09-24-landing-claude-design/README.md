@@ -4,9 +4,9 @@ Paste everything below the line into Claude Design, in the **GrepThink Design Sy
 and attach the five files in `mockups/` (plus `spec.md` if you want the full detail). Claude Code
 is building the page in parallel with placeholders, so each deliverable can land independently.
 
-> **Returned 2026-09-24** and ported: see `design/design_handoff_landing/NOTES.md` and the
-> "Assets from Claude Design" section of the spec for where each deliverable went and what is
-> still open.
+> **Returned 2026-09-24**, with a second round of fixes the same day, and ported: see
+> `design/design_handoff_landing/NOTES.md` and the "Assets from Claude Design" section of the
+> spec for where each deliverable went.
 
 ---
 
