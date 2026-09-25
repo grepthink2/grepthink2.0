@@ -17,7 +17,7 @@
 } */
 
 /* The rest of this block down through the `prefers-color-scheme: light`
-   media query is unmodified create-vite scaffold, predating both the
+   media query is create-vite scaffold (edits noted inline), predating both the
    --gt-* design-token system and this app's own component-scoped styles.
    The bare a/button tag selectors are low-specificity and normally
    overridden by real component classes, but recoloring them (or the
@@ -70,9 +70,9 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-button:hover {
-  border-color: #646cff;
-}
+/* The scaffold's `button:hover { border-color: #646cff }` is removed: it
+   outranks a single-class rule, so any button whose border came from its
+   component class (the scrum board's story cards) turned periwinkle on hover. */
 
 @media (prefers-color-scheme: light) {
   :root {

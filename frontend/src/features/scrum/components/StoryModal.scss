@@ -173,7 +173,6 @@
     cursor: pointer;
     @include gt-transition(border-color, color);
 
-    // Explicit: the scaffold's `button:hover` would otherwise paint the border periwinkle.
     &:hover { border-color: var(--gt-primary); color: var(--gt-primary); }
     &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
   }
