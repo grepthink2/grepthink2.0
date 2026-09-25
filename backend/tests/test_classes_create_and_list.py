@@ -9,17 +9,21 @@ the frontend reads ``teacher_email`` (decision D9), so students never saw it.
 from __future__ import annotations
 
 import datetime
+from uuid import UUID
 
 import pytest
 from fastapi import HTTPException
 
 from app.classes import controller as classes
+from tests.conftest import ISTINYE_INSTITUTION, UCSC_INSTITUTION, make_token
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "instr", "instr-2"
 S1, S2, TA1, LONER = "s1", "s2", "ta-1", "loner"
 C1, C2, C3 = "class-1", "class-2", "class-3"
 BANNER = "https://cdn.example/class-banner.svg"
+UCSC_ID = UCSC_INSTITUTION["id"]
+IST_ID = ISTINYE_INSTITUTION["id"]
 
 
 def _trace(db) -> list[str]:
@@ -121,6 +125,54 @@ def test_create_class_without_an_institution_leaves_it_unset(create_db, monkeypa
     assert "institution_id" not in created
 
 
+# --------------------------------------------------- the create route (view)
+
+ROUTE_INSTR = "instr-route"
+ROUTE_BODY = {"name": "SE 301", "term": "Fall", "start_date": "2026-09-24"}
+
+
+@pytest.fixture
+def instructor_route_db(monkeypatch):
+    """Just enough for ``require_instructor`` to admit ``ROUTE_INSTR``; the view's own
+    ``controller.create_class`` call is mocked, so no ``classes``/``assignments`` tables
+    are needed here."""
+    fake = FakeSupabase(profiles=[{"id": ROUTE_INSTR, "email": "r@ucsc.edu", "role": "instructor"}])
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    return fake
+
+
+def _route_header() -> dict[str, str]:
+    return {"Authorization": f"Bearer {make_token(sub=ROUTE_INSTR)}"}
+
+
+def test_create_class_route_passes_institution_id_through(client, instructor_route_db, monkeypatch):
+    captured: dict = {}
+    monkeypatch.setattr(
+        classes,
+        "create_class",
+        lambda *args, **kwargs: captured.update(kwargs) or {"id": "new-class"},
+    )
+
+    res = client.post(
+        "/api/classes",
+        headers=_route_header(),
+        json={**ROUTE_BODY, "institution_id": UCSC_ID},
+    )
+
+    assert res.status_code == 200, res.text
+    assert captured["institution_id"] == UUID(UCSC_ID)
+
+
+def test_create_class_route_rejects_a_non_uuid_institution_id(client, instructor_route_db):
+    res = client.post(
+        "/api/classes",
+        headers=_route_header(),
+        json={**ROUTE_BODY, "institution_id": "not-a-uuid"},
+    )
+
+    assert res.status_code == 422
+
+
 # ----------------------------------------------------------- class listing
 
 
@@ -143,8 +195,6 @@ def _class(cid, owner, name, code, **extra):
     }
 
 
-UCSC_ID = "00000000-0000-4000-8000-0000000000c5"  # tests.conftest.UCSC_INSTITUTION
-IST_ID = "11111111-1111-4111-8111-111111111111"
 C_IST = "class-ist"
 
 
@@ -181,20 +231,6 @@ def list_db(monkeypatch):
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
-
-
-@pytest.fixture
-def two_schools(monkeypatch):
-    from app.institutions import controller as institutions
-    from tests.conftest import UCSC_INSTITUTION
-
-    ist = {
-        "id": IST_ID,
-        "name": "İstinye University",
-        "slug": "istinye",
-        "email_domains": ["istinye.edu.tr"],
-    }
-    monkeypatch.setattr(institutions, "_cache", (float("inf"), [dict(UCSC_INSTITUTION), ist]))
 
 
 UCSC_SUMMARY = {"id": UCSC_ID, "name": "UC Santa Cruz", "slug": "ucsc"}
@@ -252,13 +288,24 @@ def test_instructors_see_the_classes_they_created(list_db):
     assert list_db.executes <= 3, _trace(list_db)
 
 
-def test_one_account_teaches_one_class_and_assists_in_another(list_db, two_schools):
+def test_one_account_teaches_one_class_and_assists_in_another(list_db, with_istinye):
     out = classes.get_classes_for_user(TA1)
     assert [(c["id"], c["my_role"], c["institution"]) for c in out] == [
         (C_IST, "instructor", IST_SUMMARY),  # created classes come first
         (C1, "ta", UCSC_SUMMARY),
     ]
     assert out[1]["teacher_email"] == "instr@ucsc.edu"
+    taught, assisted = out
+    # Taught (created) keeps the full owned-class shape; assisted (enrolled, as TA) keeps the
+    # narrower one a student or TA may see — the same shape a student's enrolled class has.
+    assert set(taught) == set(_class(C_IST, TA1, "SE 301", "DDDD4444", institution_id=IST_ID)) | {
+        "enrolled_count",
+        "my_role",
+        "institution",
+    }
+    assert set(assisted) == STUDENT_KEYS
+    # created and enrolled classes in one wave, then the counts
+    assert list_db.executes <= 3, _trace(list_db)
 
 
 def test_a_class_both_created_and_enrolled_in_is_listed_once_as_taught(list_db):
@@ -276,6 +323,47 @@ def test_before_the_migration_classes_have_no_school(list_db, monkeypatch):
     out = classes.get_classes_for_user(S1)
     assert [c["institution"] for c in out] == [None, None]
     assert all("institution_id" not in c for c in out)  # not selected: the column may not exist
+
+
+def test_a_ta_in_a_class_with_no_institution_sees_no_school(list_db):
+    # C2 has no institution_id at all (unlike C1/C_IST); make TA1 its TA too.
+    list_db.rows("class_enrollments").append(
+        {"id": "e7", "class_id": C2, "user_id": TA1, "enrollment_role": "ta"}
+    )
+    out = classes.get_classes_for_user(TA1)
+    c2 = next(c for c in out if c["id"] == C2)
+    assert (c2["my_role"], c2["institution"]) == ("ta", None)
+
+
+def test_an_institution_id_missing_from_the_cache_shows_no_school(list_db):
+    # A class can point at an institution id no longer in the (cached) list — deleted, or
+    # added after this instance last refreshed. institution_id still comes back as read;
+    # only its resolved `institution` summary is None.
+    ghost_id = "22222222-2222-4222-8222-222222222222"
+    list_db.rows("classes").append(
+        _class("class-ghost", INSTR, "CSE 199", "EEEE5555", institution_id=ghost_id)
+    )
+    out = classes.get_classes_for_user(INSTR)
+    ghost = next(c for c in out if c["id"] == "class-ghost")
+    assert (ghost["institution_id"], ghost["institution"]) == (ghost_id, None)
+
+
+def test_an_institutions_loader_outage_answers_503(list_db, monkeypatch):
+    from app.core.errors import DatabaseUnavailableError
+    from app.institutions import controller as institutions
+
+    class _Unreachable:
+        def table(self, _name):
+            raise DatabaseUnavailableError(operation="read", target="institutions")
+
+    # No cached list to fall back on, so the outage has to reach the caller (DatabaseError
+    # is itself an HTTPException, so `except HTTPException: raise` lets it straight through).
+    monkeypatch.setattr(institutions, "_cache", None)
+    monkeypatch.setattr(institutions, "get_client", lambda: _Unreachable())
+
+    with pytest.raises(HTTPException) as exc:
+        classes.get_classes_for_user(S1)
+    assert exc.value.status_code == 503
 
 
 def test_class_list_lets_http_errors_through(list_db, monkeypatch):
