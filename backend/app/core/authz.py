@@ -53,6 +53,8 @@ from fastapi import HTTPException
 
 ROLE_STUDENT = "student"
 ROLE_TA = "ta"
+#: ``my_role`` for a class the caller created (``classes.created_by``).
+ROLE_INSTRUCTOR = "instructor"
 
 #: Project roles allowed to manage membership / review join requests.
 ELEVATED_PROJECT_ROLES: tuple[str, ...] = ("owner", "product owner", "admin")

@@ -111,9 +111,15 @@ def _class(cid, owner, name, code, **extra):
     }
 
 
+UCSC_ID = "00000000-0000-4000-8000-0000000000c5"  # tests.conftest.UCSC_INSTITUTION
+IST_ID = "11111111-1111-4111-8111-111111111111"
+C_IST = "class-ist"
+
+
 @pytest.fixture
 def list_db(monkeypatch):
-    """C1 (INSTR) has S1, S2 and TA1; C2 (OTHER_INSTR) has S1; C3 (INSTR) is empty."""
+    """C1 (INSTR, UCSC) has S1, S2 and TA1; C2 (OTHER_INSTR) has S1; C3 (INSTR) is empty;
+    C_IST (created by TA1, İstinye) has S2."""
     fake = FakeSupabase(
         profiles=[
             {"id": INSTR, "email": "instr@ucsc.edu"},
@@ -124,15 +130,17 @@ def list_db(monkeypatch):
             {"id": LONER, "email": "loner@ucsc.edu"},
         ],
         classes=[
-            _class(C1, INSTR, "CSE 115C", "AAAA1111"),
+            _class(C1, INSTR, "CSE 115C", "AAAA1111", institution_id=UCSC_ID),
             _class(C2, OTHER_INSTR, "CSE 110", "BBBB2222"),
             _class(C3, INSTR, "CSE 130", "CCCC3333", status="complete"),
+            _class(C_IST, TA1, "SE 301", "DDDD4444", institution_id=IST_ID),
         ],
         class_enrollments=[
             {"id": "e1", "class_id": C1, "user_id": S1, "enrollment_role": "student"},
             {"id": "e2", "class_id": C2, "user_id": S1, "enrollment_role": None},
             {"id": "e3", "class_id": C1, "user_id": S2, "enrollment_role": "student"},
             {"id": "e4", "class_id": C1, "user_id": TA1, "enrollment_role": "ta"},
+            {"id": "e5", "class_id": C_IST, "user_id": S2, "enrollment_role": "student"},
         ],
         relations={
             ("class_enrollments", "classes"): ("class_id", "id", False),
@@ -142,6 +150,23 @@ def list_db(monkeypatch):
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
 
+
+@pytest.fixture
+def two_schools(monkeypatch):
+    from app.institutions import controller as institutions
+    from tests.conftest import UCSC_INSTITUTION
+
+    ist = {
+        "id": IST_ID,
+        "name": "İstinye University",
+        "slug": "istinye",
+        "email_domains": ["istinye.edu.tr"],
+    }
+    monkeypatch.setattr(institutions, "_cache", (float("inf"), [dict(UCSC_INSTITUTION), ist]))
+
+
+UCSC_SUMMARY = {"id": UCSC_ID, "name": "UC Santa Cruz", "slug": "ucsc"}
+IST_SUMMARY = {"id": IST_ID, "name": "İstinye University", "slug": "istinye"}
 
 STUDENT_KEYS = {
     "id",
@@ -155,35 +180,70 @@ STUDENT_KEYS = {
     "start_date",
     "year",
     "image_url",
+    "institution_id",
     "teacher_email",
     "enrolled_count",
+    "my_role",
+    "institution",
 }
 
 
 def test_students_see_their_classes_with_the_teacher_email(list_db):
-    out = classes.get_classes_for_user(S1, "student")
+    out = classes.get_classes_for_user(S1)
     assert [c["id"] for c in out] == [C1, C2]
     assert all(set(c) == STUDENT_KEYS for c in out), [sorted(c) for c in out]
-    assert [(c["teacher_email"], c["enrolled_count"]) for c in out] == [
-        ("instr@ucsc.edu", 2),  # TAs are not counted
-        ("other@ucsc.edu", 1),
+    assert [(c["teacher_email"], c["enrolled_count"], c["my_role"]) for c in out] == [
+        ("instr@ucsc.edu", 2, "student"),  # TAs are not counted
+        ("other@ucsc.edu", 1, "student"),  # a NULL enrollment_role is a student
     ]
-    # enrollments with their class and its instructor's email, then the counts
-    assert list_db.executes <= 2, _trace(list_db)
+    assert [c["institution"] for c in out] == [UCSC_SUMMARY, None]
+    # created and enrolled classes in one wave, then the counts
+    assert list_db.executes <= 3, _trace(list_db)
 
 
-def test_a_student_with_no_classes_gets_an_empty_list(list_db):
-    assert classes.get_classes_for_user(LONER, "student") == []
-    assert list_db.executes == 1
+def test_an_account_with_no_classes_gets_an_empty_list(list_db):
+    assert classes.get_classes_for_user(LONER) == []
+    assert list_db.executes == 2  # the two reads of the first wave, no counts
 
 
 def test_instructors_see_the_classes_they_created(list_db):
-    out = classes.get_classes_for_user(INSTR, "instructor")
+    out = classes.get_classes_for_user(INSTR)
     by_id = {c["id"]: c for c in out}
     assert set(by_id) == {C1, C3}
-    assert by_id[C1] == {**_class(C1, INSTR, "CSE 115C", "AAAA1111"), "enrolled_count": 2}
+    assert by_id[C1] == {
+        **_class(C1, INSTR, "CSE 115C", "AAAA1111", institution_id=UCSC_ID),
+        "enrolled_count": 2,
+        "my_role": "instructor",
+        "institution": UCSC_SUMMARY,
+    }
     assert by_id[C3]["enrolled_count"] == 0
-    assert list_db.executes <= 2, _trace(list_db)
+    assert list_db.executes <= 3, _trace(list_db)
+
+
+def test_one_account_teaches_one_class_and_assists_in_another(list_db, two_schools):
+    out = classes.get_classes_for_user(TA1)
+    assert [(c["id"], c["my_role"], c["institution"]) for c in out] == [
+        (C_IST, "instructor", IST_SUMMARY),  # created classes come first
+        (C1, "ta", UCSC_SUMMARY),
+    ]
+    assert out[1]["teacher_email"] == "instr@ucsc.edu"
+
+
+def test_a_class_both_created_and_enrolled_in_is_listed_once_as_taught(list_db):
+    list_db.rows("class_enrollments").append(
+        {"id": "e6", "class_id": C3, "user_id": INSTR, "enrollment_role": "student"}
+    )
+    out = classes.get_classes_for_user(INSTR)
+    assert sorted((c["id"], c["my_role"]) for c in out) == [(C1, "instructor"), (C3, "instructor")]
+
+
+def test_before_the_migration_classes_have_no_school(list_db, monkeypatch):
+    from app.institutions import controller as institutions
+
+    monkeypatch.setattr(institutions, "_cache", (float("inf"), None))
+    out = classes.get_classes_for_user(S1)
+    assert [c["institution"] for c in out] == [None, None]
+    assert all("institution_id" not in c for c in out)  # not selected: the column may not exist
 
 
 def test_class_list_lets_http_errors_through(list_db, monkeypatch):
@@ -192,5 +252,5 @@ def test_class_list_lets_http_errors_through(list_db, monkeypatch):
 
     monkeypatch.setattr(classes, "_enrollment_counts_by_class", unavailable)
     with pytest.raises(HTTPException) as exc:
-        classes.get_classes_for_user(S1, "student")
+        classes.get_classes_for_user(S1)
     assert (exc.value.status_code, exc.value.detail) == (503, "Service unavailable")

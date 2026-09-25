@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from app.classes.invite_email import send_class_invite_email, send_class_invite_email_or_raise
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
+from app.institutions.controller import load_institutions
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code, normalize_course_code
 from app.utils.profiles import profile_display_name
@@ -461,64 +462,80 @@ def _attach_enrolled_counts(classes: list[dict], count_by_class: dict[str, int])
         cls["enrolled_count"] = count_by_class.get(cls["id"], 0)
 
 
-def get_classes_for_user(user_id: str, role: str) -> list:
-    """
-    Get all classes for a user based on their role
+#: The class columns an enrolled student or TA may see (no review Zoom room, no settings).
+_ENROLLED_CLASS_COLUMNS = (
+    "id, name, description, created_by, created_at, course_code, status, term, start_date, "
+    "year, image_url"
+)
 
-    Instructors get every class they created (the full row). Students get the
-    classes they are enrolled in with ``teacher_email``, the instructor's email
-    the class list shows. Both carry ``enrolled_count`` (students, not TAs).
 
-    Round trips: 2, the classes and then the enrollment counts. A student's
-    classes arrive with their instructors' emails embedded (was 3).
+def get_classes_for_user(user_id: str) -> list:
+    """Every class the user created or is enrolled in, each with ``my_role``.
 
-    Args:
-        user_id: User's unique identifier
-        role: User's role (instructor or student)
+    ``my_role`` is ``'instructor'`` for a class the user created, else the enrollment role
+    (``'ta'``, or ``'student'`` for anything else). A class the user both created and is
+    enrolled in is listed once, as taught. Created classes come first with the full row;
+    enrolled ones carry the columns students may see plus ``teacher_email``. Every class carries
+    ``enrolled_count`` (students, not TAs) and ``institution`` (``{id, name, slug}`` or ``None``).
 
-    Returns:
-        List of class dictionaries
-
-    Raises:
-        HTTPException: If database error occurs
+    Round trips: the created and the enrolled classes in one concurrent wave, then the
+    enrollment counts. Institutions come from their in-process cache; before the institutions
+    migration is applied (``load_institutions() is None``) ``institution_id`` is not selected.
     """
     try:
         client = get_client()
-
-        if role == "instructor":
-            # Instructors see classes they created
-            result = client.table("classes").select("*").eq("created_by", user_id).execute()
-            classes = result.data or []
-            if not classes:
-                return []
-
-            _attach_enrolled_counts(
-                classes, _enrollment_counts_by_class(client, [c["id"] for c in classes])
-            )
-            return classes
-
-        # Students: enrollments with the class and its instructor's email embedded.
-        enrollments = (
-            client.table("class_enrollments")
-            .select(
-                "class_id, classes(id, name, description, created_by, created_at, course_code, "
-                "status, term, start_date, year, image_url, "
-                "instructor:profiles!classes_created_by_fkey(email))"
-            )
-            .eq("user_id", user_id)
-            .execute()
+        institutions = load_institutions()
+        enrolled_columns = _ENROLLED_CLASS_COLUMNS
+        if institutions is not None:
+            enrolled_columns += ", institution_id"
+        reads = fan_out(
+            {
+                "owned": lambda: (
+                    (client.table("classes").select("*").eq("created_by", user_id).execute()).data
+                    or []
+                ),
+                "enrolled": lambda: (
+                    (
+                        client.table("class_enrollments")
+                        .select(
+                            f"enrollment_role, classes({enrolled_columns}, "
+                            "instructor:profiles!classes_created_by_fkey(email))"
+                        )
+                        .eq("user_id", user_id)
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
         )
-        if not enrollments.data:
-            return []
 
-        classes = []
-        for row in enrollments.data:
+        classes: list[dict] = []
+        seen: set[str] = set()
+        for cls in reads["owned"]:
+            cls["my_role"] = authz.ROLE_INSTRUCTOR
+            classes.append(cls)
+            seen.add(str(cls["id"]))
+        for row in reads["enrolled"]:
             cls = row.get("classes")
-            if not cls:
+            if not cls or str(cls["id"]) in seen:
                 continue
             instructor = cls.pop("instructor", None) or {}
             cls["teacher_email"] = instructor.get("email")
+            cls["my_role"] = (
+                authz.ROLE_TA if row.get("enrollment_role") == authz.ROLE_TA else authz.ROLE_STUDENT
+            )
             classes.append(cls)
+            seen.add(str(cls["id"]))
+        if not classes:
+            return []
+
+        summaries = {
+            i["id"]: {"id": i["id"], "name": i["name"], "slug": i["slug"]}
+            for i in institutions or []
+        }
+        for cls in classes:
+            institution_id = cls.get("institution_id")
+            cls["institution"] = summaries.get(str(institution_id)) if institution_id else None
 
         _attach_enrolled_counts(
             classes, _enrollment_counts_by_class(client, [c["id"] for c in classes])
@@ -527,7 +544,7 @@ def get_classes_for_user(user_id: str, role: str) -> list:
     except HTTPException:
         raise
     except Exception:
-        logger.exception("Error fetching classes | user_id=%s role=%s", user_id, role)
+        logger.exception("Error fetching classes | user_id=%s", user_id)
         raise HTTPException(status_code=500, detail="Failed to fetch classes")
 
 

@@ -35,9 +35,8 @@ def create_class(data: CreateClassRequest, user_id: str = Depends(require_instru
 
 
 def get_classes(user_id: str = Depends(require_user)):
-    role = get_user_role(user_id)
-    classes = controller.get_classes_for_user(user_id, role)
-    return {"classes": classes}
+    """Every class the caller created or is enrolled in, each with the caller's ``my_role``."""
+    return {"classes": controller.get_classes_for_user(user_id)}
 
 
 def get_class(class_id: UUID, user_id: str = Depends(require_user)):
