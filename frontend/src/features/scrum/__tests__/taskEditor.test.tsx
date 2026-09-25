@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TaskEditorModal from '../components/TaskEditorModal';
 import { remainingStoryPoints } from '../utils/rollups';
@@ -41,34 +41,48 @@ describe('TaskEditorModal', () => {
     expect(screen.getByRole('dialog', { name: /new task in US-1/i })).toBeInTheDocument();
   });
 
-  it('offers all ten tags and sends only the toggled ones', async () => {
+  it('picks labels from the menu and shows the chosen ones as removable badges', async () => {
     const p = props();
     render(<TaskEditorModal {...p} />);
-    const tags = screen.getAllByRole('button', { pressed: false });
-    expect(tags.length).toBeGreaterThanOrEqual(10);
-
     await userEvent.type(screen.getByLabelText('Title'), 'Wire the filters');
-    await userEvent.click(screen.getByRole('button', { name: /frontend/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'ui/ux' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Add task' }));
 
+    await userEvent.click(screen.getByRole('button', { name: 'Add label' }));
+    const menu = screen.getByRole('menu', { name: 'Labels' });
+    expect(within(menu).getAllByRole('menuitemcheckbox')).toHaveLength(10);
+    await userEvent.click(within(menu).getByRole('menuitemcheckbox', { name: 'frontend' }));
+    await userEvent.click(within(menu).getByRole('menuitemcheckbox', { name: 'ui/ux' }));
+    expect(within(menu).getByRole('menuitemcheckbox', { name: 'frontend' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('button', { name: 'Remove tag frontend' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add task' }));
     expect(p.onCreate).toHaveBeenCalledWith({
       title: 'Wire the filters', tags: ['frontend', 'ui/ux'],
     });
   });
 
-  it('toggles a tag back off', async () => {
+  it('closes the label menu on Escape without closing the editor', async () => {
+    const p = props();
+    render(<TaskEditorModal {...p} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Add label' }));
+    expect(screen.getByRole('menu', { name: 'Labels' })).toBeInTheDocument();
+
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('menu', { name: 'Labels' })).toBeNull();
+    expect(p.onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Add label' })).toHaveFocus();
+  });
+
+  it('drops a label with its × and sends no empty tags key', async () => {
     const p = props();
     render(<TaskEditorModal {...p} />);
     await userEvent.type(screen.getByLabelText('Title'), 'x');
-    const bug = screen.getByRole('button', { name: 'bug' });
-    await userEvent.click(bug);
-    expect(bug).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.click(bug);
-    expect(bug).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(screen.getByRole('button', { name: 'Add label' }));
+    await userEvent.click(screen.getByRole('menuitemcheckbox', { name: 'bug' }));
+    await userEvent.keyboard('{Escape}');
 
+    await userEvent.click(screen.getByRole('button', { name: 'Remove tag bug' }));
     await userEvent.click(screen.getByRole('button', { name: 'Add task' }));
-    expect(p.onCreate).toHaveBeenCalledWith({ title: 'x' });   // no empty tags key
+    expect(p.onCreate).toHaveBeenCalledWith({ title: 'x' });
   });
 
   it('says how many points the story has left', () => {
@@ -117,6 +131,54 @@ describe('TaskEditorModal', () => {
 
     // Full set, so clearing a field actually clears it server-side.
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ title: 'Renamed task' }));
+  });
+
+  it('clears fields with explicit nulls, so the server clears them too', async () => {
+    const p = props();
+    const own = makeTask({
+      id: 'a', points: 3, description_md: 'Old notes', time_estimate: '2h', assignee_id: 'u1',
+      pr_url: 'https://github.com/o/r/pull/1',
+    });
+    const onSave = vi.fn();
+    render(<TaskEditorModal {...p} task={own} onSave={onSave} />);
+
+    await userEvent.clear(screen.getByLabelText('Description'));
+    await userEvent.clear(screen.getByLabelText('Time estimate'));
+    await userEvent.selectOptions(screen.getByLabelText('Assignee'), '');
+    await userEvent.clear(screen.getByLabelText('Pull request'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save task' }));
+
+    // `undefined` would vanish from the JSON body and the old values would stay.
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      description_md: null, time_estimate: null, assignee_id: null, pr_url: null,
+    }));
+  });
+
+  it('links a pull request from an existing task', async () => {
+    const p = props();
+    const onSave = vi.fn();
+    render(<TaskEditorModal {...p} task={p.story.tasks[0]} onSave={onSave} />);
+
+    await userEvent.type(screen.getByLabelText('Pull request'), 'https://github.com/ucsc/app/pull/42');
+    await userEvent.click(screen.getByRole('button', { name: 'Save task' }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      pr_url: 'https://github.com/ucsc/app/pull/42',
+    }));
+  });
+
+  it('refuses a link that is not a pull request, and says why', async () => {
+    const p = props();
+    render(<TaskEditorModal {...p} task={p.story.tasks[0]} onSave={vi.fn()} />);
+
+    await userEvent.type(screen.getByLabelText('Pull request'), 'https://github.com/ucsc/app');
+    expect(screen.getByLabelText('Pull request')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText(/Paste a GitHub pull request link/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save task' })).toBeDisabled();
+  });
+
+  it('asks for a pull request only once the task exists', () => {
+    render(<TaskEditorModal {...props()} />);
+    expect(screen.queryByLabelText('Pull request')).toBeNull();
   });
 
   it('offers a way back to the parent story', async () => {
