@@ -9,6 +9,15 @@
 -- prod/2026-09-20_align_prod.sql, byte-identical). Idempotent. Update supabase/schema.sql once
 -- this is applied (AGENTS.md).
 --
+-- Applied on PROD before the per-class-roles release, it runs ahead of the code there: the old
+-- can_message() still refuses a DM between two accounts whose profiles.role is 'instructor', so
+-- such a pair sees an enabled composer whose send answers 403 until the release is live.
+-- Harmless (the server still enforces its own rule), and gone once the new code is deployed.
+--
+-- Before applying, run the Check at the end on its own: body_hash must be a434e227, the function
+-- from 2026-07-14_group_messaging.sql. Any other value means the live function was changed since;
+-- compare it with that file before replacing it.
+--
 -- public.messages_inbox() set can_send = false for a DM between two accounts whose profiles.role
 -- is 'instructor'. The backend's can_message() dropped that rule with per-class roles: an
 -- instructor account can be a TA in another instructor's class, and the two must be able to
@@ -114,8 +123,12 @@ ORDER BY c.last_message_at DESC NULLS LAST, c.created_at DESC
 LIMIT 200;
 $$;
 
--- Check. Expected: instructor_rule_gone = t, config = {search_path=public}.
-SELECT pg_get_functiondef('public.messages_inbox(uuid)'::regprocedure) NOT LIKE '%''instructor''%'
-         AS instructor_rule_gone,
-       (SELECT proconfig FROM pg_proc WHERE oid = 'public.messages_inbox(uuid)'::regprocedure)
-         AS config;
+-- Check. Expected after applying: instructor_rule_gone = t, config = {search_path=public},
+-- body_hash = daa60cbf (this file's function body, byte for byte).
+-- Before applying: instructor_rule_gone = f, body_hash = a434e227 (2026-07-14_group_messaging.sql).
+-- body_hash is the first 8 hex of md5(prosrc), as prod/2026-09-20_align_prod.sql computes it.
+SELECT pg_get_functiondef(p.oid) NOT LIKE '%''instructor''%' AS instructor_rule_gone,
+       p.proconfig                                         AS config,
+       left(md5(p.prosrc), 8)                              AS body_hash
+  FROM pg_proc p
+ WHERE p.oid = 'public.messages_inbox(uuid)'::regprocedure;

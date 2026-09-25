@@ -128,14 +128,16 @@ def test_only_hostname_shaped_domains_are_kept(sketchy):
     assert row["email_domains"] == ["example.edu", "ucsc.edu", "stu.sketchy.edu"]
 
 
-def test_each_dropped_domain_is_logged_with_its_school(sketchy, caplog):
+def test_each_dropped_domain_is_logged_as_an_error_with_its_school(sketchy, caplog):
+    # An ERROR, not a WARNING: Sentry files a WARNING as a breadcrumb only, and a maintainer's
+    # typo silently turns off that school's email domain until someone reads the log.
     with caplog.at_level(logging.WARNING, logger="app.institutions.controller"):
         institutions.load_institutions()
 
     dropped = [
         r for r in caplog.records if r.name == "app.institutions.controller" and "dropped" in r.msg
     ]
-    assert [r.levelno for r in dropped] == [logging.WARNING] * 6
+    assert [r.levelno for r in dropped] == [logging.ERROR] * 6
     for record, entry in zip(
         dropped, ["com", "admin@istinye.edu.tr", "istinye .edu.tr", "", "   ", "@."], strict=True
     ):
@@ -231,6 +233,24 @@ def test_missing_table_is_cached_then_rechecked_after_the_ttl(monkeypatch, pg_co
     recovered = institutions.load_institutions()
     assert recovered is not None
     assert {i["slug"] for i in recovered} == {"ucsc"}
+
+
+@pytest.mark.parametrize("pg_code", sorted(institutions._MISSING_TABLE_CODES))
+def test_missing_table_logs_one_line_without_a_traceback(monkeypatch, caplog, pg_code):
+    # Expected until the migration is applied, and logged again every minute on every
+    # instance: the code says which case it is, a traceback adds nothing.
+    institutions.clear_institutions_cache()
+    monkeypatch.setattr(institutions, "get_client", lambda: _Unreadable(pg_code=pg_code))
+
+    with caplog.at_level(logging.WARNING, logger="app.institutions.controller"):
+        assert institutions.load_institutions() is None
+
+    [record] = [r for r in caplog.records if r.name == "app.institutions.controller"]
+    assert record.levelno == logging.WARNING
+    assert record.exc_info is None
+    assert record.getMessage() == (
+        f"institutions: table not found ({pg_code}), treating it as empty"
+    )
 
 
 def test_a_failed_read_keeps_serving_the_last_good_list(monkeypatch):

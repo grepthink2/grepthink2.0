@@ -97,7 +97,7 @@ is live on PROD and after the İstinye seed has run there.
   five minutes. Subdomains of a listed domain count automatically — never list a public suffix
   (`edu.tr`, `ac.uk`, `com`, ...) in `email_domains`, since that would make every address under it
   a school email. (The loader also drops a small denylist of two-part public suffixes and any
-  domain with no dot, logging a warning rather than failing.)
+  domain with no dot, logging an error (so Sentry reports it) rather than failing.)
 - **Letting an existing account create classes:** edit and run
   `backend/database/migrations/prod/2026-09-25_scott_class_creation.sql` (it flips `student → instructor`
   for one email and refuses to change anything else). It takes effect within a minute; the user sees

@@ -83,9 +83,11 @@ def _normalized(row: dict) -> dict:
     for raw in row.get("email_domains") or []:
         domain = _normalized_domain(raw)
         if domain is None:
-            # A maintainer's typo in the row. Logged so it can be fixed, because it grants
-            # nothing: an entry nothing can match, or a public suffix that would match too much.
-            logger.warning(
+            # A maintainer's typo in the row. It grants nothing (an entry nothing can match, or
+            # a public suffix that would match too much), so that school's addresses silently
+            # stop counting as school emails: an ERROR, so Sentry reports it (it files a
+            # WARNING as a breadcrumb only).
+            logger.error(
                 "institutions: dropped email domain %r of %r: not one school's own domain",
                 raw,
                 slug,
@@ -131,7 +133,9 @@ def load_institutions() -> list[dict] | None:
         value = _fetch_institutions()
     except DatabaseError as exc:
         if exc.pg_code in _MISSING_TABLE_CODES:
-            logger.warning("institutions: table not found, treating it as empty", exc_info=True)
+            # Expected until the migration is applied, and repeated every minute on every
+            # instance: one line, no traceback (the code says which case this is).
+            logger.warning("institutions: table not found (%s), treating it as empty", exc.pg_code)
             with _lock:
                 _cache = (now + _MISSING_TABLE_TTL_SECONDS, None)
             return None
