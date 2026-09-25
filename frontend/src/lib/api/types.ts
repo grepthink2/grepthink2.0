@@ -810,10 +810,11 @@ export interface ApiCreateTaskBody {
 
 export interface ApiUpdateTaskBody {
   title?: string;
-  description_md?: string;
+  /** Explicit null clears it (an omitted key leaves it as it is). */
+  description_md?: string | null;
   points?: number;
-  time_estimate?: string;
-  assignee_id?: string;
+  time_estimate?: string | null;
+  assignee_id?: string | null;
   tags?: string[];
   /** Explicit null unlinks the PR. */
   pr_url?: string | null;

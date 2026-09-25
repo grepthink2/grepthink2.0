@@ -6,9 +6,12 @@
   // Same layer as the story modal: the page shows one or the other, never both.
   z-index: var(--gt-z-modal);
   display: flex;
-  align-items: center;
+  // flex-start + the dialog's `margin: auto` centres it when it fits and lets a tall
+  // one scroll from its top, which `align-items: center` would clip.
+  align-items: flex-start;
   justify-content: center;
   padding: 24px;
+  overflow-y: auto;
   background: var(--gt-scrim);
 }
 
@@ -16,8 +19,9 @@
   position: relative;
   width: 100%;
   max-width: 520px;
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
+  // No max-height/overflow here: the backdrop scrolls instead, because a scrolling
+  // dialog would clip the label menu that opens part-way down it.
+  margin: auto 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -104,39 +108,34 @@
 
   &__hint { font-size: 11px; color: var(--gt-text-tertiary); }
 
-  // Tag toggles: the real TagBadge in its own colors, dimmed until chosen, so
-  // the palette is legible while picking rather than a wall of gray chips.
-  &__tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  // Labels follow the design system's tag vocabulary: chosen labels are TagBadges
+  // with their × (design/components/scrum/TagBadge), and more are picked from a
+  // Popover + Menu. The trigger is the design's ghost button, sized to the badge row.
+  &__tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 
-  // Selection reads through the pill's *own* colour rather than a border:
-  // a border box around a rounded chip never lines up, and a second accent
-  // colour fights the ten-colour tag palette. Unselected = quiet; selected =
-  // full colour with a soft ring in the chip's own hue.
-  &__tag {
-    padding: 0;
+  &__add-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 22px;
+    padding: 0 8px;
     border: none;
     border-radius: var(--gt-radius-sm);
-    background: none;
-    line-height: 0;
+    background-color: transparent;
+    font-family: $primary-font;
+    font-size: 11.5px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-primary);
     cursor: pointer;
-    opacity: 0.4;
-    filter: saturate(0.45);
-    @include gt-transition(opacity, filter, box-shadow);
+    @include gt-transition(background-color);
 
-    &:hover { opacity: 0.75; filter: saturate(0.8); }
+    // Same tint as design/components/primitives `.gt-button--ghost:hover`.
+    &:hover { background-color: rgba(1, 129, 86, 0.08); }
     &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
-
-    &--on {
-      opacity: 1;
-      filter: none;
-    }
-
-    // The halo sits on the badge, where currentColor is that tag's own text
-    // colour — so each selected label glows in its own hue, not a shared blue.
-    &--on .gt-tagbadge {
-      box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 20%, transparent);
-    }
   }
+
+  // Unchecked rows keep the check's slot, so every badge lines up.
+  &__labels-menu [aria-checked='false'] .gt-menu__icon { visibility: hidden; }
 
   &__points { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 
@@ -181,7 +180,10 @@
 
     &::placeholder { color: var(--gt-text-tertiary); }
     &:focus { outline: none; border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+    &[aria-invalid='true'] { border-color: var(--gt-error); }
   }
+
+  input[aria-invalid='true'] + .task-editor__hint { color: var(--gt-error-text); }
 
   textarea { resize: vertical; line-height: var(--gt-leading-normal); }
   select { cursor: pointer; }

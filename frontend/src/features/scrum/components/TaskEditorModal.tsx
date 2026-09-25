@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Check, Plus, X } from 'lucide-react';
+import { Menu, MenuItem } from '@components/Menu/Menu';
+import { Popover } from '@components/Popover/Popover';
 import type {
   ApiCreateTaskBody, ApiScrumMember, ApiScrumStory, ApiScrumTask, ApiUpdateTaskBody,
 } from '@/lib/api';
 import { TASK_TAGS } from '../config/scrumTags';
 import type { EstimateScale } from '../config/scrumTags';
+import { isPrUrl } from '../utils/prLabel';
 import { assignedTaskPoints } from '../utils/rollups';
 import { PointPicker } from './ScalePicker';
 import TagBadge from './TagBadge';
@@ -47,7 +50,11 @@ export default function TaskEditorModal({
   const [points, setPoints] = useState<number | undefined>(task?.points ?? undefined);
   const [estimate, setEstimate] = useState(task?.time_estimate ?? '');
   const [assignee, setAssignee] = useState(task?.assignee_id ?? '');
+  const [prUrl, setPrUrl] = useState(task?.pr_url ?? '');
+  const [labelsOpen, setLabelsOpen] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
+  const labelsButtonRef = useRef<HTMLButtonElement>(null);
+  const prInvalid = prUrl.trim() !== '' && !isPrUrl(prUrl.trim());
 
   // Budget left for this task: siblings count against the story, but the task's
   // own current points are its to keep when re-pointing.
@@ -64,19 +71,28 @@ export default function TaskEditorModal({
   const toggleTag = (tag: string) =>
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
 
+  // Keyboard users were inside the menu, so hand focus back to its trigger; a click
+  // elsewhere then moves focus wherever it landed.
+  const closeLabels = useCallback(() => {
+    setLabelsOpen(false);
+    if (document.activeElement?.closest('.task-editor__labels-menu')) labelsButtonRef.current?.focus();
+  }, []);
+
   const submit = () => {
     const trimmed = title.trim();
-    if (!trimmed || saving) return;
+    if (!trimmed || saving || prInvalid) return;
     if (editing) {
-      // Edits send the full field set: clearing a description or unassigning
-      // must persist, which an omit-when-empty body could never express.
+      // Edits send the full field set with explicit nulls: clearing a description,
+      // unassigning or unlinking a PR must persist. `undefined` would be dropped
+      // from the JSON body, and the server would keep the old value.
       onSave?.({
         title: trimmed,
-        description_md: description.trim() || undefined,
+        description_md: description.trim() || null,
         tags,
         points,
-        time_estimate: estimate.trim() || undefined,
-        assignee_id: assignee || undefined,
+        time_estimate: estimate.trim() || null,
+        assignee_id: assignee || null,
+        pr_url: prUrl.trim() || null,
       });
       return;
     }
@@ -154,20 +170,41 @@ export default function TaskEditorModal({
         <div className="task-editor__field">
           <span className="task-editor__label" id="task-editor-tags-label">Labels</span>
           <div className="task-editor__tags" role="group" aria-labelledby="task-editor-tags-label">
-            {TASK_TAGS.map((tag) => {
-              const on = tags.includes(tag);
-              return (
+            {tags.map((tag) => (
+              <TagBadge key={tag} tag={tag} onRemove={() => toggleTag(tag)} />
+            ))}
+            <Popover
+              open={labelsOpen}
+              onClose={closeLabels}
+              padded={false}
+              anchor={
                 <button
-                  key={tag}
+                  ref={labelsButtonRef}
                   type="button"
-                  aria-pressed={on}
-                  className={`task-editor__tag${on ? ' task-editor__tag--on' : ''}`}
-                  onClick={() => toggleTag(tag)}
+                  className="task-editor__add-label"
+                  aria-haspopup="menu"
+                  aria-expanded={labelsOpen}
+                  onClick={() => setLabelsOpen((open) => !open)}
                 >
-                  <TagBadge tag={tag} />
+                  <Plus size={12} aria-hidden="true" />
+                  {tags.length ? 'Label' : 'Add label'}
                 </button>
-              );
-            })}
+              }
+            >
+              {/* Stays open while toggling, so several labels take one trip. */}
+              <Menu ariaLabel="Labels" autoFocus onClose={closeLabels} className="task-editor__labels-menu">
+                {TASK_TAGS.map((tag) => (
+                  <MenuItem
+                    key={tag}
+                    checked={tags.includes(tag)}
+                    icon={<Check size={14} aria-hidden="true" />}
+                    onSelect={() => toggleTag(tag)}
+                  >
+                    <TagBadge tag={tag} />
+                  </MenuItem>
+                ))}
+              </Menu>
+            </Popover>
           </div>
         </div>
 
@@ -217,13 +254,35 @@ export default function TaskEditorModal({
           </div>
         </div>
 
+        {/* create_task takes no PR, and a PR usually follows the task it closes. */}
+        {editing && (
+          <div className="task-editor__field">
+            <label className="task-editor__label" htmlFor="task-editor-pr">Pull request</label>
+            <input
+              id="task-editor-pr"
+              type="url"
+              value={prUrl}
+              maxLength={500}
+              placeholder="https://github.com/team/repo/pull/42"
+              aria-invalid={prInvalid || undefined}
+              aria-describedby="task-editor-pr-hint"
+              onChange={(e) => setPrUrl(e.target.value)}
+            />
+            <span className="task-editor__hint" id="task-editor-pr-hint">
+              {prInvalid
+                ? 'Paste a GitHub pull request link (…/pull/42) or a git.ucsc.edu merge request link.'
+                : 'Its open, draft, merged or closed state shows on the card. A private repo needs a token in board settings.'}
+            </span>
+          </div>
+        )}
+
         <footer className="task-editor__foot">
           <button type="button" className="task-editor__cancel" onClick={onClose}>Cancel</button>
           <button
             type="button"
             className="task-editor__submit"
             onClick={submit}
-            disabled={!title.trim() || saving}
+            disabled={!title.trim() || saving || prInvalid}
           >
             {saving ? 'Saving…' : editing ? 'Save task' : 'Add task'}
           </button>

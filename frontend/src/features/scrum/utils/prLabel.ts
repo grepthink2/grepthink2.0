@@ -12,3 +12,13 @@ export function prLabel(prUrl: string | null, provider: string | null): string |
 export function prState(state: string | null): 'open' | 'merged' | 'closed' | 'draft' {
   return state === 'open' || state === 'merged' || state === 'closed' ? state : 'draft';
 }
+
+// Mirrors GITHUB_RE and GITLAB_RE in backend/app/scrum/pr_links.py, which is the
+// authority: a link this accepts can still be refused there, never the reverse.
+const GITHUB_PR = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/\d+\/?$/;
+const GITLAB_MR = /^https:\/\/git\.ucsc\.edu\/(?:[\w.-]+\/)+[\w.-]+\/-\/merge_requests\/\d+\/?$/;
+
+/** Whether `url` is a link the backend can attach to a task. */
+export function isPrUrl(url: string): boolean {
+  return GITHUB_PR.test(url) || GITLAB_MR.test(url);
+}
