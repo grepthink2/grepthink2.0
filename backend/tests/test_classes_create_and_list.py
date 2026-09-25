@@ -89,6 +89,38 @@ def test_create_class_gives_up_when_every_candidate_is_taken(create_db, monkeypa
     assert not [q for q in create_db.queries if q["op"] != "select"], _trace(create_db)
 
 
+def test_create_class_records_a_known_institution(create_db, monkeypatch):
+    # _pick_course_code always draws _COURSE_CODE_ATTEMPTS (5) candidates up front; repeat the
+    # one free code so the generator isn't exhausted (dict.fromkeys collapses the duplicates).
+    _codes(monkeypatch, ["FREE0001"] * 5)
+    created = classes.create_class(
+        "SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR, institution_id=UCSC_ID
+    )
+    assert created["institution_id"] == UCSC_ID
+    assert create_db.executes <= 4, _trace(create_db)
+
+
+def test_create_class_refuses_an_unknown_institution_before_writing(create_db, monkeypatch):
+    _codes(monkeypatch, ["FREE0001"])
+    with pytest.raises(HTTPException) as exc:
+        classes.create_class(
+            "SE 301",
+            None,
+            "Fall",
+            datetime.date(2026, 9, 24),
+            INSTR,
+            institution_id="99999999-9999-4999-8999-999999999999",
+        )
+    assert (exc.value.status_code, exc.value.detail) == (400, "Unknown institution")
+    assert create_db.executes == 0
+
+
+def test_create_class_without_an_institution_leaves_it_unset(create_db, monkeypatch):
+    _codes(monkeypatch, ["FREE0001"] * 5)
+    created = classes.create_class("SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR)
+    assert "institution_id" not in created
+
+
 # ----------------------------------------------------------- class listing
 
 

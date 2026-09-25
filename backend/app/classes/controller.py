@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from app.classes.invite_email import send_class_invite_email, send_class_invite_email_or_raise
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
-from app.institutions.controller import load_institutions
+from app.institutions.controller import is_known_institution, load_institutions
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code, normalize_course_code
 from app.utils.profiles import profile_display_name
@@ -369,15 +369,20 @@ def create_class(
     start_date: datetime.date,
     user_id: str,
     tsr_count: int | None = None,
+    institution_id=None,
 ) -> dict:
     """
     Create a new class with a unique course code and auto-generate TSR assignments.
 
     After the class is created, TSR assignments are automatically generated
     starting after the first 2 weeks of class. tsr_count overrides the
-    term-based default (5 for Fall/Winter/Spring, 3 for Summer).
+    term-based default (5 for Fall/Winter/Spring, 3 for Summer). ``institution_id`` must name
+    an existing institution (400 otherwise); omitted, the class has none.
     """
     try:
+        if institution_id is not None and not is_known_institution(institution_id):
+            raise HTTPException(status_code=400, detail="Unknown institution")
+
         client = get_client()
 
         year = start_date.year
@@ -398,6 +403,8 @@ def create_class(
         }
         if description is not None:
             class_data["description"] = description
+        if institution_id is not None:
+            class_data["institution_id"] = str(institution_id)
 
         result = client.table("classes").insert(class_data).execute()
         new_class = result.data[0]

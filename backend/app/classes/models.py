@@ -4,6 +4,7 @@ Class management request models
 
 import datetime
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -18,6 +19,9 @@ class CreateClassRequest(BaseModel):
     term: str
     start_date: datetime.date
     tsr_count: int | None = None
+    #: The school the class belongs to (``GET /api/institutions``). Optional until the
+    #: institutions contract step makes ``classes.institution_id`` required.
+    institution_id: UUID | None = None
 
 
 class InviteStudentRequest(BaseModel):

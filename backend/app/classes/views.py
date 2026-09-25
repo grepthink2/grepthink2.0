@@ -30,6 +30,7 @@ def create_class(data: CreateClassRequest, user_id: str = Depends(require_instru
         data.start_date,
         user_id,
         tsr_count=data.tsr_count,
+        institution_id=data.institution_id,
     )
     return {"message": "Class created successfully", "class": result}
 
