@@ -15,12 +15,27 @@ interface AuthContextValue {
    * Effective role driving the UI. In "View as Student" preview this is forced
    * to 'student' so the sidebar, route guards, and page branching all simulate
    * the student experience. Use `realRole` when you need the true account role.
+   * @deprecated Class pages follow your role in the selected class
+   * (`useSelectedClassRole` in `lib/classContext.tsx`), not the account role. Removed
+   * once every consumer reads the class role instead (Task 15).
    */
   role: UserRole;
-  /** The account's true role, unaffected by preview mode. */
+  /**
+   * The account's true role, unaffected by preview mode.
+   * @deprecated Removed once every consumer reads the class role (Task 15).
+   */
   realRole: UserRole;
-  /** Whether "View as Student" preview is currently active. */
+  /**
+   * Whether "View as Student" preview is currently active.
+   * @deprecated Removed once every consumer reads the class role (Task 15).
+   */
   isPreviewing: boolean;
+  /**
+   * `profiles.role === 'instructor'`: the account may create classes. It is the only thing the
+   * account role decides — everything else follows your role in the selected class
+   * (useSelectedClassRole in lib/classContext.tsx).
+   */
+  canCreateClasses: boolean;
   /**
    * The profile answered and carries no role: its owner signed up with Google and has
    * not chosen one yet. Every role-gated endpoint refuses them, so ProtectedRoute sends
@@ -138,7 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (session?.user?.user_metadata as { role?: unknown } | undefined)?.role,
     );
     const resolved = profileRole && profileRole.userId === userId ? profileRole : null;
-    const role: UserRole = resolved?.role ?? metadataRole ?? 'student';
+    const accountRole: UserRole = resolved?.role ?? metadataRole ?? 'student';
     // With no metadata role there is nothing to render with yet, so hold the UI
     // until the profile answers instead of showing an instructor the student app
     // (and letting the route guards redirect them).
@@ -150,9 +165,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading: loading || resolvingRole,
       // Provider exposes the true role; the `useAuth` hook below overlays
       // preview state (it can't be read here — PreviewProvider is a descendant).
-      role,
-      realRole: role,
+      role: accountRole,
+      realRole: accountRole,
       isPreviewing: false,
+      canCreateClasses: accountRole === 'instructor',
       needsRole: resolved !== null && resolved.answered && resolved.role === null,
       refreshRole,
       getToken: async () => {
