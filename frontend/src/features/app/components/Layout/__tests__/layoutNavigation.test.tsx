@@ -4,8 +4,8 @@
  * change must commit together with its navigation; committed first, it meets the class route guard
  * on the old page, which redirects from there.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { useLayoutEffect } from 'react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { lazy, Suspense, useLayoutEffect, type ComponentType } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiClass, ApiNotification } from '@/lib/api';
@@ -201,6 +201,67 @@ describe('switching class on a detail page', () => {
     pickFromProfileMenu(/^School:/, 'UC Santa Cruz');
     await landsOn('/app/ta-meetings');
     expect(commits).toEqual(['/app/ta-meetings B']);
+  });
+});
+
+describe('a class list refresh while a class switch waits for its page', () => {
+  function deferred<T>() {
+    let resolve: (value: T) => void = () => {};
+    const promise = new Promise<T>((res) => {
+      resolve = res;
+    });
+    return { promise, resolve };
+  }
+
+  function RefreshButton() {
+    const { refreshClasses } = useClass();
+    return <button onClick={() => void refreshClasses(false)}>refresh classes</button>;
+  }
+
+  it('never shows the page being left with the new class', async () => {
+    state.canCreateClasses = false;
+    // The list page's code is not loaded yet, so the switch's transition waits for it.
+    const chunk = deferred<{ default: ComponentType }>();
+    const LazyListPage = lazy(() => chunk.promise);
+    const classes = [cls('A', 'Alpha', 'student'), cls('B', 'Beta', 'student')];
+    api.getClasses.mockResolvedValue({ classes });
+    render(
+      <MemoryRouter initialEntries={['/app/assignments/asgA']}>
+        <PreviewProvider>
+          <ClassProvider>
+            <Sidebar />
+            <RefreshButton />
+            <ClassRouteGuard>
+              <Suspense fallback={<p>loading page</p>}>
+                <Routes>
+                  <Route path="/app/assignments/:id" element={<Page />} />
+                  <Route path="/app/assignments" element={<LazyListPage />} />
+                </Routes>
+              </Suspense>
+            </ClassRouteGuard>
+          </ClassProvider>
+        </PreviewProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(page()).toBe('/app/assignments/asgA'));
+    await waitFor(() => expect(commits).toContain('/app/assignments/asgA A'));
+    commits.length = 0;
+
+    fireEvent.click(screen.getByRole('button', { name: /^Alpha/ }));
+    fireEvent.click(screen.getByText('Beta')); // goes to the list, whose code is still loading
+    expect(page()).toBe('/app/assignments/asgA');
+
+    const refresh = deferred<unknown>();
+    api.getClasses.mockReturnValueOnce(refresh.promise);
+    fireEvent.click(screen.getByText('refresh classes')); // My Classes' timer, say
+    await act(async () => refresh.resolve({ classes }));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(page()).toBe('/app/assignments/asgA');
+    expect(commits).not.toContain('/app/assignments/asgA B');
+
+    await act(async () => chunk.resolve({ default: Page }));
+    await landsOn('/app/assignments');
+    expect(commits).toEqual(['/app/assignments B']);
   });
 });
 

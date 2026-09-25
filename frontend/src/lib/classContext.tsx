@@ -220,7 +220,14 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           // Keep focus on completed classes chosen from My Classes; fall back to an active class.
           const resolved =
             resolveSelectedClass(visible, preferredId) ?? resolveSelectedClass(active, null);
-          selectClass(resolved);
+          // A class picked since the last commit (the class switchers pick in a transition,
+          // which waits while the next page's code loads) is already on its way. Selecting it
+          // again here, outside that transition, would commit it at once on the page being
+          // left, so a detail page would fetch its id in the new class.
+          const pickPending = tabClassId.current !== syncedTabClassId.current;
+          if (!(pickPending && !honorsRequest && resolved?.id === tabClassId.current)) {
+            selectClass(resolved);
+          }
         })
         .catch((error: unknown) => {
           failed = true;

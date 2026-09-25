@@ -41,11 +41,28 @@ export const CLASS_ROLE_LABELS: Record<ClassRole, string> = {
 };
 
 /**
- * `path` as the rules compare it: lower-case, without trailing slashes. React Router matches paths
- * case-insensitively and accepts a trailing slash, so `/app/Dashboard/` opens the Dashboard too.
+ * `path` with each segment percent-decoded, as React Router decodes it before matching routes (its
+ * `decodePath`): a `/` decoded inside a segment stays `%2F`, and a path with a malformed escape is
+ * left as it is.
+ */
+function decodePath(path: string): string {
+  try {
+    return path
+      .split('/')
+      .map((segment) => decodeURIComponent(segment).replace(/\//g, '%2F'))
+      .join('/');
+  } catch {
+    return path;
+  }
+}
+
+/**
+ * `path` as the rules compare it: decoded, lower-case, without trailing slashes. React Router
+ * decodes the path, matches it case-insensitively and accepts a trailing slash, so
+ * `/app/Dashboard/` and `/app/%64ashboard` open the Dashboard too.
  */
 function normalizePath(path: string): string {
-  return path.toLowerCase().replace(/\/+$/, '') || '/';
+  return decodePath(path).toLowerCase().replace(/\/+$/, '') || '/';
 }
 
 function isFinalReviewsPath(path: string): boolean {

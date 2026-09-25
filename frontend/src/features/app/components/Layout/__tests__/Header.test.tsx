@@ -114,6 +114,20 @@ describe('Header', () => {
     expect(profileButton).toHaveFocus();
   });
 
+  it.each(['View class as student', 'Settings'])(
+    'returns focus to the profile button after "%s" closes the menu',
+    (item) => {
+      renderAt('/app/dashboard');
+      const profileButton = screen.getByRole('button', { name: 'Profile menu' });
+      fireEvent.click(profileButton);
+      const option = screen.getByRole('button', { name: item });
+      option.focus(); // a keyboard user on the item
+      fireEvent.click(option);
+      expect(document.querySelector('.app-header__profile-dropdown')).not.toBeInTheDocument();
+      expect(profileButton).toHaveFocus();
+    },
+  );
+
   it('offers "View class as student" in a class you own and starts the preview from Home', () => {
     renderAt('/app/dashboard');
     expect(openProfileMenu()).toEqual(['View class as student', 'Settings', 'Log Out']);

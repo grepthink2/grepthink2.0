@@ -260,13 +260,20 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
     navigate('/');
   };
 
-  const handleSettingsClick = () => {
+  // Closing the profile menu from one of its items: the item goes away with the menu, so focus
+  // returns to the profile button rather than falling back to the page.
+  const closeProfileMenu = () => {
     setShowProfileMenu(false);
+    profileButtonRef.current?.focus();
+  };
+
+  const handleSettingsClick = () => {
+    closeProfileMenu();
     onOpenSettings();
   };
 
   const handleViewAsStudent = () => {
-    setShowProfileMenu(false);
+    closeProfileMenu();
     // One transition for the preview and the page. The router navigates in a transition, so a
     // preview committed on its own would meet the class route guard on the old page, which would
     // redirect from there (the Dashboard to My Project, My Project to the Dashboard).
@@ -495,13 +502,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
 
           {showProfileMenu && (
             <div className="app-header__dropdown app-header__profile-dropdown">
-              {/* The picked option goes away with the menu: focus returns to the profile button. */}
-              <SchoolSwitcher
-                onPicked={() => {
-                  setShowProfileMenu(false);
-                  profileButtonRef.current?.focus();
-                }}
-              />
+              <SchoolSwitcher onPicked={closeProfileMenu} />
               {/* Only in a class you own: the class's own role, which preview does not change. */}
               {selectedClass?.my_role === 'instructor' && (
                 <button

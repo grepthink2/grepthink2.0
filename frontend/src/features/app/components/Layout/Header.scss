@@ -514,7 +514,7 @@ $app-header-text: var(--gt-text-secondary);
     border: none;
     text-align: left;
     cursor: pointer;
-    @include gt-transition(background-color);
+    @include gt-transition(background-color, box-shadow);
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     font-family: $primary-font;
@@ -534,7 +534,13 @@ $app-header-text: var(--gt-text-secondary);
 
     &:focus {
       outline: none;
+    }
+
+    // The canvas tint alone (1.16:1) is too faint to show keyboard focus; the ring is not. Inset,
+    // since each item spans the menu edge to edge.
+    &:focus-visible {
       background-color: var(--gt-canvas);
+      box-shadow: inset var(--gt-focus-ring-tight);
     }
 
     svg {

@@ -97,6 +97,20 @@ describe('class route rules', () => {
     expect(pathAfterClassSwitch('/app/Assignments/A1/', 'student')).toBe('/app/assignments');
   });
 
+  it('decodes each segment as the router does before matching', () => {
+    // The router opens /app/%64ashboard as the Dashboard.
+    expect(isClassScopedPath('/app/%64ashboard')).toBe(true);
+    expect(isPathAllowedForClassRole('/app/%64ashboard', 'student')).toBe(false);
+    expect(isPathAllowedForClassRole('/app/%44ashboard/', 'ta')).toBe(false);
+    expect(isPathAllowedForClassRole('/app/ta-%72eview/a1', 'student')).toBe(false);
+    expect(detailPageList('/app/%61ssignments/a1')).toBe('/app/assignments');
+    expect(pathAfterClassSwitch('/app/%64ashboard', 'ta')).toBe('/app/ta-meetings');
+    // A "/" decoded inside a segment stays part of it (the router matches /app/dashboard%2F
+    // to no page), and a path that does not decode is compared as it is.
+    expect(isClassScopedPath('/app/dashboard%2F')).toBe(false);
+    expect(isClassScopedPath('/app/%E0%A4%A')).toBe(false);
+  });
+
   it('names the list each detail page belongs to', () => {
     expect(detailPageList('/app/assignments/a1')).toBe('/app/assignments');
     expect(detailPageList('/app/modules/tsr/t1')).toBe('/app/modules');
