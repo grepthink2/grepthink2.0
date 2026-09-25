@@ -20,7 +20,7 @@ green. Everything the page shows must be true on launch day.
 
 | # | Question | Decision |
 |---|---|---|
-| D1 | How to present an unshipped scrum board | Ship this page together with the scrum release; scrum carries a NEW badge |
+| D1 | How to present an unshipped scrum board | Ship this page together with the scrum release; scrum carries a NEW badge. Revised 2026-09-25: ship ahead of the board (see Release) |
 | D2 | What "task reconciliation" means | Board ↔ repo is the headline; board ↔ weekly status reports is a second beat for TAs and instructors |
 | D3 | Page structure | Spotlight bands: one full-width band per feature, alternating sides |
 | D4 | Widget look | The hero's floating-card shell (white, 20px radius, soft two-layer shadow, small tilt, slow float) around the design system's real anatomy |
@@ -242,9 +242,12 @@ screenshot of each band.
 
 ## Release
 
-Branch `feat/landing-new-features` from `beta`; PR onto `beta` opened as a draft. It merges only
-after #177 has landed and the scrum migrations are on PROD, so the page never advertises a board
-that isn't there. After launch, `landing.config.ts` can retire the announcement.
+Branch `feat/landing-new-features` from `beta`; PR onto `beta` opened as a draft. The plan was to
+merge it only after #177 had landed and the scrum migrations were on PROD. On 2026-09-25 the
+maintainer chose to ship it first, accepting that the page advertises the scrum board before
+the board is live. When #177 is rebased onto `beta` afterwards, keep `beta`'s `design/` wherever
+it conflicts: it is the newer copy. After launch, `landing.config.ts` can retire the
+announcement.
 
 ## Assets from Claude Design
 
