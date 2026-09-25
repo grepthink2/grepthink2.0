@@ -26,7 +26,7 @@ const JoinClassModal = lazyModal(
 );
 
 const AppView: React.FC = () => {
-  const { role, isPreviewing, loading: authLoading } = useAuth();
+  const { user, role, isPreviewing, loading: authLoading } = useAuth();
   const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
   const [isJoinClassModalOpen, setIsJoinClassModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -83,7 +83,8 @@ const AppView: React.FC = () => {
   }
 
   return (
-    <ClassProvider>
+    // Keyed by account: the next account never sees the last one's classes.
+    <ClassProvider key={user?.id ?? 'anon'}>
       <div className={`app-view${isPreviewing ? ' app-view--previewing' : ''}`}>
         <PreviewBanner />
         <Sidebar
