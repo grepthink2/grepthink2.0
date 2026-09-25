@@ -117,6 +117,36 @@ describe('useScrumBoard', () => {
     expect(result.current.board!.stories[0].points).toBe(5);
   });
 
+  it('ends loading when a background refresh overtakes a sprint switch', async () => {
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let finishSwitch: (board: ApiScrumBoard) => void = () => {};
+    vi.mocked(api.getScrumBoard)
+      .mockReturnValueOnce(new Promise((res) => { finishSwitch = res; }))  // the switch: slow
+      .mockResolvedValueOnce(makeBoard());                                  // the refresh: fast
+    act(() => { void result.current.selectSprint('sp1'); });
+    expect(result.current.loading).toBe(true);
+
+    await act(async () => { await result.current.refresh(); });
+    await act(async () => { finishSwitch(makeBoard()); });
+    // Background refreshes used to leave loading alone, so this stayed true for good.
+    expect(result.current.loading).toBe(false);
+  });
+
+  it('clears the previous project\'s board while the next one loads', async () => {
+    const { result, rerender } = renderHook(
+      ({ pid }) => useScrumBoard(pid, 'Tony Wu'),
+      { initialProps: { pid: 'p1' } },
+    );
+    await waitFor(() => expect(result.current.board).not.toBeNull());
+
+    vi.mocked(api.getScrumBoard).mockReturnValueOnce(new Promise(() => {}));  // p2 never arrives
+    rerender({ pid: 'p2' });
+    expect(result.current.board).toBeNull();
+    expect(result.current.loading).toBe(true);
+  });
+
   it('rolls the card back and explains when the move fails', async () => {
     vi.mocked(api.moveScrumTask).mockRejectedValue(new Error('network down'));
     const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));

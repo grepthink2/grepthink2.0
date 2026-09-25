@@ -10,6 +10,7 @@ import type {
 } from '@/lib/api';
 import BacklogRow from '../components/BacklogRow';
 import BurnupChart from '../components/BurnupChart';
+import { BOARD_VIEWS, type BoardView } from '../config/boardViews';
 import ScrumBoard from '../components/ScrumBoard';
 import StoryCard from '../components/StoryCard';
 import StoryModal from '../components/StoryModal';
@@ -22,9 +23,6 @@ import { collectTasks } from '../utils/rollups';
 import '../scrum.scss';
 import './ScrumBoardPage.scss';
 
-/** The three full-width sub-views (L2). Tab state lives in `?view=`. */
-export const BOARD_VIEWS = ['board', 'backlog', 'burnup'] as const;
-export type BoardView = (typeof BOARD_VIEWS)[number];
 
 const VIEW_LABELS: Record<BoardView, string> = {
   board: 'Board',
@@ -111,11 +109,11 @@ export default function ScrumBoardPage() {
    */
   const openTaskPair = useMemo(() => {
     if (!openTaskId) return null;
-    for (const s of allStories) {
-      const t = s.tasks.find((x) => x.id === openTaskId);
-      if (t) return { story: s, task: t };
-    }
-    return null;
+    // find() rather than a loop with an early return, which the React Compiler's
+    // analysis (react-hooks/preserve-manual-memoization) cannot keep memoized.
+    const story = allStories.find((s) => s.tasks.some((x) => x.id === openTaskId));
+    const task = story?.tasks.find((x) => x.id === openTaskId);
+    return story && task ? { story, task } : null;
   }, [allStories, openTaskId]);
 
   const openStory: ApiScrumStory | null = useMemo(

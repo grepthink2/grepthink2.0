@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CommentThread from '../components/CommentThread';
+import StoryModal from '../components/StoryModal';
 import { buildMemberMap } from '../scrumTypes';
-import { makeMembers } from './fixtures';
+import { makeMembers, makeStory, makeTask } from './fixtures';
 
 vi.mock('@/lib/api', () => ({
   api: { getScrumComments: vi.fn(), createScrumComment: vi.fn() },
@@ -100,5 +101,26 @@ describe('CommentThread', () => {
 
     await waitFor(() => expect(onError).toHaveBeenCalledWith('offline'));
     expect((screen.getByLabelText(/comment on T-1/i) as HTMLTextAreaElement).value).toBe('Draft text');
+  });
+});
+
+describe('StoryModal comment thread', () => {
+  it('starts each task with an empty composer: a draft does not follow the reader', async () => {
+    const story = makeStory({
+      tasks: [makeTask({ id: 'a', key: 'T-1' }), makeTask({ id: 'b', key: 'T-2' })],
+    });
+    const props = {
+      story, members, sprints: [], scale: 'fibonacci' as const, canWrite: true,
+      onClose: vi.fn(), onUpdateStory: vi.fn(), onOpenTask: vi.fn(), onAddTask: vi.fn(),
+      onDeleteTask: vi.fn(), onMoveTask: vi.fn(), onCommentError: vi.fn(), onCommentPosted: vi.fn(),
+    };
+    const { rerender } = render(<StoryModal {...props} focusTaskId="a" />);
+    await screen.findByText('No comments yet.');
+    await userEvent.type(screen.getByLabelText(/comment on T-1/i), 'Meant for T-1');
+
+    rerender(<StoryModal {...props} focusTaskId="b" />);
+    const box = (await screen.findByLabelText(/comment on T-2/i)) as HTMLTextAreaElement;
+    expect(box.value).toBe('');
+    expect(api.getScrumComments).toHaveBeenLastCalledWith('tasks', 'b');
   });
 });

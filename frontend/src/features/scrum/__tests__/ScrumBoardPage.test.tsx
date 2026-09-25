@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import ScrumBoardPage, { ScrumBoardSkeleton, BOARD_VIEWS } from '../pages/ScrumBoardPage';
+import ScrumBoardPage, { ScrumBoardSkeleton } from '../pages/ScrumBoardPage';
+import { BOARD_VIEWS } from '../config/boardViews';
 import { makeBoard, makeStory, makeTask } from './fixtures';
 
 vi.mock('@/lib/auth', () => ({

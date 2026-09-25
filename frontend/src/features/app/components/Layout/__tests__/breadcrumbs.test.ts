@@ -1,4 +1,4 @@
-import { buildBreadcrumbs } from '../Header';
+import { buildBreadcrumbs } from '../breadcrumbs';
 
 const CLASS = 'CSE 115A';
 
