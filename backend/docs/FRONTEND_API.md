@@ -63,7 +63,7 @@ All routes require auth unless stated otherwise.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/projects` | Create a project. Body: `class_id`, `name`, `description`, `team_size`, optional `looking_for_roles`, `skills`, and **instructor-only** sponsor fields. Enrolled students can create projects with stricter sponsor rules in the controller. |
+| `POST` | `/api/projects` | Create a project. Body: `class_id`, `name`, `description`, `team_size`, optional `looking_for_roles`, `skills`, and sponsor fields only the **class instructor** can set. Anyone enrolled (student or TA) can create one without them and becomes its product owner; anyone else → **403**. |
 | `GET` | `/api/projects` | List projects for the current user. **Query:** `class_id` (optional UUID) to filter. |
 | `GET` | `/api/projects/pending-invites` | **Query:** `class_id` (required). Pending **team invitations** where the **current user** is the invitee (rows with `invited_by` set). Same shape as other join-request UIs where possible. **Register this path before `/{project_id}` in the router** (already done in `url.py`). |
 | `GET` | `/api/projects/{project_id}` | Project details; may include `user_role` when applicable. |
@@ -98,23 +98,17 @@ All routes require auth unless stated otherwise.
 | `POST` | `/api/projects/{project_id}/remove-scrum-master` | Body: `user_id`. Demote scrum master to `member`. |
 | `POST` | `/api/projects/{project_id}/remove-admin` | Body: `user_id`. Demote admin to `member`. |
 
-### Test-only (avoid in production UI)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/projects/test-create` | Same body as normal create. **Bypasses normal role checks**—any authenticated user could create a project in a class that exists. Intended for legacy demo pages; **do not use** in real product flows. |
-
 ---
 
 ## Assignments (`/api/assignments`)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/assignments` | Create assignment. Body: `class_id`, `title`, `open_date`, `close_date`, `status` (`draft` \| `publish`), optional `assignment_type`. Instructor-only in controller. |
-| `GET` | `/api/assignments` | **Query:** `class_id` (**required**). List assignments for that class. |
+| `POST` | `/api/assignments` | Create assignment. Body: `class_id`, `title`, `open_date`, `close_date`, `status` (`draft` \| `publish`), optional `assignment_type`. **Class instructor** only (checked in the controller). |
+| `GET` | `/api/assignments` | **Query:** `class_id` (**required**). The class instructor gets every assignment with turn-in stats; anyone enrolled (student or TA) gets the published ones; anyone else → **403**. |
 | `PATCH` | `/api/assignments/{assignment_id}` | Partial update: `title`, dates, `status`, `assignment_type` (all optional in body). |
 | `GET` | `/api/assignments/{assignment_id}/tsrs` | **Student:** TSR entries **you** submitted for this assignment. |
-| `GET` | `/api/assignments/{assignment_id}/tsrs/about/{evaluatee_id}` | **Instructor:** all TSR rows about a given student for this assignment. |
+| `GET` | `/api/assignments/{assignment_id}/tsrs/about/{evaluatee_id}` | **Class instructor:** all TSR rows about a given student for this assignment. |
 | `PATCH` | `/api/assignments/{assignment_id}/tsrs/{tsr_id}` | Update editable TSR fields (`percent_contribution`, feedback fields, `scrum_master_notes`). |
 
 ---

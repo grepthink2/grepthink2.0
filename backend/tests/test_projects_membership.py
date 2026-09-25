@@ -358,6 +358,21 @@ def test_update_project_follows_the_class_owner_not_the_account_role(db):
     assert next(p for p in db.rows("projects") if p["id"] == P1)["name"] == "Renamed"
 
 
+def test_update_project_reads_the_project_with_its_class_owner_in_one_round_trip(db):
+    projects.update_project(P1, INSTR, name="Renamed")
+    trace = [f"{q['table']}:{q['op']}" for q in db.queries]
+    assert trace == ["projects:select", "projects:update"]  # no separate classes read
+
+    db.reset_counter()
+    projects.update_project(P1, S1, name="Again")  # S1 is P1's product owner
+    trace = [f"{q['table']}:{q['op']}" for q in db.queries]
+    assert trace == ["projects:select", "project_members:select", "projects:update"]
+
+    with pytest.raises(HTTPException) as missing:
+        projects.update_project("no-such-project", INSTR, name="Nope")
+    assert (missing.value.status_code, missing.value.detail) == (404, "Project not found")
+
+
 # ------------------------------------------------------------ get_projects_for_user
 
 

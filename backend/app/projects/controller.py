@@ -147,11 +147,11 @@ def create_project(
         team_size: Maximum team size
         looking_for_roles: Optional list of role names (stored as JSONB)
         skills: Optional list of skill names (stored as JSONB)
-        sponsor_name: Optional sponsor contact name (instructor only)
-        sponsor_company: Optional sponsor company/organization (instructor only)
-        sponsor_email: Optional sponsor email (instructor only)
-        sponsor_website: Optional sponsor website URL (instructor only)
-        sponsor_description: Optional description of the sponsor (instructor only)
+        sponsor_name: Optional sponsor contact name (class instructor only)
+        sponsor_company: Optional sponsor company/organization (class instructor only)
+        sponsor_email: Optional sponsor email (class instructor only)
+        sponsor_website: Optional sponsor website URL (class instructor only)
+        sponsor_description: Optional description of the sponsor (class instructor only)
 
     Returns:
         Dictionary containing project data
@@ -164,10 +164,10 @@ def create_project(
         cid = str(class_id)
 
         # Fan out the two independent verifications. The enrollment lookup
-        # is only needed for non-instructors but it's a cheap select on an
-        # indexed pair (``class_id``, ``user_id``); pre-fetching it in
-        # parallel removes a sequential round-trip from the student create
-        # path without measurably hurting the instructor path.
+        # is only needed when the caller is not the class instructor, but it's a
+        # cheap select on an indexed pair (``class_id``, ``user_id``); pre-fetching
+        # it in parallel removes a sequential round-trip from an enrolled member's
+        # create path without measurably hurting the instructor path.
         class_future = query_pool.submit(
             lambda: client.table("classes").select("id, created_by").eq("id", cid).execute()
         )
@@ -217,7 +217,7 @@ def create_project(
         if skills is not None:
             project_data["skills"] = skills
 
-        # Sponsor fields are only applied for instructors
+        # Sponsor fields are only applied for the class instructor
         if is_instructor:
             if sponsor_name is not None:
                 project_data["sponsor_name"] = sponsor_name
@@ -237,7 +237,7 @@ def create_project(
 
         project = result.data[0]
 
-        # Students who create a project are automatically added as product owner
+        # Anyone enrolled who creates a project is automatically added as product owner
         if not is_instructor:
             client.table("project_members").insert(
                 {
@@ -297,6 +297,9 @@ def update_project(
     - The class instructor (whoever created the project's class)
 
     At least one field must be provided.
+
+    Round trips: the project with its class's owner embedded, the caller's membership unless
+    they are the class instructor, then the update.
     """
     all_none = all(
         v is None
@@ -318,15 +321,10 @@ def update_project(
     try:
         client = get_client()
 
-        project_result = (
-            client.table("projects").select("id, class_id").eq("id", str(project_id)).execute()
+        project = authz.load_project(
+            client, project_id, columns="id, class_id", class_columns="created_by"
         )
-        if not project_result.data:
-            raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
-
-        class_id = project_result.data[0].get("class_id")
-
-        is_class_instructor = bool(class_id) and _is_instructor(user_id, class_id)
+        is_class_instructor = str(_class_owner(project)) == str(user_id)
 
         if not is_class_instructor:
             _require_member_role(
