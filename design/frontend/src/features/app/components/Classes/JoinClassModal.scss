@@ -1,0 +1,164 @@
+@use '@styles/index.scss' as *;
+
+.join-class-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.join-class-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+  &__close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+
+    &:hover:not(:disabled) {
+      background-color: $background;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  &__title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0;
+    font-family: $primary-font;
+  }
+
+  &__subtitle {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    text-align: center;
+    margin: 0;
+    font-family: $primary-font;
+  }
+
+  &__error {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #fee;
+    border: 1px solid #fcc;
+    border-radius: 6px;
+    color: #c33;
+    font-size: $font-size-sm;
+    text-align: center;
+    font-family: $primary-font;
+  }
+
+  &__success {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #e8f5e9;
+    border: 1px solid #4caf50;
+    border-radius: 6px;
+    color: #2e7d32;
+    font-size: $font-size-sm;
+    text-align: center;
+    font-weight: 500;
+    font-family: $primary-font;
+  }
+
+  &__code-container {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin: 1rem 0;
+  }
+
+  &__code-input {
+    width: 48px;
+    height: 56px;
+    border: 2px solid $border-color;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-family: $primary-font;
+    color: $text-primary;
+    transition: all 0.2s;
+    background: white;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba(1, 129, 86, 0.1);
+    }
+
+    &:disabled {
+      background-color: $background;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    &::placeholder {
+      color: $text-secondary;
+      opacity: 0.4;
+    }
+  }
+
+  &__status {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    font-family: $primary-font;
+    margin: 0;
+  }
+
+  @media (max-width: 480px) {
+    padding: 1.5rem 1rem;
+    width: 95%;
+
+    &__code-container {
+      gap: 0.3rem;
+      margin: 0.5rem 0;
+    }
+
+    &__code-input {
+      width: 32px;
+      height: 42px;
+      font-size: 1.15rem;
+      border-radius: 6px;
+    }
+
+    &__title {
+      font-size: 1.4rem;
+    }
+  }
+}

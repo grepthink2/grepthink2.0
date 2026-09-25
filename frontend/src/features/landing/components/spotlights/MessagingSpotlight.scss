@@ -1,0 +1,282 @@
+@use '@styles/index.scss' as *;
+@use '@features/landing/landing-tokens' as *;
+
+// Messaging band stage (landing-only; the shell lives in Spotlight.scss). Mirrors the app's
+// ConversationListItem, MessageBubble and the design system's TypingIndicator (soft tone);
+// every color here is a token.
+
+.msg-inbox-card,
+.msg-thread-card {
+  --swap-duration: 2.4s;
+  --swap-delay: 1.2s;
+}
+
+.msg-inbox-card {
+  top: 8%;
+  left: 5%;
+  z-index: 1;
+  width: 318px;
+  --tilt: -2deg;
+  --float-duration: 8s;
+  --float-y: -10px;
+}
+
+.msg-thread-card {
+  top: 42%;
+  right: 4%;
+  z-index: 2;
+  width: 300px;
+  --tilt: 2.5deg;
+  --float-duration: 9s;
+  --float-y: 9px;
+}
+
+// --- Inbox ------------------------------------------------------------------------------------
+.msg-conv {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 10px;
+
+  & + & {
+    margin-top: 2px;
+  }
+
+  &--active {
+    background: var(--gt-gray-50);
+  }
+
+  &__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__preview {
+    margin-top: 1px;
+    overflow: hidden;
+    font-size: 11px;
+    color: $text-tertiary;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  &__time {
+    font-size: 9.5px;
+    color: var(--gt-gray-500);
+  }
+
+  &__unread {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--gt-error-text);
+    color: $white;
+    font-size: 9.5px;
+    font-weight: 700;
+  }
+}
+
+// --- Thread -----------------------------------------------------------------------------------
+.msg-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 150px;
+}
+
+.msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+
+  &--mine {
+    justify-content: flex-end;
+  }
+
+  &--live {
+    overflow: hidden;
+  }
+}
+
+.msg-bubble {
+  max-width: 190px;
+  padding: 8px 11px;
+  border-radius: 14px 14px 14px 4px;
+  background: $mkt-bubble;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: $text-dark;
+
+  small {
+    display: block;
+    margin-top: 2px;
+    font-size: 9px;
+    opacity: 0.7;
+  }
+
+  &--mine {
+    border-radius: 14px 14px 4px 14px;
+    background: $primary-color;
+    color: $white;
+  }
+}
+
+.msg-live {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  // Resting state: the reply has landed and the dots are gone.
+  &__typing {
+    display: inline-flex;
+    gap: 3px;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 11px;
+    border-radius: 14px 14px 14px 4px;
+    background: $mkt-bubble;
+    opacity: 0;
+
+    i {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--gt-gray-500);
+      animation: msg-blink 1.2s infinite;
+    }
+
+    i:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    i:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+
+  &__landed {
+    overflow: hidden;
+    transform-origin: bottom left;
+  }
+}
+
+.is-seen .msg-row--live {
+  animation: msg-row-in 2.4s ease 0.9s both;
+}
+
+.is-seen .msg-live__typing {
+  animation: msg-typing 2.4s ease 0.9s both;
+}
+
+.is-seen .msg-live__landed {
+  animation: msg-land 2.4s ease 0.9s both;
+}
+
+@keyframes msg-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes msg-row-in {
+  0% {
+    opacity: 0;
+    max-height: 0;
+  }
+  12%,
+  100% {
+    opacity: 1;
+    max-height: 80px;
+  }
+}
+
+@keyframes msg-typing {
+  0%,
+  10% {
+    opacity: 0;
+    max-height: 0;
+    padding: 0 11px;
+  }
+  16%,
+  62% {
+    opacity: 1;
+    max-height: 30px;
+    padding: 9px 11px;
+  }
+  68%,
+  100% {
+    opacity: 0;
+    max-height: 0;
+    padding: 0 11px;
+  }
+}
+
+@keyframes msg-land {
+  0%,
+  64% {
+    opacity: 0;
+    transform: scale(0.9);
+    max-height: 0;
+    padding: 0 11px;
+  }
+  74%,
+  100% {
+    opacity: 1;
+    transform: none;
+    max-height: 60px;
+    padding: 8px 11px;
+  }
+}
+
+.msg-composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--gt-gray-200);
+  font-size: 11px;
+  color: var(--gt-gray-500);
+
+  &__send {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-left: auto;
+    border-radius: 8px;
+    background: $primary-color;
+    color: $white;
+  }
+}

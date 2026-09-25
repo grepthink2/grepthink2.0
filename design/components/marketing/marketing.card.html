@@ -1,0 +1,114 @@
+<!-- @dsCard group="Components" viewport="700x1150" name="Marketing — landing family" subtitle="LandingHeader (bar → pill), Eyebrow + badges, AnnouncementPill, Hero, Spotlight band + Stage/StageCard, ClosingBand, LandingFooter, FeatureColumn, ContactCard" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); color: var(--gt-gray-800); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 18px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .frame { border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 1px var(--gt-gray-300); }
+  .wide { zoom: 0.6; width: 1100px; }
+  .pillbg { background: var(--gt-gray-100); padding: 18px 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { LandingHeader, Eyebrow, MarketingBadge, AnnouncementPill, Hero, FloatCard, Spotlight, Stage, StageCard,
+        ClosingBand, LandingFooter, FeatureColumn, ContactCard, TagBadge, PointsChip, EstimateChip, PRLinkChip, UserPair } = NS;
+const LOGO = '../../assets/grepthink-logo.svg';
+
+const Move = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>;
+const Scale = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/></svg>;
+
+function Demo() {
+  const [contact, setContact] = React.useState({ name: '', email: '', message: '' });
+  return (
+    <div>
+      <p className="lbl">LandingHeader — top-of-page bar, then the scrolled pill (in-flow previews)</p>
+      <div className="frame"><LandingHeader logoSrc={LOGO} fixed={false} /></div>
+      <div className="frame pillbg" style={{marginTop: 10}}><LandingHeader logoSrc={LOGO} fixed={false} scrolled /></div>
+
+      <p className="lbl">Eyebrows & badges · AnnouncementPill</p>
+      <div className="row">
+        <Eyebrow>For instructors and student teams</Eyebrow>
+        <Eyebrow badge="NEW">Scrum board</Eyebrow>
+        <Eyebrow badge="SOON" tone="amber">Project assistant</Eyebrow>
+        <MarketingBadge>NEW</MarketingBadge>
+        <MarketingBadge tone="soon">SOON</MarketingBadge>
+      </div>
+      <div className="row" style={{marginTop: 10}}>
+        <AnnouncementPill href="#scrum-board" ariaLabel="New: scrum boards and team channels. Jump to the scrum board section">Scrum boards and team channels</AnnouncementPill>
+      </div>
+
+      <p className="lbl">Hero with announcement (compact) · a FloatCard</p>
+      <div className="frame">
+        <Hero compact
+          announcement={<AnnouncementPill href="#scrum-board">Scrum boards and team channels</AnnouncementPill>}
+          title="Build better project teams," titleAccent="all in one place"
+          subtitle="grepthink helps instructors and student teams form balanced teams, track weekly progress, and keep everyone accountable without the spreadsheet chaos." />
+      </div>
+      <div className="row" style={{marginTop: 12, alignItems: 'flex-start'}}>
+        <FloatCard kind="team" inline still />
+        <FloatCard kind="tsr" inline still />
+      </div>
+
+      <p className="lbl">Spotlight band (desktop composition, scaled) — Stage + StageCards wrap scrum anatomy</p>
+      <div className="frame" style={{width: 660, height: 380, overflow: 'hidden'}}>
+        <div className="wide">
+          <Spotlight id="demo-scrum" eyebrow="Scrum board" badge="NEW" heading="Run every sprint from" headingAccent="one board"
+            lead="Break your project into sprints, user stories and tasks. Drag work across the board, estimate it in points, and link each task to its pull request."
+            bullets={[{ icon: <Move />, text: 'Drag-and-drop board with a history of every move' }, { icon: <Scale />, text: 'Story points and time estimates, on your team\'s own scale' }]}
+            hairline>
+            <Stage>
+              <StageCard tilt={3} floatY={9} order={0} mobile style={{right: 24, top: 60, width: 262}}>
+                <div style={{display:'flex', gap:6, alignItems:'center', marginBottom:8}}>
+                  <span style={{fontFamily:'var(--gt-font-mono)', fontSize:10.5, fontWeight:600, color:'var(--gt-mkt-slate)'}}>GT-12</span>
+                  <span style={{marginLeft:'auto'}}><EstimateChip estimate="6h" /></span><PointsChip points={3} size="sm" />
+                </div>
+                <p style={{margin:'0 0 9px', fontSize:13.5, fontWeight:600, lineHeight:1.35}}>Connect the class roster API</p>
+                <div style={{display:'flex', gap:5, marginBottom:11}}><TagBadge tag="backend" /><TagBadge tag="frontend" /></div>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}><UserPair reporter="Priya Shah" assignee="Jordan L." /><PRLinkChip label="#41 merged" url="#" state="merged" /></div>
+              </StageCard>
+              <StageCard tilt={-3} floatY={-8} floatDur={9.5} order={1} title="Sprint burnup" meta={<span><strong style={{color:'var(--gt-mkt-ink)', fontSize:13}}>18</strong>/24 pts</span>} style={{left: 40, bottom: 40, width: 250}}>
+                <svg viewBox="0 0 200 86" preserveAspectRatio="none" style={{display:'block', width:'100%', height:86}}>
+                  <polygon fill="rgba(1,129,86,.10)" points="0,86 0,78 33,70 66,58 100,44 133,36 166,28 166,86"/>
+                  <polyline fill="none" stroke="#9aa0a6" strokeWidth="1.5" strokeDasharray="4 3" points="0,26 66,26 66,14 200,14"/>
+                  <polyline fill="none" stroke="#018156" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" points="0,78 33,70 66,58 100,44 133,36 166,28"/>
+                </svg>
+              </StageCard>
+            </Stage>
+          </Spotlight>
+        </div>
+      </div>
+
+      <p className="lbl">ClosingBand · LandingFooter (compact)</p>
+      <div className="frame">
+        <ClosingBand text="Create a class and import your roster. Every team gets a scrum board and its own channels from day one." />
+        <LandingFooter logoSrc={LOGO} compact />
+      </div>
+
+      <p className="lbl">FeatureColumn · ContactCard</p>
+      <div className="row" style={{alignItems:'flex-start', gap: 20}}>
+        <div style={{background:'#fff', borderRadius:12, padding:'16px 0', width: 250}}>
+          <FeatureColumn icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>} title="Smart team formation">Balance teams by interests and skills, so no group is stacked and no student is stranded.</FeatureColumn>
+        </div>
+        <div style={{flex: 1, minWidth: 320}}>
+          <ContactCard subtitle="Questions about grepthink for your class? Send us a note." values={contact} onChange={setContact} onSubmit={() => {}} />
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

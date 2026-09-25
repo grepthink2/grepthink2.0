@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import logo from '@assets/grepthink l logo.svg?url';
+import SectionLink from './SectionLink';
+import { SECTION_IDS } from '../landing.config';
 import './Header.scss';
 
 /**
@@ -43,6 +45,12 @@ const Header: React.FC = () => {
         </Link>
 
         <nav className="landing-header__nav" aria-label="Primary">
+          <SectionLink
+            sectionId={SECTION_IDS.scrum}
+            className="landing-header__link landing-header__link--features"
+          >
+            Features
+          </SectionLink>
           <Link to="/contact" className="landing-header__link">
             Contact
           </Link>

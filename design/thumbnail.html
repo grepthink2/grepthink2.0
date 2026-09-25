@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="styles.css">
+<style>
+  html, body { margin: 0; width: 1280px; height: 854px; overflow: hidden; }
+  .tile { display: flex; width: 1280px; height: 854px; }
+  .main { flex: 1; background: var(--gt-green-500); display: flex; align-items: center; justify-content: center; }
+  .main img { width: 74%; filter: brightness(0) invert(1); }
+  .strip { width: 25%; display: flex; flex-direction: column; }
+  .strip span { flex: 1; }
+</style>
+</head>
+<body>
+<div class="tile">
+  <div class="main"><img src="assets/grepthink-logo.svg" alt="GrepThink"></div>
+  <div class="strip">
+    <span style="background:var(--gt-gold)"></span>
+    <span style="background:var(--gt-green-300)"></span>
+    <span style="background:var(--gt-blue-500)"></span>
+    <span style="background:var(--gt-green-900)"></span>
+  </div>
+</div>
+</body>
+</html>

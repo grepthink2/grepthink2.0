@@ -1,0 +1,34 @@
+<!-- @dsCard group="Colors" viewport="700x170" name="Semantic pairs" subtitle="solid / soft-bg / text triads for success, warning, error, info" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+body{margin:0;padding:16px;font-family:var(--gt-font-sans);background:#fff}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.sem{border-radius:7px;overflow:hidden;border:1px solid var(--gt-gray-200)}
+.sem .solid{height:34px;display:flex;align-items:center;padding:0 10px;color:#fff;font-size:11px;font-weight:600}
+.sem .soft{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:10px;font-weight:500}
+.sem .soft code{font-family:var(--gt-font-mono);font-size:8.5px;opacity:.8}
+.cap{font-size:9px;color:var(--gt-gray-600);padding:6px 10px;display:flex;justify-content:space-between;font-family:var(--gt-font-mono)}
+</style></head><body>
+<div class="grid">
+  <div class="sem">
+    <div class="solid" style="background:var(--gt-success)">Success</div>
+    <div class="soft" style="background:var(--gt-success-soft);color:var(--gt-success-text)">Submitted<code>#E6F4EF</code></div>
+    <div class="cap"><span>#018156</span><span>#016547</span></div>
+  </div>
+  <div class="sem">
+    <div class="solid" style="background:var(--gt-warning)">Warning</div>
+    <div class="soft" style="background:var(--gt-warning-soft);color:var(--gt-warning-text)">Due soon<code>#FEF3C7</code></div>
+    <div class="cap"><span>#B26A00</span><span>#8A5200</span></div>
+  </div>
+  <div class="sem">
+    <div class="solid" style="background:var(--gt-error)">Error</div>
+    <div class="soft" style="background:var(--gt-error-soft);color:var(--gt-error-text)">Overdue<code>#FDECEA</code></div>
+    <div class="cap"><span>#DC2626</span><span>#B91C1C</span></div>
+  </div>
+  <div class="sem">
+    <div class="solid" style="background:var(--gt-info)">Info</div>
+    <div class="soft" style="background:var(--gt-info-soft);color:var(--gt-info-text)">In progress<code>#EAF1FF</code></div>
+    <div class="cap"><span>#2771FF</span><span>#1543A8</span></div>
+  </div>
+</div>
+</body></html>

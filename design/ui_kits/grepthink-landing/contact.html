@@ -1,0 +1,47 @@
+<!-- @dsCard group="GrepThink Site" viewport="1280x800" name="Contact — grepthink2.com/contact" subtitle="Landing header + ContactCard (form states) + footer" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact — grepthink</title>
+<link rel="icon" href="../../assets/gt2bulb.svg">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; }
+  body { font-family: var(--gt-font-sans); color: var(--gt-text-primary); background: var(--gt-canvas); }
+  .contact { min-height: 100vh; display: flex; flex-direction: column; }
+  .contact__main { flex: 1; display: flex; justify-content: center; align-items: flex-start; padding: clamp(140px, 18vh, 200px) 24px clamp(64px, 10vh, 100px); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { LandingHeader, ContactCard, LandingFooter } = window.GrepThinkDesignSystem_36e7e3;
+const LOGO = '../../assets/grepthink-logo.svg';
+function ContactPage() {
+  const [values, setValues] = React.useState({ name: '', email: '', message: '' });
+  const [status, setStatus] = React.useState('idle');
+  const submit = () => { setStatus('sending'); setTimeout(() => { setStatus('success'); setValues({ name: '', email: '', message: '' }); }, 900); };
+  return (
+    <div className="contact">
+      <LandingHeader logoSrc={LOGO} homeHref="index.html" links={[{ label: 'Features', href: 'index.html#scrum-board' }, { label: 'Contact', href: 'contact.html' }]} signInHref="#" ctaHref="#" />
+      <main className="contact__main">
+        <ContactCard subtitle="Questions about grepthink for your class? Send us a note and we'll get back to you." values={values} onChange={setValues} status={status} onSubmit={submit} />
+      </main>
+      <LandingFooter logoSrc={LOGO} columns={[
+        { title: 'Product', links: [{ label: 'Get started', href: '#' }, { label: 'Solutions', href: 'index.html#solutions' }, { label: 'Scrum board', href: 'index.html#scrum-board' }, { label: 'Messaging', href: 'index.html#messaging' }, { label: 'Project assistant', href: 'index.html#project-assistant' }] },
+        { title: 'Account', links: [{ label: 'Sign in', href: '#' }, { label: 'Create account', href: '#' }] },
+        { title: 'Company', links: [{ label: 'Contact', href: 'contact.html' }] },
+      ]} />
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<ContactPage />);
+</script>
+</body>
+</html>

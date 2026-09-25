@@ -59,6 +59,8 @@ frontend/src/
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
 
 supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
+design/               # Claude Design export (design system); replace it wholesale on each
+                      # import, then port `git diff design/` per design/PORTING.md
 ```
 
 ## Architecture

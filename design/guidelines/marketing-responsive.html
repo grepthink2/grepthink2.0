@@ -1,0 +1,19 @@
+<!-- @dsCard group="Marketing" viewport="700x230" name="Responsive bands" subtitle="≥1080 two columns, all cards · 768–1079 text above stage, two cards · <768 text then one untilted, still card — no moment, stage auto-height" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+body{margin:0;padding:16px;font-family:var(--gt-font-sans);color:var(--gt-gray-800);background:#fff;display:flex;gap:16px;align-items:flex-end}
+.bp{display:flex;flex-direction:column;gap:6px;align-items:center}
+.bp small{font-size:9.5px;color:var(--gt-gray-600);font-family:var(--gt-font-mono)}
+.scr{background:#fff;border:1.5px solid var(--gt-gray-300);border-radius:8px;padding:8px;box-sizing:border-box;display:flex;gap:6px}
+.txt{display:flex;flex-direction:column;gap:3px;flex:1}.txt i{display:block;height:4px;border-radius:2px;background:var(--gt-mkt-ink);width:55%}.txt i+i{width:90%;height:3px;background:var(--gt-gray-300)}
+.stg{flex:1.08;background:var(--gt-mkt-stage-tint),var(--gt-mkt-stage-bg);border-radius:7px;position:relative;min-height:54px}
+.stg span{position:absolute;background:#fff;border-radius:4px;width:22px;height:14px;box-shadow:0 3px 8px -2px rgba(33,43,54,.3)}
+.stack{flex-direction:column}
+.stack .stg{flex:none;height:46px}
+.mob .stg{background:none;display:flex;justify-content:center;min-height:0}
+.mob .stg span{position:relative;width:70%;height:22px;rotate:0deg}
+</style></head><body>
+<div class="bp"><div class="scr" style="width:300px;height:100px"><div class="txt"><i></i><i></i><i></i></div><div class="stg"><span style="left:8px;top:8px;rotate:-2deg"></span><span style="right:8px;top:14px;rotate:3deg"></span><span style="left:26px;bottom:8px;rotate:-3deg"></span></div></div><small>≥ 1080 · two columns · all cards</small></div>
+<div class="bp"><div class="scr stack" style="width:190px;height:130px"><div class="txt"><i></i><i></i><i></i></div><div class="stg"><span style="left:10px;top:10px;rotate:-2deg"></span><span style="right:10px;top:16px;rotate:3deg"></span></div></div><small>768–1079 · stacked · two cards</small></div>
+<div class="bp"><div class="scr stack mob" style="width:110px;height:150px"><div class="txt"><i></i><i></i><i></i><i></i></div><div class="stg"><span></span></div></div><small>&lt; 768 · one still card · no moment<br>stage auto-height · band 3 = pending</small></div>
+</body></html>

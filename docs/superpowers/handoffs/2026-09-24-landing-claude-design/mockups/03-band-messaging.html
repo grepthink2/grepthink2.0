@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 · Band 2 · Messaging (approved, v3)</title>
+<style>
+  /* Minimal stand-in for the brainstorming frame these mockups were reviewed in. */
+  body { margin: 0; padding: 32px 24px 64px; background: #1f2023; color: #e8e8e8; font-family: system-ui, -apple-system, sans-serif; }
+  body > h2 { font-size: 26px; margin: 0 0 8px; color: #fff; }
+  .subtitle { color: #a1a1aa; font-size: 15px; line-height: 1.5; margin: 0 0 24px; max-width: 900px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 24px; }
+  .card { background: #2a2b2f; border-radius: 14px; overflow: hidden; border: 2px solid transparent; }
+  .card.chosen { border-color: #22c55e; }
+  .card-image { padding: 12px; background: #ececee; }
+  .card-body { padding: 14px 16px; } .card-body h3 { margin: 0 0 6px; font-size: 16px; color: #fff; } .card-body p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.5; color: #c4c4c8; }
+  .chosen-tag { display: inline-block; font-size: 11px; font-weight: 700; color: #0b3; background: #dcfce7; padding: 2px 8px; border-radius: 99px; margin-left: 6px; }
+</style></head>
+<body>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  .bd { --g:#018156; --dark:#212B36; --t2:#424242; --t3:#637381;
+        width: 1040px; margin: 0 auto 22px; font-family: Poppins, system-ui, sans-serif; color: var(--dark);
+        border-radius: 18px; padding: 72px 56px; display: grid; grid-template-columns: 1.08fr 1fr; gap: 48px; align-items: center; background: #f8faf9; }
+  @media (max-width: 1120px) { .bd { zoom: .78 } }
+  @media (max-width: 900px)  { .bd { zoom: .6 } }
+  @media (max-width: 700px)  { .bd { zoom: .52 } }
+  .eb { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+        color: #016547; background: rgba(1,129,86,.1); padding: 6px 13px; border-radius: 999px; margin-bottom: 18px; }
+  .eb b { background: var(--g); color: #fff; font-size: 10px; padding: 2px 7px; border-radius: 99px; letter-spacing: .06em; }
+  .bd h2 { font-size: 40px; line-height: 1.1; letter-spacing: -.02em; margin: 0 0 16px; font-weight: 700; }
+  .bd h2 span { background: linear-gradient(135deg,#018156,#02a06b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .bd p.lead { font-size: 16.5px; line-height: 1.65; color: var(--t3); margin: 0 0 24px; max-width: 450px; }
+  .bd ul.feats { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .bd ul.feats li { display: flex; gap: 12px; align-items: center; font-size: 14.5px; color: var(--t2); font-weight: 500; }
+  .bd ul.feats i { flex: 0 0 34px; height: 34px; border-radius: 10px; background: #E6F4EF; color: var(--g); display: inline-flex; align-items: center; justify-content: center; }
+
+  .stg { position: relative; height: 470px; border-radius: 28px; background: radial-gradient(70% 60% at 40% 40%, rgba(1,129,86,.10), transparent 70%), #eef5f2; }
+  .stg::before { content:''; position:absolute; inset:0; border-radius: inherit; background-image: radial-gradient(circle, rgba(33,43,54,.16) 1.2px, transparent 1.5px);
+        background-size: 22px 22px; -webkit-mask-image: radial-gradient(80% 80% at 50% 50%, #000 30%, transparent 85%); mask-image: radial-gradient(80% 80% at 50% 50%, #000 30%, transparent 85%); }
+  .fc { position: absolute; background: #fff; border-radius: 20px; padding: 16px;
+        box-shadow: 0 2px 6px rgba(33,43,54,.04), 0 24px 48px -12px rgba(33,43,54,.18); }
+  .fh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+  .ft { font-size: 13.5px; font-weight: 600; letter-spacing: -.01em; display: inline-flex; gap: 7px; align-items: center; }
+  .fm { font-size: 10.5px; color: #9aa0a6; font-weight: 500; }
+  .pill { font-size: 9.5px; font-weight: 600; padding: 2px 7px; border-radius: 99px; }
+  .p-team { background: #E6F4EF; color: #016547; } .p-ta { background: #EAF1FF; color: #1543A8; } .p-ins { background: #FEF3C7; color: #8A5200; }
+  .av { width: 30px; height: 30px; border-radius: 50%; color: #fff; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .av.sm { width: 24px; height: 24px; font-size: 8.5px; }
+  .sq { border-radius: 9px; }
+
+  .inbox { left: 24px; top: 40px; width: 318px; transform: rotate(-2deg); animation: fa 8s ease-in-out infinite; z-index: 1; }
+  .conv { display: flex; gap: 10px; align-items: center; padding: 8px 6px; border-radius: 10px; }
+  .conv + .conv { margin-top: 2px; } .conv.hl { background: #f5f8f7; }
+  .cb { flex: 1; min-width: 0; }
+  .cn { display: flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 600; }
+  .cp { font-size: 11px; color: var(--t3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; position: relative; height: 16px; }
+  .cr { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .tm { font-size: 9.5px; color: #9aa0a6; }
+  .ub { min-width: 17px; height: 17px; border-radius: 99px; background: #DC2626; color: #fff; font-size: 9.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; position: relative; }
+  .swapA, .swapB { position: absolute; left: 0; right: 0; } .ub .swapA, .ub .swapB { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .swapA { animation: sA 7s infinite; } .swapB { animation: sB 7s infinite; opacity: 0; }
+  @keyframes sA { 0%, 52% { opacity: 1 } 56%, 94% { opacity: 0 } 100% { opacity: 1 } }
+  @keyframes sB { 0%, 52% { opacity: 0 } 56%, 94% { opacity: 1 } 100% { opacity: 0 } }
+
+  .thread { right: 22px; top: 176px; width: 300px; transform: rotate(2.5deg); animation: fb 9s ease-in-out infinite; z-index: 2; }
+  .msgs { display: flex; flex-direction: column; gap: 8px; min-height: 150px; }
+  .mrow { display: flex; gap: 7px; align-items: flex-end; } .mrow.me { justify-content: flex-end; }
+  .bub { max-width: 190px; font-size: 11.5px; line-height: 1.45; padding: 8px 11px; border-radius: 14px; }
+  .theirs .bub { background: #f1f3f4; color: var(--dark); border-bottom-left-radius: 4px; }
+  .me .bub { background: var(--g); color: #fff; border-bottom-right-radius: 4px; }
+  .bub small { display: block; font-size: 9px; opacity: .7; margin-top: 2px; }
+  /* One row for Jordan: the avatar arrives with the typing dots and stays when the message lands. */
+  .live { animation: rowv 7s infinite; overflow: hidden; }
+  @keyframes rowv { 0%, 12% { opacity: 0; max-height: 0 } 16%, 94% { opacity: 1; max-height: 70px } 100% { opacity: 0; max-height: 0 } }
+  .slot { display: flex; flex-direction: column; align-items: flex-start; }
+  .typing { display: inline-flex; gap: 3px; background: #f1f3f4; border-radius: 14px; border-bottom-left-radius: 4px; overflow: hidden; animation: tyv 7s infinite; }
+  .typing i { width: 5px; height: 5px; border-radius: 50%; background: #9aa0a6; animation: blink 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay: .2s } .typing i:nth-child(3) { animation-delay: .4s }
+  @keyframes blink { 0%, 80%, 100% { opacity: .3; transform: translateY(0) } 40% { opacity: 1; transform: translateY(-2px) } }
+  @keyframes tyv { 0%, 50% { opacity: 1; max-height: 30px; padding: 9px 11px } 53%, 100% { opacity: 0; max-height: 0; padding: 0 11px } }
+  .landed { overflow: hidden; transform-origin: bottom left; animation: land 7s infinite; }
+  @keyframes land { 0%, 52% { opacity: 0; transform: scale(.9); max-height: 0; padding: 0 11px } 57%, 100% { opacity: 1; transform: scale(1); max-height: 60px; padding: 8px 11px } }
+  .comp { margin-top: 12px; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; box-shadow: 0 0 0 1px #e5e7eb; font-size: 11px; color: #9aa0a6; }
+  .comp b { margin-left: auto; width: 24px; height: 24px; border-radius: 8px; background: var(--g); display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+  @keyframes fa { 0%,100% { translate: 0 0 } 50% { translate: 0 -10px } }
+  @keyframes fb { 0%,100% { translate: 0 0 } 50% { translate: 0 9px } }
+</style>
+
+<h2>Band 2 · Messaging, v3</h2>
+<p class="subtitle">The floating Messages tab is gone. Jordan's typing dots and reply now share one row, so the avatar stays put when the message lands. Notifications are covered in the paragraph and in the last bullet.</p>
+
+<section class="bd">
+  <div class="stg" aria-hidden="true">
+    <div class="fc inbox">
+      <div class="fh"><span class="ft">Messages</span><span class="fm">3 unread</span></div>
+      <div class="conv hl"><span class="av sq" style="background:#018156">SS</span>
+        <div class="cb"><div class="cn">ShoeShopper <span class="pill p-team">Team</span></div>
+          <div class="cp"><span class="swapA">Standup moved to 3pm</span><span class="swapB">Jordan: Merged, thanks!</span></div></div>
+        <div class="cr"><span class="tm">2m</span><span class="ub"><span class="swapA">2</span><span class="swapB">3</span>&nbsp;</span></div></div>
+      <div class="conv"><span class="av sq" style="background:#2771FF">SS</span>
+        <div class="cb"><div class="cn">ShoeShopper <span class="pill p-ta">TA</span></div><div class="cp">Great demo today, see notes</div></div>
+        <div class="cr"><span class="tm">1h</span></div></div>
+      <div class="conv"><span class="av sq" style="background:#B26A00">SS</span>
+        <div class="cb"><div class="cn">ShoeShopper <span class="pill p-ins">Instructor</span></div><div class="cp">Final review slot confirmed</div></div>
+        <div class="cr"><span class="tm">Tue</span></div></div>
+      <div class="conv"><span class="av" style="background:#7D3C98">PS</span>
+        <div class="cb"><div class="cn">Priya Shah</div><div class="cp">Can you look at my PR?</div></div>
+        <div class="cr"><span class="tm">Mon</span></div></div>
+    </div>
+
+    <div class="fc thread">
+      <div class="fh"><span class="ft">ShoeShopper <span class="pill p-team">Team</span></span><span class="fm">5 members</span></div>
+      <div class="msgs">
+        <div class="mrow theirs"><span class="av sm" style="background:#7D3C98">PS</span><div class="bub">Can someone review GT-12 before standup?<small>Priya · 10:02</small></div></div>
+        <div class="mrow me"><div class="bub">On it. PR #41 is up.<small>You · 10:04</small></div></div>
+        <div class="mrow theirs live"><span class="av sm" style="background:#2771FF">JL</span>
+          <div class="slot"><div class="typing"><i></i><i></i><i></i></div><div class="bub landed">Merged, thanks!<small>Jordan · 10:09</small></div></div></div>
+      </div>
+      <div class="comp">Message the team…<b><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></b></div>
+    </div>
+  </div>
+
+  <div>
+    <span class="eb"><b>NEW</b> Messaging</span>
+    <h2>One inbox for your team and <span>course staff</span></h2>
+    <p class="lead">Every project gets three channels: one for the team, one with your TA and one with your instructor. Direct messages cover everything else. Messages and notifications arrive live, with unread counts wherever you are in the app.</p>
+    <ul class="feats">
+      <li><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></i>Team, TA and Instructor channels for every project</li>
+      <li><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></i>Direct messages with classmates and course staff</li>
+      <li><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></i>Channels follow the roster: join a team and you're in</li>
+      <li><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></i>Live notifications for messages, join requests and team changes</li>
+    </ul>
+  </div>
+</section>
+
+</body></html>

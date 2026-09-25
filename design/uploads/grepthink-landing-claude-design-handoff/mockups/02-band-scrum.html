@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 · Band 1 · Scrum board (approved)</title>
+<style>
+  /* Minimal stand-in for the brainstorming frame these mockups were reviewed in. */
+  body { margin: 0; padding: 32px 24px 64px; background: #1f2023; color: #e8e8e8; font-family: system-ui, -apple-system, sans-serif; }
+  body > h2 { font-size: 26px; margin: 0 0 8px; color: #fff; }
+  .subtitle { color: #a1a1aa; font-size: 15px; line-height: 1.5; margin: 0 0 24px; max-width: 900px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 24px; }
+  .card { background: #2a2b2f; border-radius: 14px; overflow: hidden; border: 2px solid transparent; }
+  .card.chosen { border-color: #22c55e; }
+  .card-image { padding: 12px; background: #ececee; }
+  .card-body { padding: 14px 16px; } .card-body h3 { margin: 0 0 6px; font-size: 16px; color: #fff; } .card-body p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.5; color: #c4c4c8; }
+  .chosen-tag { display: inline-block; font-size: 11px; font-weight: 700; color: #0b3; background: #dcfce7; padding: 2px 8px; border-radius: 99px; margin-left: 6px; }
+</style></head>
+<body>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  .sb { --g:#018156; --gh:#016547; --dark:#212B36; --t2:#424242; --t3:#637381; --line:#eef0f2; --blue:#2771FF;
+        width: 1040px; margin: 0 auto; font-family: Poppins, system-ui, sans-serif; color: var(--dark);
+        background: #fff; border-radius: 18px; padding: 72px 56px; display: grid; grid-template-columns: 1fr 1.08fr; gap: 48px; align-items: center; }
+  @media (max-width: 1120px) { .sb { zoom: .78 } }
+  @media (max-width: 900px)  { .sb { zoom: .6 } }
+  @media (max-width: 700px)  { .sb { zoom: .52 } }
+  .sb-eyebrow { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+        color: #016547; background: rgba(1,129,86,.1); padding: 6px 13px; border-radius: 999px; margin-bottom: 18px; }
+  .sb-eyebrow b { background: var(--g); color: #fff; font-size: 10px; padding: 2px 7px; border-radius: 99px; letter-spacing: .06em; }
+  .sb h2 { font-size: 40px; line-height: 1.1; letter-spacing: -.02em; margin: 0 0 16px; font-weight: 700; }
+  .sb h2 span { background: linear-gradient(135deg,#018156,#02a06b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sb p.lead { font-size: 16.5px; line-height: 1.65; color: var(--t3); margin: 0 0 26px; max-width: 440px; }
+  .sb ul.feats { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .sb ul.feats li { display: flex; gap: 12px; align-items: center; font-size: 14.5px; color: var(--t2); font-weight: 500; }
+  .sb ul.feats i { flex: 0 0 34px; height: 34px; border-radius: 10px; background: #E6F4EF; color: var(--g); display: inline-flex; align-items: center; justify-content: center; }
+
+  .stage { position: relative; height: 470px; border-radius: 28px;
+        background: radial-gradient(70% 60% at 60% 40%, rgba(1,129,86,.10), transparent 70%), #f5f8f7; }
+  .stage::before { content:''; position:absolute; inset:0; border-radius: inherit; background-image: radial-gradient(circle, rgba(33,43,54,.16) 1.2px, transparent 1.5px);
+        background-size: 22px 22px; -webkit-mask-image: radial-gradient(80% 80% at 50% 50%, #000 30%, transparent 85%); mask-image: radial-gradient(80% 80% at 50% 50%, #000 30%, transparent 85%); }
+  .fc { position: absolute; background: #fff; border-radius: 20px; padding: 16px 16px 14px;
+        box-shadow: 0 2px 6px rgba(33,43,54,.04), 0 24px 48px -12px rgba(33,43,54,.18); }
+  .fc-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .fc-title { font-size: 13.5px; font-weight: 600; letter-spacing: -.01em; }
+  .fc-meta { font-size: 10.5px; color: #9aa0a6; font-weight: 500; }
+
+  /* board */
+  .board { left: 18px; top: 34px; width: 360px; transform: rotate(-2deg); animation: fl-a 8s ease-in-out infinite; z-index: 2; }
+  .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; position: relative; }
+  .col { background: #f7f8f9; border-radius: 10px; padding: 8px 6px 6px; min-height: 164px; }
+  .col-h { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: var(--t2); margin: 0 2px 7px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .col-h .n { margin-left: auto; font-size: 9.5px; color: #9aa0a6; font-weight: 600; position: relative; }
+  .row { background: #fff; border-radius: 7px; padding: 6px 6px 5px; margin-bottom: 5px; box-shadow: 0 0 0 1px #eceef0; }
+  .row .k { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 8.5px; color: #9aa0a6; display: flex; justify-content: space-between; }
+  .row .k b { font-family: ui-monospace, monospace; font-size: 8.5px; color: var(--g); background: #E6F4EF; border-radius: 4px; padding: 0 4px; }
+  .row .t { font-size: 9.5px; font-weight: 500; line-height: 1.3; margin-top: 2px; color: var(--dark); }
+  .row.mover { position: absolute; left: calc(33.33% + 2.7px + 6px); top: 32px; width: calc(33.33% - 5.4px - 12px); box-shadow: 0 0 0 1.5px var(--blue), 0 8px 18px -6px rgba(39,113,255,.45);
+        animation: move 6s cubic-bezier(.65,0,.35,1) infinite; z-index: 3; }
+  @keyframes move { 0%, 30% { transform: translateX(0) rotate(0); box-shadow: 0 0 0 1.5px var(--blue), 0 8px 18px -6px rgba(39,113,255,.45); }
+                    38% { transform: translateX(50%) translateY(-6px) rotate(2deg); }
+                    46%, 92% { transform: translateX(calc(100% + 20px)) rotate(0); box-shadow: 0 0 0 1.5px var(--g), 0 8px 18px -8px rgba(1,129,86,.45); }
+                    100% { transform: translateX(0); } }
+  .cnt-a, .cnt-b { position: absolute; right: 0; top: 0; }
+  .cnt-a { animation: cntA 6s infinite; } .cnt-b { animation: cntB 6s infinite; opacity: 0; }
+  @keyframes cntA { 0%, 44% { opacity: 1 } 46%, 92% { opacity: 0 } 100% { opacity: 1 } }
+  @keyframes cntB { 0%, 44% { opacity: 0 } 46%, 92% { opacity: 1 } 100% { opacity: 0 } }
+  .spacer { height: 40px; }
+
+  /* task card */
+  .task { right: 14px; top: 196px; width: 262px; transform: rotate(3deg); animation: fl-b 9s ease-in-out infinite; z-index: 3; }
+  .task-top { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .key { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; color: var(--t3); font-weight: 600; }
+  .story { font-family: ui-monospace, monospace; font-size: 9.5px; color: var(--t3); background: #f3f4f6; border-radius: 5px; padding: 1px 5px; }
+  .est { margin-left: auto; font-size: 10px; color: var(--t3); display: inline-flex; gap: 3px; align-items: center; }
+  .pts { font-family: ui-monospace, monospace; font-size: 10.5px; font-weight: 700; color: var(--g); background: #E6F4EF; border-radius: 6px; padding: 1px 6px; }
+  .task-title { font-size: 13.5px; font-weight: 600; line-height: 1.35; margin: 0 0 9px; }
+  .tags { display: flex; gap: 5px; margin-bottom: 11px; }
+  .tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+  .tag.be { background: #E6F4EF; color: #016547; } .tag.fe { background: #EAF1FF; color: #1543A8; }
+  .foot { display: flex; align-items: center; justify-content: space-between; }
+  .pair { display: inline-flex; align-items: center; gap: 4px; color: #9aa0a6; }
+  .av { width: 22px; height: 22px; border-radius: 50%; color: #fff; font-size: 8.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; }
+  .right { display: inline-flex; gap: 7px; align-items: center; }
+  .cm { font-size: 10px; color: var(--t3); display: inline-flex; gap: 3px; align-items: center; }
+  .pr { font-size: 10px; font-weight: 600; color: #7D3C98; background: rgba(125,60,152,.12); padding: 2px 7px; border-radius: 99px; display: inline-flex; gap: 4px; align-items: center; }
+  .audit { margin-top: 10px; padding-top: 9px; border-top: 1px dashed #e5e7eb; font-size: 10px; color: var(--t3); display: flex; gap: 5px; align-items: center; }
+  .audit b { color: var(--g); font-weight: 600; }
+
+  /* burnup */
+  .burn { left: 58px; bottom: 22px; width: 250px; transform: rotate(-3deg); animation: fl-c 9.5s ease-in-out infinite; z-index: 1; }
+  .burn .stat { font-size: 11px; color: var(--t3); } .burn .stat strong { color: var(--dark); font-size: 13px; }
+  .burn svg { display: block; width: 100%; height: 86px; }
+  .burn .area { fill: rgba(1,129,86,.10); }
+  .burn .scope { fill: none; stroke: #9aa0a6; stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .burn .done { fill: none; stroke: var(--g); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 260; animation: draw 6s ease-in-out infinite; }
+  @keyframes draw { 0%, 20% { stroke-dashoffset: 260 } 55%, 92% { stroke-dashoffset: 0 } 100% { stroke-dashoffset: 260 } }
+  .legend { display: flex; gap: 12px; font-size: 9.5px; color: var(--t3); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+
+  @keyframes fl-a { 0%,100% { transform: translateY(0) rotate(-2deg) } 50% { transform: translateY(-10px) rotate(-2deg) } }
+  @keyframes fl-b { 0%,100% { transform: translateY(0) rotate(3deg) } 50% { transform: translateY(9px) rotate(3deg) } }
+  @keyframes fl-c { 0%,100% { transform: translateY(0) rotate(-3deg) } 50% { transform: translateY(-8px) rotate(-3deg) } }
+  .note { max-width: 1040px; margin: 14px auto 0; font-size: 13px; color: #9aa0a6; line-height: 1.6; }
+</style>
+
+<h2>Band 1 · Scrum board</h2>
+<p class="subtitle">How it would look at desktop width, with motion looping so you can see it. On the real page the move plays once when the band scrolls into view, and it's replaced by a still frame for reduced-motion users.</p>
+
+<section class="sb">
+  <div>
+    <span class="sb-eyebrow"><b>NEW</b> Scrum board</span>
+    <h2>Run every sprint from <span>one board</span></h2>
+    <p class="lead">Break your project into sprints, user stories and tasks. Drag work across the board, estimate it in points, and link each task to its pull request. Every move is logged, so your TA sees progress as it happens.</p>
+    <ul class="feats">
+      <li><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg></i>Drag-and-drop board with a history of every move</li>
+      <li><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/></svg></i>Story points and time estimates, on your team's own scale</li>
+      <li><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 9v6a3 3 0 003 3h6M18 15V9"/></svg></i>Tasks linked to GitHub and git.ucsc.edu pull requests</li>
+      <li><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg></i>Burnup charts for each sprint and the whole project</li>
+    </ul>
+  </div>
+
+  <div class="stage" aria-hidden="true">
+    <div class="fc board">
+      <div class="fc-head"><span class="fc-title">Sprint 3</span><span class="fc-meta">4 days left</span></div>
+      <div class="cols">
+        <div class="col"><div class="col-h"><span class="dot" style="background:#BDBDBD"></span>TODO<span class="n">2</span></div>
+          <div class="row"><div class="k">GT-15<b>2</b></div><div class="t">Invite flow copy</div></div>
+          <div class="row"><div class="k">GT-16<b>5</b></div><div class="t">Export grades CSV</div></div></div>
+        <div class="col"><div class="col-h"><span class="dot" style="background:#2771FF"></span>In Progress<span class="n">2</span></div>
+          <div class="spacer"></div>
+          <div class="row"><div class="k">GT-9<b>3</b></div><div class="t">Attendance tab</div></div></div>
+        <div class="col"><div class="col-h"><span class="dot" style="background:#018156"></span>Done<span class="n"><span class="cnt-a">3</span><span class="cnt-b">4</span>&nbsp;</span></div>
+          <div class="spacer"></div>
+          <div class="row"><div class="k">GT-7<b>2</b></div><div class="t">Login page</div></div>
+          <div class="row"><div class="k">GT-8<b>3</b></div><div class="t">Team channels</div></div></div>
+        <div class="row mover"><div class="k">GT-12<b>3</b></div><div class="t">Roster API</div></div>
+      </div>
+    </div>
+
+    <div class="fc task">
+      <div class="task-top"><span class="key">GT-12</span><span class="story">GT-4</span>
+        <span class="est"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2" stroke-linecap="round"/></svg>6h</span><span class="pts">3</span></div>
+      <p class="task-title">Connect the class roster API</p>
+      <div class="tags"><span class="tag be">backend</span><span class="tag fe">frontend</span></div>
+      <div class="foot">
+        <span class="pair"><span class="av" style="background:#7D3C98">PR</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span class="av" style="background:#2771FF">JL</span></span>
+        <span class="right"><span class="cm"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>4</span>
+          <span class="pr"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 9v6a3 3 0 003 3h6M18 15V9"/></svg>#41 merged</span></span>
+      </div>
+      <div class="audit"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>Moved to <b>Done</b> · Jordan · just now</div>
+    </div>
+
+    <div class="fc burn">
+      <div class="fc-head"><span class="fc-title">Sprint burnup</span><span class="stat"><strong>18</strong>/24 pts</span></div>
+      <svg viewBox="0 0 200 86" preserveAspectRatio="none">
+        <line x1="0" x2="200" y1="21" y2="21" stroke="#f0f1f3"/><line x1="0" x2="200" y1="43" y2="43" stroke="#f0f1f3"/><line x1="0" x2="200" y1="64" y2="64" stroke="#f0f1f3"/>
+        <polygon class="area" points="0,86 0,78 33,70 66,58 100,44 133,36 166,28 166,86"/>
+        <polyline class="scope" points="0,26 66,26 66,14 200,14"/>
+        <polyline class="done" points="0,78 33,70 66,58 100,44 133,36 166,28"/>
+      </svg>
+      <div class="legend"><span><i style="background:#018156"></i>Completed</span><span><i style="background:#9aa0a6"></i>Scope</span></div>
+    </div>
+  </div>
+</section>
+
+<p class="note">Widgets are the design system's scrum components (TaskCard, board columns, PointsChip, EstimateChip, TagBadge, PRLinkChip, UserPair, the audit line and BurnupChart), scaled down and wrapped in the hero's floating-card shell. Below 1080px the burnup card drops out; below 768px the stage shows only the task card, untilted and still.</p>
+
+</body></html>

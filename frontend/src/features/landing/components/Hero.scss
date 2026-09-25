@@ -57,11 +57,65 @@
     font-weight: $font-weight-semibold;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: $primary-color;
+    // --gt-success-text on the green tint is 6.3:1; the brand green there was only ~4.3:1.
+    color: var(--gt-success-text);
     background: rgba(1, 129, 86, 0.1);
     padding: 6px 14px;
     border-radius: 999px;
     margin-bottom: $spacing-lg;
+  }
+
+  // Launch announcement: replaces the eyebrow while landing.config.ts has one.
+  &__announce {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: $spacing-lg;
+    padding: 5px 14px 5px 5px;
+    border-radius: 999px;
+    background: $white;
+    box-shadow:
+      0 0 0 1px rgba(1, 129, 86, 0.25),
+      0 8px 20px -10px rgba(1, 129, 86, 0.45);
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $text-secondary;
+    text-decoration: none;
+    transition: box-shadow $transition-fast;
+
+    &:hover {
+      box-shadow:
+        0 0 0 1px rgba(1, 129, 86, 0.45),
+        0 10px 24px -10px rgba(1, 129, 86, 0.55);
+
+      .hero__announce-arrow {
+        transform: translateX(3px);
+      }
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring);
+    }
+  }
+
+  &__announce-badge {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: $primary-color;
+    color: $white;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  &__announce-arrow {
+    display: inline-block;
+    color: var(--gt-success-text);
+    font-weight: $font-weight-semibold;
+    transition: transform $transition-fast;
   }
 
   &__title {
@@ -494,7 +548,9 @@
     animation: none;
   }
   .hero__cta,
-  .hero__signin span {
+  .hero__signin span,
+  .hero__announce,
+  .hero__announce-arrow {
     transition: none;
   }
 }
