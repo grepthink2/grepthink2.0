@@ -110,7 +110,7 @@ def test_create_user_checks_edu_conflicts_on_the_service_client(client, fake):
         "/api/create-user", headers=header_for(TAKEN), json={**SIGNUP, "email": TAKEN}
     )
     assert res.status_code == 409
-    assert res.json()["detail"] == "This .edu email is already linked to another account."
+    assert res.json()["detail"] == "This school email is already linked to another account."
     fake.auth.admin.delete_user.assert_called_once_with("user-abc")
     assert not [p for p in fake.rows("profiles") if p["id"] == "user-abc"]
 

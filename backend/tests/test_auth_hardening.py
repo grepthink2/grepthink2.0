@@ -301,6 +301,46 @@ def test_send_without_smtp_on_a_deployment_answers_503_and_keeps_nothing(
     assert _pending(db) == []
 
 
+# ── school email: .edu or an institution's domains ───────────────────────────────
+
+IST = {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "name": "İstinye University",
+    "slug": "istinye",
+    "email_domains": ["istinye.edu.tr"],
+}
+
+
+@pytest.fixture
+def with_istinye(monkeypatch):
+    from app.institutions import controller as institutions
+    from tests.conftest import UCSC_INSTITUTION
+
+    monkeypatch.setattr(institutions, "_cache", (float("inf"), [dict(UCSC_INSTITUTION), dict(IST)]))
+
+
+def test_an_institution_domain_can_be_verified_as_a_school_email(
+    client, auth_header, db, mailer, with_istinye
+):
+    res = client.post(
+        "/api/profiles/send-edu-verification",
+        headers=auth_header,
+        json={"edu_email": "ann@stu.istinye.edu.tr"},
+    )
+    assert res.status_code == 200, res.text
+    assert _pending(db)[0]["edu_email"] == "ann@stu.istinye.edu.tr"
+
+
+def test_an_address_at_no_school_is_refused(client, auth_header, db, mailer, with_istinye):
+    res = client.post(
+        "/api/profiles/send-edu-verification",
+        headers=auth_header,
+        json={"edu_email": "ann@example.com"},
+    )
+    assert (res.status_code, res.json()["detail"]) == (400, "Must be a valid school email address")
+    assert _pending(db) == []
+
+
 # ── verifying it ─────────────────────────────────────────────────────────────────
 
 

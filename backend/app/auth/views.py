@@ -14,6 +14,7 @@ from app.core.db import get_client
 from app.core.errors import DatabaseConflictError, DatabaseError
 from app.database.client import get_authenticated_client
 from app.dependencies import require_user, require_user_payload
+from app.institutions.controller import is_school_email
 from app.limiter import limiter
 
 logger = logging.getLogger(__name__)
@@ -65,9 +66,9 @@ def create_user(  # noqa: C901
     - The JWT's ``sub`` must match ``userId`` in the body; otherwise a
       caller could provision a profile for another user.
     - The email is the verified token's, never the body's. It is written to
-      ``profiles.email`` and, for a .edu address, to ``edu_email`` — the two
-      columns a roster row is matched by — so a caller who could choose it could
-      take over any classmate's roster row. The body's copy only has to agree.
+      ``profiles.email`` and, for a school email address, to ``edu_email`` — the
+      two columns a roster row is matched by — so a caller who could choose it
+      could take over any classmate's roster row. The body's copy only has to agree.
     - The role is written once. It used to ``upsert`` on conflict with the user
       id, which meant an authenticated student could re-POST with
       ``userType: 'instructor'`` and escalate. A profile whose role is still
@@ -116,7 +117,7 @@ def create_user(  # noqa: C901
 
     def _insert_profile(client):
         row = {"id": user_id, "email": email, "role": user_type}
-        if email.endswith(".edu"):
+        if is_school_email(email):
             row["edu_email"] = email
         if data.firstName:
             row["first_name"] = data.firstName.strip()
@@ -141,9 +142,9 @@ def create_user(  # noqa: C901
 
     def _backfill_edu_email(client):
         # A Supabase trigger may have auto-created the profile row without
-        # edu_email. If the primary email is .edu and edu_email isn't set
-        # yet, backfill it now so the column stays in sync.
-        if not email.endswith(".edu"):
+        # edu_email. If the primary email is a school email and edu_email isn't
+        # set yet, backfill it now so the column stays in sync.
+        if not is_school_email(email):
             return
         existing_edu = (
             client.table("profiles").select("edu_email").eq("id", user_id).single().execute()
@@ -254,12 +255,12 @@ def create_user(  # noqa: C901
                 detail="Profile already exists for this user",
             )
 
-        # If the signup email is .edu, block it if another account already owns
+        # If the signup email is a school email, block it if another account already owns
         # that address as its edu_email (defensive backstop for race conditions;
         # the /check-email endpoint handles the common case earlier in SignUp.tsx).
         # Only with the service-role client: `client` is that client here, and it
         # can see (and delete the auth user behind) other accounts' rows.
-        if email.endswith(".edu") and service_configured:
+        if is_school_email(email) and service_configured:
             edu_conflict = client.table("profiles").select("id").eq("edu_email", email).execute()
             if edu_conflict.data:
                 try:
@@ -270,7 +271,7 @@ def create_user(  # noqa: C901
                     )
                 raise HTTPException(
                     status_code=409,
-                    detail="This .edu email is already linked to another account.",
+                    detail="This school email is already linked to another account.",
                 )
 
         _insert_profile(client)
@@ -335,7 +336,7 @@ def check_user_exists(request: Request, data: CheckEmailRequest):
 @limiter.limit("60/minute")
 def check_email(request: Request, data: CheckEmailRequest):
     """
-    Unauthenticated endpoint. Returns whether a .edu email address is
+    Unauthenticated endpoint. Returns whether a school email address is
     available to be claimed — i.e. not already stored as edu_email on any
     existing profile. Used by SignUp.tsx to give early feedback before
     calling supabase.auth.signUp.

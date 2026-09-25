@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from app.core import db as core_db
 from app.core.db import get_client
+from app.institutions.controller import is_school_email
 from app.utils.profiles import profile_display_name
 
 logger = logging.getLogger(__name__)
@@ -204,7 +205,7 @@ def _get_profile(user_id: str) -> dict:
 
 
 def _profile_needs_completion(profile: dict) -> bool:
-    """True when name is missing or a student lacks a roster .edu email."""
+    """True when name is missing or a student lacks a roster school email."""
     first = (profile.get("first_name") or "").strip()
     last = (profile.get("last_name") or "").strip()
     if not first or not last:
@@ -213,7 +214,7 @@ def _profile_needs_completion(profile: dict) -> bool:
     role = profile.get("role")
     email = (profile.get("email") or "").strip().lower()
     edu_email = (profile.get("edu_email") or "").strip()
-    return role == "student" and not email.endswith(".edu") and not edu_email
+    return role == "student" and not is_school_email(email) and not edu_email
 
 
 _PROFILE_NOTIFICATION_COOLDOWN_SECONDS = 300  # 5 minutes
@@ -238,8 +239,8 @@ def ensure_profile_completion_notification(user_id: str) -> None:
     role = profile.get("role")
     email = (profile.get("email") or "").strip().lower()
     edu_email = (profile.get("edu_email") or "").strip()
-    if role == "student" and not email.endswith(".edu") and not edu_email:
-        missing.append("roster .edu email")
+    if role == "student" and not is_school_email(email) and not edu_email:
+        missing.append("roster school email")
 
     body = f"Please add your {' and '.join(missing)} in Settings to finish setting up your account."
     title = "Complete your profile"
