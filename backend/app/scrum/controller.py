@@ -8,11 +8,11 @@ Permission model (RLS is on with no policies; everything is enforced here):
   * Everyone else                                      -> 404 (don't leak existence).
 Spec: docs/superpowers/specs/2026-08-12-scrum-board-design.md (D2, D4).
 """
+
 from __future__ import annotations
 
 import logging
-import re
-from datetime import datetime, timedelta, timezone, date
+from datetime import UTC, date, datetime, timedelta
 
 try:  # tzdata may be absent on minimal images; degrade like attendance does
     from zoneinfo import ZoneInfo
@@ -22,14 +22,15 @@ except Exception:  # pragma: no cover
 from fastapi import HTTPException
 
 from app.config import settings
-from app.database.client import service_client, query_pool
+from app.database.client import query_pool, service_client
+
 # Sanctioned cross-module reuse (attendance/tas do the same):
 from app.projects.controller import _is_instructor
-from app.tas.controller import get_enrollment_role
-from app.utils.profiles import profile_display_name
 from app.scrum.burnup import build_cumulative_series, build_sprint_series
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
-from app.scrum.pr_links import parse_pr_url, parse_repo_url, pr_repo_prefix, fetch_pr_state
+from app.scrum.pr_links import fetch_pr_state, parse_pr_url, parse_repo_url, pr_repo_prefix
+from app.tas.controller import get_enrollment_role
+from app.utils.profiles import profile_display_name
 
 logger = logging.getLogger(__name__)
 
@@ -47,13 +48,23 @@ def _client():
 def _board_access(*, project_id: str, user_id: str) -> str:
     """Return 'member' or 'staff'; raise 404 for everyone else."""
     client = _client()
-    member = (client.table("project_members").select("id")
-              .eq("project_id", str(project_id)).eq("user_id", str(user_id))
-              .limit(1).execute())
+    member = (
+        client.table("project_members")
+        .select("id")
+        .eq("project_id", str(project_id))
+        .eq("user_id", str(user_id))
+        .limit(1)
+        .execute()
+    )
     if member.data:
         return "member"
-    proj_res = (client.table("projects").select("id, class_id, assigned_ta_id")
-                .eq("id", str(project_id)).maybe_single().execute())
+    proj_res = (
+        client.table("projects")
+        .select("id, class_id, assigned_ta_id")
+        .eq("id", str(project_id))
+        .maybe_single()
+        .execute()
+    )
     proj = proj_res.data if proj_res else None
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -75,7 +86,7 @@ def _today_la() -> date:
     """Calendar day in America/Los_Angeles (attendance uses the same rule)."""
     if _LA_TZ:
         return datetime.now(_LA_TZ).date()
-    return (datetime.now(timezone.utc) - timedelta(hours=8)).date()  # tzdata-less fallback
+    return (datetime.now(UTC) - timedelta(hours=8)).date()  # tzdata-less fallback
 
 
 def _la_day(ts: str) -> date:
@@ -89,7 +100,12 @@ def update_settings(*, project_id: str, user_id: str, estimate_scale: str) -> No
     if estimate_scale not in ESTIMATE_SCALES:
         raise HTTPException(status_code=422, detail="Unknown estimate scale")
     client = _client()
-    res = client.table("projects").update({"estimate_scale": estimate_scale}).eq("id", str(project_id)).execute()
+    res = (
+        client.table("projects")
+        .update({"estimate_scale": estimate_scale})
+        .eq("id", str(project_id))
+        .execute()
+    )
     if not res.data:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -99,18 +115,31 @@ def create_sprint(*, project_id: str, user_id: str, name: str, starts_at, ends_a
     if ends_at < starts_at:
         raise HTTPException(status_code=422, detail="ends_at must be on or after starts_at")
     client = _client()
-    res = client.table("sprints").insert({
-        "project_id": str(project_id), "name": name,
-        "starts_at": str(starts_at), "ends_at": str(ends_at),
-    }).execute()
+    res = (
+        client.table("sprints")
+        .insert(
+            {
+                "project_id": str(project_id),
+                "name": name,
+                "starts_at": str(starts_at),
+                "ends_at": str(ends_at),
+            }
+        )
+        .execute()
+    )
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create sprint")
     return res.data[0]
 
 
 def _get_sprint_or_404(client, sprint_id: str) -> dict:
-    res = (client.table("sprints").select("id, project_id, name, starts_at, ends_at, status")
-           .eq("id", str(sprint_id)).maybe_single().execute())
+    res = (
+        client.table("sprints")
+        .select("id, project_id, name, starts_at, ends_at, status")
+        .eq("id", str(sprint_id))
+        .maybe_single()
+        .execute()
+    )
     row = res.data if res else None
     if not row:
         raise HTTPException(status_code=404, detail="Sprint not found")
@@ -127,9 +156,11 @@ def update_sprint(*, sprint_id: str, user_id: str, fields: dict) -> dict:
     client = _client()
     sprint = _get_sprint_or_404(client, sprint_id)
     _require_writer(project_id=sprint["project_id"], user_id=user_id)
-    allowed = {k: (str(v) if k in ("starts_at", "ends_at") else v)
-               for k, v in fields.items()
-               if k in ("name", "starts_at", "ends_at", "status") and v is not None}
+    allowed = {
+        k: (str(v) if k in ("starts_at", "ends_at") else v)
+        for k, v in fields.items()
+        if k in ("name", "starts_at", "ends_at", "status") and v is not None
+    }
     if not allowed:
         return sprint
     eff_start = date.fromisoformat(allowed.get("starts_at", str(sprint["starts_at"])))
@@ -157,8 +188,7 @@ def _validate_tags(tags: list[str]) -> None:
 
 
 def _get_story_or_404(client, story_id: str) -> dict:
-    res = (client.table("user_stories").select("*")
-           .eq("id", str(story_id)).maybe_single().execute())
+    res = client.table("user_stories").select("*").eq("id", str(story_id)).maybe_single().execute()
     row = res.data if res else None
     if not row:
         raise HTTPException(status_code=404, detail="Story not found")
@@ -166,8 +196,7 @@ def _get_story_or_404(client, story_id: str) -> dict:
 
 
 def _get_task_or_404(client, task_id: str) -> dict:
-    res = (client.table("tasks").select("*")
-           .eq("id", str(task_id)).maybe_single().execute())
+    res = client.table("tasks").select("*").eq("id", str(task_id)).maybe_single().execute()
     row = res.data if res else None
     if not row:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -206,12 +235,12 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     if "sprint_id" in fields:
         if fields["sprint_id"] is not None:
             _require_sprint_in_project(client, fields["sprint_id"], story["project_id"])
-        payload["sprint_id"] = fields["sprint_id"]      # None ⇒ backlog
+        payload["sprint_id"] = fields["sprint_id"]  # None ⇒ backlog
     if "archived" in fields and fields["archived"] is not None:
-        payload["archived_at"] = datetime.now(timezone.utc).isoformat() if fields["archived"] else None
+        payload["archived_at"] = datetime.now(UTC).isoformat() if fields["archived"] else None
     if not payload:
         return story
-    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    payload["updated_at"] = datetime.now(UTC).isoformat()
     res = client.table("user_stories").update(payload).eq("id", str(story_id)).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update story")
@@ -232,8 +261,12 @@ def create_task(*, story_id: str, user_id: str, fields: dict) -> dict:
     _require_writer(project_id=story["project_id"], user_id=user_id)
     _validate_tags(fields.get("tags") or [])
     key = _next_key(client, story["project_id"], "task")
-    row = {"story_id": str(story_id), "project_id": str(story["project_id"]),
-           "key": key, "reporter_id": str(user_id)}
+    row = {
+        "story_id": str(story_id),
+        "project_id": str(story["project_id"]),
+        "key": key,
+        "reporter_id": str(user_id),
+    }
     for k in ("title", "description_md", "points", "time_estimate", "assignee_id", "tags"):
         if fields.get(k) is not None:
             row[k] = fields[k]
@@ -263,7 +296,7 @@ def update_task(*, task_id: str, user_id: str, fields: dict) -> dict:
         payload.update(_pr_fields(fields["pr_url"], project_id=task["project_id"]))
     if not payload:
         return task
-    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    payload["updated_at"] = datetime.now(UTC).isoformat()
     res = client.table("tasks").update(payload).eq("id", str(task_id)).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to update task")
@@ -275,7 +308,11 @@ def _match_repo_token(repo_rows: list[dict], parsed: dict) -> str | None:
     same-provider repo with a token, else None (caller falls back to env/anonymous)."""
     prefix = pr_repo_prefix(parsed)
     for r in repo_rows:
-        if r.get("access_token") and r.get("provider") == parsed["provider"] and r.get("repo_url") == prefix:
+        if (
+            r.get("access_token")
+            and r.get("provider") == parsed["provider"]
+            and r.get("repo_url") == prefix
+        ):
             return r["access_token"]
     for r in repo_rows:
         if r.get("access_token") and r.get("provider") == parsed["provider"]:
@@ -284,8 +321,12 @@ def _match_repo_token(repo_rows: list[dict], parsed: dict) -> str | None:
 
 
 def _project_repo_rows(client, project_id: str) -> list[dict]:
-    return (client.table("scrum_repos").select("repo_url, provider, access_token")
-            .eq("project_id", str(project_id)).execute()).data or []
+    return (
+        client.table("scrum_repos")
+        .select("repo_url, provider, access_token")
+        .eq("project_id", str(project_id))
+        .execute()
+    ).data or []
 
 
 def _pr_fields(pr_url, *, project_id: str) -> dict:
@@ -293,14 +334,19 @@ def _pr_fields(pr_url, *, project_id: str) -> dict:
         return {"pr_url": None, "pr_provider": None, "pr_state": None, "pr_checked_at": None}
     parsed = parse_pr_url(pr_url)
     if not parsed:
-        raise HTTPException(status_code=422,
-                            detail="PR URL must be a github.com pull or git.ucsc.edu merge request")
+        raise HTTPException(
+            status_code=422, detail="PR URL must be a github.com pull or git.ucsc.edu merge request"
+        )
     token = _match_repo_token(_project_repo_rows(_client(), project_id), parsed)
     # Store the truth: on fetch failure pr_state stays NULL (never a fabricated
     # 'draft') and pr_checked_at stays NULL so refresh retries immediately.
     state = fetch_pr_state(parsed, token=token)
-    return {"pr_url": pr_url, "pr_provider": parsed["provider"], "pr_state": state,
-            "pr_checked_at": datetime.now(timezone.utc).isoformat() if state else None}
+    return {
+        "pr_url": pr_url,
+        "pr_provider": parsed["provider"],
+        "pr_state": state,
+        "pr_checked_at": datetime.now(UTC).isoformat() if state else None,
+    }
 
 
 def delete_task(*, task_id: str, user_id: str) -> None:
@@ -311,15 +357,25 @@ def delete_task(*, task_id: str, user_id: str) -> None:
 
 
 def _live_burnup_totals(client, sprint_id: str) -> tuple[int, int]:
-    stories = (client.table("user_stories").select("id, points")
-               .eq("sprint_id", str(sprint_id)).is_("archived_at", "null").execute())
+    stories = (
+        client.table("user_stories")
+        .select("id, points")
+        .eq("sprint_id", str(sprint_id))
+        .is_("archived_at", "null")
+        .execute()
+    )
     story_rows = stories.data or []
     scope = sum(s["points"] or 0 for s in story_rows)
     completed = 0
     ids = [s["id"] for s in story_rows]
     if ids:
-        tasks = (client.table("tasks").select("points, status")
-                 .in_("story_id", ids).eq("status", "done").execute())
+        tasks = (
+            client.table("tasks")
+            .select("points, status")
+            .in_("story_id", ids)
+            .eq("status", "done")
+            .execute()
+        )
         completed = sum(t["points"] or 0 for t in (tasks.data or []))
     return scope, completed
 
@@ -331,28 +387,46 @@ def _snapshot_burnup_safe(sprint_id: str, totals: tuple[int, int] | None = None)
         client = _client()
         scope, completed = totals if totals is not None else _live_burnup_totals(client, sprint_id)
         client.table("sprint_burnup_days").upsert(
-            {"sprint_id": str(sprint_id), "day": _today_la().isoformat(),
-             "scope_points": scope, "completed_points": completed},
-            on_conflict="sprint_id,day").execute()
+            {
+                "sprint_id": str(sprint_id),
+                "day": _today_la().isoformat(),
+                "scope_points": scope,
+                "completed_points": completed,
+            },
+            on_conflict="sprint_id,day",
+        ).execute()
     except Exception:
         logger.exception("scrum: burnup snapshot failed | sprint=%s", sprint_id)
 
 
-def _completed_by_day_from_moves(client, sprint_id: str, starts_at: date, ends_at: date) -> dict[str, int]:
+def _completed_by_day_from_moves(
+    client, sprint_id: str, starts_at: date, ends_at: date
+) -> dict[str, int]:
     """Exact completed points per LA day, reconstructed from the task_moves audit
     (spec D7: fills past days that predate the lazy snapshots)."""
-    stories = (client.table("user_stories").select("id")
-               .eq("sprint_id", str(sprint_id)).is_("archived_at", "null").execute())
+    stories = (
+        client.table("user_stories")
+        .select("id")
+        .eq("sprint_id", str(sprint_id))
+        .is_("archived_at", "null")
+        .execute()
+    )
     story_ids = [s["id"] for s in (stories.data or [])]
     if not story_ids:
         return {}
-    tasks = (client.table("tasks").select("id, points")
-             .in_("story_id", story_ids).execute()).data or []
+    tasks = (
+        client.table("tasks").select("id, points").in_("story_id", story_ids).execute()
+    ).data or []
     if not tasks:
         return {}
     points = {t["id"]: t["points"] or 0 for t in tasks}
-    moves = (client.table("task_moves").select("task_id, to_status, moved_at")
-             .in_("task_id", list(points)).order("moved_at").execute()).data or []
+    moves = (
+        client.table("task_moves")
+        .select("task_id, to_status, moved_at")
+        .in_("task_id", list(points))
+        .order("moved_at")
+        .execute()
+    ).data or []
     if not moves:
         return {}
     status: dict[str, str] = {}
@@ -376,19 +450,28 @@ def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
     task = _get_task_or_404(client, task_id)
     _require_writer(project_id=task["project_id"], user_id=user_id)
     if task["status"] == to_status:
-        return {"task": {**task, "moved_by_name": _name_for(client, task.get("moved_by"))},
-                "move": None}
-    res = client.table("task_moves").insert(
-        {"task_id": str(task_id), "to_status": to_status, "moved_by": str(user_id)}
-    ).execute()
+        return {
+            "task": {**task, "moved_by_name": _name_for(client, task.get("moved_by"))},
+            "move": None,
+        }
+    res = (
+        client.table("task_moves")
+        .insert({"task_id": str(task_id), "to_status": to_status, "moved_by": str(user_id)})
+        .execute()
+    )
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to move task")
     move = res.data[0]
     # The board list resolves moved_by_name from its bulk profile fetch; this
     # single-row response has to resolve its own, or the client reconciles the
     # optimistic audit line down to "Unknown".
-    task = {**task, "status": to_status, "moved_by": str(user_id),
-            "moved_at": move["moved_at"], "moved_by_name": _name_for(client, user_id)}
+    task = {
+        **task,
+        "status": to_status,
+        "moved_by": str(user_id),
+        "moved_at": move["moved_at"],
+        "moved_by_name": _name_for(client, user_id),
+    }
     story = _get_story_or_404(client, task["story_id"])
     if story.get("sprint_id"):
         _snapshot_burnup_safe(story["sprint_id"])
@@ -405,22 +488,37 @@ def _name_for(client, user_id: str | None) -> str | None:
     "nobody has moved this" apart from "moved by someone we can't name"."""
     if not user_id:
         return None
-    res = (client.table("profiles").select("id, first_name, last_name, email")
-           .eq("id", str(user_id)).maybe_single().execute())
+    res = (
+        client.table("profiles")
+        .select("id, first_name, last_name, email")
+        .eq("id", str(user_id))
+        .maybe_single()
+        .execute()
+    )
     return _display_name(res.data if res else None)
 
 
 def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
     access = _board_access(project_id=project_id, user_id=user_id)
     client = _client()
-    proj = (client.table("projects").select("id, name, estimate_scale")
-            .eq("id", str(project_id)).maybe_single().execute())
+    proj = (
+        client.table("projects")
+        .select("id, name, estimate_scale")
+        .eq("id", str(project_id))
+        .maybe_single()
+        .execute()
+    )
     project = proj.data if proj else None
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    sprints = (client.table("sprints").select("id, name, starts_at, ends_at, status")
-               .eq("project_id", str(project_id)).order("starts_at").execute()).data or []
+    sprints = (
+        client.table("sprints")
+        .select("id, name, starts_at, ends_at, status")
+        .eq("project_id", str(project_id))
+        .order("starts_at")
+        .execute()
+    ).data or []
 
     selected = None
     if sprint_id:
@@ -429,16 +527,29 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
             raise HTTPException(status_code=404, detail="Sprint not found")
     else:
         active = [s for s in sprints if s["status"] == "active"]
-        selected = (sorted(active, key=lambda s: s["starts_at"])[-1] if active
-                    else (sprints[-1] if sprints else None))
+        selected = (
+            sorted(active, key=lambda s: s["starts_at"])[-1]
+            if active
+            else (sprints[-1] if sprints else None)
+        )
 
-    all_stories = (client.table("user_stories").select("*")
-                   .eq("project_id", str(project_id)).order("created_at").execute()).data or []
+    all_stories = (
+        client.table("user_stories")
+        .select("*")
+        .eq("project_id", str(project_id))
+        .order("created_at")
+        .execute()
+    ).data or []
     story_ids = [s["id"] for s in all_stories]
     tasks = []
     if story_ids:
-        tasks = (client.table("tasks").select("*")
-                 .in_("story_id", story_ids).order("created_at").execute()).data or []
+        tasks = (
+            client.table("tasks")
+            .select("*")
+            .in_("story_id", story_ids)
+            .order("created_at")
+            .execute()
+        ).data or []
 
     comments = []
     if story_ids:
@@ -447,8 +558,9 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         or_filter = f"story_id.in.({','.join(story_ids)})"
         if task_ids:
             or_filter += f",task_id.in.({','.join(task_ids)})"
-        comments = (client.table("scrum_comments").select("story_id, task_id")
-                    .or_(or_filter).execute()).data or []
+        comments = (
+            client.table("scrum_comments").select("story_id, task_id").or_(or_filter).execute()
+        ).data or []
     story_counts: dict[str, int] = {}
     task_counts: dict[str, int] = {}
     for c in comments:
@@ -457,40 +569,64 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         if c.get("task_id"):
             task_counts[c["task_id"]] = task_counts.get(c["task_id"], 0) + 1
 
-    member_rows = (client.table("project_members").select("user_id, role")
-                   .eq("project_id", str(project_id)).execute()).data or []
-    profile_ids = ({m["user_id"] for m in member_rows}
-                   | {t["moved_by"] for t in tasks if t.get("moved_by")})
+    member_rows = (
+        client.table("project_members")
+        .select("user_id, role")
+        .eq("project_id", str(project_id))
+        .execute()
+    ).data or []
+    profile_ids = {m["user_id"] for m in member_rows} | {
+        t["moved_by"] for t in tasks if t.get("moved_by")
+    }
     profiles: dict[str, dict] = {}
     if profile_ids:
-        rows = (client.table("profiles").select("id, first_name, last_name, email, image_url")
-                .in_("id", list(profile_ids)).execute()).data or []
+        rows = (
+            client.table("profiles")
+            .select("id, first_name, last_name, email, image_url")
+            .in_("id", list(profile_ids))
+            .execute()
+        ).data or []
         profiles = {r["id"]: r for r in rows}
-    members = [{"user_id": m["user_id"], "name": _display_name(profiles.get(m["user_id"])),
-                "image_url": (profiles.get(m["user_id"]) or {}).get("image_url"),
-                "project_role": m.get("role")} for m in member_rows]
+    members = [
+        {
+            "user_id": m["user_id"],
+            "name": _display_name(profiles.get(m["user_id"])),
+            "image_url": (profiles.get(m["user_id"]) or {}).get("image_url"),
+            "project_role": m.get("role"),
+        }
+        for m in member_rows
+    ]
 
     tasks_by_story: dict[str, list] = {}
     for t in tasks:
         t["comment_count"] = task_counts.get(t["id"], 0)
-        t["moved_by_name"] = _display_name(profiles.get(t["moved_by"])) if t.get("moved_by") else None
+        t["moved_by_name"] = (
+            _display_name(profiles.get(t["moved_by"])) if t.get("moved_by") else None
+        )
         tasks_by_story.setdefault(t["story_id"], []).append(t)
     for s in all_stories:
         s["comment_count"] = story_counts.get(s["id"], 0)
         s["tasks"] = tasks_by_story.get(s["id"], [])
 
     sel_id = selected["id"] if selected else None
-    stories = [s for s in all_stories
-               if s.get("sprint_id") == sel_id and not s.get("archived_at")] if sel_id else []
+    stories = (
+        [s for s in all_stories if s.get("sprint_id") == sel_id and not s.get("archived_at")]
+        if sel_id
+        else []
+    )
     backlog = [s for s in all_stories if s.get("sprint_id") is None or s.get("archived_at")]
 
     # One snapshot query covers both charts; the selected sprint's live totals are
     # computed once and reused (snapshot upsert, sprint series, cumulative point).
     snaps_by_sprint: dict[str, list[dict]] = {}
     if sprints:
-        all_snaps = (client.table("sprint_burnup_days")
-                     .select("sprint_id, day, scope_points, completed_points")
-                     .in_("sprint_id", [s["id"] for s in sprints]).order("day").execute()).data or []
+        all_snaps = (
+            client.table("sprint_burnup_days")
+            .select("sprint_id, day, scope_points, completed_points")
+            .in_("sprint_id", [s["id"] for s in sprints])
+            .order("day")
+            .execute()
+        ).data or []
         for row in all_snaps:
             snaps_by_sprint.setdefault(row["sprint_id"], []).append(row)
 
@@ -506,16 +642,26 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         if today >= starts:
             day_key = today.isoformat()
             if not any(s["day"] == day_key for s in snaps):
-                snaps = snaps + [{"day": day_key, "scope_points": live_totals[0],
-                                  "completed_points": live_totals[1]}]
+                snaps = snaps + [
+                    {
+                        "day": day_key,
+                        "scope_points": live_totals[0],
+                        "completed_points": live_totals[1],
+                    }
+                ]
         elapsed = (min(today, ends) - starts).days + 1 if today >= starts else 0
         completed_by_day = None
         if elapsed > len(snaps):  # snapshots started late — reconstruct from the audit
             completed_by_day = _completed_by_day_from_moves(client, selected["id"], starts, ends)
         sprint_series = build_sprint_series(
-            snapshots=snaps, starts_at=starts, ends_at=ends, today=today,
-            live_scope=live_totals[0], live_completed=live_totals[1],
-            completed_by_day=completed_by_day)
+            snapshots=snaps,
+            starts_at=starts,
+            ends_at=ends,
+            today=today,
+            live_scope=live_totals[0],
+            live_completed=live_totals[1],
+            completed_by_day=completed_by_day,
+        )
         sprint_series["subtitle"] = f"{selected['starts_at']} – {selected['ends_at']}"
 
     cumulative_input = []
@@ -532,19 +678,30 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         cumulative_input.append({"id": s["id"], "name": s["name"], "final": final})
     cumulative = build_cumulative_series(cumulative_input)
 
-    return {"project": project, "ai_enabled": bool(settings.AI_API_KEY and settings.AI_BASE_URL),
-            "sprints": sprints, "sprint_id": sel_id,
-            "stories": stories, "backlog": backlog,
-            "burnup": {"sprint": sprint_series, "cumulative": cumulative},
-            "members": members, "access": access}
+    return {
+        "project": project,
+        "ai_enabled": bool(settings.AI_API_KEY and settings.AI_BASE_URL),
+        "sprints": sprints,
+        "sprint_id": sel_id,
+        "stories": stories,
+        "backlog": backlog,
+        "burnup": {"sprint": sprint_series, "cumulative": cumulative},
+        "members": members,
+        "access": access,
+    }
 
 
 def refresh_pr_states(*, project_id: str, user_id: str) -> dict:
     _board_access(project_id=project_id, user_id=user_id)
     client = _client()
-    rows = (client.table("tasks").select("id, pr_url, pr_state, pr_checked_at")
-            .eq("project_id", str(project_id)).not_.is_("pr_url", "null").execute()).data or []
-    cutoff = datetime.now(timezone.utc) - PR_STALE_AFTER
+    rows = (
+        client.table("tasks")
+        .select("id, pr_url, pr_state, pr_checked_at")
+        .eq("project_id", str(project_id))
+        .not_.is_("pr_url", "null")
+        .execute()
+    ).data or []
+    cutoff = datetime.now(UTC) - PR_STALE_AFTER
     stale = []
     for t in rows:
         if not t.get("pr_url"):
@@ -564,7 +721,7 @@ def refresh_pr_states(*, project_id: str, user_id: str) -> dict:
 
     old_state = {t["id"]: t.get("pr_state") for t in stale}
     updated: dict[str, str] = {}
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     for task_id, state in query_pool.map(_one, stale):
         if state and state != old_state.get(task_id):
             updated[task_id] = state
@@ -583,21 +740,37 @@ def list_repos(*, project_id: str, user_id: str) -> list[dict]:
     exposes only has_token, never the credential (D8)."""
     _board_access(project_id=project_id, user_id=user_id)
     client = _client()
-    rows = (client.table("scrum_repos").select("id, repo_url, provider, access_token, created_at")
-            .eq("project_id", str(project_id)).order("created_at").execute()).data or []
-    return [{"id": r["id"], "repo_url": r["repo_url"], "provider": r["provider"],
-             "has_token": bool(r.get("access_token"))} for r in rows]
+    rows = (
+        client.table("scrum_repos")
+        .select("id, repo_url, provider, access_token, created_at")
+        .eq("project_id", str(project_id))
+        .order("created_at")
+        .execute()
+    ).data or []
+    return [
+        {
+            "id": r["id"],
+            "repo_url": r["repo_url"],
+            "provider": r["provider"],
+            "has_token": bool(r.get("access_token")),
+        }
+        for r in rows
+    ]
 
 
 def add_repo(*, project_id: str, user_id: str, repo_url: str, access_token: str | None) -> dict:
     _require_writer(project_id=project_id, user_id=user_id)
     parsed = parse_repo_url(repo_url)
     if not parsed:
-        raise HTTPException(status_code=422,
-                            detail="Repo URL must be a github.com or git.ucsc.edu repository")
+        raise HTTPException(
+            status_code=422, detail="Repo URL must be a github.com or git.ucsc.edu repository"
+        )
     client = _client()
-    row = {"project_id": str(project_id), "repo_url": parsed["repo_url"],
-           "provider": parsed["provider"]}
+    row = {
+        "project_id": str(project_id),
+        "repo_url": parsed["repo_url"],
+        "provider": parsed["provider"],
+    }
     if access_token:
         row["access_token"] = access_token
     # Re-adding the same repo rotates (or clears) its token.
@@ -605,14 +778,23 @@ def add_repo(*, project_id: str, user_id: str, repo_url: str, access_token: str 
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to save repo")
     saved = res.data[0]
-    return {"id": saved["id"], "repo_url": saved["repo_url"], "provider": saved["provider"],
-            "has_token": bool(saved.get("access_token"))}
+    return {
+        "id": saved["id"],
+        "repo_url": saved["repo_url"],
+        "provider": saved["provider"],
+        "has_token": bool(saved.get("access_token")),
+    }
 
 
 def delete_repo(*, repo_id: str, user_id: str) -> None:
     client = _client()
-    res = (client.table("scrum_repos").select("id, project_id")
-           .eq("id", str(repo_id)).maybe_single().execute())
+    res = (
+        client.table("scrum_repos")
+        .select("id, project_id")
+        .eq("id", str(repo_id))
+        .maybe_single()
+        .execute()
+    )
     row = res.data if res else None
     if not row:
         raise HTTPException(status_code=404, detail="Repo not found")
@@ -620,8 +802,16 @@ def delete_repo(*, repo_id: str, user_id: str) -> None:
     client.table("scrum_repos").delete().eq("id", str(repo_id)).execute()
 
 
-def _fanout_mentions(client, *, project_id: str, parent_kind: str, parent_id: str,
-                     parent_key: str, author_id: str, body_md: str) -> None:
+def _fanout_mentions(
+    client,
+    *,
+    project_id: str,
+    parent_kind: str,
+    parent_id: str,
+    parent_key: str,
+    author_id: str,
+    body_md: str,
+) -> None:
     """No-op seam. Activated by the mentions plan
     (docs/superpowers/plans/2026-08-13-mentions-system.md, Task M3): extract mention
     UUIDs, intersect with team ∪ staff, notify via the generic `mention` type."""
@@ -638,16 +828,30 @@ def create_comment(*, parent_kind: str, parent_id: str, user_id: str, body_md: s
     client = _client()
     parent = _get_comment_parent(client, parent_kind, parent_id)
     _board_access(project_id=parent["project_id"], user_id=user_id)  # staff may comment (D2)
-    row = {"author_id": str(user_id), "body_md": body_md,
-           ("story_id" if parent_kind == "story" else "task_id"): str(parent_id)}
+    row = {
+        "author_id": str(user_id),
+        "body_md": body_md,
+        ("story_id" if parent_kind == "story" else "task_id"): str(parent_id),
+    }
     res = client.table("scrum_comments").insert(row).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create comment")
-    _fanout_mentions(client, project_id=parent["project_id"], parent_kind=parent_kind,
-                     parent_id=parent_id, parent_key=parent.get("key", ""),
-                     author_id=user_id, body_md=body_md)
-    prof = (client.table("profiles").select("id, first_name, last_name, email")
-            .eq("id", str(user_id)).maybe_single().execute())
+    _fanout_mentions(
+        client,
+        project_id=parent["project_id"],
+        parent_kind=parent_kind,
+        parent_id=parent_id,
+        parent_key=parent.get("key", ""),
+        author_id=user_id,
+        body_md=body_md,
+    )
+    prof = (
+        client.table("profiles")
+        .select("id, first_name, last_name, email")
+        .eq("id", str(user_id))
+        .maybe_single()
+        .execute()
+    )
     author_name = _display_name(prof.data if prof else None)
     return {**res.data[0], "author_name": author_name}
 
@@ -657,13 +861,22 @@ def list_comments(*, parent_kind: str, parent_id: str, user_id: str) -> list[dic
     parent = _get_comment_parent(client, parent_kind, parent_id)
     _board_access(project_id=parent["project_id"], user_id=user_id)
     col = "story_id" if parent_kind == "story" else "task_id"
-    rows = (client.table("scrum_comments").select("id, author_id, body_md, created_at")
-            .eq(col, str(parent_id)).order("created_at").execute()).data or []
+    rows = (
+        client.table("scrum_comments")
+        .select("id, author_id, body_md, created_at")
+        .eq(col, str(parent_id))
+        .order("created_at")
+        .execute()
+    ).data or []
     author_ids = list({r["author_id"] for r in rows})
     names: dict[str, str] = {}
     if author_ids:
-        profs = (client.table("profiles").select("id, first_name, last_name, email")
-                 .in_("id", author_ids).execute()).data or []
+        profs = (
+            client.table("profiles")
+            .select("id, first_name, last_name, email")
+            .in_("id", author_ids)
+            .execute()
+        ).data or []
         names = {p["id"]: _display_name(p) for p in profs}
     return [{**r, "author_name": names.get(r["author_id"], "Unknown")} for r in rows]
 
@@ -671,35 +884,57 @@ def list_comments(*, parent_kind: str, parent_id: str, user_id: str) -> list[dic
 AI_DAILY_LIMIT = 10
 
 
-def ai_draft(*, project_id: str, user_id: str, kind: str, prompt: str,
-             story_id: str | None) -> dict:
+def ai_draft(
+    *, project_id: str, user_id: str, kind: str, prompt: str, story_id: str | None
+) -> dict:
     _require_writer(project_id=project_id, user_id=user_id)
     if not settings.AI_API_KEY or not settings.AI_BASE_URL:
         raise HTTPException(status_code=503, detail="AI drafting is not configured")
     client = _client()
 
     today = _today_la().isoformat()
-    usage_res = (client.table("ai_draft_usage").select("count")
-                 .eq("user_id", str(user_id)).eq("used_on", today).maybe_single().execute())
+    usage_res = (
+        client.table("ai_draft_usage")
+        .select("count")
+        .eq("user_id", str(user_id))
+        .eq("used_on", today)
+        .maybe_single()
+        .execute()
+    )
     used = (usage_res.data or {}).get("count", 0) if usage_res else 0
     if used >= AI_DAILY_LIMIT:
         raise HTTPException(status_code=429, detail="Daily AI draft limit reached (10/day)")
 
-    proj = (client.table("projects").select("estimate_scale")
-            .eq("id", str(project_id)).maybe_single().execute())
-    scale = ESTIMATE_SCALES[(proj.data or {}).get("estimate_scale", "fibonacci") if proj else "fibonacci"]
+    proj = (
+        client.table("projects")
+        .select("estimate_scale")
+        .eq("id", str(project_id))
+        .maybe_single()
+        .execute()
+    )
+    scale = ESTIMATE_SCALES[
+        (proj.data or {}).get("estimate_scale", "fibonacci") if proj else "fibonacci"
+    ]
 
     story_context = None
     if story_id:
         story = _get_story_or_404(client, story_id)
         if story["project_id"] != str(project_id):
             raise HTTPException(status_code=404, detail="Story not found")
-        story_context = f"{story['key']} {story['title']}: {(story.get('description_md') or '')[:500]}"
+        story_context = (
+            f"{story['key']} {story['title']}: {(story.get('description_md') or '')[:500]}"
+        )
 
     from app.scrum.ai_draft import request_draft, snap_points
+
     try:
-        raw = request_draft(kind=kind, prompt=prompt, scale_values=scale,
-                            tags=TASK_TAGS, story_context=story_context)
+        raw = request_draft(
+            kind=kind,
+            prompt=prompt,
+            scale_values=scale,
+            tags=TASK_TAGS,
+            story_context=story_context,
+        )
     except Exception:
         logger.exception("scrum: ai draft failed | project=%s", project_id)
         raise HTTPException(status_code=502, detail="Draft failed — try again")
@@ -709,16 +944,21 @@ def ai_draft(*, project_id: str, user_id: str, kind: str, prompt: str,
         "description_md": raw.get("description_md"),
         "points": snap_points(raw.get("points"), scale),
         "time_estimate": raw.get("time_estimate"),
-        "tasks": [{
-            "title": str(t.get("title") or "")[:200],
-            "tags": [tag for tag in (t.get("tags") or []) if tag in TASK_TAGS],
-            "points": snap_points(t.get("points"), scale),
-            "time_estimate": t.get("time_estimate"),
-        } for t in (raw.get("tasks") or []) if t.get("title")],
+        "tasks": [
+            {
+                "title": str(t.get("title") or "")[:200],
+                "tags": [tag for tag in (t.get("tags") or []) if tag in TASK_TAGS],
+                "points": snap_points(t.get("points"), scale),
+                "time_estimate": t.get("time_estimate"),
+            }
+            for t in (raw.get("tasks") or [])
+            if t.get("title")
+        ],
     }
 
     # Courtesy quota: read-modify-write race can miscount by one; acceptable (spec D14).
     client.table("ai_draft_usage").upsert(
         {"user_id": str(user_id), "used_on": today, "count": used + 1},
-        on_conflict="user_id,used_on").execute()
+        on_conflict="user_id,used_on",
+    ).execute()
     return {"draft": draft}
