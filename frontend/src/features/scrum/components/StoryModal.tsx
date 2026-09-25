@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Pencil, Plus, Trash2, X } from 'lucide-react';
 import MarkdownText from '@components/Markdown/MarkdownText';
 import type {
-  ApiScrumSprint, ApiScrumStory, ApiScrumTask,
+  ApiScrumSprint, ApiScrumStory, ApiScrumTask, ApiUpdateStoryBody,
 } from '@/lib/api';
 import { BOARD_COLUMNS } from '../config/scrumTags';
 import type { BoardStatus, EstimateScale } from '../config/scrumTags';
@@ -24,7 +24,7 @@ export interface StoryModalProps {
   focusTaskId?: string | null;
   canWrite?: boolean;
   onClose: () => void;
-  onUpdateStory: (body: { points?: number; sprint_id?: string | null; archived?: boolean }) => void;
+  onUpdateStory: (body: ApiUpdateStoryBody) => void;
   /** Open the task editor for this task. The page swaps modals rather than
    *  stacking them — story and task detail are never on screen together. */
   onOpenTask: (task: ApiScrumTask) => void;
@@ -51,6 +51,11 @@ export default function StoryModal({
 }: StoryModalProps) {
   const focusedTask = story.tasks.find((t) => t.id === focusTaskId) ?? null;
   const [confirmDelete, setConfirmDelete] = useState<ApiScrumTask | null>(null);
+  // In-place editing of the story's text (the create-only StoryEditorModal has
+  // always pointed here for edits; until 2026-09-25 nothing was wired).
+  const [editing, setEditing] = useState<null | 'title' | 'description'>(null);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftDescription, setDraftDescription] = useState('');
   const focusRef = useRef<HTMLLIElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -59,11 +64,36 @@ export default function StoryModal({
   const reporter = personOf(members, story.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, story.assignee_id);
 
+  // Esc backs out of an edit first; only a second Esc closes the story.
   useEffect(() => {
-    const onEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (editing) setEditing(null);
+      else onClose();
+    };
     document.addEventListener('keydown', onEscape);
     return () => document.removeEventListener('keydown', onEscape);
-  }, [onClose]);
+  }, [onClose, editing]);
+
+  /** `focus` picks which field takes the cursor: the one the reader asked to change. */
+  const startEdit = (focus: 'title' | 'description') => {
+    setDraftTitle(story.title);
+    setDraftDescription(story.description_md ?? '');
+    setEditing(focus);
+  };
+
+  const saveEdit = () => {
+    const title = draftTitle.trim();
+    if (!title) return;
+    const description = draftDescription.trim();
+    // Only what changed: an untouched title shouldn't re-save, and a cleared
+    // description goes as null, which the API treats as "clear".
+    const body: ApiUpdateStoryBody = {};
+    if (title !== story.title) body.title = title;
+    if (description !== (story.description_md ?? '')) body.description_md = description || null;
+    if (Object.keys(body).length) onUpdateStory(body);
+    setEditing(null);
+  };
 
   // Opening from a card should land on that task, not the top of the list.
   useEffect(() => {
@@ -81,7 +111,7 @@ export default function StoryModal({
         className="story-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="story-modal-title"
+        aria-labelledby="story-modal-key story-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
         <button ref={closeRef} className="story-modal__close" onClick={onClose} aria-label="Close story">
@@ -89,8 +119,28 @@ export default function StoryModal({
         </button>
 
         <header className="story-modal__head">
-          <span className="story-modal__key">{story.key}</span>
-          <h2 className="story-modal__title" id="story-modal-title">{story.title}</h2>
+          <div className="story-modal__head-row">
+            <span className="story-modal__key" id="story-modal-key">{story.key}</span>
+            {canWrite && !editing && (
+              <button type="button" className="story-modal__edit" onClick={() => startEdit('title')}>
+                <Pencil size={12} aria-hidden="true" />
+                Edit
+              </button>
+            )}
+          </div>
+          {editing ? (
+            <input
+              className="story-modal__title-input"
+              aria-label="Story title"
+              value={draftTitle}
+              maxLength={200}
+              autoFocus={editing === 'title'}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); }}
+            />
+          ) : (
+            <h2 className="story-modal__title" id="story-modal-title">{story.title}</h2>
+          )}
         </header>
 
         <div className="story-modal__meta">
@@ -115,11 +165,47 @@ export default function StoryModal({
           </div>
         )}
 
-        {story.description_md && (
+        {editing ? (
+          <div className="story-modal__edit-form">
+            <label className="story-modal__label" htmlFor="story-modal-description">Description</label>
+            <textarea
+              id="story-modal-description"
+              aria-describedby="story-modal-description-hint"
+              rows={6}
+              value={draftDescription}
+              maxLength={20000}
+              placeholder="What should a user be able to do, and how will the team know it's done?"
+              autoFocus={editing === 'description'}
+              onChange={(e) => setDraftDescription(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(); }}
+            />
+            <div className="story-modal__edit-foot">
+              <span className="story-modal__hint" id="story-modal-description-hint">
+                **bold** · `code` · - lists · ⌘/Ctrl+Enter to save
+              </span>
+              <button type="button" className="story-modal__edit-cancel" onClick={() => setEditing(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="story-modal__edit-save"
+                onClick={saveEdit}
+                disabled={!draftTitle.trim()}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        ) : story.description_md ? (
           <div className="story-modal__description">
             <MarkdownText>{story.description_md}</MarkdownText>
           </div>
-        )}
+        ) : canWrite ? (
+          <button type="button" className="story-modal__add-description" onClick={() => startEdit('description')}>
+            <Plus size={12} aria-hidden="true" />
+            Add a description
+          </button>
+        ) : null}
 
         <section className="story-modal__tasks">
           <h3 className="story-modal__section-title">Tasks</h3>
