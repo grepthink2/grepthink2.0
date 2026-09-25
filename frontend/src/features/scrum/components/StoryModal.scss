@@ -1,11 +1,12 @@
 @use '@styles/index.scss' as *;
+@use '../layers' as *;
 
 // Story detail overlay — 640px per the design handoff, on the app's existing
 // backdrop idiom (ConfirmModal). Values follow the scrum layer's scale.
 .story-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: var(--gt-z-modal);
+  z-index: $scrum-modal-z; // above the sidebar; see ../_layers.scss
   display: flex;
   align-items: center;
   justify-content: center;

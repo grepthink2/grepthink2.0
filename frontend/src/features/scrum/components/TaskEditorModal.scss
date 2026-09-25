@@ -1,10 +1,11 @@
 @use '@styles/index.scss' as *;
+@use '../layers' as *;
 
 .task-editor-backdrop {
   position: fixed;
   inset: 0;
   // Same layer as the story modal: the page shows one or the other, never both.
-  z-index: var(--gt-z-modal);
+  z-index: $scrum-modal-z; // above the sidebar; see ../_layers.scss
   display: flex;
   // flex-start + the dialog's `margin: auto` centres it when it fits and lets a tall
   // one scroll from its top, which `align-items: center` would clip.

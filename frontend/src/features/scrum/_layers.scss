@@ -1,0 +1,13 @@
+// Stacking layer for the board's modals (story detail, task editor, story editor, settings).
+//
+// The token says modals are `--gt-z-modal` (100), but the app's fixed sidebar sits at a
+// hard-coded 1000 (Sidebar.scss), so a modal at 100 opened underneath it: on a narrower
+// window its left edge, story key included, hid behind the sidebar, and the scrim never
+// dimmed the sidebar (maintainer dry run 2026-09-25).
+//
+// Modals therefore share the sidebar's layer, `--gt-z-tooltip` (1000). With equal z-index
+// the later element in the DOM paints on top: the sidebar comes first (AppView), each modal
+// after it, and ScrumBoardPage renders its ToastStack (also 1000) last, so a toast raised
+// while a modal is open still shows above it. The design system's own Modal uses 2000, which
+// would bury those toasts. Revisit if the sidebar moves to a layer below modals.
+$scrum-modal-z: var(--gt-z-tooltip);
