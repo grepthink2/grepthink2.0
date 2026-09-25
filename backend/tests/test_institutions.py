@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from app.core.errors import DatabaseError, DatabaseUnavailableError
 from app.institutions import controller as institutions
 from app.limiter import limiter
+from tests.conftest import ISTINYE_INSTITUTION
 from tests.fake_supabase import FakeSupabase
 
 UCSC = {
@@ -18,14 +19,9 @@ UCSC = {
     "slug": "ucsc",
     "email_domains": ["ucsc.edu"],
 }
-# Contains a hex letter on purpose: some tests check that a differently-cased form of this id
-# still matches, which an all-digit id ("1111...") could not exercise.
-IST = {
-    "id": "1a111111-1111-4111-8111-111111111111",
-    "name": "İstinye University",
-    "slug": "istinye",
-    "email_domains": [" Istinye.edu.TR "],
-}
+# The row as it would actually sit in the database: mixed case and stray whitespace, to exercise
+# _normalized_domain. Compare against the already-clean ISTINYE_INSTITUTION from conftest.
+IST_RAW = {**ISTINYE_INSTITUTION, "email_domains": [" Istinye.edu.TR "]}
 
 
 class _Unreadable:
@@ -50,13 +46,19 @@ class _Unreadable:
 
 
 class _FailingWith:
-    """A client whose every table read fails with a given, non-missing-table ``DatabaseError``."""
+    """A client whose every table read fails with a given, non-missing-table ``DatabaseError``.
+
+    Counts how many times it was asked for a table, so a test can check the re-arm window
+    spared it a second attempt.
+    """
 
     def __init__(self, *, pg_code: str, pg_message: str = "boom"):
         self._pg_code = pg_code
         self._pg_message = pg_message
+        self.calls = 0
 
     def table(self, name):
+        self.calls += 1
         raise DatabaseError(
             operation="read", target=name, pg_code=self._pg_code, pg_message=self._pg_message
         )
@@ -64,7 +66,7 @@ class _FailingWith:
 
 @pytest.fixture
 def db(monkeypatch):
-    fake = FakeSupabase(institutions=[dict(UCSC), dict(IST)])
+    fake = FakeSupabase(institutions=[dict(UCSC), dict(IST_RAW)])
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     institutions.clear_institutions_cache()
     return fake
@@ -85,7 +87,7 @@ def test_the_list_is_read_once_then_served_from_memory(db):
 
 def test_domains_are_trimmed_and_lower_cased(db):
     ist = next(i for i in institutions.load_institutions() if i["slug"] == "istinye")
-    assert ist == {**IST, "email_domains": ["istinye.edu.tr"]}
+    assert ist == ISTINYE_INSTITUTION
 
 
 def test_domains_without_a_dot_are_dropped(monkeypatch):
@@ -108,9 +110,40 @@ def test_domains_without_a_dot_are_dropped(monkeypatch):
     assert sketchy["email_domains"] == ["example.edu", "ucsc.edu"]
 
 
-def test_missing_table_is_cached_then_rechecked_after_the_ttl(monkeypatch):
+def test_a_trailing_dot_is_stripped_too():
+    assert institutions._normalized_domain("ucsc.edu.") == "ucsc.edu"
+
+
+@pytest.mark.parametrize("suffix", sorted(institutions._DENYLISTED_SUFFIXES))
+def test_a_bare_public_suffix_is_dropped(suffix):
+    assert institutions._normalized_domain(suffix) is None
+    assert institutions._normalized_domain(suffix.upper()) is None
+
+
+def test_a_denylisted_suffix_does_not_grant_every_school_under_it(monkeypatch):
+    fake = FakeSupabase(
+        institutions=[
+            {
+                "id": "66666666-6666-4666-8666-666666666666",
+                "name": "Oops University",
+                "slug": "oops",
+                # A maintainer meant "our address ends in .edu.tr", not "every .edu.tr school".
+                "email_domains": ["edu.tr"],
+            }
+        ]
+    )
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     institutions.clear_institutions_cache()
-    unreadable = _Unreadable()
+
+    oops = next(i for i in institutions.load_institutions() if i["slug"] == "oops")
+    assert oops["email_domains"] == []
+    assert institutions.is_school_email("ann@besiktas.edu.tr") is False
+
+
+@pytest.mark.parametrize("pg_code", sorted(institutions._MISSING_TABLE_CODES))
+def test_missing_table_is_cached_then_rechecked_after_the_ttl(monkeypatch, pg_code):
+    institutions.clear_institutions_cache()
+    unreadable = _Unreadable(pg_code=pg_code)
     monkeypatch.setattr(institutions, "get_client", lambda: unreadable)
 
     assert institutions.load_institutions() is None
@@ -142,6 +175,47 @@ def test_a_failed_read_keeps_serving_the_last_good_list(monkeypatch):
 
     again = institutions.load_institutions()
     assert again == first
+
+
+def test_a_failed_read_is_not_retried_within_the_stale_window_then_recovers(monkeypatch):
+    institutions.clear_institutions_cache()
+    fake = FakeSupabase(institutions=[dict(UCSC)])
+    monkeypatch.setattr(institutions, "get_client", lambda: fake)
+    first = institutions.load_institutions()
+
+    failing = _FailingWith(pg_code="42501", pg_message="no grant")
+    monkeypatch.setattr(institutions, "get_client", lambda: failing)
+    monkeypatch.setattr(institutions, "_cache", (0.0, first))  # looks expired, but has a fallback
+
+    assert institutions.load_institutions() == first
+    assert failing.calls == 1
+
+    # Still inside the 10 s re-arm: served from the fallback, no second failed read.
+    assert institutions.load_institutions() == first
+    assert failing.calls == 1
+
+    real_monotonic = time.monotonic
+    monkeypatch.setattr(time, "monotonic", lambda: real_monotonic() + 11)
+    recovered_client = FakeSupabase(institutions=[dict(UCSC), dict(IST_RAW)])
+    monkeypatch.setattr(institutions, "get_client", lambda: recovered_client)
+
+    recovered = institutions.load_institutions()
+    assert {i["slug"] for i in recovered} == {"ucsc", "istinye"}
+
+
+def test_a_newly_added_school_appears_only_after_the_ttl(monkeypatch):
+    institutions.clear_institutions_cache()
+    fake = FakeSupabase(institutions=[dict(UCSC)])
+    monkeypatch.setattr(institutions, "get_client", lambda: fake)
+    assert {i["slug"] for i in institutions.load_institutions()} == {"ucsc"}
+
+    fake.rows("institutions").append(dict(IST_RAW))
+    # Still inside the 300 s TTL: served from memory, the new row not visible yet.
+    assert {i["slug"] for i in institutions.load_institutions()} == {"ucsc"}
+
+    real_monotonic = time.monotonic
+    monkeypatch.setattr(time, "monotonic", lambda: real_monotonic() + 301)
+    assert {i["slug"] for i in institutions.load_institutions()} == {"ucsc", "istinye"}
 
 
 def test_a_failed_read_with_no_previous_list_raises(monkeypatch):
@@ -185,17 +259,17 @@ def test_a_dropped_connection_is_retried_once(monkeypatch):
 
 
 def test_summaries_and_known_ids(db):
-    assert institutions.institution_summaries()[IST["id"]] == {
-        "id": IST["id"],
+    assert institutions.institution_summaries()[ISTINYE_INSTITUTION["id"]] == {
+        "id": ISTINYE_INSTITUTION["id"],
         "name": "İstinye University",
         "slug": "istinye",
     }
-    assert institutions.is_known_institution(IST["id"]) is True
+    assert institutions.is_known_institution(ISTINYE_INSTITUTION["id"]) is True
     assert institutions.is_known_institution("33333333-3333-4333-8333-333333333333") is False
 
 
 def test_is_known_institution_normalizes_the_id(db):
-    assert institutions.is_known_institution(IST["id"].upper()) is True
+    assert institutions.is_known_institution(ISTINYE_INSTITUTION["id"].upper()) is True
     assert institutions.is_known_institution("not-a-uuid") is False
     assert institutions.is_known_institution(None) is False
 
@@ -232,7 +306,7 @@ def test_the_list_is_public_and_cacheable(client: TestClient, db):
     by_slug = {i["slug"]: i for i in res.json()["institutions"]}
     assert by_slug == {
         "ucsc": UCSC,
-        "istinye": {**IST, "email_domains": ["istinye.edu.tr"]},
+        "istinye": ISTINYE_INSTITUTION,
     }
 
 

@@ -83,6 +83,15 @@ UCSC_INSTITUTION = {
     "email_domains": ["ucsc.edu"],
 }
 
+# Contains a hex letter on purpose: some tests check that a differently-cased form of this id
+# still matches, which an all-digit id ("1111...") could not exercise.
+ISTINYE_INSTITUTION = {
+    "id": "1a111111-1111-4111-8111-111111111111",
+    "name": "İstinye University",
+    "slug": "istinye",
+    "email_domains": ["istinye.edu.tr"],
+}
+
 
 @pytest.fixture(autouse=True)
 def _known_institutions(monkeypatch):
@@ -95,3 +104,19 @@ def _known_institutions(monkeypatch):
     from app.institutions import controller as institutions
 
     monkeypatch.setattr(institutions, "_cache", (float("inf"), [dict(UCSC_INSTITUTION)]))
+
+
+@pytest.fixture
+def with_istinye(monkeypatch):
+    """Add İstinye (a non-``.edu`` school domain) to the cached institution list.
+
+    For a test that needs an address at an institution's domain to count as a school email
+    (``is_school_email``) without a real institutions-table round trip.
+    """
+    from app.institutions import controller as institutions
+
+    monkeypatch.setattr(
+        institutions,
+        "_cache",
+        (float("inf"), [dict(UCSC_INSTITUTION), dict(ISTINYE_INSTITUTION)]),
+    )

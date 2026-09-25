@@ -24,7 +24,7 @@ import time
 from uuid import UUID
 
 from app.core.db import get_client, retry_on_disconnect
-from app.core.errors import DatabaseError
+from app.core.errors import DatabaseError, DatabaseUnavailableError
 
 logger = logging.getLogger(__name__)
 
@@ -50,16 +50,39 @@ _lock = threading.Lock()
 _cache: tuple[float, list[dict] | None] | None = None
 
 
+#: Multi-label public suffixes a maintainer could paste as if they were one school's domain
+#: (typing "edu.tr" to mean "our .edu.tr address"). Under the subdomain rule in
+#: ``is_school_email`` an unfiltered one of these would grant every school under it — every
+#: Turkish university for ``edu.tr``, not just the one the maintainer meant.
+_DENYLISTED_SUFFIXES = frozenset(
+    {
+        "edu.tr",
+        "com.tr",
+        "ac.uk",
+        "co.uk",
+        "edu.au",
+        "com.au",
+        "ac.jp",
+        "co.jp",
+        "edu.cn",
+        "com.cn",
+    }
+)
+
+
 def _normalized_domain(raw: object) -> str | None:
     """A domain the way ``is_school_email`` matches it, or ``None`` when it is not usable.
 
-    Trimmed, lower-cased, and stripped of a leading ``@`` or ``.`` (someone pastes ``@ucsc.edu``
-    or ``.ucsc.edu`` into the maintainer's insert). ``None`` when nothing with a dot in it is
-    left: under the subdomain rule in ``is_school_email``, a bare TLD like ``"com"`` would
-    otherwise make every ``.com`` address a school email.
+    Trimmed, lower-cased, and stripped of a leading ``@`` and any leading or trailing ``.``
+    (someone pastes ``@ucsc.edu``, ``.ucsc.edu`` or ``ucsc.edu.`` into the maintainer's insert).
+    ``None`` when nothing with a dot in it is left — under the subdomain rule in
+    ``is_school_email``, a bare TLD like ``"com"`` would otherwise make every ``.com`` address a
+    school email — or when the whole domain is one of ``_DENYLISTED_SUFFIXES``.
     """
-    domain = str(raw).strip().lower().lstrip("@.")
-    return domain if "." in domain else None
+    domain = str(raw).strip().lower().lstrip("@").strip(".")
+    if "." not in domain or domain in _DENYLISTED_SUFFIXES:
+        return None
+    return domain
 
 
 def _normalized(row: dict) -> dict:
@@ -115,7 +138,11 @@ def load_institutions() -> list[dict] | None:
             previous = _cache[1] if _cache is not None else None
         if previous is None:
             raise
-        logger.warning("institutions: read failed, serving the last known list", exc_info=True)
+        # Same split as ``app.core.errors._app_error``: a dropped connection is expected to
+        # clear on its own, but anything else (a missing grant, a bad query) is a standing
+        # misconfiguration that should page someone even though a stale list is still served.
+        log = logger.warning if isinstance(exc, DatabaseUnavailableError) else logger.error
+        log("institutions: read failed, serving the last known list", exc_info=True)
         with _lock:
             _cache = (now + _STALE_TTL_SECONDS, previous)
         return previous
@@ -133,7 +160,11 @@ def clear_institutions_cache() -> None:
 
 
 def institution_summaries() -> dict[str, dict]:
-    """``{id: {id, name, slug}}`` for every institution: what a class row embeds."""
+    """``{id: {id, name, slug}}`` for every institution: what a class row embeds.
+
+    Can raise ``DatabaseError`` (see ``load_institutions``) when the list can't be read and
+    nothing is cached.
+    """
     return {
         i["id"]: {"id": i["id"], "name": i["name"], "slug": i["slug"]}
         for i in load_institutions() or []
@@ -145,6 +176,9 @@ def is_known_institution(institution_id) -> bool:
 
     Normalized through ``uuid.UUID`` first, so an upper-case (or otherwise re-cased) form of a
     known id still matches; anything that is not a UUID at all is false, not an error.
+
+    Can raise ``DatabaseError`` (see ``load_institutions``) when the list can't be read and
+    nothing is cached.
     """
     try:
         normalized = str(UUID(str(institution_id)))
@@ -165,6 +199,11 @@ def is_school_email(email: str | None) -> bool:
     Its domain ends in ``.edu`` (so US schools that have not been added still count), or is one
     of an institution's ``email_domains``, or a subdomain of one: ``stu.istinye.edu.tr`` matches
     ``istinye.edu.tr``; ``evil-istinye.edu.tr`` does not.
+
+    Can raise ``DatabaseError`` (see ``load_institutions``) when the list can't be read and
+    nothing is cached. A caller on a hot path should run the free checks that make a lookup
+    unnecessary — the role, an already-verified roster email — first (see
+    ``app.utils.profiles.needs_roster_email``).
     """
     domain = email_domain(email)
     if not domain:

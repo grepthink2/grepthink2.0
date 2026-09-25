@@ -14,10 +14,10 @@
 --     assigned to UC Santa Cruz, the only school GrepThink has served so far.
 --   * An address counts as a school email when its domain ends in .edu, or is one of an
 --     institution's email_domains, or a subdomain of one (stu.istinye.edu.tr ⊂ istinye.edu.tr).
---   * This file is safe to re-run later, including after the per-class-roles release: the last
---     UPDATE assigns UC Santa Cruz to any class that still has no institution. Harmless before
---     the later contract step that makes institution_id required — nothing reads it yet besides
---     this file — but worth knowing once something does.
+--   * Do NOT re-run this file after the per-class-roles release: POST /api/classes takes an
+--     optional institution_id, so a class can legitimately be created with none yet. The last
+--     UPDATE cannot tell that apart from "predates this migration" and would relabel every such
+--     class UC Santa Cruz.
 
 BEGIN;
 
