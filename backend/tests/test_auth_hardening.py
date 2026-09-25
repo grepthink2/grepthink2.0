@@ -129,6 +129,44 @@ def test_join_answers_404_for_a_well_formed_code_nobody_uses(client, auth_header
     assert db.rows("class_enrollments") == []
 
 
+def _header(sub: str) -> dict[str, str]:
+    from tests.conftest import make_token
+
+    return {"Authorization": f"Bearer {make_token(sub=sub)}"}
+
+
+def test_an_instructor_account_can_join_another_instructors_class(client, db):
+    db.rows("profiles").append({"id": "inst-join-2", "email": "i2@ucsc.edu", "role": "instructor"})
+    res = client.post(
+        "/api/classes/join", headers=_header("inst-join-2"), json={"course_code": "QASBX26A"}
+    )
+    assert res.status_code == 200, res.text
+    assert [(e["class_id"], e["user_id"]) for e in db.rows("class_enrollments")] == [
+        ("class-1", "inst-join-2")
+    ]
+
+
+def test_the_instructor_of_a_class_cannot_join_it(client, db):
+    db.rows("profiles").append({"id": "inst-1", "email": "i1@ucsc.edu", "role": "instructor"})
+    res = client.post(
+        "/api/classes/join", headers=_header("inst-1"), json={"course_code": "QASBX26A"}
+    )
+    assert (res.status_code, res.json()["detail"]) == (409, "You are the instructor of this class")
+    assert db.rows("class_enrollments") == []
+
+
+def test_an_account_without_a_role_cannot_join(client, db):
+    db.rows("profiles").append({"id": "no-role-join", "email": "n@gmail.com", "role": None})
+    res = client.post(
+        "/api/classes/join", headers=_header("no-role-join"), json={"course_code": "QASBX26A"}
+    )
+    assert (res.status_code, res.json()["detail"]) == (
+        403,
+        "Choose whether you are a student or an instructor first",
+    )
+    assert db.rows("class_enrollments") == []
+
+
 # ── the profile endpoint can no longer claim a roster address ────────────────────
 
 

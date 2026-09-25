@@ -621,7 +621,7 @@ def get_class_by_id(class_id: UUID) -> dict:
 
 def join_class_by_code(course_code: str, user_id: str) -> dict:
     """
-    Enroll a student in a class using a course code
+    Enroll the caller in a class using its course code (anyone but its instructor)
 
     Args:
         course_code: Course code to join
@@ -647,6 +647,9 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
             raise HTTPException(status_code=404, detail="Invalid course code")
 
         class_row = class_result.data[0]
+
+        if str(class_row.get("created_by")) == str(user_id):
+            raise HTTPException(status_code=409, detail="You are the instructor of this class")
 
         # Check if already enrolled
         existing = (

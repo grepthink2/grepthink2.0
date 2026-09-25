@@ -56,9 +56,13 @@ def update_class_status(
 
 
 def join_class(data: JoinClassRequest, user_id: str = Depends(require_user)):
-    role = get_user_role(user_id)
-    if role != "student":
-        raise HTTPException(status_code=403, detail="Only students can join classes")
+    """Join a class with its course code. Any account that has picked a role may join (as a
+    student; the instructor can then make them a TA). The class instructor cannot join their own
+    class (409, checked in the controller)."""
+    if get_user_role(user_id) is None:
+        raise HTTPException(
+            status_code=403, detail="Choose whether you are a student or an instructor first"
+        )
     return controller.join_class_by_code(data.course_code, user_id)
 
 
