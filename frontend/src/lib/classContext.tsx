@@ -132,14 +132,19 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Loads overlap (a focus refresh, My Classes' timer, a join or create), numbered as they start.
   // An answer is applied unless a later-started load's answer already was, or a status change
   // retired it; so an older success still lands when a newer load fails. A class a load was asked
-  // to select waits until a load started since applies it, or the user picks a class.
+  // to select waits until a load started since applies it, the user picks a class, or the load
+  // that asked fails.
   const loadSeq = useRef(0);
   const appliedSeq = useRef(0);
   const requestedClass = useRef<{ id: string | null; seq: number } | null>(null);
   const newestLoad = useRef<Promise<void>>(Promise.resolve());
   const lastLoadStartedAt = useRef(0);
-  // Read by a load when it lands; the effects below keep them current.
+  // The list and this tab's class as a landing load sees them. Written as the provider applies an
+  // answer or selects a class, so an answer landing right behind another reads the newer state;
+  // the effects below also sync them after a status change or a fallback picked while rendering.
   const classesRef = useRef<Class[]>([]);
+  const tabClassId = useRef<string | undefined>(undefined);
+  // The class selected at the last commit, to end "view class as student" on a class switch.
   const lastSelectedClassId = useRef<string | undefined>(undefined);
 
   const visibleClasses = useMemo(
@@ -154,6 +159,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Select a class and save it for the next visit.
   const selectClass = useCallback((classItem: Class | null) => {
+    tabClassId.current = classItem?.id;
     setSelectedClassState(classItem);
     persistSelectedClassId(classItem?.id ?? null);
   }, []);
@@ -190,6 +196,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             classesRef.current,
             response.classes.map((c) => toClass(c, userId)),
           );
+          classesRef.current = all;
           setClasses(all);
 
           // A load that started before the request may not know the class yet.
@@ -203,7 +210,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           // it only seeds the first load.
           const preferredId = honorsRequest
             ? request.id
-            : (lastSelectedClassId.current ?? getStoredSelectedClassId());
+            : (tabClassId.current ?? getStoredSelectedClassId());
           // Keep focus on completed classes chosen from My Classes; fall back to an active class.
           const resolved =
             resolveSelectedClass(visible, preferredId) ?? resolveSelectedClass(active, null);
@@ -214,9 +221,13 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           console.error('Failed to fetch classes:', error);
         })
         .finally(() => {
-          // The newest load settles the spinner; after a failure the next focus retries at once.
+          // The newest load settles the spinner. After a failure the next focus retries at once,
+          // and a class this load asked for is dropped rather than jumped to by a later refresh.
           if (seq !== loadSeq.current) return;
-          if (failed) lastLoadStartedAt.current = 0;
+          if (failed) {
+            lastLoadStartedAt.current = 0;
+            if (requestedClass.current?.seq === seq) requestedClass.current = null;
+          }
           setLoading(false);
         });
       newestLoad.current = load;
@@ -307,13 +318,15 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     void loadClasses();
   }, [loadClasses]);
 
-  // What the next load compares against, so rows that did not change keep their objects.
+  // What the next load compares against (a status change edits the list), so rows that did not
+  // change keep their objects.
   useEffect(() => {
     classesRef.current = classes;
   }, [classes]);
 
-  // Keep storage on the selected class, including a fallback picked above.
+  // Keep this tab's class and storage on the selected class, including a fallback picked above.
   useEffect(() => {
+    tabClassId.current = selectedClassId;
     if (selectedClassId) persistSelectedClassId(selectedClassId);
   }, [selectedClassId]);
 
@@ -323,8 +336,8 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (selectedClassId && selectedSchoolId) rememberClassForSchool(selectedSchoolId, selectedClassId);
   }, [selectedClassId, selectedSchoolId]);
 
-  // Track this tab's class for the next load, and end "view class as student" when another class
-  // is picked. The first selection (classes arriving) is not a switch.
+  // End "view class as student" when another class is picked. The first selection (classes
+  // arriving) is not a switch.
   useEffect(() => {
     const previous = lastSelectedClassId.current;
     if (previous === selectedClassId) return;

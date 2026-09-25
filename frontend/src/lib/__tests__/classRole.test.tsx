@@ -477,6 +477,41 @@ describe('refreshes', () => {
     expect(text('landed')).toBe('new');
   });
 
+  it('keeps the requested class when a newer answer lands right after it', async () => {
+    api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'student' })] });
+    renderProvider(<Controls />);
+    await waitFor(() => expect(text('selected')).toBe('x'));
+    const joinLoad = deferred<unknown>();
+    const timerLoad = deferred<unknown>();
+    api.getClasses.mockReturnValueOnce(joinLoad.promise).mockReturnValueOnce(timerLoad.promise);
+    act(() => screen.getByText('join new').click());
+    act(() => screen.getByText('refresh').click());
+    const both = { classes: [cls('x', { my_role: 'student' }), cls('new', { my_role: 'student' })] };
+    await act(async () => {
+      joinLoad.resolve(both); // selects "new"...
+      timerLoad.resolve(both); // ...and this answer is applied before React commits that
+    });
+    expect(text('selected')).toBe('new');
+    expect(text('landed')).toBe('new');
+  });
+
+  it('drops the requested class when the load that asked for it fails', async () => {
+    quietErrors();
+    api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'student' })] });
+    renderProvider(<Controls />);
+    await waitFor(() => expect(text('selected')).toBe('x'));
+    api.getClasses.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await act(async () => screen.getByText('join new').click()); // the GET after the join fails
+    expect(text('landed')).toBe('x');
+    api.getClasses.mockResolvedValue({
+      classes: [cls('x', { my_role: 'student' }), cls('new', { my_role: 'student' })],
+    });
+    at(600); // ten minutes on, with no pick in between
+    await regainFocus();
+    await waitFor(() => expect(screen.getByText('select new')).toBeInTheDocument());
+    expect(text('selected')).toBe('x');
+  });
+
   it('keeps an older answer when the newer load fails', async () => {
     quietErrors();
     api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'student' })] });
