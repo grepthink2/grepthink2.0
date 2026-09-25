@@ -31,7 +31,7 @@ Stories**, stories contain **tasks**. Requirements 1–12 from the handoff:
 | # | Question | Recommendation | Why / alternative |
 |---|---|---|---|
 | D1 | Where does the board mount? | Nested lazy route `/app/projects/:projectId/board` + a small tab strip on `ProjectView` (Overview · Scrum Board) | Deep-linkable, matches the repo's lazy-route-for-chart-pages idiom (`App.tsx:38-65`). Alt: in-page tabs inside the 700-line `ProjectView` — rejected (no deep links, bloats the file) |
-| D2 ⚑ | Who can do what? | Team members (`project_members`): full read/write. Class instructor, class TAs (`enrollment_role='ta'`), and the assigned meeting TA: **read + comment only**. Everyone else: 404 | Staff observe/coach; mutating student boards is odd. Alt: staff get full write — one-line change in the authz helper if wanted |
+| D2 ⚑ | Who can do what? | Team members (`project_members`): full read/write. Class instructor, class TAs (`enrollment_role='ta'`), and the assigned meeting TA: **read + comment only**. Everyone else: ~~404~~ **403**; a project that does not exist is 404 (**revised 2026-09-25**: aligned with the app-wide not-found / not-allowed policy in `app/core/authz.py` when #177 was rebased onto the refactored beta; the original 404 hid the project's existence) | Staff observe/coach; mutating student boards is odd. Alt: staff get full write — one-line change in the authz helper if wanted |
 | D3 | Estimate-scale storage | `projects.estimate_scale` column (additive, default `'fibonacci'`) | Requirement 11 says project-level (the handoff's own schema sketch putting `scale` on `sprints` contradicts its req 11 — the ScalePicker `.d.ts` confirms project-level). A one-field settings table is YAGNI |
 | D4 ⚑ | Who can change the scale / manage sprints? | Any team member (v1) | Matches the always-visible ScalePicker in the design. Alt: restrict to `scrum master` + `ELEVATED_ROLES` — the roles exist in `project_members.role`; tighten later if teams ask |
 | D5 | Key generation (US-n, GT-n) | `scrum_counters(project_id, story_seq, task_seq)` + SQL function `scrum_next_key(project_id, kind)` called via `.rpc()` | Atomic under concurrency; supabase-py has no transactions and PostgREST can't do relative updates. RPC precedent: `messages_inbox` |
@@ -308,12 +308,13 @@ Members ride along for assignee pickers + mention autocomplete (one round-trip).
 ### Authorization (`controller.py`)
 
 ```python
-from app.projects.controller import _is_instructor, ELEVATED_ROLES  # sanctioned reuse
-def _board_access(project_id, user_id) -> str:   # 'member' | 'staff'
+from app.core import authz  # was app.projects._is_instructor before the 2026-09 core layer
+def _board_access(client, project_id, user_id) -> str:   # 'member' | 'staff'
     # member: project_members row → 'member'
     # staff:  class instructor OR enrollment_role=='ta' OR projects.assigned_ta_id → 'staff'
-    # else:   404 "Project not found"  (don't leak existence — staffing precedent)
-def _require_writer(project_id, user_id):        # member only (D2)
+    # else:   403 authz.NOT_PROJECT_MEMBER; a missing project is 404 authz.PROJECT_NOT_FOUND
+    #         (D2, revised 2026-09-25 — was 404 for both, to hide existence)
+def _require_writer(client, project_id, user_id):        # member only (D2)
 ```
 Every mutation resolves its entity → `project_id` first, then gates. Follow the
 attendance module's docstring style: state the whole permission model at the top.

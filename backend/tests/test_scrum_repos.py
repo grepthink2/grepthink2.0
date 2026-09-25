@@ -1,18 +1,24 @@
 """Per-project repo registry (D8 revision): URL parsing, write-only tokens, token matching."""
 
-from unittest.mock import MagicMock, patch
-
 import pytest
 from fastapi import HTTPException
 
+from app.scrum import controller
 from app.scrum.pr_links import parse_repo_url, pr_repo_prefix
+from tests.scrum_support import INSTR, OUTSIDER, PID, UID, scrum_db
 
-PID = "00000000-0000-0000-0000-0000000000aa"
-UID = "00000000-0000-0000-0000-0000000000bb"
+REPO = {
+    "id": "r1",
+    "project_id": PID,
+    "repo_url": "https://github.com/ucsc/grepthink2.0",
+    "provider": "github",
+    "access_token": "secret",
+    "created_at": "2026-08-21T00:00:00Z",
+}
 
 
 @pytest.mark.parametrize(
-    "url,provider,canonical",
+    ("url", "provider", "canonical"),
     [
         ("https://github.com/ucsc/grepthink2.0", "github", "https://github.com/ucsc/grepthink2.0"),
         (
@@ -29,8 +35,7 @@ UID = "00000000-0000-0000-0000-0000000000bb"
     ],
 )
 def test_parse_repo_url_accepts(url, provider, canonical):
-    parsed = parse_repo_url(url)
-    assert parsed == {"provider": provider, "repo_url": canonical}
+    assert parse_repo_url(url) == {"provider": provider, "repo_url": canonical}
 
 
 @pytest.mark.parametrize(
@@ -46,9 +51,7 @@ def test_parse_repo_url_rejects(url):
     assert parse_repo_url(url) is None
 
 
-def test_match_repo_token_prefers_exact_repo():
-    from app.scrum.controller import _match_repo_token
-
+def test_match_repo_token_prefers_the_exact_repo():
     rows = [
         {
             "repo_url": "https://github.com/ucsc/other",
@@ -63,10 +66,10 @@ def test_match_repo_token_prefers_exact_repo():
         {"repo_url": "https://git.ucsc.edu/a/b", "provider": "gitlab", "access_token": "t-gl"},
     ]
     parsed = {"provider": "github", "owner": "ucsc", "repo": "grepthink2.0", "number": 42}
-    assert _match_repo_token(rows, parsed) == "t-exact"
-    parsed_unknown = {"provider": "github", "owner": "ucsc", "repo": "unregistered", "number": 1}
-    assert _match_repo_token(rows, parsed_unknown) == "t-other"  # same-provider fallback
-    assert _match_repo_token([], parsed) is None
+    assert controller._match_repo_token(rows, parsed) == "t-exact"
+    unknown = {"provider": "github", "owner": "ucsc", "repo": "unregistered", "number": 1}
+    assert controller._match_repo_token(rows, unknown) == "t-other"  # same-provider fallback
+    assert controller._match_repo_token([], parsed) is None
 
 
 def test_pr_repo_prefix_matches_parse_repo_url_canonical():
@@ -79,70 +82,77 @@ def test_pr_repo_prefix_matches_parse_repo_url_canonical():
     )
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_add_repo_derives_provider_and_upserts(mock_client, _writer):
-    from app.scrum.controller import add_repo
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.upsert.return_value.execute.return_value = MagicMock(
-        data=[
-            {
-                "id": "r1",
-                "repo_url": "https://github.com/ucsc/grepthink2.0",
-                "provider": "github",
-                "access_token": "secret",
-            }
-        ]
-    )
-    out = add_repo(
+def test_add_repo_normalizes_the_url_and_never_echoes_the_token(monkeypatch):
+    db = scrum_db(monkeypatch)
+    out = controller.add_repo(
         project_id=PID,
         user_id=UID,
         repo_url="https://github.com/ucsc/grepthink2.0.git",
         access_token="secret",
     )
-    upserted = client.table.return_value.upsert.call_args.args[0]
-    assert upserted["provider"] == "github"
-    assert upserted["repo_url"] == "https://github.com/ucsc/grepthink2.0"  # normalized
-    assert client.table.return_value.upsert.call_args.kwargs["on_conflict"] == "project_id,repo_url"
+    [stored] = db.rows("scrum_repos")
+    assert (stored["provider"], stored["repo_url"]) == (
+        "github",
+        "https://github.com/ucsc/grepthink2.0",
+    )
     assert out == {
-        "id": "r1",
+        "id": stored["id"],
         "repo_url": "https://github.com/ucsc/grepthink2.0",
         "provider": "github",
         "has_token": True,
-    }  # token never echoed
+    }
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_add_repo_rejects_unknown_host(mock_client, _writer):
-    from app.scrum.controller import add_repo
-
-    mock_client.return_value = MagicMock()
-    with pytest.raises(HTTPException) as e:
-        add_repo(project_id=PID, user_id=UID, repo_url="https://gitlab.com/x/y", access_token=None)
-    assert e.value.status_code == 422
-
-
-@patch("app.scrum.controller._board_access", return_value="staff")
-@patch("app.scrum.controller._client")
-def test_list_repos_exposes_has_token_not_token(mock_client, _access):
-    from app.scrum.controller import list_repos
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.order.return_value.execute.return_value = MagicMock(
-        data=[
-            {
-                "id": "r1",
-                "repo_url": "u",
-                "provider": "github",
-                "access_token": "secret",
-                "created_at": "2026-08-21T00:00:00Z",
-            }
-        ]
+def test_re_adding_a_repo_rotates_its_token(monkeypatch):
+    db = scrum_db(monkeypatch, scrum_repos=[dict(REPO)])
+    controller.add_repo(
+        project_id=PID, user_id=UID, repo_url=REPO["repo_url"], access_token="rotated"
     )
-    out = list_repos(project_id=PID, user_id=UID)
-    assert out == [{"id": "r1", "repo_url": "u", "provider": "github", "has_token": True}]
+    [stored] = db.rows("scrum_repos")
+    assert stored["access_token"] == "rotated"
+
+
+def test_add_repo_rejects_an_unknown_host(monkeypatch):
+    db = scrum_db(monkeypatch)
+    with pytest.raises(HTTPException) as e:
+        controller.add_repo(
+            project_id=PID, user_id=UID, repo_url="https://gitlab.com/x/y", access_token=None
+        )
+    assert e.value.status_code == 422
+    assert db.rows("scrum_repos") == []
+
+
+def test_staff_list_repos_but_see_only_has_token(monkeypatch):
+    scrum_db(monkeypatch, scrum_repos=[dict(REPO)])
+    out = controller.list_repos(project_id=PID, user_id=INSTR)
+    assert out == [
+        {"id": "r1", "repo_url": REPO["repo_url"], "provider": "github", "has_token": True}
+    ]
     assert "secret" not in str(out)
+
+
+def test_staff_cannot_add_or_delete_repos(monkeypatch):
+    db = scrum_db(monkeypatch, scrum_repos=[dict(REPO)])
+    with pytest.raises(HTTPException) as e:
+        controller.add_repo(
+            project_id=PID, user_id=INSTR, repo_url=REPO["repo_url"], access_token=None
+        )
+    assert e.value.status_code == 403
+    with pytest.raises(HTTPException) as e:
+        controller.delete_repo(repo_id="r1", user_id=INSTR)
+    assert e.value.status_code == 403
+    assert len(db.rows("scrum_repos")) == 1
+
+
+def test_outsiders_cannot_list_repos(monkeypatch):
+    scrum_db(monkeypatch, scrum_repos=[dict(REPO)])
+    with pytest.raises(HTTPException) as e:
+        controller.list_repos(project_id=PID, user_id=OUTSIDER)
+    assert e.value.status_code == 403
+
+
+def test_delete_repo_404_when_missing(monkeypatch):
+    scrum_db(monkeypatch)
+    with pytest.raises(HTTPException) as e:
+        controller.delete_repo(repo_id="nope", user_id=UID)
+    assert (e.value.status_code, e.value.detail) == (404, controller.REPO_NOT_FOUND)
