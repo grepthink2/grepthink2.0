@@ -5,10 +5,13 @@
 // ConversationListItem, MessageBubble and the design system's TypingIndicator (soft tone);
 // every color here is a token.
 
+// The moment loops on the approved mockup's 7s cycle: Jordan starts typing, the reply lands as
+// the inbox row and unread counts update, it holds, then Jordan's row clears and it starts again.
+$cycle: 7s;
+
 .msg-inbox-card,
 .msg-thread-card {
-  --swap-duration: 2.4s;
-  --swap-delay: 1.2s;
+  --swap-duration: #{$cycle};
 }
 
 .msg-inbox-card {
@@ -183,15 +186,15 @@
 }
 
 .is-seen .msg-row--live {
-  animation: msg-row-in 2.4s ease 0.9s both;
+  animation: msg-row-in $cycle ease infinite both;
 }
 
 .is-seen .msg-live__typing {
-  animation: msg-typing 2.4s ease 0.9s both;
+  animation: msg-typing $cycle ease infinite both;
 }
 
 .is-seen .msg-live__landed {
-  animation: msg-land 2.4s ease 0.9s both;
+  animation: msg-land $cycle ease infinite both;
 }
 
 @keyframes msg-blink {
@@ -207,13 +210,17 @@
   }
 }
 
+// Jordan's row opens at 12–16% with the typing dots, the reply replaces them at about 50% (as the
+// inbox swaps), and the row clears at 94–100% so the next cycle starts clean.
 @keyframes msg-row-in {
-  0% {
+  0%,
+  12%,
+  100% {
     opacity: 0;
     max-height: 0;
   }
-  12%,
-  100% {
+  16%,
+  94% {
     opacity: 1;
     max-height: 80px;
   }
@@ -221,18 +228,12 @@
 
 @keyframes msg-typing {
   0%,
-  10% {
-    opacity: 0;
-    max-height: 0;
-    padding: 0 11px;
-  }
-  16%,
-  62% {
+  48% {
     opacity: 1;
     max-height: 30px;
     padding: 9px 11px;
   }
-  68%,
+  52%,
   100% {
     opacity: 0;
     max-height: 0;
@@ -242,13 +243,13 @@
 
 @keyframes msg-land {
   0%,
-  64% {
+  51% {
     opacity: 0;
     transform: scale(0.9);
     max-height: 0;
     padding: 0 11px;
   }
-  74%,
+  57%,
   100% {
     opacity: 1;
     transform: none;

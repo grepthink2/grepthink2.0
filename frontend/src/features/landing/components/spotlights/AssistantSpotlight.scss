@@ -70,12 +70,12 @@
 }
 
 // --- The moment -------------------------------------------------------------------------------
-// Approve presses, then the pending card folds away to reveal the approved one beneath it. Both
-// share one grid cell, so the StageCard shrinks as the pending card folds. The pending card's white
+// Loops on the approved mockup's 7s cycle: Approve presses, the pending card folds away to reveal
+// the approved one beneath it, that holds, then the pending card unfolds for the next round. Both
+// share one grid cell, so the StageCard shrinks and grows with the fold. The pending card's white
 // background hides the approved card until then, and their heads are identical, so the head holds
 // still while the body changes. The base styles are the final frame: approved.
-$press-at: 2.2s;
-$fold-at: 2.6s;
+$cycle: 7s;
 
 .assist-moment {
   display: grid;
@@ -94,20 +94,23 @@ $fold-at: 2.6s;
 }
 
 .is-seen .assist-moment__pending {
-  animation: assist-fold 0.5s cubic-bezier(0.4, 0, 0.2, 1) $fold-at both;
+  animation: assist-fold $cycle cubic-bezier(0.4, 0, 0.2, 1) infinite both;
 }
 
 .is-seen .assist-moment__pending .gt-asst__btn--ok {
-  animation: assist-press 0.35s ease $press-at both;
+  animation: assist-press $cycle ease infinite both;
 }
 
 @keyframes assist-fold {
-  from {
+  0%,
+  50%,
+  100% {
     max-height: 240px;
     opacity: 1;
   }
 
-  to {
+  57%,
+  92% {
     max-height: 0;
     opacity: 0;
   }
@@ -115,12 +118,14 @@ $fold-at: 2.6s;
 
 @keyframes assist-press {
   0%,
+  44%,
+  50%,
   100% {
     box-shadow: none;
     transform: none;
   }
 
-  40% {
+  47% {
     box-shadow: 0 0 0 3px rgba(1, 129, 86, 0.25);
     transform: translateY(0.5px);
   }
