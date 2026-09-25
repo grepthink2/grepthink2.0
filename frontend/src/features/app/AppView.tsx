@@ -1,16 +1,17 @@
 import React, { useState, Suspense } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import type { AppOutletContext } from '@/features/app/appOutletContext';
 import Sidebar from '@features/app/components/Layout/Sidebar';
 import Header from '@features/app/components/Layout/Header';
 import PreviewBanner from '@features/app/components/Layout/PreviewBanner';
+import ClassRouteGuard from '@features/app/components/Layout/ClassRouteGuard';
 import { lazyModal } from '@/lib/lazyModal';
 import Settings from '@features/app/pages/Settings';
 import PageFallback from '@features/app/components/PageFallback';
 import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
 import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
-import { instructorOnlyPaths, studentOnlyPaths } from '@features/app/config/routePermissions';
+import { usePreview } from '@/lib/previewContext';
 import { MessageWidget } from '@features/messages/components/MessageWidget';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './AppView.scss';
@@ -26,7 +27,8 @@ const JoinClassModal = lazyModal(
 );
 
 const AppView: React.FC = () => {
-  const { user, role, isPreviewing, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { isPreviewing } = usePreview();
   const [isCreateClassModalOpen, setIsCreateClassModalOpen] = useState(false);
   const [isJoinClassModalOpen, setIsJoinClassModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -73,22 +75,12 @@ const AppView: React.FC = () => {
     );
   }
 
-  // Role-based route guard: redirect if user hit a path for the other role
-  const pathname = location.pathname;
-  if (instructorOnlyPaths.includes(pathname) && role !== 'instructor') {
-    return <Navigate to="/app/home" replace />;
-  }
-  if (studentOnlyPaths.includes(pathname) && role !== 'student') {
-    return <Navigate to="/app/home" replace />;
-  }
-
   return (
     // Keyed by account: the next account never sees the last one's classes.
     <ClassProvider key={user?.id ?? 'anon'}>
       <div className={`app-view${isPreviewing ? ' app-view--previewing' : ''}`}>
         <PreviewBanner />
         <Sidebar
-          role={role}
           onOpenCreateClass={handleOpenCreateClassModal}
           onOpenJoinClass={handleOpenJoinClassModal}
           onOpenSettings={() => setIsSettingsOpen(true)}
@@ -114,14 +106,17 @@ const AppView: React.FC = () => {
               App.tsx). Scoped to the Outlet only — Sidebar/Header/modals
               above are siblings, not descendants, so they stay mounted and
               visible while a page chunk loads instead of being replaced by
-              the fallback. */}
+              the fallback. Class pages open only for the roles they are
+              for, by your role in the selected class. */}
           <ErrorBoundary resetKey={location.pathname}>
             <Suspense fallback={<PageFallback />}>
-              <Outlet
-                context={
-                  { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
-                }
-              />
+              <ClassRouteGuard>
+                <Outlet
+                  context={
+                    { openJoinClassModal: handleOpenJoinClassModal } satisfies AppOutletContext
+                  }
+                />
+              </ClassRouteGuard>
             </Suspense>
           </ErrorBoundary>
         </main>

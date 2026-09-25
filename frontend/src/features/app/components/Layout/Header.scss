@@ -553,6 +553,81 @@ $app-header-text: var(--gt-text-secondary);
       }
     }
   }
+
+  // School switcher (SchoolSwitcher.tsx): the menu's first row for accounts whose active
+  // classes span two or more schools. Expands in place, like the sidebar's expandable groups.
+  .app-header__school {
+    border-bottom: 1px solid var(--gt-border);
+  }
+
+  // Always the menu's first row, so only its top corners are rounded, list open or not (the
+  // :last-child rule above would round its bottom corners while the list is closed).
+  .app-header__school .app-header__school-toggle {
+    border-radius: $border-radius-md $border-radius-md 0 0;
+  }
+
+  .app-header__school-label {
+    flex: 1;
+    min-width: 0;
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-header__school-chevron {
+    flex-shrink: 0;
+    @include gt-transition(transform);
+  }
+
+  .app-header__school-chevron--open {
+    transform: rotate(180deg);
+  }
+
+  // Indented so each check sits under the school icon and each name under the "School:"
+  // label (the toggle is 16px padding + 18px icon + 12px gap before its label).
+  .app-header__school-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 $spacing-sm $spacing-sm;
+  }
+
+  .app-header__school-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 6px $spacing-sm 6px 10px;
+    background-color: transparent;
+    border: none;
+    border-radius: $border-radius-sm;
+    text-align: left;
+    cursor: pointer;
+    @include gt-transition(background-color);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    font-family: $primary-font;
+    color: $app-header-text;
+
+    &:hover {
+      background-color: var(--gt-canvas);
+    }
+
+    &:focus {
+      outline: none;
+      background-color: var(--gt-canvas);
+    }
+  }
+
+  .app-header__school-option--current {
+    font-weight: $font-weight-semibold;
+  }
+
+  .app-header__school-check {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 14px;
+  }
 }
 
 /* Mobile: show the hamburger, drop the fixed-width search to free up the row */

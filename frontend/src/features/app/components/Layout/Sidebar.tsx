@@ -2,16 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { PanelLeft } from 'lucide-react';
 import { ChevronDown } from 'lucide-react';
-import { instructorSidebarConfig, studentSidebarConfig, type SidebarItem, type SidebarSection, type UserRole } from '../../config/sidebar';
-import { useClass } from '@/lib/classContext';
-import { useEnrollmentRole } from '@/lib/enrollmentRole';
+import { buildSidebarConfig, type SidebarItem } from '../../config/sidebar';
+import { CLASS_ROLE_LABELS, pathAfterClassSwitch } from '../../config/routePermissions';
+import { useAuth } from '@/lib/auth';
+import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { useUnreadTotal } from '@features/messages/hooks/useUnreadTotal';
 import logo from '@assets/grepthink l logo.svg?url';
-import ModulesIcon from '@assets/streamline-ultimate_module-three-bold.svg?url';
 import './Sidebar.scss';
 
 interface SidebarProps {
-  role: UserRole;
   onOpenCreateClass?: () => void;
   onOpenJoinClass?: () => void;
   onOpenSettings?: () => void;
@@ -21,7 +20,7 @@ interface SidebarProps {
   onMobileClose?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinClass, onOpenSettings, mobileOpen, onMobileClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, onOpenSettings, mobileOpen, onMobileClose }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches,
@@ -31,35 +30,19 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const { sidebarClasses, selectedClass, setSelectedClass } = useClass();
+  const { canCreateClasses } = useAuth();
+  const classRole = useSelectedClassRole();
+  const { sidebarClasses, selectedClass, setSelectedClass, showSchoolSwitcher } = useClass();
   const unreadTotal = useUnreadTotal();
-  // Students who are a TA in the selected class get an extra "TA Review" nav item.
-  const isTaForClass = useEnrollmentRole(role === 'student' ? selectedClass?.id : undefined) === 'ta';
 
-  const sidebarConfig: SidebarSection[] = React.useMemo(() => {
-    if (role === 'instructor') return instructorSidebarConfig;
-    if (!isTaForClass) return studentSidebarConfig;
-    // Append "TA Review" to the student "Class" section without mutating config.
-    return studentSidebarConfig.map((section) =>
-      section.title === 'Class'
-        ? {
-            ...section,
-            items: [
-              ...section.items,
-              {
-                label: 'TA Review',
-                path: '/app/ta-review',
-                iconSvg: ModulesIcon,
-                children: [
-                  { label: 'TSRs', path: '/app/ta-review' },
-                  { label: 'Final Reviews', path: '/app/ta-review/final-reviews' },
-                ],
-              },
-            ],
-          }
-        : section,
-    );
-  }, [role, isTaForClass]);
+  // The main section follows what the account can do; the class section, your role in the
+  // selected class (TAs get the student items plus "TA Review").
+  const sidebarConfig = React.useMemo(
+    () => buildSidebarConfig({ canCreateClasses, classRole }),
+    [canCreateClasses, classRole],
+  );
+  // Label each class with your role only when the list mixes roles.
+  const mixedRoles = new Set(sidebarClasses.map((c) => c.my_role)).size > 1;
 
   // Expandable items (those with children): open/closed state, keyed by path.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -121,8 +104,15 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   };
 
   const handleClassSelect = (classItem: (typeof sidebarClasses)[number]) => {
+    const switching = classItem.id !== selectedClass?.id;
     setSelectedClass(classItem);
     setShowClassDropdown(false);
+    // Stay on this page when your role in the new class allows it, else go to that role's page.
+    // The class you are already in needs neither (a preview of it goes on, so its own role
+    // would not be the one the page follows).
+    if (!switching) return;
+    const next = pathAfterClassSwitch(location.pathname, classItem.my_role);
+    if (next) navigate(next);
   };
 
   // Close dropdown when clicking outside
@@ -138,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
   }, []);
 
   return (
-    <div className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''} ${role === 'instructor' ? 'instructor' : 'student'}`}>
+    <div className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''} ${classRole === 'instructor' ? 'instructor' : 'student'}`}>
       {/* Header with Logo */}
       <div className="sidebar-header">
         {!collapsed && (
@@ -158,8 +148,11 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
             className="class-selector-header"
             onClick={() => setShowClassDropdown(!showClassDropdown)}
           >
-            <span className="class-name">
-              {selectedClass ? selectedClass.name : 'No class selected'}
+            <span className="class-selector-title">
+              <span className="class-name">{selectedClass ? selectedClass.name : 'No class selected'}</span>
+              {showSchoolSwitcher && selectedClass?.institution && (
+                <span className="class-school">{selectedClass.institution.name}</span>
+              )}
             </span>
             <ChevronDown size={16} className={showClassDropdown ? 'rotated' : ''} />
           </button>
@@ -177,6 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
                   >
                     <div className="class-item-name">{classItem.name}</div>
                     <div className="class-item-code">{classItem.course_code}</div>
+                    {mixedRoles && <div className="class-item-role">{CLASS_ROLE_LABELS[classItem.my_role]}</div>}
                   </button>
                 ))
               )}
@@ -273,7 +267,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, onOpenCreateClass, onOpenJoinCl
 
                 // For instructors, keep "Projects" highlighted when viewing
                 // project details or create-project flows under the class.
-                if (role === 'instructor' && isProjectsItem) {
+                if (classRole === 'instructor' && isProjectsItem) {
                   const path = location.pathname;
                   if (
                     path === '/app/projects' ||

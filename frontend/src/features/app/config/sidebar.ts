@@ -82,27 +82,6 @@ const SETTINGS_SECTION: SidebarSection = {
 };
 
 /**
- * @deprecated Built from the account role, so a class you TA in still shows the
- * instructor sidebar to its owner and never adds "TA Review". Use `buildSidebarConfig`
- * with the class role instead. Removed once Sidebar.tsx reads it directly (Task 14).
- */
-export const instructorSidebarConfig: SidebarSection[] = [
-  { title: 'Main', items: [HOME, MESSAGES, MY_CLASSES, CREATE_CLASS] },
-  { title: 'Class', items: instructorClassItems },
-  SETTINGS_SECTION,
-];
-
-/**
- * @deprecated See `instructorSidebarConfig`. Removed once Sidebar.tsx reads
- * `buildSidebarConfig` directly (Task 14).
- */
-export const studentSidebarConfig: SidebarSection[] = [
-  { title: 'Main', items: [HOME, MESSAGES, JOIN_CLASS, MY_CLASSES] },
-  { title: 'Class', items: studentClassItems },
-  SETTINGS_SECTION,
-];
-
-/**
  * The sidebar for an account and its role in the selected class. The main section keeps each
  * account's familiar order; the class section follows the class role and is hidden with no class.
  */

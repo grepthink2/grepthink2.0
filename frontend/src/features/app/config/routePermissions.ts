@@ -1,5 +1,4 @@
 import type { ClassRole } from '@/lib/api';
-import type { UserRole } from './sidebar';
 
 /** Class pages only the class instructor may open. */
 export const instructorOnlyPaths: string[] = [
@@ -10,28 +9,6 @@ export const instructorOnlyPaths: string[] = [
   '/app/ta-management',
   '/app/class-settings',
 ];
-
-/**
- * @deprecated Account role no longer decides student-only class pages; use
- * `learnerOnlyPaths` (with `isPathAllowedForClassRole`) and the class role instead.
- * Removed once AppView.tsx reads the class role (Task 14).
- */
-export const studentOnlyPaths: string[] = [
-  '/app/join-class',
-  '/app/browse-projects',
-  '/app/my-project',
-  '/app/assignments',
-];
-
-/**
- * @deprecated Use `isPathAllowedForClassRole` with the class role instead. Removed
- * once AppView.tsx reads the class role (Task 14).
- */
-export function isPathAllowedForRole(path: string, role: UserRole): boolean {
-  if (instructorOnlyPaths.includes(path)) return role === 'instructor';
-  if (studentOnlyPaths.includes(path)) return role === 'student';
-  return true; // shared paths (home, messages, my-classes, settings, help-center)
-}
 
 /** Class pages for students and TAs (TAs keep the student pages). */
 export const learnerOnlyPaths: string[] = ['/app/browse-projects', '/app/my-project', '/app/assignments'];

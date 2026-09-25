@@ -3,12 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu, Eye } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
-import { useClass } from '@/lib/classContext';
+import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { usePreview } from '@/lib/previewContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
 import { formatRelativeTime } from '@features/messages/utils/relativeTime';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { apiRequest, type ApiProfile } from '@/lib/api';
+import SchoolSwitcher from './SchoolSwitcher';
 import './Header.scss';
 
 function notificationPath(notification: {
@@ -144,10 +145,12 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, role, realRole, isPreviewing, user } = useAuth();
-  const { enterPreview, exitPreview } = usePreview();
+  const { signOut, user } = useAuth();
+  const { isPreviewing, enterPreview, exitPreview } = usePreview();
   const { selectedClass, classes, setSelectedClass } = useClass();
-  
+  // Breadcrumbs and the class details follow your role in the selected class.
+  const classRole = useSelectedClassRole();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -183,11 +186,17 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
   const path = location.pathname;
 
   const breadcrumbs = useMemo(
-    () => buildBreadcrumbs(path, role, selectedClass?.name, location.state),
-    [path, role, selectedClass?.name, location.state],
+    () =>
+      buildBreadcrumbs(
+        path,
+        classRole === 'instructor' ? 'instructor' : 'student',
+        selectedClass?.name,
+        location.state,
+      ),
+    [path, classRole, selectedClass?.name, location.state],
   );
   const isClassRoute = breadcrumbs !== null;
-  const showInstructorClassMeta = isClassRoute && role === 'instructor';
+  const showInstructorClassMeta = isClassRoute && classRole === 'instructor';
   const standaloneTitle = pageTitles[path] ?? 'GrepThink';
 
   const handleNotificationClick = async (notification: typeof notifications[number]) => {
@@ -480,13 +489,15 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
 
           {showProfileMenu && (
             <div className="app-header__dropdown app-header__profile-dropdown">
-              {realRole === 'instructor' && (
+              <SchoolSwitcher onPicked={() => setShowProfileMenu(false)} />
+              {/* Only in a class you own: the class's own role, which preview does not change. */}
+              {selectedClass?.my_role === 'instructor' && (
                 <button
                   className="app-header__dropdown-item"
                   onClick={handleViewAsStudent}
                 >
                   <Eye size={18} />
-                  <span>{isPreviewing ? 'Instructor View' : 'View as Student'}</span>
+                  <span>{isPreviewing ? 'Instructor view' : 'View class as student'}</span>
                 </button>
               )}
               <button
