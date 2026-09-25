@@ -8,6 +8,11 @@
 //     border+ring alone read as focus, not as "this story is filtering the board"
 //   * .gt-comments__input gains an explicit background — the design source sets
 //     a color but no background, which left it to the UA. Keep it on re-port.
+//   * .gt-story:hover and .gt-story--active:hover pin the border (maintainer
+//     2026-09-25: "green + blue border mixed" on a selected card). The card is a
+//     <button>, and the Vite scaffold's `button:hover { border-color: #646cff }`
+//     in index.css outranks single-class rules, so hover repainted the border
+//     periwinkle while the hover shadow replaced the selection ring.
 // Re-port from the design file when it changes; do not hand-edit values.
 
 /* ============================================================
@@ -117,13 +122,20 @@
   box-sizing: border-box;
   transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
 }
-.gt-story:hover { box-shadow: var(--gt-shadow-hover); }
+.gt-story:hover { box-shadow: var(--gt-shadow-hover); border-color: var(--gt-border); }
 .gt-story:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
 .gt-story--active {
   border-color: var(--gt-primary);
   box-shadow: 0 0 0 1px var(--gt-primary);
   background: var(--gt-green-50);
 }
+/* A selected card keeps its selection while hovered, and still lifts. */
+.gt-story--active:hover {
+  border-color: var(--gt-primary);
+  box-shadow: 0 0 0 1px var(--gt-primary), var(--gt-shadow-hover);
+}
+/* Keyboard focus still wins over the hover treatment above. */
+.gt-story:focus-visible { box-shadow: var(--gt-focus-ring); }
 .gt-story--active .gt-story__bar { background: var(--gt-gray-0); }
 .gt-story__top { display: flex; align-items: center; gap: 8px; }
 .gt-story__key {
