@@ -3,8 +3,8 @@ import * as React from 'react';
 export interface AssistantSuggestionCardProps {
   /** @default 'pending' */
   state?: 'pending' | 'approved' | 'dismissed';
-  /** The evidence sentence, e.g. <>PR <b>#41</b> was merged into main.</> */
-  evidence: React.ReactNode;
+  /** The evidence sentence, e.g. <>PR <b>#41</b> was merged into main.</> Read only in the pending state. */
+  evidence?: React.ReactNode;
   /** @default 'Move this task to Done?' */
   question?: React.ReactNode;
   /** Task key shown in the chip and the confirmation line. */

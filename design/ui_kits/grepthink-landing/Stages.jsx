@@ -97,17 +97,20 @@ function MessagingStage({ play }) {
 }
 
 /* ── Band 3 · Project assistant (preview) ─────────────────── */
+/* Desktop placement (build values): suggestion 288px wide, 25% from the top;
+   stalled flag and report card 3% from the right edge. The suggestion is the
+   phone card and stays `pending` there (no moment below 768px). */
 function AssistantStage({ play, approved }) {
   const evidence = <React.Fragment>PR <b>#41</b> was merged into main.</React.Fragment>;
   return (
     <Stage variant="preview" className={play ? 'is-playing' : ''}>
-      <StageCard tilt={3} floatY={9} floatDur={9} order={1} style={{ right: 20, top: 20, width: 226, zIndex: 1, padding: 0 }}>
+      <StageCard tilt={3} floatY={9} floatDur={9} order={1} style={{ right: '3%', top: 20, width: 226, zIndex: 1, padding: 0 }}>
         <StalledFlag surface="landing" taskKey="GT-9" title="Attendance tab" days={6} detail="no commits" assignee="Sam" style={{ boxShadow: 'none' }} />
       </StageCard>
-      <StageCard tilt={-2} floatY={-10} floatDur={8} order={0} mobile className={approved ? '' : 'lk-press'} style={{ left: 22, top: 112, width: 296, zIndex: 2, padding: 0 }}>
+      <StageCard tilt={-2} floatY={-10} floatDur={8} order={0} mobile className={approved ? '' : 'lk-press'} style={{ left: 22, top: '25%', width: 288, zIndex: 2, padding: 0 }}>
         <AssistantSuggestionCard surface="landing" state={approved ? 'approved' : 'pending'} evidence={evidence} taskKey="GT-12" taskTitle="Connect the class roster API" target="Done" approvedBy="you" style={{ boxShadow: 'none' }} />
       </StageCard>
-      <StageCard tilt={-2.5} floatY={-8} floatDur={9.5} order={2} tabletHide style={{ right: 18, bottom: 30, width: 272, zIndex: 3, padding: 0 }}>
+      <StageCard tilt={-2.5} floatY={-8} floatDur={9.5} order={2} tabletHide style={{ right: '3%', bottom: 30, width: 272, zIndex: 3, padding: 0 }}>
         <ReportCheckCard surface="landing" week="Week 5" project="ShoeShopper" rows={[{ kind: 'match', text: '4 reports match closed work' }, { kind: 'review', text: 'Alex: reports 35%, closed 1 of 6 tasks' }]} style={{ boxShadow: 'none' }} />
       </StageCard>
       <StageCard pill tilt={2} floatY={9} floatDur={10} order={3} tabletHide style={{ left: 16, bottom: 22, zIndex: 4 }}>

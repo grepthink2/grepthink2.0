@@ -86,20 +86,26 @@ The public landing and contact pages are the one place the flat rules bend. Ever
   NEW = white on `#018156`; SOON = white on `#8A5200` (never `#B26A00`); amber eyebrow `#8A5200` on `#FEF3C7`.
 - **Floating card shell:** white, 20px radius (hero cards keep 22px), shadow `0 2px 6px rgba(33,43,54,.04),
   0 24px 48px -12px rgba(33,43,54,.18)`, tilt −3…+3° via `rotate`, float ±8–10px over 8–10s via `translate`.
-- **Band layout:** 1100px max, `1fr 1.08fr` (stage wider), 48px gap, 72px vertical; stages alternate sides;
-  heading `clamp(2rem, 4vw, 2.5rem)` 700 −0.02em; lead 16.5px `#637381`; bullets 14.5px with 34px green-50 tiles.
+- **Band layout:** 1100px max, `1fr 1.08fr` (stage wider), 48px gap, `clamp(72px, 9vw, 112px)` vertical,
+  `scroll-margin-top` 88px under the fixed header; stages alternate sides; heading `clamp(2rem, 4vw, 2.5rem)`
+  700 −0.02em; lead 16.5px `#637381`; bullets 14.5px with 34px green-50 tiles; band link `#016547`;
+  stage-card meta `#8A8A8A`. Band 3 desktop: suggestion card 288px wide at 25% from the top, stalled flag
+  and report card 3% from the right edge.
 - **Motion:** reveal once (text up 16px, cards in 24px from their side, 80ms stagger); float loops pause
-  off-screen; one "moment" per band plays once at 50% visible, 0.4s after the reveal settles.
-  Reduced motion renders the final frame. Only transform/translate/opacity (+ max-height, stroke-dashoffset).
+  off-screen; one "moment" per band plays once at 50% visible, 0.4s after the reveal settles — on
+  ≥768px only. Reduced motion renders the final frame. Only transform/translate/opacity (+ max-height,
+  stroke-dashoffset).
 - **Hover:** lift −1px (header/contact buttons) or −2px (hero CTA) — the only place transforms are allowed.
-- **Mobile:** text first, then one untilted, still card per band. Hero cards hide below 768px.
+- **Mobile (<768px):** text first, then one untilted, still card per band and no moment — the stage has no
+  fixed height there, so a card that changes size would push the page around; Band 3 shows the pending
+  suggestion (evidence + Approve/Dismiss), never the approved line. Hero cards hide below 768px.
 - **Assistant surfaces:** the Project assistant is told apart from people without a new hue — spark mark
   in a green-50 tile, "Project assistant" label in green-700, dashed green hairline in-app.
 
 ## ICONOGRAPHY
 - **Icon system: lucide-react** in production (18px default in nav, 16px inline, stroke-width 2).
   The Project assistant's mark (`AssistantIcon`) is a custom spark drawn in the same idiom (24 viewBox,
-  2px stroke, round caps); `AIDraftButton` should adopt it so there is one mark.
+  2px stroke, round caps); `AIDraftButton` renders it, so there is one assistant mark.
   The codebase also keeps one-off SVG assets named after their source sets
   (`fluent_*`, `material-symbols_*`, `octicon_*`, `mingcute_*`, `solar_*`) in `frontend/src/assets/`.
 - In this design system, components embed minimal inline SVGs matching Lucide's 24-viewBox,

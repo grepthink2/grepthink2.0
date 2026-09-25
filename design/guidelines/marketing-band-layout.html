@@ -1,4 +1,4 @@
-<!-- @dsCard group="Marketing" viewport="700x230" name="Band layout & stage backdrops" subtitle="1100px · 1fr / 1.08fr alternating · 48px gap · 72px vertical · green stage for live, outlined for preview" -->
+<!-- @dsCard group="Marketing" viewport="700x230" name="Band layout & stage backdrops" subtitle="1100px · 1fr / 1.08fr alternating · 48px gap · clamp(72px, 9vw, 112px) vertical · anchor offset 88px · green stage for live, outlined for preview" -->
 <!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
 <style>
 body{margin:0;padding:16px;font-family:var(--gt-font-sans);color:var(--gt-gray-800);background:#fff}
@@ -19,5 +19,5 @@ body{margin:0;padding:16px;font-family:var(--gt-font-sans);color:var(--gt-gray-8
   <div class="band l" style="background:var(--gt-mkt-band-alt-bg)"><div class="stg live"><span style="left:10px;top:8px;rotate:-2deg"></span><span style="right:12px;top:6px;rotate:2.5deg"></span></div><div class="txt"><i></i><i></i></div><span class="lab">2 · stage left · NEW · #f8faf9</span></div>
   <div class="band r" style="background:#fff;box-shadow:inset 0 0 0 1px var(--gt-gray-200)"><div class="txt"><i></i><i></i></div><div class="stg prev"><span style="left:40px;top:12px;rotate:-2deg"></span><span style="right:8px;top:4px;rotate:3deg"></span></div><span class="lab">3 · text left · SOON · preview</span></div>
 </div>
-<p class="cap"><code>--gt-mkt-band-max</code> 1100 · columns <code>1fr 1.08fr</code> (stage wider) · gap 48 · padding 72/0 · stage 470px tall, radius 28. Live stage: green tint + dots. Preview stage: flat <code>#fbfbfc</code>, 1.5px <code>#d3d8dd</code> inset outline, dashed PREVIEW tag.</p>
+<p class="cap"><code>--gt-mkt-band-max</code> 1100 · columns <code>1fr 1.08fr</code> (stage wider) · gap 48 · padding <code>clamp(72px, 9vw, 112px)</code> / 24 · <code>scroll-margin-top</code> 88 · stage 470px tall (420 on tablet, auto on phones), radius 28 · band link <code>#016547</code>. Live stage: green tint + dots. Preview stage: flat <code>#fbfbfc</code>, 1.5px <code>#d3d8dd</code> inset outline, dashed PREVIEW tag. Band 3 desktop: suggestion 288px wide at 25% from the top; stalled flag + report card 3% from the right.</p>
 </body></html>

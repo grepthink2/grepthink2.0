@@ -8,4 +8,4 @@ Stage + StageCard: the decorative widget layer of a spotlight band. `Stage` is t
 <Stage variant="preview">…</Stage>
 ```
 
-Tilt within −3…+3°, float ±8–10px over 8–10s. Mark exactly one card `mobile`; `tabletHide` the ones that crowd 768–1079px.
+Tilt within −3…+3°, float ±8–10px over 8–10s. Mark exactly one card `mobile`; `tabletHide` the ones that crowd 768–1079px. Below 768px the stage has no fixed height and no moment plays, so the `mobile` card must not change size — show its pre-moment state (Band 3: the pending suggestion). Meta text is `--gt-mkt-card-meta` (#8A8A8A).

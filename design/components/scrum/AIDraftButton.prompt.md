@@ -1,4 +1,4 @@
-Sparkle ghost button for LLM-drafted stories/tasks. Quiet by design — AI assist, not an AI feature wall.
+Ghost button for LLM-drafted stories/tasks, carrying the Project assistant's spark (`AssistantIcon`) — one assistant mark across the product. Quiet by design: AI assist, not an AI feature wall.
 
 ```jsx
 <AIDraftButton onClick={draft} />

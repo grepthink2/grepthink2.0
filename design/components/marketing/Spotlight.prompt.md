@@ -14,4 +14,4 @@ One full-width feature band for the landing page: eyebrow (with NEW/SOON badge),
 </Spotlight>
 ```
 
-Layout: 1100px max, `1fr 1.08fr` columns (stage wider), 48px gap, 72px vertical padding; stacks below 1080px (text first).
+Layout: 1100px max, `1fr 1.08fr` columns (stage wider), 48px gap, `clamp(72px, 9vw, 112px)` vertical padding, `scroll-margin-top` 88px under the fixed header; stacks below 1080px (text first). The band link is `#016547` (`--gt-mkt-band-link`).

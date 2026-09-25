@@ -7,6 +7,20 @@ const LOGO = '../../assets/grepthink-logo.svg';
 const PREVIEW = '../../assets/landing/landing-preview.png';
 const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* Phones (<768px): each band shows one still card and plays no moment — the stage has no
+   fixed height there, so a card that changes size would push the page around. */
+function usePhone() {
+  const mq = React.useMemo(() => (window.matchMedia ? window.matchMedia('(max-width: 767px)') : null), []);
+  const [phone, setPhone] = React.useState(!!(mq && mq.matches));
+  React.useEffect(() => {
+    if (!mq) return undefined;
+    const on = (e) => setPhone(e.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [mq]);
+  return phone;
+}
+
 /* Launch settings — mirrors landing.config.ts */
 const CONFIG = { announcement: true, badges: { scrum: 'NEW', messaging: 'NEW', assistant: 'SOON' } };
 
@@ -41,18 +55,19 @@ function useInView(ref, threshold) {
   return { seen, visible };
 }
 
-/* One band: reveal (30%) → settle → moment (50%, +0.4s, once). */
+/* One band: reveal (30%) → settle → moment (50%, +0.4s, once; never on phones). */
 function Band({ children, renderStage, ...spot }) {
   const ref = React.useRef(null);
+  const phone = usePhone();
   const reveal = useInView(ref, 0.3);
   const moment = useInView(ref, 0.5);
   const [phase, setPhase] = React.useState(REDUCED ? 'settled' : 'idle');
   const [play, setPlay] = React.useState(REDUCED);
   React.useEffect(() => { if (reveal.seen && phase === 'idle') { setPhase('seen'); const t = setTimeout(() => setPhase('settled'), 700); return () => clearTimeout(t); } }, [reveal.seen, phase]);
-  React.useEffect(() => { if (moment.seen && phase === 'settled' && !play) { const t = setTimeout(() => setPlay(true), 400); return () => clearTimeout(t); } }, [moment.seen, phase, play]);
+  React.useEffect(() => { if (!phone && moment.seen && phase === 'settled' && !play) { const t = setTimeout(() => setPlay(true), 400); return () => clearTimeout(t); } }, [phone, moment.seen, phase, play]);
   return (
     <div ref={ref}>
-      <Spotlight reveal={phase} {...spot}>{renderStage({ play, paused: !reveal.visible })}</Spotlight>
+      <Spotlight reveal={phase} {...spot}>{renderStage({ play: play && !phone, paused: !reveal.visible, phone })}</Spotlight>
     </div>
   );
 }
@@ -117,7 +132,7 @@ function LandingPage() {
           note={{ title: 'For TAs and instructors', text: "Each week it compares status reports with the tasks and PRs each student actually closed, and points out where they don't line up, so reviews start from evidence." }}
           link={{ label: 'Want early access? Get in touch', href: 'contact.html' }}
           side="right"
-          renderStage={({ play }) => <AssistantMoment play={play} approved={approved} setApproved={setApproved} />} />
+          renderStage={({ play, phone }) => <AssistantMoment play={play} phone={phone} approved={approved} setApproved={setApproved} />} />
 
         <ClosingBand text="Create a class and import your roster. Every team gets a scrum board and its own channels from day one." ctaHref="#" secondaryHref="contact.html" />
       </main>
@@ -130,10 +145,11 @@ function LandingPage() {
   );
 }
 
-/* The assistant moment: Approve "presses" at 0.8s, the card collapses at 1.3s. */
-function AssistantMoment({ play, approved, setApproved }) {
+/* The assistant moment: Approve "presses" at 0.8s, the card collapses at 1.3s.
+   On phones the card stays pending (evidence + Approve/Dismiss) — no moment, no collapse. */
+function AssistantMoment({ play, phone, approved, setApproved }) {
   React.useEffect(() => { if (play && !approved) { const t = setTimeout(() => setApproved(true), 1300); return () => clearTimeout(t); } }, [play, approved]);
-  return <AssistantStage play={play} approved={approved} />;
+  return <AssistantStage play={play} approved={phone ? false : approved} />;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<LandingPage />);

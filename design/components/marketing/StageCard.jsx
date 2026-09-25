@@ -5,7 +5,9 @@ import React from 'react';
  * two-layer shadow, a tilt (−3°…+3°) and a slow float (8–10s). Position
  * it with `style` inside a <Stage>. `order` drives the reveal stagger
  * (80ms apart). `pill` = pill-shaped chip shell. `mobile` marks the one
- * card that survives below 768px (untilted, still).
+ * card that survives below 768px — untilted, still, and shown in its
+ * pre-moment state (no moment plays on phones; the stage has no fixed
+ * height there, so a card that changes size would push the page around).
  */
 export function StageCard({
   tilt = 0,
