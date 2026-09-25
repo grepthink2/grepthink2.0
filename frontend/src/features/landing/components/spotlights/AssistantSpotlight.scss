@@ -1,0 +1,136 @@
+@use '@features/landing/landing-tokens' as *;
+
+// Project assistant band stage (landing-only; the band shell lives in Spotlight.scss). The cards
+// are the app's assistant components (features/app/components/Assistant) on their `landing`
+// surface, each in a StageCard that supplies the floating shell: tilt, float, reveal, shadow.
+
+// --- The components' landing surface ----------------------------------------------------------
+// Styled here rather than with the components, so marketing tokens stay out of the app.
+.gt-asst--landing {
+  padding: $mkt-card-pad;
+  border-radius: $mkt-card-radius;
+  box-shadow: $mkt-shadow-card;
+}
+
+.gt-asst-unlinked--landing {
+  box-shadow: $mkt-shadow-card;
+}
+
+// A StageCard is already the shell; a second shadow would double it.
+.stage-card .gt-asst--landing {
+  box-shadow: none;
+}
+
+// --- Placement --------------------------------------------------------------------------------
+// After the design kit's layout: the suggestion's top-right corner tucks under the stalled
+// flag's left edge without reaching "Nudge Sam", and folds clear of the report card.
+.assist-suggest-card {
+  top: 25%;
+  left: 4%;
+  z-index: 2;
+  width: 288px;
+  padding: 0;
+  --tilt: -2deg;
+  --float-duration: 8s;
+  --float-y: -10px;
+}
+
+.assist-stall-card {
+  top: 4%;
+  right: 3%;
+  z-index: 1;
+  width: 226px;
+  padding: 0;
+  --tilt: 3deg;
+  --float-duration: 9s;
+  --float-y: 9px;
+}
+
+.assist-report-card {
+  right: 3%;
+  bottom: 6%;
+  z-index: 3;
+  width: 272px;
+  padding: 0;
+  --tilt: -2.5deg;
+  --float-duration: 9.5s;
+  --float-y: -8px;
+}
+
+.assist-chip-card {
+  bottom: 5%;
+  left: 4%;
+  z-index: 4;
+  padding: 9px 13px;
+  border-radius: 999px;
+  white-space: nowrap;
+  --tilt: 2deg;
+  --float-duration: 10s;
+  --float-y: 9px;
+}
+
+// --- The moment -------------------------------------------------------------------------------
+// Approve presses, then the pending card folds away to reveal the approved one beneath it. Both
+// share one grid cell, so the StageCard shrinks as the pending card folds. The pending card's white
+// background hides the approved card until then, and their heads are identical, so the head holds
+// still while the body changes. The base styles are the final frame: approved.
+$press-at: 2.2s;
+$fold-at: 2.6s;
+
+.assist-moment {
+  display: grid;
+
+  > * {
+    grid-area: 1 / 1;
+    align-self: start;
+  }
+
+  &__pending {
+    z-index: 1;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+  }
+}
+
+.is-seen .assist-moment__pending {
+  animation: assist-fold 0.5s cubic-bezier(0.4, 0, 0.2, 1) $fold-at both;
+}
+
+.is-seen .assist-moment__pending .gt-asst__btn--ok {
+  animation: assist-press 0.35s ease $press-at both;
+}
+
+@keyframes assist-fold {
+  from {
+    max-height: 240px;
+    opacity: 1;
+  }
+
+  to {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes assist-press {
+  0%,
+  100% {
+    box-shadow: none;
+    transform: none;
+  }
+
+  40% {
+    box-shadow: 0 0 0 3px rgba(1, 129, 86, 0.25);
+    transform: translateY(0.5px);
+  }
+}
+
+// Phones show one still card, so it rests on the suggestion itself (the evidence and the
+// Approve / Dismiss choice) rather than on its outcome.
+@media (max-width: 767px) {
+  .assist-moment__pending {
+    max-height: none;
+    opacity: 1;
+  }
+}

@@ -1,0 +1,501 @@
+@use '@styles/index.scss' as *;
+@use '@features/landing/landing-tokens' as *;
+
+// Spotlight bands: a landing-only marketing surface, like Hero.scss and Solutions.scss. Band,
+// stage and card values come from the marketing tokens ($mkt-*, mirrored from the design
+// system). The two avatar colors are bespoke: the design system's AVATAR_COLORS, all 4.5:1 with
+// white initials. Spec: docs/superpowers/specs/2026-09-24-landing-new-features-design.md.
+
+$avatar-blue: #1b57d6;
+$avatar-purple: #7d3c98;
+
+.spotlight {
+  position: relative;
+  padding: $mkt-band-pad-y $spacing-lg;
+  background: $white;
+  border-top: 1px solid var(--gt-gray-100);
+
+  &--tinted {
+    background: $mkt-band-alt-bg;
+    border-top-color: transparent;
+  }
+
+  &__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+    gap: clamp(32px, 5vw, 64px);
+    align-items: center;
+    max-width: $mkt-band-max;
+    margin: 0 auto;
+  }
+
+  &--text-right &__inner {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  }
+
+  &--text-right &__text {
+    order: 2;
+  }
+
+  // --- Text column: fades up once, children 60ms apart ------------------------------
+  &__text > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 0.5s ease,
+      transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  @for $i from 2 through 6 {
+    &__text > :nth-child(#{$i}) {
+      transition-delay: ($i - 1) * 60ms;
+    }
+  }
+
+  &.is-seen &__text > * {
+    opacity: 1;
+    transform: none;
+  }
+
+  &__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 18px;
+    padding: 6px 13px;
+    border-radius: 999px;
+    background: $mkt-eyebrow-bg;
+    color: $mkt-eyebrow-text;
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    letter-spacing: $mkt-tracking-caps;
+    text-transform: uppercase;
+
+    &--soon {
+      background: $mkt-eyebrow-amber-bg;
+      color: $mkt-eyebrow-amber-text;
+    }
+  }
+
+  &__badge {
+    margin-left: -8px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: $mkt-badge-new-bg;
+    color: $mkt-badge-text;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: $mkt-tracking-badge;
+  }
+
+  &__eyebrow--soon &__badge {
+    background: $mkt-badge-soon-bg;
+  }
+
+  &__title {
+    margin: 0 0 16px;
+    font-family: $primary-font;
+    font-size: $mkt-band-heading;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: $mkt-tracking-display;
+    color: $mkt-ink;
+  }
+
+  &__accent {
+    background: $mkt-accent-gradient;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  &__lead {
+    max-width: 460px;
+    margin: 0 0 24px;
+    font-family: $primary-font;
+    font-size: clamp(15px, 1.3vw, $mkt-band-lead);
+    line-height: 1.65;
+    color: $mkt-slate;
+  }
+
+  &__points {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__point {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: $primary-font;
+    font-size: $mkt-band-bullet;
+    font-weight: $font-weight-medium;
+    color: $text-secondary;
+  }
+
+  &__point-icon {
+    display: inline-flex;
+    flex: 0 0 $mkt-bullet-tile;
+    align-items: center;
+    justify-content: center;
+    height: $mkt-bullet-tile;
+    border-radius: 10px;
+    background: var(--gt-primary-soft);
+    color: $primary-color;
+  }
+
+  &__aside {
+    max-width: 460px;
+    margin-top: 22px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: $white;
+    box-shadow: 0 0 0 1px var(--gt-gray-200);
+  }
+
+  &__aside-title {
+    display: block;
+    margin-bottom: 4px;
+    font-family: $primary-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    letter-spacing: $mkt-tracking-caps;
+    text-transform: uppercase;
+    color: $mkt-slate;
+  }
+
+  &__aside-text {
+    margin: 0;
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    line-height: 1.6;
+    color: $text-secondary;
+  }
+
+  &__cta {
+    display: inline-flex;
+    gap: 6px;
+    margin-top: 20px;
+    font-family: $primary-font;
+    font-size: 15px;
+    font-weight: $font-weight-semibold;
+    color: $mkt-band-link;
+    text-decoration: none;
+
+    span {
+      display: inline-block;
+      transition: transform $transition-fast;
+    }
+
+    &:hover span {
+      transform: translateX(4px);
+    }
+
+    &:focus-visible {
+      border-radius: 4px;
+    }
+  }
+
+  // --- Stage backdrops --------------------------------------------------------------------
+  &__stage {
+    position: relative;
+    height: $mkt-stage-height;
+    border-radius: $mkt-stage-radius;
+    pointer-events: none;
+
+    &--live {
+      background: $mkt-stage-tint, $mkt-stage-bg;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background-image: radial-gradient(circle, $mkt-stage-dot 1.2px, transparent 1.5px);
+        background-size: $mkt-stage-dot-size $mkt-stage-dot-size;
+        -webkit-mask-image: $mkt-stage-dot-mask;
+        mask-image: $mkt-stage-dot-mask;
+      }
+    }
+
+    &--preview {
+      background: $mkt-preview-bg;
+      box-shadow: inset 0 0 0 1.5px $mkt-preview-outline;
+
+      &::after {
+        content: 'Preview';
+        position: absolute;
+        top: 16px;
+        left: 18px;
+        padding: 3px 9px;
+        border: 1.5px dashed $mkt-preview-tag-border;
+        border-radius: 999px;
+        font-family: $primary-font;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: $mkt-preview-tag;
+      }
+    }
+  }
+
+  // The tint leans toward the text; a stage on a tinted band sits a shade darker.
+  &--text-right &__stage--live {
+    background-image: $mkt-stage-tint-mirror;
+  }
+
+  &--tinted &__stage--live {
+    background-color: $mkt-stage-alt-bg;
+  }
+}
+
+// --- Floating cards ---------------------------------------------------------------------------
+// The hero's card shell. Each stage's stylesheet places a card and sets --tilt, --float-y and
+// --float-duration on it.
+.stage-card {
+  position: absolute;
+  padding: $mkt-card-pad;
+  border-radius: $mkt-card-radius;
+  background: $white;
+  box-shadow: $mkt-shadow-card;
+  font-family: $primary-font;
+  color: $text-dark;
+  text-align: left;
+  rotate: var(--tilt, 0deg);
+  opacity: 0;
+  transform: translateX(var(--enter-x, $mkt-reveal-card));
+  transition:
+    opacity 0.6s ease,
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: calc(var(--reveal-order, 0) * 80ms + 120ms);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  &__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13.5px;
+    font-weight: $font-weight-semibold;
+    letter-spacing: -0.01em;
+  }
+
+  &__meta {
+    font-size: 10.5px;
+    font-weight: $font-weight-medium;
+    color: $mkt-card-meta;
+  }
+}
+
+.spotlight--text-right .stage-card {
+  --enter-x: -#{$mkt-reveal-card};
+}
+
+.is-seen .stage-card {
+  opacity: 1;
+  transform: none;
+  animation: stage-float var(--float-duration, 9s) ease-in-out infinite;
+}
+
+.is-offscreen .stage-card {
+  animation-play-state: paused;
+}
+
+@keyframes stage-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 var(--float-y, -10px);
+  }
+}
+
+// --- Shared widget parts ----------------------------------------------------------------------
+.stage-avatar {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px $white;
+  color: $white;
+  font-size: 8.5px;
+  font-weight: $font-weight-semibold;
+
+  &--lg {
+    width: 30px;
+    height: 30px;
+    font-size: 10px;
+  }
+
+  &--square {
+    border-radius: 9px;
+    box-shadow: none;
+  }
+
+  &--green {
+    background: $primary-color;
+  }
+
+  &--blue {
+    background: $avatar-blue;
+  }
+
+  &--purple {
+    background: $avatar-purple;
+  }
+
+  &--amber {
+    background: var(--gt-warning-text);
+  }
+}
+
+.stage-pill {
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: $font-weight-semibold;
+  white-space: nowrap;
+
+  &--green {
+    background: var(--gt-success-soft);
+    color: var(--gt-success-text);
+  }
+
+  &--blue {
+    background: var(--gt-info-soft);
+    color: var(--gt-info-text);
+  }
+
+  &--amber {
+    background: var(--gt-warning-soft);
+    color: var(--gt-warning-text);
+  }
+}
+
+// Stacked values that trade places mid-moment; `after` is the resting state.
+.stage-swap {
+  display: inline-grid;
+
+  > * {
+    grid-area: 1 / 1;
+  }
+
+  &__before {
+    opacity: 0;
+  }
+}
+
+.is-seen .stage-swap__before {
+  animation: stage-swap-out var(--swap-duration, 2.2s) linear var(--swap-delay, 0.9s) both;
+}
+
+.is-seen .stage-swap__after {
+  animation: stage-swap-in var(--swap-duration, 2.2s) linear var(--swap-delay, 0.9s) both;
+}
+
+@keyframes stage-swap-out {
+  0%,
+  57% {
+    opacity: 1;
+  }
+  62%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes stage-swap-in {
+  0%,
+  57% {
+    opacity: 0;
+  }
+  62%,
+  100% {
+    opacity: 1;
+  }
+}
+
+// --- Narrower screens -------------------------------------------------------------------------
+@media (max-width: 1079px) {
+  .spotlight__inner,
+  .spotlight--text-right .spotlight__inner {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 680px;
+  }
+
+  .spotlight--text-right .spotlight__text {
+    order: 0;
+  }
+
+  .spotlight__stage {
+    height: 430px;
+  }
+
+  .spotlight__stage .stage-card--wide-only {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .spotlight__stage {
+    display: flex;
+    justify-content: center;
+    height: auto;
+    padding: 36px 16px;
+  }
+
+  .spotlight__stage .stage-card {
+    display: none;
+  }
+
+  .spotlight__stage .stage-card.stage-card--mobile {
+    display: block;
+    position: relative;
+    inset: auto;
+    width: min(100%, 320px);
+    rotate: none;
+  }
+
+  .is-seen .spotlight__stage .stage-card--mobile {
+    animation: none;
+  }
+
+  // One still card per band: its moments stay off too. The stage has no fixed height here,
+  // so a card that changed size mid-scroll would shove the rest of the page around.
+  .spotlight__stage .stage-card--mobile *,
+  .spotlight__stage .stage-card--mobile *::before,
+  .spotlight__stage .stage-card--mobile *::after {
+    animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight__text > *,
+  .stage-card {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  // Every float and moment stops; the base styles are each band's final frame.
+  .spotlight *,
+  .spotlight *::before,
+  .spotlight *::after {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,62 @@
+<!-- @dsCard group="Components" viewport="700x460" name="Navigation — Tabs, Pager, Segments & Sidebar" subtitle="Tabs, Pagination, SegmentedControl, SidebarNavItem" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-gray-0); font-family: var(--gt-font-sans); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 16px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Tabs, Pagination, SegmentedControl, SidebarNavItem, SidebarSectionTitle } = window.GrepThinkDesignSystem_36e7e3;
+
+const HomeIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const MsgIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const FolderIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+
+function Demo() {
+  const [tab, setTab] = React.useState('details');
+  const [page, setPage] = React.useState(4);
+  const [view, setView] = React.useState('table');
+  return (
+    <div>
+      <p className="lbl">Tabs</p>
+      <Tabs value={tab} onChange={setTab} tabs={[
+        { value: 'details', label: 'Details' },
+        { value: 'team', label: 'Team', count: 5 },
+        { value: 'requests', label: 'Join Requests', count: 2 },
+      ]} />
+
+      <p className="lbl">Pagination · Segmented control</p>
+      <div className="row">
+        <Pagination page={page} pageCount={12} onChange={setPage} />
+        <SegmentedControl value={view} onChange={setView} options={[
+          { value: 'table', label: 'Table' },
+          { value: 'cards', label: 'Cards' },
+        ]} />
+      </div>
+
+      <p className="lbl">Sidebar nav items (on the green sidebar)</p>
+      <div style={{background:'#018156', borderRadius:10, padding:'14px 14px 14px 19.2px', width:230, overflow:'hidden'}}>
+        <SidebarSectionTitle>Main</SidebarSectionTitle>
+        <SidebarNavItem icon={<HomeIcon />} label="Home" active />
+        <SidebarNavItem icon={<MsgIcon />} label="Messages" badge={8} />
+        <SidebarNavItem icon={<FolderIcon />} label="Projects" />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

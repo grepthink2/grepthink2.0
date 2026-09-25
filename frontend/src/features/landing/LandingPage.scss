@@ -1,4 +1,5 @@
 @use '@styles/index.scss' as *;
+@use '@features/landing/landing-tokens' as *;
 
 .landing {
   min-height: 100vh;
@@ -9,5 +10,10 @@
 
   main {
     display: block;
+  }
+
+  // Anchored sections land below the fixed header (its floating pill is ~64px plus margin).
+  section[id] {
+    scroll-margin-top: $mkt-anchor-offset;
   }
 }

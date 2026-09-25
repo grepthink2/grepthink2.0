@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 · Page structure (A chosen)</title>
+<style>
+  /* Minimal stand-in for the brainstorming frame these mockups were reviewed in. */
+  body { margin: 0; padding: 32px 24px 64px; background: #1f2023; color: #e8e8e8; font-family: system-ui, -apple-system, sans-serif; }
+  body > h2 { font-size: 26px; margin: 0 0 8px; color: #fff; }
+  .subtitle { color: #a1a1aa; font-size: 15px; line-height: 1.5; margin: 0 0 24px; max-width: 900px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 24px; }
+  .card { background: #2a2b2f; border-radius: 14px; overflow: hidden; border: 2px solid transparent; }
+  .card.chosen { border-color: #22c55e; }
+  .card-image { padding: 12px; background: #ececee; }
+  .card-body { padding: 14px 16px; } .card-body h3 { margin: 0 0 6px; font-size: 16px; color: #fff; } .card-body p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.5; color: #c4c4c8; }
+  .chosen-tag { display: inline-block; font-size: 11px; font-weight: 700; color: #0b3; background: #dcfce7; padding: 2px 8px; border-radius: 99px; margin-left: 6px; }
+</style></head>
+<body>
+<style>
+  .ps-page { width: 230px; margin: 0 auto 14px; border-radius: 10px; overflow: hidden; background: #fff;
+    box-shadow: 0 2px 6px rgba(33,43,54,.06), 0 18px 36px -14px rgba(33,43,54,.25); font-family: Poppins, system-ui, sans-serif; }
+  .ps-nav { height: 12px; background: #13201b; display: flex; align-items: center; justify-content: space-between; padding: 0 7px; }
+  .ps-nav i { display: block; width: 26px; height: 4px; border-radius: 2px; background: #fff; opacity: .85; }
+  .ps-nav b { display: block; width: 18px; height: 6px; border-radius: 2px; background: #018156; }
+  .ps-hero { position: relative; height: 92px; background: radial-gradient(60% 60% at 50% 0%, rgba(1,129,86,.10), transparent 70%), #f4f5f6;
+    background-image: radial-gradient(circle, rgba(33,43,54,.16) .8px, transparent 1px); background-size: 7px 7px; }
+  .ps-hero .t { position: absolute; left: 50%; transform: translateX(-50%); top: 30px; width: 96px; }
+  .ps-hero .t i { display: block; height: 7px; border-radius: 3px; background: #212b36; margin: 0 auto 4px; }
+  .ps-hero .t i:nth-child(2) { width: 70%; background: #018156; }
+  .ps-hero .t u { display: block; width: 34px; height: 8px; border-radius: 3px; background: #018156; margin: 7px auto 0; }
+  .ps-pill { position: absolute; left: 50%; transform: translateX(-50%); top: 14px; font-size: 6.5px; font-weight: 600; letter-spacing: .03em;
+    color: #018156; background: rgba(1,129,86,.14); border: 1px solid rgba(1,129,86,.35); padding: 2px 6px; border-radius: 99px; white-space: nowrap; }
+  .ps-fc { position: absolute; width: 30px; height: 20px; background: #fff; border-radius: 5px; box-shadow: 0 4px 10px -3px rgba(33,43,54,.3); }
+  .ps-over { padding: 10px 12px; background: #fff; }
+  .ps-over .h { width: 90px; height: 6px; border-radius: 3px; background: #212b36; margin: 0 auto 8px; }
+  .ps-cols { display: flex; gap: 6px; margin-bottom: 8px; }
+  .ps-cols i { flex: 1; height: 16px; border-radius: 3px; background: #eef0f2; }
+  .ps-prev { height: 30px; border-radius: 5px; background: linear-gradient(160deg, #e8f5f0, #c8e8dc); }
+  .ps-band { display: flex; gap: 8px; align-items: center; padding: 10px 12px; position: relative; }
+  .ps-band.rev { flex-direction: row-reverse; }
+  .ps-band.tint { background: #f7faf9; }
+  .ps-txt { flex: 1; }
+  .ps-txt em { display: inline-block; font-style: normal; font-size: 5.5px; font-weight: 700; letter-spacing: .05em; padding: 1px 4px; border-radius: 99px; margin-bottom: 4px; }
+  .ps-txt i { display: block; height: 4px; border-radius: 2px; background: #d7dbe0; margin-bottom: 3px; }
+  .ps-txt i:first-of-type { height: 6px; background: #212b36; width: 85%; }
+  .ps-stage { width: 96px; height: 60px; border-radius: 8px; background: #eef6f2; position: relative; }
+  .ps-stage.dashed { background: #fbfbfc; border: 1.5px dashed #b9c0c7; }
+  .ps-stage .ps-fc:nth-child(1) { left: 8px; top: 8px; transform: rotate(-4deg); width: 42px; height: 28px; }
+  .ps-stage .ps-fc:nth-child(2) { right: 8px; top: 16px; transform: rotate(3deg); width: 38px; height: 24px; }
+  .ps-stage .ps-fc:nth-child(3) { left: 30px; bottom: 6px; transform: rotate(2deg); width: 36px; height: 18px; }
+  .new { color: #018156; background: rgba(1,129,86,.14); }
+  .live { color: #1543a8; background: #eaf1ff; }
+  .soon { color: #8a5200; background: #fef3c7; }
+  .ps-cta { height: 26px; background: #0f2a20; display: flex; align-items: center; justify-content: center; }
+  .ps-cta b { width: 34px; height: 8px; border-radius: 3px; background: #018156; display: block; }
+  .ps-foot { height: 16px; background: #f4f5f6; }
+  .ps-tabs { display: flex; gap: 4px; justify-content: center; margin: 2px 0 6px; }
+  .ps-tabs span { font-size: 5.5px; font-weight: 600; padding: 2px 5px; border-radius: 99px; background: #eef0f2; color: #5b6570; }
+  .ps-tabs span.on { background: #018156; color: #fff; }
+  .ps-bento { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; padding: 10px 12px; }
+  .ps-bento div { background: #f4f7f6; border-radius: 6px; height: 34px; position: relative; }
+  .ps-bento .w2 { grid-column: span 2; height: 46px; }
+  .ps-bento .w3 { grid-column: span 3; height: 26px; background: #fbfbfc; border: 1.5px dashed #b9c0c7; }
+  .ps-bento em { position: absolute; left: 5px; top: 4px; font-style: normal; font-size: 5px; font-weight: 700; padding: 1px 3px; border-radius: 99px; }
+  .ps-note { font-size: 12px; color: #6b7280; margin: 0; }
+  .ps-lbl { font-size: 11px; color: #9aa0a6; text-align: center; margin: -6px 0 10px; }
+</style>
+
+<h2>Where do the three new features live on the page?</h2>
+<p class="subtitle">Wireframes of the whole scroll, top to bottom. The hero, the existing overview section and the footer stay. Click the one you prefer, then tell me in the terminal.</p>
+
+<div class="cards">
+  <div class="card chosen" data-choice="spotlights" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;padding:14px 0 4px;background:#eceef0">
+      <div class="ps-page">
+        <div class="ps-nav"><i></i><b></b></div>
+        <div class="ps-hero">
+          <span class="ps-pill">NEW · Scrum boards →</span>
+          <span class="ps-fc" style="left:8px;top:22px;transform:rotate(-4deg)"></span>
+          <span class="ps-fc" style="left:12px;top:60px;transform:rotate(4deg)"></span>
+          <span class="ps-fc" style="right:8px;top:30px;transform:rotate(4deg)"></span>
+          <span class="ps-fc" style="right:12px;top:64px;transform:rotate(-3deg)"></span>
+          <div class="t"><i></i><i></i><u></u></div>
+        </div>
+        <div class="ps-over"><div class="h"></div><div class="ps-cols"><i></i><i></i><i></i></div><div class="ps-prev"></div></div>
+        <div class="ps-band tint"><div class="ps-txt"><em class="new">NEW</em><i></i><i></i><i style="width:70%"></i></div><div class="ps-stage"><span class="ps-fc"></span><span class="ps-fc"></span><span class="ps-fc"></span></div></div>
+        <div class="ps-band rev"><div class="ps-txt"><em class="live">LIVE</em><i></i><i></i><i style="width:60%"></i></div><div class="ps-stage"><span class="ps-fc"></span><span class="ps-fc"></span><span class="ps-fc"></span></div></div>
+        <div class="ps-band tint"><div class="ps-txt"><em class="soon">COMING SOON</em><i></i><i></i><i style="width:75%"></i></div><div class="ps-stage dashed"><span class="ps-fc"></span><span class="ps-fc"></span></div></div>
+        <div class="ps-cta"><b></b></div>
+        <div class="ps-foot"></div>
+      </div>
+      <p class="ps-lbl">scrum · messaging · agentic, alternating sides</p>
+    </div>
+    <div class="card-body">
+      <h3>A · Spotlight bands <span class="chosen-tag">CHOSEN</span> <span style="font-size:12px;color:#018156">(recommended)</span></h3>
+      <p>One full-width band per feature, text and a cluster of floating widgets on alternating sides. The widgets reuse the hero's card language, so the page reads as one story. A "NEW · Scrum boards" pill in the hero jumps to the first band, and a closing call-to-action band sits before the footer.</p>
+      <p class="ps-note"><b>+</b> every feature visible on scroll, easy to skim, room for three widgets each<br><b>−</b> the longest page; needs scroll-in motion to keep it lively</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="tabs" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;padding:14px 0 4px;background:#eceef0">
+      <div class="ps-page">
+        <div class="ps-nav"><i></i><b></b></div>
+        <div class="ps-hero">
+          <span class="ps-fc" style="left:8px;top:22px;transform:rotate(-4deg)"></span>
+          <span class="ps-fc" style="left:12px;top:60px;transform:rotate(4deg)"></span>
+          <span class="ps-fc" style="right:8px;top:30px;transform:rotate(4deg)"></span>
+          <span class="ps-fc" style="right:12px;top:64px;transform:rotate(-3deg)"></span>
+          <div class="t"><i></i><i></i><u></u></div>
+        </div>
+        <div class="ps-over"><div class="h"></div><div class="ps-cols"><i></i><i></i><i></i></div><div class="ps-prev"></div></div>
+        <div style="padding:10px 12px;background:#f7faf9">
+          <div class="ps-over" style="padding:0;background:none"><div class="h" style="width:110px"></div></div>
+          <div class="ps-tabs"><span class="on">Scrum board</span><span>Messaging</span><span>Agentic · soon</span></div>
+          <div class="ps-stage" style="width:100%;height:92px"><span class="ps-fc" style="width:64px;height:40px"></span><span class="ps-fc" style="width:58px;height:36px"></span><span class="ps-fc" style="left:70px;width:52px;height:26px"></span></div>
+        </div>
+        <div class="ps-foot"></div>
+      </div>
+      <p class="ps-lbl">one stage, three tabs</p>
+    </div>
+    <div class="card-body">
+      <h3>B · Tabbed product tour</h3>
+      <p>A single "See how teams work" section: three tabs swap one large stage of widgets, with a crossfade between features.</p>
+      <p class="ps-note"><b>+</b> compact, feels interactive, one bigger stage to show off<br><b>−</b> two of three features sit behind a click, and most visitors never click tabs</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="bento" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;padding:14px 0 4px;background:#eceef0">
+      <div class="ps-page">
+        <div class="ps-nav"><i></i><b></b></div>
+        <div class="ps-hero">
+          <span class="ps-fc" style="left:8px;top:22px;transform:rotate(-4deg)"></span>
+          <span class="ps-fc" style="left:12px;top:60px;transform:rotate(4deg)"></span>
+          <span class="ps-fc" style="right:8px;top:30px;transform:rotate(4deg)"></span>
+          <span class="ps-fc" style="right:12px;top:64px;transform:rotate(-3deg)"></span>
+          <div class="t"><i></i><i></i><u></u></div>
+        </div>
+        <div class="ps-over"><div class="h"></div><div class="ps-cols"><i></i><i></i><i></i></div><div class="ps-prev"></div></div>
+        <div class="ps-bento">
+          <div class="w2"><em class="new">NEW</em></div><div><em class="new">NEW</em></div>
+          <div><em class="live">LIVE</em></div><div class="w2"><em class="live">LIVE</em></div>
+          <div class="w3"><em class="soon">COMING SOON</em></div>
+        </div>
+        <div class="ps-foot"></div>
+      </div>
+      <p class="ps-lbl">one grid, mixed tile sizes</p>
+    </div>
+    <div class="card-body">
+      <h3>C · Bento grid</h3>
+      <p>One "What's new" section: a grid of tiles, each holding a flat mini widget (board, burnup, channels, agent suggestion) with a one-line caption.</p>
+      <p class="ps-note"><b>+</b> dense and modern, the whole update at a glance<br><b>−</b> flat tiles drop the floating-card feel, and less room for copy per feature</p>
+    </div>
+  </div>
+</div>
+
+</body></html>

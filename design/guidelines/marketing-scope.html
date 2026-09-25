@@ -1,0 +1,21 @@
+<!-- @dsCard group="Marketing" viewport="700x190" name="Scope — public site only" subtitle="What marketing surfaces may do, and what never crosses into the signed-in app" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+body{margin:0;padding:18px;font-family:var(--gt-font-sans);color:var(--gt-gray-800);background:#fff;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.col{border-radius:10px;padding:14px 16px;font-size:11.5px;line-height:1.55}
+.col h4{margin:0 0 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.col ul{margin:0;padding-left:16px}
+.ok{background:var(--gt-mkt-band-alt-bg);box-shadow:inset 0 0 0 1px #dfe7e3}.ok h4{color:var(--gt-mkt-eyebrow-text)}
+.no{background:var(--gt-gray-100)}.no h4{color:var(--gt-gray-700)}
+</style></head><body>
+<div class="col ok"><h4>grepthink2.com — landing, contact</h4><ul>
+<li>Accent gradient on heading words · radial green wash · masked dot grid</li>
+<li>Floating cards: 20px radius, deep navy-tinted shadow, ±3° tilt, 8–10s float</li>
+<li>Lift-on-hover (−1/−2px), dark <code>#0c1f18</code> chrome, <code>#0f2a20</code> closing band</li>
+<li>Tokens: <code>--gt-mkt-*</code> only, layered on the product tokens</li></ul></div>
+<div class="col no"><h4>Never inside the app</h4><ul>
+<li>No gradients, no tilt, no float, no transform on hover (0.5px press only)</li>
+<li>Radii stay 7 / 10 / 20; shadows stay whisper-soft (2.61px card shadow)</li>
+<li>Focus is the 2px accent-blue ring — the contact form's green glow is a marketing exception</li>
+<li>Assistant components use <code>surface="app"</code>: flat, 10px, dashed green hairline</li></ul></div>
+</body></html>

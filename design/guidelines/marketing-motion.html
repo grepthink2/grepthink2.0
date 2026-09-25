@@ -1,0 +1,25 @@
+<!-- @dsCard group="Marketing" viewport="700x210" name="Motion — reveal, float, moment" subtitle="Reveal: text up 16px, cards in 24px, 80ms stagger · Float ±8–10px / 8–10s · one moment per band (≥768px only) · reduced motion = final frame" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+body{margin:0;padding:18px;font-family:var(--gt-font-sans);color:var(--gt-gray-800);background:#fff;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.m{border-radius:10px;background:var(--gt-mkt-stage-bg);height:120px;position:relative;overflow:hidden}
+.m h4{margin:0;position:absolute;left:10px;top:8px;font-size:10.5px;font-weight:600;color:var(--gt-mkt-ink)}
+.m p{margin:0;position:absolute;left:10px;right:10px;bottom:8px;font-size:9px;line-height:1.45;color:var(--gt-gray-600)}
+.card{position:absolute;width:44px;height:28px;background:#fff;border-radius:6px;box-shadow:0 2px 6px rgba(33,43,54,.04),0 12px 24px -8px rgba(33,43,54,.25)}
+.rv .card{left:50%;top:44px;margin-left:-22px;animation:reveal 3s var(--gt-mkt-reveal-ease) infinite}
+.rv .card:nth-child(3){margin-left:6px;top:52px;animation-delay:80ms}.rv .card:nth-child(4){margin-left:-50px;top:56px;animation-delay:160ms}
+@keyframes reveal{0%{opacity:0;translate:24px 0}30%,80%{opacity:1;translate:0 0}100%{opacity:0;translate:24px 0}}
+.fl .card{left:50%;top:44px;margin-left:-22px;rotate:-3deg;animation:fl 8s ease-in-out infinite}
+@keyframes fl{0%,100%{translate:0 0}50%{translate:0 -9px}}
+.mo .card{left:18px;top:48px;box-shadow:0 0 0 1.5px var(--gt-blue-500);animation:mo 5s cubic-bezier(.65,0,.35,1) infinite}
+.mo .tgt{position:absolute;right:18px;top:48px;width:44px;height:28px;border-radius:6px;border:1.5px dashed var(--gt-gray-300)}
+@keyframes mo{0%,35%{translate:0 0}55%,90%{translate:76px 0;box-shadow:0 0 0 1.5px var(--gt-primary)}100%{translate:0 0}}
+.rm .card{left:50%;top:44px;margin-left:-22px}
+.rm .card:nth-child(3){margin-left:6px;top:52px}.rm .card:nth-child(4){margin-left:-50px;top:56px}
+@media(prefers-reduced-motion:reduce){.card{animation:none!important;opacity:1!important;translate:0 0!important}}
+</style></head><body>
+<div class="m rv"><h4>Reveal · once</h4><span class="card"></span><span class="card"></span><span class="card"></span><p>Band 30% visible → text fades up 16px, cards drift in 24px from their side, 80ms apart.</p></div>
+<div class="m fl"><h4>Float · loop</h4><span class="card"></span><p>±8–10px on 8–10s ease-in-out; tilt preserved (rotate + translate). Pauses off-screen.</p></div>
+<div class="m mo"><h4>Moment · once</h4><span class="tgt"></span><span class="card"></span><p>Plays once at 50% visible, 0.4s after the reveal settles — e.g. GT-12 slides to Done. Never on phones (&lt;768px): the stage has no fixed height there.</p></div>
+<div class="m rm"><h4>Reduced motion</h4><span class="card"></span><span class="card"></span><span class="card"></span><p>No reveal, float or moment. The band renders its final frame.</p></div>
+</body></html>

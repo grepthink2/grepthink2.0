@@ -1,0 +1,100 @@
+<!-- @dsCard group="Components" viewport="700x1050" name="Scrum — Board, Stories & Sprint tools" subtitle="ScrumBoard (DnD + audit), StoryCard, TaskCard, TagBadge, BurnupChart, ScalePicker, CommentThread, AIDraftButton, BacklogRow" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 18px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .panel { background: #fff; border-radius: 10px; padding: 14px; border: 1px solid var(--gt-gray-300); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { TagBadge, TASK_TAGS, PointsChip, EstimateChip, PRLinkChip, UserPair, StoryCard, TaskCard,
+        ScrumBoard, BurnupChart, ScalePicker, PointPicker, CommentThread, AIDraftButton, BacklogRow, Card } = NS;
+
+function Demo() {
+  const [tasks, setTasks] = React.useState([
+    { id: 1, taskKey: 'GT-12', storyKey: 'US-3', title: 'Wire TSR submit endpoint', tags: ['backend'], points: 3, estimate: '4h', reporter: 'Ashton Liu', assignee: 'Tony Wu', status: 'todo', commentCount: 2 },
+    { id: 2, taskKey: 'GT-14', storyKey: 'US-3', title: 'Contribution slider a11y', tags: ['frontend', 'ui/ux'], points: 2, estimate: '3h', reporter: 'Ashton Liu', assignee: 'Priya Raman', status: 'in_progress', moved: { to: 'In Progress', by: 'Priya Raman', at: '2h ago' }, pr: { label: 'PR #42', url: '#', state: 'open' } },
+    { id: 3, taskKey: 'GT-9', storyKey: 'US-2', title: 'Fix roster CSV import crash', tags: ['bug'], points: 1, estimate: '2h', reporter: 'Landon Ngo', assignee: 'Tony Wu', status: 'done', moved: { to: 'Done', by: 'Tony Wu', at: 'Mon' }, pr: { label: '!17', url: '#', state: 'merged', provider: 'gitlab' } },
+  ]);
+  const [scale, setScale] = React.useState('fibonacci');
+  const [pts, setPts] = React.useState(5);
+  const [draft, setDraft] = React.useState('');
+
+  const onMove = (id, to) => {
+    const label = { todo: 'TODO', in_progress: 'In Progress', done: 'Done' }[to];
+    setTasks((ts) => ts.map((t) => t.id === id ? { ...t, status: to, moved: { to: label, by: 'You', at: 'just now' } } : t));
+  };
+
+  return (
+    <div>
+      <p className="lbl">Tags — the 10 work types · meta chips</p>
+      <div className="row">
+        {TASK_TAGS.map((t) => <TagBadge key={t} tag={t} />)}
+      </div>
+      <div className="row" style={{marginTop: 8}}>
+        <PointsChip points={5} />
+        <EstimateChip estimate="6h" />
+        <PRLinkChip label="PR #42" url="#" state="open" />
+        <PRLinkChip label="PR #38" url="#" state="merged" />
+        <PRLinkChip label="!17" url="#" state="draft" provider="gitlab" />
+        <UserPair reporter="Ashton Liu" assignee="Tony Wu" />
+        <AIDraftButton size="sm" />
+      </div>
+
+      <p className="lbl">Board — drag between columns (audit line updates)</p>
+      <ScrumBoard tasks={tasks} onMove={onMove} />
+
+      <p className="lbl">Story card · Burnup</p>
+      <div className="cols">
+        <div style={{display:'flex', flexDirection:'column', gap:10}}>
+          <StoryCard storyKey="US-3" title="As a student, I can submit my TSR with per-teammate contributions" points={8} estimate="3d" reporter="Ashton Liu" assignee="Tony Wu" tasksDone={1} tasksTotal={3} pointsDone={1} onOpen={() => {}} />
+          <div className="panel">
+            <ScalePicker value={scale} onChange={setScale} />
+            <div style={{marginTop: 8}}><PointPicker scale={scale} value={pts} onChange={setPts} /></div>
+          </div>
+        </div>
+        <div className="panel">
+          <BurnupChart title="Sprint 3 burnup" subtitle="Jan 12 – Jan 25" height={120}
+            labels={['M','T','W','T','F','M','T','W','T','F']}
+            scope={[21,21,21,24,24,24,24,24,24,24]}
+            completed={[0,2,5,5,9,12,15,18,21,24]} />
+        </div>
+      </div>
+
+      <p className="lbl">Comments (markdown + @mentions) · Backlog</p>
+      <div className="cols">
+        <div className="panel">
+          <CommentThread
+            members={['Ashton Liu','Tony Wu','Priya Raman']}
+            comments={[
+              { author: 'Tony Wu', time: '2h ago', body: '@AshtonLiu the `submit_tsr` RPC is **done** — see [PR #42](#)' },
+              { author: 'Ashton Liu', time: '1h ago', body: 'Nice. Remaining:\n- error toast on 409\n- *optimistic* row update' },
+            ]}
+            value={draft} onChange={setDraft} onSubmit={() => setDraft('')} />
+        </div>
+        <Card padded={false} shadow="hairline">
+          <BacklogRow storyKey="US-9" title="Export TSR history as CSV" points={5} estimate="2d" reporter="Ashton Liu" assignee="Priya Raman" archivedAt="Jun 12" onRestore={() => {}} onOpen={() => {}} />
+          <BacklogRow storyKey="US-11" title="Dark mode for the scrum board" points={3} estimate="1d" reporter="Landon Ngo" assignee="Tony Wu" archivedAt="Jul 02" onRestore={() => {}} onOpen={() => {}} />
+        </Card>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

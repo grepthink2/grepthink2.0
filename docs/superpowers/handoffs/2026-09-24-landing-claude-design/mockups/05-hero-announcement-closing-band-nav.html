@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · Hero announcement (A chosen), closing band, navigation</title>
+<style>
+  /* Minimal stand-in for the brainstorming frame these mockups were reviewed in. */
+  body { margin: 0; padding: 32px 24px 64px; background: #1f2023; color: #e8e8e8; font-family: system-ui, -apple-system, sans-serif; }
+  body > h2 { font-size: 26px; margin: 0 0 8px; color: #fff; }
+  .subtitle { color: #a1a1aa; font-size: 15px; line-height: 1.5; margin: 0 0 24px; max-width: 900px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-bottom: 24px; }
+  .card { background: #2a2b2f; border-radius: 14px; overflow: hidden; border: 2px solid transparent; }
+  .card.chosen { border-color: #22c55e; }
+  .card-image { padding: 12px; background: #ececee; }
+  .card-body { padding: 14px 16px; } .card-body h3 { margin: 0 0 6px; font-size: 16px; color: #fff; } .card-body p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.5; color: #c4c4c8; }
+  .chosen-tag { display: inline-block; font-size: 11px; font-weight: 700; color: #0b3; background: #dcfce7; padding: 2px 8px; border-radius: 99px; margin-left: 6px; }
+</style></head>
+<body>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  .hx { font-family: Poppins, system-ui, sans-serif; color: #212B36; border-radius: 14px; overflow: hidden; background: #f4f5f6; position: relative; }
+  .hx-nav { height: 46px; background: #13201b; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; }
+  .hx-nav .logo { color: #fff; font-weight: 800; font-size: 12px; letter-spacing: .04em; }
+  .hx-nav nav { display: flex; gap: 14px; align-items: center; font-size: 11px; color: rgba(255,255,255,.8); }
+  .hx-nav nav b { background: #018156; color: #fff; padding: 6px 11px; border-radius: 7px; font-weight: 600; }
+  .hx-nav nav .newlink { color: #fff; font-weight: 600; }
+  .hx-body { padding: 34px 18px 38px; text-align: center; background: radial-gradient(60% 60% at 50% 0%, rgba(1,129,86,.09), transparent 70%);
+    background-image: radial-gradient(circle, rgba(33,43,54,.13) 1px, transparent 1.2px); background-size: 16px 16px; }
+  .eyebrow { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #018156; background: rgba(1,129,86,.1); padding: 5px 11px; border-radius: 99px; margin-bottom: 12px; }
+  .announce { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 99px; background: #fff; box-shadow: 0 0 0 1px rgba(1,129,86,.25), 0 6px 16px -8px rgba(1,129,86,.45);
+    font-size: 11.5px; font-weight: 500; color: #424242; margin-bottom: 14px; }
+  .announce b { background: #018156; color: #fff; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; padding: 3px 8px; border-radius: 99px; }
+  .announce span { color: #018156; font-weight: 600; }
+  .announce.small { font-size: 10.5px; margin-bottom: 8px; }
+  .h1 { font-size: 30px; font-weight: 700; line-height: 1.05; letter-spacing: -.02em; margin: 0 0 8px; }
+  .h1 em { font-style: normal; background: linear-gradient(135deg,#018156,#02a06b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { font-size: 11.5px; color: #637381; max-width: 330px; margin: 0 auto 14px; line-height: 1.55; }
+  .btns { display: flex; gap: 12px; justify-content: center; align-items: center; font-size: 11.5px; }
+  .btns b { background: #018156; color: #fff; padding: 9px 18px; border-radius: 8px; font-weight: 600; }
+  .btns span { color: #424242; font-weight: 500; }
+
+  .cta { font-family: Poppins, system-ui, sans-serif; margin-top: 26px; border-radius: 22px; padding: 56px 40px; text-align: center; color: #fff; position: relative; overflow: hidden;
+    background: radial-gradient(70% 90% at 50% 0%, rgba(2,160,107,.35), transparent 70%), #0f2a20; }
+  .cta::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,.14) 1px, transparent 1.3px); background-size: 20px 20px;
+    -webkit-mask-image: radial-gradient(80% 90% at 50% 100%, #000 10%, transparent 75%); mask-image: radial-gradient(80% 90% at 50% 100%, #000 10%, transparent 75%); }
+  .cta h3 { position: relative; font-size: 32px; font-weight: 700; letter-spacing: -.02em; line-height: 1.12; margin: 0 0 12px; }
+  .cta p { position: relative; font-size: 14.5px; color: rgba(255,255,255,.75); max-width: 460px; margin: 0 auto 26px; line-height: 1.6; }
+  .cta .row { position: relative; display: flex; gap: 14px; justify-content: center; align-items: center; }
+  .cta .go { background: #018156; color: #fff; font-weight: 600; font-size: 14px; padding: 12px 28px; border-radius: 10px; box-shadow: 0 10px 26px -8px rgba(2,160,107,.8); }
+  .cta .talk { color: #fff; font-weight: 500; font-size: 14px; padding: 12px 20px; border-radius: 10px; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.35); }
+  .foot { font-family: Poppins, system-ui, sans-serif; margin-top: 18px; display: flex; gap: 40px; font-size: 12px; color: #637381; padding: 18px 22px; background: #fff; border-radius: 14px; }
+  .foot div { display: flex; flex-direction: column; gap: 6px; } .foot strong { color: #212B36; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+  .foot .add { color: #018156; font-weight: 600; }
+</style>
+
+<h2>Hero announcement, closing band, and navigation</h2>
+<p class="subtitle">The hero headline, buttons and floating cards stay the same. The question is how the launch gets announced at the top. Click one.</p>
+
+<div class="cards">
+  <div class="card chosen" data-choice="replace-eyebrow" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;padding:0">
+      <div class="hx">
+        <div class="hx-nav"><span class="logo">GREPTHINK</span><nav><span class="newlink">Features</span><span>Contact</span><span>Sign in</span><b>Get started</b></nav></div>
+        <div class="hx-body">
+          <div class="announce"><b>NEW</b>Scrum boards and team channels <span>→</span></div>
+          <p class="h1">Build better project teams,<br><em>all in one place</em></p>
+          <p class="sub">grepthink helps instructors and student teams form balanced teams, track weekly progress, and keep everyone accountable without the spreadsheet chaos.</p>
+          <div class="btns"><b>Get started</b><span>Sign in →</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · The announcement replaces the eyebrow <span class="chosen-tag">CHOSEN</span> <span style="font-size:12px;color:#018156">(recommended)</span></h3>
+      <p>One pill, clickable, scrolls to the scrum band. "For instructors and student teams" moves into the subtitle, so the audience line isn't lost. After launch season, the pill goes back to the plain eyebrow (one setting).</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="stack" onclick="toggleSelect(this)">
+    <div class="card-image" style="display:block;padding:0">
+      <div class="hx">
+        <div class="hx-nav"><span class="logo">GREPTHINK</span><nav><span class="newlink">Features</span><span>Contact</span><span>Sign in</span><b>Get started</b></nav></div>
+        <div class="hx-body">
+          <div class="announce small"><b>NEW</b>Scrum boards and team channels <span>→</span></div><br>
+          <span class="eyebrow">For instructors and student teams</span>
+          <p class="h1">Build better project teams,<br><em>all in one place</em></p>
+          <p class="sub">grepthink helps classes form balanced teams, track weekly progress, and keep everyone accountable without the spreadsheet chaos.</p>
+          <div class="btns"><b>Get started</b><span>Sign in →</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · Announcement above the eyebrow</h3>
+      <p>Everything existing stays word for word; a smaller announcement pill sits on top. Two pills in a row compete for attention, and the headline moves down.</p>
+    </div>
+  </div>
+</div>
+
+<div class="cta">
+  <h3>Ready to run your class on grepthink?</h3>
+  <p>Create a class and import your roster. Every team gets a scrum board and its own channels from day one.</p>
+  <div class="row"><span class="go">Get started</span><span class="talk">Talk to us</span></div>
+</div>
+
+<div class="foot">
+  <div><strong>Product</strong><span>Get started</span><span>Solutions</span><span class="add">Scrum board</span><span class="add">Messaging</span><span class="add">Project assistant</span></div>
+  <div><strong>Account</strong><span>Sign in</span><span>Create account</span></div>
+  <div><strong>Company</strong><span>Contact</span></div>
+</div>
+<p class="subtitle" style="margin-top:12px">Below the options: the closing band before the footer (dark green, echoing the header, "Talk to us" goes to /contact), and the footer's Product column with the three new anchors in green. The header gains a "Features" link that scrolls to the first band.</p>
+
+</body></html>
