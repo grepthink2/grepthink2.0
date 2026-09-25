@@ -1,5 +1,6 @@
 import { ArrowRight, Clock, GitPullRequest } from 'lucide-react';
 import { InitialsAvatar } from '@features/messages/components/InitialsAvatar';
+import { Tooltip, type TooltipProps } from '@components/Tooltip/Tooltip';
 import type { BoardPerson } from '../scrumTypes';
 import { prLabel, prState } from '../utils/prLabel';
 
@@ -43,16 +44,31 @@ export function PRLinkChip({ prUrl, provider, state }: { prUrl: string; provider
 }
 
 /** Reporter → assignee pair (tiny avatars with an arrow). */
-export function UserPair({ reporter, assignee, size = 18 }: { reporter: BoardPerson; assignee: BoardPerson; size?: number }) {
+/**
+ * Reporter → assignee avatars. Hovering either names the person with the design
+ * system's Tooltip, which shows at once; the browser's `title` waited about a second.
+ * `tooltipSide` exists for rows inside a clipping container (the backlog), where a
+ * bubble above the first row would be cut off.
+ */
+export function UserPair({
+  reporter, assignee, size = 18, tooltipSide = 'top',
+}: {
+  reporter: BoardPerson;
+  assignee: BoardPerson;
+  size?: number;
+  tooltipSide?: TooltipProps['side'];
+}) {
+  // Not focusable: cards are buttons (or draggable cards), and the bubble's text
+  // already reads as part of the card's accessible name.
   return (
     <span className="gt-userpair">
-      <span title={`Reporter: ${reporter.name}`}>
+      <Tooltip content={`Reporter: ${reporter.name}`} side={tooltipSide} focusable={false}>
         <InitialsAvatar name={reporter.name} imageUrl={reporter.image_url} size={size} />
-      </span>
+      </Tooltip>
       <ArrowRight size={10} aria-hidden="true" />
-      <span title={`Assignee: ${assignee.name}`}>
+      <Tooltip content={`Assignee: ${assignee.name}`} side={tooltipSide} focusable={false}>
         <InitialsAvatar name={assignee.name} imageUrl={assignee.image_url} size={size} />
-      </span>
+      </Tooltip>
     </span>
   );
 }
