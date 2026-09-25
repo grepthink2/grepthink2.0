@@ -11,7 +11,7 @@ const ISTINYE: ApiInstitution = { id: 'ist', name: 'İstinye University', slug: 
 const api = vi.hoisted(() => ({ getInstitutions: vi.fn(), createClass: vi.fn(), uploadClassRoster: vi.fn() }));
 vi.mock('@/lib/api', () => ({ api }));
 vi.mock('@/lib/classContext', () => ({
-  useClass: () => ({ refreshClasses: vi.fn(() => Promise.resolve()), currentSchool: null }),
+  useClass: () => ({ refreshClasses: vi.fn(() => Promise.resolve()), currentSchool: null, classes: [] }),
 }));
 vi.mock('@/features/app/components/Fields/DatePickerField', () => ({ default: () => null }));
 

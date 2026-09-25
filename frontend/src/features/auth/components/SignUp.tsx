@@ -9,7 +9,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/auth';
-import { api } from '@/lib/api';
+import { api, type ApiInstitution } from '@/lib/api';
 import { fetchInstitutions } from '@/lib/institutions';
 import { isSchoolEmail } from '@/lib/schoolEmail';
 import './SignUp.scss';
@@ -22,6 +22,25 @@ interface SignUpProps {
   userType?: 'instructor' | 'student';
   embedded?: boolean;
   onAccountCreated?: (email: string) => void;
+}
+
+/** How long a submit waits for the schools list before it lets the backend decide. */
+const SCHOOLS_LIST_WAIT_MS = 3_000;
+
+/**
+ * The schools list for the submit's school-email check: `[]` (unknown) when it could not load or
+ * takes longer than `SCHOOLS_LIST_WAIT_MS`, so a slow list never holds up signing up.
+ */
+async function schoolsListForSubmit(): Promise<ApiInstitution[]> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const giveUp = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), SCHOOLS_LIST_WAIT_MS);
+  });
+  try {
+    return (await Promise.race([fetchInstitutions(), giveUp])) ?? [];
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCreated }) => {
@@ -106,11 +125,12 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
     // If signing up with a school email, check it isn't already claimed as
     // another account's verified edu_email before creating the auth account.
     // Any .edu address is one without the schools list; for other addresses the
-    // list decides (fetched when the form opened), and one that could not load
-    // lets signup continue.
+    // list decides (fetched when the form opened). A list that could not load,
+    // or has not answered within three seconds, lets signup continue: the
+    // backend still checks the address when the profile is created.
     const signingUpWithSchoolEmail =
       isSchoolEmail(formData.email, []) ||
-      isSchoolEmail(formData.email, (await fetchInstitutions()) ?? []);
+      isSchoolEmail(formData.email, await schoolsListForSubmit());
     if (signingUpWithSchoolEmail) {
       const checkData = await api.checkEmail(formData.email);
       if (checkData && !checkData.available) {

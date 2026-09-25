@@ -191,7 +191,8 @@ The matching `api.ts` methods and `.well-known/grepthink-actions.json` entries a
 - The class list re-fetches when the tab regains focus, at most every 30 s, so a newly promoted TA
   sees TA Review about as quickly as with today's 30 s role cache.
 - Rollout safety: when `my_role` is missing (new frontend, old backend) it is derived as
-  `created_by === user.id ? 'instructor' : 'student'`.
+  `created_by === user.id ? 'instructor' : 'student'`, and a 404 from `GET /api/institutions`
+  reads as no schools (`[]`), so Create Class still works on the old backend.
 
 ### Layout
 
@@ -229,8 +230,10 @@ The matching `api.ts` methods and `.well-known/grepthink-actions.json` entries a
 - **My Classes:** each card is rendered from its own `my_role` (owner card with code and settings;
   TA or student card with Leave), with a section per school when there is more than one. Toolbar:
   Create Class and Join Class when `canCreateClasses`, Join Class otherwise.
-- **Create Class modal:** a required Institution select from `GET /api/institutions`, defaulting to
-  the current school, or to the only institution when there is one. Term buttons unchanged
+- **Create Class modal:** a required Institution select from `GET /api/institutions`. It defaults
+  to the current school only when you teach a class there (a school where you only TA or study is
+  not a safe guess: Scott's first İstinye class would default to UC Santa Cruz), else to the only
+  institution when there is one, else to nothing, and you pick. Term buttons unchanged
   (Follow-ups).
 - **Per-class role instead of the account role:** ProjectView, MemberManagerModal, ProjectDetails,
   CreateProject, Roster, RequireReviewAccess, TAMeetings and FinalReviews. FinalReviewDetail already
@@ -241,7 +244,8 @@ The matching `api.ts` methods and `.well-known/grepthink-actions.json` entries a
   TA or student role in any class.
 - **School email:** `lib/schoolEmail.ts` `isSchoolEmail(email, institutions)` mirrors the backend
   rule and replaces `.endsWith('.edu')` in Settings, AccountDetails and SignUp; labels read "School
-  email".
+  email". SignUp waits at most about three seconds for the list on submit; after that the list
+  counts as unknown and the backend decides.
 - **Deleted:** `features/classes/pages/ClassManagement.tsx` and its `/classes` route. Nothing links
   to it, and it branches on the account role.
 

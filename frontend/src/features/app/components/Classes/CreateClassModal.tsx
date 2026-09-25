@@ -32,14 +32,19 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const navigate = useNavigate();
   // undefined: loading · null: couldn't load (retry asks again) · list
   const { institutions, retry: retrySchools } = useInstitutionsWithRetry();
-  const { refreshClasses, currentSchool } = useClass();
+  const { refreshClasses, currentSchool, classes } = useClass();
   const [chosenInstitutionId, setChosenInstitutionId] = useState<string | null>(null);
   const terms: Term[] = ['Fall', 'Winter', 'Spring', 'Summer'];
 
-  // A class belongs to a school: the one picked, else the current school, else the only one.
+  // A class belongs to a school: the one picked; else the current school, but only where you
+  // already teach a class (a school where you only TA or study is not a safe guess, and a wrong
+  // school takes hand-written SQL to fix); else the only school; else none, and you pick.
   const schoolList = institutions ?? [];
+  const teachesAtCurrentSchool =
+    currentSchool !== null &&
+    classes.some((c) => c.my_role === 'instructor' && c.institution?.id === currentSchool.id);
   const defaultInstitutionId =
-    schoolList.find((i) => i.id === currentSchool?.id)?.id ??
+    (teachesAtCurrentSchool ? schoolList.find((i) => i.id === currentSchool.id)?.id : undefined) ??
     (schoolList.length === 1 ? schoolList[0].id : '');
   const institutionId = chosenInstitutionId ?? defaultInstitutionId;
   const needsInstitution = schoolList.length > 0;

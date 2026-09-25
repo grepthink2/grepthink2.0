@@ -6,17 +6,27 @@ import type { ApiInstitution } from '@/lib/api';
 
 const UCSC: ApiInstitution = { id: 'ucsc', name: 'UC Santa Cruz', slug: 'ucsc', email_domains: ['ucsc.edu'] };
 const ISTINYE: ApiInstitution = { id: 'ist', name: 'İstinye University', slug: 'istinye', email_domains: ['istinye.edu.tr'] };
+const AT_UCSC = { id: 'ucsc', name: 'UC Santa Cruz', slug: 'ucsc' };
+const AT_ISTINYE = { id: 'ist', name: 'İstinye University', slug: 'istinye' };
+
+type School = typeof AT_UCSC;
+type ClassRow = { id: string; my_role: 'instructor' | 'ta' | 'student'; institution: School | null };
 
 const state = vi.hoisted(() => ({
   institutions: undefined as ApiInstitution[] | null | undefined,
-  currentSchool: null as { id: string; name: string; slug: string } | null,
+  currentSchool: null as School | null,
+  classes: [] as ClassRow[],
 }));
 
 vi.mock('@/lib/institutions', () => ({
   useInstitutionsWithRetry: () => ({ institutions: state.institutions, retry: vi.fn() }),
 }));
 vi.mock('@/lib/classContext', () => ({
-  useClass: () => ({ refreshClasses: vi.fn(() => Promise.resolve()), currentSchool: state.currentSchool }),
+  useClass: () => ({
+    refreshClasses: vi.fn(() => Promise.resolve()),
+    currentSchool: state.currentSchool,
+    classes: state.classes,
+  }),
 }));
 vi.mock('@/lib/api', () => ({ api: { createClass: vi.fn(), uploadClassRoster: vi.fn() } }));
 // The real picker is a calendar popover; a button that picks a date is enough here.
@@ -51,6 +61,7 @@ beforeEach(() => {
   vi.mocked(api.createClass).mockResolvedValue({ message: 'ok', class: { id: 'new', name: 'SE 301', created_by: 'me', created_at: '' } });
   state.institutions = undefined;
   state.currentSchool = null;
+  state.classes = [];
 });
 
 describe('CreateClassModal — school', () => {
@@ -69,19 +80,35 @@ describe('CreateClassModal — school', () => {
     expect(api.createClass).toHaveBeenCalledWith(expect.objectContaining({ name: 'SE 301', institution_id: 'ist' }));
   });
 
-  it('defaults to the current school, or to the only one', () => {
+  it('does not default to the current school when you only TA or study there', () => {
+    // Scott with a UCSC class selected: a TA there, the instructor only at İstinye.
     state.institutions = [UCSC, ISTINYE];
-    state.currentSchool = { id: 'ist', name: 'İstinye University', slug: 'istinye' };
-    const { unmount } = render(
-      <MemoryRouter>
-        <CreateClassModal isOpen onClose={() => {}} />
-      </MemoryRouter>,
-    );
-    expect(screen.getByLabelText('School')).toHaveValue('ist');
-    unmount();
+    state.currentSchool = AT_UCSC;
+    state.classes = [
+      { id: 'cse115c', my_role: 'ta', institution: AT_UCSC },
+      { id: 'cse101', my_role: 'student', institution: AT_UCSC },
+      { id: 'se301', my_role: 'instructor', institution: AT_ISTINYE },
+    ];
+    renderModal();
+    expect(screen.getByLabelText('School')).toHaveValue('');
+    expect(submit()).toBeDisabled();
+  });
 
+  it('defaults to the current school when you teach a class there', () => {
+    state.institutions = [UCSC, ISTINYE];
+    state.currentSchool = AT_ISTINYE;
+    state.classes = [
+      { id: 'cse115c', my_role: 'ta', institution: AT_UCSC },
+      { id: 'se301', my_role: 'instructor', institution: AT_ISTINYE },
+    ];
+    renderModal();
+    expect(screen.getByLabelText('School')).toHaveValue('ist');
+  });
+
+  it('defaults to the only school, even one where you do not teach', () => {
     state.institutions = [UCSC];
-    state.currentSchool = null;
+    state.currentSchool = AT_UCSC;
+    state.classes = [{ id: 'cse115c', my_role: 'ta', institution: AT_UCSC }];
     renderModal();
     expect(screen.getByLabelText('School')).toHaveValue('ucsc');
   });

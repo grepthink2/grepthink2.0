@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -26,11 +26,15 @@ function renderSignUp() {
   );
 }
 
-async function signUpWith(email: string) {
-  const user = userEvent.setup();
+async function fillIn(email: string, user = userEvent.setup()) {
   await user.type(screen.getByLabelText('Email'), email);
   await user.type(screen.getByLabelText('Password'), 'long-enough-1');
   await user.type(screen.getByLabelText('Confirm Password'), 'long-enough-1');
+}
+
+async function signUpWith(email: string) {
+  const user = userEvent.setup();
+  await fillIn(email, user);
   await user.click(screen.getByRole('button', { name: 'Create Account' }));
 }
 
@@ -71,5 +75,28 @@ describe('SignUp — school email check', () => {
     await waitFor(() => expect(onAccountCreated).toHaveBeenCalledWith('ann@gmail.com'));
     expect(api.checkEmail).not.toHaveBeenCalled();
     expect(signUp).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits about three seconds for a schools list that does not answer, then lets the backend decide', async () => {
+    fetchInstitutions.mockReturnValue(new Promise(() => {})); // never answers
+    renderSignUp();
+    await fillIn('ann@gmail.com');
+    vi.useFakeTimers();
+    try {
+      // fireEvent, not user-event: Testing Library's async wrapper around user-event waits on a
+      // setTimeout that it only advances for Jest's fake timers, so under Vitest's it never ends.
+      fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
+
+      await act(() => vi.advanceTimersByTimeAsync(2_900));
+      expect(signUp).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Creating Account...' })).toBeDisabled();
+
+      await act(() => vi.advanceTimersByTimeAsync(100));
+      expect(signUp).toHaveBeenCalledTimes(1);
+      expect(api.checkEmail).not.toHaveBeenCalled();
+      expect(onAccountCreated).toHaveBeenCalledWith('ann@gmail.com');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

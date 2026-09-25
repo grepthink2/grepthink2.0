@@ -26,13 +26,21 @@ describe('getInstitutions', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/institutions');
   });
 
-  it('answers an empty list only when the backend sends one', async () => {
+  it('answers an empty list when the backend sends one', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { institutions: [] }));
+    await expect(institutionsApi.getInstitutions()).resolves.toEqual([]);
+  });
+
+  it('answers an empty list for a 404: a backend older than the endpoint has no schools', async () => {
+    // A new web client on the backend it replaces, during a deploy.
+    fetchMock.mockResolvedValue(jsonResponse(404, { detail: 'Not Found' }));
     await expect(institutionsApi.getInstitutions()).resolves.toEqual([]);
   });
 
   it.each([
     ['a 503', () => jsonResponse(503, { detail: 'Database unavailable', code: 'database_unavailable' })],
+    ['a 500', () => jsonResponse(500, { detail: 'Internal server error', code: 'internal_error' })],
+    ['a 429 from the rate limiter', () => jsonResponse(429, { error: 'Rate limit exceeded: 60 per 1 minute' })],
     ['a body that is not JSON', () => new Response('<html>', { status: 200 })],
     ['a body without the list', () => jsonResponse(200, {})],
     ['a school without email domains', () => jsonResponse(200, { institutions: [UCSC, { id: 'x', name: 'X', slug: 'x' }] })],
