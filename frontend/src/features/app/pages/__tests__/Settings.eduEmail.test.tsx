@@ -8,6 +8,10 @@ const session = vi.hoisted(() => ({
   canCreateClasses: false,
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => session }));
+vi.mock('@/lib/classContext', () => ({ useClass: () => ({ classes: [] }) }));
+vi.mock('@/lib/institutions', () => ({
+  useInstitutions: () => [{ id: 'ucsc', name: 'UC Santa Cruz', slug: 'ucsc', email_domains: ['ucsc.edu'] }],
+}));
 vi.mock('@/lib/supabaseClient', () => ({ supabase: { storage: { from: vi.fn() } } }));
 vi.mock('@/lib/api', () => ({ apiRequest: vi.fn(), api: { checkEmail: vi.fn() } }));
 
@@ -42,7 +46,7 @@ describe('Settings — university email', () => {
   it('saves everything else, then asks for a code before the new address counts', async () => {
     const user = userEvent.setup();
     render(<Settings isOpen onClose={() => {}} />);
-    const field = await screen.findByLabelText('.edu Email (Roster Email)');
+    const field = await screen.findByLabelText('School email (roster email)');
     await waitFor(() => expect(field).toHaveValue('old@ucsc.edu'));
 
     await user.clear(field);
@@ -58,7 +62,7 @@ describe('Settings — university email', () => {
   it('can still remove the address without a code', async () => {
     const user = userEvent.setup();
     render(<Settings isOpen onClose={() => {}} />);
-    const field = await screen.findByLabelText('.edu Email (Roster Email)');
+    const field = await screen.findByLabelText('School email (roster email)');
     await waitFor(() => expect(field).toHaveValue('old@ucsc.edu'));
 
     await user.clear(field);

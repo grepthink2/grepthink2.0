@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/api', () => ({ apiRequest: vi.fn(), api: { checkEmail: vi.fn() } }));
+vi.mock('@/lib/institutions', () => ({ useInstitutions: () => [] }));
 
 import { api, apiRequest } from '@/lib/api';
 import AccountDetails from '../AccountDetails';
@@ -40,7 +41,7 @@ describe('AccountDetails', () => {
     const user = userEvent.setup();
     renderDetails({ email: 'ann@gmail.com', userType: 'student' });
     await fillNames(user);
-    await user.type(screen.getByLabelText('Roster .edu Email'), 'ann@ucsc.edu');
+    await user.type(screen.getByLabelText('Roster School Email'), 'ann@ucsc.edu');
 
     await user.click(screen.getByRole('button', { name: /continue/i }));
 
@@ -71,7 +72,7 @@ describe('AccountDetails', () => {
     const user = userEvent.setup();
     renderDetails({ email: 'ann@gmail.com', userType: 'student' });
     await fillNames(user);
-    await user.type(screen.getByLabelText('Roster .edu Email'), 'ann@ucsc.edu');
+    await user.type(screen.getByLabelText('Roster School Email'), 'ann@ucsc.edu');
 
     await user.click(screen.getByRole('button', { name: /continue/i }));
 
@@ -79,7 +80,7 @@ describe('AccountDetails', () => {
     expect(screen.queryByText('the app')).not.toBeInTheDocument();
   });
 
-  it('needs no code when the login email is already the .edu address', async () => {
+  it('needs no code when the login email is already a school email', async () => {
     const user = userEvent.setup();
     renderDetails({ email: 'ann@ucsc.edu', userType: 'student' });
     await fillNames(user);
