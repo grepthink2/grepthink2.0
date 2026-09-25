@@ -73,6 +73,110 @@
     border-radius: var(--gt-radius-sm);
   }
 
+  // ── In-place editing of the title and description ──────────────────────────
+  &__head-row { display: flex; align-items: center; gap: 10px; }
+
+  // The design's ghost button (primitives `.gt-button--ghost`), at meta size.
+  &__edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 22px;
+    padding: 0 8px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background-color: transparent;
+    font-family: $primary-font;
+    font-size: 11.5px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-primary);
+    cursor: pointer;
+    @include gt-transition(background-color);
+
+    &:hover { background-color: rgba(1, 129, 86, 0.08); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__title-input,
+  &__edit-form textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+    font-family: $primary-font;
+    color: var(--gt-text-primary);
+    box-sizing: border-box;
+
+    &::placeholder { color: var(--gt-text-tertiary); }
+    &:focus { outline: none; border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+  }
+
+  &__title-input { font-size: 17px; font-weight: 600; line-height: 1.3; }
+
+  &__edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    textarea { font-size: 12.5px; line-height: var(--gt-leading-normal); resize: vertical; }
+  }
+
+  &__edit-foot { display: flex; align-items: center; gap: 8px; }
+  &__hint { margin-right: auto; font-size: 11px; color: var(--gt-text-tertiary); }
+
+  &__edit-cancel,
+  &__edit-save {
+    padding: 7px 14px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    font-family: $primary-font;
+    font-size: 12px;
+    font-weight: var(--gt-weight-medium);
+    cursor: pointer;
+    @include gt-transition(background-color, opacity);
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  // The design's secondary and primary buttons.
+  &__edit-cancel {
+    background-color: var(--gt-gray-100);
+    color: var(--gt-text-secondary);
+
+    &:hover { background-color: var(--gt-border); }
+  }
+
+  &__edit-save {
+    background-color: var(--gt-primary);
+    color: var(--gt-gray-0);
+
+    &:hover:not(:disabled) { background-color: var(--gt-primary-hover); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  // Same dashed affordance as "Add task", for a story that has no description yet.
+  &__add-description {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 7px 14px;
+    border: 1px dashed var(--gt-border-strong);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+    font-family: $primary-font;
+    font-size: 12px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-secondary);
+    cursor: pointer;
+    @include gt-transition(border-color, color);
+
+    // Explicit: the scaffold's `button:hover` would otherwise paint the border periwinkle.
+    &:hover { border-color: var(--gt-primary); color: var(--gt-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
   &__section-title {
     margin: 0 0 8px;
     font-size: 12px;

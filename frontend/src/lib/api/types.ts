@@ -789,7 +789,8 @@ export interface ApiCreateStoryBody {
 
 export interface ApiUpdateStoryBody {
   title?: string;
-  description_md?: string;
+  /** Explicit null clears it (an omitted key leaves it as it is). */
+  description_md?: string | null;
   points?: number;
   time_estimate?: string;
   assignee_id?: string;
