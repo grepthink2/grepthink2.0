@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiInstitution } from '@/lib/api';
 
@@ -6,7 +6,12 @@ const api = vi.hoisted(() => ({ getInstitutions: vi.fn() }));
 
 vi.mock('@/lib/api', () => ({ api }));
 
-import { clearInstitutionsCache, fetchInstitutions, useInstitutions } from '../institutions';
+import {
+  clearInstitutionsCache,
+  fetchInstitutions,
+  useInstitutions,
+  useInstitutionsWithRetry,
+} from '../institutions';
 
 const UCSC: ApiInstitution = { id: 'ucsc', name: 'UC Santa Cruz', slug: 'ucsc', email_domains: ['ucsc.edu'] };
 
@@ -53,5 +58,18 @@ describe('useInstitutions', () => {
     const { result } = renderHook(() => useInstitutions());
     expect(result.current).toBeUndefined();
     await waitFor(() => expect(result.current).toBeNull());
+  });
+});
+
+describe('useInstitutionsWithRetry', () => {
+  it('asks again on retry after a failure: loading, then the list', async () => {
+    api.getInstitutions.mockResolvedValueOnce(null).mockResolvedValueOnce([UCSC]);
+    const { result } = renderHook(() => useInstitutionsWithRetry());
+    await waitFor(() => expect(result.current.institutions).toBeNull());
+
+    act(() => result.current.retry());
+    expect(result.current.institutions).toBeUndefined();
+    await waitFor(() => expect(result.current.institutions).toEqual([UCSC]));
+    expect(api.getInstitutions).toHaveBeenCalledTimes(2);
   });
 });

@@ -41,6 +41,11 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
   // State for error handling and loading
   const [error, setError] = React.useState<string>('');
   const [isLoading, setIsLoading] = React.useState(false);
+
+  // Ask for the schools list while the form is filled in, so the submit rarely waits for it.
+  React.useEffect(() => {
+    void fetchInstitutions();
+  }, []);
   
   // Handler for form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +105,13 @@ const SignUp: React.FC<SignUpProps> = ({ userType, embedded = false, onAccountCr
 
     // If signing up with a school email, check it isn't already claimed as
     // another account's verified edu_email before creating the auth account.
-    if (isSchoolEmail(formData.email, (await fetchInstitutions()) ?? [])) {
+    // Any .edu address is one without the schools list; for other addresses the
+    // list decides (fetched when the form opened), and one that could not load
+    // lets signup continue.
+    const signingUpWithSchoolEmail =
+      isSchoolEmail(formData.email, []) ||
+      isSchoolEmail(formData.email, (await fetchInstitutions()) ?? []);
+    if (signingUpWithSchoolEmail) {
       const checkData = await api.checkEmail(formData.email);
       if (checkData && !checkData.available) {
         setError('This school email is already linked to another account.');

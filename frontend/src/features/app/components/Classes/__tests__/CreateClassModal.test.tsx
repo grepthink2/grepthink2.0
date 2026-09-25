@@ -12,7 +12,9 @@ const state = vi.hoisted(() => ({
   currentSchool: null as { id: string; name: string; slug: string } | null,
 }));
 
-vi.mock('@/lib/institutions', () => ({ useInstitutions: () => state.institutions }));
+vi.mock('@/lib/institutions', () => ({
+  useInstitutionsWithRetry: () => ({ institutions: state.institutions, retry: vi.fn() }),
+}));
 vi.mock('@/lib/classContext', () => ({
   useClass: () => ({ refreshClasses: vi.fn(() => Promise.resolve()), currentSchool: state.currentSchool }),
 }));

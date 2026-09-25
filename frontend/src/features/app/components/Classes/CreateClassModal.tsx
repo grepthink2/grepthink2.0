@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
-import { useInstitutions } from '@/lib/institutions';
+import { useInstitutionsWithRetry } from '@/lib/institutions';
 import DatePickerField from '@/features/app/components/Fields/DatePickerField';
 import './CreateClassModal.scss';
 
@@ -30,7 +30,8 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const institutions = useInstitutions(); // undefined: loading · null: couldn't load · list
+  // undefined: loading · null: couldn't load (retry asks again) · list
+  const { institutions, retry: retrySchools } = useInstitutionsWithRetry();
   const { refreshClasses, currentSchool } = useClass();
   const [chosenInstitutionId, setChosenInstitutionId] = useState<string | null>(null);
   const terms: Term[] = ['Fall', 'Winter', 'Spring', 'Summer'];
@@ -180,13 +181,16 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         </div>
 
         <div className="create-class-modal__content">
-          {/* School: loading, couldn't load (the modal stays mounted after its first open, so
-              only a reload asks again), a choice, or nothing when there are no schools yet */}
+          {/* School: loading, couldn't load (Try again asks again), a choice, or nothing when
+              there are no schools yet */}
           {schoolsPending ? (
             <p className="create-class-modal__description">Loading schools…</p>
           ) : schoolsFailed ? (
-            <div className="create-class-modal__error" role="alert">
-              Couldn&apos;t load the list of schools. Reload the page and try again.
+            <div className="create-class-modal__error create-class-modal__error--with-action" role="alert">
+              <span>Couldn&apos;t load the list of schools.</span>
+              <button type="button" className="create-class-modal__retry" onClick={retrySchools}>
+                Try again
+              </button>
             </div>
           ) : needsInstitution ? (
             <div className="create-class-modal__field">

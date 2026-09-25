@@ -28,10 +28,11 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
 }) => {
   const navigate = useNavigate();
   const isInstructor = userType === 'instructor';
-  const institutions = useInstitutions() ?? [];
+  // undefined while loading, null when it could not load: either way not known yet.
+  const institutions = useInstitutions();
   // Recomputed every render (not a useState initialiser): the schools list arrives
   // after the first render, and this must pick up the change when it does.
-  const primaryIsSchool = isSchoolEmail(email, institutions);
+  const primaryIsSchool = isSchoolEmail(email, institutions ?? []);
   const needsRosterEmail = !isInstructor;
 
   const [firstName, setFirstName] = React.useState('');
@@ -64,7 +65,10 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
         setError('Please enter your roster school email.');
         return;
       }
-      if (!isSchoolEmail(trimmedEdu, institutions)) {
+      // Refused here only against a known schools list. Without one (still loading, or it
+      // could not load) the server decides: it answers 400 for an address that is not a
+      // school's, and only a .edu address is known to be one without the list.
+      if (institutions && !isSchoolEmail(trimmedEdu, institutions)) {
         setError('Roster email must be a school email address.');
         return;
       }
@@ -164,7 +168,7 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
             {needsRosterEmail && (
               <div className="formGroup">
                 <label htmlFor="eduEmail">
-                  {primaryIsSchool ? 'School Email' : 'Roster School Email'}
+                  {primaryIsSchool ? 'School email' : 'Roster school email'}
                 </label>
                 <input
                   type="email"

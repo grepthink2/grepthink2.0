@@ -41,7 +41,7 @@ describe('AccountDetails', () => {
     const user = userEvent.setup();
     renderDetails({ email: 'ann@gmail.com', userType: 'student' });
     await fillNames(user);
-    await user.type(screen.getByLabelText('Roster School Email'), 'ann@ucsc.edu');
+    await user.type(screen.getByLabelText('Roster school email'), 'ann@ucsc.edu');
 
     await user.click(screen.getByRole('button', { name: /continue/i }));
 
@@ -72,7 +72,7 @@ describe('AccountDetails', () => {
     const user = userEvent.setup();
     renderDetails({ email: 'ann@gmail.com', userType: 'student' });
     await fillNames(user);
-    await user.type(screen.getByLabelText('Roster School Email'), 'ann@ucsc.edu');
+    await user.type(screen.getByLabelText('Roster school email'), 'ann@ucsc.edu');
 
     await user.click(screen.getByRole('button', { name: /continue/i }));
 

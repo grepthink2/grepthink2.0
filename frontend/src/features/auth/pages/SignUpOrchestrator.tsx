@@ -2,7 +2,7 @@
  * SignUpOrchestrator Component
  *
  * Orchestrates the email/password signup flow: credentials first, then a
- * swipe transition to account details (name + roster .edu email).
+ * swipe transition to account details (name + roster school email).
  */
 import React from 'react';
 import { useLocation } from 'react-router-dom';
