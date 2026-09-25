@@ -14,8 +14,9 @@ import { Skeleton } from '@/components/Skeleton/Skeleton';
  *
  * Clicking the pencil icon opens a search panel. Results come from a
  * debounced GET /api/messages/contacts?q= call — the backend already
- * excludes the caller and enforces messaging eligibility (e.g.
- * instructor<->instructor pairs), so no client-side filtering is needed.
+ * excludes the caller and enforces messaging eligibility (anyone who
+ * shares a class, including two instructors), so no client-side
+ * filtering is needed.
  * Clicking a result navigates to /app/messages/compose?to={userId}&name={displayName}.
  */
 export const NewConversationSearch: React.FC = () => {
