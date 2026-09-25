@@ -1,141 +1,94 @@
-"""Move endpoint: single task_moves INSERT (trigger applies), no-op fast path."""
+"""Moves: one task_moves INSERT (the trigger applies it), the no-op fast path, and
+which story edits pay for a burnup snapshot."""
 
-from unittest.mock import MagicMock, patch
+import pytest
+from fastapi import HTTPException
 
-PID = "00000000-0000-0000-0000-0000000000aa"
-UID = "00000000-0000-0000-0000-0000000000bb"
-TASK = {"id": "t1", "project_id": PID, "status": "todo", "story_id": "st1"}
+from app.scrum import controller
+from tests.scrum_support import PID, STUDENT, TA, UID, scrum_db
+
+STORY = {"id": "st1", "project_id": PID, "key": "US-1", "title": "Search", "sprint_id": "sp1"}
+TASK = {"id": "t1", "story_id": "st1", "project_id": PID, "key": "GT-1", "status": "todo"}
+SPRINT = {
+    "id": "sp1",
+    "project_id": PID,
+    "name": "Sprint 1",
+    "starts_at": "2026-08-17",
+    "ends_at": "2026-08-30",
+    "status": "active",
+}
 
 
-@patch("app.scrum.controller._snapshot_burnup_safe")
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_move_inserts_single_move_row(mock_client, _w, _snap):
-    from app.scrum.controller import move_task
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data=dict(TASK)
+def _board(monkeypatch):
+    return scrum_db(
+        monkeypatch, sprints=[dict(SPRINT)], user_stories=[dict(STORY)], tasks=[dict(TASK)]
     )
-    client.table.return_value.insert.return_value.execute.return_value = MagicMock(
-        data=[
-            {
-                "id": "mv1",
-                "from_status": "todo",
-                "to_status": "done",
-                "moved_at": "2026-08-12T01:00:00Z",
-            }
-        ]
-    )
-    out = move_task(task_id="t1", user_id=UID, to_status="done")
-    inserted = client.table.return_value.insert.call_args.args[0]
-    assert inserted == {"task_id": "t1", "to_status": "done", "moved_by": UID}
+
+
+def test_move_is_one_insert_that_the_trigger_applies(monkeypatch):
+    db = _board(monkeypatch)
+    out = controller.move_task(task_id="t1", user_id=UID, to_status="done")
+
+    [move] = db.rows("task_moves")
+    assert {k: move[k] for k in ("task_id", "to_status", "moved_by", "from_status")} == {
+        "task_id": "t1",
+        "to_status": "done",
+        "moved_by": UID,
+        "from_status": "todo",
+    }
+    assert db.rows("tasks")[0]["status"] == "done"
     assert out["task"]["status"] == "done" and out["move"]["from_status"] == "todo"
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_move_same_status_is_noop(mock_client, _w):
-    from app.scrum.controller import move_task
+def test_move_answers_with_the_movers_name(monkeypatch):
+    """The board resolves moved_by_name from its bulk profile read; this single-row
+    response resolves its own, or the client reconciles its optimistic audit line
+    down to "Unknown"."""
+    _board(monkeypatch)
+    out = controller.move_task(task_id="t1", user_id=UID, to_status="done")
+    assert out["task"]["moved_by_name"] == "Tony Wu"
 
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data=dict(TASK)
-    )
-    out = move_task(task_id="t1", user_id=UID, to_status="todo")
-    client.table.return_value.insert.assert_not_called()
+
+def test_moving_to_the_same_status_writes_nothing(monkeypatch):
+    db = _board(monkeypatch)
+    out = controller.move_task(task_id="t1", user_id=UID, to_status="todo")
     assert out["move"] is None
+    assert db.rows("task_moves") == []
 
 
-@patch("app.scrum.controller._snapshot_burnup_safe")
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_move_returns_mover_display_name(mock_client, _w, _snap):
-    """The board list resolves moved_by_name from a bulk profile fetch; this
-    single-row response must resolve its own, or the client reconciles its
-    optimistic audit line down to "Unknown"."""
-    from app.scrum.controller import move_task
-
-    client = MagicMock()
-    mock_client.return_value = client
-    tables = {}
-
-    def table(name):
-        tables.setdefault(name, MagicMock())
-        return tables[name]
-
-    client.table.side_effect = table
-    table(
-        "tasks"
-    ).select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = (
-        MagicMock(data=dict(TASK))
-    )
-    table("task_moves").insert.return_value.execute.return_value = MagicMock(
-        data=[
-            {
-                "id": "mv1",
-                "from_status": "todo",
-                "to_status": "done",
-                "moved_at": "2026-08-12T01:00:00Z",
-            }
-        ]
-    )
-    table(
-        "profiles"
-    ).select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = (
-        MagicMock(
-            data={
-                "id": UID,
-                "first_name": "QA",
-                "last_name": "Student",
-                "email": "qa.student@grepthink.dev",
-            }
-        )
-    )
-
-    out = move_task(task_id="t1", user_id=UID, to_status="done")
-    assert out["task"]["moved_by_name"] == "QA Student"
+def test_unknown_status_is_422(monkeypatch):
+    _board(monkeypatch)
+    with pytest.raises(HTTPException) as e:
+        controller.move_task(task_id="t1", user_id=UID, to_status="blocked")
+    assert e.value.status_code == 422
 
 
-@patch("app.scrum.controller._snapshot_burnup_safe")
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_story_title_edit_skips_the_burnup_snapshot(mock_client, _w, snap):
-    """A snapshot costs three extra sequential round-trips; only scope-bearing
-    edits (points / sprint_id / archived) can move the burnup line."""
-    from app.scrum.controller import update_story
-
-    client = MagicMock()
-    mock_client.return_value = client
-    story = {"id": "st1", "project_id": PID, "sprint_id": "sp1"}
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data=dict(story)
-    )
-    client.table.return_value.update.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[dict(story)]
-    )
-
-    update_story(story_id="st1", user_id=UID, fields={"title": "New title"})
-    snap.assert_not_called()
+@pytest.mark.parametrize(("caller", "status"), [(TA, 403), (STUDENT, 403)])
+def test_only_the_team_moves_tasks(monkeypatch, caller, status):
+    db = _board(monkeypatch)
+    with pytest.raises(HTTPException) as e:
+        controller.move_task(task_id="t1", user_id=caller, to_status="done")
+    assert e.value.status_code == status
+    assert db.rows("task_moves") == []
 
 
-@patch("app.scrum.controller._snapshot_burnup_safe")
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_story_points_edit_still_snapshots(mock_client, _w, snap):
-    from app.scrum.controller import update_story
+def test_a_move_snapshots_the_sprint_burnup(monkeypatch):
+    db = _board(monkeypatch)
+    controller.move_task(task_id="t1", user_id=UID, to_status="done")
+    [snap] = db.rows("sprint_burnup_days")
+    assert snap["sprint_id"] == "sp1"
 
-    client = MagicMock()
-    mock_client.return_value = client
-    story = {"id": "st1", "project_id": PID, "sprint_id": "sp1"}
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data=dict(story)
-    )
-    client.table.return_value.update.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[dict(story)]
-    )
 
-    update_story(story_id="st1", user_id=UID, fields={"points": 5})
-    snap.assert_called_once_with("sp1")
+def test_a_story_title_edit_skips_the_burnup_snapshot(monkeypatch):
+    """A snapshot costs three extra sequential round trips; only scope-bearing edits
+    (points / sprint_id / archived) can move the burnup line."""
+    db = _board(monkeypatch)
+    controller.update_story(story_id="st1", user_id=UID, fields={"title": "New title"})
+    assert db.rows("sprint_burnup_days") == []
+
+
+def test_a_story_points_edit_still_snapshots(monkeypatch):
+    db = _board(monkeypatch)
+    controller.update_story(story_id="st1", user_id=UID, fields={"points": 5})
+    [snap] = db.rows("sprint_burnup_days")
+    assert (snap["sprint_id"], snap["scope_points"]) == ("sp1", 5)

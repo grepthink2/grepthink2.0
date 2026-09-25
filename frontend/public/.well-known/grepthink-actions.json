@@ -238,7 +238,7 @@
       "id": "view_scrum_board", "title": "View the scrum board (sprints, stories, tasks, burnup)", "role": "any",
       "method": "GET", "endpoint": "/api/projects/{project_id}/scrum/board",
       "params": {"sprint_id": "uuid (query — defaults to the active sprint)"}, "uiRoute": "/app/projects/{projectId}/board",
-      "note": "Team members get full read/write; class staff (instructor, class TAs, meeting TA) get read + comments; everyone else 404."
+      "note": "Team members get full read/write; class staff (instructor, class TAs, meeting TA) get read + comments; everyone else 403, and a project that does not exist is 404."
     },
     {
       "id": "update_scrum_settings", "title": "Set the board's estimate scale", "role": "project-member",

@@ -1,44 +1,59 @@
-"""Comments: staff may post, parent routing, and the mention seam is invoked."""
+"""Comments: staff may post, the parent kind picks the column, the mention seam runs,
+and authors come back by name."""
 
-from unittest.mock import MagicMock, patch
+import pytest
+from fastapi import HTTPException
 
-PID = "00000000-0000-0000-0000-0000000000aa"
-UID = "00000000-0000-0000-0000-0000000000bb"
+from app.scrum import controller
+from tests.scrum_support import INSTR, OUTSIDER, PID, UID, scrum_db
+
+STORY = {"id": "st1", "project_id": PID, "key": "US-3", "title": "Search"}
+TASK = {"id": "t1", "story_id": "st1", "project_id": PID, "key": "GT-12", "status": "todo"}
 
 
-def _wire(mock_client, parent):
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data=parent
+def _board(monkeypatch):
+    return scrum_db(monkeypatch, user_stories=[dict(STORY)], tasks=[dict(TASK)])
+
+
+def test_staff_can_comment(monkeypatch):
+    db = _board(monkeypatch)
+    out = controller.create_comment(
+        parent_kind="story", parent_id="st1", user_id=INSTR, body_md="hello"
     )
-    client.table.return_value.insert.return_value.execute.return_value = MagicMock(
-        data=[{"id": "c1", "author_id": UID, "body_md": "x", "created_at": "2026-08-12T00:00:00Z"}]
+    assert out["author_name"] == "Ina X"
+    assert db.rows("scrum_comments")[0]["story_id"] == "st1"
+
+
+def test_a_task_comment_goes_on_the_task_and_reaches_the_mention_seam(monkeypatch):
+    db = _board(monkeypatch)
+    seam = []
+    monkeypatch.setattr(controller, "_fanout_mentions", lambda client, **kw: seam.append(kw))
+    controller.create_comment(parent_kind="task", parent_id="t1", user_id=UID, body_md="hello")
+
+    [stored] = db.rows("scrum_comments")
+    assert stored["task_id"] == "t1" and "story_id" not in stored
+    [call] = seam
+    assert (call["parent_kind"], call["parent_key"]) == ("task", "GT-12")
+
+
+def test_outsiders_cannot_comment(monkeypatch):
+    db = _board(monkeypatch)
+    with pytest.raises(HTTPException) as e:
+        controller.create_comment(
+            parent_kind="story", parent_id="st1", user_id=OUTSIDER, body_md="hi"
+        )
+    assert e.value.status_code == 403
+    assert db.rows("scrum_comments") == []
+
+
+def test_list_comments_names_each_author(monkeypatch):
+    scrum_db(
+        monkeypatch,
+        user_stories=[dict(STORY)],
+        scrum_comments=[
+            {"id": "c1", "story_id": "st1", "author_id": UID, "body_md": "a", "created_at": "1"},
+            {"id": "c2", "story_id": "st1", "author_id": "gone", "body_md": "b", "created_at": "2"},
+        ],
     )
-    return client
-
-
-@patch("app.scrum.controller._fanout_mentions")
-@patch("app.scrum.controller._board_access", return_value="staff")
-@patch("app.scrum.controller._client")
-def test_staff_can_comment(mock_client, _access, _fan):
-    from app.scrum.controller import create_comment
-
-    _wire(mock_client, {"id": "st1", "project_id": PID, "key": "US-3"})
-    out = create_comment(parent_kind="story", parent_id="st1", user_id=UID, body_md="hello")
-    assert out["id"] == "c1"
-
-
-@patch("app.scrum.controller._fanout_mentions")
-@patch("app.scrum.controller._board_access", return_value="member")
-@patch("app.scrum.controller._client")
-def test_create_comment_routes_task_parent_and_invokes_seam(mock_client, _access, fan):
-    from app.scrum.controller import create_comment
-
-    client = _wire(mock_client, {"id": "t1", "project_id": PID, "key": "GT-12"})
-    create_comment(parent_kind="task", parent_id="t1", user_id=UID, body_md="hello")
-    inserted = client.table.return_value.insert.call_args.args[0]
-    assert inserted["task_id"] == "t1" and "story_id" not in inserted
-    assert fan.call_count == 1
-    assert fan.call_args.kwargs["parent_key"] == "GT-12"
-    assert fan.call_args.kwargs["parent_kind"] == "task"
+    out = controller.list_comments(parent_kind="story", parent_id="st1", user_id=INSTR)
+    assert [(c["id"], c["author_name"]) for c in out] == [("c1", "Tony Wu"), ("c2", "Unknown")]

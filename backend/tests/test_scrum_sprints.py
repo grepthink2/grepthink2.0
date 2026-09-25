@@ -1,94 +1,80 @@
 """Settings + sprint CRUD."""
 
-from unittest.mock import MagicMock, patch
-
 import pytest
 from fastapi import HTTPException
 
-PID = "00000000-0000-0000-0000-0000000000aa"
-UID = "00000000-0000-0000-0000-0000000000bb"
+from app.scrum import controller
+from tests.scrum_support import INSTR, PID, UID, scrum_db
+
+SPRINT = {
+    "id": "s1",
+    "project_id": PID,
+    "name": "Sprint 1",
+    "starts_at": "2026-08-17",
+    "ends_at": "2026-08-30",
+    "status": "planned",
+}
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_update_settings_writes_scale(mock_client, _writer):
-    from app.scrum.controller import update_settings
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.update.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{"id": PID}]
-    )
-    update_settings(project_id=PID, user_id=UID, estimate_scale="linear")
-    client.table.assert_called_with("projects")
-    client.table.return_value.update.assert_called_with({"estimate_scale": "linear"})
+def test_update_settings_writes_scale(monkeypatch):
+    db = scrum_db(monkeypatch)
+    controller.update_settings(project_id=PID, user_id=UID, estimate_scale="linear")
+    assert next(p for p in db.rows("projects") if p["id"] == PID)["estimate_scale"] == "linear"
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_create_sprint_returns_row(mock_client, _writer):
-    from app.scrum.controller import create_sprint
+def test_update_settings_rejects_unknown_scale(monkeypatch):
+    scrum_db(monkeypatch)
+    with pytest.raises(HTTPException) as e:
+        controller.update_settings(project_id=PID, user_id=UID, estimate_scale="vibes")
+    assert e.value.status_code == 422
 
-    client = MagicMock()
-    mock_client.return_value = client
-    row = {
-        "id": "s1",
-        "name": "Sprint 1",
-        "starts_at": "2026-08-17",
-        "ends_at": "2026-08-30",
-        "status": "planned",
-    }
-    client.table.return_value.insert.return_value.execute.return_value = MagicMock(data=[row])
-    out = create_sprint(
+
+def test_staff_cannot_change_settings(monkeypatch):
+    db = scrum_db(monkeypatch)
+    with pytest.raises(HTTPException) as e:
+        controller.update_settings(project_id=PID, user_id=INSTR, estimate_scale="linear")
+    assert e.value.status_code == 403
+    assert next(p for p in db.rows("projects") if p["id"] == PID)["estimate_scale"] == "fibonacci"
+
+
+def test_create_sprint_returns_the_row(monkeypatch):
+    db = scrum_db(monkeypatch)
+    out = controller.create_sprint(
         project_id=PID, user_id=UID, name="Sprint 1", starts_at="2026-08-17", ends_at="2026-08-30"
     )
-    assert out["id"] == "s1"
+    assert out["name"] == "Sprint 1" and out["project_id"] == PID
+    assert db.rows("sprints") == [out]
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_update_sprint_404_when_missing(mock_client, _writer):
-    from app.scrum.controller import update_sprint
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = None
+def test_create_sprint_rejects_reversed_dates(monkeypatch):
+    db = scrum_db(monkeypatch)
     with pytest.raises(HTTPException) as e:
-        update_sprint(sprint_id="s-missing", user_id=UID, fields={"status": "active"})
-    assert e.value.status_code == 404
-
-
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_create_sprint_rejects_reversed_dates(mock_client, _writer):
-    from app.scrum.controller import create_sprint
-
-    mock_client.return_value = MagicMock()
-    with pytest.raises(HTTPException) as e:
-        create_sprint(
+        controller.create_sprint(
             project_id=PID, user_id=UID, name="Bad", starts_at="2026-09-10", ends_at="2026-09-01"
         )
-    assert e.value.status_code == 422
+    assert (e.value.status_code, e.value.detail) == (422, controller.BAD_DATE_RANGE)
+    assert db.rows("sprints") == []
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_update_sprint_rejects_reversed_effective_dates(mock_client, _writer):
-    from app.scrum.controller import update_sprint
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data={
-            "id": "s1",
-            "project_id": PID,
-            "name": "S1",
-            "starts_at": "2026-08-17",
-            "ends_at": "2026-08-30",
-            "status": "planned",
-        }
-    )
+def test_update_sprint_404_when_missing(monkeypatch):
+    scrum_db(monkeypatch)
     with pytest.raises(HTTPException) as e:
-        update_sprint(sprint_id="s1", user_id=UID, fields={"ends_at": "2026-08-01"})
+        controller.update_sprint(sprint_id="s-missing", user_id=UID, fields={"status": "active"})
+    assert (e.value.status_code, e.value.detail) == (404, controller.SPRINT_NOT_FOUND)
+
+
+def test_update_sprint_rejects_reversed_effective_dates(monkeypatch):
+    db = scrum_db(monkeypatch, sprints=[dict(SPRINT)])
+    with pytest.raises(HTTPException) as e:
+        controller.update_sprint(sprint_id="s1", user_id=UID, fields={"ends_at": "2026-08-01"})
     assert e.value.status_code == 422
-    client.table.return_value.update.assert_not_called()
+    assert db.rows("sprints")[0]["ends_at"] == "2026-08-30"  # nothing written
+
+
+def test_update_sprint_writes_allowed_fields(monkeypatch):
+    db = scrum_db(monkeypatch, sprints=[dict(SPRINT)])
+    out = controller.update_sprint(
+        sprint_id="s1", user_id=UID, fields={"status": "active", "project_id": "hijack"}
+    )
+    assert out["status"] == "active"
+    assert db.rows("sprints")[0]["project_id"] == PID  # only name/dates/status are writable

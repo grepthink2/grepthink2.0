@@ -1,147 +1,137 @@
-"""Story/task creation (key RPC), updates, task delete, tag validation."""
-
-from unittest.mock import MagicMock, patch
+"""Story/task creation (key RPC), updates, task delete, tag validation, PR links."""
 
 import pytest
 from fastapi import HTTPException
 
-PID = "00000000-0000-0000-0000-0000000000aa"
-UID = "00000000-0000-0000-0000-0000000000bb"
+from app.core.db import get_client
+from app.scrum import controller
+from tests.scrum_support import OTHER_PID, PID, TA, UID, scrum_db
+
+STORY = {"id": "st1", "project_id": PID, "key": "US-1", "title": "Search", "sprint_id": None}
+TASK = {
+    "id": "t1",
+    "story_id": "st1",
+    "project_id": PID,
+    "key": "GT-1",
+    "title": "Endpoint",
+    "status": "todo",
+    "pr_url": "https://github.com/o/r/pull/42",
+}
+FOREIGN_SPRINT = {
+    "id": "s9",
+    "project_id": OTHER_PID,
+    "name": "Theirs",
+    "starts_at": "2026-08-17",
+    "ends_at": "2026-08-30",
+    "status": "active",
+}
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_create_story_uses_key_rpc(mock_client, _writer):
-    from app.scrum.controller import create_story
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.rpc.return_value.execute.return_value = MagicMock(data=7)
-    client.table.return_value.insert.return_value.execute.return_value = MagicMock(
-        data=[{"id": "st1", "key": "US-7"}]
-    )
-    out = create_story(project_id=PID, user_id=UID, fields={"title": "Login flow"})
-    client.rpc.assert_called_with("scrum_next_key", {"p_project_id": PID, "p_kind": "story"})
-    assert out["key"] == "US-7"
-    inserted = client.table.return_value.insert.call_args.args[0]
-    assert inserted["reporter_id"] == UID and inserted["key"] == "US-7"
+def test_create_story_takes_its_key_from_the_rpc(monkeypatch):
+    db = scrum_db(monkeypatch)
+    first = controller.create_story(project_id=PID, user_id=UID, fields={"title": "Login flow"})
+    second = controller.create_story(project_id=PID, user_id=UID, fields={"title": "Logout"})
+    assert (first["key"], second["key"]) == ("US-1", "US-2")
+    assert first["reporter_id"] == UID
+    assert [q["table"] for q in db.queries].count("rpc:scrum_next_key") == 2
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_create_task_rejects_bad_tag(mock_client, _writer):
-    from app.scrum.controller import create_task
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data={"id": "st1", "project_id": PID}
-    )
+def test_create_story_rejects_a_sprint_from_another_project(monkeypatch):
+    db = scrum_db(monkeypatch, sprints=[dict(FOREIGN_SPRINT)])
     with pytest.raises(HTTPException) as e:
-        create_task(story_id="st1", user_id=UID, fields={"title": "x", "tags": ["yolo"]})
+        controller.create_story(
+            project_id=PID, user_id=UID, fields={"title": "x", "sprint_id": "s9"}
+        )
+    assert (e.value.status_code, e.value.detail) == (404, controller.SPRINT_NOT_FOUND)
+    assert db.rows("user_stories") == []
+
+
+def test_staff_cannot_create_a_story(monkeypatch):
+    db = scrum_db(monkeypatch)
+    with pytest.raises(HTTPException) as e:
+        controller.create_story(project_id=PID, user_id=TA, fields={"title": "x"})
+    assert e.value.status_code == 403
+    assert db.rows("user_stories") == []
+
+
+def test_create_task_rejects_an_unknown_tag(monkeypatch):
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)])
+    with pytest.raises(HTTPException) as e:
+        controller.create_task(story_id="st1", user_id=UID, fields={"title": "x", "tags": ["yolo"]})
     assert e.value.status_code == 422
+    assert db.rows("tasks") == []
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_create_story_rejects_cross_project_sprint(mock_client, _writer):
-    from app.scrum.controller import create_story
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data={"id": "s9", "project_id": "OTHER"}
+def test_create_task_inherits_the_story_project_and_gets_a_task_key(monkeypatch):
+    scrum_db(monkeypatch, user_stories=[dict(STORY)])
+    out = controller.create_task(
+        story_id="st1", user_id=UID, fields={"title": "x", "tags": ["backend"]}
     )
+    assert (out["key"], out["project_id"], out["tags"]) == ("GT-1", PID, ["backend"])
+
+
+def test_update_story_rejects_a_sprint_from_another_project(monkeypatch):
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)], sprints=[dict(FOREIGN_SPRINT)])
     with pytest.raises(HTTPException) as e:
-        create_story(project_id=PID, user_id=UID, fields={"title": "x", "sprint_id": "s9"})
+        controller.update_story(story_id="st1", user_id=UID, fields={"sprint_id": "s9"})
     assert e.value.status_code == 404
-    client.table.return_value.insert.assert_not_called()
+    assert db.rows("user_stories")[0]["sprint_id"] is None
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_update_story_rejects_cross_project_sprint(mock_client, _writer):
-    from app.scrum.controller import update_story
+def test_update_story_archive_sets_the_timestamp(monkeypatch):
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)])
+    controller.update_story(story_id="st1", user_id=UID, fields={"archived": True})
+    stored = db.rows("user_stories")[0]
+    assert stored["archived_at"] is not None and "archived" not in stored
 
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.side_effect = [
-        MagicMock(data={"id": "st1", "project_id": PID, "sprint_id": None}),  # story lookup
-        MagicMock(data={"id": "s9", "project_id": "OTHER"}),  # sprint lookup
-    ]
+
+def test_update_story_rejects_a_null_title(monkeypatch):
+    scrum_db(monkeypatch, user_stories=[dict(STORY)])
     with pytest.raises(HTTPException) as e:
-        update_story(story_id="st1", user_id=UID, fields={"sprint_id": "s9"})
-    assert e.value.status_code == 404
-    client.table.return_value.update.assert_not_called()
+        controller.update_story(story_id="st1", user_id=UID, fields={"title": None})
+    assert (e.value.status_code, e.value.detail) == (422, controller.TITLE_REQUIRED)
 
 
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_update_story_archive_sets_timestamp(mock_client, _writer):
-    from app.scrum.controller import update_story
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data={"id": "st1", "project_id": PID, "sprint_id": "s1"}
-    )
-    client.table.return_value.update.return_value.eq.return_value.execute.return_value = MagicMock(
-        data=[{"id": "st1", "archived_at": "2026-08-12T00:00:00Z"}]
-    )
-    update_story(story_id="st1", user_id=UID, fields={"archived": True})
-    payload = client.table.return_value.update.call_args.args[0]
-    assert payload["archived_at"] is not None and "archived" not in payload
-
-
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_update_story_rejects_null_title(mock_client, _writer):
-    from app.scrum.controller import update_story
-
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data={"id": "st1", "project_id": PID, "sprint_id": None}
-    )
+def test_update_story_404_when_missing(monkeypatch):
+    scrum_db(monkeypatch)
     with pytest.raises(HTTPException) as e:
-        update_story(story_id="st1", user_id=UID, fields={"title": None})
-    assert e.value.status_code == 422
+        controller.update_story(story_id="nope", user_id=UID, fields={"title": "x"})
+    assert (e.value.status_code, e.value.detail) == (404, controller.STORY_NOT_FOUND)
 
 
-@patch("app.scrum.controller._project_repo_rows", return_value=[])
-@patch("app.scrum.controller._client")
-@patch("app.scrum.controller.fetch_pr_state", return_value=None)
-def test_pr_fields_fetch_failure_stores_null_state(_fetch, _client, _repos):
-    from app.scrum.controller import _pr_fields
+def test_delete_task_removes_it(monkeypatch):
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)], tasks=[dict(TASK)])
+    controller.delete_task(task_id="t1", user_id=UID)
+    assert db.rows("tasks") == []
 
-    out = _pr_fields("https://github.com/o/r/pull/42", project_id=PID)
+
+def test_pr_fields_fetch_failure_stores_a_null_state(monkeypatch):
+    scrum_db(monkeypatch)
+    monkeypatch.setattr(controller, "fetch_pr_state", lambda parsed, token: None)
+    out = controller._pr_fields(get_client(), "https://github.com/o/r/pull/42", project_id=PID)
     assert out["pr_provider"] == "github"
     assert out["pr_state"] is None and out["pr_checked_at"] is None
 
 
-@patch("app.scrum.controller._project_repo_rows", return_value=[])
-@patch("app.scrum.controller._client")
-@patch("app.scrum.controller.fetch_pr_state", return_value="merged")
-def test_pr_fields_fetch_success_stamps_state(_fetch, _client, _repos):
-    from app.scrum.controller import _pr_fields
-
-    out = _pr_fields("https://github.com/o/r/pull/42", project_id=PID)
+def test_pr_fields_fetch_success_stamps_the_state(monkeypatch):
+    scrum_db(monkeypatch)
+    monkeypatch.setattr(controller, "fetch_pr_state", lambda parsed, token: "merged")
+    out = controller._pr_fields(get_client(), "https://github.com/o/r/pull/42", project_id=PID)
     assert out["pr_state"] == "merged" and out["pr_checked_at"] is not None
 
 
-@patch("app.scrum.controller._pr_fields")
-@patch("app.scrum.controller._require_writer")
-@patch("app.scrum.controller._client")
-def test_update_task_skips_pr_fetch_when_url_unchanged(mock_client, _writer, pr_fields):
-    from app.scrum.controller import update_task
+def test_pr_fields_rejects_an_unknown_host(monkeypatch):
+    scrum_db(monkeypatch)
+    with pytest.raises(HTTPException) as e:
+        controller._pr_fields(
+            get_client(), "https://gitlab.com/o/r/-/merge_requests/1", project_id=PID
+        )
+    assert e.value.status_code == 422
 
-    client = MagicMock()
-    mock_client.return_value = client
-    client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
-        data={"id": "t1", "project_id": PID, "pr_url": "https://github.com/o/r/pull/42"}
-    )
-    out = update_task(
-        task_id="t1", user_id=UID, fields={"pr_url": "https://github.com/o/r/pull/42"}
-    )
-    pr_fields.assert_not_called()
-    assert out["id"] == "t1"
+
+def test_update_task_skips_the_pr_fetch_when_the_url_is_unchanged(monkeypatch):
+    scrum_db(monkeypatch, user_stories=[dict(STORY)], tasks=[dict(TASK)])
+    calls = []
+    monkeypatch.setattr(controller, "_pr_fields", lambda *a, **k: calls.append(1) or {})
+    out = controller.update_task(task_id="t1", user_id=UID, fields={"pr_url": TASK["pr_url"]})
+    assert calls == [] and out["id"] == "t1"
