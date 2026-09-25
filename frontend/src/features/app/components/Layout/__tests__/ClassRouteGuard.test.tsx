@@ -83,6 +83,12 @@ describe('ClassRouteGuard', () => {
     expect(page()).toBe('/app/dashboard');
   });
 
+  it('keeps TA Review to a TA of the selected class', () => {
+    ctx.role = 'student';
+    renderAt('/app/ta-review/a1');
+    expect(page()).toBe('/app/my-project');
+  });
+
   it('treats a class previewed as a student like a student class', () => {
     // useSelectedClassRole reports 'student' for the class "view class as student" previews.
     ctx.role = 'student';

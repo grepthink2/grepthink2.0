@@ -6,6 +6,7 @@ import { buildSidebarConfig, type SidebarItem } from '../../config/sidebar';
 import { CLASS_ROLE_LABELS, pathAfterClassSwitch } from '../../config/routePermissions';
 import { useAuth } from '@/lib/auth';
 import { useClass, useSelectedClassRole } from '@/lib/classContext';
+import { usePreview } from '@/lib/previewContext';
 import { useUnreadTotal } from '@features/messages/hooks/useUnreadTotal';
 import logo from '@assets/grepthink l logo.svg?url';
 import './Sidebar.scss';
@@ -31,15 +32,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { canCreateClasses } = useAuth();
+  const { isPreviewing } = usePreview();
   const classRole = useSelectedClassRole();
   const { sidebarClasses, selectedClass, setSelectedClass, showSchoolSwitcher } = useClass();
   const unreadTotal = useUnreadTotal();
 
-  // The main section follows what the account can do; the class section, your role in the
-  // selected class (TAs get the student items plus "TA Review").
+  // The main section follows what the account can do, except that "View class as student" shows
+  // a student account's; the class section, your role in the selected class (TAs get the student
+  // items plus "TA Review").
   const sidebarConfig = React.useMemo(
-    () => buildSidebarConfig({ canCreateClasses, classRole }),
-    [canCreateClasses, classRole],
+    () => buildSidebarConfig({ canCreateClasses: canCreateClasses && !isPreviewing, classRole }),
+    [canCreateClasses, isPreviewing, classRole],
   );
   // Label each class with your role only when the list mixes roles.
   const mixedRoles = new Set(sidebarClasses.map((c) => c.my_role)).size > 1;
@@ -265,9 +268,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
                   location.pathname === item.path ||
                   location.pathname.startsWith(`${item.path}/`);
 
-                // For instructors, keep "Projects" highlighted when viewing
+                // Keep the instructor's "Projects" (only their class section has
+                // it, including while the classes load) highlighted when viewing
                 // project details or create-project flows under the class.
-                if (classRole === 'instructor' && isProjectsItem) {
+                if (isProjectsItem) {
                   const path = location.pathname;
                   if (
                     path === '/app/projects' ||

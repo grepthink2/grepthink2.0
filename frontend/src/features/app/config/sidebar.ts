@@ -82,8 +82,10 @@ const SETTINGS_SECTION: SidebarSection = {
 };
 
 /**
- * The sidebar for an account and its role in the selected class. The main section keeps each
- * account's familiar order; the class section follows the class role and is hidden with no class.
+ * The sidebar for an account and its role in the selected class (`undefined` while the classes
+ * load, `null` with no class selected). The main section keeps each account's familiar order. The
+ * class section follows the class role; while the classes load it is the account's usual one, so
+ * it does not pop in, and with no class selected it is hidden.
  */
 export function buildSidebarConfig({
   canCreateClasses,
@@ -96,9 +98,10 @@ export function buildSidebarConfig({
     ? [HOME, MESSAGES, MY_CLASSES, CREATE_CLASS]
     : [HOME, MESSAGES, JOIN_CLASS, MY_CLASSES];
   const sections: SidebarSection[] = [{ title: 'Main', items: main }];
-  if (classRole === 'instructor') sections.push({ title: 'Class', items: instructorClassItems });
-  else if (classRole === 'ta') sections.push({ title: 'Class', items: [...studentClassItems, taReviewItem] });
-  else if (classRole === 'student') sections.push({ title: 'Class', items: studentClassItems });
+  const role = classRole === undefined ? (canCreateClasses ? 'instructor' : 'student') : classRole;
+  if (role === 'instructor') sections.push({ title: 'Class', items: instructorClassItems });
+  else if (role === 'ta') sections.push({ title: 'Class', items: [...studentClassItems, taReviewItem] });
+  else if (role === 'student') sections.push({ title: 'Class', items: studentClassItems });
   sections.push(SETTINGS_SECTION);
   return sections;
 }

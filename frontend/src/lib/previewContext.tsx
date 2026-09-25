@@ -3,12 +3,13 @@ import type { ReactNode } from 'react';
 import { setReadOnly } from './previewGuard';
 
 /**
- * "View as Student" preview mode.
+ * "View class as student" preview mode.
  *
- * An instructor can flip into a read-only simulation of the student UI. While
- * active:
- *   - `useAuth().role` reports 'student' (see lib/auth.tsx), so the sidebar,
- *     route guards, and per-page branching all render the student experience;
+ * An instructor can flip into a read-only simulation of the student UI for a
+ * class they own. While active:
+ *   - `useSelectedClassRole()` reports 'student' for the previewed class (see
+ *     lib/classContext.tsx), so the sidebar, the class route guard, and
+ *     per-page branching all render the student experience;
  *   - every mutating API call is blocked by the read-only guard;
  *   - `previewProjectId` (optional) binds the "My Project" experience to a
  *     specific project the instructor chose to inspect as a member.

@@ -5,6 +5,7 @@ import type { Class, ClassRole } from '@/lib/classContext';
 
 const state = vi.hoisted(() => ({
   canCreateClasses: true,
+  previewing: false,
   role: 'instructor' as ClassRole | null | undefined,
   ctx: {
     sidebarClasses: [] as Class[],
@@ -14,6 +15,7 @@ const state = vi.hoisted(() => ({
   },
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ canCreateClasses: state.canCreateClasses }) }));
+vi.mock('@/lib/previewContext', () => ({ usePreview: () => ({ isPreviewing: state.previewing }) }));
 vi.mock('@/lib/classContext', () => ({
   useClass: () => state.ctx,
   useSelectedClassRole: () => state.role,
@@ -76,6 +78,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   state.canCreateClasses = true;
+  state.previewing = false;
   state.role = 'instructor';
   state.ctx.sidebarClasses = [taught, assisted];
   state.ctx.selectedClass = taught;
@@ -92,6 +95,47 @@ describe('Sidebar', () => {
     expect(screen.getByText('Create Class')).toBeInTheDocument();
     expect(screen.getByText('TA Review')).toBeInTheDocument();
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+  });
+
+  it("shows a TA whose account can't create classes the student sidebar plus TA Review", () => {
+    state.canCreateClasses = false;
+    state.role = 'ta';
+    state.ctx.selectedClass = assisted;
+    renderAt('/app/home');
+    expect(screen.getByText('Join Class')).toBeInTheDocument();
+    expect(screen.queryByText('Create Class')).not.toBeInTheDocument();
+    expect(screen.getByText('My Project')).toBeInTheDocument();
+    expect(screen.getByText('TA Review')).toBeInTheDocument();
+  });
+
+  it("shows the account's usual class section while the classes load", () => {
+    state.role = undefined;
+    state.ctx.selectedClass = null;
+    state.ctx.sidebarClasses = [];
+    const { unmount } = renderAt('/app/home');
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    unmount();
+
+    state.canCreateClasses = false;
+    renderAt('/app/home');
+    expect(screen.getByText('My Project')).toBeInTheDocument();
+    expect(screen.queryByText('TA Review')).not.toBeInTheDocument();
+  });
+
+  it('keeps Projects lit on a project page while the classes load', () => {
+    state.role = undefined;
+    state.ctx.selectedClass = null;
+    renderAt('/app/projects/p1');
+    expect(screen.getByText('Projects').closest('button')).toHaveClass('active');
+  });
+
+  it('shows the Main section of a student account while previewing your class as a student', () => {
+    state.previewing = true;
+    state.role = 'student'; // the previewed class shows as a student's
+    renderAt('/app/home');
+    expect(screen.getByText('Join Class')).toBeInTheDocument();
+    expect(screen.queryByText('Create Class')).not.toBeInTheDocument();
+    expect(screen.getByText('My Project')).toBeInTheDocument();
   });
 
   it('hides the class section when no class is selected', () => {
