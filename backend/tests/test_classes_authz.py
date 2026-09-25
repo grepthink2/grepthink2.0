@@ -170,6 +170,7 @@ INSTRUCTOR_ONLY = {
         cid, ["s1@ucsc.edu"], caller
     ),
     "queue_invite": lambda caller, cid: classes.queue_invite(cid, ["s1@ucsc.edu"], caller),
+    "cancel_invite": lambda caller, cid: classes.cancel_invite(cid, JOB, caller),
     "get_class_turn_in_stats": lambda caller, cid: classes.get_class_turn_in_stats(cid, caller),
 }
 
@@ -243,10 +244,12 @@ def test_owner_queues_an_invite(db):
 
 
 def test_cancel_invite_answers(db):
+    # Anyone but the class instructor is turned away before the job is looked up
+    # (INSTRUCTOR_ONLY above); the owner gets 404 for a job that does not exist.
     assert classes.cancel_invite(CLASS, JOB, INSTR) == {"cancelled": True}
-    with pytest.raises(HTTPException) as other:
-        classes.cancel_invite(CLASS, JOB, OTHER_INSTR)
-    assert (other.value.status_code, other.value.detail) == (404, "Invite job not found")
+    with pytest.raises(HTTPException) as missing:
+        classes.cancel_invite(CLASS, "no-such-job", INSTR)
+    assert (missing.value.status_code, missing.value.detail) == (404, "Invite job not found")
     db.rows("pending_invites")[0]["sent"] = True
     with pytest.raises(HTTPException) as sent:
         classes.cancel_invite(CLASS, JOB, INSTR)

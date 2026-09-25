@@ -131,6 +131,8 @@ def db(monkeypatch):
                 "id",
                 False,
             ),
+            # Invites load the instructor's profile with the class.
+            ("classes", "profiles!classes_created_by_fkey"): ("created_by", "id", False),
         },
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
@@ -203,10 +205,20 @@ CASES = {
         403,
         NOT_CLASS_INSTRUCTOR,
     ),
-    "assignments.create/student-profile": (
+    "assignments.create/enrolled-student": (
         lambda db: assignments.create_assignment(S1, CLASS, "T", OCT_1, OCT_8, "draft"),
         403,
-        INSTRUCTOR_ROLE_REQUIRED,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "assignments.update/enrolled-student": (
+        lambda db: assignments.update_assignment(S1, A_FEEDBACK, "T", None, None, None),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "assignments.delete/enrolled-student": (
+        lambda db: assignments.delete_assignment(S1, A_FEEDBACK),
+        403,
+        NOT_CLASS_INSTRUCTOR,
     ),
     "assignments.feedback_overview/missing-class": (
         lambda db: assignments.get_feedback_overview(INSTR, A_ORPHAN),
@@ -296,6 +308,63 @@ CASES = {
         403,
         NOT_CLASS_MEMBER,
     ),
+    # The class endpoints below authenticate only; the owner check turns away an enrolled
+    # student whatever their account role.
+    "classes.update_status/enrolled-student": (
+        lambda db: classes.update_class_status(CLASS, "complete", S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "classes.invite/enrolled-student": (
+        lambda db: classes.invite_student_to_class(CLASS, "x@ucsc.edu", S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "classes.roster_timeline/enrolled-student": (
+        lambda db: classes.get_class_roster_timeline(CLASS, S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "classes.roster_upload/enrolled-student": (
+        lambda db: classes.upload_class_roster(CLASS, "Name,Email\n", S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "classes.roster_manual_add/enrolled-student": (
+        lambda db: classes.add_manual_roster_student(CLASS, "A", "B", "a@ucsc.edu", S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "classes.roster_manual_delete/enrolled-student": (
+        lambda db: classes.delete_manual_roster_entry(CLASS, "entry-1", S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "classes.turn_in_stats/enrolled-student": (
+        lambda db: classes.get_class_turn_in_stats(CLASS, S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "classes.remove_student/enrolled-student": (
+        lambda db: classes.remove_student_from_class(CLASS, TA1, S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "classes.bulk_invite/enrolled-student": (
+        lambda db: classes.bulk_invite_students(CLASS, ["x@ucsc.edu"], S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "classes.queue_invite/enrolled-student": (
+        lambda db: classes.queue_invite(CLASS, ["x@ucsc.edu"], S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "classes.cancel_invite/enrolled-student": (
+        lambda db: classes.cancel_invite(CLASS, "job-1", S1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
     # app.tas
     "tas.set_review_window/missing-class": (
         lambda db: tas.set_review_window(INSTR, MISSING_CLASS, True),
@@ -309,6 +378,38 @@ CASES = {
     ),
     "tas.set_final_review_time/enrolled-ta": (
         lambda db: tas.set_final_review_time(TA1, P1, None),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "tas.promote/enrolled-student": (
+        lambda db: tas.promote_to_ta(S1, CLASS, TA1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "tas.demote/enrolled-student": (
+        lambda db: tas.demote_ta(S1, CLASS, TA1),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "tas.list_class_tas/enrolled-student": (
+        lambda db: tas.list_class_tas(S1, CLASS),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "tas.set_review_window/enrolled-student": (
+        lambda db: tas.set_review_window(S1, CLASS, True),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "tas.set_review_zoom/enrolled-student": (
+        lambda db: tas.set_review_zoom(S1, CLASS, "https://zoom.us/j/1"),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "tas.set_final_review_time/enrolled-student": (
+        lambda db: tas.set_final_review_time(
+            S1, P1, datetime.datetime(2026, 12, 1, 20, tzinfo=datetime.UTC)
+        ),
         403,
         NOT_CLASS_INSTRUCTOR,
     ),

@@ -1871,9 +1871,13 @@ def queue_invite(
 
 @retry_on_disconnect()
 def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
-    """Cancel a queued invite batch before it is sent."""
+    """Cancel a queued invite batch before it is sent.
+
+    404 when the class does not exist, 403 unless the caller created it.
+    """
     try:
         client = get_client()
+        _require_owner(client, instructor_id, str(class_id))
         result = (
             client.table("pending_invites")
             .select("id, sent, cancelled")

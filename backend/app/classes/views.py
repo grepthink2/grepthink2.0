@@ -48,9 +48,10 @@ def get_class(class_id: UUID, user_id: str = Depends(require_user)):
 def update_class_status(
     class_id: UUID,
     data: UpdateClassStatusRequest,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Set class lifecycle status to active or complete (instructor only)."""
+    """Set class lifecycle status to active or complete (the class instructor; checked in
+    the controller)."""
     updated = controller.update_class_status(class_id, data.status, user_id)
     return {"message": "Class status updated", "class": updated}
 
@@ -69,8 +70,10 @@ def join_class(data: JoinClassRequest, user_id: str = Depends(require_user)):
 def invite_student(
     class_id: UUID,
     data: InviteStudentRequest,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
+    """Invite a student to the class by email (the class instructor; checked in the
+    controller)."""
     return controller.invite_student_to_class(class_id, data.student_email, user_id)
 
 
@@ -93,18 +96,20 @@ def get_attention_summary(user_id: str = Depends(require_user)):
 
 def get_class_roster_timeline(
     class_id: UUID,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Enrollment, team-join, and drop dates for each roster student (instructor only)."""
+    """Enrollment, team-join, and drop dates for each roster student (the class instructor;
+    checked in the controller)."""
     return controller.get_class_roster_timeline(class_id, user_id)
 
 
 async def upload_class_roster(
     class_id: UUID,
     file: UploadFile = File(...),
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Replace the class roster from a UCSC CSV export (instructor only)."""
+    """Replace the class roster from a UCSC CSV export (the class instructor; checked in the
+    controller)."""
     raw = await file.read()
     try:
         csv_text = raw.decode("utf-8-sig")
@@ -116,9 +121,9 @@ async def upload_class_roster(
 def add_manual_roster_student(
     class_id: UUID,
     data: AddManualRosterStudentRequest,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Manually add a student to the roster (instructor only)."""
+    """Manually add a student to the roster (the class instructor; checked in the controller)."""
     return controller.add_manual_roster_student(
         class_id,
         data.first_name,
@@ -131,9 +136,9 @@ def add_manual_roster_student(
 def delete_manual_roster_entry(
     class_id: UUID,
     entry_id: str,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Delete a manually-added roster row (instructor only)."""
+    """Delete a manually-added roster row (the class instructor; checked in the controller)."""
     return controller.delete_manual_roster_entry(class_id, entry_id, user_id)
 
 
@@ -154,9 +159,10 @@ def get_class_projects_overview(class_id: UUID, user_id: str = Depends(require_u
 
 def get_class_turn_in_stats(
     class_id: UUID,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """TSR turn-in stats for the class's current assignment (instructor only)."""
+    """TSR turn-in stats for the class's current assignment (the class instructor; checked
+    in the controller)."""
     turn_in = controller.get_class_turn_in_stats(class_id, user_id)
     return {"turn_in": turn_in}
 
@@ -164,18 +170,18 @@ def get_class_turn_in_stats(
 def remove_student(
     class_id: UUID,
     student_id: str,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Remove a student from a class (instructor only)."""
+    """Remove a student from a class (the class instructor; checked in the controller)."""
     return controller.remove_student_from_class(class_id, student_id, user_id)
 
 
 def bulk_invite(
     class_id: UUID,
     data: BulkInviteRequest,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Bulk-enroll students by email list (instructor only)."""
+    """Bulk-enroll students by email list (the class instructor; checked in the controller)."""
     return controller.bulk_invite_students(class_id, data.emails, user_id)
 
 
@@ -187,9 +193,10 @@ def leave_class(class_id: UUID, user_id: str = Depends(require_user)):
 def queue_invite(
     class_id: UUID,
     data: QueueInviteRequest,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ) -> QueueInviteResponse:
-    """Queue an invite batch for delayed delivery (instructor only)."""
+    """Queue an invite batch for delayed delivery (the class instructor; checked in the
+    controller)."""
     return controller.queue_invite(
         class_id,
         data.emails,
@@ -205,7 +212,8 @@ def queue_invite(
 def cancel_invite(
     class_id: UUID,
     job_id: str,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ) -> CancelInviteResponse:
-    """Cancel a queued invite batch before it is sent (instructor only)."""
+    """Cancel a queued invite batch before it is sent (the class instructor; checked in the
+    controller)."""
     return controller.cancel_invite(class_id, job_id, user_id)

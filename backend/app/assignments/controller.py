@@ -19,13 +19,6 @@ logger = logging.getLogger(__name__)
 ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form", "feedback"}
 
 
-def _require_instructor(user_id: str) -> None:
-    """Raise 403 if the user's profile role is not instructor."""
-    result = get_client().table("profiles").select("role").eq("id", user_id).execute()
-    if not result.data or result.data[0].get("role") != "instructor":
-        raise HTTPException(status_code=403, detail=authz.INSTRUCTOR_ROLE_REQUIRED)
-
-
 def _require_class_instructor(user_id: str, class_id: str) -> None:
     """Raise 404 if the class does not exist and 403 unless the user is its instructor."""
     authz.require_class_instructor(get_client(), user_id, class_id)
@@ -64,13 +57,12 @@ def create_assignment(
     assignment_type: str | None = None,
 ) -> dict:
     """
-    Create a new assignment for a class (instructor only).
+    Create a new assignment for a class (the class instructor only).
 
     Uses the assignments.class_id FK column to link the assignment to its class.
 
     Returns the created assignment row.
     """
-    _require_instructor(user_id)
     _require_class_instructor(user_id, str(class_id))
 
     if open_date > close_date:
@@ -218,7 +210,7 @@ def update_assignment(
     assignment_type: str | None = None,
 ) -> dict:
     """
-    Edit an existing assignment's title, dates, or status (instructor only).
+    Edit an existing assignment's title, dates, or status (the class instructor only).
 
     Only the instructor who owns the class the assignment belongs to may edit it.
     Returns the updated assignment row. If the assignment type is 'tsr', a
@@ -226,8 +218,6 @@ def update_assignment(
     evaluatee_name, percent_contribution, constructive_feedback, and positive_feedback (always present)
     plus Scrum Master fields.
     """
-    _require_instructor(user_id)
-
     try:
         client = get_client()
 
@@ -310,7 +300,6 @@ def update_assignment(
 
 def delete_assignment(user_id: str, assignment_id: UUID) -> None:
     """Delete an assignment (instructor who owns the class only)."""
-    _require_instructor(user_id)
     try:
         client = get_client()
         assignment_result = (
