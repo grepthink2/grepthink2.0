@@ -57,6 +57,14 @@ All routes require auth unless stated otherwise.
 
 ---
 
+## Institutions (`/api/institutions`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/institutions` | No | Public. The schools GrepThink knows: `{institutions: [{id, name, slug, email_domains}]}`, empty until the migration is applied. Feeds the Create Class institution picker and the school-email check at sign-up (before the user is signed in). Rate-limited 60/min; `Cache-Control: public, max-age=300` (`no-store` while the table doesn't exist yet). |
+
+---
+
 ## Projects (`/api/projects`)
 
 ### Listing and detail

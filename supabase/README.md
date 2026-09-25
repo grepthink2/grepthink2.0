@@ -77,3 +77,28 @@ for the known inconsistencies before mirroring.
 Fresh-build model, no auto-migrate: when the dev schema changes, re-run the
 `db dump`, re-apply the changed DDL to prod, and update `auth_glue.sql` if any
 trigger/function/Auth-hook/bucket changed.
+
+## Institutions and class creation (maintainer steps)
+
+Apply `backend/database/migrations/2026-09-25_institutions.sql` and then
+`2026-09-25_seed_istinye.sql` — DEV, then PROD — before anyone creates a class outside UC Santa
+Cruz. Until the first file runs, no class can be given a school, and that file's one-time backfill
+labels every existing class UC Santa Cruz; a non-UCSC class created before both files have run
+would be mislabeled the same way, and re-running the backfill afterwards is not a fix (see the
+migration's own header). The backend works on either schema (the institutions loader in
+`app/institutions/controller.py` falls back to "no schools" while the table is missing), so the
+institutions migration, and `2026-09-25_messages_inbox_class_roles.sql` (the inbox's `can_send`
+now follows shared classes, not the account role), may each be applied before or after the
+per-class-roles release. The role flip below is different: it must wait until *after* the release
+is live on PROD and after the İstinye seed has run there.
+
+- **Add a school:** copy `backend/database/migrations/2026-09-25_seed_istinye.sql`, change the name,
+  slug (lower-case, hyphens) and base email domains, run it on DEV then PROD. The app shows it within
+  five minutes. Subdomains of a listed domain count automatically — never list a public suffix
+  (`edu.tr`, `ac.uk`, `com`, ...) in `email_domains`, since that would make every address under it
+  a school email. (The loader also drops a small denylist of two-part public suffixes and any
+  domain with no dot, logging a warning rather than failing.)
+- **Letting an existing account create classes:** edit and run
+  `backend/database/migrations/prod/2026-09-25_scott_class_creation.sql` (it flips `student → instructor`
+  for one email and refuses to change anything else). It takes effect within a minute; the user sees
+  "Create Class" after reloading. Their classes as a TA or student are unaffected.

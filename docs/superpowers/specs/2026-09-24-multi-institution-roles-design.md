@@ -78,8 +78,8 @@ ClassContext ─┬─► useClassRole ──────► sidebar · route gu
 
 ## Data model
 
-New migration `backend/database/migrations/2026-09-24_institutions.sql` (expand only, idempotent),
-mirrored in `supabase/schema.sql`:
+New migration `backend/database/migrations/2026-09-25_institutions.sql` (expand only, idempotent);
+`supabase/schema.sql` is updated once it is applied (AGENTS.md):
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.institutions (
@@ -149,7 +149,7 @@ instead of `Instructor role required`; the status code is unchanged.
 
 ### School email
 
-`app/core/school_email.py` exposes `is_school_email(email) -> bool`. It is true when the domain ends
+`app/institutions/controller.py` exposes `is_school_email(email) -> bool`. It is true when the domain ends
 in `.edu`, equals an institution domain, or is a subdomain of one (`stu.istinye.edu.tr` matches
 `istinye.edu.tr`; `evil-istinye.edu.tr` does not). Institution domains are read with the service
 client and cached in process for five minutes. It replaces the `.edu` checks in `auth/views.py`
@@ -160,7 +160,8 @@ client and cached in process for five minutes. It replaces the `.edu` checks in 
 ### Routes
 
 - `GET /api/classes`: every class gains `my_role: 'instructor' | 'ta' | 'student'` and
-  `institution: {id, name, slug} | null` (a PostgREST embed).
+  `institution: {id, name, slug} | null`, joined in-process from the cached institutions list
+  rather than a PostgREST embed, so the route still works before the migration is applied.
 - `GET /api/institutions` (new module `app/institutions/`): public, `@limiter.limit("60/minute")`,
   `Cache-Control: public, max-age=300`; returns `{institutions: [{id, name, slug, email_domains}]}`.
   It is public because SignUp validates the email before the user is signed in.
@@ -294,15 +295,22 @@ Frontend (Vitest; `npm run build` is the completeness check for D8):
 
 ## Rollout
 
-1. Apply the institutions migration to DEV, then PROD (maintainer; staged file). It must come before
-   the backend deploy, because the class list embeds `institutions`.
+1. Apply the institutions migration to DEV, then PROD (maintainer; staged file). The backend runs
+   on either schema (the institutions loader falls back while the table is missing), so this can
+   happen before or after the release; `2026-09-25_messages_inbox_class_roles.sql` (the inbox's
+   `can_send` follows shared classes, not the account role) is independent of both and may land on
+   either side too. Apply the İstinye seed (step 3) on the same DEV-then-PROD schedule before
+   anyone creates a class outside UC Santa Cruz: until the migration runs no class can be given a
+   school, and its one-time backfill labels every class without one UC Santa Cruz, so an earlier
+   non-UCSC class would be mislabeled the same way.
 2. Merge and release (beta → main). The backend works with the current frontend, and the new
    frontend tolerates a missing `my_role` (see Role source).
 3. Seed İstinye: `INSERT INTO public.institutions (name, slug, email_domains) VALUES ('İstinye
    University', 'istinye', '{istinye.edu.tr}');`. Confirm the base domain with Scott first; student
    subdomains match automatically.
 4. Flip Scott: `UPDATE public.profiles SET role = 'instructor' WHERE id = '<Scott''s profile id>' AND
-   role = 'student';`. Only after step 2 is live on PROD; before that, their UCSC classes disappear.
+   role = 'student';`. Only after step 2 is live on PROD and step 3 has run: before that, either
+   their UCSC classes disappear, or İstinye is not yet there for their new class to pick.
 5. Scott creates the İstinye class and picks İstinye in the dialog.
 6. Contract, later: assign any NULL `institution_id`, `ALTER COLUMN institution_id SET NOT NULL`,
    and make `institution_id` required in `CreateClassRequest`.

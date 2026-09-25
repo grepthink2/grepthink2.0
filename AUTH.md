@@ -178,6 +178,8 @@ require_user            → extracts the `sub` claim. Use when a view only
 require_instructor      → builds on require_user, then looks up the role
                           in the `profiles` table. Raises 403 if the
                           caller is not an instructor. Returns user_id.
+                          Used only by `POST /api/classes`: a class's own
+                          endpoints check that the caller created the class.
 ```
 
 ### Why layered?
@@ -281,8 +283,9 @@ upsert overwrote their existing `role: student` profile row.
 2. **`userType` whitelist.** Validated server-side against
    `{'student', 'instructor'}` — we don't just echo the body field.
 3. **Token/body id match.** Preserved from the old code.
-4. **The email is the token's.** `profiles.email` and, for a `.edu` address,
-   `profiles.edu_email` are the two columns a roster row is matched by. They
+4. **The email is the token's.** `profiles.email` and, for a school email
+   (`.edu` or an institution's `email_domains`), `profiles.edu_email` are the
+   two columns a roster row is matched by. They
    used to be copied from the request body, so any signed-in user could claim
    a classmate's address (and with it their roster row) by POSTing it. The
    endpoint now takes the address from the verified token's `email` claim and
@@ -453,13 +456,14 @@ Frontend (`frontend/.env` or inherited from the monorepo root):
 
 ---
 
-## The roster `.edu` email is proven, never typed in
+## The roster school email is proven, never typed in
 
 `profiles.edu_email` wins over the login email when a roster is matched to
 accounts, so whoever holds an address there owns that student's roster row.
 It is written in exactly two places:
 
-- `/api/create-user`, from the **token's** email when that is a `.edu` address;
+- `/api/create-user`, from the **token's** email when that is a school email
+  (`.edu` or an institution's `email_domains`);
 - `POST /api/profiles/verify-edu-email`, after a 6-digit code emailed to the
   address comes back.
 
@@ -473,10 +477,13 @@ the count it read **before** the code is compared, so parallel guesses cannot
 share an attempt. With no SMTP settings a deployment answers 503; a developer
 machine logs the code instead (never returns it) so the flow stays testable.
 
-Still trusting: a `.edu` **login** email is only as verified as Supabase makes
-it. With email confirmation switched off in the Auth settings, a password
-signup can name an address its owner has never seen. That is a dashboard
-setting, not code.
+Still trusting: a school **login** email — `.edu` or an institution's
+`email_domains` — is only as verified as Supabase's email confirmation makes
+it. Adding a domain to `institutions.email_domains` widens that trust with no
+code review, since it is a maintainer data change, not a deploy; and with
+email confirmation switched off in the Auth settings, a password signup can
+name an address its owner has never seen. That is a dashboard setting, not
+code.
 
 ## The browser has no table access
 
@@ -519,10 +526,9 @@ These are documented as known gaps so no one re-discovers them:
   purpose, 2026-09-21). Enforcing it belongs in a Supabase
   "before user created" auth hook, with `hd` on the Google button as a hint.
 - **The instructor role is self-service.** Anyone can pick it at signup.
-- **No admin path for role changes.** Since `/api/create-user` writes the
-  role once, there is currently no supported way to change a user's
-  role after signup. A dedicated admin endpoint (gated on
-  `require_instructor` + an `is_superadmin` flag we don't have yet) is
-  the planned fix.
+- **Role changes are a maintainer step.** `/api/create-user` writes the role once; a
+  maintainer flips `student → instructor` with the SQL in `supabase/README.md`
+  ("Letting an existing account create classes"). The account role only gates
+  class creation, so the flip changes nothing else.
 - **No rate limiting.** `slowapi` or an equivalent should wrap at least
   `/api/create-user` and the auth endpoints. CODE_REVIEW.md #5.

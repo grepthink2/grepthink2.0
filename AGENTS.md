@@ -31,7 +31,7 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
-  health auth classes projects assignments tsr staffing
+  health auth classes institutions projects assignments tsr staffing
   messages profiles contact notifications tas attendance stats
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
@@ -51,7 +51,8 @@ frontend/src/
   lib/api/client.ts   # apiRequest / apiUpload: auth header, preview guard, ApiError, 401 event
   lib/auth.tsx        # AuthContext / useAuth (signs out locally on auth:unauthorized)
   lib/classContext.tsx# selected-class state
-  lib/enrollmentRole.ts # useEnrollmentRole(classId): one shared, briefly cached my-role lookup
+  lib/institutions.ts   # useInstitutions(): the public schools list, fetched once
+  lib/schoolEmail.ts   # isSchoolEmail(): .edu or an institution domain
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
   components/         # shared UI (Skeleton, ErrorBoundary)
   styles/             # design tokens (@use '@styles/index.scss' as *)
@@ -86,10 +87,18 @@ supabase/             # schema.sql + auth_glue.sql + storage.sql (DDL-as-code)
 - **Frontend** dev server proxies `/api` to the backend (`uvicorn app.main:app`).
 
 ## Roles
-- **Global** (`profiles.role`): `instructor` | `student`.
-- **Class-scoped**: instructor = `classes.created_by`; **TA** = `class_enrollments.enrollment_role = 'ta'`
-  (single source of truth — see TA gotcha).
+- **Account** (`profiles.role`): `instructor` | `student`. It only decides who may create a class
+  (`POST /api/classes`, `require_instructor`). Nothing else reads it: never branch on it for a
+  class decision, in the backend or the UI.
+- **Class-scoped** (every other decision): instructor = `classes.created_by`; **TA** =
+  `class_enrollments.enrollment_role = 'ta'` (single source of truth — see TA gotcha); student =
+  any other enrollment. One account can hold a different role in each class. `GET /api/classes`
+  returns `my_role` for every class; the web client reads it with `useSelectedClassRole()` /
+  `useClassRole(classId)` from `lib/classContext.tsx`.
 - **Project-scoped** (`project_members.role`): `owner` | `product owner` | `scrum master` | `admin` | `member`.
+- **Institutions**: every class belongs to a maintainer-seeded `institutions` row
+  (`classes.institution_id`). Its `email_domains`, plus any `.edu`, decide what counts as a school
+  email (`app/institutions/controller.py` `is_school_email`, mirrored by `lib/schoolEmail.ts`).
 
 ## Run / test
 ```bash
@@ -109,7 +118,7 @@ npx vitest run                              # unit + component tests
 
 ## API surface
 Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `login-check`,
-`create-user`, `check-email`), `/api/classes`, `/api/projects`, `/api/assignments`,
+`create-user`, `check-email`), `/api/classes`, `/api/institutions`, `/api/projects`, `/api/assignments`,
 `/api/tsrs`, `/api/staffing`, `/api/messages`, `/api/profiles`, `/api/contact`,
 `/api/notifications`, `/api/tas`, `/api/stats`, plus attendance routes under `/api`.
 The full agent-facing action catalog (method, params, role) lives at
@@ -135,7 +144,9 @@ The full agent-facing action catalog (method, params, role) lives at
 - **Identity columns are never taken from a request body.** `profiles.email`, `profiles.edu_email`
   and `profiles.role` decide whose roster row and whose privileges an account gets. The email
   comes from the verified token, `edu_email` is written only by `verify_edu_email` (or from the
-  token's `.edu` address), and the role is written once by `create_user`. See `AUTH.md`.
+  token's address when it is a school email — `.edu`, or an institution's `email_domains`;
+  `app/institutions/controller.py` `is_school_email` — not just `.edu`), and the role is written
+  once by `create_user`. See `AUTH.md`.
 - **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
   code once let `%` join any class. Validate the shape first, then match exactly.
 - **`lib/api/*.ts` can drift from routes** — the client is hand-maintained, no codegen.
@@ -159,8 +170,8 @@ The full agent-facing action catalog (method, params, role) lives at
   new credentials that way, and keep names, grades and review text out of exception and log
   messages: nothing can recognise those.
 - **Rate limiting** (slowapi) covers `create_user`, `check_email`, `login_check`,
-  `contact`, `stats`. Add `@limiter.limit(...)` (+ a `request: Request` param) for
-  new abuse-prone endpoints.
+  `contact`, `stats`, `list_institutions` (`GET /api/institutions`, 60/min). Add
+  `@limiter.limit(...)` (+ a `request: Request` param) for new abuse-prone endpoints.
 - **Preview / "View as student"** is a frontend-only read-only simulation
   (`previewContext` + `previewGuard`) — no backend act-as, so it does not show a
   specific student's real data.
