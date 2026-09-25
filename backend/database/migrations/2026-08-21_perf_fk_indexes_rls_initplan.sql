@@ -1,3 +1,17 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- ⛔ SUPERSEDED — NEVER APPLIED — DO NOT RUN
+--    Superseded by 2026-09-08_perf_indexes_and_lints.sql (PR #178), applied on
+--    DEV 2026-09-20 and on PROD 2026-09-23 through prod/2026-09-20_align_prod.sql.
+--
+--    That file indexes every (table, columns) pair this one does, rewrites the
+--    policies on every table this one touches, and also pins function search_path.
+--    This file never ran: DEV has none of the index names only it creates
+--    (checked 2026-09-25), and nothing records it on PROD. Running it NOW would
+--    add a second index under a different name on each of those columns, which
+--    is exactly the duplicate-index finding the advisors flag. Kept as the record
+--    of the 2026-08-21 advisor pass that found them first.
+-- ═══════════════════════════════════════════════════════════════════════════
+
 -- Performance hygiene from the 2026-08-21 PROD advisor pass:
 --   1) Covering indexes for unindexed FKs on real query paths (authz membership
 --      checks, TSR/class/roster reads, messaging read-marks). Audit-only columns
