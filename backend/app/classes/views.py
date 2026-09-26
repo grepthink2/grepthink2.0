@@ -30,14 +30,14 @@ def create_class(data: CreateClassRequest, user_id: str = Depends(require_instru
         data.start_date,
         user_id,
         tsr_count=data.tsr_count,
+        institution_id=data.institution_id,
     )
     return {"message": "Class created successfully", "class": result}
 
 
 def get_classes(user_id: str = Depends(require_user)):
-    role = get_user_role(user_id)
-    classes = controller.get_classes_for_user(user_id, role)
-    return {"classes": classes}
+    """Every class the caller created or is enrolled in, each with the caller's ``my_role``."""
+    return {"classes": controller.get_classes_for_user(user_id)}
 
 
 def get_class(class_id: UUID, user_id: str = Depends(require_user)):
@@ -48,25 +48,32 @@ def get_class(class_id: UUID, user_id: str = Depends(require_user)):
 def update_class_status(
     class_id: UUID,
     data: UpdateClassStatusRequest,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Set class lifecycle status to active or complete (instructor only)."""
+    """Set class lifecycle status to active or complete (the class instructor; checked in
+    the controller)."""
     updated = controller.update_class_status(class_id, data.status, user_id)
     return {"message": "Class status updated", "class": updated}
 
 
 def join_class(data: JoinClassRequest, user_id: str = Depends(require_user)):
-    role = get_user_role(user_id)
-    if role != "student":
-        raise HTTPException(status_code=403, detail="Only students can join classes")
+    """Join a class with its course code. Any account that has picked a role may join (as a
+    student; the instructor can then make them a TA). The class instructor cannot join their own
+    class (409, checked in the controller)."""
+    if get_user_role(user_id) is None:
+        raise HTTPException(
+            status_code=403, detail="Choose whether you are a student or an instructor first"
+        )
     return controller.join_class_by_code(data.course_code, user_id)
 
 
 def invite_student(
     class_id: UUID,
     data: InviteStudentRequest,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
+    """Invite a student to the class by email (the class instructor; checked in the
+    controller)."""
     return controller.invite_student_to_class(class_id, data.student_email, user_id)
 
 
@@ -89,18 +96,20 @@ def get_attention_summary(user_id: str = Depends(require_user)):
 
 def get_class_roster_timeline(
     class_id: UUID,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Enrollment, team-join, and drop dates for each roster student (instructor only)."""
+    """Enrollment, team-join, and drop dates for each roster student (the class instructor;
+    checked in the controller)."""
     return controller.get_class_roster_timeline(class_id, user_id)
 
 
 async def upload_class_roster(
     class_id: UUID,
     file: UploadFile = File(...),
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Replace the class roster from a UCSC CSV export (instructor only)."""
+    """Replace the class roster from a UCSC CSV export (the class instructor; checked in the
+    controller)."""
     raw = await file.read()
     try:
         csv_text = raw.decode("utf-8-sig")
@@ -112,9 +121,9 @@ async def upload_class_roster(
 def add_manual_roster_student(
     class_id: UUID,
     data: AddManualRosterStudentRequest,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Manually add a student to the roster (instructor only)."""
+    """Manually add a student to the roster (the class instructor; checked in the controller)."""
     return controller.add_manual_roster_student(
         class_id,
         data.first_name,
@@ -127,30 +136,33 @@ def add_manual_roster_student(
 def delete_manual_roster_entry(
     class_id: UUID,
     entry_id: str,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Delete a manually-added roster row (instructor only)."""
+    """Delete a manually-added roster row (the class instructor; checked in the controller)."""
     return controller.delete_manual_roster_entry(class_id, entry_id, user_id)
 
 
 def get_class_projects(class_id: UUID, user_id: str = Depends(require_user)):
-    """Get all projects for a class (visible to enrolled students and class teacher)."""
-    role = get_user_role(user_id)
-    projects = controller.get_class_projects(class_id, user_id, role)
+    """Get all projects for a class (visible to enrolled students and class teacher).
+
+    Sentiment visibility is this class's instructor relationship, not the caller's account-wide
+    role — the controller decides it from the access check, not from ``get_user_role``.
+    """
+    projects = controller.get_class_projects(class_id, user_id)
     return {"projects": projects}
 
 
 def get_class_projects_overview(class_id: UUID, user_id: str = Depends(require_user)):
     """Projects + enrolled-student list for the Projects page in a single call."""
-    role = get_user_role(user_id)
-    return controller.get_class_projects_overview(class_id, user_id, role)
+    return controller.get_class_projects_overview(class_id, user_id)
 
 
 def get_class_turn_in_stats(
     class_id: UUID,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """TSR turn-in stats for the class's current assignment (instructor only)."""
+    """TSR turn-in stats for the class's current assignment (the class instructor; checked
+    in the controller)."""
     turn_in = controller.get_class_turn_in_stats(class_id, user_id)
     return {"turn_in": turn_in}
 
@@ -158,18 +170,18 @@ def get_class_turn_in_stats(
 def remove_student(
     class_id: UUID,
     student_id: str,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Remove a student from a class (instructor only)."""
+    """Remove a student from a class (the class instructor; checked in the controller)."""
     return controller.remove_student_from_class(class_id, student_id, user_id)
 
 
 def bulk_invite(
     class_id: UUID,
     data: BulkInviteRequest,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ):
-    """Bulk-enroll students by email list (instructor only)."""
+    """Bulk-enroll students by email list (the class instructor; checked in the controller)."""
     return controller.bulk_invite_students(class_id, data.emails, user_id)
 
 
@@ -181,9 +193,10 @@ def leave_class(class_id: UUID, user_id: str = Depends(require_user)):
 def queue_invite(
     class_id: UUID,
     data: QueueInviteRequest,
-    user_id: str = Depends(require_instructor),
+    user_id: str = Depends(require_user),
 ) -> QueueInviteResponse:
-    """Queue an invite batch for delayed delivery (instructor only)."""
+    """Queue an invite batch for delayed delivery (the class instructor; checked in the
+    controller)."""
     return controller.queue_invite(
         class_id,
         data.emails,
@@ -198,8 +211,10 @@ def queue_invite(
 
 def cancel_invite(
     class_id: UUID,
-    job_id: str,
-    user_id: str = Depends(require_instructor),
+    job_id: UUID,
+    user_id: str = Depends(require_user),
 ) -> CancelInviteResponse:
-    """Cancel a queued invite batch before it is sent (instructor only)."""
-    return controller.cancel_invite(class_id, job_id, user_id)
+    """Cancel a queued invite batch before it is sent (the class instructor; checked in the
+    controller). ``job_id`` is a ``pending_invites`` id: anything but a UUID answers 422 here
+    instead of failing in the database."""
+    return controller.cancel_invite(class_id, str(job_id), user_id)

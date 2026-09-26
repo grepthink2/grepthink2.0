@@ -9,7 +9,6 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from app.auth.controller import get_user_role
 from app.core import authz
 from app.core.db import fan_out, get_client
 from app.database.client import (
@@ -137,8 +136,8 @@ def create_project(
     """
     Create a new project within a class.
 
-    Instructors who own the class may create projects with full sponsor information.
-    Enrolled students may also create projects, but sponsor fields are excluded.
+    The class instructor (its creator) may create projects with sponsor information; anyone
+    enrolled (student or TA) may create one without it.
 
     Args:
         class_id: Class unique identifier
@@ -148,11 +147,11 @@ def create_project(
         team_size: Maximum team size
         looking_for_roles: Optional list of role names (stored as JSONB)
         skills: Optional list of skill names (stored as JSONB)
-        sponsor_name: Optional sponsor contact name (instructor only)
-        sponsor_company: Optional sponsor company/organization (instructor only)
-        sponsor_email: Optional sponsor email (instructor only)
-        sponsor_website: Optional sponsor website URL (instructor only)
-        sponsor_description: Optional description of the sponsor (instructor only)
+        sponsor_name: Optional sponsor contact name (class instructor only)
+        sponsor_company: Optional sponsor company/organization (class instructor only)
+        sponsor_email: Optional sponsor email (class instructor only)
+        sponsor_website: Optional sponsor website URL (class instructor only)
+        sponsor_description: Optional description of the sponsor (class instructor only)
 
     Returns:
         Dictionary containing project data
@@ -165,10 +164,10 @@ def create_project(
         cid = str(class_id)
 
         # Fan out the two independent verifications. The enrollment lookup
-        # is only needed for non-instructors but it's a cheap select on an
-        # indexed pair (``class_id``, ``user_id``); pre-fetching it in
-        # parallel removes a sequential round-trip from the student create
-        # path without measurably hurting the instructor path.
+        # is only needed when the caller is not the class instructor, but it's a
+        # cheap select on an indexed pair (``class_id``, ``user_id``); pre-fetching
+        # it in parallel removes a sequential round-trip from an enrolled member's
+        # create path without measurably hurting the instructor path.
         class_future = query_pool.submit(
             lambda: client.table("classes").select("id, created_by").eq("id", cid).execute()
         )
@@ -181,10 +180,6 @@ def create_project(
                 .execute()
             )
         )
-        # ``get_user_role`` is itself in-process cached, so this is usually
-        # a memory hit. Calling it directly (rather than via the executor)
-        # keeps the cache check off the worker thread.
-        user_role = get_user_role(user_id)
 
         class_result = class_future.result()
         if not class_result.data or len(class_result.data) == 0:
@@ -192,14 +187,9 @@ def create_project(
 
         class_row = class_result.data[0]
 
-        is_instructor = user_role == "instructor" and class_row.get("created_by") == user_id
+        is_instructor = str(class_row.get("created_by")) == str(user_id)
 
         if not is_instructor:
-            if user_role != "student":
-                raise HTTPException(
-                    status_code=403,
-                    detail="Only the class instructor or enrolled students can create projects",
-                )
             enrollment = enrollment_future.result()
             if not enrollment.data:
                 raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
@@ -227,7 +217,7 @@ def create_project(
         if skills is not None:
             project_data["skills"] = skills
 
-        # Sponsor fields are only applied for instructors
+        # Sponsor fields are only applied for the class instructor
         if is_instructor:
             if sponsor_name is not None:
                 project_data["sponsor_name"] = sponsor_name
@@ -247,7 +237,7 @@ def create_project(
 
         project = result.data[0]
 
-        # Students who create a project are automatically added as product owner
+        # Anyone enrolled who creates a project is automatically added as product owner
         if not is_instructor:
             client.table("project_members").insert(
                 {
@@ -304,9 +294,12 @@ def update_project(
 
     Who can edit:
     - Product owner or admin (project members with elevated roles)
-    - Instructors who own the class the project belongs to
+    - The class instructor (whoever created the project's class)
 
     At least one field must be provided.
+
+    Round trips: the project with its class's owner embedded, the caller's membership unless
+    they are the class instructor, then the update.
     """
     all_none = all(
         v is None
@@ -328,28 +321,10 @@ def update_project(
     try:
         client = get_client()
 
-        project_result = (
-            client.table("projects").select("id, class_id").eq("id", str(project_id)).execute()
+        project = authz.load_project(
+            client, project_id, columns="id, class_id", class_columns="created_by"
         )
-        if not project_result.data:
-            raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
-
-        class_id = project_result.data[0].get("class_id")
-
-        # Check if the user is an instructor who owns the class
-        is_class_instructor = False
-        if class_id:
-            profile = client.table("profiles").select("role").eq("id", user_id).execute()
-            user_role = profile.data[0].get("role") if profile.data else None
-            if user_role == "instructor":
-                class_check = (
-                    client.table("classes")
-                    .select("id")
-                    .eq("id", str(class_id))
-                    .eq("created_by", user_id)
-                    .execute()
-                )
-                is_class_instructor = bool(class_check.data)
+        is_class_instructor = str(_class_owner(project)) == str(user_id)
 
         if not is_class_instructor:
             _require_member_role(

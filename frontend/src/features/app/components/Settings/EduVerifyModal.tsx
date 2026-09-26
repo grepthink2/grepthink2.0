@@ -116,7 +116,7 @@ const EduVerifyModal: React.FC<EduVerifyModalProps> = ({
         </button>
 
         <div className="join-class-modal__content">
-          <h1 className="join-class-modal__title">Verify .edu Email</h1>
+          <h1 className="join-class-modal__title">Verify school email</h1>
           <p className="join-class-modal__subtitle">
             Enter the 6-digit code sent to
             <br />

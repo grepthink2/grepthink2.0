@@ -73,3 +73,50 @@ def valid_token() -> str:
 @pytest.fixture
 def auth_header(valid_token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {valid_token}"}
+
+
+#: The institution list every test starts from (see ``_known_institutions``).
+UCSC_INSTITUTION = {
+    "id": "00000000-0000-4000-8000-0000000000c5",
+    "name": "UC Santa Cruz",
+    "slug": "ucsc",
+    "email_domains": ["ucsc.edu"],
+}
+
+# Contains a hex letter on purpose: some tests check that a differently-cased form of this id
+# still matches, which an all-digit id ("1111...") could not exercise.
+ISTINYE_INSTITUTION = {
+    "id": "1a111111-1111-4111-8111-111111111111",
+    "name": "İstinye University",
+    "slug": "istinye",
+    "email_domains": ["istinye.edu.tr"],
+}
+
+
+@pytest.fixture(autouse=True)
+def _known_institutions(monkeypatch):
+    """Serve a fixed institution list (UC Santa Cruz) from the in-process cache.
+
+    ``load_institutions`` caches for minutes. Without this, whichever test ran first would
+    decide what later tests see, and the first read in each test would cost a round trip that
+    no budget expects. Tests of the loader itself call ``clear_institutions_cache()``.
+    """
+    from app.institutions import controller as institutions
+
+    monkeypatch.setattr(institutions, "_cache", (float("inf"), [dict(UCSC_INSTITUTION)]))
+
+
+@pytest.fixture
+def with_istinye(monkeypatch):
+    """Add İstinye (a non-``.edu`` school domain) to the cached institution list.
+
+    For a test that needs an address at an institution's domain to count as a school email
+    (``is_school_email``) without a real institutions-table round trip.
+    """
+    from app.institutions import controller as institutions
+
+    monkeypatch.setattr(
+        institutions,
+        "_cache",
+        (float("inf"), [dict(UCSC_INSTITUTION), dict(ISTINYE_INSTITUTION)]),
+    )

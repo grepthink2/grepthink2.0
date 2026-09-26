@@ -76,7 +76,7 @@ class Settings:
     CORS_METHODS: list = ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"]
     CORS_HEADERS: list = ["Authorization", "Content-Type", "Accept"]
 
-    # SMTP / Email Configuration (required for .edu verification emails)
+    # SMTP / Email Configuration (required for school-email verification emails)
     #
     # Resend (recommended):
     #   SMTP_HOST=smtp.resend.com

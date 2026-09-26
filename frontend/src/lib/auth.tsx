@@ -2,7 +2,6 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import type { UserRole } from '@/features/app/config/sidebar';
-import { usePreview } from './previewContext';
 import { AUTH_UNAUTHORIZED_EVENT } from './authEvents';
 import { apiRequest } from './api/client';
 import type { ApiProfile } from './api/types';
@@ -12,15 +11,11 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   /**
-   * Effective role driving the UI. In "View as Student" preview this is forced
-   * to 'student' so the sidebar, route guards, and page branching all simulate
-   * the student experience. Use `realRole` when you need the true account role.
+   * `profiles.role === 'instructor'`: the account may create classes. It is the only thing the
+   * account role decides — everything else follows your role in the selected class
+   * (useSelectedClassRole in lib/classContext.tsx).
    */
-  role: UserRole;
-  /** The account's true role, unaffected by preview mode. */
-  realRole: UserRole;
-  /** Whether "View as Student" preview is currently active. */
-  isPreviewing: boolean;
+  canCreateClasses: boolean;
   /**
    * The profile answered and carries no role: its owner signed up with Google and has
    * not chosen one yet. Every role-gated endpoint refuses them, so ProtectedRoute sends
@@ -138,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (session?.user?.user_metadata as { role?: unknown } | undefined)?.role,
     );
     const resolved = profileRole && profileRole.userId === userId ? profileRole : null;
-    const role: UserRole = resolved?.role ?? metadataRole ?? 'student';
+    const accountRole: UserRole = resolved?.role ?? metadataRole ?? 'student';
     // With no metadata role there is nothing to render with yet, so hold the UI
     // until the profile answers instead of showing an instructor the student app
     // (and letting the route guards redirect them).
@@ -148,11 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       session,
       user: session?.user ?? null,
       loading: loading || resolvingRole,
-      // Provider exposes the true role; the `useAuth` hook below overlays
-      // preview state (it can't be read here — PreviewProvider is a descendant).
-      role,
-      realRole: role,
-      isPreviewing: false,
+      canCreateClasses: accountRole === 'instructor',
       needsRole: resolved !== null && resolved.answered && resolved.role === null,
       refreshRole,
       getToken: async () => {
@@ -188,18 +179,7 @@ export const useAuth = (): AuthContextValue => {
   if (!ctx) {
     throw new Error('useAuth must be used within AuthProvider');
   }
-
-  // Overlay "View as Student" preview. Only an instructor can preview, so a
-  // student account is never affected. `usePreview` safely returns a
-  // not-previewing default when no PreviewProvider is mounted (e.g. /login).
-  const { isPreviewing } = usePreview();
-  const previewing = isPreviewing && ctx.realRole === 'instructor';
-
-  return {
-    ...ctx,
-    role: previewing ? 'student' : ctx.realRole,
-    isPreviewing: previewing,
-  };
+  return ctx;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider

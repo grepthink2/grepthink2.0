@@ -1,19 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { startTransition, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, X, Lock } from 'lucide-react';
-import { useAuth } from '@/lib/auth';
 import { usePreview } from '@/lib/previewContext';
 import './PreviewBanner.scss';
 
 /**
- * Sticky bar shown while an instructor is in "View as Student" preview. It
+ * Sticky bar shown while an instructor is in "View class as student" preview. It
  * keeps the read-only state visible at all times and offers a one-click exit.
  * Also surfaces a transient toast when a blocked write is attempted (the API
  * guard dispatches a `preview:blocked` window event).
  */
 const PreviewBanner: React.FC = () => {
-  const { isPreviewing } = useAuth();
-  const { exitPreview } = usePreview();
+  const { isPreviewing, exitPreview } = usePreview();
   const navigate = useNavigate();
   const [blockedToast, setBlockedToast] = useState(false);
 
@@ -35,9 +33,13 @@ const PreviewBanner: React.FC = () => {
   if (!isPreviewing) return null;
 
   const handleExit = () => {
-    exitPreview();
-    // Back to a guaranteed-instructor route (student-only paths would bounce).
-    navigate('/app/home');
+    // Back to Home, which every role may open, in one transition with the preview's end: the
+    // router navigates in a transition, and a preview ended on its own would meet the class route
+    // guard on the student page it is on.
+    startTransition(() => {
+      exitPreview();
+      navigate('/app/home');
+    });
   };
 
   return (

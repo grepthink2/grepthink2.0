@@ -10,6 +10,7 @@ Roles (see AGENTS.md):
 - class TA          = ``class_enrollments.enrollment_role == 'ta'``
 - enrolled student  = ``class_enrollments.enrollment_role == 'student'``
 - project roles     = ``project_members.role``
+- account role (``profiles.role``) = may create classes; never used for a class decision
 
 Not found versus not allowed
 ----------------------------
@@ -53,6 +54,8 @@ from fastapi import HTTPException
 
 ROLE_STUDENT = "student"
 ROLE_TA = "ta"
+#: ``my_role`` for a class the caller created (``classes.created_by``).
+ROLE_INSTRUCTOR = "instructor"
 
 #: Project roles allowed to manage membership / review join requests.
 ELEVATED_PROJECT_ROLES: tuple[str, ...] = ("owner", "product owner", "admin")

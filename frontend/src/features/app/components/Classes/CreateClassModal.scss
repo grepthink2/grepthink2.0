@@ -398,3 +398,32 @@
   font-size: $font-size-sm;
   margin-bottom: 16px;
 }
+
+// The schools list that failed to load: the message, then a Try again link-button beside it.
+.create-class-modal__error--with-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: $spacing-sm;
+}
+
+.create-class-modal__retry {
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: $border-radius-sm;
+  color: inherit;
+  font: inherit;
+  font-weight: $font-weight-semibold;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    box-shadow: var(--gt-focus-ring-tight);
+  }
+}

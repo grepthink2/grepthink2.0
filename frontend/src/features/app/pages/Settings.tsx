@@ -3,6 +3,9 @@ import { createPortal } from 'react-dom';
 import { X, Camera, UserPen, CheckCircle, AlertCircle } from 'lucide-react';
 import { LinkedinIcon as Linkedin, GithubIcon as Github } from '@/components/icons/BrandIcons';
 import { useAuth } from '@/lib/auth';
+import { useClass } from '@/lib/classContext';
+import { useInstitutions } from '@/lib/institutions';
+import { isSchoolEmail } from '@/lib/schoolEmail';
 import { supabase } from '@/lib/supabaseClient';
 import { apiRequest, api, type ApiProfile } from '@/lib/api';
 import EduVerifyModal from '@features/app/components/Settings/EduVerifyModal';
@@ -13,8 +16,17 @@ interface SettingsProps {
   onClose: () => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
-  const { user, role } = useAuth();
+/** The open Settings modal: mounted each time Settings opens (see `Settings` below). */
+const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { user, canCreateClasses } = useAuth();
+  const { classes } = useClass();
+  // undefined while loading, null when it could not load: either way not known yet.
+  const institutions = useInstitutions();
+  // The roster email and portfolio fields are for accounts that are a student or TA
+  // somewhere, even if the account can also create classes elsewhere.
+  const enrolledSomewhere = classes.some((c) => c.my_role !== 'instructor');
+  const showStudentFields = !canCreateClasses || enrolledSomewhere;
+  const primaryIsSchool = isSchoolEmail(user?.email, institutions ?? []);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -37,7 +49,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    if (!user || !isOpen) return;
+    if (!user) return;
     apiRequest<ApiProfile>('/api/profiles/me')
       .then((profile) => {
         setFirstName(profile.first_name ?? '');
@@ -59,13 +71,12 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         originalEduEmailRef.current = '';
       })
       .finally(() => setSaveStatus('idle'));
-  }, [user, isOpen]);
+  }, [user]);
 
   useEffect(() => {
-    if (!isOpen) return;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
+  }, []);
 
   const handleClose = useCallback(() => {
     if (avatarPreview) URL.revokeObjectURL(avatarPreview);
@@ -76,11 +87,10 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   }, [onClose, avatarPreview]);
 
   useEffect(() => {
-    if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, handleClose]);
+  }, [handleClose]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,19 +132,21 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         setPendingFile(null);
       }
 
-      const primaryIsEdu = user.email?.toLowerCase().endsWith('.edu') ?? false;
-      const isStudent = role === 'student';
-      const newEduEmail = isStudent && !primaryIsEdu ? eduEmail.trim() : '';
-      const origEduEmail = isStudent && !primaryIsEdu ? originalEduEmailRef.current : '';
-      const eduEmailChanged = isStudent && !primaryIsEdu && newEduEmail !== origEduEmail;
+      const isStudent = showStudentFields;
+      const newEduEmail = isStudent && !primaryIsSchool ? eduEmail.trim() : '';
+      const origEduEmail = isStudent && !primaryIsSchool ? originalEduEmailRef.current : '';
+      const eduEmailChanged = isStudent && !primaryIsSchool && newEduEmail !== origEduEmail;
 
       if (eduEmailChanged && newEduEmail) {
-        if (!newEduEmail.toLowerCase().endsWith('.edu')) {
-          throw new Error('Must be a valid .edu email address');
+        // Refused here only against a known schools list. Without one (still loading, or it
+        // could not load) the server decides: send-edu-verification answers 400 for an
+        // address that is not a school's.
+        if (institutions && !isSchoolEmail(newEduEmail, institutions)) {
+          throw new Error('Enter your school email address.');
         }
         const checkData = await api.checkEmail(newEduEmail);
         if (checkData && !checkData.available) {
-          throw new Error('This .edu email is already linked to another account.');
+          throw new Error('This school email is already linked to another account.');
         }
       }
 
@@ -144,7 +156,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         image_url: resolvedAvatarUrl ?? null,
       };
 
-      if (role === 'student') {
+      if (showStudentFields) {
         updateData.linkedin = linkedIn.trim();
         updateData.github = github.trim();
       }
@@ -192,15 +204,12 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     if (verifyingEduEmail && originalEduEmailRef.current !== verifyingEduEmail) {
       setEduEmail(originalEduEmailRef.current);
       setSaveStatus('error');
-      setErrorMessage('Your university email was not changed because it was not verified.');
+      setErrorMessage('Your school email was not changed because it was not verified.');
     }
     setVerifyingEduEmail(null);
   };
 
-  if (!isOpen) return null;
-
   const displayAvatar = avatarPreview ?? avatarUrl;
-  const primaryIsEdu = user?.email?.toLowerCase().endsWith('.edu') ?? false;
 
   return createPortal(
     <>
@@ -312,12 +321,13 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               />
             </div>
 
-            {/* Roster .edu email — students only */}
-            {role === 'student' && (
-              primaryIsEdu ? (
+            {/* Roster school email — students and TAs */}
+            {showStudentFields && (
+              primaryIsSchool ? (
                 <div className="settings-modal__field">
-                  <label className="settings-modal__label">.edu Email</label>
+                  <label className="settings-modal__label" htmlFor="sm-school-email">School email</label>
                   <input
+                    id="sm-school-email"
                     type="email"
                     className="settings-modal__input settings-modal__input--readonly"
                     value={user?.email ?? ''}
@@ -327,7 +337,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               ) : (
                 <div className="settings-modal__field">
                   <label className="settings-modal__label" htmlFor="sm-edu-email">
-                    .edu Email (Roster Email)
+                    School email (roster email)
                   </label>
                   <input
                     id="sm-edu-email"
@@ -342,7 +352,7 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
             )}
 
             {/* Portfolio — students only, no subtitle */}
-            {role === 'student' && (
+            {showStudentFields && (
               <>
                 <div className="settings-modal__field">
                   <label className="settings-modal__label" htmlFor="sm-linkedin">LinkedIn Username</label>
@@ -420,5 +430,13 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     document.body,
   );
 };
+
+/**
+ * Settings is always mounted (AppView), but its modal only while open, so each opening starts
+ * from the saved profile and reads the schools list again: a list that could not load at one
+ * opening is asked for again at the next (a list that loaded is kept for the page load).
+ */
+const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) =>
+  isOpen ? <SettingsModal onClose={onClose} /> : null;
 
 export default Settings;

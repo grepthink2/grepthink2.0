@@ -6,7 +6,7 @@ from app.tas import views
 
 router = APIRouter(prefix="/api/tas", tags=["tas"])
 
-# Class-level TA management (instructor only).
+# Class-level TA management (the class instructor; checked in the controller).
 router.get("/classes/{class_id}")(views.list_class_tas)
 router.post("/classes/{class_id}/promote")(views.promote_to_ta)
 router.post("/classes/{class_id}/demote")(views.demote_ta)

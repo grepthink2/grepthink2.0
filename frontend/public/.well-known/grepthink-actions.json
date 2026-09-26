@@ -2,7 +2,7 @@
   "$schema": "https://grepthink.com/schemas/agent-actions-v1.json",
   "version": "1",
   "name": "GrepThink 2.0",
-  "description": "Agent-facing catalog of user actions. All actions require a Supabase-authenticated session and are role-gated. Param syntax: 'type!' = required, 'type' = optional.",
+  "description": "Agent-facing catalog of user actions. All actions require a Supabase-authenticated session and are role-gated. Param syntax: 'type!' = required, 'type' = optional. The 'instructor' role tag means the class instructor (the class's creator) except on create_class, which is gated by the account's own instructor role (profiles.role) instead.",
   "apiBase": "/api",
   "auth": {
     "type": "supabase-jwt",
@@ -26,11 +26,15 @@
       "method": "POST", "endpoint": "/api/contact", "rateLimit": "10/min",
       "params": {"name": "string!", "email": "string!", "message": "string!", "website": "string (honeypot — leave empty)"}
     },
+    {
+      "id": "list_institutions", "title": "List the schools GrepThink serves", "role": "public",
+      "method": "GET", "endpoint": "/api/institutions", "rateLimit": "60/min", "params": {}
+    },
 
     {
       "id": "create_class", "title": "Create a class", "role": "instructor",
       "method": "POST", "endpoint": "/api/classes",
-      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "tsr_count": "int"},
+      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "tsr_count": "int", "institution_id": "uuid"},
       "uiRoute": "/app → Create Class"
     },
     {
@@ -38,7 +42,7 @@
       "method": "GET", "endpoint": "/api/classes", "uiRoute": "/app/my-classes"
     },
     {
-      "id": "join_class", "title": "Join a class by course code", "role": "student",
+      "id": "join_class", "title": "Join a class by course code", "role": "any",
       "method": "POST", "endpoint": "/api/classes/join",
       "params": {"course_code": "string!"}, "uiRoute": "/app → Join Class"
     },

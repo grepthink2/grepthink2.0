@@ -106,7 +106,7 @@ def get_tsrs_about_user(
     evaluatee_id: UUID,
     user_id: str = Depends(require_user),
 ):
-    """Return all TSR responses about a specific user for this assignment (instructor only)."""
+    """Return all TSR responses about a specific user for this assignment (class instructor only)."""
     entries = controller.get_tsr_responses_about_user(
         user_id=user_id,
         assignment_id=assignment_id,
@@ -159,7 +159,7 @@ def get_feedback_overview(
     assignment_id: UUID,
     user_id: str = Depends(require_user),
 ):
-    """All feedback submissions for an assignment (instructor only)."""
+    """All feedback submissions for an assignment (class instructor only)."""
     return controller.get_feedback_overview(
         user_id=user_id,
         assignment_id=assignment_id,

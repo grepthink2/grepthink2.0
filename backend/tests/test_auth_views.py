@@ -105,12 +105,39 @@ def test_create_user_provisions_through_the_service_client(client, auth_header, 
     }
 
 
-def test_create_user_checks_edu_conflicts_on_the_service_client(client, fake):
+@pytest.mark.parametrize(
+    "email",
+    ["new@ucsc.edu", "new@stu.istinye.edu.tr"],
+    ids=["dot-edu", "institution-domain"],
+)
+def test_create_user_sets_edu_email_for_a_school_address(client, fake, with_istinye, email):
+    """Every ``is_school_email`` call in ``create_user`` — not just a plain ``.edu`` one —
+    must recognize an institution's domain. A regression to ``email.endswith(".edu")`` would
+    still pass the ``dot-edu`` case here but silently drop ``edu_email`` for the other."""
     res = client.post(
-        "/api/create-user", headers=header_for(TAKEN), json={**SIGNUP, "email": TAKEN}
+        "/api/create-user", headers=header_for(email), json={**SIGNUP, "email": email}
+    )
+    assert res.status_code == 200
+    [row] = [p for p in fake.rows("profiles") if p["id"] == "user-abc"]
+    assert row["edu_email"] == email
+
+
+@pytest.mark.parametrize(
+    "taken_email",
+    [TAKEN, "taken@stu.istinye.edu.tr"],
+    ids=["dot-edu", "institution-domain"],
+)
+def test_create_user_checks_edu_conflicts_on_the_service_client(
+    client, fake, with_istinye, taken_email
+):
+    fake.rows("profiles")[0]["email"] = taken_email
+    fake.rows("profiles")[0]["edu_email"] = taken_email
+
+    res = client.post(
+        "/api/create-user", headers=header_for(taken_email), json={**SIGNUP, "email": taken_email}
     )
     assert res.status_code == 409
-    assert res.json()["detail"] == "This .edu email is already linked to another account."
+    assert res.json()["detail"] == "This school email is already linked to another account."
     fake.auth.admin.delete_user.assert_called_once_with("user-abc")
     assert not [p for p in fake.rows("profiles") if p["id"] == "user-abc"]
 

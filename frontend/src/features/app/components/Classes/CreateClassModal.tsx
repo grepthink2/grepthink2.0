@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
+import { useInstitutionsWithRetry } from '@/lib/institutions';
 import DatePickerField from '@/features/app/components/Fields/DatePickerField';
 import './CreateClassModal.scss';
 
@@ -29,8 +30,27 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const { refreshClasses } = useClass();
+  // undefined: loading · null: couldn't load (retry asks again) · list
+  const { institutions, retry: retrySchools } = useInstitutionsWithRetry();
+  const { refreshClasses, currentSchool, classes } = useClass();
+  const [chosenInstitutionId, setChosenInstitutionId] = useState<string | null>(null);
   const terms: Term[] = ['Fall', 'Winter', 'Spring', 'Summer'];
+
+  // A class belongs to a school: the one picked; else the current school, but only where you
+  // already teach a class (a school where you only TA or study is not a safe guess, and a wrong
+  // school takes hand-written SQL to fix); else the only school; else none, and you pick.
+  const schoolList = institutions ?? [];
+  const teachesAtCurrentSchool =
+    currentSchool !== null &&
+    classes.some((c) => c.my_role === 'instructor' && c.institution?.id === currentSchool.id);
+  const defaultInstitutionId =
+    (teachesAtCurrentSchool ? schoolList.find((i) => i.id === currentSchool.id)?.id : undefined) ??
+    (schoolList.length === 1 ? schoolList[0].id : '');
+  const institutionId = chosenInstitutionId ?? defaultInstitutionId;
+  const needsInstitution = schoolList.length > 0;
+  // Never create a class without its school just because the list has not (or could not) load.
+  const schoolsPending = institutions === undefined;
+  const schoolsFailed = institutions === null;
 
   const handleTermChange = (term: Term) => {
     setSelectedTerm(term);
@@ -80,6 +100,11 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   };
 
   const handleCreateClass = async () => {
+    if (schoolsPending || schoolsFailed) return;
+    if (needsInstitution && !institutionId) {
+      setError('School is required');
+      return;
+    }
     if (!courseName.trim()) {
       setError('Course name is required');
       return;
@@ -100,6 +125,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         term: selectedTerm,
         start_date: termStartDate,
         tsr_count: tsrCount,
+        institution_id: institutionId || undefined,
       });
 
       const createdId = result.class?.id;
@@ -120,6 +146,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       }
 
       // Reset form and close
+      setChosenInstitutionId(null);
       setCourseName('');
       setSelectedTerm('Fall');
       setTermStartDate('');
@@ -159,6 +186,40 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         </div>
 
         <div className="create-class-modal__content">
+          {/* School: loading, couldn't load (Try again asks again), a choice, or nothing when
+              there are no schools yet */}
+          {schoolsPending ? (
+            <p className="create-class-modal__description">Loading schools…</p>
+          ) : schoolsFailed ? (
+            <div className="create-class-modal__error create-class-modal__error--with-action" role="alert">
+              <span>Couldn&apos;t load the list of schools.</span>
+              <button type="button" className="create-class-modal__retry" onClick={retrySchools}>
+                Try again
+              </button>
+            </div>
+          ) : needsInstitution ? (
+            <div className="create-class-modal__field">
+              <label htmlFor="create-class-school" className="create-class-modal__label">
+                School
+              </label>
+              <select
+                id="create-class-school"
+                className="create-class-modal__input"
+                value={institutionId}
+                onChange={(e) => setChosenInstitutionId(e.target.value)}
+              >
+                <option value="" disabled>
+                  Select a school
+                </option>
+                {schoolList.map((school) => (
+                  <option key={school.id} value={school.id}>
+                    {school.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
           {/* Course Name Input */}
           <div className="create-class-modal__field">
             <label className="create-class-modal__label">Course Name</label>
@@ -273,7 +334,14 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
               type="button"
               className="create-class-modal__submit-button"
               onClick={handleCreateClass}
-              disabled={isSubmitting || !courseName.trim() || !termStartDate.trim()}
+              disabled={
+                isSubmitting ||
+                !courseName.trim() ||
+                !termStartDate.trim() ||
+                schoolsPending ||
+                schoolsFailed ||
+                (needsInstitution && !institutionId)
+              }
             >
               {isSubmitting ? 'Creating...' : 'Create Class'}
             </button>

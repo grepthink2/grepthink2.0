@@ -46,13 +46,22 @@ All routes require auth unless stated otherwise.
 
 | Method | Path | Who | Description |
 |--------|------|-----|-------------|
-| `POST` | `/api/classes` | **Instructor** | Create a course. Body: `name`, `description?`, `term`, `start_date` (date). |
-| `GET` | `/api/classes` | Any logged-in user | List classes the user can see (depends on role and enrollment). |
+| `POST` | `/api/classes` | **Instructor account** | Create a course. Body: `name`, `description?`, `term`, `start_date` (date), `institution_id?` (from `GET /api/institutions`; an unknown id → **400**). The only route the account role (`profiles.role`) opens; every other class route checks the caller's role in that class. |
+| `GET` | `/api/classes` | Any logged-in user | Every class the caller created or is enrolled in, each with the caller's `my_role` (`instructor` \| `ta` \| `student`) and its `institution` (`{id, name, slug}` or `null`). |
 | `GET` | `/api/classes/{class_id}` | Any logged-in user | Single class details. |
-| `POST` | `/api/classes/join` | **Student** | Enroll using a course code. Body: `course_code`. Non-students get **403**. |
-| `POST` | `/api/classes/{class_id}/invite` | **Instructor** | Invite a student by email. Body: `student_email`. |
+| `POST` | `/api/classes/join` | Any account that has picked a role | Enroll (as a student) using a course code. Body: `course_code`. **403** until the account has picked a role; **409** "You are the instructor of this class" for the class's own instructor. |
+| `POST` | `/api/classes/{class_id}/invite` | **Class instructor** | Invite by email. Body: `student_email`. An existing account is enrolled whatever its role, even one that has not picked a role yet (the app sends that user to `/select` first); an unknown address gets a signup email. **409** "You are the instructor of this class" for the instructor's own address. |
+| `POST` | `/api/classes/{class_id}/students/bulk-invite` | **Class instructor** | The same for a list. Body: `emails`. Returns `results[]` of `{email, status}` with `status` one of `enrolled`, `invited`, `already_enrolled`, `class_instructor` (the instructor's own address; nothing done), `email_failed`, `error`; plus `enrolled_count` and `invited_count`. |
 | `GET` | `/api/classes/{class_id}/students` | Authenticated | Roster: enrolled students for the class. |
 | `GET` | `/api/classes/{class_id}/projects` | Authenticated | Projects in this class, filtered by what the user is allowed to see. |
+
+---
+
+## Institutions (`/api/institutions`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/institutions` | No | Public. The schools GrepThink knows: `{institutions: [{id, name, slug, email_domains}]}`, empty until the migration is applied. Feeds the Create Class institution picker and the school-email check at sign-up (before the user is signed in). Rate-limited 60/min; `Cache-Control: public, max-age=300` (`no-store` while the table doesn't exist yet). |
 
 ---
 
@@ -62,7 +71,7 @@ All routes require auth unless stated otherwise.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/projects` | Create a project. Body: `class_id`, `name`, `description`, `team_size`, optional `looking_for_roles`, `skills`, and **instructor-only** sponsor fields. Enrolled students can create projects with stricter sponsor rules in the controller. |
+| `POST` | `/api/projects` | Create a project. Body: `class_id`, `name`, `description`, `team_size`, optional `looking_for_roles`, `skills`, and sponsor fields only the **class instructor** can set. Anyone enrolled (student or TA) can create one without them and becomes its product owner; anyone else → **403**. |
 | `GET` | `/api/projects` | List projects for the current user. **Query:** `class_id` (optional UUID) to filter. |
 | `GET` | `/api/projects/pending-invites` | **Query:** `class_id` (required). Pending **team invitations** where the **current user** is the invitee (rows with `invited_by` set). Same shape as other join-request UIs where possible. **Register this path before `/{project_id}` in the router** (already done in `url.py`). |
 | `GET` | `/api/projects/{project_id}` | Project details; may include `user_role` when applicable. |
@@ -97,23 +106,17 @@ All routes require auth unless stated otherwise.
 | `POST` | `/api/projects/{project_id}/remove-scrum-master` | Body: `user_id`. Demote scrum master to `member`. |
 | `POST` | `/api/projects/{project_id}/remove-admin` | Body: `user_id`. Demote admin to `member`. |
 
-### Test-only (avoid in production UI)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/projects/test-create` | Same body as normal create. **Bypasses normal role checks**—any authenticated user could create a project in a class that exists. Intended for legacy demo pages; **do not use** in real product flows. |
-
 ---
 
 ## Assignments (`/api/assignments`)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/assignments` | Create assignment. Body: `class_id`, `title`, `open_date`, `close_date`, `status` (`draft` \| `publish`), optional `assignment_type`. Instructor-only in controller. |
-| `GET` | `/api/assignments` | **Query:** `class_id` (**required**). List assignments for that class. |
+| `POST` | `/api/assignments` | Create assignment. Body: `class_id`, `title`, `open_date`, `close_date`, `status` (`draft` \| `publish`), optional `assignment_type`. **Class instructor** only (checked in the controller). |
+| `GET` | `/api/assignments` | **Query:** `class_id` (**required**). The class instructor gets every assignment with turn-in stats; anyone enrolled (student or TA) gets the published ones; anyone else → **403**. |
 | `PATCH` | `/api/assignments/{assignment_id}` | Partial update: `title`, dates, `status`, `assignment_type` (all optional in body). |
 | `GET` | `/api/assignments/{assignment_id}/tsrs` | **Student:** TSR entries **you** submitted for this assignment. |
-| `GET` | `/api/assignments/{assignment_id}/tsrs/about/{evaluatee_id}` | **Instructor:** all TSR rows about a given student for this assignment. |
+| `GET` | `/api/assignments/{assignment_id}/tsrs/about/{evaluatee_id}` | **Class instructor:** all TSR rows about a given student for this assignment. |
 | `PATCH` | `/api/assignments/{assignment_id}/tsrs/{tsr_id}` | Update editable TSR fields (`percent_contribution`, feedback fields, `scrum_master_notes`). |
 
 ---
@@ -169,12 +172,12 @@ All routes require the caller to be the class instructor: **404** if the class d
 
 ## Messages (`/api/messages`)
 
-Direct peer-to-peer messaging between enrolled users. A **conversation** is a canonical (user_a, user_b) pair; messages nest inside a conversation. Instructors can message any student they share a class with; students can message other students and instructors in shared classes. Instructor-to-instructor messaging is not permitted.
+Direct peer-to-peer messaging between enrolled users. A **conversation** is a canonical (user_a, user_b) pair; messages nest inside a conversation. Any two people who share a class (as its instructor, a TA or a student) can message each other, whatever their account roles.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/api/messages/conversations` | Yes | Inbox: all conversations the current user participates in, sorted by `last_message_at` desc. Each row includes `other_user` (id, name, email), `last_message` preview, `unread_count`, `other_user_last_read_at`, `can_send`, and `last_message_at`. Conversations with no messages are omitted. |
-| `POST` | `/api/messages` | Yes | Send a message. Body: `to_user_id` (string), `body` (string, max 1 024 chars). Returns `{"conversation_id": "...", "message": {...}}`. **403** if the two users are not eligible to message each other (no shared class, or instructor↔instructor). |
+| `POST` | `/api/messages` | Yes | Send a message. Body: `to_user_id` (string), `body` (string, max 1 024 chars). Returns `{"conversation_id": "...", "message": {...}}`. **403** if the two users share no class. |
 | `GET` | `/api/messages/conversations/{conversation_id}/messages` | Yes | Latest 50 messages in the conversation (newest first). **403** if the caller is not a participant; **404** if the conversation doesn't exist. |
 | `POST` | `/api/messages/conversations/{conversation_id}/read` | Yes | Mark the conversation as read up to now (upserts the caller's `last_read_at` row). Returns **204 No Content**. |
 

@@ -1,8 +1,8 @@
 /**
  * AccountDetails — second step of email/password signup.
  *
- * Collects first/last name. Students also provide a roster .edu email when
- * their signup email is not already a .edu address. Whoever holds that address owns
+ * Collects first/last name. Students also provide a roster school email when
+ * their signup email is not already a school email. Whoever holds that address owns
  * the matching roster row, so it is never saved from here: the server emails a code
  * to it and only `verify-edu-email` writes it. A student can skip that and verify
  * later from Settings, so signup never depends on an email arriving.
@@ -10,6 +10,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest, api } from '@/lib/api';
+import { useInstitutions } from '@/lib/institutions';
+import { isSchoolEmail } from '@/lib/schoolEmail';
 import EduVerifyModal from '@features/app/components/Settings/EduVerifyModal';
 import './AccountDetails.scss';
 
@@ -26,25 +28,32 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
 }) => {
   const navigate = useNavigate();
   const isInstructor = userType === 'instructor';
-  const primaryIsEdu = email.toLowerCase().endsWith('.edu');
+  // undefined while loading, null when it could not load: either way not known yet.
+  const institutions = useInstitutions();
+  // Recomputed every render (not a useState initialiser): the schools list arrives
+  // after the first render, and this must pick up the change when it does.
+  const primaryIsSchool = isSchoolEmail(email, institutions ?? []);
   const needsRosterEmail = !isInstructor;
 
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
-  const [eduEmail, setEduEmail] = React.useState(primaryIsEdu ? email : '');
+  const [eduEmail, setEduEmail] = React.useState('');
   const [error, setError] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [eduVerifyOpen, setEduVerifyOpen] = React.useState(false);
   const [pendingEduEmail, setPendingEduEmail] = React.useState('');
   const [codeWasLogged, setCodeWasLogged] = React.useState(false);
-  const mustVerifyRosterEmail = needsRosterEmail && !primaryIsEdu;
+  // The roster email is the signup email itself once that's already a school email;
+  // otherwise it's whatever the student types below.
+  const rosterEmail = primaryIsSchool ? email : eduEmail;
+  const mustVerifyRosterEmail = needsRosterEmail && !primaryIsSchool;
 
   const saveDetails = async ({ verifyRosterEmail }: { verifyRosterEmail: boolean }) => {
     setError('');
 
     const trimmedFirst = firstName.trim();
     const trimmedLast = lastName.trim();
-    const trimmedEdu = eduEmail.trim();
+    const trimmedEdu = rosterEmail.trim();
 
     if (!trimmedFirst || !trimmedLast) {
       setError('Please enter your first and last name.');
@@ -53,11 +62,14 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
 
     if (verifyRosterEmail) {
       if (!trimmedEdu) {
-        setError('Please enter your roster .edu email.');
+        setError('Please enter your roster school email.');
         return;
       }
-      if (!trimmedEdu.toLowerCase().endsWith('.edu')) {
-        setError('Roster email must be a valid .edu address.');
+      // Refused here only against a known schools list. Without one (still loading, or it
+      // could not load) the server decides: it answers 400 for an address that is not a
+      // school's, and only a .edu address is known to be one without the list.
+      if (institutions && !isSchoolEmail(trimmedEdu, institutions)) {
+        setError('Roster email must be a school email address.');
         return;
       }
     }
@@ -68,7 +80,7 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
       if (verifyRosterEmail) {
         const checkData = await api.checkEmail(trimmedEdu);
         if (checkData && !checkData.available) {
-          setError('This .edu email is already linked to another account.');
+          setError('This school email is already linked to another account.');
           setIsLoading(false);
           return;
         }
@@ -156,21 +168,21 @@ const AccountDetails: React.FC<AccountDetailsProps> = ({
             {needsRosterEmail && (
               <div className="formGroup">
                 <label htmlFor="eduEmail">
-                  {primaryIsEdu ? '.edu Email' : 'Roster .edu Email'}
+                  {primaryIsSchool ? 'School email' : 'Roster school email'}
                 </label>
                 <input
                   type="email"
                   id="eduEmail"
                   name="eduEmail"
-                  value={eduEmail}
+                  value={rosterEmail}
                   onChange={(e) => {
                     setEduEmail(e.target.value);
                     setError('');
                   }}
                   placeholder="you@university.edu"
-                  readOnly={primaryIsEdu}
-                  className={primaryIsEdu ? 'inputReadonly' : undefined}
-                  required={!primaryIsEdu}
+                  readOnly={primaryIsSchool}
+                  className={primaryIsSchool ? 'inputReadonly' : undefined}
+                  required={!primaryIsSchool}
                 />
               </div>
             )}

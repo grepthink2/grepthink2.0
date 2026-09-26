@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { ApiProject, ApiProjectMember, ApiProjectTA } from '@/lib/api';
-import { useClass } from '@/lib/classContext';
+import { useClass, useClassRole } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { usePreview } from '@/lib/previewContext';
 import ProjectView, { ProjectViewSkeleton } from '@features/app/components/Project/ProjectView';
@@ -10,7 +10,7 @@ import ProjectView, { ProjectViewSkeleton } from '@features/app/components/Proje
 const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const { selectedClass } = useClass();
-  const { user, role } = useAuth();
+  const { user } = useAuth();
   const { isPreviewing, enterPreview } = usePreview();
   const location = useLocation();
   const navigate = useNavigate();
@@ -33,6 +33,8 @@ const ProjectDetails: React.FC = () => {
   /** How the latest load finished, and which project it was for. */
   const [loadStatus, setLoadStatus] = useState<{ projectId: string; error: string | null } | null>(null);
   const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
+  // Your role in the project's class (the selected class until the project loads).
+  const classRole = useClassRole(project?.class_id ?? selectedClass?.id);
 
   useEffect(() => {
     if (!projectId) return;
@@ -116,7 +118,8 @@ const ProjectDetails: React.FC = () => {
   const loading = Boolean(projectId) && loadStatus?.projectId !== projectId;
   const error = projectId ? (loadStatus?.error ?? null) : 'Missing project ID';
 
-  if (loading) {
+  // The header's actions follow your class role, so wait for the classes too.
+  if (loading || classRole === undefined) {
     return (
       <div className="projects">
         <ProjectViewSkeleton />
@@ -183,7 +186,7 @@ const ProjectDetails: React.FC = () => {
         projectMembers={members}
         onMembersChange={refreshProjectAndMembers}
         onLeave={handleLeaveProject}
-        onDelete={() => navigate(role === 'instructor' ? '/app/projects' : '/app/browse-projects')}
+        onDelete={() => navigate(classRole === 'instructor' ? '/app/projects' : '/app/browse-projects')}
         pendingRequestId={pendingRequestId}
         onRequestSent={(id) => setPendingRequestId(id)}
         onRequestCancelled={() => setPendingRequestId(null)}

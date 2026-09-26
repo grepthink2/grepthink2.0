@@ -41,7 +41,7 @@ class MarkAllPresentRequest(BaseModel):
 
 
 class SetMeetingCadenceRequest(BaseModel):
-    """Set a class's TA-meeting cadence (instructor only). Omitted fields are
+    """Set a class's TA-meeting cadence (class instructor only). Omitted fields are
     left unchanged."""
 
     meetings_per_week: int | None = None

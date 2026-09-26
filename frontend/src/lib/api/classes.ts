@@ -21,6 +21,7 @@ export const classesApi = {
     term: string;
     start_date: string;
     tsr_count?: number;
+    institution_id?: string;
   }) => {
     return apiRequest<{ message: string; class: ApiClass }>('/api/classes', {
       method: 'POST',
@@ -43,7 +44,8 @@ export const classesApi = {
     });
   },
 
-  // Student joins class by course code. Returns {message, class} with class details
+  // Join a class by course code (any account that has picked a role; the class instructor cannot
+  // join their own class). Returns {message, class} with class details
   joinClass: async (courseCode: string) => {
     return apiRequest<{ message: string; class: ApiClass }>('/api/classes/join', {
       method: 'POST',
