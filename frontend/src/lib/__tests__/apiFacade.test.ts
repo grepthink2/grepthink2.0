@@ -32,7 +32,6 @@ const METHODS = [
   'dismissJoinRequest',
   'getAssignmentTsrOverview',
   'getAssignments',
-  'getClass',
   'getClassProjects',
   'getClassProjectsOverview',
   'getClassRoster',

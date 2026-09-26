@@ -10,6 +10,10 @@ These tests pin those status codes and messages, and assert that a denied call
 writes nothing and sends no email. The retry tests cover
 ``@retry_on_disconnect``: a dropped connection has to reach the decorator
 instead of becoming a 500 first.
+
+No route reads a single class row. ``GET /api/classes/{class_id}`` returned the
+raw ``classes`` row, course code and staff-only review Zoom link included, to any
+signed-in caller. Nothing called it, so it was removed rather than gated.
 """
 
 from __future__ import annotations
@@ -21,6 +25,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.classes import controller as classes
+from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "instr", "instr-2"
@@ -295,6 +300,58 @@ def test_class_reads_answer_403_to_strangers_and_404_for_a_missing_class(db, nam
 @pytest.mark.parametrize("caller", [INSTR, S1, TA1])
 def test_class_reads_admit_the_instructor_and_enrolled_members(db, name, caller):
     CLASS_READS[name][0](caller, CLASS)
+
+
+# ------------------------------------------------- GET /api/classes/{class_id}
+
+# The removed route parsed class_id as a UUID, so any other id would have stopped
+# at a 422 without ever showing the leak.
+ROW_CLASS = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+ROW_MISSING = "cccccccc-cccc-cccc-cccc-cccccccccccc"
+
+
+@pytest.mark.parametrize(
+    ("caller", "cid"),
+    [
+        (OUTSIDER, ROW_CLASS),
+        (OTHER_INSTR, ROW_CLASS),
+        (S1, ROW_CLASS),
+        (TA1, ROW_CLASS),
+        (INSTR, ROW_CLASS),
+        (INSTR, ROW_MISSING),
+    ],
+    ids=[
+        "outsider",
+        "other-instructor",
+        "enrolled-student",
+        "enrolled-ta",
+        "instructor",
+        "missing-class",
+    ],
+)
+def test_no_route_hands_out_a_raw_class_row(client, monkeypatch, caller, cid):
+    world = _world()
+    world["classes"] = [
+        {
+            **world["classes"][0],
+            "id": ROW_CLASS,
+            "review_zoom_url": "https://ucsc.zoom.us/j/1234567890",
+            "review_period_open": True,
+        }
+    ]
+    world["class_enrollments"] = [
+        {**row, "class_id": ROW_CLASS} for row in world["class_enrollments"]
+    ]
+    fake = FakeSupabase(**world)
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+
+    r = client.get(
+        f"/api/classes/{cid}", headers={"Authorization": f"Bearer {make_token(sub=caller)}"}
+    )
+
+    # The router's own 404: no handler ran, so nothing read the class.
+    assert (r.status_code, r.json()) == (404, {"detail": "Not Found"})
+    assert fake.executes == 0, _trace(fake)
 
 
 # ------------------------------------------------------------------ retries
