@@ -9,7 +9,9 @@ against the in-memory FakeSupabase, plus:
   removing a non-member no longer decrements the counter);
 - role changes demote the previous holder with ONE update instead of one per row;
 - the six role endpoints no longer leak exception text into the 500 body;
-- each path has an upper bound on Supabase round trips.
+- each path has an upper bound on Supabase round trips;
+- creating and updating a project take the class instructor to be the class's creator,
+  never an account whose role is ``instructor``.
 """
 
 from __future__ import annotations
@@ -318,6 +320,57 @@ def test_role_endpoint_errors_do_not_leak_exception_text(db, monkeypatch):
         assert exc.value.status_code == 500
         assert "constraint" not in exc.value.detail
         assert "project_members_pkey" not in exc.value.detail
+
+
+# ------------------------------------------------ create / update: who is the class instructor
+#
+# The class's creator, whatever their account role: an account can teach one class and be a
+# TA or student in another.
+
+
+def _set_account_role(db, uid, role):
+    next(p for p in db.rows("profiles") if p["id"] == uid)["role"] = role
+
+
+def test_an_enrolled_ta_whose_account_is_an_instructor_creates_a_project_as_a_member(db):
+    _set_account_role(db, TA1, "instructor")
+    project = projects.create_project(CLASS, "Gamma", "d", TA1, 4, sponsor_name="Acme")
+    assert "sponsor_name" not in project  # sponsor fields are the class instructor's
+    assert _members(db, project["id"]) == {TA1: "product owner"}
+
+
+def test_the_class_owner_whose_account_is_a_student_creates_a_sponsored_project(db):
+    _set_account_role(db, INSTR, "student")
+    project = projects.create_project(CLASS, "Sponsored", "d", INSTR, 4, sponsor_name="Acme")
+    assert project["sponsor_name"] == "Acme"
+    assert _members(db, project["id"]) == {}  # the instructor does not join the team
+
+
+def test_update_project_follows_the_class_owner_not_the_account_role(db):
+    _set_account_role(db, INSTR, "student")
+    assert projects.update_project(P1, INSTR, name="Renamed")["name"] == "Renamed"
+
+    # An instructor account that only assists in this class is not on P1's team.
+    _set_account_role(db, TA1, "instructor")
+    with pytest.raises(HTTPException) as exc:
+        projects.update_project(P1, TA1, name="Nope")
+    assert (exc.value.status_code, exc.value.detail) == (403, "Not a member of this project")
+    assert next(p for p in db.rows("projects") if p["id"] == P1)["name"] == "Renamed"
+
+
+def test_update_project_reads_the_project_with_its_class_owner_in_one_round_trip(db):
+    projects.update_project(P1, INSTR, name="Renamed")
+    trace = [f"{q['table']}:{q['op']}" for q in db.queries]
+    assert trace == ["projects:select", "projects:update"]  # no separate classes read
+
+    db.reset_counter()
+    projects.update_project(P1, S1, name="Again")  # S1 is P1's product owner
+    trace = [f"{q['table']}:{q['op']}" for q in db.queries]
+    assert trace == ["projects:select", "project_members:select", "projects:update"]
+
+    with pytest.raises(HTTPException) as missing:
+        projects.update_project("no-such-project", INSTR, name="Nope")
+    assert (missing.value.status_code, missing.value.detail) == (404, "Project not found")
 
 
 # ------------------------------------------------------------ get_projects_for_user

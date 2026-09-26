@@ -20,7 +20,7 @@ export function getInitials(name: string, email: string): string {
   return '?';
 }
 
-/** Prefer verified .edu email; fall back to primary account email. */
+/** Prefer the verified school (roster) email; fall back to the primary account email. */
 export function getMemberCopyEmail(member: {
   edu_email?: string | null;
   email?: string | null;

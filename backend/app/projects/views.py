@@ -189,7 +189,7 @@ def remove_project_member(
     user_id: UUID,
     requester_id: str = Depends(require_user),
 ):
-    """Remove a user from a project (instructor only)."""
+    """Remove a user from a project (class instructor only)."""
     return controller.instructor_remove_member(
         project_id=project_id,
         requester_id=requester_id,
@@ -202,7 +202,7 @@ def assign_product_owner(
     data: AssignRoleRequest,
     user_id: str = Depends(require_user),
 ):
-    """Assign the product owner role to a project member (owner, product owner, admin, or instructor only)."""
+    """Assign the product owner role to a project member (owner, product owner, admin, or class instructor only)."""
     return controller.assign_product_owner(
         project_id=project_id,
         requester_id=user_id,
@@ -215,7 +215,7 @@ def assign_scrum_master(
     data: AssignRoleRequest,
     user_id: str = Depends(require_user),
 ):
-    """Assign the scrum master role to a project member (owner, product owner, admin, or instructor only)."""
+    """Assign the scrum master role to a project member (owner, product owner, admin, or class instructor only)."""
     return controller.assign_scrum_master(
         project_id=project_id,
         requester_id=user_id,
@@ -241,7 +241,7 @@ def remove_product_owner(
     data: AssignRoleRequest,
     user_id: str = Depends(require_user),
 ):
-    """Demote the product owner back to member (product owner, admin, or instructor only)."""
+    """Demote the product owner back to member (product owner, admin, or class instructor only)."""
     return controller.remove_product_owner(
         project_id=project_id,
         requester_id=user_id,
@@ -254,7 +254,7 @@ def remove_scrum_master(
     data: AssignRoleRequest,
     user_id: str = Depends(require_user),
 ):
-    """Demote the scrum master back to member (product owner, admin, or instructor only)."""
+    """Demote the scrum master back to member (product owner, admin, or class instructor only)."""
     return controller.remove_scrum_master(
         project_id=project_id,
         requester_id=user_id,

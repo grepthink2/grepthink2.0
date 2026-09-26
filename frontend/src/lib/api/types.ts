@@ -1,5 +1,20 @@
 /** Request and response types for the backend API, re-exported by lib/api.ts. */
 
+/** The signed-in user's role in one class: its creator, a TA, or an enrolled student. */
+export type ClassRole = 'instructor' | 'ta' | 'student';
+
+/** A school, as a class row embeds it. */
+export interface ApiInstitutionSummary {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+/** A school with the email domains that count as its school email (GET /api/institutions). */
+export interface ApiInstitution extends ApiInstitutionSummary {
+  email_domains: string[];
+}
+
 export interface ApiClass {
   id: string;
   name: string;
@@ -15,9 +30,17 @@ export interface ApiClass {
   status?: 'active' | 'complete';
   /** My Classes: live enrollment count from class_enrollments. */
   enrolled_count?: number;
+  /** The caller's role in this class (GET /api/classes). Missing from older backends. */
+  my_role?: ClassRole;
+  /** The school the class belongs to; null when unassigned or before the institutions migration. */
+  institution?: ApiInstitutionSummary | null;
+  institution_id?: string | null;
 }
 
-/** Class-level role on a class_enrollments row. TAs keep global role 'student'. */
+/**
+ * Class-level role on a class_enrollments row. A TA is an enrollment with 'ta', whatever the
+ * account role (profiles.role) is.
+ */
 export type EnrollmentRole = 'student' | 'ta';
 
 export interface ApiStudent {

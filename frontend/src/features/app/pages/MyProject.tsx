@@ -73,8 +73,8 @@ const MyProject: React.FC = () => {
     };
   }, [selectedClass]);
 
-  // In "View as Student" preview bound to a project, treat it as the user's
-  // project so this page mirrors a member's single-project experience.
+  // In "View class as student" preview of a class you teach, bound to one of its projects, treat
+  // that project as the user's so this page mirrors a member's single-project experience.
   if (isPreviewing && previewProjectId) {
     return <Navigate to={`/app/projects/${previewProjectId}`} replace />;
   }

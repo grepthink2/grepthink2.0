@@ -9,8 +9,7 @@ import ProjectFooter from '../components/CreateProject/ProjectFooter';
 import { PRESET_SKILLS } from '../components/CreateProject/constants';
 import { generateTemplateMarkdown, parseTemplateFromMarkdown } from '../utils/projectDescriptionTemplate';
 import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
-import { useClass, type Class } from '@/lib/classContext';
+import { useClass, useSelectedClassRole, type Class, type ClassRole } from '@/lib/classContext';
 import './CreateProject.scss';
 
 const CreateProject: React.FC = () => {
@@ -37,7 +36,7 @@ const CreateProject: React.FC = () => {
   // Latest membership check: the class and role it ran for, and what it found.
   const [membership, setMembership] = useState<{
     forClass: Class;
-    forRole: string;
+    forRole: ClassRole | null;
     existingProject: { id: string; name: string } | null;
   } | null>(null);
 
@@ -49,17 +48,18 @@ const CreateProject: React.FC = () => {
 
   const navigate = useNavigate();
   const { selectedClass } = useClass();
-  const { role } = useAuth();
+  const classRole = useSelectedClassRole();
 
-  // A student already on a project in this class may not create another one.
-  const checksMembership = selectedClass !== null && role === 'student';
+  // A student or TA already on a project in this class may not create another one.
+  const checksMembership =
+    selectedClass !== null && classRole !== undefined && classRole !== 'instructor';
   const membershipLoading =
-    checksMembership && (membership?.forClass !== selectedClass || membership?.forRole !== role);
+    checksMembership && (membership?.forClass !== selectedClass || membership?.forRole !== classRole);
   // While another class is being checked, the previous answer stays up.
   const existingProject = checksMembership ? (membership?.existingProject ?? null) : null;
 
   useEffect(() => {
-    if (!selectedClass || role !== 'student') return;
+    if (!selectedClass || classRole === undefined || classRole === 'instructor') return;
 
     let isMounted = true;
 
@@ -78,14 +78,14 @@ const CreateProject: React.FC = () => {
       } catch {
         // A failed check does not block creating a project.
       }
-      if (isMounted) setMembership({ forClass: selectedClass, forRole: role, existingProject: found });
+      if (isMounted) setMembership({ forClass: selectedClass, forRole: classRole, existingProject: found });
     };
 
     void checkMembership();
     return () => {
       isMounted = false;
     };
-  }, [selectedClass, role]);
+  }, [selectedClass, classRole]);
 
   const filteredSkills = PRESET_SKILLS.filter(
     (skill) =>

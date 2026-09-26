@@ -26,6 +26,7 @@ from app.contact.url import router as contact_router
 from app.core.errors import install_exception_handlers
 from app.core.sentry import SentryFlushMiddleware, init_sentry
 from app.health.url import router as health_router
+from app.institutions.url import router as institutions_router
 from app.jobs.pending_invites import run_forever as run_pending_invites
 from app.limiter import limiter
 from app.messages.url import router as messages_router
@@ -89,6 +90,7 @@ for router in (
     health_router,
     auth_router,
     classes_router,
+    institutions_router,
     projects_router,
     assignments_router,
     tsr_router,

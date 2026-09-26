@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 
 class CreateAssignmentRequest(BaseModel):
-    """Request model for creating a new assignment (instructor only)."""
+    """Request model for creating a new assignment (class instructor only)."""
 
     class_id: UUID
     title: str

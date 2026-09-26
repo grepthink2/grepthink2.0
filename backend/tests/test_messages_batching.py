@@ -27,11 +27,12 @@ from app.messages import controller as messages
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "instr-1", "instr-2"
+THIRD = "instr-3"  # owns C4, which nobody joined: no class in common with anyone
 TA = "ta-1"
 S1, S2, S3 = "stu-1", "stu-2", "stu-3"
 ORPHAN = "stu-orphan"  # enrolled, but has no profiles row
 NOBODY = "nobody"  # no rows anywhere
-C1, C2, C3 = "class-1", "class-2", "class-3"
+C1, C2, C3, C4 = "class-1", "class-2", "class-3", "class-4"
 
 #: The foreign keys list_contacts embeds over (all in supabase/schema.sql).
 CONTACT_RELATIONS = {
@@ -66,11 +67,13 @@ def _enroll(db, uid, class_id, role="student"):
 @pytest.fixture
 def db(monkeypatch):
     """C1 (owned by INSTR): TA and OTHER_INSTR as TAs; S1, S2 and ORPHAN as students.
-    C2 (owned by OTHER_INSTR): S1 and S3. C3 (owned by INSTR): nobody enrolled."""
+    C2 (owned by OTHER_INSTR): S1 and S3. C3 (owned by INSTR) and C4 (owned by THIRD):
+    nobody enrolled."""
     fake = FakeSupabase(
         profiles=[
             _profile(INSTR, "Ina", "Irwin", role="instructor"),
             _profile(OTHER_INSTR, "Ivo", "Olsen", role="instructor"),
+            _profile(THIRD, "Una", "Ueda", role="instructor"),
             _profile(TA, "Tara", "Tran"),
             _profile(S1, "Sam", "Stone"),
             _profile(S2, None, None, email="bea@ucsc.edu"),  # no name: sorts by email
@@ -80,6 +83,7 @@ def db(monkeypatch):
             {"id": C1, "created_by": INSTR},
             {"id": C2, "created_by": OTHER_INSTR},
             {"id": C3, "created_by": INSTR},
+            {"id": C4, "created_by": THIRD},
         ],
         relations=CONTACT_RELATIONS,
     )
@@ -108,6 +112,7 @@ def db(monkeypatch):
         pytest.param(ORPHAN, S2, True, id="enrollment-without-a-profile-row"),
         pytest.param(S2, S3, False, id="students-of-different-classes"),
         pytest.param(INSTR, S3, False, id="owner-and-student-of-another-class"),
+        pytest.param(INSTR, THIRD, False, id="owners-of-unrelated-classes"),
         pytest.param(NOBODY, S1, False, id="unknown-user"),
         pytest.param(NOBODY, "nobody-2", False, id="both-unknown"),
     ],
@@ -140,25 +145,40 @@ def test_rows_are_matched_back_to_users_the_way_postgres_compares_uuids():
 
 def test_can_message_student_and_instructor(db):
     assert messages.can_message(S1, INSTR) is True
-    assert db.executes <= 3, _trace(db)  # roles, then owned classes + enrollments
+    assert db.executes <= 2, _trace(db)  # owned classes + enrollments; no role read
 
 
 def test_can_message_without_a_shared_class(db):
     assert messages.can_message(S2, S3) is False
-    assert db.executes <= 3, _trace(db)
+    assert db.executes <= 2, _trace(db)
 
 
-def test_can_message_instructor_pair_stops_after_the_role_read(db):
-    assert messages.can_message(INSTR, OTHER_INSTR) is False  # they do share C1
-    assert _trace(db) == ["profiles:select"]
+def test_can_message_two_instructor_accounts_who_share_a_class(db):
+    """OTHER_INSTR is a TA in INSTR's C1: two instructor accounts, one shared class."""
+    assert messages.can_message(INSTR, OTHER_INSTR) is True
+    assert _trace(db) == ["class_enrollments:select", "classes:select"]
+
+
+def test_owning_a_class_is_no_tie_to_another_class_instructor(db):
+    """INSTR and THIRD each own a class; the classes share nobody. Neither can message the
+    other, and THIRD, whose class nobody joined, has no contacts."""
+    assert messages.can_message(INSTR, THIRD) is False
+    assert messages.can_message(THIRD, INSTR) is False
+
+    with pytest.raises(HTTPException) as exc:
+        messages.send_message(sender_id=INSTR, body="Hello", to_user_id=THIRD)
+    assert (exc.value.status_code, exc.value.detail) == (403, "Cannot message this user")
+    assert not [q for q in db.queries if q["op"] in {"insert", "update", "upsert", "delete"}]
+
+    assert messages.list_contacts(caller_id=THIRD) == []
 
 
 # --------------------------------------------------------------- list_contacts
 
 
 def test_list_contacts_shape_and_order_for_an_instructor(db):
-    """INSTR owns C1 and C3. From C1: S2, S1 and TA. OTHER_INSTR is left out
-    (instructor pair), ORPHAN has no profiles row, the caller is never listed.
+    """INSTR owns C1 and C3. From C1: S2, OTHER_INSTR (an instructor account, a TA
+    here), S1 and TA. ORPHAN has no profiles row, the caller is never listed.
     Sorted by name, else email, case-insensitively."""
     assert messages.list_contacts(caller_id=INSTR) == [
         {
@@ -169,6 +189,15 @@ def test_list_contacts_shape_and_order_for_an_instructor(db):
             "email": "bea@ucsc.edu",
             "image_url": f"https://img.example/{S2}.png",
             "role": "student",
+        },
+        {
+            "id": OTHER_INSTR,
+            "name": "Ivo Olsen",
+            "first_name": "Ivo",
+            "last_name": "Olsen",
+            "email": f"{OTHER_INSTR}@ucsc.edu",
+            "image_url": f"https://img.example/{OTHER_INSTR}.png",
+            "role": "instructor",
         },
         {
             "id": S1,
@@ -202,13 +231,14 @@ def test_list_contacts_for_a_student_in_two_classes(db):
 
 
 def test_list_contacts_for_an_instructor_who_is_a_ta_elsewhere(db):
-    """OTHER_INSTR owns C2 and is a TA in C1: peers from both classes, never INSTR."""
-    assert [c["id"] for c in messages.list_contacts(caller_id=OTHER_INSTR)] == [S2, S1, TA, S3]
+    """OTHER_INSTR owns C2 and is a TA in C1: peers from both classes, C1's instructor too."""
+    contacts = [c["id"] for c in messages.list_contacts(caller_id=OTHER_INSTR)]
+    assert contacts == [S2, INSTR, S1, TA, S3]
     assert db.executes <= 2, _trace(db)
 
 
 def test_list_contacts_for_a_caller_without_a_profile_row(db):
-    """No caller role to compare, so no instructor filtering."""
+    """A caller without a profiles row still gets every nameable peer."""
     contacts = messages.list_contacts(caller_id=ORPHAN)
     assert [c["id"] for c in contacts] == [S2, INSTR, OTHER_INSTR, S1, TA]
     assert db.executes <= 2, _trace(db)
@@ -219,7 +249,7 @@ def test_list_contacts_breaks_name_ties_by_user_id(db):
         db.rows("profiles").append(_profile(uid, "Alex", "Kim"))
         _enroll(db, uid, C3)
     contacts = messages.list_contacts(caller_id=INSTR)
-    assert [c["id"] for c in contacts] == ["stu-a", "stu-b", S2, S1, TA]
+    assert [c["id"] for c in contacts] == ["stu-a", "stu-b", S2, OTHER_INSTR, S1, TA]
 
 
 def test_list_contacts_query_matches_name_or_email(db):
@@ -234,10 +264,8 @@ def test_list_contacts_is_empty_without_classes_or_peers(db):
     assert messages.list_contacts(caller_id=NOBODY) == []
     assert db.executes <= 2, _trace(db)
 
-    db.rows("profiles").append(_profile("instr-3", "Una", "Ueda", role="instructor"))
-    db.rows("classes").append({"id": "class-4", "created_by": "instr-3"})
     db.reset_counter()
-    assert messages.list_contacts(caller_id="instr-3") == []  # owns a class nobody joined
+    assert messages.list_contacts(caller_id=THIRD) == []  # owns a class nobody joined
     assert db.executes <= 2, _trace(db)
 
 

@@ -17,6 +17,8 @@ role-gated (instructor / TA / student).
 
 ## Core concepts
 - **Class**: a course section owned by an instructor. Students join with a course code.
+- **Institution**: the school a class belongs to. One account can be an instructor at one school
+  and a TA or student at another.
 - **Roster**: the official class list (uploaded from a UCSC CSV) merged with who has
   actually signed up.
 - **Project**: a team workspace inside a class. Project roles: owner, product owner,

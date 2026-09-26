@@ -109,7 +109,7 @@ def get_my_enrollment_role(user_id: str, class_id: UUID) -> dict:
 
 
 def promote_to_ta(instructor_id: str, class_id: UUID, target_user_id: UUID) -> dict:
-    """Promote an enrolled student to TA for this class (instructor only)."""
+    """Promote an enrolled student to TA for this class (class instructor only)."""
     try:
         client = get_client()
         reads = fan_out(
@@ -220,7 +220,7 @@ def _ta_assignments_by_user(client, class_id, user_ids: list[str]) -> dict[str, 
 
 
 def list_class_tas(instructor_id: str, class_id: UUID) -> list[dict]:
-    """List every TA in a class with the projects they oversee (instructor only)."""
+    """List every TA in a class with the projects they oversee (class instructor only)."""
     try:
         client = get_client()
         cid = str(class_id)
@@ -402,7 +402,7 @@ REVIEW_TA_TABLE = "project_review_tas"
 
 
 def set_review_window(instructor_id: str, class_id: UUID, is_open: bool) -> dict:
-    """Open or close a class's end-of-quarter review window (instructor only)."""
+    """Open or close a class's end-of-quarter review window (class instructor only)."""
     try:
         client = get_client()
         _require_class_instructor(client, instructor_id, class_id)
@@ -594,7 +594,7 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
 
 
 def set_review_zoom(instructor_id: str, class_id: UUID, zoom_url: str | None) -> dict:
-    """Set or clear the class's ONE shared final-review Zoom room (instructor only).
+    """Set or clear the class's ONE shared final-review Zoom room (class instructor only).
 
     Every team's final review happens in this room; a null/blank URL clears it.
     """
@@ -624,7 +624,7 @@ def set_review_zoom(instructor_id: str, class_id: UUID, zoom_url: str | None) ->
 def set_final_review_time(
     instructor_id: str, project_id: UUID, scheduled_at: datetime | None
 ) -> dict:
-    """Set or clear a team's single final-review slot (instructor only).
+    """Set or clear a team's single final-review slot (class instructor only).
 
     One timestamptz per team (``projects.final_review_at``); no attendance is
     taken for final reviews, so this deliberately does not create a ``meetings``

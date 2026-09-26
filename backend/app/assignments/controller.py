@@ -19,13 +19,6 @@ logger = logging.getLogger(__name__)
 ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form", "feedback"}
 
 
-def _require_instructor(user_id: str) -> None:
-    """Raise 403 if the user's profile role is not instructor."""
-    result = get_client().table("profiles").select("role").eq("id", user_id).execute()
-    if not result.data or result.data[0].get("role") != "instructor":
-        raise HTTPException(status_code=403, detail=authz.INSTRUCTOR_ROLE_REQUIRED)
-
-
 def _require_class_instructor(user_id: str, class_id: str) -> None:
     """Raise 404 if the class does not exist and 403 unless the user is its instructor."""
     authz.require_class_instructor(get_client(), user_id, class_id)
@@ -64,13 +57,12 @@ def create_assignment(
     assignment_type: str | None = None,
 ) -> dict:
     """
-    Create a new assignment for a class (instructor only).
+    Create a new assignment for a class (the class instructor only).
 
     Uses the assignments.class_id FK column to link the assignment to its class.
 
     Returns the created assignment row.
     """
-    _require_instructor(user_id)
     _require_class_instructor(user_id, str(class_id))
 
     if open_date > close_date:
@@ -218,7 +210,7 @@ def update_assignment(
     assignment_type: str | None = None,
 ) -> dict:
     """
-    Edit an existing assignment's title, dates, or status (instructor only).
+    Edit an existing assignment's title, dates, or status (the class instructor only).
 
     Only the instructor who owns the class the assignment belongs to may edit it.
     Returns the updated assignment row. If the assignment type is 'tsr', a
@@ -226,8 +218,6 @@ def update_assignment(
     evaluatee_name, percent_contribution, constructive_feedback, and positive_feedback (always present)
     plus Scrum Master fields.
     """
-    _require_instructor(user_id)
-
     try:
         client = get_client()
 
@@ -310,7 +300,6 @@ def update_assignment(
 
 def delete_assignment(user_id: str, assignment_id: UUID) -> None:
     """Delete an assignment (instructor who owns the class only)."""
-    _require_instructor(user_id)
     try:
         client = get_client()
         assignment_result = (
@@ -437,28 +426,22 @@ def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
     """
     Return all assignments that belong to a class.
 
-    - Instructors: must own the class; see all statuses, with TSR and feedback
-      submission stats.
-    - Students: must be enrolled in the class; only see 'publish' assignments.
+    - The class instructor (``classes.created_by``) sees every status, with TSR
+      and feedback submission stats.
+    - Anyone enrolled (student or TA) sees published assignments.
+    - Anyone else: 403 ``NOT_ENROLLED``, whatever their account role.
 
-    404 when the class does not exist; 403 when the caller fails the rule above.
+    404 when the class does not exist.
 
-    Round trips: the caller's profile role, the class, their enrollment and the
-    assignment list are read concurrently; an instructor's stats take one more
-    concurrent wave. At most 8 queries in 2 waves (was 8 sequential reads for an
-    instructor).
+    Round trips: the class, the caller's enrollment and the assignments are read
+    concurrently; the instructor's stats take one more concurrent wave. At most 7
+    queries in 2 waves (was 8 sequential reads for an instructor).
     """
     try:
         client = get_client()
         cid = str(class_id)
         reads = fan_out(
             {
-                "role": lambda: (
-                    (
-                        client.table("profiles").select("role").eq("id", user_id).limit(1).execute()
-                    ).data
-                    or []
-                ),
                 "class": lambda: authz.load_class(client, cid),
                 "enrolled": lambda: bool(
                     (
@@ -482,15 +465,12 @@ def get_assignments_for_class(user_id: str, class_id: UUID) -> list:
                 ),
             }
         )
-        role = reads["role"][0].get("role") if reads["role"] else None
         assignments = reads["assignments"]
         cls = reads["class"]
         if cls is None:
             raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
 
-        if role == "instructor":
-            if str(cls.get("created_by")) != str(user_id):
-                raise HTTPException(status_code=403, detail=authz.NOT_CLASS_INSTRUCTOR)
+        if str(cls.get("created_by")) == str(user_id):
             return _with_instructor_stats(client, cid, assignments)
 
         if not reads["enrolled"]:

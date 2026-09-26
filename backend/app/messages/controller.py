@@ -29,15 +29,6 @@ _CURSOR_TS_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.+\-]+")
 _CURSOR_ID_RE = re.compile(r"[0-9a-zA-Z\-]{1,64}")
 
 
-def get_profile_roles(user_ids: list[str]) -> dict[str, str | None]:
-    """Return {user_id: role} for the given ids. Missing rows → None."""
-    if not user_ids:
-        return {}
-    res = get_client().table("profiles").select("id, role").in_("id", user_ids).execute()
-    found = {row["id"]: row["role"] for row in (res.data or [])}
-    return {uid: found.get(uid) for uid in user_ids}
-
-
 def _id_key(value: object) -> str:
     """An id in the form Postgres compares uuids in (lower-case, hyphenated).
 
@@ -92,12 +83,13 @@ def has_shared_class(a_id: str, b_id: str) -> bool:
 
 
 def can_message(a_id: str, b_id: str) -> bool:
-    """Per spec Q1=C: students↔students, instructors↔students, no
-    instructor↔instructor; both must share an active class."""
+    """Two different people who share a class may message each other.
+
+    There used to be no instructor↔instructor messaging, by account role. A class has one
+    instructor, so two instructors only share a class when one of them is enrolled in it (as a
+    TA, say), and then they must be able to talk.
+    """
     if a_id == b_id:
-        return False
-    roles = get_profile_roles([a_id, b_id])
-    if roles.get(a_id) == "instructor" and roles.get(b_id) == "instructor":
         return False
     return has_shared_class(a_id, b_id)
 
@@ -493,8 +485,8 @@ _ENROLLED_CLASS_PEOPLE = f"class_id, classes!class_enrollments_class_id_fkey({_C
 
 def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
     """Everyone the caller may DM: peers across the caller's classes
-    (enrolled students/TAs + class owners), minus self and minus
-    instructor↔instructor pairs. Optional case-insensitive name/email filter.
+    (enrolled students/TAs + class owners), minus self. Optional
+    case-insensitive name/email filter.
 
     Mirrors can_message() eligibility — keep the two in sync (same
     convention as the messages_inbox RPC).
@@ -503,9 +495,7 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
 
     Two reads in one wave — the classes the caller owns and the classes the
     caller is enrolled in, each with its owner, enrollments and their profiles
-    embedded — where it used to be five sequential reads. The caller's own
-    profile (for the instructor↔instructor rule) is part of that data whenever
-    the caller has a class: as its owner or as one of its enrollments.
+    embedded — where it used to be five sequential reads.
     """
     client = get_client()
     reads = fan_out(
@@ -547,7 +537,6 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
     peer_ids.discard(caller_id)
     if not peer_ids:
         return []
-    caller_role = (profiles.get(caller_id) or {}).get("role")
 
     needle = (query or "").strip().lower()[:100]
     out: list[dict] = []
@@ -558,8 +547,6 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
             # enrollment / auth-glue gap) are omitted — an unnameable contact
             # is worse than an absent one. can_message stays permissive, so
             # such users remain messageable via direct sends.
-            continue
-        if caller_role == "instructor" and p.get("role") == "instructor":
             continue
         first = (p.get("first_name") or "").strip()
         last = (p.get("last_name") or "").strip()

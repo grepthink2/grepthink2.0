@@ -1,21 +1,19 @@
 import React from 'react';
-import { useClass } from '@/lib/classContext';
-import { useEnrollmentRole } from '@/lib/enrollmentRole';
+import { useSelectedClassRole } from '@/lib/classContext';
 import TAScheduleView from '@features/app/components/TAManagement/TAScheduleView';
 
 /**
  * TA meeting schedule + attendance. One route (`/app/ta-meetings`) serving all
- * roles; the user's class-level role (resolved from the enrollment-role
- * endpoint, the same source the sidebar uses) decides the view:
+ * roles; your role in the selected class (the same source the sidebar uses)
+ * decides the view:
  *
  * - Instructor: every team in the class, editable, can designate/assign TAs.
  * - Class TA: the teams assigned to them — editable Zoom + attendance.
  * - Regular student: their own team's slot read-only, with their own status.
  */
 const TAMeetings: React.FC = () => {
-  const { selectedClass } = useClass();
-  // `undefined` = still resolving; `null` = no class / not enrolled.
-  const role = useEnrollmentRole(selectedClass?.id);
+  // `undefined` = classes still loading; `null` = no class selected.
+  const role = useSelectedClassRole();
 
   if (role === undefined) return null; // resolving role — avoid a wrong-scope flash
 

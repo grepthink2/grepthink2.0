@@ -43,7 +43,7 @@ def seed(monkeypatch):
     return install
 
 
-def test_contacts_excludes_self_and_instructor_pairs(seed):
+def test_contacts_excludes_self_and_includes_instructors_who_share_a_class(seed):
     # prof (instructor) owns cls1 and is enrolled in it too; prof2 (instructor)
     # owns cls2, where prof is a TA.
     seed(
@@ -63,7 +63,7 @@ def test_contacts_excludes_self_and_instructor_pairs(seed):
     ids = {c["id"] for c in contacts}
     assert "stu1" in ids  # student peer included
     assert "prof" not in ids  # never include self
-    assert "prof2" not in ids  # instructor↔instructor excluded
+    assert "prof2" in ids  # prof TAs in prof2's class
 
 
 def test_contacts_query_filters_by_name(seed):
