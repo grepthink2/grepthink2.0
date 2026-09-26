@@ -27,12 +27,13 @@ def is_instructor_role(role: str | None) -> bool:
 # ---------------------------------------------------------------------------
 # Role lookup cache
 #
-# ``get_user_role`` was being called on almost every authenticated endpoint
-# (every classes view, ``require_instructor``, etc.) and each call was a
+# ``get_user_role`` now runs only for ``require_instructor`` (creating a
+# class, the one thing ``profiles.role`` still decides), ``join_class``'s
+# has-a-role check and ``/api/login-check``; class endpoints check the class
+# itself. It used to run on almost every authenticated endpoint, each call a
 # round-trip to Supabase. Roles change extremely rarely — and we already
 # invalidate explicitly on the few code paths that mutate them — so a small
-# in-process TTL cache is safe and trims one DB round-trip from the hot
-# path of nearly every page load.
+# in-process TTL cache is safe and trims that round-trip.
 #
 # Process-local (not shared across uvicorn workers); a stale read on one
 # worker for at most ``_ROLE_CACHE_TTL_SECONDS`` is acceptable.
@@ -54,10 +55,11 @@ def get_user_role(user_id: str) -> str | None:
     """
     Fetch the user's role, returning a cached value when fresh.
 
-    Only a chosen role is cached: it never changes afterwards, so serving it
-    from memory for the TTL is safe. ``None`` (no profile row, or a row whose
-    owner has not picked a role yet) is looked up every time, because that
-    state ends the moment the user picks and other instances cannot be told.
+    Only a chosen role is cached: it changes only when a maintainer flips it
+    (student → instructor); the TTL bounds how long a stale role is served.
+    ``None`` (no profile row, or a row whose owner has not picked a role yet)
+    is looked up every time, because that state ends the moment the user
+    picks and other instances cannot be told.
     A failed lookup raises ``DatabaseError`` and is not cached either, so
     callers answer 503 or 500 instead of treating a database blip as "no role"
     (which used to surface as a 403).
@@ -83,7 +85,7 @@ def get_user_role(user_id: str) -> str | None:
     if role is None:
         # No row yet, or its owner has not picked a role. Both end the moment they do, and
         # that has to show on the very next request from any instance, so only a chosen
-        # role (which never changes afterwards) is worth caching.
+        # role (which changes only when a maintainer flips it) is worth caching.
         logger.debug("get_user_role: no role yet | user_id=%s", user_id)
         return None
     with _role_cache_lock:

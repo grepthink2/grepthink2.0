@@ -12,6 +12,8 @@ function makeClass(overrides: Partial<Class> = {}): Class {
     name: 'CSE 115B',
     created_by: 'teacher-1',
     created_at: '2026-01-01T00:00:00Z',
+    my_role: 'instructor',
+    institution: null,
     ...overrides,
   };
 }

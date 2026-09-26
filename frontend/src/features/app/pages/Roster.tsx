@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useClass } from '@/lib/classContext';
-import { useAuth } from '@/lib/auth';
+import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import ControlBar from '@features/app/components/Roster/ControlBar';
 import RosterList from '@features/app/components/Roster/RosterList';
@@ -30,7 +29,7 @@ interface UnsendJob {
 
 const Roster: React.FC = () => {
   const { selectedClass } = useClass();
-  const { role } = useAuth();
+  const classRole = useSelectedClassRole();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterOption>('all');
   const [students, setStudents] = useState<UiStudent[]>([]);
@@ -275,7 +274,8 @@ const Roster: React.FC = () => {
     );
   }
 
-  if (role === 'student') {
+  // Students and TAs get the read-only roster; the class instructor manages it.
+  if (classRole !== 'instructor') {
     return (
       <div className="roster">
         <ControlBar

@@ -60,7 +60,7 @@ class DismissJoinRequestRequest(BaseModel):
 
 
 class ManageProjectMemberRequest(BaseModel):
-    """Request model for adding a member to a project (instructor only)."""
+    """Request model for adding a member to a project (class instructor only)."""
 
     user_id: UUID
     role: str | None = "member"

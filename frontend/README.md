@@ -31,13 +31,12 @@ src/
 ├── features/            # One folder per product area
 │   ├── auth/            # Sign-in, sign-up, password reset (loaded on demand)
 │   ├── app/             # The signed-in app: pages, components, hooks, utils, config
-│   ├── classes/  landing/  messages/  notifications/
+│   ├── landing/  messages/  notifications/
 ├── lib/
 │   ├── api.ts           # `api` facade and re-exported types: import from '@/lib/api'
 │   ├── api/             # client.ts (fetch wrapper, ApiError), types.ts, one file per domain
 │   ├── auth.tsx         # AuthProvider / useAuth
-│   ├── classContext.tsx # Selected class
-│   ├── enrollmentRole.ts  # useEnrollmentRole(classId)
+│   ├── classContext.tsx # Selected class, and your role in a class (useSelectedClassRole / useClassRole)
 │   └── lazyModal.ts     # Load a modal's code the first time it opens
 ├── components/          # Shared UI (Skeleton, ErrorBoundary)
 ├── assets/
@@ -48,9 +47,9 @@ src/
 
 - Call endpoints through `api` from `@/lib/api`. Add new methods to the matching `lib/api/<domain>.ts`; the client is hand-maintained, so confirm the route exists first.
 - A failed request throws `ApiError` with `status`, `detail` and `code` (for example `database_unavailable`); its `message` is the server's detail. A 401 dispatches `auth:unauthorized`, and `AuthProvider` signs out locally.
-- "View as student" preview is read-only: `apiRequest` refuses writes (`lib/previewGuard.ts`).
+- "View class as student" preview (offered only in a class you teach) is read-only: `apiRequest` refuses writes (`lib/previewGuard.ts`).
 - Prefer one request per screen to one request per row. Batch endpoints exist for the common cases, for example `GET /api/assignments/my-submissions`, `GET /api/projects/incoming-join-requests` and `GET /api/classes/attention-summary`. A loop of `api.*` calls is a sign a batch endpoint is missing.
-- Read the caller's class role with `useEnrollmentRole(classId)`; components share one request.
+- Read the caller's class role with `useSelectedClassRole()` or `useClassRole(classId)` from `lib/classContext.tsx`; it comes with the class list, so it costs no request. The account role only decides who may create a class (`useAuth().canCreateClasses`).
 
 ## Performance
 

@@ -4,6 +4,7 @@ Class management request models
 
 import datetime
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -18,6 +19,9 @@ class CreateClassRequest(BaseModel):
     term: str
     start_date: datetime.date
     tsr_count: int | None = None
+    #: The school the class belongs to (``GET /api/institutions``). Optional until the
+    #: institutions contract step makes ``classes.institution_id`` required.
+    institution_id: UUID | None = None
 
 
 class InviteStudentRequest(BaseModel):
@@ -33,13 +37,13 @@ class JoinClassRequest(BaseModel):
 
 
 class UpdateClassStatusRequest(BaseModel):
-    """Request model for updating a class lifecycle status (instructor only)."""
+    """Request model for updating a class lifecycle status (class instructor only)."""
 
     status: ClassStatus
 
 
 class AddManualRosterStudentRequest(BaseModel):
-    """Request model for manually adding a student to the roster (instructor only)."""
+    """Request model for manually adding a student to the roster (class instructor only)."""
 
     first_name: str
     last_name: str

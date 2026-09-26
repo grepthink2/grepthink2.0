@@ -49,6 +49,7 @@ const METHODS = [
   'getFinalReviewDetail',
   'getFinalReviewSchedule',
   'getIncomingJoinRequests',
+  'getInstitutions',
   'getMessages',
   'getMyAssignedTeams',
   'getMyAssignmentTsrs',

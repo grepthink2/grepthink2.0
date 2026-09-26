@@ -115,10 +115,24 @@
     background-color: var(--gt-gray-200);
   }
 
+  // The title column may shrink (min-width: 0 below); the chevron must not.
+  > svg {
+    flex-shrink: 0;
+  }
+
   .rotated {
     transform: rotate(180deg);
     @include gt-transition(transform);
   }
+}
+
+// The selected class's name, with its school under it for accounts at two or more schools.
+.class-selector-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  text-align: left;
 }
 
 .class-name {
@@ -184,7 +198,11 @@
   color: var(--gt-text-primary);
 }
 
-.class-item-code {
+// Secondary lines: a class's code and (in a list that mixes roles) your role in it, and the
+// selected class's school.
+.class-item-code,
+.class-item-role,
+.class-school {
   font-size: 0.75rem;
   color: var(--gt-text-tertiary);
 }

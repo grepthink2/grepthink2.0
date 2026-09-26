@@ -24,7 +24,7 @@ from tests.fake_supabase import FakeSupabase
 
 INSTR = "instr"
 S1, S2, S3, TA1 = "s1", "s2", "s3", "ta-1"
-PROF = "prof"  # an instructor account: not a student
+PROF = "prof"  # an instructor account (another class's instructor): invited like anyone
 MIXED = "mixed"  # stored email has capitals
 EDU_OWNER, EMAIL_OWNER = "edu-owner", "email-owner"  # both answer to dup@ucsc.edu
 NO_EMAIL = "no-email"  # matched by edu_email, no primary email on file
@@ -159,7 +159,7 @@ BULK = [
     "s2@ucsc.edu",
     "s3@ucsc.edu",  # already enrolled
     "ta1@ucsc.edu",  # already enrolled as a TA
-    "prof@ucsc.edu",  # not a student
+    "prof@ucsc.edu",  # an instructor account: enrolled like anyone else
     "new@ucsc.edu",  # no account
     "mixed@ucsc.edu",  # stored as Mixed@UCSC.edu: no match
     "dup@ucsc.edu",  # EDU_OWNER wins over EMAIL_OWNER
@@ -185,13 +185,13 @@ def test_bulk_invite_statuses_recipients_and_rows(db, mail):
         "s2@ucsc.edu": "enrolled",
         "s3@ucsc.edu": "already_enrolled",
         "ta1@ucsc.edu": "already_enrolled",
-        "prof@ucsc.edu": "not_a_student",
+        "prof@ucsc.edu": "enrolled",
         "new@ucsc.edu": "invited",
         "mixed@ucsc.edu": "invited",
         "dup@ucsc.edu": "enrolled",
         "noemail@ucsc.edu": "enrolled",
     }
-    assert (out["enrolled_count"], out["invited_count"]) == (4, 2)
+    assert (out["enrolled_count"], out["invited_count"]) == (5, 2)
 
     assert mail.recipients() == Counter(
         {
@@ -199,6 +199,7 @@ def test_bulk_invite_statuses_recipients_and_rows(db, mail):
             ("s2@ucsc.edu", True): 1,
             ("s3@ucsc.edu", True): 1,
             ("ta1@ucsc.edu", True): 1,
+            ("prof@ucsc.edu", True): 1,
             ("new@ucsc.edu", False): 1,
             ("mixed@ucsc.edu", False): 1,
             ("personal@gmail.com", True): 1,
@@ -209,7 +210,9 @@ def test_bulk_invite_statuses_recipients_and_rows(db, mail):
         {k: m[k] for k in EMAIL_CONTEXT} == EMAIL_CONTEXT and m["via"] == "send" for m in mail.sent
     )
 
-    assert _enrolled(db) == Counter({S3: 1, TA1: 1, S1: 1, S2: 1, EDU_OWNER: 1, NO_EMAIL: 1})
+    assert _enrolled(db) == Counter(
+        {S3: 1, TA1: 1, S1: 1, S2: 1, PROF: 1, EDU_OWNER: 1, NO_EMAIL: 1}
+    )
     ta_row = next(r for r in db.rows("class_enrollments") if r["user_id"] == TA1)
     assert ta_row["enrollment_role"] == "ta"
 
@@ -265,9 +268,25 @@ def test_bulk_invite_reports_error_for_new_students_when_enrolling_fails(monkeyp
         "s2@ucsc.edu": "error",
         "s3@ucsc.edu": "already_enrolled",
         "new@ucsc.edu": "invited",
-        "prof@ucsc.edu": "not_a_student",
+        "prof@ucsc.edu": "error",
     }
     assert mail.recipients() == Counter({("s3@ucsc.edu", True): 1, ("new@ucsc.edu", False): 1})
+
+
+def _make_the_instructor_a_student_account(db):
+    """The class decides who its instructor is, not the account role."""
+    next(p for p in db.rows("profiles") if p["id"] == INSTR)["role"] = "student"
+
+
+def test_bulk_invite_reports_the_class_instructor_and_leaves_them_out(db, mail):
+    _make_the_instructor_a_student_account(db)
+    out = classes.bulk_invite_students(CLASS, ["ina@ucsc.edu", "s2@ucsc.edu"], INSTR)
+    assert {r["email"]: r["status"] for r in out["results"]} == {
+        "ina@ucsc.edu": "class_instructor",
+        "s2@ucsc.edu": "enrolled",
+    }
+    assert _enrolled(db)[INSTR] == 0
+    assert mail.recipients() == Counter({("s2@ucsc.edu", True): 1})
 
 
 # ----------------------------------------------------------------- single
@@ -314,12 +333,50 @@ def test_invite_without_an_account_sends_a_signup_email(db, mail):
     assert db.executes <= 2, _trace(db)
 
 
-def test_invite_refuses_a_non_student_account(db, mail):
+def test_invite_enrolls_an_account_whose_role_is_instructor(db, mail):
+    # PROF may teach elsewhere; here they are invited, as a TA would be.
+    out = classes.invite_student_to_class(CLASS, "prof@ucsc.edu", INSTR)
+    assert out == {"message": "Student invited successfully", "student_email": "prof@ucsc.edu"}
+    assert _enrolled(db)[PROF] == 1
+    assert mail.recipients() == Counter({("prof@ucsc.edu", True): 1})
+
+
+def test_invite_refuses_the_class_instructor(db, mail):
+    _make_the_instructor_a_student_account(db)
     with pytest.raises(HTTPException) as exc:
-        classes.invite_student_to_class(CLASS, "prof@ucsc.edu", INSTR)
-    assert (exc.value.status_code, exc.value.detail) == (400, "User is not a student")
+        classes.invite_student_to_class(CLASS, "ina@ucsc.edu", INSTR)
+    # The same answer as joining one's own class by code (test_authz_status_policy.py).
+    assert (exc.value.status_code, exc.value.detail) == (
+        409,
+        "You are the instructor of this class",
+    )
     assert mail.sent == []
     assert not [q for q in db.queries if q["op"] in WRITE_OPS]
+
+
+NO_ROLE = "no-role"  # signed up with Google and has not picked a role on /select yet
+
+
+def _add_an_account_without_a_role(db) -> None:
+    db.rows("profiles").append(_profile(NO_ROLE, "norole@gmail.com", role=None))
+
+
+def test_invite_enrolls_an_account_that_has_not_picked_a_role(db, mail):
+    # Unlike joining by code (403 until a role is picked), an invite names the address, and the
+    # app sends a role-less user to /select before anything else.
+    _add_an_account_without_a_role(db)
+    out = classes.invite_student_to_class(CLASS, "norole@gmail.com", INSTR)
+    assert out == {"message": "Student invited successfully", "student_email": "norole@gmail.com"}
+    assert _enrolled(db)[NO_ROLE] == 1
+    assert mail.recipients() == Counter({("norole@gmail.com", True): 1})
+
+
+def test_bulk_invite_enrolls_an_account_that_has_not_picked_a_role(db, mail):
+    _add_an_account_without_a_role(db)
+    out = classes.bulk_invite_students(CLASS, ["norole@gmail.com"], INSTR)
+    assert out["results"] == [{"email": "norole@gmail.com", "status": "enrolled"}]
+    assert _enrolled(db)[NO_ROLE] == 1
+    assert mail.recipients() == Counter({("norole@gmail.com", True): 1})
 
 
 def test_invite_email_failure_answers(db, mail):

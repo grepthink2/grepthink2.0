@@ -19,6 +19,7 @@ import FinalReviews from '../FinalReviews';
 
 vi.mock('@/lib/classContext', () => ({
   useClass: () => ({ selectedClass: { id: 'class-1', name: 'CSE115C' } }),
+  useSelectedClassRole: () => 'instructor',
 }));
 
 vi.mock('@/lib/auth', () => ({
@@ -28,7 +29,6 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('@/lib/api', () => ({
   api: {
     getFinalReviewSchedule: vi.fn(),
-    getMyEnrollmentRole: vi.fn(),
     getClassTAs: vi.fn(),
     setFinalReviewTime: vi.fn(),
   },
@@ -65,7 +65,6 @@ describe('FinalReviews — instructor time-edit keyboard path', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(api.getFinalReviewSchedule).mockResolvedValue(SCHEDULE);
-    vi.mocked(api.getMyEnrollmentRole).mockResolvedValue({ enrollment_role: 'instructor' });
     vi.mocked(api.getClassTAs).mockResolvedValue({ tas: [] });
     vi.mocked(api.setFinalReviewTime).mockResolvedValue({
       message: 'ok', project_id: 'proj-1', final_review_at: null,

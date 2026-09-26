@@ -8,7 +8,8 @@ Tests for the Final Reviews schedule layer on top of the review model:
     the class Zoom/window state and the viewer's review count.
 
 Controller logic runs against the in-memory FakeSupabase (same harness as
-test_ta_review_model.py); endpoint routing/role-gating uses TestClient + mocks.
+test_ta_review_model.py); endpoint routing uses TestClient + mocks. The instructor-only
+endpoints' route layer is covered by test_class_scoped_roles.py.
 """
 
 import datetime
@@ -212,11 +213,10 @@ def test_schedule_my_review_count(db):
 
 
 # --------------------------------------------------------------------------
-# Endpoint routing + role gating
+# Endpoint routing
 # --------------------------------------------------------------------------
 
 CLASS_UUID = "aaaaaaaa-0000-0000-0000-000000000001"
-PROJ_UUID = "bbbbbbbb-0000-0000-0000-000000000001"
 
 
 @patch("app.tas.views.controller.get_final_review_schedule")
@@ -225,50 +225,4 @@ def test_schedule_endpoint_routes(mock_fn, client, auth_header):
     r = client.get(f"/api/tas/classes/{CLASS_UUID}/final-reviews", headers=auth_header)
     assert r.status_code == 200
     assert r.json()["teams"] == []
-    mock_fn.assert_called_once()
-
-
-@patch("app.tas.views.controller.set_review_zoom")
-@patch("app.auth.controller.get_user_role")
-def test_review_zoom_endpoint_requires_instructor(mock_role, mock_fn, client, auth_header):
-    mock_role.return_value = "student"
-    r = client.post(
-        f"/api/tas/classes/{CLASS_UUID}/review-zoom",
-        headers=auth_header,
-        json={"zoom_url": ZOOM},
-    )
-    assert r.status_code == 403
-    mock_fn.assert_not_called()
-
-    mock_role.return_value = "instructor"
-    mock_fn.return_value = {"review_zoom_url": ZOOM}
-    r = client.post(
-        f"/api/tas/classes/{CLASS_UUID}/review-zoom",
-        headers=auth_header,
-        json={"zoom_url": ZOOM},
-    )
-    assert r.status_code == 200
-    mock_fn.assert_called_once()
-
-
-@patch("app.tas.views.controller.set_final_review_time")
-@patch("app.auth.controller.get_user_role")
-def test_review_time_endpoint_requires_instructor(mock_role, mock_fn, client, auth_header):
-    mock_role.return_value = "student"
-    r = client.post(
-        f"/api/tas/projects/{PROJ_UUID}/review-time",
-        headers=auth_header,
-        json={"scheduled_at": "2026-07-22T20:00:00Z"},
-    )
-    assert r.status_code == 403
-    mock_fn.assert_not_called()
-
-    mock_role.return_value = "instructor"
-    mock_fn.return_value = {"final_review_at": "2026-07-22T20:00:00+00:00"}
-    r = client.post(
-        f"/api/tas/projects/{PROJ_UUID}/review-time",
-        headers=auth_header,
-        json={"scheduled_at": None},
-    )
-    assert r.status_code == 200
     mock_fn.assert_called_once()

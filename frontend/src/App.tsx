@@ -13,7 +13,6 @@ import AppView from '@/features/app/AppView';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
 import AuthCallback from '@features/auth/pages/AuthCallback';
-import ClassManagement from '@features/classes/pages/ClassManagement';
 import Modules from '@features/app/pages/Modules';
 import TAManagement from '@features/app/pages/TAManagement';
 import { RequireReviewAccess } from '@features/app/components/RequireReviewAccess';
@@ -136,8 +135,6 @@ function App() {
               <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
             </Route>
           </Route>
-
-          <Route path="/classes" element={<ClassManagement />} />
         </Routes>
       </Router>
     </ErrorBoundary>

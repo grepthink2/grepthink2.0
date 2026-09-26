@@ -522,7 +522,7 @@ def set_meeting_cadence(
     meetings_per_week: int | None = None,
     meeting_duration_minutes: int | None = None,
 ) -> dict:
-    """Set a class's TA-meeting frequency + per-meeting duration (instructor only)."""
+    """Set a class's TA-meeting frequency + per-meeting duration (class instructor only)."""
     if meetings_per_week is None and meeting_duration_minutes is None:
         raise HTTPException(status_code=400, detail="Provide at least one field to update")
     try:
