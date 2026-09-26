@@ -8,7 +8,7 @@
 -- Before running: confirm with Scott that istinye.edu.tr is the base domain of İstinye addresses.
 -- Subdomains (for example stu.istinye.edu.tr) already match, so list base domains only.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-09-25 (by the maintainer)   PROD ____-__-__
 
 INSERT INTO public.institutions (name, slug, email_domains)
 VALUES ('İstinye University', 'istinye', '{istinye.edu.tr}')

@@ -1,6 +1,6 @@
 -- 2026-09-25 — the inbox's can_send follows shared classes only
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-09-25 (by the maintainer)   PROD ____-__-__
 --
 -- Safe on either side of the code deploy: only the value of `can_send` changes. That column only
 -- decides whether the web client enables a thread's composer; POST /api/messages runs

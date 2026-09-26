@@ -5,7 +5,7 @@
 -- from before institutions (no schools; ".edu" is the only school email) while this table does
 -- not exist. Update supabase/schema.sql once this is applied (AGENTS.md).
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-09-25 (by the maintainer)   PROD ____-__-__
 --
 -- ⚠️  ORDER: apply this file, then 2026-09-25_seed_istinye.sql, BEFORE anyone creates a class
 --     at a school other than UC Santa Cruz. Until this file runs no class can be given a
