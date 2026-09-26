@@ -32,10 +32,6 @@ export const classesApi = {
     return apiRequest<{ classes: ApiClass[] }>('/api/classes');
   },
 
-  getClass: async (classId: string) => {
-    return apiRequest<{ class: ApiClass }>(`/api/classes/${classId}`);
-  },
-
   updateClassStatus: async (classId: string, status: 'active' | 'complete') => {
     return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/status`, {
       method: 'PATCH',

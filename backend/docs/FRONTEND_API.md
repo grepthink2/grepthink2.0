@@ -48,7 +48,6 @@ All routes require auth unless stated otherwise.
 |--------|------|-----|-------------|
 | `POST` | `/api/classes` | **Instructor** | Create a course. Body: `name`, `description?`, `term`, `start_date` (date). |
 | `GET` | `/api/classes` | Any logged-in user | List classes the user can see (depends on role and enrollment). |
-| `GET` | `/api/classes/{class_id}` | Any logged-in user | Single class details. |
 | `POST` | `/api/classes/join` | **Student** | Enroll using a course code. Body: `course_code`. Non-students get **403**. |
 | `POST` | `/api/classes/{class_id}/invite` | **Instructor** | Invite a student by email. Body: `student_email`. |
 | `GET` | `/api/classes/{class_id}/students` | Authenticated | Roster: enrolled students for the class. |
