@@ -9,7 +9,7 @@
 > tables (see `AUTH.md`, "The browser has no table access"). *Keeping dev and
 > prod in sync:* the "re-run the dump and re-apply by hand" model is what let PROD fall three
 > migrations behind; changes now live in `backend/database/migrations/` and the plan to automate
-> them is in `docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md`. The table and
+> them is tracked in [#192](https://github.com/grepthink2/grepthink2.0/issues/192). The table and
 > function inventory further down is from June — trust `list_migrations` and the database, not
 > this page. `schema.sql` has not been regenerated since 2026-09-08.
 

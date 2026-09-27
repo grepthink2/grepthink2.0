@@ -97,8 +97,8 @@ code `main` runs today cannot finish a Google signup once it is applied — so i
 not in the bundle.
 
 PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. See
-`docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md` for that and for the rest of
-the deployment gaps (no CI or branch protection on `main`, squash-merged releases, no staging).
+[#192](https://github.com/grepthink2/grepthink2.0/issues/192) for that and for the rest of the deployment gaps
+(no CI or branch protection on `main`, no staging).
 
 ## Email delivery
 
