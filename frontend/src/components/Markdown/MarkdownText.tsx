@@ -9,7 +9,7 @@ interface Props {
  * Shared markdown renderer for user-authored bodies (story/task descriptions,
  * comments). Styling comes from the `.gt-md` layer.
  *
- * The mentions plan adds one more `components` override here — an `a` whose
+ * Mentions (issue #191) add one more `components` override here — an `a` whose
  * href starts with `mention:` renders as a chip instead of a link — so every
  * surface picks up mentions at once. Raw HTML stays disabled (react-markdown's
  * default), which is what keeps user input safe to render.

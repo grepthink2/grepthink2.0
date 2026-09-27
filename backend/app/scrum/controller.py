@@ -857,8 +857,7 @@ def _fanout_mentions(
     author_id: str,
     body_md: str,
 ) -> None:
-    """No-op seam. Activated by the mentions plan
-    (docs/superpowers/plans/2026-08-13-mentions-system.md, Task M3): extract mention
+    """No-op seam. Activated by mentions task M3 (issue #191): extract mention
     UUIDs, intersect with team ∪ staff, notify via the generic `mention` type."""
     return None
 

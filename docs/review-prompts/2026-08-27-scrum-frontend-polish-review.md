@@ -23,7 +23,7 @@ gained a per-project **Scrum Board** at `/app/projects/:projectId/board`. It was
 from a design bundle mirrored in-repo, against a backend that shipped in Part 1.
 
 Read these first, in order:
-1. `docs/superpowers/plans/2026-08-21-scrum-board-part2-frontend.md` — the plan that was
+1. [The scrum frontend plan](https://github.com/grepthink2/grepthink2.0/blob/e1cd2530b9fe59548cca1f48a59e95992af1d080/docs/superpowers/plans/2026-08-21-scrum-board-part2-frontend.md) — the plan that was
    executed, including the ⚑L table of *deliberate* deviations from the design docs
    (L1–L6) and the maintainer decisions recorded there. **A deviation listed in ⚑L is
    intended — do not report it as a defect.** Report only drift the plan did not sanction.
@@ -64,7 +64,7 @@ All of F1–F9 is built and committed on `feat/scrum-board-part1`, gates green
 
 - **AI drafting UI** — the feature is off for this release (L6). There should be no
   AIDraftButton, no "Suggest tasks", and no dead conditional for them anywhere.
-- **@mentions** — the mentions plan (`docs/superpowers/plans/2026-08-13-mentions-system.md`)
+- **@mentions** — the mentions plan ([#191](https://github.com/grepthink2/grepthink2.0/issues/191))
   is approved-pending, not built. `MarkdownText` has no mention override and the comment
   composer is a plain textarea; both are documented seams. The design system's
   `MentionListbox` exists but is intentionally unported.

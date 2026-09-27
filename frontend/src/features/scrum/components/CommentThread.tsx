@@ -21,7 +21,7 @@ interface Props {
 /**
  * Task comment thread (D10: task threads are the v1 surface).
  *
- * The composer is a plain textarea for now; the mentions plan swaps it for
+ * The composer is a plain textarea for now; mentions (issue #191) swap it for
  * MentionTextarea, at which point @mentions light up here and in the
  * markdown bodies without touching this file's data flow.
  */
