@@ -1,9 +1,9 @@
 -- 2026-09-25 — the scrum tables follow "the browser has no table access" like every other table
 --
--- STAGED, NOT APPLIED. Files in this directory are not run by anything; apply by hand
+-- STAGED FOR PROD, applied on DEV. Files in this directory are not run by anything; apply by hand
 -- (Supabase SQL editor or the MCP apply_migration tool), AFTER 2026-08-12_scrum_board.sql
 -- and 2026-08-21_scrum_repos.sql, on every database where those have run:
---   1. DEV  jfbagjjvryqcwxsyeyeg → both scrum migrations ran there on 2026-08-21, before
+--   1. DEV  jfbagjjvryqcwxsyeyeg → the scrum migrations ran there on 2026-08-21 and 08-29, before
 --      2026-09-21_lock_down_direct_table_access.sql, whose blanket REVOKE covered these
 --      tables: checked 2026-09-25, all nine exist with RLS on and give anon and
 --      authenticated nothing. On DEV this file only pins the two search_paths.
@@ -13,7 +13,12 @@
 --   3. record the apply dates here and regenerate supabase/schema.sql (not regenerated
 --      since 2026-09-08, see supabase/README.md).
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-09-27 (MCP apply_migration)   PROD ____-__-__
+--
+-- Rehearsed on DEV 2026-09-27: the three files in PROD order in one transaction, rolled back
+-- on purpose. Client privileges on the nine tables went 0 → 126 after the two scrum files
+-- (144 raw ACL entries: Postgres 17 adds MAINTAIN, which role_table_grants does not list)
+-- → 0 after this file, with no data changed.
 --
 -- ── Why ──────────────────────────────────────────────────────────────────────────────────
 -- 2026-09-21_lock_down_direct_table_access.sql revokes every client privilege on existing
