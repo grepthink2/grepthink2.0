@@ -65,3 +65,6 @@ supabase/.temp/
 
 # ---- Repo-specific artifacts (should never be committed) ----
 *.xlsx
+
+# Implementation plans are working notes: keep them local and track open work in issues.
+docs/superpowers/plans/
