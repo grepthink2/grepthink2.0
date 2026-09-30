@@ -23,6 +23,7 @@ NOTIFICATION_TYPES = frozenset(
         "complete_profile",
         "upload_roster",
         "member_removed",
+        "email_undeliverable",
     }
 )
 
@@ -130,6 +131,26 @@ def notify_member_departure(
             }
             for rid in recipient_ids
         ]
+    )
+
+
+def notify_email_undeliverable(
+    *, user_id: str | None, to_email: str, class_id: str | None, reason: str
+) -> None:
+    """Tell ``user_id`` (whoever queued an invite) that it could not be delivered, and why.
+
+    Nothing without a user. ``reason`` completes the sentence, e.g. "the address was rejected".
+    Never raises.
+    """
+    if user_id is None:
+        return
+    _insert_notification(
+        user_id=user_id,
+        type="email_undeliverable",
+        title="An email couldn't be delivered",
+        body=f"Your invite to {to_email} couldn't be delivered ({reason}).",
+        entity_type="class" if class_id else None,
+        entity_id=str(class_id) if class_id else None,
     )
 
 

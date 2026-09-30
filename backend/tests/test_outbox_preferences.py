@@ -758,3 +758,70 @@ def test_there_are_no_links_for_what_no_token_can_be_made_for(
 ):
     monkeypatch.setattr(settings, "PUBLIC_API_URL", "https://api.example.com")
     assert prefs.unsubscribe_links(user_id, category) == (None, None)
+
+
+# -- suppression_reasons: a whole batch in one read ------------------------------------------
+
+
+def test_suppression_reasons_reads_a_whole_batch_at_once():
+    db = FakeSupabase(
+        email_suppressions=[
+            {"email": "ann@example.com", "reason": "bounced"},
+            {"email": "bob@example.com", "reason": "complained"},
+            {"email": "zed@example.com", "reason": "rejected"},
+        ]
+    )
+    reasons = prefs.suppression_reasons(
+        db, ["  Ann@Example.COM ", "bob@example.com", "cat@example.com", "ANN@example.com"]
+    )
+    assert reasons == {"ann@example.com": "bounced", "bob@example.com": "complained"}
+    [query] = db.queries
+    # Each address once, the way the table stores it.
+    assert query["filters"] == [
+        ("email", "in", ["ann@example.com", "bob@example.com", "cat@example.com"])
+    ]
+
+
+def test_suppression_reasons_takes_any_iterable():
+    db = FakeSupabase(email_suppressions=[{"email": "ann@example.com", "reason": "bounced"}])
+    emails = (address for address in ["ann@example.com", "bob@example.com"])
+    assert prefs.suppression_reasons(db, emails) == {"ann@example.com": "bounced"}
+    assert db.executes == 1
+
+
+@pytest.mark.parametrize(
+    "emails", [[], (), ["", "   "], [None]], ids=["list", "tuple", "blank", "none"]
+)
+def test_suppression_reasons_of_no_address_reads_nothing(emails):
+    db = FakeSupabase(email_suppressions=[{"email": "ann@example.com", "reason": "bounced"}])
+    assert prefs.suppression_reasons(db, emails) == {}
+    assert db.executes == 0
+
+
+def test_a_long_list_is_read_in_chunks_that_fit_in_a_url():
+    # The addresses travel in the query string, which has a length limit.
+    emails = [f"s{index:03d}@example.com" for index in range(250)]
+    db = FakeSupabase(
+        email_suppressions=[
+            {"email": "s000@example.com", "reason": "bounced"},
+            {"email": "s249@example.com", "reason": "complained"},
+        ]
+    )
+    assert prefs.suppression_reasons(db, emails) == {
+        "s000@example.com": "bounced",
+        "s249@example.com": "complained",
+    }
+    assert [len(query["filters"][0][2]) for query in db.queries] == [100, 100, 50]
+
+
+@MISSING_TABLE
+def test_no_address_in_a_batch_is_suppressed_while_the_table_is_missing(pg_code):
+    db = _Broken(_no_table(pg_code))
+    assert prefs.suppression_reasons(db, ["ann@example.com", "bob@example.com"]) == {}
+
+
+@OTHER_FAILURES
+def test_a_failed_batch_lookup_is_raised_not_read_as_clear(make):
+    with pytest.raises(DatabaseError) as caught:
+        prefs.suppression_reasons(_Broken(make), ["ann@example.com"])
+    assert caught.value.target == "email_suppressions"

@@ -134,6 +134,70 @@ def test_upsert_ignore_duplicates():
     assert next(r for r in db.rows("project_members") if r["user_id"] == "u1")["role"] == "member"
 
 
+@pytest.mark.parametrize("ignore_duplicates", [True, False])
+def test_upsert_never_matches_a_null_conflict_key_like_postgres(ignore_duplicates):
+    # SQL NULLs are distinct: a row with NULL in an on_conflict column conflicts with nothing
+    # (not a stored NULL, not another row of the same request), so it is always inserted.
+    db = FakeSupabase(outbox=[{"id": "o1", "dedupe_key": None}])
+    res = (
+        db.table("outbox")
+        .upsert(
+            [{"id": "o2", "dedupe_key": None}, {"id": "o3", "dedupe_key": None}],
+            on_conflict="dedupe_key",
+            ignore_duplicates=ignore_duplicates,
+        )
+        .execute()
+    )
+    assert [r["id"] for r in res.data] == ["o2", "o3"]
+    assert [r["id"] for r in db.rows("outbox")] == ["o1", "o2", "o3"]
+
+
+def test_upsert_with_a_null_in_a_composite_key_inserts_while_a_set_key_conflicts():
+    db = FakeSupabase(
+        prefs=[
+            {"user_id": "u1", "category": "digests", "enabled": True},
+            {"user_id": "u1", "category": None, "enabled": True},
+        ]
+    )
+    db.table("prefs").upsert(
+        [
+            {"user_id": "u1", "category": None, "enabled": False},  # NULL in the key: a new row
+            {"user_id": "u1", "category": "digests", "enabled": False},  # updated in place
+        ],
+        on_conflict="user_id,category",
+    ).execute()
+    assert [(r["category"], r["enabled"]) for r in db.rows("prefs")] == [
+        ("digests", False),
+        (None, True),
+        (None, False),
+    ]
+
+
+def test_upsert_does_not_match_a_stored_null_with_the_text_none():
+    db = FakeSupabase(outbox=[{"id": "o1", "dedupe_key": None}])
+    res = (
+        db.table("outbox")
+        .upsert(
+            {"id": "o2", "dedupe_key": "None"}, on_conflict="dedupe_key", ignore_duplicates=True
+        )
+        .execute()
+    )
+    assert [r["id"] for r in res.data] == ["o2"]
+
+
+def test_update_with_returning_minimal_writes_and_answers_no_rows():
+    # PostgREST answers "Prefer: return=minimal" with no body.
+    db = _db()
+    res = (
+        db.table("projects")
+        .update({"num_members": 1}, returning="minimal")
+        .eq("id", "p1")
+        .execute()
+    )
+    assert res.data == []
+    assert next(r for r in db.rows("projects") if r["id"] == "p1")["num_members"] == 1
+
+
 def test_embedded_selects_one_to_many_many_to_one_and_nested():
     db = _db()
     rows = (

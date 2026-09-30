@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 import logging
 
+from app.outbox.rendered import Rendered
 from app.utils.email import send_email
 from app.utils.email_transport import EmailDeliveryError
 from app.utils.urls import frontend_url
@@ -12,19 +13,17 @@ from app.utils.urls import frontend_url
 logger = logging.getLogger(__name__)
 
 
-def send_class_invite_email(
+def render_class_invite(
     *,
-    to: str,
     class_name: str,
     course_code: str,
     instructor_name: str,
     registered: bool,
-) -> None:
-    """Send a roster invite email to an existing or prospective student.
+) -> Rendered:
+    """The roster invite for an existing (``registered``) or prospective student.
 
-    Raises:
-        EmailNotConfiguredError: No email provider is configured (a RuntimeError).
-        EmailDeliveryError: Delivery failed.
+    Links point at ``frontend_url()`` as it is when this runs. The outbox's ``class_invite``
+    kind renders with this, so an invite reads the same however it is sent.
     """
     app_url = frontend_url()
     signup_url = f"{app_url}/studentsignup"
@@ -79,11 +78,34 @@ def send_class_invite_email(
 </html>
 """
 
+    return Rendered(subject=subject, text=body_text, html=body_html)
+
+
+def send_class_invite_email(
+    *,
+    to: str,
+    class_name: str,
+    course_code: str,
+    instructor_name: str,
+    registered: bool,
+) -> None:
+    """Send a roster invite email to an existing or prospective student.
+
+    Raises:
+        EmailNotConfiguredError: No email provider is configured (a RuntimeError).
+        EmailDeliveryError: Delivery failed.
+    """
+    rendered = render_class_invite(
+        class_name=class_name,
+        course_code=course_code,
+        instructor_name=instructor_name,
+        registered=registered,
+    )
     send_email(
         to=to,
-        subject=subject,
-        body_text=body_text,
-        body_html=body_html,
+        subject=rendered.subject,
+        body_text=rendered.text,
+        body_html=rendered.html,
     )
     logger.info(
         "class_invite_email: sent | to=%s class=%r registered=%s",

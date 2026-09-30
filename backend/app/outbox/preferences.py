@@ -20,7 +20,7 @@ import base64
 import hashlib
 import hmac
 import uuid
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
@@ -172,6 +172,40 @@ def suppression_reason(client, email: str) -> str | None:
             return None
         raise
     return rows[0].get("reason") if rows else None
+
+
+#: Addresses per read in ``suppression_reasons``. They travel in the query string, which has a
+#: length limit; 100 addresses stay well inside it.
+_SUPPRESSION_LOOKUP_CHUNK = 100
+
+
+def suppression_reasons(client, emails: Iterable[str]) -> dict[str, str]:
+    """Each suppressed address among ``emails`` (trimmed, lower-cased) mapped to why.
+
+    One read for up to 100 distinct addresses (one more per further 100), and none when there
+    is no address. ``{}`` while the table does not exist yet; any other failure is raised, as
+    in ``suppression_reason``.
+    """
+    addresses = sorted(
+        {_address(email) for email in emails if isinstance(email, str) and email.strip()}
+    )
+    reasons: dict[str, str] = {}
+    for start in range(0, len(addresses), _SUPPRESSION_LOOKUP_CHUNK):
+        try:
+            rows = (
+                client.table("email_suppressions")
+                .select("email, reason")
+                .in_("email", addresses[start : start + _SUPPRESSION_LOOKUP_CHUNK])
+                .execute()
+            ).data or []
+        except DatabaseError as exc:
+            if exc.pg_code in MISSING_TABLE_CODES:
+                return {}
+            raise
+        for row in rows:
+            if row.get("email") and row.get("reason"):
+                reasons[_address(row["email"])] = row["reason"]
+    return reasons
 
 
 def suppress(client, email: str, reason: str, detail: str | None = None) -> None:
