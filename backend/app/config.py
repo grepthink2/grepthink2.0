@@ -99,10 +99,11 @@ class Settings:
     # Maileroo HTTP API (app.utils.email_transport). When MAILEROO_API_KEY (a sending key) is
     # set, every email goes through the API instead of SMTP. EMAIL_FROM is the sender
     # ("GrepThink <noreply@example.com>"); it falls back to SMTP_FROM.
-    MAILEROO_API_KEY: str = os.environ.get("MAILEROO_API_KEY", "")
+    MAILEROO_API_KEY: str = os.environ.get("MAILEROO_API_KEY", "").strip()
     MAILEROO_API_URL: str = (
-        os.environ.get("MAILEROO_API_URL") or "https://smtp.maileroo.com/api/v2"
-    ).rstrip("/")
+        os.environ.get("MAILEROO_API_URL", "").strip().rstrip("/")
+        or "https://smtp.maileroo.com/api/v2"
+    )
     EMAIL_FROM: str = os.environ.get("EMAIL_FROM", "")
 
     # Email outbox (app.outbox). EMAIL_DISPATCH_SECRET turns on POST /api/email/dispatch for

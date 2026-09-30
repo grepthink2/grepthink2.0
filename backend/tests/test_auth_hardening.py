@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.utils.email_transport import (
+    EmailMisconfiguredError,
     EmailNotConfiguredError,
     PermanentEmailError,
     TransientEmailError,
@@ -419,13 +420,21 @@ def test_send_with_no_email_provider_keeps_its_own_answer_not_the_delivery_failu
     assert res.status_code == status, res.text
 
 
+TRY_AGAIN = "Couldn't send the verification email. Try again in a minute."
+CHECK_THE_ADDRESS = "We couldn't send a code to that address. Check it and try again."
+
+
 @pytest.mark.parametrize(
-    "failure",
-    [TransientEmailError("provider unreachable"), PermanentEmailError("address rejected")],
-    ids=["transient", "permanent"],
+    ("failure", "detail"),
+    [
+        pytest.param(TransientEmailError("provider unreachable"), TRY_AGAIN, id="transient"),
+        pytest.param(EmailMisconfiguredError("provider refused us"), TRY_AGAIN, id="misconfigured"),
+        # Only a permanent failure points at the address: the rest are not the user's to fix.
+        pytest.param(PermanentEmailError("address rejected"), CHECK_THE_ADDRESS, id="permanent"),
+    ],
 )
 def test_send_answers_502_and_keeps_nothing_when_the_email_cannot_be_delivered(
-    client, auth_header, db, mailer, caplog, failure
+    client, auth_header, db, mailer, caplog, failure, detail
 ):
     mailer.side_effect = failure
     with caplog.at_level(logging.WARNING, logger="app.profiles.controller"):
@@ -436,7 +445,7 @@ def test_send_answers_502_and_keeps_nothing_when_the_email_cannot_be_delivered(
         )
 
     assert res.status_code == 502, res.text
-    assert res.json()["detail"] == "Couldn't send the verification email. Try again in a minute."
+    assert res.json()["detail"] == detail
     # Nobody has a code to enter, so none is left pending.
     assert _pending(db) == []
     # The failure is logged, but the code that never arrived is not.
