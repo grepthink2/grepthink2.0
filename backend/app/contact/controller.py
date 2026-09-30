@@ -9,11 +9,11 @@ from __future__ import annotations
 import html
 import logging
 import re
-import smtplib
 
 from fastapi import HTTPException
 
 from app.utils.email import send_email
+from app.utils.email_transport import EmailDeliveryError
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,6 @@ def submit_contact(*, name: str, email: str, message: str, website: str = "") ->
             body_html=body_html,
             reply_to=email,
         )
-    except (RuntimeError, smtplib.SMTPException) as exc:
+    except EmailDeliveryError as exc:
         logger.error("contact: failed to send email | %s", exc)
         raise HTTPException(status_code=502, detail="Failed to send message") from exc

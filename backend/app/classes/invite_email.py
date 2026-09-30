@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import html
 import logging
-import smtplib
 
 from app.utils.email import send_email
+from app.utils.email_transport import EmailDeliveryError
 from app.utils.urls import frontend_url
 
 logger = logging.getLogger(__name__)
@@ -108,7 +108,7 @@ def send_class_invite_email_or_raise(*, to: str, **kwargs) -> None:
                 "Set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in .env."
             ),
         ) from exc
-    except smtplib.SMTPException as exc:
+    except EmailDeliveryError as exc:
         logger.error("class_invite_email: delivery failed | to=%s err=%s", to, exc)
         raise HTTPException(
             status_code=502,
