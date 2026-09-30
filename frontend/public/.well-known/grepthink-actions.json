@@ -236,6 +236,15 @@
       "id": "update_profile", "title": "Update my profile", "role": "any",
       "method": "PATCH", "endpoint": "/api/profiles/me",
       "params": {"first_name": "string", "last_name": "string", "linkedin": "string", "github": "string", "image_url": "string"}, "uiRoute": "/app/settings", "multiStep": true
+    },
+    {
+      "id": "get_email_preferences", "title": "Show which emails I get", "role": "any",
+      "method": "GET", "endpoint": "/api/email/preferences", "uiRoute": "/app/settings"
+    },
+    {
+      "id": "update_email_preferences", "title": "Turn reminder or digest emails on or off", "role": "any",
+      "method": "PUT", "endpoint": "/api/email/preferences",
+      "params": {"preferences": "object<enum(reminders|digests), boolean>!"}, "uiRoute": "/app/settings"
     }
   ]
 }

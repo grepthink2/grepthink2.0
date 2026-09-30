@@ -30,8 +30,15 @@ development reads (only the repo-root `.env` is read — see `README.md`).
 | `SUPABASE_JWT_SECRET` and/or `SUPABASE_JWK_JSON` | access-token verification (HS256 secret, or the project's JWK for ES256/RS256) |
 | `CORS_ORIGINS` | comma-separated frontend origins; `*` is rejected |
 | `FRONTEND_URL` | absolute URL used in transactional emails |
-| `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASSWORD` `SMTP_FROM` | invite / verification / contact emails |
-| `PENDING_INVITES_POLL_SECONDS` | optional; scheduled-invite poll interval (default 5) |
+| `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASSWORD` `SMTP_FROM` | email over SMTP (invites, verification codes, contact form); used while `MAILEROO_API_KEY` is unset |
+| `MAILEROO_API_KEY` | optional; a Maileroo sending key. Set, every email goes through Maileroo's HTTP API instead of SMTP |
+| `EMAIL_FROM` | optional; sender for the HTTP API (`GrepThink <noreply@…>`); falls back to `SMTP_FROM` |
+| `EMAIL_DISPATCH_SECRET` | bearer token the `pg_cron` schedule sends to `POST /api/email/dispatch`. Set it only after the schedule exists (see **Email delivery**); while it is unset the API dispatches from inside its own process |
+| `EMAIL_DISPATCH_POLL_SECONDS` | optional; that in-process interval (default 5; the old `PENDING_INVITES_POLL_SECONDS` is still read) |
+| `EMAIL_DISPATCH_BUDGET_SECONDS` `EMAIL_INLINE_BUDGET_SECONDS` | optional; how long one dispatch run, or one invite request, keeps starting sends (default 8 each). Keep them under the function's max duration |
+| `MAILEROO_WEBHOOK_SECRET` | optional; the Maileroo webhook's shared secret (bounces, complaints). Unset, the webhook answers 503 and Maileroo retries |
+| `EMAIL_UNSUBSCRIBE_SECRET` | optional; signs unsubscribe links (default: a key derived from `SUPABASE_JWT_SECRET`) |
+| `PUBLIC_API_URL` | optional; this API's public URL (`https://api.grepthink2.com`), for the one-click `List-Unsubscribe` header |
 | `SENTRY_DSN` | optional; turns on error reporting to Sentry (see **Error tracking**). Unset means off |
 
 **Frontend project**
@@ -91,6 +98,34 @@ PROD is on Supabase's free plan: there are **no backups** and an idle project pa
 `docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md` for that and for the rest of
 the deployment gaps (no CI or branch protection on `main`, squash-merged releases, no staging).
 
+## Email delivery
+
+Invites (and, later, reminders and digests) go through an outbox (`app/outbox/`): the request
+that decides to send an email writes one `email_outbox` row per recipient, and
+`POST /api/email/dispatch` delivers the due rows — rendering them, sending through Maileroo
+(HTTP API when `MAILEROO_API_KEY` is set, SMTP otherwise), and retrying temporary failures with
+backoff for about 14 hours. When it gives up, the row is `failed`, the error is logged (a Sentry
+issue), and the instructor who sent the invite gets an in-app notification. An invite request
+also tries to send its own rows before it answers, so most invites still go out at once.
+Verification codes and the contact form send directly: the user is waiting for them.
+
+The dispatcher runs on a schedule, not inside the API process (Vercel pauses instances between
+requests). Setting it up, in order — the SQL steps are in `supabase/README.md`, "Email outbox and
+dispatch schedule":
+
+1. Apply `2026-09-30_email_outbox.sql` and `2026-09-30_email_preferences.sql` (DEV, then PROD).
+2. Deploy. With `EMAIL_DISPATCH_SECRET` unset, each API instance dispatches every few seconds
+   from inside its process, as the old invite poller did (now with retries).
+3. Run `backend/database/migrations/prod/2026-09-30_email_dispatch_cron.sql` on PROD: `pg_cron`
+   calls the dispatcher every minute through `pg_net`, with the secret kept in Vault.
+4. Set `EMAIL_DISPATCH_SECRET` (the same value) in the backend project and redeploy. The
+   in-process loop stops; the schedule is the only dispatcher.
+
+Optional, any time: `MAILEROO_API_KEY` (+ `EMAIL_FROM`), the Maileroo webhook
+(`/api/email/webhooks/maileroo` + `MAILEROO_WEBHOOK_SECRET`) so bounced and complained addresses
+stop being emailed, and `PUBLIC_API_URL` for one-click unsubscribe headers. Users turn reminder
+and digest emails on or off in Settings → Email; invites cannot be turned off.
+
 ## Error tracking (Sentry)
 
 Optional: with `SENTRY_DSN` unset nothing is initialised, so local development, the
@@ -144,10 +179,9 @@ variables today, so the app cannot even start there. For the check:
 - **Rate limiting** (`slowapi`) keeps counters in process memory and keys on the
   socket address; on Vercel each instance counts separately and sees the proxy IP.
   A shared store (e.g. Upstash) keyed on `X-Forwarded-For` is the fix.
-- **Scheduled invites** are sent by an in-process poller (`app/jobs/pending_invites.py`)
-  started in the FastAPI lifespan. Serverless instances are short-lived, so queued
-  invites can be delivered late or not at all until the poller moves to Vercel Cron
-  or `pg_cron`.
+- **Background work** does not survive on Vercel: an instance is paused between requests,
+  so anything left running after a response can stall mid-way. Email is therefore
+  delivered by a scheduled request (see **Email delivery**), not by a task in the process.
 
 ## Docker fallback (self-host)
 

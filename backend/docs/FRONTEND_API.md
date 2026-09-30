@@ -50,8 +50,10 @@ All routes require auth unless stated otherwise.
 | `GET` | `/api/classes` | Any logged-in user | Every class the caller created or is enrolled in, each with the caller's `my_role` (`instructor` \| `ta` \| `student`) and its `institution` (`{id, name, slug}` or `null`). |
 | `GET` | `/api/classes/{class_id}` | Any logged-in user | Single class details. |
 | `POST` | `/api/classes/join` | Any account that has picked a role | Enroll (as a student) using a course code. Body: `course_code`. **403** until the account has picked a role; **409** "You are the instructor of this class" for the class's own instructor. |
-| `POST` | `/api/classes/{class_id}/invite` | **Class instructor** | Invite by email. Body: `student_email`. An existing account is enrolled whatever its role, even one that has not picked a role yet (the app sends that user to `/select` first); an unknown address gets a signup email. **409** "You are the instructor of this class" for the instructor's own address. |
-| `POST` | `/api/classes/{class_id}/students/bulk-invite` | **Class instructor** | The same for a list. Body: `emails`. Returns `results[]` of `{email, status}` with `status` one of `enrolled`, `invited`, `already_enrolled`, `class_instructor` (the instructor's own address; nothing done), `email_failed`, `error`; plus `enrolled_count` and `invited_count`. |
+| `POST` | `/api/classes/{class_id}/invite` | **Class instructor** | Invite by email. Body: `student_email`. An existing account is enrolled whatever its role, even one that has not picked a role yet (the app sends that user to `/select` first); an unknown address gets a signup email. The email goes through the outbox: when it cannot go out at once it is queued and retried, and `message` says so; **502** only when the address is rejected. **409** "You are the instructor of this class" for the instructor's own address. |
+| `POST` | `/api/classes/{class_id}/students/bulk-invite` | **Class instructor** | The same for a list. Body: `emails`. Returns `results[]` of `{email, status}` with `status` one of `enrolled`, `invited`, `already_enrolled`, `queued` (the email could not go out yet; the outbox keeps retrying it), `class_instructor` (the instructor's own address; nothing done), `email_failed` (the address was rejected), `error`; plus `enrolled_count`, `invited_count` and `queued_count`. |
+| `POST` | `/api/classes/{class_id}/invites/queue` | **Class instructor** | Queue an invite batch to go out after 60 s (the Roster page's Unsend window). Body: `emails`, optional `custom_subject` + `custom_body` (+ `custom_body_html`) for a custom email, `cc`, `bcc`. Returns `{job_id, send_at}`. When it is due, the dispatcher turns the batch into one outbox email per address (enrolling existing accounts for a standard invite). |
+| `DELETE` | `/api/classes/{class_id}/invites/{job_id}` | **Class instructor** | Cancel a queued batch before it goes out: `{cancelled: true}`. **404** unknown job, **409** "Emails already sent" once it has been handed to the outbox. |
 | `GET` | `/api/classes/{class_id}/students` | Authenticated | Roster: enrolled students for the class. |
 | `GET` | `/api/classes/{class_id}/projects` | Authenticated | Projects in this class, filtered by what the user is allowed to see. |
 
@@ -61,7 +63,7 @@ All routes require auth unless stated otherwise.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/institutions` | No | Public. The schools GrepThink knows: `{institutions: [{id, name, slug, email_domains}]}`, empty until the migration is applied. Feeds the Create Class institution picker and the school-email check at sign-up (before the user is signed in). Rate-limited 60/min; `Cache-Control: public, max-age=300` (`no-store` while the table doesn't exist yet). |
+| `GET` | `/api/institutions` | No | Public. The schools GrepThink knows: `{institutions: [{id, name, slug, email_domains, timezone}]}` (`timezone` is an IANA zone, `America/Los_Angeles` when unset), empty until the migration is applied. Feeds the Create Class institution picker and the school-email check at sign-up (before the user is signed in). Rate-limited 60/min; `Cache-Control: public, max-age=300` (`no-store` while the table doesn't exist yet). |
 
 ---
 
@@ -180,6 +182,19 @@ Direct peer-to-peer messaging between enrolled users. A **conversation** is a ca
 | `POST` | `/api/messages` | Yes | Send a message. Body: `to_user_id` (string), `body` (string, max 1 024 chars). Returns `{"conversation_id": "...", "message": {...}}`. **403** if the two users share no class. |
 | `GET` | `/api/messages/conversations/{conversation_id}/messages` | Yes | Latest 50 messages in the conversation (newest first). **403** if the caller is not a participant; **404** if the conversation doesn't exist. |
 | `POST` | `/api/messages/conversations/{conversation_id}/read` | Yes | Mark the conversation as read up to now (upserts the caller's `last_read_at` row). Returns **204 No Content**. |
+
+---
+
+## Email (`/api/email`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/email/preferences` | Yes | The caller's email categories: `{preferences: [{category, label, description, enabled}]}` (`reminders`, `digests`; on unless turned off). Invites and verification codes have no category and are always sent. |
+| `PUT` | `/api/email/preferences` | Yes | Body `{preferences: {<category>: true \| false}}`; returns the full list. **400** unknown category or a non-boolean; **503** before the preferences migration is applied. |
+| `GET` | `/api/email/unsubscribe?token=` | No | Public, for the unsubscribe page: `{valid: true, category, label}` or `{valid: false}`. Rate-limited 30/min. |
+| `POST` | `/api/email/unsubscribe?token=` | No | Public: turns the token's category off → `{unsubscribed: true, category, label}`; **400** invalid token. Also the RFC 8058 one-click target of the `List-Unsubscribe` header (the form body is ignored). Rate-limited 30/min. |
+| `POST` | `/api/email/dispatch` | Bearer `EMAIL_DISPATCH_SECRET` | Internal, for the `pg_cron` schedule: turns due invite batches into outbox rows and delivers due rows for up to `EMAIL_DISPATCH_BUDGET_SECONDS`. **404** while the secret is unset, **401** on a wrong token. Not called by the frontend. |
+| `POST` | `/api/email/webhooks/maileroo` | `x-maileroo-signature` | Internal, for Maileroo: HMAC-SHA256 of the raw body with `MAILEROO_WEBHOOK_SECRET`. `failed`/`rejected` mark the outbox row bounced and suppress the address, `complained` suppresses it, `delivered` records `delivered_at`. **503** while the secret is unset (Maileroo retries). Not called by the frontend. |
 
 ---
 
