@@ -24,7 +24,7 @@ import threading
 import time
 from uuid import UUID
 
-from app.core.db import get_client, retry_on_disconnect
+from app.core.db import MISSING_TABLE_CODES, get_client, retry_on_disconnect
 from app.core.errors import DatabaseError, DatabaseUnavailableError
 
 logger = logging.getLogger(__name__)
@@ -39,10 +39,11 @@ _MISSING_TABLE_TTL_SECONDS = 60.0
 #: How long a stale-but-good list is re-served after some other read failure, before retrying.
 _STALE_TTL_SECONDS = 10.0
 
-#: PostgREST's and Postgres's own "this table does not exist" codes — the only failures that
-#: mean "the migration has not been applied yet". Anything else (a timeout, a dropped
-#: connection, a missing grant, ...) is a real outage, not a schema state.
-_MISSING_TABLE_CODES = frozenset({"PGRST205", "42P01"})
+#: PostgREST's and Postgres's own "this table does not exist" codes (defined once, in
+#: ``app.core.db``) — the only failures that mean "the migration has not been applied yet".
+#: Anything else (a timeout, a dropped connection, a missing grant, ...) is a real outage, not a
+#: schema state.
+_MISSING_TABLE_CODES = MISSING_TABLE_CODES
 
 _lock = threading.Lock()
 #: ``(expires_at, institutions or None)``; ``expires_at`` is on the ``time.monotonic()`` clock.

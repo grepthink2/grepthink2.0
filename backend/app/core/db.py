@@ -35,6 +35,7 @@ from app.database.client import (
 
 __all__ = [
     "FOREIGN_KEY_VIOLATION",
+    "MISSING_TABLE_CODES",
     "TRANSIENT_ERRORS",
     "UNIQUE_VIOLATION",
     "DatabaseClient",
@@ -53,6 +54,8 @@ _POOL_THREAD_PREFIX = "supabase-query"
 #: Postgres SQLSTATEs the application reacts to.
 UNIQUE_VIOLATION = "23505"
 FOREIGN_KEY_VIOLATION = "23503"
+#: "Table does not exist" (PostgREST PGRST205, Postgres 42P01): its migration is not applied yet.
+MISSING_TABLE_CODES = frozenset({"PGRST205", "42P01"})
 
 #: Codes meaning "the database is unreachable or overloaded", not "this request was
 #: wrong": statement timeout, shutdowns, too many connections, PostgREST's own
