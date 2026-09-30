@@ -283,10 +283,66 @@ def _mime(message: EmailMessage, sender: str) -> str:
     return msg.as_string()
 
 
-def _smtp_reason(exc: smtplib.SMTPResponseException) -> str:
-    error = exc.smtp_error
-    text = error.decode("utf-8", "replace") if isinstance(error, bytes) else str(error)
-    return f"{exc.smtp_code} {text}".strip()
+# Whatever happens to these, the server cannot run a session for us: connecting, saying hello,
+# or a feature (STARTTLS, AUTH) it lacks. They count as session failures at any stage.
+_SESSION_ERRORS = (smtplib.SMTPConnectError, smtplib.SMTPHeloError, smtplib.SMTPNotSupportedError)
+
+
+def _smtp_reason(exc: OSError) -> str:
+    """What went wrong, for an exception message: the server's reply code and text, if it sent one."""
+    if isinstance(exc, smtplib.SMTPResponseException):
+        error = exc.smtp_error
+        text = error.decode("utf-8", "replace") if isinstance(error, bytes) else str(error)
+        return f"{type(exc).__name__}: {exc.smtp_code} {text}".strip()
+    return f"{type(exc).__name__}: {exc}"
+
+
+def _every_refusal_is_final(exc: smtplib.SMTPRecipientsRefused) -> bool:
+    """Whether the server answered 5xx for every recipient (``recipients``: address -> (code, text))."""
+    codes = [refusal[0] for refusal in exc.recipients.values()]
+    return bool(codes) and all(isinstance(code, int) and code >= 500 for code in codes)
+
+
+def _smtp_error(exc: OSError, stage: str) -> EmailDeliveryError:
+    """Classify a failed SMTP session by where it failed.
+
+    Until ``sendmail`` starts, nothing the server says is about the message: it is our login, our
+    settings or the provider's health, so the email waits. From ``sendmail`` on, a 5xx means the
+    message itself was refused (permanent) and a 4xx means try again (transient).
+    """
+    if isinstance(exc, smtplib.SMTPAuthenticationError):
+        logger.error(
+            "email_transport: SMTP login failed, check SMTP_USER and SMTP_PASSWORD | host=%s code=%s",
+            settings.SMTP_HOST,
+            exc.smtp_code,
+        )
+        return TransientEmailError(f"SMTP login failed: {_smtp_reason(exc)}")
+
+    setting_up = stage != "sendmail"
+    if isinstance(exc, _SESSION_ERRORS) or (
+        setting_up and isinstance(exc, smtplib.SMTPResponseException)
+    ):
+        # A 5xx here (or a server that cannot do what we need) is most likely our settings.
+        if getattr(exc, "smtp_code", 500) >= 500:
+            logger.error(
+                "email_transport: the SMTP server turned the session down at %s, check SMTP_HOST, "
+                "SMTP_PORT and the account | host=%s error=%s",
+                stage,
+                settings.SMTP_HOST,
+                type(exc).__name__,
+            )
+        return TransientEmailError(
+            f"The SMTP server would not set up a session ({stage}): {_smtp_reason(exc)}"
+        )
+
+    if isinstance(exc, smtplib.SMTPRecipientsRefused):
+        error = PermanentEmailError if _every_refusal_is_final(exc) else TransientEmailError
+        return error(f"The SMTP server refused the recipients: {exc}")
+    if isinstance(exc, smtplib.SMTPResponseException):  # SenderRefused, DataError, ...
+        error = PermanentEmailError if exc.smtp_code >= 500 else TransientEmailError
+        return error(f"The SMTP server refused the message: {_smtp_reason(exc)}")
+    # Anything else (a dropped connection, a timeout, a TLS error): nothing is wrong with the email.
+    return TransientEmailError(f"SMTP failed ({stage}): {_smtp_reason(exc)}")
 
 
 def _send_smtp(message: EmailMessage) -> None:
@@ -312,35 +368,29 @@ def _send_smtp(message: EmailMessage) -> None:
         len(message.bcc),
     )
 
+    stage = "connect"  # the step in progress, which decides what a failure means
     try:
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:
+            stage = "ehlo"
             smtp.ehlo()
+            stage = "starttls"
             smtp.starttls()
             smtp.ehlo()
+            stage = "login"
             smtp.login(login_user, settings.SMTP_PASSWORD)
+            stage = "sendmail"
             smtp.sendmail(sender, recipients, raw)
-    except smtplib.SMTPRecipientsRefused as exc:
-        raise PermanentEmailError(f"The SMTP server refused every recipient: {exc}") from exc
-    except smtplib.SMTPSenderRefused as exc:
-        raise PermanentEmailError(
-            f"The SMTP server refused the sender: {_smtp_reason(exc)}"
-        ) from exc
-    except smtplib.SMTPAuthenticationError as exc:
-        # Ahead of the generic 5xx rule below: a bad login is ours to fix, not the email's fault.
-        logger.error(
-            "email_transport: SMTP login failed, check SMTP_USER and SMTP_PASSWORD | host=%s code=%s",
-            settings.SMTP_HOST,
-            exc.smtp_code,
+            stage = "done"
+    except (smtplib.SMTPException, OSError) as exc:
+        if stage != "done":
+            raise _smtp_error(exc, stage) from exc
+        # The server already has the message and only closing the session went wrong. Raising
+        # would have the caller send it a second time.
+        logger.warning(
+            "email_transport: SMTP session failed after the server accepted the message | "
+            "to=%s error=%s",
+            message.to,
+            type(exc).__name__,
         )
-        raise TransientEmailError(f"SMTP login failed: {_smtp_reason(exc)}") from exc
-    except smtplib.SMTPResponseException as exc:
-        error = PermanentEmailError if exc.smtp_code >= 500 else TransientEmailError
-        raise error(f"The SMTP server answered {_smtp_reason(exc)}") from exc
-    except smtplib.SMTPException as exc:
-        raise TransientEmailError(f"SMTP failed: {type(exc).__name__}: {exc}") from exc
-    except OSError as exc:  # includes ssl.SSLError, TimeoutError, ConnectionError
-        raise TransientEmailError(
-            f"The SMTP server could not be reached: {type(exc).__name__}: {exc}"
-        ) from exc
 
-    logger.info("send_email: delivered | to=%s subject=%r", message.to, message.subject)
+    logger.info("send_email: delivered | to=%s", message.to)

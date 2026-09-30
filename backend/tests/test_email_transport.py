@@ -134,7 +134,8 @@ def _no_http(monkeypatch) -> None:
 
 def _fake_smtp(monkeypatch, fail: dict[str, Exception] | None = None) -> SimpleNamespace:
     """Replace ``smtplib.SMTP`` with a recorder. ``fail`` maps a step (``connect``, ``ehlo``,
-    ``starttls``, ``login``, ``sendmail``) to the exception that step raises."""
+    ``starttls``, ``login``, ``sendmail``, or ``quit`` when the session is closed) to the
+    exception that step raises."""
     fail = fail or {}
     log = SimpleNamespace(connections=[], calls=[])
 
@@ -148,6 +149,9 @@ def _fake_smtp(monkeypatch, fail: dict[str, Exception] | None = None) -> SimpleN
             return self
 
         def __exit__(self, *exc_info):
+            log.calls.append(("quit",))
+            if "quit" in fail:
+                raise fail["quit"]
             return False
 
         def _step(self, name, *args):
@@ -307,6 +311,19 @@ def test_http_send_without_any_reference_id_returns_none(monkeypatch):
     _http(monkeypatch, _reply(200, {"success": True, "message": "queued"}))
 
     assert transport.send(_message()) is None
+
+
+def test_http_send_logs_the_recipient_and_reference_id_but_not_the_subject(monkeypatch, caplog):
+    _use_http(monkeypatch)
+    _http(monkeypatch, _reply(200, _accepted(PROVIDER_ID)))
+
+    with caplog.at_level(logging.INFO):
+        transport.send(_full_message())
+
+    assert "to=student@ucsc.edu" in caplog.text
+    assert f"reference_id={PROVIDER_ID}" in caplog.text
+    assert "Weekly digest" not in caplog.text
+    assert API_KEY not in caplog.text
 
 
 @pytest.mark.parametrize("status", [400, 422])
@@ -538,7 +555,14 @@ def test_smtp_send_returns_none_and_walks_the_usual_session(monkeypatch):
     assert transport.send(_message()) is None
 
     assert smtp.connections == [("smtp.example.test", 587, 10)]
-    assert [call[0] for call in smtp.calls] == ["ehlo", "starttls", "ehlo", "login", "sendmail"]
+    assert [call[0] for call in smtp.calls] == [
+        "ehlo",
+        "starttls",
+        "ehlo",
+        "login",
+        "sendmail",
+        "quit",
+    ]
     assert _sendmail(smtp)[1] == SENDER
     assert next(call for call in smtp.calls if call[0] == "login")[1:] == ("mailer", "s3cret")
 
@@ -654,7 +678,7 @@ def test_smtp_login_user(host, configured, expected):
     assert transport._smtp_login_user(host, configured) == expected
 
 
-def test_smtp_logs_the_session_like_the_old_send_email(monkeypatch, caplog):
+def test_smtp_logs_the_session_with_the_recipient_but_not_the_subject(monkeypatch, caplog):
     _use_smtp(monkeypatch)
     _fake_smtp(monkeypatch)
 
@@ -664,83 +688,170 @@ def test_smtp_logs_the_session_like_the_old_send_email(monkeypatch, caplog):
     assert "send_email: connecting | host=smtp.example.test port=587 user=mailer" in caplog.text
     assert "bcc_count=1" in caplog.text
     assert "send_email: delivered | to=student@ucsc.edu" in caplog.text
+    assert "Weekly digest" not in caplog.text
     assert "s3cret" not in caplog.text
 
 
 # ── SMTP: the failures ───────────────────────────────────────────────────────────────
+#
+# Where a failure happens decides what it means. Until ``sendmail`` starts, nothing the server says
+# is about the message: it is our login, our settings or the provider's health, so the email waits
+# (transient). From ``sendmail`` on, a 5xx means the message itself was refused (permanent) and a
+# 4xx means try again (transient).
 
-SMTP_FAILURES = [
+# Raised by ``sendmail``: the message itself. Never a misconfiguration, so never an error log.
+MESSAGE_FAILURES = [
     pytest.param(
-        "sendmail",
-        smtplib.SMTPRecipientsRefused({"student@ucsc.edu": (550, b"no such user")}),
+        smtplib.SMTPRecipientsRefused({"a@ucsc.edu": (550, b"no such user")}),
         PermanentEmailError,
-        id="recipients-refused",
+        id="recipients-refused-5xx",
     ),
     pytest.param(
-        "sendmail",
+        smtplib.SMTPRecipientsRefused(
+            {"a@ucsc.edu": (550, b"no such user"), "b@ucsc.edu": (553, b"bad mailbox name")}
+        ),
+        PermanentEmailError,
+        id="every-recipient-refused-5xx",
+    ),
+    pytest.param(
+        smtplib.SMTPRecipientsRefused(
+            {"a@ucsc.edu": (550, b"no such user"), "b@ucsc.edu": (450, b"mailbox busy")}
+        ),
+        TransientEmailError,
+        id="one-recipient-refused-4xx",
+    ),
+    pytest.param(
+        smtplib.SMTPRecipientsRefused({"a@ucsc.edu": (450, b"mailbox busy")}),
+        TransientEmailError,
+        id="recipients-refused-4xx",
+    ),
+    pytest.param(
+        smtplib.SMTPRecipientsRefused({}),
+        TransientEmailError,
+        id="recipients-refused-no-codes",  # nothing says never, so wait
+    ),
+    pytest.param(
         smtplib.SMTPSenderRefused(550, b"sender not allowed", SENDER),
         PermanentEmailError,
-        id="sender-refused",
+        id="sender-refused-5xx",
     ),
     pytest.param(
-        "sendmail",
-        smtplib.SMTPSenderRefused(451, b"sender not allowed yet", SENDER),
+        smtplib.SMTPSenderRefused(451, b"try again later", SENDER),
+        TransientEmailError,
+        id="sender-refused-4xx",
+    ),
+    pytest.param(
+        smtplib.SMTPDataError(550, b"message rejected"), PermanentEmailError, id="data-error-5xx"
+    ),
+    pytest.param(
+        smtplib.SMTPDataError(451, b"try again later"), TransientEmailError, id="data-error-4xx"
+    ),
+    pytest.param(
+        smtplib.SMTPResponseException(554, b"transaction failed"),
         PermanentEmailError,
-        id="sender-refused-4xx",  # a refused sender is permanent whatever the code (spec)
+        id="response-5xx",
     ),
     pytest.param(
-        "sendmail",
-        smtplib.SMTPRecipientsRefused({"student@ucsc.edu": (450, b"mailbox busy")}),
-        PermanentEmailError,
-        id="recipients-refused-4xx",  # likewise for a refused recipient (spec)
+        smtplib.SMTPResponseException(421, b"service not available"),
+        TransientEmailError,
+        id="response-4xx",
     ),
     pytest.param(
-        "sendmail", smtplib.SMTPDataError(550, b"x"), PermanentEmailError, id="data-error-550"
+        smtplib.SMTPServerDisconnected("Connection unexpectedly closed"),
+        TransientEmailError,
+        id="disconnected-mid-send",
+    ),
+]
+
+
+@pytest.mark.parametrize(("failure", "expected"), MESSAGE_FAILURES)
+def test_smtp_message_failures_are_permanent_only_on_a_5xx(monkeypatch, caplog, failure, expected):
+    _use_smtp(monkeypatch)
+    _fake_smtp(monkeypatch, fail={"sendmail": failure})
+
+    with caplog.at_level(logging.ERROR), pytest.raises(expected) as caught:
+        transport.send(_message())
+
+    assert caught.value.__cause__ is failure
+    assert _errors(caplog) == []
+
+
+# Raised while the session is set up: connect, EHLO, STARTTLS, login. The message is never at
+# fault, so these always wait. ``logged`` says whether it is an error log: a 5xx (or a server
+# that cannot do what we need) is most likely a misconfiguration; a 4xx or a dropped connection
+# is the provider having a moment.
+SESSION_FAILURES = [
+    pytest.param(
+        "connect", smtplib.SMTPConnectError(554, b"client host blocked"), True, id="connect-5xx"
+    ),
+    pytest.param("connect", smtplib.SMTPConnectError(421, b"too busy"), False, id="connect-4xx"),
+    pytest.param("connect", ConnectionRefusedError(61, "refused"), False, id="refused"),
+    pytest.param("connect", TimeoutError("timed out"), False, id="timeout"),
+    pytest.param("ehlo", smtplib.SMTPHeloError(503, b"bad sequence"), True, id="helo-5xx"),
+    pytest.param(
+        "ehlo", smtplib.SMTPResponseException(550, b"refused"), True, id="ehlo-response-5xx"
     ),
     pytest.param(
-        "sendmail", smtplib.SMTPDataError(451, b"x"), TransientEmailError, id="data-error-451"
+        "starttls",
+        smtplib.SMTPNotSupportedError("STARTTLS extension not supported by server."),
+        True,
+        id="no-starttls",
+    ),
+    pytest.param(
+        "starttls",
+        smtplib.SMTPResponseException(502, b"command not implemented"),
+        True,
+        id="starttls-5xx",
+    ),
+    pytest.param(
+        "starttls",
+        smtplib.SMTPResponseException(454, b"TLS not available due to temporary reason"),
+        False,
+        id="starttls-4xx",
     ),
     pytest.param(
         "starttls",
         ssl.SSLEOFError(8, "EOF occurred in violation of protocol (_ssl.c:1016)"),
-        TransientEmailError,
+        False,
         id="tls-handshake-eof",  # the PROD Sentry event: an OSError, not an SMTPException
     ),
     pytest.param(
+        "login", smtplib.SMTPAuthenticationError(535, b"bad credentials"), True, id="authentication"
+    ),
+    pytest.param(
         "login",
-        smtplib.SMTPAuthenticationError(535, b"bad credentials"),
-        TransientEmailError,
-        id="authentication",
+        smtplib.SMTPAuthenticationError(454, b"temporary authentication failure"),
+        True,
+        id="authentication-4xx",  # a wrong login is ours to fix whatever the code
     ),
     pytest.param(
-        "sendmail",
-        smtplib.SMTPServerDisconnected("Connection unexpectedly closed"),
-        TransientEmailError,
-        id="disconnected",
+        "login",
+        smtplib.SMTPNotSupportedError("SMTP AUTH extension not supported by server."),
+        True,
+        id="no-auth",
     ),
     pytest.param(
-        "sendmail",
-        smtplib.SMTPResponseException(421, b"service not available"),
-        TransientEmailError,
-        id="response-421",
+        "login", smtplib.SMTPResponseException(550, b"account suspended"), True, id="login-5xx"
     ),
-    pytest.param(
-        "connect", ConnectionRefusedError(61, "refused"), TransientEmailError, id="refused"
-    ),
-    pytest.param("connect", TimeoutError("timed out"), TransientEmailError, id="timeout"),
 ]
 
 
-@pytest.mark.parametrize(("step", "failure", "expected"), SMTP_FAILURES)
-def test_smtp_failures_are_classified_and_keep_their_cause(monkeypatch, step, failure, expected):
+@pytest.mark.parametrize(("step", "failure", "logged"), SESSION_FAILURES)
+def test_smtp_session_failures_always_wait_and_a_5xx_is_an_error_log(
+    monkeypatch, caplog, step, failure, logged
+):
     _use_smtp(monkeypatch)
-    _fake_smtp(monkeypatch, fail={step: failure})
+    smtp = _fake_smtp(monkeypatch, fail={step: failure})
 
-    with pytest.raises(expected) as caught:
+    with caplog.at_level(logging.ERROR), pytest.raises(TransientEmailError) as caught:
         transport.send(_message())
 
+    assert not isinstance(caught.value, PermanentEmailError)
     assert caught.value.__cause__ is failure
-    assert isinstance(caught.value, EmailDeliveryError)
+    assert bool(_errors(caplog)) is logged
+    assert "s3cret" not in caplog.text
+    # Nothing was sent: the failure came before the message was offered.
+    assert not [call for call in smtp.calls if call[0] == "sendmail"]
 
 
 def test_a_failed_login_is_an_error_log_and_never_shows_the_password(monkeypatch, caplog):
@@ -755,6 +866,53 @@ def test_a_failed_login_is_an_error_log_and_never_shows_the_password(monkeypatch
     assert "s3cret" not in caplog.text
 
 
+@pytest.mark.parametrize(
+    "failure",
+    [
+        smtplib.SMTPConnectError(554, b"client host blocked"),
+        smtplib.SMTPHeloError(503, b"bad sequence"),
+        smtplib.SMTPNotSupportedError("SMTPUTF8 not supported by server"),
+    ],
+    ids=["connect-error", "helo-error", "not-supported"],
+)
+def test_the_session_error_classes_are_transient_even_when_raised_while_sending(
+    monkeypatch, failure
+):
+    """They describe the server, not the message, so their class decides, not the stage."""
+    _use_smtp(monkeypatch)
+    _fake_smtp(monkeypatch, fail={"sendmail": failure})
+
+    with pytest.raises(TransientEmailError) as caught:
+        transport.send(_message())
+
+    assert not isinstance(caught.value, PermanentEmailError)
+    assert caught.value.__cause__ is failure
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        smtplib.SMTPResponseException(250, b"2.0.0 bye"),
+        smtplib.SMTPServerDisconnected("Connection unexpectedly closed"),
+        ConnectionResetError(54, "Connection reset by peer"),
+    ],
+    ids=["odd-reply-to-quit", "disconnected", "reset"],
+)
+def test_a_failure_while_closing_the_session_after_delivery_is_not_a_failure(
+    monkeypatch, caplog, failure
+):
+    """The server already has the message: raising would make the caller send it a second time."""
+    _use_smtp(monkeypatch)
+    smtp = _fake_smtp(monkeypatch, fail={"quit": failure})
+
+    with caplog.at_level(logging.INFO):
+        assert transport.send(_message()) is None
+
+    assert [call[0] for call in smtp.calls].count("sendmail") == 1
+    assert "accepted the message" in caplog.text
+    assert "send_email: delivered | to=student@ucsc.edu" in caplog.text
+
+
 def test_a_message_that_cannot_be_serialised_is_permanent_and_opens_no_session(monkeypatch):
     """A subject carrying a second header line is never going to go out: retrying is pointless."""
     _use_smtp(monkeypatch)
@@ -764,6 +922,79 @@ def test_a_message_that_cannot_be_serialised_is_permanent_and_opens_no_session(m
         transport.send(_message(subject="Hi\r\nBcc: someone@else.test"))
 
     assert smtp.connections == []
+
+
+# ── the subject stays out of errors and logs ─────────────────────────────────────────
+#
+# A contact-form subject carries a person's name, and names stay out of logs and exception
+# messages (AGENTS.md: nothing can scrub them). No path may put the subject in either.
+
+PERSON = "Ada Lovelace"
+
+
+def _http_answers(status: int, body=None):
+    def arrange(monkeypatch):
+        _use_http(monkeypatch)
+        _http(monkeypatch, _reply(status, body))
+
+    return arrange
+
+
+def _smtp_fails(**fail: Exception):
+    def arrange(monkeypatch):
+        _use_smtp(monkeypatch)
+        _fake_smtp(monkeypatch, fail=fail)
+
+    return arrange
+
+
+@pytest.mark.parametrize(
+    "arrange",
+    [
+        pytest.param(_http_answers(200, _accepted()), id="http-accepted"),
+        pytest.param(
+            _http_answers(400, {"success": False, "message": "Invalid recipient."}), id="http-400"
+        ),
+        pytest.param(
+            _http_answers(401, {"success": False, "message": "Invalid key."}), id="http-401"
+        ),
+        pytest.param(_http_answers(503), id="http-503"),
+        pytest.param(_smtp_fails(), id="smtp-delivered"),
+        pytest.param(_smtp_fails(connect=smtplib.SMTPConnectError(554, b"x")), id="smtp-connect"),
+        pytest.param(
+            _smtp_fails(login=smtplib.SMTPAuthenticationError(535, b"x")), id="smtp-login"
+        ),
+        pytest.param(_smtp_fails(sendmail=smtplib.SMTPDataError(550, b"x")), id="smtp-data"),
+        pytest.param(
+            _smtp_fails(sendmail=smtplib.SMTPRecipientsRefused({"a@ucsc.edu": (550, b"x")})),
+            id="smtp-recipients",
+        ),
+        pytest.param(
+            _smtp_fails(quit=smtplib.SMTPResponseException(250, b"x")), id="smtp-quit-after-send"
+        ),
+    ],
+)
+def test_no_path_puts_the_subject_in_an_error_or_a_log(monkeypatch, caplog, arrange):
+    arrange(monkeypatch)
+
+    with caplog.at_level(logging.DEBUG):
+        try:
+            transport.send(_message(subject=f"New contact message from {PERSON}"))
+        except EmailDeliveryError as error:
+            assert PERSON not in str(error)
+
+    assert PERSON not in caplog.text
+
+
+def test_an_unserialisable_subject_is_not_quoted_in_the_error(monkeypatch, caplog):
+    _use_smtp(monkeypatch)
+    _fake_smtp(monkeypatch)
+
+    with caplog.at_level(logging.DEBUG), pytest.raises(PermanentEmailError) as caught:
+        transport.send(_message(subject=f"From {PERSON}\r\nBcc: someone@else.test"))
+
+    assert PERSON not in str(caught.value)
+    assert PERSON not in caplog.text
 
 
 # ── reference ids ────────────────────────────────────────────────────────────────────
@@ -899,6 +1130,8 @@ def test_a_class_invite_answers_503_when_email_is_not_configured(monkeypatch):
         send_class_invite_email_or_raise(to="student@ucsc.edu", **INVITE)
 
     assert caught.value.status_code == 503
+    # The cause may be a missing sender or key, so the answer does not send anyone to SMTP_*.
+    assert caught.value.detail == "Email delivery is not configured on this server."
     assert caught.value.__cause__ is error
 
 

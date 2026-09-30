@@ -17,6 +17,7 @@ from app.core.db import get_client
 from app.core.errors import DatabaseConflictError, DatabaseError, DatabaseUnavailableError
 from app.institutions.controller import is_school_email
 from app.utils.email import send_email
+from app.utils.email_transport import EmailDeliveryError
 from app.utils.profiles import needs_roster_email
 
 logger = logging.getLogger(__name__)
@@ -303,6 +304,16 @@ def send_edu_verification(user_id: str, edu_email: str) -> dict:
             code,
         )
         return {"delivery": "log"}
+    except EmailDeliveryError as exc:
+        # The provider did not take the email, so no code is on its way. Do not leave one
+        # pending: the once-a-minute limit reads its row, and the user would wait that minute
+        # for nothing. The code is never logged.
+        _forget_pending(client, user_id)
+        logger.warning("edu_verification: email delivery failed | user_id=%s err=%s", user_id, exc)
+        raise HTTPException(
+            status_code=502,
+            detail="Couldn't send the verification email. Try again in a minute.",
+        ) from exc
 
     logger.info("edu_verification: code sent | user_id=%s email=%s", user_id, email)
     return {"delivery": "email"}

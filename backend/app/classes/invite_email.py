@@ -23,8 +23,8 @@ def send_class_invite_email(
     """Send a roster invite email to an existing or prospective student.
 
     Raises:
-        RuntimeError: SMTP is not configured.
-        smtplib.SMTPException: Delivery failed.
+        EmailNotConfiguredError: No email provider is configured (a RuntimeError).
+        EmailDeliveryError: Delivery failed.
     """
     app_url = frontend_url()
     signup_url = f"{app_url}/studentsignup"
@@ -94,19 +94,16 @@ def send_class_invite_email(
 
 
 def send_class_invite_email_or_raise(*, to: str, **kwargs) -> None:
-    """Send invite email; translate SMTP failures into HTTP-friendly errors."""
+    """Send invite email; translate delivery failures into HTTP-friendly errors."""
     from fastapi import HTTPException
 
     try:
         send_class_invite_email(to=to, **kwargs)
     except RuntimeError as exc:
-        logger.warning("class_invite_email: SMTP not configured | to=%s", to)
+        logger.warning("class_invite_email: email delivery not configured | to=%s", to)
         raise HTTPException(
             status_code=503,
-            detail=(
-                "Email delivery is not configured on this server. "
-                "Set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in .env."
-            ),
+            detail="Email delivery is not configured on this server.",
         ) from exc
     except EmailDeliveryError as exc:
         logger.error("class_invite_email: delivery failed | to=%s err=%s", to, exc)
