@@ -9,17 +9,17 @@ Until ``2026-09-25_institutions.sql`` is applied the table does not exist. ``loa
 then answers ``None`` and every caller keeps the behaviour from before institutions: no schools,
 and ``.edu`` is the only school email. AGENTS.md: code must work on the schema that is live.
 
-Each school also has a ``timezone``: the IANA zone its dates are in. Until
-``2026-09-30_institution_timezones.sql`` is applied the column does not exist, so the table is
-read with ``select("*")`` (naming a missing column fails the whole read) and every school gets
-``DEFAULT_TIMEZONE``; so does one whose value ``zoneinfo`` does not know, which is logged as an
-error.
-
 ``None`` means specifically "the table does not exist" (PostgREST's or Postgres's own
 missing-table codes) — never "some read failed". Any other database failure keeps serving the
 last known-good list instead, the same way ``app.auth.controller.get_user_role`` never caches a
 failure as "no role": a dropped connection or a missing grant is an outage, and treating it as
 "not migrated yet" would answer a whole class of requests wrong for up to a minute.
+
+Each school also has a ``timezone``: the IANA zone its dates are in. Until
+``2026-09-30_institution_timezones.sql`` is applied the column does not exist, so the table is
+read with ``select("*")`` (naming a missing column fails the whole read) and every school gets
+``DEFAULT_TIMEZONE``; so does one whose value ``zoneinfo`` does not know, which is logged as an
+error.
 """
 
 from __future__ import annotations
@@ -103,9 +103,10 @@ def _normalized_timezone(raw: object, slug: str) -> str:
         ZoneInfo(name)
     except (ZoneInfoNotFoundError, ValueError, OSError):
         # Not found; or a key zoneinfo refuses outright ("../etc", a NUL byte); or a name the
-        # file system rejects (``Europe`` is a directory of the tz database and raises
-        # IsADirectoryError; a very long one, OSError). Any of them escaping would fail the whole
-        # read of the list, for every school, over one row's cosmetic typo.
+        # file system rejects: one over the file-name limit raises OSError on every Python
+        # version, and a directory of the tz database (``Europe``) raises IsADirectoryError on
+        # Python 3.12 and older (3.14 reports a not-found instead, gh-85702). Any of them
+        # escaping would fail the whole read of the list, for every school, over one row's typo.
         logger.error(
             "institutions: unknown timezone %r for %r; using %s", raw, slug, DEFAULT_TIMEZONE
         )
@@ -218,6 +219,18 @@ def institution_summaries(institutions: list[dict] | None) -> dict[str, dict]:
     }
 
 
+def _normalized_id(institution_id: object) -> str | None:
+    """``institution_id`` spelled the way ``load_institutions`` spells ids, or ``None``.
+
+    A ``UUID``, or an upper-case (or otherwise re-cased) string, of a known id still matches it;
+    anything that is not a UUID at all (``None``, ``"not-a-uuid"``) is ``None``, not an error.
+    """
+    try:
+        return str(UUID(str(institution_id)))
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
 def is_known_institution(institution_id) -> bool:
     """True when ``institution_id`` names an existing institution.
 
@@ -227,30 +240,29 @@ def is_known_institution(institution_id) -> bool:
     Can raise ``DatabaseError`` (see ``load_institutions``) when the list can't be read and
     nothing is cached.
     """
-    try:
-        normalized = str(UUID(str(institution_id)))
-    except (ValueError, TypeError):
-        return False
-    return normalized in {i["id"] for i in load_institutions() or []}
+    normalized = _normalized_id(institution_id)
+    return normalized is not None and normalized in {i["id"] for i in load_institutions() or []}
 
 
-def institution_timezone(institution_id: str | None) -> ZoneInfo:
+def institution_timezone(institution_id: UUID | str | None) -> ZoneInfo:
     """The time zone a school's dates are in, for reminder scheduling.
 
     ``assignments.open_date`` and ``close_date`` are bare dates in the school's own zone, so "due
     tomorrow" is only right when worked out there. ``DEFAULT_TIMEZONE`` for a class with no school
     (``None``), for an id that names none, and before the institutions table exists.
 
-    ``institution_id`` is an id as the database spells it (``classes.institution_id``).
+    ``institution_id`` is matched the way ``is_known_institution`` matches it: a ``UUID``, or a
+    string in any case, finds its school.
 
     Can raise ``DatabaseError`` (see ``load_institutions``) when the list can't be read and
     nothing is cached: an outage must not pass for "unknown school" and schedule in the wrong
-    zone. ``None`` needs no lookup, so it never raises.
+    zone. ``None``, or anything else that is not a UUID, needs no lookup, so it never raises.
     """
-    if institution_id is not None:
+    wanted = _normalized_id(institution_id)
+    if wanted is not None:
         for institution in load_institutions() or []:
-            if institution["id"] == institution_id:
-                # ``.get``: an entry primed into the cache by hand (tests do) may not have one.
+            if institution["id"] == wanted:
+                # Defensive: the cache may hold an entry primed before ``timezone`` existed.
                 return ZoneInfo(institution.get("timezone") or DEFAULT_TIMEZONE)
     return ZoneInfo(DEFAULT_TIMEZONE)
 

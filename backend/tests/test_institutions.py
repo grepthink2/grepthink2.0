@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -415,6 +416,20 @@ def test_is_known_institution_normalizes_the_id(db):
     assert institutions.is_known_institution(None) is False
 
 
+@pytest.mark.parametrize("institution_id", [None, "not-a-uuid"], ids=["none", "not-an-id"])
+def test_is_known_institution_needs_no_lookup_for_an_id_that_is_not_a_uuid(
+    monkeypatch, institution_id
+):
+    # Nothing that is not a UUID can name a school, so it is unknown without reading the list:
+    # an institutions outage cannot turn that answer into an error.
+    def load_institutions():
+        raise AssertionError("load_institutions must not be called")
+
+    monkeypatch.setattr(institutions, "load_institutions", load_institutions)
+
+    assert institutions.is_known_institution(institution_id) is False
+
+
 @pytest.mark.parametrize(
     ("email", "expected"),
     [
@@ -445,6 +460,7 @@ def test_the_list_is_public_and_cacheable(client: TestClient, db):
     assert res.status_code == 200
     assert res.headers["cache-control"] == "public, max-age=300"
     by_slug = {i["slug"]: i for i in res.json()["institutions"]}
+    # Each expected row includes its school's timezone, so this is also what pins that field.
     assert by_slug == {
         "ucsc": UCSC,
         "istinye": ISTINYE_INSTITUTION,
@@ -516,13 +532,17 @@ def test_a_school_keeps_its_own_timezone_else_gets_the_default_without_an_error(
         pytest.param(" Europe/Istanbul", id="stray-space"),
         pytest.param("../etc", id="leaves-the-tz-database"),
         pytest.param("Europe", id="a-region-not-a-zone"),
+        pytest.param("x" * 300, id="name-too-long"),
     ],
 )
 def test_an_unknown_timezone_gets_the_default_and_an_error_log(monkeypatch, caplog, bad_name):
     # An ERROR, not a WARNING: Sentry files a WARNING as a breadcrumb only, and a maintainer's
     # typo would otherwise have reminders go out in the wrong zone until someone read the log.
-    # These names make zoneinfo raise three kinds of exception (not found, ValueError,
-    # IsADirectoryError): none may escape, or one row's typo would fail the read of every school.
+    # These names make zoneinfo raise four kinds of exception: not found; ValueError; OSError (a
+    # name over the file-name limit, on every Python version); and IsADirectoryError (a directory
+    # of the tz database, "Europe", on Python 3.12 and older: 3.14 reports a not-found instead,
+    # so there "x" * 300 is what covers OSError). None may escape, or one row's typo would fail
+    # the read of every school.
     with caplog.at_level(logging.WARNING, logger="app.institutions.controller"):
         school = _load_zone_school(monkeypatch, timezone=bad_name)
 
@@ -576,15 +596,6 @@ def test_columns_the_app_does_not_use_never_reach_the_cached_list(monkeypatch):
     )
 
     assert school == {**ZONE_SCHOOL, "timezone": "Europe/Istanbul"}
-
-
-def test_the_list_carries_each_schools_timezone(client: TestClient, db):
-    schools = client.get("/api/institutions").json()["institutions"]
-
-    assert {i["slug"]: i["timezone"] for i in schools} == {
-        "ucsc": "America/Los_Angeles",
-        "istinye": "Europe/Istanbul",
-    }
 
 
 @pytest.fixture
@@ -642,6 +653,19 @@ def test_institution_timezone_reads_the_zone_through_the_loader(db):
 
 @pytest.mark.parametrize(
     "institution_id",
+    [UUID(ISTINYE_INSTITUTION["id"]), ISTINYE_INSTITUTION["id"].upper()],
+    ids=["uuid-object", "upper-case"],
+)
+def test_institution_timezone_finds_a_school_by_a_uuid_or_a_re_cased_id(
+    with_istinye, institution_id
+):
+    # Matched the way is_known_institution matches: the id a caller holds need not be spelled
+    # the way the database spells it.
+    assert institutions.institution_timezone(institution_id).key == "Europe/Istanbul"
+
+
+@pytest.mark.parametrize(
+    "institution_id",
     [None, "33333333-3333-4333-8333-333333333333", "not-a-uuid"],
     ids=["no-school", "unknown-id", "not-an-id"],
 )
@@ -665,14 +689,18 @@ def test_institution_timezone_of_a_cached_school_without_one_is_the_default(monk
     assert institutions.institution_timezone(old["id"]).key == "America/Los_Angeles"
 
 
-def test_institution_timezone_needs_no_lookup_for_a_class_without_a_school(monkeypatch):
-    # A class with no school must not cost a cache lookup, or fail in an outage with a cold cache.
+@pytest.mark.parametrize("institution_id", [None, "not-a-uuid"], ids=["no-school", "not-an-id"])
+def test_institution_timezone_needs_no_lookup_for_an_id_that_cannot_match(
+    monkeypatch, institution_id
+):
+    # A class with no school, or an id that is no UUID, must not cost a cache lookup, or fail in
+    # an outage with a cold cache.
     def load_institutions():
         raise AssertionError("load_institutions must not be called")
 
     monkeypatch.setattr(institutions, "load_institutions", load_institutions)
 
-    assert institutions.institution_timezone(None).key == "America/Los_Angeles"
+    assert institutions.institution_timezone(institution_id).key == "America/Los_Angeles"
 
 
 def test_institution_timezone_does_not_hide_an_outage_as_an_unknown_school(monkeypatch):
