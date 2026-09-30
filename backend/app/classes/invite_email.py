@@ -6,20 +6,10 @@ import html
 import logging
 import smtplib
 
-from app.config import settings
 from app.utils.email import send_email
+from app.utils.urls import frontend_url
 
 logger = logging.getLogger(__name__)
-
-
-def frontend_url() -> str:
-    """Public app base URL for links in invitation emails."""
-    explicit = (settings.FRONTEND_URL or "").strip().rstrip("/")
-    if explicit:
-        return explicit
-    if settings.CORS_ORIGINS:
-        return settings.CORS_ORIGINS[0].rstrip("/")
-    return "http://localhost:5173"
 
 
 def send_class_invite_email(

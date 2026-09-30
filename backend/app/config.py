@@ -96,8 +96,40 @@ class Settings:
     SMTP_PASSWORD: str = os.environ.get("SMTP_PASSWORD", "")
     SMTP_FROM: str = os.environ.get("SMTP_FROM", "")
 
-    # Scheduled-invite poller interval (app.jobs.pending_invites), seconds.
-    PENDING_INVITES_POLL_SECONDS: float = float(os.environ.get("PENDING_INVITES_POLL_SECONDS", 5))
+    # Maileroo HTTP API (app.utils.email_transport). When MAILEROO_API_KEY (a sending key) is
+    # set, every email goes through the API instead of SMTP. EMAIL_FROM is the sender
+    # ("GrepThink <noreply@example.com>"); it falls back to SMTP_FROM.
+    MAILEROO_API_KEY: str = os.environ.get("MAILEROO_API_KEY", "")
+    MAILEROO_API_URL: str = (
+        os.environ.get("MAILEROO_API_URL") or "https://smtp.maileroo.com/api/v2"
+    ).rstrip("/")
+    EMAIL_FROM: str = os.environ.get("EMAIL_FROM", "")
+
+    # Email outbox (app.outbox). EMAIL_DISPATCH_SECRET turns on POST /api/email/dispatch for
+    # the pg_cron schedule and turns off the in-process loop (app.jobs.email_dispatch), which
+    # otherwise runs every EMAIL_DISPATCH_POLL_SECONDS. The budgets bound how long one dispatch
+    # run, or one request sending its own emails, keeps starting new sends.
+    EMAIL_DISPATCH_SECRET: str = os.environ.get("EMAIL_DISPATCH_SECRET", "")
+    EMAIL_DISPATCH_POLL_SECONDS: float = float(
+        os.environ.get("EMAIL_DISPATCH_POLL_SECONDS")
+        or os.environ.get("PENDING_INVITES_POLL_SECONDS")
+        or 5
+    )
+    # Legacy name read by app.main until the lifespan switches to app.jobs.email_dispatch.
+    PENDING_INVITES_POLL_SECONDS: float = EMAIL_DISPATCH_POLL_SECONDS
+    EMAIL_DISPATCH_BUDGET_SECONDS: float = float(os.environ.get("EMAIL_DISPATCH_BUDGET_SECONDS", 8))
+    EMAIL_INLINE_BUDGET_SECONDS: float = float(os.environ.get("EMAIL_INLINE_BUDGET_SECONDS", 8))
+
+    # Maileroo webhook shared secret (POST /api/email/webhooks/maileroo). Unset: the endpoint
+    # answers 503, so Maileroo keeps retrying until it is configured.
+    MAILEROO_WEBHOOK_SECRET: str = os.environ.get("MAILEROO_WEBHOOK_SECRET", "")
+
+    # Signs unsubscribe links. Unset: a key derived from SUPABASE_JWT_SECRET is used.
+    EMAIL_UNSUBSCRIBE_SECRET: str = os.environ.get("EMAIL_UNSUBSCRIBE_SECRET", "")
+
+    # Public URL of this API (https://api.example.com), for the one-click unsubscribe link in
+    # the List-Unsubscribe header. Unset: emails carry only the frontend unsubscribe page link.
+    PUBLIC_API_URL: str = (os.environ.get("PUBLIC_API_URL") or "").strip().rstrip("/")
 
     # Public frontend URL for links in transactional emails (signup, class join).
     # Falls back to the first CORS origin when unset.
