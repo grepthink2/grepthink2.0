@@ -121,6 +121,13 @@ dispatch schedule":
 4. Set `EMAIL_DISPATCH_SECRET` (the same value) in the backend project and redeploy. The
    in-process loop stops; the schedule is the only dispatcher.
 
+**After any change to the email provider settings** (`MAILEROO_API_KEY`, `EMAIL_FROM`,
+`SMTP_*`): make sure the sender's domain is verified in Maileroo, then send one real email and
+check it arrives — e.g. the contact form addressed to yourself. The outbox pauses (without losing
+anything) when the provider refuses the credentials or the sender, but Maileroo's HTTP API may
+answer an unverified sender with a plain 400, which the outbox cannot tell from a bad address:
+every queued email would fail permanently and each instructor would be notified.
+
 Optional, any time: `MAILEROO_API_KEY` (+ `EMAIL_FROM`), the Maileroo webhook
 (`/api/email/webhooks/maileroo` + `MAILEROO_WEBHOOK_SECRET`) so bounced and complained addresses
 stop being emailed, and `PUBLIC_API_URL` for one-click unsubscribe headers. Users turn reminder
@@ -201,3 +208,9 @@ curl -s -o /dev/null -w '%{http_code}\n' https://<frontend-domain>/   # 200
 Then sign in on the frontend and open a class: the request to
 `/api/classes` must return 200 with the class list (a 401 means the frontend and
 backend point at different Supabase projects).
+
+Email: send yourself a message through the contact form and check it arrives (this also
+proves the SMTP certificate check and the provider credentials work). Once the dispatch
+schedule is on, `SELECT status_code, created FROM net._http_response ORDER BY created DESC
+LIMIT 3;` on PROD shows 200s, and `SELECT status, count(*) FROM email_outbox GROUP BY 1;`
+has no growing `pending` backlog.
