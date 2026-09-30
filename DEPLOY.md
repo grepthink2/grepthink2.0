@@ -37,7 +37,7 @@ development reads (only the repo-root `.env` is read — see `README.md`).
 | `EMAIL_DISPATCH_POLL_SECONDS` | optional; that in-process interval (default 5; the old `PENDING_INVITES_POLL_SECONDS` is still read) |
 | `EMAIL_DISPATCH_BUDGET_SECONDS` `EMAIL_INLINE_BUDGET_SECONDS` | optional; how long one dispatch run, or one invite request, keeps starting sends (default 8 each). Keep them under the function's max duration |
 | `MAILEROO_WEBHOOK_SECRET` | optional; the Maileroo webhook's shared secret (bounces, complaints). Unset, the webhook answers 503 and Maileroo retries |
-| `EMAIL_UNSUBSCRIBE_SECRET` | optional; signs unsubscribe links (default: a key derived from `SUPABASE_JWT_SECRET`) |
+| `EMAIL_UNSUBSCRIBE_SECRET` | signs unsubscribe links (default: a key derived from `SUPABASE_JWT_SECRET`). Set it on PROD before the first reminder or digest email goes out: changing the key later — or rotating the JWT secret while relying on the default — breaks every link already sent |
 | `PUBLIC_API_URL` | optional; this API's public URL (`https://api.grepthink2.com`), for the one-click `List-Unsubscribe` header |
 | `SENTRY_DSN` | optional; turns on error reporting to Sentry (see **Error tracking**). Unset means off |
 

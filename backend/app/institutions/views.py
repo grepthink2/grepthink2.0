@@ -17,6 +17,8 @@ def _public_institution(institution: dict) -> dict:
         "name": institution["name"],
         "slug": institution["slug"],
         "email_domains": institution["email_domains"],
+        # ``.get``: an entry primed into the cache by hand (tests do) may not have one.
+        "timezone": institution.get("timezone") or controller.DEFAULT_TIMEZONE,
     }
 
 
