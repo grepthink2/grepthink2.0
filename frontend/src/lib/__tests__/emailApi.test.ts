@@ -25,6 +25,16 @@ function jsonResponse(status: number, body: unknown): Response {
   });
 }
 
+/** The exact message of the error a call rejects with (`toThrow(text)` only checks that it is included). */
+async function rejectionMessage(promise: Promise<unknown>): Promise<string> {
+  try {
+    await promise;
+  } catch (err) {
+    return (err as Error).message;
+  }
+  throw new Error('expected the call to reject');
+}
+
 beforeEach(() => {
   fetchMock.mockReset();
   apiRequest.mockReset();
@@ -149,20 +159,30 @@ describe('confirmUnsubscribe (public)', () => {
     });
   });
 
-  it("throws the backend's own words for a link it does not accept", async () => {
+  it("throws the backend's own words for a link it does not accept (a 400)", async () => {
     fetchMock.mockResolvedValue(jsonResponse(400, { detail: "This unsubscribe link isn't valid." }));
-    await expect(emailApi.confirmUnsubscribe('t')).rejects.toThrow("This unsubscribe link isn't valid.");
+    expect(await rejectionMessage(emailApi.confirmUnsubscribe('t'))).toBe("This unsubscribe link isn't valid.");
+  });
+
+  it("throws the backend's own words when it says it is down for now (a 503)", async () => {
+    const detail = 'The service is temporarily unavailable. Please try again in a moment.';
+    fetchMock.mockResolvedValue(jsonResponse(503, { detail, code: 'database_unavailable' }));
+    expect(await rejectionMessage(emailApi.confirmUnsubscribe('t'))).toBe(detail);
   });
 
   it.each([
-    ['a detail that is not text', () => jsonResponse(422, { detail: [{ loc: ['query', 'token'], msg: 'Field required' }] })],
-    ['an empty detail', () => jsonResponse(400, { detail: '' })],
+    ['a 500 with its server message', () => jsonResponse(500, { detail: 'Internal server error', code: 'internal_error' })],
+    ['a 404 with its server message', () => jsonResponse(404, { detail: 'Not Found' })],
+    ['a 502 with text in its detail', () => jsonResponse(502, { detail: 'Bad gateway' })],
+    ['a 422 validation error', () => jsonResponse(422, { detail: [{ loc: ['query', 'token'], msg: 'Field required' }] })],
+    ['a 400 whose detail is not text', () => jsonResponse(400, { detail: [{ loc: ['query', 'token'], msg: 'Field required' }] })],
+    ['a 400 with an empty detail', () => jsonResponse(400, { detail: '' })],
+    ['a 503 with no detail', () => jsonResponse(503, {})],
     ['a body that is not JSON', () => new Response('<html>Bad gateway</html>', { status: 502 })],
     ['a rate limit', () => jsonResponse(429, { error: 'Rate limit exceeded: 30 per 1 minute' })],
-    ['a 500', () => jsonResponse(500, {})],
-  ])('throws a generic message for %s', async (_case, response) => {
+  ])('throws a generic message, not what the server said, for %s', async (_case, response) => {
     fetchMock.mockResolvedValue(response());
-    await expect(emailApi.confirmUnsubscribe('t')).rejects.toThrow(GENERIC);
+    expect(await rejectionMessage(emailApi.confirmUnsubscribe('t'))).toBe(GENERIC);
   });
 
   it.each([
@@ -171,11 +191,11 @@ describe('confirmUnsubscribe (public)', () => {
     ['an answer without the category', () => jsonResponse(200, { unsubscribed: true })],
   ])('throws a generic message for a 200 with %s', async (_case, response) => {
     fetchMock.mockResolvedValue(response());
-    await expect(emailApi.confirmUnsubscribe('t')).rejects.toThrow(GENERIC);
+    expect(await rejectionMessage(emailApi.confirmUnsubscribe('t'))).toBe(GENERIC);
   });
 
-  it('throws a generic message, not the browser\'s, when the network fails', async () => {
+  it("throws a generic message, not the browser's, when the network fails", async () => {
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
-    await expect(emailApi.confirmUnsubscribe('t')).rejects.toThrow(GENERIC);
+    expect(await rejectionMessage(emailApi.confirmUnsubscribe('t'))).toBe(GENERIC);
   });
 });

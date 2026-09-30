@@ -1,5 +1,8 @@
 @use '@styles/index.scss' as *;
 
+// The close button floats over the modal's top-right corner; the phone layout's nav row leaves room for it.
+$settings-close-size: 30px;
+
 .settings-modal {
   &__overlay {
     position: fixed;
@@ -105,8 +108,10 @@
     position: absolute;
     top: $spacing-md;
     right: $spacing-md;
-    width: 30px;
-    height: 30px;
+    width: $settings-close-size;
+    height: $settings-close-size;
+    // index.css gives every button padding: .6em 1.2em, which left this box no room for its icon.
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -117,6 +122,10 @@
     cursor: pointer;
     @include gt-transition(background, color);
     z-index: 2;
+
+    svg {
+      flex-shrink: 0;
+    }
 
     &:hover {
       background: $background;
@@ -133,11 +142,15 @@
     gap: $spacing-md;
   }
 
+  // The Email section's title takes focus after "Try again": it is as wide as its text, so the focus
+  // ring wraps the word and does not reach the close button, and the radius rounds the ring.
   &__section-title {
+    align-self: flex-start;
     margin: 0;
     font-size: $font-size-large;
     font-weight: $font-weight-semibold;
     color: $text-primary;
+    border-radius: $border-radius-sm;
   }
 
   &__section-subtitle {
@@ -476,18 +489,37 @@
 
     &__nav {
       width: 100%;
-      padding: $spacing-sm $spacing-md;
+      // Right padding: the close button's inset, its width and a gap, so no tab sits under it.
+      padding: $spacing-sm ($spacing-md + $settings-close-size + $spacing-sm) $spacing-sm $spacing-md;
       border-right: none;
       border-bottom: 1px solid $border-color;
       flex-direction: row;
+      // A tab that does not fit drops to a second row instead of running under the button.
+      flex-wrap: wrap;
       align-items: center;
-      gap: $spacing-md;
+      gap: $spacing-xs $spacing-md;
       flex-shrink: 0;
     }
 
+    // The title, the tabs and the close button do not fit side by side on a phone (the tabs would
+    // run under the button below ~375px), and the tabs and the section's own heading already say
+    // where you are. The heading stays for screen readers, hidden the usual way.
     &__nav-title {
-      margin: 0;
-      font-size: $font-size-base;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      border: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    // Centered on the row of tabs: the nav's top padding plus half of what a tab (37px: a 14px line
+    // at line-height 1.5, and the tab's 8px of padding above and below) has over this 30px box.
+    &__close {
+      top: $spacing-md - $spacing-xs;
     }
 
     &__nav-list {

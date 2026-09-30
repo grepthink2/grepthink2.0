@@ -16,12 +16,15 @@ const UNSUBSCRIBE_FAILED = 'Could not unsubscribe. Try again later.';
 type View =
   | { kind: 'checking' }
   | { kind: 'invalid' }
+  | { kind: 'unavailable' }
   | { kind: 'ready'; label: string }
   | { kind: 'done'; label: string };
 
 /**
  * `info` is what the backend said about the token: `undefined` until it answers, `null` when it
- * could not say. A link it cannot name a category for is no use, so it reads as not valid.
+ * could not say (a network failure, a rate limit, a server error, a backend without the endpoint
+ * yet). That says nothing about the link, so it is "unavailable", not "not valid": the reader can
+ * ask again. A link the backend answers for but cannot name a category for is no use either.
  */
 function viewOf(
   token: string | null,
@@ -31,7 +34,8 @@ function viewOf(
   if (result) return { kind: 'done', label: result.label };
   if (!token) return { kind: 'invalid' };
   if (info === undefined) return { kind: 'checking' };
-  if (info?.valid && info.label) return { kind: 'ready', label: info.label };
+  if (info === null) return { kind: 'unavailable' };
+  if (info.valid && info.label) return { kind: 'ready', label: info.label };
   return { kind: 'invalid' };
 }
 
@@ -41,11 +45,10 @@ function copyFor(view: View): { heading: string; text: string } {
       return { heading: 'Unsubscribe', text: 'Checking your link…' };
     case 'invalid':
       return { heading: 'Unsubscribe', text: "This unsubscribe link isn't valid. It may be incomplete." };
+    case 'unavailable':
+      return { heading: 'Unsubscribe', text: "We couldn't check your link right now. Try again in a minute." };
     case 'ready':
-      return {
-        heading: `Unsubscribe from ${view.label}?`,
-        text: `You'll stop getting ${view.label.toLowerCase()} from GrepThink.`,
-      };
+      return { heading: `Unsubscribe from ${view.label}?`, text: "You'll stop getting these emails from GrepThink." };
     case 'done':
       return {
         heading: 'Unsubscribed',
@@ -57,9 +60,13 @@ function copyFor(view: View): { heading: string; text: string } {
 /** One link's card. Keyed by its token (see `Unsubscribe`), so a new link starts from scratch. */
 const UnsubscribeCard: React.FC<{ token: string | null }> = ({ token }) => {
   const [info, setInfo] = React.useState<ApiUnsubscribeInfo | null | undefined>(undefined);
+  const [attempt, setAttempt] = React.useState(0);
   const [result, setResult] = React.useState<ApiUnsubscribeResult | null>(null);
   const [confirming, setConfirming] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // The heading stays on the page through every state, so it is where focus goes when the button
+  // the reader just used is disabled or replaced: focus on a control that goes away falls to the page.
+  const headingRef = React.useRef<HTMLHeadingElement>(null);
 
   React.useEffect(() => {
     if (!token) return;
@@ -70,10 +77,17 @@ const UnsubscribeCard: React.FC<{ token: string | null }> = ({ token }) => {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, attempt]);
+
+  const checkAgain = () => {
+    headingRef.current?.focus();
+    setInfo(undefined);
+    setAttempt((n) => n + 1);
+  };
 
   const confirm = async () => {
     if (!token) return;
+    headingRef.current?.focus();
     setConfirming(true);
     setError(null);
     try {
@@ -90,11 +104,18 @@ const UnsubscribeCard: React.FC<{ token: string | null }> = ({ token }) => {
 
   return (
     <>
-      <h1 className="unsubscribe__title">{heading}</h1>
+      <h1 ref={headingRef} tabIndex={-1} className="unsubscribe__title">
+        {heading}
+      </h1>
       {/* One paragraph whose text follows the page's state, so a screen reader announces each change. */}
       <p className="unsubscribe__text" aria-live="polite">
         {text}
       </p>
+      {view.kind === 'unavailable' && (
+        <button type="button" className="unsubscribe__button" onClick={checkAgain}>
+          Try again
+        </button>
+      )}
       {view.kind === 'ready' && (
         <button type="button" className="unsubscribe__button" onClick={confirm} disabled={confirming}>
           {confirming ? 'Unsubscribing…' : 'Unsubscribe'}

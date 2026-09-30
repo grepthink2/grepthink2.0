@@ -1,9 +1,22 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
-import { api, type ApiEmailPreference } from '@/lib/api';
+import { api, ApiError, type ApiEmailPreference } from '@/lib/api';
 
 const LOAD_FAILED = "Couldn't load your email settings.";
 const SAVE_FAILED = "Couldn't save that change. Try again.";
+
+/**
+ * What to tell the reader about a failed request: the backend's own text for a 400 (what was
+ * wrong) or a 503 (down for now, e.g. "Email preferences are not available yet"), else `fallback`.
+ * Any other failure would show a status code, a server message ("Internal server error") or the
+ * browser's own ("Failed to fetch").
+ */
+function messageFor(err: unknown, fallback: string): string {
+  if (err instanceof ApiError && (err.status === 400 || err.status === 503)) {
+    if (typeof err.detail === 'string' && err.detail) return err.detail;
+  }
+  return fallback;
+}
 
 /** One switch per category of optional email, saved as soon as it is flipped. */
 const PreferenceSwitches: React.FC<{ initial: ApiEmailPreference[] }> = ({ initial }) => {
@@ -39,7 +52,7 @@ const PreferenceSwitches: React.FC<{ initial: ApiEmailPreference[] }> = ({ initi
       setPreferences(saved.preferences);
     } catch (err) {
       setPreferences(before);
-      setError(err instanceof Error ? err.message : SAVE_FAILED);
+      setError(messageFor(err, SAVE_FAILED));
     } finally {
       setSaving(false);
     }
@@ -94,6 +107,9 @@ const EmailPreferences: React.FC = () => {
   const [preferences, setPreferences] = useState<ApiEmailPreference[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // The heading stays through every state, so it is where focus goes when "Try again" is replaced
+  // by the loading text: focus on a control that goes away falls to the page.
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,7 +119,7 @@ const EmailPreferences: React.FC = () => {
         if (!cancelled) setPreferences(res.preferences);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setLoadError(err instanceof Error ? err.message : LOAD_FAILED);
+        if (!cancelled) setLoadError(messageFor(err, LOAD_FAILED));
       });
     return () => {
       cancelled = true;
@@ -111,13 +127,16 @@ const EmailPreferences: React.FC = () => {
   }, [attempt]);
 
   const retry = () => {
+    headingRef.current?.focus();
     setLoadError(null);
     setAttempt((n) => n + 1);
   };
 
   return (
     <>
-      <h3 className="settings-modal__section-title">Email</h3>
+      <h3 ref={headingRef} tabIndex={-1} className="settings-modal__section-title">
+        Email
+      </h3>
       <p className="settings-modal__section-subtitle">
         Choose which emails GrepThink sends you. Class invites and verification codes are always sent.
       </p>

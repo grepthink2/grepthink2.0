@@ -4,6 +4,13 @@ import type { ApiEmailPreference, ApiUnsubscribeInfo, ApiUnsubscribeResult } fro
 
 const UNSUBSCRIBE_FAILED = 'Could not unsubscribe. Try again later.';
 
+/**
+ * The statuses whose `detail` is written for the reader: a 400 says what is wrong with the link,
+ * a 503 that the service is down for now. Any other failure's `detail` is a server message
+ * ("Internal server error", "Not Found") that would only confuse them.
+ */
+const READABLE_DETAIL_STATUSES = [400, 503];
+
 /** The answer to a link: either not valid, or valid with the category's name to show. */
 function isUnsubscribeInfo(body: unknown): body is ApiUnsubscribeInfo {
   if (!body || typeof body !== 'object') return false;
@@ -55,7 +62,7 @@ export const emailApi = {
 
   /**
    * Turns off the link's category. Throws an `Error` whose message is fit to show: the backend's
-   * `detail` when it sends text (a 400 for a link it does not accept), else a generic one.
+   * `detail` for a 400 (a link it does not accept) or a 503, else a generic one.
    */
   confirmUnsubscribe: async (token: string): Promise<ApiUnsubscribeResult> => {
     let response: Response;
@@ -68,7 +75,8 @@ export const emailApi = {
       | (Partial<ApiUnsubscribeResult> & { detail?: unknown })
       | null;
     if (!response.ok) {
-      throw new Error(typeof body?.detail === 'string' && body.detail ? body.detail : UNSUBSCRIBE_FAILED);
+      const detail = READABLE_DETAIL_STATUSES.includes(response.status) ? body?.detail : undefined;
+      throw new Error(typeof detail === 'string' && detail ? detail : UNSUBSCRIBE_FAILED);
     }
     if (body?.unsubscribed !== true || typeof body.category !== 'string' || typeof body.label !== 'string') {
       throw new Error(UNSUBSCRIBE_FAILED);

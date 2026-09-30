@@ -22,12 +22,17 @@
     }
   }
 
+  // The heading takes focus after an action (see Unsubscribe.tsx): it is as wide as its text, so the
+  // focus ring wraps the words and not the whole card, and the radius rounds the ring.
   &__title {
+    width: fit-content;
+    max-width: 100%;
     font-family: $primary-font;
     font-size: $font-size-header;
     font-weight: $font-weight-semibold;
     color: $text-primary;
-    margin: 0 0 12px;
+    margin: 0 auto 12px;
+    border-radius: $border-radius-sm;
   }
 
   &__text {

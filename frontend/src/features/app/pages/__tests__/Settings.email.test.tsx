@@ -12,12 +12,17 @@ vi.mock('@/lib/auth', () => ({ useAuth: () => session }));
 vi.mock('@/lib/classContext', () => ({ useClass: () => ({ classes: [] }) }));
 vi.mock('@/lib/institutions', () => ({ useInstitutions: () => [] }));
 vi.mock('@/lib/supabaseClient', () => ({ supabase: { storage: { from: vi.fn() } } }));
-vi.mock('@/lib/api', () => ({
-  apiRequest: vi.fn(),
-  api: { checkEmail: vi.fn(), getEmailPreferences: vi.fn(), updateEmailPreferences: vi.fn() },
-}));
+vi.mock('@/lib/api', async () => {
+  // The real error class: the section reads its status and detail.
+  const { ApiError } = await vi.importActual<typeof import('@/lib/api')>('@/lib/api');
+  return {
+    ApiError,
+    apiRequest: vi.fn(),
+    api: { checkEmail: vi.fn(), getEmailPreferences: vi.fn(), updateEmailPreferences: vi.fn() },
+  };
+});
 
-import { api, apiRequest } from '@/lib/api';
+import { api, apiRequest, ApiError } from '@/lib/api';
 import Settings from '../Settings';
 
 const REMINDERS: ApiEmailPreference = {
@@ -33,6 +38,36 @@ const DIGESTS: ApiEmailPreference = {
   enabled: true,
 };
 const PROFILE = { id: 'u1', email: 'ann@gmail.com', role: 'student', first_name: 'Ann', last_name: 'Lee' };
+
+const LOAD_FAILED = "Couldn't load your email settings.";
+const SAVE_FAILED = "Couldn't save that change. Try again.";
+
+/** The 503 the backend answers with before its preferences migration is applied. */
+const unavailable = () =>
+  new ApiError(503, 'Email preferences are not available yet', 'Request failed with status 503');
+
+/**
+ * A failed request, and the text the reader should see for it: the backend's own for a 400 or a
+ * 503 that has some, `null` (the section's fixed line) for everything else.
+ */
+const FAILURES: [string, () => Error, string | null][] = [
+  ['a 503 with its text', unavailable, 'Email preferences are not available yet'],
+  [
+    'a 400 with its text',
+    () => new ApiError(400, 'Unknown email category: x', 'Request failed with status 400'),
+    'Unknown email category: x',
+  ],
+  [
+    'a 500 with a server message',
+    () => new ApiError(500, 'Internal server error', 'Request failed with status 500', 'internal_error'),
+    null,
+  ],
+  ['a 500 with no text', () => new ApiError(500, undefined, 'Request failed with status 500'), null],
+  ['a 503 with no text', () => new ApiError(503, undefined, 'Request failed with status 503'), null],
+  ['a 404', () => new ApiError(404, 'Not Found', 'Request failed with status 404'), null],
+  ['a network failure', () => new TypeError('Failed to fetch'), null],
+  ['a missing session', () => new Error('No authentication token available'), null],
+];
 
 function deferred<T>() {
   let resolve: (value: T) => void = () => {};
@@ -162,7 +197,7 @@ describe('Settings — Email', () => {
 
     it('shows why it could not load, offers Try again, and reads them again when asked', async () => {
       vi.mocked(api.getEmailPreferences)
-        .mockRejectedValueOnce(new Error('Email preferences are not available yet'))
+        .mockRejectedValueOnce(unavailable())
         .mockResolvedValueOnce({ preferences: [REMINDERS, DIGESTS] });
       const user = await openEmailSection();
 
@@ -178,10 +213,36 @@ describe('Settings — Email', () => {
       expect(api.getEmailPreferences).toHaveBeenCalledTimes(2);
     });
 
+    it.each(FAILURES)('tells the reader only what is fit to read when loading fails with %s', async (_case, failure, shown) => {
+      vi.mocked(api.getEmailPreferences).mockRejectedValue(failure());
+      await openEmailSection();
+
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toBe(shown ?? LOAD_FAILED);
+      expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    });
+
+    it('moves focus to the heading when Try again is pressed, and leaves it there', async () => {
+      const second = deferred<{ preferences: ApiEmailPreference[] }>();
+      vi.mocked(api.getEmailPreferences).mockRejectedValueOnce(unavailable()).mockReturnValueOnce(second.promise);
+      const user = await openEmailSection();
+
+      await user.click(await screen.findByRole('button', { name: 'Try again' }));
+
+      // The button is gone; focus did not drop to the page.
+      expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Email' })).toHaveFocus();
+
+      await act(async () => second.resolve({ preferences: [REMINDERS, DIGESTS] }));
+
+      expect(reminders()).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Email' })).toHaveFocus();
+    });
+
     it('goes back to loading while Try again waits, and can fail again', async () => {
       const second = deferred<{ preferences: ApiEmailPreference[] }>();
       vi.mocked(api.getEmailPreferences)
-        .mockRejectedValueOnce(new Error('first failure'))
+        .mockRejectedValueOnce(unavailable())
         .mockReturnValueOnce(second.promise);
       const user = await openEmailSection();
       await screen.findByRole('alert');
@@ -190,8 +251,8 @@ describe('Settings — Email', () => {
       expect(screen.getByRole('status')).toHaveTextContent('Loading…');
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
-      await act(async () => second.reject(new Error('second failure')));
-      expect(await screen.findByRole('alert')).toHaveTextContent('second failure');
+      await act(async () => second.reject(new ApiError(503, 'Still not available', 'Request failed with status 503')));
+      expect(await screen.findByRole('alert')).toHaveTextContent('Still not available');
       expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     });
 
@@ -281,7 +342,7 @@ describe('Settings — Email', () => {
     });
 
     it('puts the switch back and shows the error when the save fails', async () => {
-      vi.mocked(api.updateEmailPreferences).mockRejectedValue(new Error('Email preferences are not available yet'));
+      vi.mocked(api.updateEmailPreferences).mockRejectedValue(unavailable());
       const user = await openEmailSection();
 
       await user.click(await screen.findByRole('switch', { name: 'Deadline reminders' }));
@@ -293,9 +354,21 @@ describe('Settings — Email', () => {
       expect(digests()).toBeEnabled();
     });
 
+    it.each(FAILURES)('puts the switch back and tells the reader only what is fit to read when saving fails with %s', async (_case, failure, shown) => {
+      vi.mocked(api.updateEmailPreferences).mockRejectedValue(failure());
+      const user = await openEmailSection();
+
+      await user.click(await screen.findByRole('switch', { name: 'Deadline reminders' }));
+
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toBe(shown ?? SAVE_FAILED);
+      expect(reminders()).toBeChecked();
+      expect(reminders()).toBeEnabled();
+    });
+
     it('clears the error when the next save starts', async () => {
       vi.mocked(api.updateEmailPreferences)
-        .mockRejectedValueOnce(new Error('Email preferences are not available yet'))
+        .mockRejectedValueOnce(unavailable())
         .mockResolvedValueOnce({ preferences: [REMINDERS, { ...DIGESTS, enabled: false }] });
       const user = await openEmailSection();
 
@@ -335,9 +408,9 @@ describe('Settings — Email', () => {
 
       await user.keyboard(' ');
       dropFocusFrom(control);
-      await act(async () => save.reject(new Error("Couldn't save")));
+      await act(async () => save.reject(unavailable()));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't save");
+      expect(await screen.findByRole('alert')).toHaveTextContent('Email preferences are not available yet');
       expect(control).toBeChecked();
       expect(control).toHaveFocus();
     });
