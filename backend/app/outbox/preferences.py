@@ -190,9 +190,10 @@ def suppress(client, email: str, reason: str, detail: str | None = None) -> None
 # -- unsubscribe tokens ----------------------------------------------------------------------
 #
 # ``<user id>.<category>.<signature>``, the signature being the unpadded URL-safe base64 of
-# HMAC-SHA256 over ``unsubscribe:v1:<user id>:<category>``. A token names one user and one
-# category, and nothing is stored. It sits in emails for as long as people keep them, so the
-# format and the key are not changed lightly: either one breaks every link already sent.
+# HMAC-SHA256 over ``unsubscribe:v1:<user id>:<category>`` and the user id a lower-case,
+# hyphenated UUID. A token names one user and one category, and nothing is stored. It sits in
+# emails for as long as people keep them, so the format and the key are not changed lightly:
+# either one breaks every link already sent.
 
 #: Mixed into the key derived from ``SUPABASE_JWT_SECRET``, so the unsubscribe key is not the
 #: JWT secret itself and nothing signed with one can be replayed as the other.
@@ -219,21 +220,23 @@ def _signature(key: bytes, user_id: str, category: str) -> str:
 
 
 def _canonical_uuid(value: object) -> str | None:
-    """The lower-case, hyphenated UUID that ``value`` spells, or ``None`` if it is not one."""
-    if not isinstance(value, str):
-        return None
+    """The lower-case, hyphenated UUID that ``value`` spells, or ``None`` if it is not one.
+
+    ``value`` is a string or a ``uuid.UUID`` (any typed id that prints as a UUID will do).
+    """
     try:
-        return str(uuid.UUID(value))
-    except ValueError:
+        return str(uuid.UUID(str(value)))
+    except (ValueError, TypeError, AttributeError):
         return None
 
 
-def make_unsubscribe_token(user_id: str, category: str) -> str | None:
+def make_unsubscribe_token(user_id: str | uuid.UUID, category: str) -> str | None:
     """A signed token that switches ``category`` off for ``user_id``, or ``None`` if none can be made.
 
-    ``None`` for a category this code does not have, a ``user_id`` that is not a UUID (either
-    would make a token ``read_unsubscribe_token`` refuses), and when no key is configured. The
-    user id is written in its canonical spelling, which is also what the signature covers.
+    ``user_id`` is a string or a ``uuid.UUID``. ``None`` for a category this code does not have,
+    a ``user_id`` that is not a UUID (either would make a token ``read_unsubscribe_token``
+    refuses), and when no key is configured. The user id is written in its canonical spelling,
+    which is also what the signature covers.
     """
     key = _signing_key()
     user = _canonical_uuid(user_id)
@@ -247,8 +250,9 @@ def read_unsubscribe_token(token: str) -> tuple[str, str] | None:
 
     Never raises: the token comes straight out of a URL. ``None`` for anything malformed, signed
     with another key, made for another user or category, or for a category this code no longer
-    has. The user id comes back in its canonical lower-case spelling; the signature covers that
-    spelling, so another way of writing the same id still verifies.
+    has. The user id must be spelled the way ``make_unsubscribe_token`` writes it (lower-case,
+    hyphenated, ASCII): ``uuid.UUID`` also reads it upper-cased, in braces, without hyphens or
+    in non-ASCII digits, but no such token was ever made.
     """
     key = _signing_key()
     if key is None or not isinstance(token, str):
@@ -256,17 +260,16 @@ def read_unsubscribe_token(token: str) -> tuple[str, str] | None:
     parts = token.split(".")
     if len(parts) != 3:
         return None
-    raw_user, category, signature = parts
-    user = _canonical_uuid(raw_user)
+    user, category, signature = parts
     # compare_digest raises on non-ASCII text, and no signature we made contains any.
-    if user is None or category not in CATEGORIES or not signature.isascii():
+    if _canonical_uuid(user) != user or category not in CATEGORIES or not signature.isascii():
         return None
     if not hmac.compare_digest(signature, _signature(key, user, category)):
         return None
     return user, category
 
 
-def unsubscribe_links(user_id: str, category: str) -> tuple[str | None, str | None]:
+def unsubscribe_links(user_id: str | uuid.UUID, category: str) -> tuple[str | None, str | None]:
     """``(page_url, one_click_url)`` that switch ``category`` off for ``user_id``.
 
     ``page_url`` is the frontend page a person opens from the email. ``one_click_url`` is the API

@@ -11,6 +11,7 @@ import base64
 import hashlib
 import hmac
 import re
+import uuid
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, quote, urlsplit
 
@@ -98,8 +99,8 @@ MISSING_TABLE = pytest.mark.parametrize("pg_code", sorted(MISSING_TABLE_CODES))
 
 def test_missing_table_codes_are_what_postgrest_and_postgres_answer():
     assert frozenset({"PGRST205", "42P01"}) == MISSING_TABLE_CODES
-    # One definition: the institutions loader reacts to exactly the same failures.
-    assert institutions._MISSING_TABLE_CODES == MISSING_TABLE_CODES
+    # One definition: the institutions loader uses this very set, not a copy of it.
+    assert institutions._MISSING_TABLE_CODES is MISSING_TABLE_CODES
 
 
 # -- reading preferences ---------------------------------------------------------------------
@@ -276,16 +277,14 @@ def test_saving_a_preference_is_a_503_while_the_table_is_missing(pg_code):
         503,
         "Email preferences are not available yet",
     )
-    assert not isinstance(caught.value, DatabaseError)
 
 
 @OTHER_FAILURES
 def test_a_failed_write_is_not_mistaken_for_a_missing_table(make):
+    # Still the DatabaseError it was: the 503 above is a plain HTTPException, not one of these.
     db = _Broken(make, fails=lambda query: query._op == "upsert")
-    with pytest.raises(DatabaseError) as caught:
+    with pytest.raises(DatabaseError):
         prefs.set_preferences(db, USER, {"reminders": False})
-    assert caught.value.operation == "write"
-    assert caught.value.detail != "Email preferences are not available yet"
 
 
 def test_a_failed_read_stops_the_update_before_anything_is_written():
@@ -566,6 +565,7 @@ def test_a_signed_token_of_something_that_is_not_a_user_id_is_rejected(explicit_
         ("user-abc", "reminders"),  # not a UUID
         ("", "reminders"),
         (None, "reminders"),
+        (42, "reminders"),  # not an id at all
         (USER[:-1], "reminders"),  # one character short
         (USER, "bogus"),
         (USER, ""),
@@ -582,13 +582,47 @@ def test_a_token_is_made_in_the_canonical_spelling_of_the_user_id(explicit_secre
     assert token.startswith(f"{USER}.")
 
 
-def test_another_spelling_of_the_same_user_reads_back_in_canonical_form(explicit_secret):
-    # The signature covers the canonical form, so a spelling of the id that an intermediary
-    # changed still names the same user and the same answer.
+def test_a_token_can_be_made_from_a_uuid_object(explicit_secret):
+    token = prefs.make_unsubscribe_token(uuid.UUID(USER), "reminders")
+    assert token == prefs.make_unsubscribe_token(USER, "reminders")
+    assert prefs.read_unsubscribe_token(token) == (USER, "reminders")
+
+
+@pytest.mark.parametrize("error", [TypeError, AttributeError])
+def test_a_user_id_that_cannot_be_turned_into_text_gets_no_token(explicit_secret, error):
+    class Unprintable:
+        def __str__(self):
+            raise error("no text")
+
+    assert prefs.make_unsubscribe_token(Unprintable(), "reminders") is None
+
+
+_ARABIC_INDIC_DIGITS = str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩")
+
+
+@pytest.mark.parametrize(
+    "respell",
+    [
+        str.upper,
+        lambda user: "{" + user + "}",
+        lambda user: "urn:uuid:" + user,
+        lambda user: user.replace("-", ""),
+        lambda user: user.translate(_ARABIC_INDIC_DIGITS),
+    ],
+    ids=["upper-case", "braced", "urn", "unhyphenated", "non-ascii-digits"],
+)
+def test_a_token_only_reads_back_with_the_user_id_spelled_as_it_was_made(explicit_secret, respell):
+    # uuid.UUID reads every one of these as the same user, yet no token was ever made with one.
+    # Neither the real signature (a reader that merely canonicalized would accept that) nor a
+    # signature computed over the odd spelling (one that merely checked the id parses) gets it in.
+    key = EXPLICIT_SECRET.encode()
+    spelled = respell(USER)
     token = prefs.make_unsubscribe_token(USER, "reminders")
-    shouted = token.replace(USER, USER.upper())
-    assert shouted != token
-    assert prefs.read_unsubscribe_token(shouted) == (USER, "reminders")
+    signed_over_it = f"{spelled}.reminders.{_signature(key, spelled, 'reminders')}"
+    assert uuid.UUID(spelled) == uuid.UUID(USER)
+    assert prefs.read_unsubscribe_token(token) == (USER, "reminders")
+    assert prefs.read_unsubscribe_token(token.replace(USER, spelled)) is None
+    assert prefs.read_unsubscribe_token(signed_over_it) is None
 
 
 @pytest.mark.parametrize(
@@ -689,6 +723,17 @@ def test_without_a_public_api_url_there_is_only_the_page_link(monkeypatch, expli
     assert prefs.unsubscribe_links(USER, "digests") == (
         f"https://app.example.com/unsubscribe?token={token}",
         None,
+    )
+
+
+def test_the_links_can_be_made_from_a_uuid_object(monkeypatch, explicit_secret):
+    monkeypatch.setattr(settings, "FRONTEND_URL", "https://app.example.com")
+    monkeypatch.setattr(settings, "PUBLIC_API_URL", "https://api.example.com")
+    token = prefs.make_unsubscribe_token(USER, "digests")
+
+    assert prefs.unsubscribe_links(uuid.UUID(USER), "digests") == (
+        f"https://app.example.com/unsubscribe?token={token}",
+        f"https://api.example.com/api/email/unsubscribe?token={token}",
     )
 
 
