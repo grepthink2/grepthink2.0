@@ -1,7 +1,7 @@
 /** Settings' Email section: one switch per category of optional email, saved as it is flipped. */
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiEmailPreference } from '@/lib/api';
 
 const session = vi.hoisted(() => ({
@@ -23,6 +23,7 @@ vi.mock('@/lib/api', async () => {
 });
 
 import { api, apiRequest, ApiError } from '@/lib/api';
+import { assertWritableRequest, ReadOnlyPreviewError, setReadOnly } from '@/lib/previewGuard';
 import Settings from '../Settings';
 
 const REMINDERS: ApiEmailPreference = {
@@ -113,6 +114,9 @@ describe('Settings — Email', () => {
     );
     vi.mocked(api.getEmailPreferences).mockResolvedValue({ preferences: [REMINDERS, DIGESTS] });
   });
+
+  // The preview guard is module state: leave it off for the next test.
+  afterEach(() => setReadOnly(false));
 
   describe('the section', () => {
     it('starts on Profile and only reads the preferences when Email is opened', async () => {
@@ -364,6 +368,26 @@ describe('Settings — Email', () => {
       expect(alert.textContent).toBe(shown ?? SAVE_FAILED);
       expect(reminders()).toBeChecked();
       expect(reminders()).toBeEnabled();
+    });
+
+    it('says the preview is read-only, in its own words, when "View class as student" refuses the save', async () => {
+      // The real guard, which apiRequest runs before a write leaves the browser.
+      setReadOnly(true);
+      vi.mocked(api.updateEmailPreferences).mockImplementation(async () => {
+        assertWritableRequest('PUT');
+        return { preferences: [] };
+      });
+      const user = await openEmailSection();
+
+      await user.click(await screen.findByRole('switch', { name: 'Deadline reminders' }));
+
+      const alert = await screen.findByRole('alert');
+      expect(alert.textContent).toBe(new ReadOnlyPreviewError().message);
+      expect(alert.textContent).not.toBe(SAVE_FAILED);
+      // Put back, and usable again.
+      expect(reminders()).toBeChecked();
+      expect(reminders()).toBeEnabled();
+      expect(digests()).toBeEnabled();
     });
 
     it('clears the error when the next save starts', async () => {

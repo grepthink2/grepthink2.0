@@ -494,10 +494,7 @@ $settings-close-size: 30px;
       border-right: none;
       border-bottom: 1px solid $border-color;
       flex-direction: row;
-      // A tab that does not fit drops to a second row instead of running under the button.
-      flex-wrap: wrap;
       align-items: center;
-      gap: $spacing-xs $spacing-md;
       flex-shrink: 0;
     }
 
@@ -522,8 +519,13 @@ $settings-close-size: 30px;
       top: $spacing-md - $spacing-xs;
     }
 
+    // The nav's only child in the flow is this list (the title is out of it), so the tabs wrap here:
+    // one that does not fit drops to a second row, which the nav's right padding also keeps clear
+    // of the close button.
     &__nav-list {
       flex-direction: row;
+      flex-wrap: wrap;
+      row-gap: $spacing-xs;
     }
 
     &__section {

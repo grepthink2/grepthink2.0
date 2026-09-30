@@ -1,17 +1,20 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { api, ApiError, type ApiEmailPreference } from '@/lib/api';
+import { ReadOnlyPreviewError } from '@/lib/previewGuard';
 
 const LOAD_FAILED = "Couldn't load your email settings.";
 const SAVE_FAILED = "Couldn't save that change. Try again.";
 
 /**
  * What to tell the reader about a failed request: the backend's own text for a 400 (what was
- * wrong) or a 503 (down for now, e.g. "Email preferences are not available yet"), else `fallback`.
- * Any other failure would show a status code, a server message ("Internal server error") or the
- * browser's own ("Failed to fetch").
+ * wrong) or a 503 (down for now, e.g. "Email preferences are not available yet"), and the
+ * preview's own for a save that "View class as student" refused before it left the browser
+ * ("Read-only preview — changes are disabled."); else `fallback`. Any other failure would show a
+ * status code, a server message ("Internal server error") or the browser's own ("Failed to fetch").
  */
 function messageFor(err: unknown, fallback: string): string {
+  if (err instanceof ReadOnlyPreviewError) return err.message;
   if (err instanceof ApiError && (err.status === 400 || err.status === 503)) {
     if (typeof err.detail === 'string' && err.detail) return err.detail;
   }
