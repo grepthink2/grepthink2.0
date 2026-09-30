@@ -304,6 +304,134 @@
     flex-shrink: 0;
   }
 
+  // ── Email preferences ────────────────────────────────────────────────────
+
+  &__pref-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  &__pref {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-lg;
+    padding: $spacing-md 0;
+    border-bottom: 1px solid $border-color;
+
+    &:first-child {
+      padding-top: 0;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__pref-text {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    min-width: 0;
+  }
+
+  &__pref-label {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+    cursor: pointer;
+  }
+
+  &__pref-description {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+  }
+
+  &__pref-status {
+    margin: 0;
+    font-size: $font-size-base;
+    color: $text-tertiary;
+  }
+
+  // A native checkbox drawn as a switch (as CreateClassModal draws its checkbox): the input stays
+  // the focusable control, so the global focus ring lands on it, and role="switch" names it.
+  // The off track is --gt-gray-500, not a lighter gray, so that it keeps 3:1 against the white
+  // modal. The transparent borders are invisible, but forced colors (Windows High Contrast) drop
+  // backgrounds and shadows and paint borders: the track and the knob stay outlined, and the
+  // side the knob is on still shows whether the switch is on.
+  &__switch {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    position: relative;
+    flex-shrink: 0;
+    width: 40px;
+    height: 22px;
+    margin: 0;
+    border: 1px solid transparent;
+    border-radius: var(--gt-radius-pill);
+    background: var(--gt-gray-500);
+    cursor: pointer;
+    @include gt-transition(background);
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: 18px;
+      height: 18px;
+      border: 1px solid transparent;
+      border-radius: 50%;
+      background: $white;
+      box-shadow: var(--gt-shadow-card);
+      @include gt-transition(transform);
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--gt-gray-600);
+    }
+
+    &:checked {
+      background: $primary-color;
+
+      &::before {
+        transform: translateX(18px);
+      }
+
+      &:hover:not(:disabled) {
+        background: $primary-hover;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &__retry {
+    align-self: flex-start;
+    padding: 6px $spacing-md;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-family: $primary-font;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+    cursor: pointer;
+    @include gt-transition(background);
+
+    // index.css gives every button:hover an indigo border; keep the border's own color.
+    &:hover {
+      background: $background;
+      border-color: $border-color;
+    }
+  }
+
   // ── Footer ───────────────────────────────────────────────────────────────
 
   &__footer {

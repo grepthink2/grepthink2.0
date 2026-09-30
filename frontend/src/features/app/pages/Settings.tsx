@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Camera, UserPen, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Camera, UserPen, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 import { LinkedinIcon as Linkedin, GithubIcon as Github } from '@/components/icons/BrandIcons';
 import { useAuth } from '@/lib/auth';
 import { useClass } from '@/lib/classContext';
@@ -9,12 +9,15 @@ import { isSchoolEmail } from '@/lib/schoolEmail';
 import { supabase } from '@/lib/supabaseClient';
 import { apiRequest, api, type ApiProfile } from '@/lib/api';
 import EduVerifyModal from '@features/app/components/Settings/EduVerifyModal';
+import EmailPreferences from '@features/app/components/Settings/EmailPreferences';
 import './Settings.scss';
 
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+type SettingsSection = 'profile' | 'email';
 
 /** The open Settings modal: mounted each time Settings opens (see `Settings` below). */
 const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -27,6 +30,10 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const enrolledSomewhere = classes.some((c) => c.my_role !== 'instructor');
   const showStudentFields = !canCreateClasses || enrolledSomewhere;
   const primaryIsSchool = isSchoolEmail(user?.email, institutions ?? []);
+
+  // The Profile fields and their save state live here, not in the section, so edits survive a
+  // look at another section.
+  const [activeSection, setActiveSection] = useState<SettingsSection>('profile');
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -236,9 +243,25 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           <h2 className="settings-modal__nav-title">Settings</h2>
           <ul className="settings-modal__nav-list">
             <li>
-              <button type="button" className="settings-modal__nav-item settings-modal__nav-item--active">
+              <button
+                type="button"
+                className={`settings-modal__nav-item${activeSection === 'profile' ? ' settings-modal__nav-item--active' : ''}`}
+                aria-current={activeSection === 'profile' ? 'true' : undefined}
+                onClick={() => setActiveSection('profile')}
+              >
                 <UserPen size={16} />
                 Profile
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className={`settings-modal__nav-item${activeSection === 'email' ? ' settings-modal__nav-item--active' : ''}`}
+                aria-current={activeSection === 'email' ? 'true' : undefined}
+                onClick={() => setActiveSection('email')}
+              >
+                <Mail size={16} />
+                Email
               </button>
             </li>
           </ul>
@@ -246,176 +269,185 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         {/* Right body */}
         <div className="settings-modal__body">
-          <div className="settings-modal__section">
-            <h3 className="settings-modal__section-title">Profile</h3>
+          {activeSection === 'profile' && (
+            <>
+              <div className="settings-modal__section">
+                <h3 className="settings-modal__section-title">Profile</h3>
 
-            {/* Avatar */}
-            <div className="settings-modal__avatar-row">
-              <div className="settings-modal__avatar">
-                {displayAvatar ? (
-                  <img src={displayAvatar} alt="Profile avatar" className="settings-modal__avatar-img" />
-                ) : (
-                  <Camera size={26} className="settings-modal__avatar-icon" />
-                )}
-              </div>
-              <div className="settings-modal__avatar-actions">
-                <button
-                  type="button"
-                  className="settings-modal__avatar-change"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Change Avatar
-                </button>
-                <button
-                  type="button"
-                  className="settings-modal__avatar-remove"
-                  onClick={handleRemoveAvatar}
-                >
-                  Remove Avatar
-                </button>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="settings-modal__file-input"
-                onChange={handleFileChange}
-              />
-            </div>
-
-            {/* Name */}
-            <div className="settings-modal__row">
-              <div className="settings-modal__field">
-                <label className="settings-modal__label" htmlFor="sm-first-name">First Name</label>
-                <input
-                  id="sm-first-name"
-                  type="text"
-                  className="settings-modal__input"
-                  value={firstName}
-                  onChange={(e) => { setFirstName(e.target.value); setSaveStatus('idle'); }}
-                  placeholder="First name"
-                />
-              </div>
-              <div className="settings-modal__field">
-                <label className="settings-modal__label" htmlFor="sm-last-name">Last Name</label>
-                <input
-                  id="sm-last-name"
-                  type="text"
-                  className="settings-modal__input"
-                  value={lastName}
-                  onChange={(e) => { setLastName(e.target.value); setSaveStatus('idle'); }}
-                  placeholder="Last name"
-                />
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="settings-modal__field">
-              <label className="settings-modal__label" htmlFor="sm-email">Email Address</label>
-              <input
-                id="sm-email"
-                type="email"
-                className="settings-modal__input settings-modal__input--readonly"
-                value={user?.email ?? ''}
-                readOnly
-              />
-            </div>
-
-            {/* Roster school email — students and TAs */}
-            {showStudentFields && (
-              primaryIsSchool ? (
-                <div className="settings-modal__field">
-                  <label className="settings-modal__label" htmlFor="sm-school-email">School email</label>
+                {/* Avatar */}
+                <div className="settings-modal__avatar-row">
+                  <div className="settings-modal__avatar">
+                    {displayAvatar ? (
+                      <img src={displayAvatar} alt="Profile avatar" className="settings-modal__avatar-img" />
+                    ) : (
+                      <Camera size={26} className="settings-modal__avatar-icon" />
+                    )}
+                  </div>
+                  <div className="settings-modal__avatar-actions">
+                    <button
+                      type="button"
+                      className="settings-modal__avatar-change"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Change Avatar
+                    </button>
+                    <button
+                      type="button"
+                      className="settings-modal__avatar-remove"
+                      onClick={handleRemoveAvatar}
+                    >
+                      Remove Avatar
+                    </button>
+                  </div>
                   <input
-                    id="sm-school-email"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="settings-modal__file-input"
+                    onChange={handleFileChange}
+                  />
+                </div>
+
+                {/* Name */}
+                <div className="settings-modal__row">
+                  <div className="settings-modal__field">
+                    <label className="settings-modal__label" htmlFor="sm-first-name">First Name</label>
+                    <input
+                      id="sm-first-name"
+                      type="text"
+                      className="settings-modal__input"
+                      value={firstName}
+                      onChange={(e) => { setFirstName(e.target.value); setSaveStatus('idle'); }}
+                      placeholder="First name"
+                    />
+                  </div>
+                  <div className="settings-modal__field">
+                    <label className="settings-modal__label" htmlFor="sm-last-name">Last Name</label>
+                    <input
+                      id="sm-last-name"
+                      type="text"
+                      className="settings-modal__input"
+                      value={lastName}
+                      onChange={(e) => { setLastName(e.target.value); setSaveStatus('idle'); }}
+                      placeholder="Last name"
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div className="settings-modal__field">
+                  <label className="settings-modal__label" htmlFor="sm-email">Email Address</label>
+                  <input
+                    id="sm-email"
                     type="email"
                     className="settings-modal__input settings-modal__input--readonly"
                     value={user?.email ?? ''}
                     readOnly
                   />
                 </div>
-              ) : (
-                <div className="settings-modal__field">
-                  <label className="settings-modal__label" htmlFor="sm-edu-email">
-                    School email (roster email)
-                  </label>
-                  <input
-                    id="sm-edu-email"
-                    type="email"
-                    className="settings-modal__input"
-                    value={eduEmail}
-                    onChange={(e) => { setEduEmail(e.target.value); setSaveStatus('idle'); }}
-                    placeholder="you@university.edu"
-                  />
-                </div>
-              )
-            )}
 
-            {/* Portfolio — students only, no subtitle */}
-            {showStudentFields && (
-              <>
-                <div className="settings-modal__field">
-                  <label className="settings-modal__label" htmlFor="sm-linkedin">LinkedIn Username</label>
-                  <div className="settings-modal__input-group">
-                    <span className="settings-modal__prefix">
-                      <Linkedin size={13} />
-                      linkedin.com/in/
-                    </span>
-                    <input
-                      id="sm-linkedin"
-                      type="text"
-                      className="settings-modal__input settings-modal__input--grouped"
-                      value={linkedIn}
-                      onChange={(e) => { setLinkedIn(e.target.value); setSaveStatus('idle'); }}
-                      placeholder="your-username"
-                    />
-                  </div>
-                </div>
+                {/* Roster school email — students and TAs */}
+                {showStudentFields && (
+                  primaryIsSchool ? (
+                    <div className="settings-modal__field">
+                      <label className="settings-modal__label" htmlFor="sm-school-email">School email</label>
+                      <input
+                        id="sm-school-email"
+                        type="email"
+                        className="settings-modal__input settings-modal__input--readonly"
+                        value={user?.email ?? ''}
+                        readOnly
+                      />
+                    </div>
+                  ) : (
+                    <div className="settings-modal__field">
+                      <label className="settings-modal__label" htmlFor="sm-edu-email">
+                        School email (roster email)
+                      </label>
+                      <input
+                        id="sm-edu-email"
+                        type="email"
+                        className="settings-modal__input"
+                        value={eduEmail}
+                        onChange={(e) => { setEduEmail(e.target.value); setSaveStatus('idle'); }}
+                        placeholder="you@university.edu"
+                      />
+                    </div>
+                  )
+                )}
 
-                <div className="settings-modal__field">
-                  <label className="settings-modal__label" htmlFor="sm-github">GitHub Username</label>
-                  <div className="settings-modal__input-group">
-                    <span className="settings-modal__prefix">
-                      <Github size={13} />
-                      github.com/
-                    </span>
-                    <input
-                      id="sm-github"
-                      type="text"
-                      className="settings-modal__input settings-modal__input--grouped"
-                      value={github}
-                      onChange={(e) => { setGithub(e.target.value); setSaveStatus('idle'); }}
-                      placeholder="your-username"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+                {/* Portfolio — students only, no subtitle */}
+                {showStudentFields && (
+                  <>
+                    <div className="settings-modal__field">
+                      <label className="settings-modal__label" htmlFor="sm-linkedin">LinkedIn Username</label>
+                      <div className="settings-modal__input-group">
+                        <span className="settings-modal__prefix">
+                          <Linkedin size={13} />
+                          linkedin.com/in/
+                        </span>
+                        <input
+                          id="sm-linkedin"
+                          type="text"
+                          className="settings-modal__input settings-modal__input--grouped"
+                          value={linkedIn}
+                          onChange={(e) => { setLinkedIn(e.target.value); setSaveStatus('idle'); }}
+                          placeholder="your-username"
+                        />
+                      </div>
+                    </div>
 
-          {/* Sticky footer */}
-          <div className="settings-modal__footer">
-            {saveStatus === 'error' && (
-              <span className="settings-modal__feedback settings-modal__feedback--error">
-                <AlertCircle size={15} />
-                {errorMessage}
-              </span>
-            )}
-            {saveStatus === 'success' && (
-              <span className="settings-modal__feedback settings-modal__feedback--success">
-                <CheckCircle size={15} />
-                Changes saved.
-              </span>
-            )}
-            <button
-              type="button"
-              className="settings-modal__save"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? 'Saving…' : 'Save Changes'}
-            </button>
-          </div>
+                    <div className="settings-modal__field">
+                      <label className="settings-modal__label" htmlFor="sm-github">GitHub Username</label>
+                      <div className="settings-modal__input-group">
+                        <span className="settings-modal__prefix">
+                          <Github size={13} />
+                          github.com/
+                        </span>
+                        <input
+                          id="sm-github"
+                          type="text"
+                          className="settings-modal__input settings-modal__input--grouped"
+                          value={github}
+                          onChange={(e) => { setGithub(e.target.value); setSaveStatus('idle'); }}
+                          placeholder="your-username"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Sticky footer */}
+              <div className="settings-modal__footer">
+                {saveStatus === 'error' && (
+                  <span className="settings-modal__feedback settings-modal__feedback--error">
+                    <AlertCircle size={15} />
+                    {errorMessage}
+                  </span>
+                )}
+                {saveStatus === 'success' && (
+                  <span className="settings-modal__feedback settings-modal__feedback--success">
+                    <CheckCircle size={15} />
+                    Changes saved.
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="settings-modal__save"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </>
+          )}
+          {activeSection === 'email' && (
+            <div className="settings-modal__section">
+              <EmailPreferences />
+            </div>
+          )}
         </div>
       </div>
     </div>

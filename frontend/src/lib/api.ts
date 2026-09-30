@@ -8,6 +8,7 @@
  */
 import { authApi } from './api/auth';
 import { classesApi } from './api/classes';
+import { emailApi } from './api/email';
 import { institutionsApi } from './api/institutions';
 import { projectsApi } from './api/projects';
 import { assignmentsApi } from './api/assignments';
@@ -23,6 +24,7 @@ export { ApiError, apiRequest, apiUpload } from './api/client';
 export const api = {
   ...authApi,
   ...classesApi,
+  ...emailApi,
   ...institutionsApi,
   ...projectsApi,
   ...assignmentsApi,

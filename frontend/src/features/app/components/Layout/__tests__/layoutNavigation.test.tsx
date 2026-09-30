@@ -286,4 +286,27 @@ describe('opening a notification for another class', () => {
     await landsOn('/app/roster');
     expect(pagesVisited()).not.toContain('/app/dashboard');
   });
+
+  it('opens the Roster of the class an undeliverable invite was for, with that class selected', async () => {
+    // The same account: a TA in Alpha whose invite to a student of Beta, which they teach, bounced.
+    state.notifications = [
+      {
+        id: 'n2',
+        type: 'email_undeliverable',
+        title: "An email couldn't be delivered",
+        body: "Your invite to ann@example.com couldn't be delivered (mailbox full).",
+        entity_type: 'class',
+        entity_id: 'B',
+        read_at: null,
+        created_at: '2026-09-30T10:00:00Z',
+      } satisfies ApiNotification,
+    ];
+    await start('/app/ta-review', [cls('A', 'Alpha', 'ta'), cls('B', 'Beta', 'instructor')]);
+    fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
+    fireEvent.click(screen.getByText("An email couldn't be delivered"));
+    await landsOn('/app/roster');
+    // The page and the class commit together, and the page never shows under the old class.
+    expect(commits).toEqual(['/app/roster B']);
+    expect(pagesVisited()).not.toContain('/app/dashboard');
+  });
 });
