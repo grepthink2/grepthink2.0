@@ -154,8 +154,16 @@ def notify_email_undeliverable(
             entity_type="class" if class_id else None,
             entity_id=str(class_id) if class_id else None,
         )
-    except HTTPException:  # no service client to write with
-        logger.warning("notify_email_undeliverable: skipped | user_id=%s", user_id)
+    except DatabaseError:  # an HTTPException too, so caught first: this one is worth an event
+        logger.error(
+            "notify_email_undeliverable: could not save the notification | user_id=%s",
+            user_id,
+            exc_info=True,
+        )
+    except HTTPException:  # the 503 of a server without a service client: nothing to fix here
+        logger.warning(
+            "notify_email_undeliverable: skipped, no service client | user_id=%s", user_id
+        )
 
 
 def _upsert_unread_notification(

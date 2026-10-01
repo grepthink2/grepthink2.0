@@ -1,8 +1,8 @@
 """The email outbox engine (app.outbox.controller) and the kinds of email it sends (app.outbox.kinds).
 
-Everything runs against FakeSupabase, with a claim function that does in Python what
-``claim_email_outbox`` does in SQL (backend/database/migrations/2026-09-30_email_outbox.sql) and
-a stand-in for ``email_transport.send`` that records each message. Time belongs to the tests:
+Everything runs against FakeSupabase, with the doubles of tests/outbox_support.py: a claim
+function that does in Python what ``claim_email_outbox`` does in SQL, a stand-in for
+``email_transport.send`` that records each message, and a clock. Time belongs to the tests:
 ``_now`` and ``_monotonic`` are patched, so leases, backoff and budgets are exact.
 """
 
@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import re
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -36,9 +36,7 @@ from app.utils.email_transport import (
     reference_id_for,
 )
 from tests.fake_supabase import FakeSupabase
-
-NOW = datetime(2026, 9, 30, 12, 0, tzinfo=UTC)
-START = 1_000.0  # the monotonic clock when a test begins
+from tests.outbox_support import NOW, START, Clock, Mailbox, claim_function
 
 INSTRUCTOR = "11111111-2222-4333-8444-555555555555"
 STUDENT = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"
@@ -99,89 +97,6 @@ MISCONFIGURED = [
 
 
 # -- time, mail and the database ---------------------------------------------------------------
-
-
-class Clock:
-    """What the outbox reads as the time: a wall clock for timestamps, a monotonic one for budgets."""
-
-    def __init__(self):
-        self.wall = NOW
-        self.mono = START
-
-    def now(self) -> datetime:
-        return self.wall
-
-    def monotonic(self) -> float:
-        return self.mono
-
-    def advance(self, seconds: float) -> None:
-        self.wall += timedelta(seconds=seconds)
-        self.mono += seconds
-
-
-class Mailbox:
-    """Stands in for ``email_transport.send``: records every message and fails on request.
-
-    Each send takes ``seconds_per_send`` on the clock; ``started`` holds when each began, in
-    seconds from the start of the test. A send to an address in ``failures`` raises that error;
-    any other returns ``ref-<n>``, n counting the messages sent so far.
-    """
-
-    def __init__(self, clock: Clock):
-        self.clock = clock
-        self.attempts: list[EmailMessage] = []
-        self.sent: list[EmailMessage] = []
-        self.started: list[float] = []
-        self.failures: dict[str, Exception] = {}
-        self.seconds_per_send = 0.0
-
-    def fail(self, address: str, error: Exception) -> None:
-        self.failures[address] = error
-
-    def send(self, message: EmailMessage) -> str:
-        self.attempts.append(message)
-        self.started.append(self.clock.monotonic() - START)
-        self.clock.advance(self.seconds_per_send)
-        error = self.failures.get(message.to)
-        if error is not None:
-            raise error
-        self.sent.append(message)
-        return f"ref-{len(self.sent)}"
-
-
-def _ts(value) -> datetime:
-    return datetime.fromisoformat(value) if isinstance(value, str) else value
-
-
-def claim_function(db: FakeSupabase, clock: Clock):
-    """``claim_email_outbox(p_limit, p_lease_seconds)`` in Python, against ``db``'s rows."""
-
-    def claim(params: dict) -> list[dict]:
-        now = clock.now()
-        due = [
-            row
-            for row in db.rows("email_outbox")
-            if (row["status"] == "pending" and _ts(row["next_attempt_at"]) <= now)
-            or (
-                row["status"] == "sending"
-                and row["locked_until"] is not None
-                and _ts(row["locked_until"]) < now
-            )
-        ]
-        due.sort(key=lambda row: _ts(row["next_attempt_at"]))
-        locked_until = (now + timedelta(seconds=params["p_lease_seconds"])).isoformat()
-        claimed = []
-        for row in due[: max(params["p_limit"], 0)]:
-            row.update(
-                status="sending",
-                attempts=row["attempts"] + 1,
-                locked_until=locked_until,
-                updated_at=now.isoformat(),
-            )
-            claimed.append(dict(row))
-        return claimed
-
-    return claim
 
 
 class FailingDb(FakeSupabase):
@@ -684,6 +599,52 @@ def test_a_rejected_address_fails_the_row_and_tells_whoever_queued_it(db, mail, 
             f"email_outbox: refused by the mail server | kind=class_invite row={row.id} "
             "attempts=1 error=Maileroo rejected the email (HTTP 400)",
         )
+    ]
+
+
+def test_a_run_of_refusals_is_one_error(db, mail, caplog):
+    # A sender the provider stopped trusting refuses everyone: someone has to hear of it.
+    rows = [queued(f"{name}@ucsc.edu") for name in "abcd"]
+    for row in rows[:3]:
+        mail.fail(row.to_email, PermanentEmailError("550 sender rejected"))
+
+    with caplog.at_level(logging.WARNING, logger="app.outbox.controller"):
+        outcomes = send_owned(*rows)
+
+    assert list(outcomes.values()) == ["failed", "failed", "failed", "sent"]
+    refusals = [m for level, m in outbox_logs(caplog) if "refused by the mail server" in m]
+    assert len(refusals) == 4  # one WARNING per row, then the run's ERROR
+    assert error_logs(caplog) == [
+        "email_outbox: 3 emails refused by the mail server in one run | kinds=class_invite"
+    ]
+
+
+def test_two_refusals_are_no_error(db, mail, caplog):
+    rows = [queued(f"{name}@ucsc.edu") for name in "ab"]
+    for row in rows:
+        mail.fail(row.to_email, PermanentEmailError("550 no such user"))
+
+    with caplog.at_level(logging.WARNING, logger="app.outbox.controller"):
+        send_owned(*rows)
+
+    assert error_logs(caplog) == []
+
+
+def test_refusals_are_counted_across_the_batches_of_a_tick(db, mail, monkeypatch, caplog):
+    monkeypatch.setattr(outbox, "CLAIM_BATCH", 2)
+    custom = {"subject": "Welcome", "body_text": "Hello"}
+    stored(db, queued("a@ucsc.edu"))
+    stored(db, queued("b@ucsc.edu", kind="custom_invite", payload=custom))
+    stored(db, queued("c@ucsc.edu"))
+    for address in ("a@ucsc.edu", "b@ucsc.edu", "c@ucsc.edu"):
+        mail.fail(address, PermanentEmailError("550 sender rejected"))
+
+    with caplog.at_level(logging.WARNING, logger="app.outbox.controller"):
+        assert tick() == {**NO_COUNTS, "claimed": 3, "failed": 3}
+
+    assert error_logs(caplog) == [
+        "email_outbox: 3 emails refused by the mail server in one run "
+        "| kinds=class_invite,custom_invite"
     ]
 
 
@@ -1262,22 +1223,36 @@ def test_rows_a_tick_puts_back_take_one_update_per_attempt_count(db, mail):
     assert [row_of(db, record["id"])["attempts"] for record in records[2:]] == [2, 0, 0]
 
 
-def test_putting_owned_rows_back_uncounts_their_attempt_and_skips_rows_not_leased(db, mail, caplog):
+def test_putting_owned_rows_back_uncounts_their_attempt(db, mail):
     twice = leased(db, queued("a@ucsc.edu"), attempts=2)
-    waiting = stored(db, queued("b@ucsc.edu"))  # pending: never leased to this caller
-    waiting_before = dict(waiting)
 
-    with caplog.at_level(logging.WARNING, logger="app.outbox.controller"):
-        outcomes = deliver(twice, waiting, budget=0)
+    assert deliver(twice, budget=0) == {twice["id"]: "queued"}
 
-    assert outcomes == {twice["id"]: "queued", waiting["id"]: "queued"}
     after = row_of(db, twice["id"])
     assert (after["status"], after["attempts"]) == ("pending", 1)  # 2 - 1, not 0
-    assert row_of(db, waiting["id"]) == waiting_before
+
+
+@pytest.mark.parametrize(
+    "columns",
+    [{}, {"status": "sent", "sent_at": NOW.isoformat()}],
+    ids=["pending", "sent"],
+)
+def test_a_request_never_sends_a_row_it_does_not_hold(db, mail, caplog, columns):
+    held = leased(db, queued("a@ucsc.edu"), attempts=1)
+    other = stored(db, queued("b@ucsc.edu"), **columns)  # not leased to this caller
+    other_before = dict(other)
+
+    with caplog.at_level(logging.WARNING, logger="app.outbox.controller"):
+        outcomes = deliver(held, other)
+
+    assert outcomes == {held["id"]: "sent", other["id"]: "queued"}
+    assert [message.to for message in mail.attempts] == ["a@ucsc.edu"]
+    assert row_of(db, other["id"]) == other_before
     assert (
-        f"email_outbox: not putting back a row that was not leased | row={waiting['id']} "
-        "status=pending"
-    ) in caplog.text
+        "WARNING",
+        f"email_outbox: not sending a row the caller does not hold | row={other['id']} "
+        f"status={other['status']}",
+    ) in outbox_logs(caplog)
 
 
 def test_putting_rows_back_leaves_a_row_someone_else_finished_alone(db, mail):
@@ -1513,7 +1488,8 @@ def test_an_email_that_is_no_longer_relevant_is_skipped(db, mail, monkeypatch, r
 
 
 def test_an_unknown_kind_waits_for_a_deploy_that_knows_it(db, mail, caplog):
-    # A rollback past the kind's release must not throw its rows away.
+    # A rollback past the kind's release must not throw its rows away, nor flood Sentry with
+    # an event per row and retry: WARNINGs until it is given up on.
     row = queued(kind="no_such_kind", payload={})
 
     with caplog.at_level(logging.WARNING, logger="app.outbox.controller"):
@@ -1527,17 +1503,26 @@ def test_an_unknown_kind_waits_for_a_deploy_that_knows_it(db, mail, caplog):
         "unknown kind",
     )
     assert record["next_attempt_at"] == (NOW + timedelta(seconds=60)).isoformat()
-    assert error_logs(caplog) == [f"email_outbox: unknown kind | kind=no_such_kind row={row.id}"]
+    assert error_logs(caplog) == []
+    assert (
+        "WARNING",
+        f"email_outbox: unknown kind | kind=no_such_kind row={row.id}",
+    ) in outbox_logs(caplog)
 
 
-def test_an_unknown_kind_is_given_up_on_after_the_last_attempt(db, mail):
+def test_an_unknown_kind_is_given_up_on_after_the_last_attempt(db, mail, caplog):
     record = leased(db, queued(kind="no_such_kind", payload={}), attempts=outbox.MAX_ATTEMPTS)
 
-    assert deliver(record) == {record["id"]: "failed"}
+    with caplog.at_level(logging.WARNING, logger="app.outbox.controller"):
+        assert deliver(record) == {record["id"]: "failed"}
 
     after = row_of(db, record["id"])
     assert (after["status"], after["last_error"]) == ("failed", "unknown kind")
     assert db.rows("notifications") == []  # without its kind, nobody knows whom to tell
+    assert error_logs(caplog) == [
+        f"email_outbox: gave up | kind=no_such_kind row={record['id']} attempts=6 "
+        "error=unknown kind"
+    ]
 
 
 def test_a_payload_that_cannot_be_rendered_fails_the_row(db, mail, caplog):
@@ -2287,6 +2272,48 @@ def test_a_notification_without_a_class_is_kept_apart(db):
         (CLASS, "Your invite to a@ucsc.edu couldn't be delivered (delivery kept failing)."),
         (None, "Your invite to c@ucsc.edu couldn't be delivered (delivery kept failing)."),
     ]
+
+
+def test_a_notification_the_database_refuses_is_logged_as_an_error(monkeypatch, clock, caplog):
+    install(
+        monkeypatch,
+        clock,
+        FailingDb(lambda table, op: table == "notifications", denied, **empty_tables()),
+    )
+
+    with caplog.at_level(logging.WARNING, logger="app.notifications.controller"):
+        notifications.notify_email_undeliverable(
+            user_id=INSTRUCTOR,
+            to_email="a@ucsc.edu",
+            class_id=CLASS,
+            reason="the mail server refused it",
+        )
+
+    [logged] = [r for r in caplog.records if r.name == "app.notifications.controller"]
+    assert (logged.levelname, logged.getMessage()) == (
+        "ERROR",
+        f"notify_email_undeliverable: could not save the notification | user_id={INSTRUCTOR}",
+    )
+    assert isinstance(logged.exc_info[1], DatabaseError)
+
+
+def test_without_a_service_client_the_notification_is_skipped_quietly(monkeypatch, caplog):
+    monkeypatch.setattr("app.core.db.service_client", None, raising=False)
+
+    with caplog.at_level(logging.DEBUG, logger="app.notifications.controller"):
+        notifications.notify_email_undeliverable(
+            user_id=INSTRUCTOR,
+            to_email="a@ucsc.edu",
+            class_id=CLASS,
+            reason="the mail server refused it",
+        )
+
+    [logged] = [r for r in caplog.records if r.name == "app.notifications.controller"]
+    assert (logged.levelname, logged.getMessage()) == (
+        "WARNING",
+        f"notify_email_undeliverable: skipped, no service client | user_id={INSTRUCTOR}",
+    )
+    assert logged.exc_info is None
 
 
 def test_email_undeliverable_is_a_notification_type():
