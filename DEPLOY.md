@@ -34,8 +34,10 @@ development reads (only the repo-root `.env` is read — see `README.md`).
 | `MAILEROO_API_KEY` | optional; a Maileroo sending key. Set, every email goes through Maileroo's HTTP API instead of SMTP |
 | `EMAIL_FROM` | optional; sender for the HTTP API (`GrepThink <noreply@…>`); falls back to `SMTP_FROM` |
 | `EMAIL_DISPATCH_SECRET` | bearer token the `pg_cron` schedule sends to `POST /api/email/dispatch`. Set it only after the schedule exists (see **Email delivery**); while it is unset the API dispatches from inside its own process |
+| `EMAIL_DISPATCH_IN_PROCESS` | optional; whether the API may dispatch from inside its own process while `EMAIL_DISPATCH_SECRET` is unset. Default: on only when `VERCEL_ENV=production`, so a local backend or a Preview pointed at a shared database never dispatches it; set `1` locally to test queued invites |
 | `EMAIL_DISPATCH_POLL_SECONDS` | optional; that in-process interval (default 5; the old `PENDING_INVITES_POLL_SECONDS` is still read) |
-| `EMAIL_DISPATCH_BUDGET_SECONDS` `EMAIL_INLINE_BUDGET_SECONDS` | optional; how long one dispatch run, or one invite request, keeps starting sends (default 8 each). Keep them under the function's max duration |
+| `EMAIL_DISPATCH_BUDGET_SECONDS` `EMAIL_INLINE_BUDGET_SECONDS` | optional; how long one dispatch run, or one invite request, keeps *starting* sends (default 8 each). A run can last the budget plus one send (up to ~25 s over HTTP, ~90 s over SMTP), so keep that under the backend function's max duration: a run killed mid-send re-sends that email after its 5-minute lease |
+| `MAILEROO_API_URL` | optional; the Maileroo API base (default `https://smtp.maileroo.com/api/v2`) |
 | `MAILEROO_WEBHOOK_SECRET` | optional; the Maileroo webhook's shared secret (bounces, complaints). Unset, the webhook answers 503 and Maileroo retries |
 | `EMAIL_UNSUBSCRIBE_SECRET` | signs unsubscribe links (default: a key derived from `SUPABASE_JWT_SECRET`). Set it on PROD before the first reminder or digest email goes out: changing the key later — or rotating the JWT secret while relying on the default — breaks every link already sent |
 | `PUBLIC_API_URL` | optional; this API's public URL (`https://api.grepthink2.com`), for the one-click `List-Unsubscribe` header |
@@ -119,7 +121,9 @@ dispatch schedule":
 3. Run `backend/database/migrations/prod/2026-09-30_email_dispatch_cron.sql` on PROD: `pg_cron`
    calls the dispatcher every minute through `pg_net`, with the secret kept in Vault.
 4. Set `EMAIL_DISPATCH_SECRET` (the same value) in the backend project and redeploy. The
-   in-process loop stops; the schedule is the only dispatcher.
+   in-process loop stops; the schedule is the only dispatcher. Before this step, check the backend
+   function's max duration (Vercel project settings; `backend/vercel.json` does not pin it) is at
+   least the dispatch budget plus one send — see the budget row above.
 
 **After any change to the email provider settings** (`MAILEROO_API_KEY`, `EMAIL_FROM`,
 `SMTP_*`): make sure the sender's domain is verified in Maileroo, then send one real email and

@@ -14,9 +14,12 @@
 --     Between 3 and 4 the calls answer 404 (net._http_response shows them); nothing is lost,
 --     because the in-process loop still runs until step 4.
 --
--- pg_net gives up on a request after timeout_milliseconds; 30 s is above the dispatcher's
--- EMAIL_DISPATCH_BUDGET_SECONDS (8 s) plus one slow send. The secret stays in Vault, not in
--- cron.job.
+-- pg_net gives up on a request after timeout_milliseconds; 120 s covers the dispatcher's
+-- EMAIL_DISPATCH_BUDGET_SECONDS (8 s) plus one slow send (up to ~25 s over HTTP, ~90 s over
+-- SMTP), so a slow run is not recorded as a timeout. Before running this, confirm the backend
+-- function's max duration is at least that long (DEPLOY.md, "Email delivery"). The secret stays
+-- in Vault, not in cron.job. pg_cron never prunes cron.job_run_details itself, and this job adds
+-- ~1 400 rows a day, so the last job below keeps a week of them.
 --
 -- Applied: PROD ____-__-__
 
@@ -41,7 +44,7 @@ SELECT cron.schedule(
                                       WHERE name = 'email_dispatch_secret')
     ),
     body := '{}'::jsonb,
-    timeout_milliseconds := 30000
+    timeout_milliseconds := 120000
   );
   $cron$
 );
@@ -58,7 +61,16 @@ SELECT cron.schedule(
   $cron$
 );
 
--- Check. Expected: both jobs active; after a minute or two, 200s from /api/email/dispatch.
+-- pg_cron's own run log grows by one row per job run; keep a week of it.
+SELECT cron.schedule(
+  'cron-run-details-retention',
+  '23 3 * * *',
+  $cron$
+  DELETE FROM cron.job_run_details WHERE end_time < now() - interval '7 days';
+  $cron$
+);
+
+-- Check. Expected: all three jobs active; after a minute or two, 200s from /api/email/dispatch.
 SELECT jobname, schedule, active FROM cron.job ORDER BY jobname;
 SELECT id, status_code, left(content, 120) AS body, error_msg, created
   FROM net._http_response
@@ -68,3 +80,4 @@ SELECT id, status_code, left(content, 120) AS body, error_msg, created
 -- Undo:
 --   SELECT cron.unschedule('email-dispatch');
 --   SELECT cron.unschedule('email-outbox-retention');
+--   SELECT cron.unschedule('cron-run-details-retention');
