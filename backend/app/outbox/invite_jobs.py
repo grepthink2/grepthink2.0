@@ -20,7 +20,11 @@ email twice. A job cancelled meanwhile has its unclaimed rows cancelled
 
 A job that fails (a database error, students who cannot be looked up or enrolled, a bug) is
 tried again ``RETRY_SECONDS`` later, so the jobs due after it get their turn. One still failing
-``GIVE_UP_AFTER`` after it was queued is cancelled instead, and its instructor told in the app.
+``GIVE_UP_AFTER`` after it was queued, and already tried again at least once, is cancelled
+instead and its instructor told in the app. "Tried again" is read off the job itself: its
+``send_at`` is more than ``_QUEUED_WITH_DELAY_UP_TO`` after its ``created_at`` (``queue_invite``
+schedules a job 60 s after creating it; every retry moves it later). So a job first tried long
+after it was queued (the dispatcher was down) gets one more try before it is given up.
 
 Logs name the job, never an address.
 """
@@ -32,9 +36,11 @@ from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from postgrest.types import ReturnMethod
+
 from app.core import authz
 from app.core.db import MISSING_TABLE_CODES
-from app.core.errors import DatabaseError
+from app.core.errors import DatabaseError, DatabaseUnavailableError
 from app.notifications import controller as notifications
 from app.outbox import controller as outbox
 
@@ -44,12 +50,15 @@ logger = logging.getLogger(__name__)
 JOB_BATCH = 20
 #: How long a job that failed waits before it is tried again.
 RETRY_SECONDS = 300
-#: A job still failing this long after it was queued is given up.
+#: A job still failing this long after it was queued (and tried again at least once) is given up.
 GIVE_UP_AFTER = timedelta(hours=24)
+#: The most a job's ``send_at`` can trail its ``created_at`` before any retry: ``queue_invite``
+#: schedules a job 60 s after creating it, and the margin covers clocks that differ a little.
+_QUEUED_WITH_DELAY_UP_TO = timedelta(seconds=120)
 
 _JOB_COLUMNS = (
     "id, class_id, instructor_id, emails, cc, bcc, custom_subject, custom_body, "
-    "custom_body_html, created_at"
+    "custom_body_html, send_at, created_at"
 )
 
 
@@ -105,7 +114,7 @@ def _expand(client, job: Mapping[str, Any]) -> bool:
     rows = _enroll_and_build_rows(client, job)
 
     try:
-        outbox.enqueue(client, rows)
+        outbox.enqueue(client, rows, return_rows=False)
     except outbox.OutboxUnavailable:
         # Nothing would hold the emails, so the job is marked sent before they go: a dispatcher
         # expanding it at the same time, or the next tick, finds it taken and sends nothing.
@@ -228,20 +237,25 @@ def _withdraw(client, job_id: str) -> None:
         logger.info("invite_jobs: cancelled before it went out | job=%s", job_id)
 
 
-def cancel_pending_rows(client, job_id: str) -> bool:
+def cancel_pending_rows(client, job_id: str, *, raise_retryable: bool = False) -> bool:
     """Cancel the outbox rows of the invite job ``job_id`` that no dispatcher has claimed yet.
 
     Rows being sent, or sent, are past stopping and left alone. Before the outbox migration
-    there are no rows: the missing table is ignored. Never raises: any other failure is logged
-    and answers ``False``.
+    there are no rows: the missing table is ignored. Any other failure is logged and answers
+    ``False``, except, with ``raise_retryable``, a dropped connection (a retryable
+    ``DatabaseUnavailableError``): that is raised, for a caller that retries itself
+    (``cancel_invite`` under ``@retry_on_disconnect``; cancelling again is harmless).
     """
     try:
         client.table("email_outbox").update(
-            {"status": "cancelled", "updated_at": outbox._now().isoformat()}
+            {"status": "cancelled", "updated_at": outbox._now().isoformat()},
+            returning=ReturnMethod.minimal,
         ).eq("batch_id", str(job_id)).eq("status", "pending").execute()
     except DatabaseError as err:
         if err.pg_code in MISSING_TABLE_CODES:
             return True
+        if raise_retryable and isinstance(err, DatabaseUnavailableError) and err.retryable:
+            raise
         logger.error(
             "invite_jobs: could not cancel the queued emails | job=%s error=%s", job_id, err
         )
@@ -253,11 +267,15 @@ def cancel_pending_rows(client, job_id: str) -> bool:
 
 
 def _log_failure(job: Mapping[str, Any], err: Exception) -> None:
-    """Why ``job`` could not be expanded: a known cause without a traceback, a bug with one."""
+    """Why ``job`` could not be expanded: an outage as a WARNING, anything else as an ERROR
+    (which reaches Sentry), with its traceback when it is not a plain database error."""
     if isinstance(err, _NotReady):
-        logger.warning(
-            "invite_jobs: students could not be looked up or enrolled | job=%s", job.get("id")
-        )
+        cause = err.__cause__
+        message = "invite_jobs: students could not be looked up or enrolled | job=%s"
+        if isinstance(cause, DatabaseUnavailableError):
+            logger.warning(message, job.get("id"))
+        else:  # a bug in planning, or a database error that is not an outage
+            logger.error(message, job.get("id"), exc_info=cause)
     elif isinstance(err, DatabaseError):
         logger.error("invite_jobs: a database error | job=%s error=%s", job.get("id"), err)
     else:
@@ -266,19 +284,38 @@ def _log_failure(job: Mapping[str, Any], err: Exception) -> None:
 
 def _retry_later_or_give_up(client, job: Mapping[str, Any]) -> None:
     """After a failure: try ``job`` again ``RETRY_SECONDS`` from now, which lets the jobs due
-    after it go first, or give it up once it is ``GIVE_UP_AFTER`` old. Never raises."""
+    after it go first, or give it up (see the module docstring). Never raises."""
     job_id = str(job.get("id"))
     now = outbox._now()
-    queued_at = _parse_time(job.get("created_at"))
-    try:
-        if queued_at is not None and now - queued_at > GIVE_UP_AFTER:
+    if _should_give_up(job, now):
+        try:
             _give_up(client, job)
-            return
+        except Exception:
+            logger.error(
+                "invite_jobs: could not give up on a job that kept failing | job=%s",
+                job_id,
+                exc_info=True,
+            )
+        return
+    try:
         client.table("pending_invites").update(
             {"send_at": (now + timedelta(seconds=RETRY_SECONDS)).isoformat()}
         ).eq("id", job_id).eq("sent", False).execute()
     except Exception:
         logger.error("invite_jobs: could not put the job back | job=%s", job_id, exc_info=True)
+
+
+def _should_give_up(job: Mapping[str, Any], now: datetime) -> bool:
+    """Whether ``job`` was queued over ``GIVE_UP_AFTER`` ago and has been tried again since.
+
+    A job whose times cannot be read is never given up: it keeps being tried again.
+    """
+    queued_at = _parse_time(job.get("created_at"))
+    due_at = _parse_time(job.get("send_at"))
+    if queued_at is None or due_at is None:
+        return False
+    tried_again = due_at > queued_at + _QUEUED_WITH_DELAY_UP_TO
+    return tried_again and now - queued_at > GIVE_UP_AFTER
 
 
 def _give_up(client, job: Mapping[str, Any]) -> None:

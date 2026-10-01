@@ -2001,8 +2001,10 @@ def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
 
     Cancelling is final for every email of the job no dispatcher has claimed yet: rows a tick
     already queued for it (one that failed before it could mark the job sent) are cancelled too
-    (``invite_jobs.cancel_pending_rows``; before the outbox migration there are none). Students
-    a standard job enrolled when it was expanded stay enrolled.
+    (``invite_jobs.cancel_pending_rows``; before the outbox migration there are none). A dropped
+    connection there is raised, so ``@retry_on_disconnect`` runs the whole cancel again; any
+    other failure to cancel those rows is logged and the job stays cancelled. Students a
+    standard job enrolled when it was expanded stay enrolled.
     """
     try:
         client = get_client()
@@ -2024,7 +2026,7 @@ def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
             # Still there and unsent, yet not cancelled: never claim it was.
             logger.error("cancel_invite: the job could not be cancelled | job=%s", job_id)
             raise HTTPException(status_code=500, detail="Failed to cancel invite")
-        invite_jobs.cancel_pending_rows(client, job_id)
+        invite_jobs.cancel_pending_rows(client, job_id, raise_retryable=True)
         logger.info("cancel_invite: cancelled job=%s class=%s", job_id, class_id)
         return {"cancelled": True}
     except HTTPException:

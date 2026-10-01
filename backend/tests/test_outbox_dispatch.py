@@ -15,6 +15,7 @@ from datetime import timedelta
 from types import SimpleNamespace
 
 import pytest
+from postgrest.types import ReturnMethod
 
 from app.classes import invite_email
 from app.classes.invite_email import render_class_invite
@@ -493,6 +494,82 @@ def test_enqueue_inserts_every_row_without_a_dedupe_key(db):
 def test_enqueue_with_nothing_to_queue_makes_no_request(db):
     assert outbox.enqueue(get_client(), []) == []
     assert db.executes == 0
+
+
+def record_upserts(db: FakeSupabase, monkeypatch) -> list[tuple[list[dict], dict]]:
+    """Every upsert sent through ``db``: its rows and its options."""
+    sent: list[tuple[list[dict], dict]] = []
+    table = db.table
+
+    def recording_table(name):
+        query = table(name)
+        upsert = query.upsert
+
+        def recording_upsert(payload, **options):
+            sent.append((payload, options))
+            return upsert(payload, **options)
+
+        query.upsert = recording_upsert
+        return query
+
+    monkeypatch.setattr(db, "table", recording_table)
+    return sent
+
+
+def test_enqueue_sends_at_most_100_rows_per_request(db, monkeypatch):
+    sent = record_upserts(db, monkeypatch)
+    rows = [queued(f"s{n}@ucsc.edu") for n in range(101)]
+
+    inserted = outbox.enqueue(get_client(), rows)
+
+    assert outbox._ROWS_PER_INSERT == 100
+    assert [len(payload) for payload, _ in sent] == [100, 1]
+    assert [row["id"] for row in inserted] == [row.id for row in rows]
+    assert len(db.rows("email_outbox")) == 101
+
+
+def test_enqueue_keeps_one_row_per_dedupe_key_across_requests(db, monkeypatch):
+    sent = record_upserts(db, monkeypatch)
+    rows = [queued(f"s{n}@ucsc.edu", key=f"k{n}") for n in range(101)]
+    repeat = queued("again@ucsc.edu", key="k0")  # the first row's key, a full request later
+
+    inserted = outbox.enqueue(get_client(), [*rows, repeat])
+
+    assert [len(payload) for payload, _ in sent] == [100, 1]
+    assert repeat.id not in {item["id"] for payload, _ in sent for item in payload}
+    assert [row["id"] for row in inserted] == [row.id for row in rows]
+
+
+def test_enqueue_without_rows_back_returns_nothing_and_still_inserts(db, monkeypatch):
+    sent = record_upserts(db, monkeypatch)
+    rows = [queued("a@ucsc.edu"), queued("b@ucsc.edu")]
+
+    assert outbox.enqueue(get_client(), rows, return_rows=False) == []
+
+    assert [row["id"] for row in db.rows("email_outbox")] == [row.id for row in rows]
+    [(_, options)] = sent
+    assert options["returning"] == ReturnMethod.minimal
+    # By default the rows come back: deliver_owned_rows needs them.
+    outbox.enqueue(get_client(), [queued("c@ucsc.edu")])
+    assert sent[-1][1]["returning"] == ReturnMethod.representation
+
+
+def test_a_later_insert_request_that_fails_leaves_the_earlier_rows_queued(monkeypatch, clock, mail):
+    upserts: list[str] = []
+
+    def the_second_upsert(table, op):
+        if table == "email_outbox" and op == "upsert":
+            upserts.append(op)
+            return len(upserts) == 2
+        return False
+
+    db = install(monkeypatch, clock, FailingDb(the_second_upsert, outage, **empty_tables()))
+    rows = [queued(f"s{n}@ucsc.edu") for n in range(150)]
+
+    with pytest.raises(DatabaseError):
+        outbox.enqueue(get_client(), rows)
+
+    assert [row["id"] for row in db.rows("email_outbox")] == [row.id for row in rows[:100]]
 
 
 def test_the_missing_outbox_codes_cover_the_table_and_the_claim_function():

@@ -648,6 +648,58 @@ def test_the_invite_route_answers_503_with_retry_after_during_a_database_outage(
     assert mail.attempts == []
 
 
+@pytest.fixture
+def bulk_calls(monkeypatch) -> list[tuple]:
+    """The bulk-invite controller is replaced: what reaches it, if anything."""
+    calls: list[tuple] = []
+
+    def record(*args, **kwargs):
+        calls.append(args)
+        return {"results": [], "enrolled_count": 0, "invited_count": 0, "queued_count": 0}
+
+    monkeypatch.setattr("app.classes.views.controller.bulk_invite_students", record)
+    return calls
+
+
+def _bulk(client, emails: list[str]):
+    return client.post(
+        f"/api/classes/{PROBE_CLASS}/students/bulk-invite",
+        headers={"Authorization": f"Bearer {make_token(sub=PROBE_INSTR)}"},
+        json={"emails": emails},
+    )
+
+
+def test_a_bulk_invite_names_at_most_500_addresses(client, bulk_calls):
+    addresses = [f"s{n}@ucsc.edu" for n in range(501)]
+    assert _bulk(client, addresses).status_code == 422
+    assert bulk_calls == []
+
+    res = _bulk(client, addresses[:500])
+    assert res.status_code == 200, res.text
+    assert len(bulk_calls) == 1
+
+
+@pytest.mark.parametrize(
+    "address",
+    [
+        "b" + "a" * 245 + "@ucsc.edu",  # 255 characters
+        "ann@ucsc.edu\nBcc: everyone@ucsc.edu",
+        "ann@ucsc.edu\N{LINE SEPARATOR}",
+    ],
+    ids=["too-long", "line-feed", "line-separator"],
+)
+def test_a_bulk_invite_refuses_an_address_too_long_or_with_a_line_break(
+    client, bulk_calls, address
+):
+    assert _bulk(client, [address]).status_code == 422
+    assert bulk_calls == []
+
+    longest = "a" * 245 + "@ucsc.edu"  # 254 characters, as long as an address can be
+    res = _bulk(client, [longest])
+    assert res.status_code == 200, res.text
+    assert len(bulk_calls) == 1
+
+
 NO_ROLE = "no-role"  # signed up with Google and has not picked a role on /select yet
 
 

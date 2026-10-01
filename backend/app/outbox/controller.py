@@ -93,6 +93,8 @@ OUTBOX_MISSING_CODES = MISSING_TABLE_CODES | {"PGRST202", "42883"}
 
 #: Row ids per update when rows are put back (the ids travel in the query string).
 _IDS_PER_UPDATE = 100
+#: Rows per insert request: keeps each request's body modest, whatever a caller queues at once.
+_ROWS_PER_INSERT = 100
 #: ``last_error`` is cut to this many characters.
 _ERROR_LIMIT = 500
 #: The end of "the address ..." for each suppression reason, in a notification.
@@ -180,13 +182,20 @@ class OutboxRow:
 # -- queueing --------------------------------------------------------------------------------
 
 
-def enqueue(client, rows: Sequence[OutboxRow], *, owned: bool = False) -> list[dict]:
+def enqueue(
+    client, rows: Sequence[OutboxRow], *, owned: bool = False, return_rows: bool = True
+) -> list[dict]:
     """Insert ``rows`` into the outbox. Returns the rows actually inserted.
 
-    One request. A row whose ``dedupe_key`` is already in the table is skipped, and so is one
-    repeating the key of an earlier row in ``rows``; rows without a key are all inserted.
-    ``owned=True`` inserts them leased to the caller, for ``deliver_owned_rows``. Nothing to
-    insert makes no request.
+    One request per ``_ROWS_PER_INSERT`` rows. A row whose ``dedupe_key`` is already in the
+    table is skipped, and so is one repeating the key of an earlier row in ``rows`` (in the same
+    request or an earlier one); rows without a key are all inserted. ``owned=True`` inserts them
+    leased to the caller, for ``deliver_owned_rows``. ``return_rows=False`` asks for nothing
+    back (``returning=minimal``) and returns ``[]``, for a caller that does not read the rows.
+    Nothing to insert makes no request.
+
+    The requests are not one transaction: when a later one fails, the rows of the earlier ones
+    stay queued (owned ones go to the dispatcher once their lease runs out).
 
     Raises:
         OutboxUnavailable: the table does not exist yet (send with ``deliver_now`` instead).
@@ -200,27 +209,32 @@ def enqueue(client, rows: Sequence[OutboxRow], *, owned: bool = False) -> list[d
                 continue
             keys.add(row.dedupe_key)
         unique.append(row)
-    if not unique:
-        return []
 
     now = _now()
-    try:
-        result = (
-            client.table("email_outbox")
-            .upsert(
-                [row.as_insert(owned=owned, now=now) for row in unique],
-                on_conflict="dedupe_key",
-                ignore_duplicates=True,
+    returning = ReturnMethod.representation if return_rows else ReturnMethod.minimal
+    inserted: list[dict] = []
+    for start in range(0, len(unique), _ROWS_PER_INSERT):
+        chunk = unique[start : start + _ROWS_PER_INSERT]
+        try:
+            result = (
+                client.table("email_outbox")
+                .upsert(
+                    [row.as_insert(owned=owned, now=now) for row in chunk],
+                    on_conflict="dedupe_key",
+                    ignore_duplicates=True,
+                    returning=returning,
+                )
+                .execute()
             )
-            .execute()
-        )
-    except DatabaseError as exc:
-        if exc.pg_code in OUTBOX_MISSING_CODES:
-            # Every invite says this until the migration is applied: not a Sentry event each.
-            logger.warning("email_outbox: table missing, sending directly")
-            raise OutboxUnavailable("email_outbox does not exist yet") from exc
-        raise
-    return list(result.data or [])
+        except DatabaseError as exc:
+            if exc.pg_code in OUTBOX_MISSING_CODES:
+                # Every invite says this until the migration is applied: not a Sentry event each.
+                logger.warning("email_outbox: table missing, sending directly")
+                raise OutboxUnavailable("email_outbox does not exist yet") from exc
+            raise
+        if return_rows:
+            inserted.extend(result.data or [])
+    return inserted
 
 
 # -- delivering ------------------------------------------------------------------------------

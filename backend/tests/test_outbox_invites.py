@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 
 import httpx
 import pytest
+from postgrest.types import ReturnMethod
 
 from app.classes import controller as classes
 from app.core.db import get_client
@@ -234,13 +235,14 @@ def fail_marking_sent_once(db: HookedDb) -> None:
     db.before.append(hook)
 
 
-def lookups_down(db: HookedDb, table: str) -> dict:
-    """Reads of ``table`` fail while the returned switch says ``down``."""
+def lookups_down(db: HookedDb, table: str, error=database_error) -> dict:
+    """Reads of ``table`` raise ``error(table)`` (an outage unless the test says otherwise)
+    while the returned switch says ``down``."""
     switch = {"down": True}
 
     def hook(name, query):
         if name == table and query._op == "select" and switch["down"]:
-            raise database_error(name)
+            raise error(name)
 
     db.before.append(hook)
     return switch
@@ -575,6 +577,63 @@ def test_cancelling_a_job_whose_emails_are_queued_cancels_them(db, clock):
     assert enrolled(db) == {SAM, KIM}
 
 
+def test_the_producer_does_not_ask_for_the_rows_it_queues(db, monkeypatch):
+    calls = []
+    enqueue = outbox.enqueue
+
+    def recording_enqueue(client, rows, **options):
+        calls.append(options)
+        return enqueue(client, rows, **options)
+
+    monkeypatch.setattr(outbox, "enqueue", recording_enqueue)
+    db.rows("pending_invites").append(custom_job())
+
+    assert expand() == 1
+
+    assert calls == [{"return_rows": False}]
+    assert len(rows_of(db)) == 2
+
+
+def test_cancelling_queued_emails_asks_for_nothing_back(db):
+    returning = []
+
+    def record(table, query):
+        if table == "email_outbox" and query._op == "update":
+            returning.append(query._returning)
+
+    db.after.append(record)
+    assert invite_jobs.cancel_pending_rows(get_client(), JOB) is True
+    assert returning == [ReturnMethod.minimal]
+
+
+def test_a_dropped_connection_while_cancelling_queued_emails_is_raised_only_when_asked(db, caplog):
+    def drop(table, query):
+        if table == "email_outbox" and query._op == "update":
+            raise httpx.RemoteProtocolError("Server disconnected")
+
+    db.before.append(drop)
+
+    # The producer's call: logged, never raised.
+    with caplog.at_level(logging.WARNING, logger="app.outbox.invite_jobs"):
+        assert invite_jobs.cancel_pending_rows(get_client(), JOB) is False
+    [logged] = job_logs(caplog, logging.ERROR)
+    assert JOB in logged.getMessage()
+
+    # cancel_invite's call: raised, for its @retry_on_disconnect.
+    with pytest.raises(DatabaseUnavailableError) as raised:
+        invite_jobs.cancel_pending_rows(get_client(), JOB, raise_retryable=True)
+    assert raised.value.retryable
+
+
+def test_an_outage_that_is_not_a_dropped_connection_is_never_raised(db):
+    def time_out(table, query):
+        if table == "email_outbox" and query._op == "update":
+            raise database_error(table)  # a statement timeout: not retryable
+
+    db.before.append(time_out)
+    assert invite_jobs.cancel_pending_rows(get_client(), JOB, raise_retryable=True) is False
+
+
 # -- jobs that fail ---------------------------------------------------------------------------
 
 
@@ -589,6 +648,7 @@ def test_a_standard_job_whose_students_cannot_be_looked_up_is_tried_again_later(
     assert (job_of(db)["sent"], job_of(db)["send_at"]) == (False, RETRY_AT)
     assert enrolled(db) == {KIM}
     [logged] = job_logs(caplog)
+    assert logged.levelno == logging.WARNING  # an outage: no Sentry event every five minutes
     assert JOB in logged.getMessage() and "@" not in logged.getMessage()
 
     profiles["down"] = False
@@ -614,6 +674,38 @@ def test_a_standard_job_whose_enrollments_cannot_be_read_enrolls_nobody_yet(db, 
     clock.advance(invite_jobs.RETRY_SECONDS)
     assert expand() == 1
     assert enrolled(db) == {SAM, KIM}
+
+
+def test_a_bug_while_planning_a_standard_job_is_an_error_with_its_traceback(db, caplog):
+    db.rows("pending_invites").append(job())
+    lookups_down(db, "profiles", error=lambda table: RuntimeError("a bug"))
+
+    with caplog.at_level(logging.WARNING, logger="app.outbox.invite_jobs"):
+        assert expand() == 0
+
+    [logged] = job_logs(caplog)
+    assert logged.levelno == logging.ERROR
+    assert isinstance(logged.exc_info[1], RuntimeError)
+    assert JOB in logged.getMessage() and "@" not in logged.getMessage()
+    assert job_of(db)["send_at"] == RETRY_AT  # tried again later, like any failure
+
+
+def test_a_database_error_while_planning_that_is_not_an_outage_is_an_error(db, caplog):
+    denied = DatabaseError(
+        operation="read",
+        target="profiles",
+        pg_code="42501",
+        pg_message="permission denied for table profiles",
+    )
+    db.rows("pending_invites").append(job())
+    lookups_down(db, "profiles", error=lambda table: denied)
+
+    with caplog.at_level(logging.WARNING, logger="app.outbox.invite_jobs"):
+        assert expand() == 0
+
+    [logged] = job_logs(caplog)
+    assert logged.levelno == logging.ERROR
+    assert logged.exc_info[1] is denied
 
 
 def test_a_database_error_on_one_job_does_not_stop_the_next(db, caplog):
@@ -701,7 +793,11 @@ def test_jobs_that_keep_failing_do_not_starve_a_job_due_after_them(db):
 
 
 def test_a_job_still_failing_a_day_after_it_was_queued_is_given_up(db, caplog):
-    db.rows("pending_invites").append(job(created=NOW - timedelta(hours=24, seconds=1)))
+    # Queued over a day ago and tried again since: its send_at is far past the 60 s it was
+    # queued with.
+    db.rows("pending_invites").append(
+        job(created=NOW - timedelta(hours=25), due=NOW - timedelta(minutes=1))
+    )
     # An email an earlier run queued for it before it failed: giving up cancels it too.
     earlier = outbox.OutboxRow(
         kind="class_invite",
@@ -731,6 +827,65 @@ def test_a_job_still_failing_a_day_after_it_was_queued_is_given_up(db, caplog):
     assert "2 addresses" in note["body"] and "the scheduled invite kept failing" in note["body"]
     [gave_up] = job_logs(caplog, logging.ERROR)
     assert JOB in gave_up.getMessage() and "@" not in gave_up.getMessage()
+
+
+def test_a_job_first_tried_long_after_it_was_queued_gets_one_more_try(db, clock):
+    # The dispatcher was down for a day: the job's first try fails, which is no reason yet to
+    # give it up. It is tried again, and given up only when that fails too.
+    queued_at = NOW - timedelta(hours=30)
+    db.rows("pending_invites").append(job(created=queued_at, due=queued_at + timedelta(seconds=60)))
+    lookups_down(db, "profiles")
+
+    assert expand() == 0
+    assert (job_of(db)["cancelled"], job_of(db)["send_at"]) == (False, RETRY_AT)
+    assert db.rows("notifications") == []
+
+    clock.advance(invite_jobs.RETRY_SECONDS)
+    assert expand() == 0
+    assert job_of(db)["cancelled"] is True
+    [note] = db.rows("notifications")
+    assert "the scheduled invite kept failing" in note["body"]
+
+
+@pytest.mark.parametrize(
+    ("created", "send_at", "gives_up"),
+    [
+        pytest.param(NOW - timedelta(hours=25), "+60s", False, id="never-tried-again"),
+        pytest.param(NOW - timedelta(hours=25), "+120s", False, id="within-the-margin"),
+        pytest.param(NOW - timedelta(hours=25), "+121s", True, id="tried-again"),
+        pytest.param(NOW - timedelta(hours=23), "+1h", False, id="not-a-day-old"),
+        pytest.param(None, "+1h", False, id="no-created-at"),
+        pytest.param(NOW - timedelta(hours=25), None, False, id="no-send-at"),
+    ],
+)
+def test_the_give_up_rule(created, send_at, gives_up):
+    offsets = {"+60s": 60, "+120s": 120, "+121s": 121, "+1h": 3600}
+    queued_at = created or NOW - timedelta(hours=25)
+    row = {
+        "created_at": created.isoformat() if created else None,
+        "send_at": (
+            (queued_at + timedelta(seconds=offsets[send_at])).isoformat() if send_at else None
+        ),
+    }
+    assert invite_jobs._should_give_up(row, NOW) is gives_up
+
+
+def test_a_give_up_that_fails_says_so(db, caplog):
+    db.rows("pending_invites").append(job(created=NOW - timedelta(hours=25)))
+    lookups_down(db, "profiles")
+
+    def the_give_up_fails(table, query):
+        if table == "pending_invites" and query._payload == {"cancelled": True}:
+            raise database_error(table)
+
+    db.before.append(the_give_up_fails)
+
+    with caplog.at_level(logging.WARNING, logger="app.outbox.invite_jobs"):
+        assert expand() == 0
+
+    errors = [record.getMessage() for record in job_logs(caplog, logging.ERROR)]
+    assert errors == [f"invite_jobs: could not give up on a job that kept failing | job={JOB}"]
+    assert db.rows("notifications") == []
 
 
 def test_a_failing_job_less_than_a_day_old_is_tried_again_later(db):
@@ -978,6 +1133,24 @@ def test_a_subject_with_a_line_break_is_refused_before_anything_is_queued(
     assert res.status_code == 422, res.text
     assert "single line" in res.text
     assert queued_calls == []
+
+
+@pytest.mark.parametrize(
+    ("field", "limit"), [("custom_body", 50_000), ("custom_body_html", 100_000)]
+)
+def test_a_body_over_its_limit_is_refused_with_a_word_about_pasted_images(
+    client, queued_calls, field, limit
+):
+    # The Roster editor turns a pasted screenshot into a base64 data: URI inside the HTML.
+    custom = {"custom_subject": "Welcome", "custom_body": "Hi"}
+    res = _queue(client, **{**custom, field: "x" * (limit + 1)})
+    assert res.status_code == 422, res.text
+    assert "pasted images" in res.text
+    assert queued_calls == []
+
+    res = _queue(client, **{**custom, field: "x" * limit})
+    assert res.status_code == 200, res.text
+    assert len(queued_calls) == 1
 
 
 @pytest.mark.parametrize("field", ["emails", "cc", "bcc"])

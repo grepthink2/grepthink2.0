@@ -391,6 +391,57 @@ class _OutboxFails(FakeSupabase):
         return query
 
 
+class _OutboxUpdateDrops(FakeSupabase):
+    """The first ``drops`` updates of ``email_outbox`` lose their connection mid-request."""
+
+    def __init__(self, drops: int, **tables):
+        super().__init__(**tables)
+        self.drops = drops
+
+    def table(self, name):
+        query = super().table(name)
+        if name == "email_outbox":
+            execute = query.execute
+
+            def maybe_drop():
+                if query._op == "update" and self.drops:
+                    self.drops -= 1
+                    raise httpx.RemoteProtocolError("Server disconnected")
+                return execute()
+
+            query.execute = maybe_drop
+        return query
+
+
+def test_a_dropped_connection_while_cancelling_the_queued_emails_cancels_again(monkeypatch):
+    # Raised, so @retry_on_disconnect runs the whole (idempotent) cancel once more.
+    fake = _OutboxUpdateDrops(1, **_world())
+    fake.rows("email_outbox").append(_outbox_row("queued", JOB, "pending"))
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+
+    assert classes.cancel_invite(CLASS, JOB, INSTR) == {"cancelled": True}
+
+    assert fake.drops == 0
+    assert fake.rows("email_outbox")[0]["status"] == "cancelled"
+    assert _job(fake)["cancelled"] is True
+
+
+def test_a_connection_that_drops_twice_while_cancelling_answers_503(monkeypatch):
+    # The retry met it too: the database's answer reaches the instructor (503 + Retry-After).
+    # The job is cancelled all the same, and cancelling again finishes the queued emails.
+    fake = _OutboxUpdateDrops(2, **_world())
+    fake.rows("email_outbox").append(_outbox_row("queued", JOB, "pending"))
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+
+    with pytest.raises(DatabaseUnavailableError) as exc:
+        classes.cancel_invite(CLASS, JOB, INSTR)
+
+    assert exc.value.status_code == 503
+    assert _job(fake)["cancelled"] is True
+    assert classes.cancel_invite(CLASS, JOB, INSTR) == {"cancelled": True}
+    assert fake.rows("email_outbox")[0]["status"] == "cancelled"
+
+
 @pytest.mark.parametrize(
     ("error", "logged"),
     [
