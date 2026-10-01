@@ -59,7 +59,8 @@ backend/
 │   │   ├── errors.py        # DatabaseError types; handlers answer {"detail", "code"}
 │   │   └── sentry.py        # Optional Sentry error reporting (SENTRY_DSN)
 │   ├── jobs/
-│   │   └── pending_invites.py  # Poller that sends queued class-invite emails
+│   │   └── email_dispatch.py   # In-process outbox dispatch, only while EMAIL_DISPATCH_SECRET is unset
+│   ├── outbox/              # Email outbox: enqueue, dispatcher, kinds, preferences, Maileroo webhook
 │   ├── database/client.py   # Supabase clients (anon + service role)
 │   ├── utils/               # Helpers (profiles, code generators)
 │   │

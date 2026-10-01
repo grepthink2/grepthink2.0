@@ -474,8 +474,10 @@ only `sha256(user_id:edu_email:code)` is stored, codes expire after ten
 minutes, a new one can be requested once a minute, and five wrong guesses
 delete the code. Each guess claims its attempt with an update conditional on
 the count it read **before** the code is compared, so parallel guesses cannot
-share an attempt. With no SMTP settings a deployment answers 503; a developer
-machine logs the code instead (never returns it) so the flow stays testable.
+share an attempt. With no email provider configured a deployment answers 503; a
+developer machine logs the code instead (never returns it) so the flow stays testable.
+If the provider refuses or fails the send, the pending code is forgotten (so the
+once-a-minute limit does not lock the user out) and the answer is 502.
 
 Still trusting: a school **login** email — `.edu` or an institution's
 `email_domains` — is only as verified as Supabase's email confirmation makes

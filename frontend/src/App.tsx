@@ -65,6 +65,8 @@ const CompleteProfile = lazy(() => import('@features/auth/pages/CompleteProfile'
 const ForgetPassword = lazy(() => import('@features/auth/pages/ForgotPassword'));
 const VerifyResetPassword = lazy(() => import('@features/auth/pages/VerifyResetPassword'));
 const ResetPassword = lazy(() => import('@features/auth/pages/ResetPassword'));
+// The page an unsubscribe link in an email opens (signed out).
+const Unsubscribe = lazy(() => import('@features/auth/pages/Unsubscribe'));
 function App() {
   return (
     <ErrorBoundary>
@@ -85,6 +87,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgetPassword />} />
             <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
           </Route>
 
           {/* App routes with persistent sidebar (protected: requires auth).

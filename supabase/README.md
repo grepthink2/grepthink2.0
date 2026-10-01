@@ -112,3 +112,47 @@ In this order (the SQL files are in `backend/database/migrations/`):
   for one email and refuses to change anything else). Run it only once steps 1–3 above are done on
   PROD. It takes effect within a minute; the user sees "Create Class" after reloading. Their classes
   as a TA or student are unaffected.
+- **A school's timezone:** `institutions.timezone` (added by `2026-09-30_institution_timezones.sql`)
+  is the IANA zone its dates are in (`America/Los_Angeles`, `Europe/Istanbul`). Set it in the same
+  insert when adding a school; a name `zoneinfo` does not know falls back to `America/Los_Angeles`
+  and logs an error.
+
+## Email outbox and dispatch schedule (maintainer steps)
+
+Class invites (and, later, reminders and digests) are rows in `email_outbox`, one per recipient.
+`POST /api/email/dispatch` delivers the due rows, retrying temporary failures for about 14 hours
+before giving up and notifying whoever sent the invite. In this order:
+
+1. `2026-09-30_email_outbox.sql` and `2026-09-30_email_preferences.sql`, DEV then PROD, **before**
+   the release. The code works without them (it sends invites directly, as before the outbox, and
+   treats every email category as on), but until they run scheduled invites keep the old
+   mark-sent-then-send path — the bug this fixes. Before releasing, look for stale due jobs, which
+   the first dispatch would send however old they are:
+   `SELECT id, send_at FROM pending_invites WHERE NOT sent AND NOT cancelled AND send_at < now() - interval '1 hour';`
+2. `2026-09-30_institution_timezones.sql`, DEV then PROD, any time.
+3. Release beta → main. Until step 5 the API dispatches from inside its own process every few
+   seconds (like the old invite poller, but through the outbox, so a failed send is retried).
+4. PROD SQL editor: `prod/2026-09-30_email_dispatch_cron.sql`, with a new random secret and the API
+   URL filled in. It schedules a `pg_net` call to the dispatcher every minute (the secret lives in
+   Vault), a nightly job that deletes sent rows older than 90 days, and one that keeps a week of
+   pg_cron's own run log (`cron.job_run_details`, which pg_cron never prunes).
+5. Vercel, backend project, Production: set `EMAIL_DISPATCH_SECRET` to the same secret and redeploy.
+   From then on only the schedule dispatches. Check: `SELECT status_code, created FROM
+   net._http_response ORDER BY created DESC LIMIT 5;` shows 200s.
+
+- **Rolling back** to code from before the outbox leaves `pending` and leased `email_outbox` rows
+  where they are; they go out once the outbox code is back (nothing reads them in between).
+- **Watching the outbox:** `SELECT status, count(*) FROM email_outbox GROUP BY 1;` — rows stuck in
+  `pending` with a past `next_attempt_at` mean nothing is dispatching; `failed` rows carry
+  `last_error`.
+- **Maileroo webhook (bounces and complaints):** in the Maileroo dashboard add a webhook for
+  `https://api.grepthink2.com/api/email/webhooks/maileroo` with the `failed`, `rejected`,
+  `complained` and `delivered` events, then set its secret as `MAILEROO_WEBHOOK_SECRET` in Vercel.
+  A bounced address (and a rejected one, when the reason names the recipient) lands in
+  `email_suppressions` and is not emailed again. Before turning the webhook on, export Maileroo's
+  existing suppression list and insert those addresses (`reason = 'bounced'`, lower-cased) so the
+  outbox already knows them — otherwise a cc'd address that Maileroo blocks makes it reject whole
+  emails without saying which recipient, and those emails are bounced without suppressing anyone.
+  Maileroo retries a webhook 8 times over about 14 hours; events refused for longer are lost.
+- **Allowing a suppressed address again:** `DELETE FROM email_suppressions WHERE email = '<address>';`
+  (addresses are stored lower-cased).

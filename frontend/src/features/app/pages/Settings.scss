@@ -1,5 +1,8 @@
 @use '@styles/index.scss' as *;
 
+// The close button floats over the modal's top-right corner; the phone layout's nav row leaves room for it.
+$settings-close-size: 30px;
+
 .settings-modal {
   &__overlay {
     position: fixed;
@@ -105,8 +108,10 @@
     position: absolute;
     top: $spacing-md;
     right: $spacing-md;
-    width: 30px;
-    height: 30px;
+    width: $settings-close-size;
+    height: $settings-close-size;
+    // index.css gives every button padding: .6em 1.2em, which left this box no room for its icon.
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -117,6 +122,10 @@
     cursor: pointer;
     @include gt-transition(background, color);
     z-index: 2;
+
+    svg {
+      flex-shrink: 0;
+    }
 
     &:hover {
       background: $background;
@@ -133,11 +142,15 @@
     gap: $spacing-md;
   }
 
+  // The Email section's title takes focus after "Try again": it is as wide as its text, so the focus
+  // ring wraps the word and does not reach the close button, and the radius rounds the ring.
   &__section-title {
+    align-self: flex-start;
     margin: 0;
     font-size: $font-size-large;
     font-weight: $font-weight-semibold;
     color: $text-primary;
+    border-radius: $border-radius-sm;
   }
 
   &__section-subtitle {
@@ -304,6 +317,134 @@
     flex-shrink: 0;
   }
 
+  // ── Email preferences ────────────────────────────────────────────────────
+
+  &__pref-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  &__pref {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-lg;
+    padding: $spacing-md 0;
+    border-bottom: 1px solid $border-color;
+
+    &:first-child {
+      padding-top: 0;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__pref-text {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    min-width: 0;
+  }
+
+  &__pref-label {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+    cursor: pointer;
+  }
+
+  &__pref-description {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $text-tertiary;
+  }
+
+  &__pref-status {
+    margin: 0;
+    font-size: $font-size-base;
+    color: $text-tertiary;
+  }
+
+  // A native checkbox drawn as a switch (as CreateClassModal draws its checkbox): the input stays
+  // the focusable control, so the global focus ring lands on it, and role="switch" names it.
+  // The off track is --gt-gray-500, not a lighter gray, so that it keeps 3:1 against the white
+  // modal. The transparent borders are invisible, but forced colors (Windows High Contrast) drop
+  // backgrounds and shadows and paint borders: the track and the knob stay outlined, and the
+  // side the knob is on still shows whether the switch is on.
+  &__switch {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    position: relative;
+    flex-shrink: 0;
+    width: 40px;
+    height: 22px;
+    margin: 0;
+    border: 1px solid transparent;
+    border-radius: var(--gt-radius-pill);
+    background: var(--gt-gray-500);
+    cursor: pointer;
+    @include gt-transition(background);
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: 18px;
+      height: 18px;
+      border: 1px solid transparent;
+      border-radius: 50%;
+      background: $white;
+      box-shadow: var(--gt-shadow-card);
+      @include gt-transition(transform);
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--gt-gray-600);
+    }
+
+    &:checked {
+      background: $primary-color;
+
+      &::before {
+        transform: translateX(18px);
+      }
+
+      &:hover:not(:disabled) {
+        background: $primary-hover;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &__retry {
+    align-self: flex-start;
+    padding: 6px $spacing-md;
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-family: $primary-font;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+    cursor: pointer;
+    @include gt-transition(background);
+
+    // index.css gives every button:hover an indigo border; keep the border's own color.
+    &:hover {
+      background: $background;
+      border-color: $border-color;
+    }
+  }
+
   // ── Footer ───────────────────────────────────────────────────────────────
 
   &__footer {
@@ -348,22 +489,43 @@
 
     &__nav {
       width: 100%;
-      padding: $spacing-sm $spacing-md;
+      // Right padding: the close button's inset, its width and a gap, so no tab sits under it.
+      padding: $spacing-sm ($spacing-md + $settings-close-size + $spacing-sm) $spacing-sm $spacing-md;
       border-right: none;
       border-bottom: 1px solid $border-color;
       flex-direction: row;
       align-items: center;
-      gap: $spacing-md;
       flex-shrink: 0;
     }
 
+    // The title, the tabs and the close button do not fit side by side on a phone (the tabs would
+    // run under the button below ~375px), and the tabs and the section's own heading already say
+    // where you are. The heading stays for screen readers, hidden the usual way.
     &__nav-title {
-      margin: 0;
-      font-size: $font-size-base;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      border: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
+    // Centered on the row of tabs: the nav's top padding plus half of what a tab (37px: a 14px line
+    // at line-height 1.5, and the tab's 8px of padding above and below) has over this 30px box.
+    &__close {
+      top: $spacing-md - $spacing-xs;
+    }
+
+    // The nav's only child in the flow is this list (the title is out of it), so the tabs wrap here:
+    // one that does not fit drops to a second row, which the nav's right padding also keeps clear
+    // of the close button.
     &__nav-list {
       flex-direction: row;
+      flex-wrap: wrap;
+      row-gap: $spacing-xs;
     }
 
     &__section {

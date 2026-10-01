@@ -1,24 +1,22 @@
 """
 Email delivery utility.
 
-Sends transactional emails via SMTP (TLS on port 587 by default).
-Requires SMTP_HOST, SMTP_USER, and SMTP_PASSWORD to be set in .env.
-See config.py for the full list of settings.
+``send_email`` sends one transactional email right now, through
+``app.utils.email_transport``: Maileroo's HTTP API when MAILEROO_API_KEY is set,
+SMTP (STARTTLS on port 587 by default) otherwise. See config.py for the settings.
 
-If SMTP is not configured (e.g. local dev without a mail server) the
-function raises a RuntimeError so callers can surface a clear error
-rather than silently swallowing it.
+If no provider is configured (e.g. local dev without a mail server) it raises
+EmailNotConfiguredError, a RuntimeError, so callers can surface a clear error
+rather than silently swallowing it. Any other failure is an EmailDeliveryError:
+TransientEmailError (retry later) or PermanentEmailError (never retry).
+
+The HTML helpers below prepare editor content for an email body.
 """
 
-import logging
 import re
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
-logger = logging.getLogger(__name__)
-
-_RESEND_SMTP_HOST = "smtp.resend.com"
+from app.utils import email_transport
+from app.utils.email_transport import EmailMessage
 
 
 def normalize_editor_html_for_email(html: str) -> str:
@@ -86,26 +84,6 @@ def wrap_editor_html_for_email(html: str) -> str:
     )
 
 
-_RESEND_SMTP_USER = "resend"
-
-
-def _smtp_login_user(host: str, configured_user: str) -> str:
-    """
-    Resend SMTP always authenticates with username ``resend`` (API key as password).
-    The visible From address is SMTP_FROM, not SMTP_USER.
-    """
-    if host.strip().lower() == _RESEND_SMTP_HOST:
-        if configured_user and configured_user != _RESEND_SMTP_USER:
-            logger.warning(
-                "Resend SMTP: SMTP_USER must be %r (got %r). Using %r; set the sender in SMTP_FROM.",
-                _RESEND_SMTP_USER,
-                configured_user,
-                _RESEND_SMTP_USER,
-            )
-        return _RESEND_SMTP_USER
-    return configured_user
-
-
 def send_email(
     *,
     to: str,
@@ -117,7 +95,8 @@ def send_email(
     bcc: list[str] | None = None,
 ) -> None:
     """
-    Send a plain-text (and optionally HTML) email via the configured SMTP server.
+    Send a plain-text (and optionally HTML) email now, through the configured provider
+    (Maileroo's HTTP API when MAILEROO_API_KEY is set, SMTP otherwise).
 
     Args:
         to:        Recipient email address.
@@ -131,52 +110,20 @@ def send_email(
                    to the SMTP envelope only).
 
     Raises:
-        RuntimeError: If SMTP settings are missing from the environment.
-        smtplib.SMTPException: On connection or authentication failures.
+        EmailNotConfiguredError: No provider is configured. A RuntimeError, and a
+            TransientEmailError.
+        EmailDeliveryError: The provider did not take the email. TransientEmailError
+            means retry later (timeouts, outages, throttling, a misconfiguration);
+            PermanentEmailError means never retry (a bad address, a rejected body).
     """
-    from app.config import settings  # local import avoids circular dependency at module load
-
-    if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        raise RuntimeError(
-            "SMTP is not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in .env "
-            "to enable email delivery."
+    email_transport.send(
+        EmailMessage(
+            to=to,
+            subject=subject,
+            text=body_text,
+            html=body_html,
+            cc=tuple(cc or ()),
+            bcc=tuple(bcc or ()),
+            reply_to=reply_to,
         )
-
-    sender = settings.SMTP_FROM or settings.SMTP_USER
-    cc = cc or []
-    bcc = bcc or []
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = sender
-    msg["To"] = to
-    if cc:
-        msg["Cc"] = ", ".join(cc)
-    if reply_to:
-        msg["Reply-To"] = reply_to
-
-    msg.attach(MIMEText(body_text, "plain"))
-    if body_html:
-        msg.attach(MIMEText(body_html, "html"))
-
-    all_recipients = [to] + cc + bcc
-
-    login_user = _smtp_login_user(settings.SMTP_HOST, settings.SMTP_USER)
-    logger.info(
-        "send_email: connecting | host=%s port=%s user=%s to=%s cc=%s bcc_count=%d",
-        settings.SMTP_HOST,
-        settings.SMTP_PORT,
-        login_user,
-        to,
-        cc,
-        len(bcc),
     )
-
-    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.ehlo()
-        smtp.login(login_user, settings.SMTP_PASSWORD)
-        smtp.sendmail(sender, all_recipients, msg.as_string())
-
-    logger.info("send_email: delivered | to=%s subject=%r", to, subject)

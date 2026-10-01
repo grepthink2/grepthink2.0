@@ -1,0 +1,99 @@
+@use '@styles/index.scss' as *;
+
+// The same card as AuthConfirm (the other signed-out page that answers an emailed link).
+.unsubscribe {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+
+  &__card {
+    background-color: $background;
+    border-radius: $border-radius-lg;
+    padding: ($spacing-xl + $spacing-md) $spacing-xxl;
+    width: min(480px, calc(100vw - 2rem));
+    box-sizing: border-box;
+    text-align: center;
+
+    @media (max-width: 600px) {
+      padding: $spacing-xl $spacing-lg;
+    }
+  }
+
+  // The heading takes focus after an action (see Unsubscribe.tsx): it is as wide as its text, so the
+  // focus ring wraps the words and not the whole card, and the radius rounds the ring.
+  &__title {
+    width: fit-content;
+    max-width: 100%;
+    font-family: $primary-font;
+    font-size: $font-size-header;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    margin: 0 auto 12px;
+    border-radius: $border-radius-sm;
+  }
+
+  &__text {
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    color: $text-secondary;
+    margin: 0;
+  }
+
+  &__button {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    background-color: $primary-color;
+    color: $white;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    @include gt-transition-medium(background-color);
+
+    &:hover:not(:disabled) {
+      background-color: $primary-hover;
+    }
+
+    &:disabled {
+      background-color: $disabled-bg;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+  }
+
+  // --gt-error-text, not --gt-error: the red itself is under 4.5:1 on the soft red.
+  &__error {
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    color: $error-text;
+    background-color: var(--gt-error-soft);
+    padding: 12px;
+    border-radius: 8px;
+    margin: 16px 0 0;
+  }
+
+  // --gt-info-text, not the accent blue: the accent is under 4.5:1 on this gray.
+  &__link {
+    display: inline-block;
+    margin-top: 20px;
+    padding: $spacing-sm;
+    color: var(--gt-info-text);
+    font-family: $primary-font;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    text-decoration: underline;
+
+    // index.css recolors every a:hover to a lighter indigo; keep the color that passes.
+    &:hover {
+      color: var(--gt-info-text);
+      text-decoration-thickness: 2px;
+    }
+  }
+}

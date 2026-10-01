@@ -17,6 +17,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from app.utils.email_transport import (
+    EmailMisconfiguredError,
+    EmailNotConfiguredError,
+    PermanentEmailError,
+    TransientEmailError,
+)
 from tests.conftest import header_for, make_token
 from tests.fake_supabase import FakeSupabase
 
@@ -384,6 +390,123 @@ def test_send_without_smtp_on_a_deployment_answers_503_and_keeps_nothing(
         )
 
     assert res.status_code == 503
+    assert _pending(db) == []
+
+
+@pytest.mark.parametrize(
+    ("on_a_deployment", "status"),
+    [(False, 200), (True, 503)],
+    ids=["developer-machine", "deployment"],
+)
+def test_send_with_no_email_provider_keeps_its_own_answer_not_the_delivery_failure_one(
+    client, auth_header, db, monkeypatch, on_a_deployment, status
+):
+    """EmailNotConfiguredError is a delivery error too, but the RuntimeError branch comes first:
+    a missing provider is the administrator's problem (503, or the log on a developer machine),
+    not "try again in a minute"."""
+    if on_a_deployment:
+        monkeypatch.setenv("VERCEL", "1")
+    else:
+        monkeypatch.delenv("VERCEL", raising=False)
+    with patch(
+        "app.profiles.controller.send_email", side_effect=EmailNotConfiguredError("nothing set")
+    ):
+        res = client.post(
+            "/api/profiles/send-edu-verification",
+            headers=auth_header,
+            json={"edu_email": "ann@ucsc.edu"},
+        )
+
+    assert res.status_code == status, res.text
+
+
+TRY_AGAIN = "Couldn't send the verification email. Try again in a minute."
+CHECK_THE_ADDRESS = "We couldn't send a code to that address. Check it and try again."
+
+
+@pytest.mark.parametrize(
+    ("failure", "detail", "level"),
+    [
+        pytest.param(
+            TransientEmailError("provider unreachable"), TRY_AGAIN, logging.WARNING, id="transient"
+        ),
+        # A bad key while students verify must reach Sentry: it is user-driven, so it is loud
+        # the moment it starts, and low volume, so it cannot flood. The others are not worth one.
+        pytest.param(
+            EmailMisconfiguredError("provider refused us"),
+            TRY_AGAIN,
+            logging.ERROR,
+            id="misconfigured",
+        ),
+        # Only a permanent failure points at the address: the rest are not the user's to fix.
+        pytest.param(
+            PermanentEmailError("address rejected"),
+            CHECK_THE_ADDRESS,
+            logging.WARNING,
+            id="permanent",
+        ),
+    ],
+)
+def test_send_answers_502_and_keeps_nothing_when_the_email_cannot_be_delivered(
+    client, auth_header, db, mailer, caplog, failure, detail, level
+):
+    mailer.side_effect = failure
+    with caplog.at_level(logging.WARNING, logger="app.profiles.controller"):
+        res = client.post(
+            "/api/profiles/send-edu-verification",
+            headers=auth_header,
+            json={"edu_email": "ann@ucsc.edu"},
+        )
+
+    assert res.status_code == 502, res.text
+    assert res.json()["detail"] == detail
+    # Nobody has a code to enter, so none is left pending.
+    assert _pending(db) == []
+    # The failure is logged, but the code that never arrived is not.
+    [record] = [r for r in caplog.records if "email delivery failed" in r.getMessage()]
+    assert record.levelno == level
+    assert not re.search(r"\b\d{6}\b", caplog.text)
+    assert not re.search(r"\d{6}", res.text)
+
+
+def test_a_retry_right_after_a_failed_delivery_is_not_rate_limited(client, auth_header, db, mailer):
+    """The once-a-minute limit reads the pending row's last_sent_at, and a failed send leaves no
+    row, so a code that never went out does not cost the user a minute."""
+    body = {"edu_email": "ann@ucsc.edu"}
+    mailer.side_effect = TransientEmailError("provider unreachable")
+    failed = client.post("/api/profiles/send-edu-verification", headers=auth_header, json=body)
+    assert failed.status_code == 502
+
+    mailer.side_effect = None  # the provider is back
+    retry = client.post("/api/profiles/send-edu-verification", headers=auth_header, json=body)
+
+    assert retry.status_code == 200, retry.text
+    assert len(_pending(db)) == 1
+    assert mailer.call_count == 2
+
+
+def test_a_failed_delivery_forgets_the_code_it_replaced_too(client, auth_header, db, mailer):
+    """A new code replaces the old one before it is emailed, so after a failed send there is no
+    code that could still be valid: the row goes, rather than keeping one nobody was sent."""
+    _pending(db).append(
+        {
+            "user_id": USER,
+            "edu_email": "old@ucsc.edu",
+            "code_hash": "stale",
+            "attempts": 1,
+            "expires_at": "2099-01-01T00:00:00+00:00",
+            "last_sent_at": OLD,
+        }
+    )
+    mailer.side_effect = PermanentEmailError("address rejected")
+
+    res = client.post(
+        "/api/profiles/send-edu-verification",
+        headers=auth_header,
+        json={"edu_email": "ann@ucsc.edu"},
+    )
+
+    assert res.status_code == 502
     assert _pending(db) == []
 
 

@@ -32,12 +32,14 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes institutions projects assignments tsr staffing
-  messages profiles contact notifications tas attendance stats
+  messages profiles contact notifications tas attendance stats outbox
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
   core/sentry.py     # optional Sentry reporting (SENTRY_DSN): event scrubbing, delivery before the response
-  jobs/pending_invites.py  # poller that sends queued class-invite emails
+  outbox/             # email outbox: enqueue, dispatcher, kinds, preferences, Maileroo webhook
+  jobs/email_dispatch.py  # in-process dispatch loop, only while EMAIL_DISPATCH_SECRET is unset
+  utils/email_transport.py  # Maileroo HTTP API or SMTP; transient vs permanent errors
   main.py            # app wiring: CORS, security headers, rate limiter, routers
   config.py          # settings from the repo-root .env
   dependencies.py    # require_user / require_instructor (JWT verify)
@@ -126,7 +128,8 @@ npx vitest run                              # unit + component tests
 Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `login-check`,
 `create-user`, `check-email`), `/api/classes`, `/api/institutions`, `/api/projects`, `/api/assignments`,
 `/api/tsrs`, `/api/staffing`, `/api/messages`, `/api/profiles`, `/api/contact`,
-`/api/notifications`, `/api/tas`, `/api/stats`, plus attendance routes under `/api`.
+`/api/notifications`, `/api/tas`, `/api/stats`, `/api/email` (outbox dispatch, Maileroo webhook,
+unsubscribe, email preferences), plus attendance routes under `/api`.
 The full agent-facing action catalog (method, params, role) lives at
 `frontend/public/.well-known/grepthink-actions.json`.
 
@@ -176,8 +179,15 @@ The full agent-facing action catalog (method, params, role) lives at
   new credentials that way, and keep names, grades and review text out of exception and log
   messages: nothing can recognise those.
 - **Rate limiting** (slowapi) covers `create_user`, `check_email`, `login_check`,
-  `contact`, `stats`, `list_institutions` (`GET /api/institutions`, 60/min). Add
-  `@limiter.limit(...)` (+ a `request: Request` param) for new abuse-prone endpoints.
+  `contact`, `stats`, `list_institutions` (`GET /api/institutions`, 60/min), and the `/api/email`
+  dispatch, webhook and unsubscribe routes. Add `@limiter.limit(...)` (+ a `request: Request`
+  param) for new abuse-prone endpoints.
+- **Email goes through the outbox.** Queue an email with `app.outbox.controller.enqueue`
+  (one row per recipient, a `kind` registered in `app/outbox/kinds.py`, a `dedupe_key` when the
+  producer may run twice) instead of sending from a request or a background task: Vercel pauses
+  an instance between requests, and a send cut off mid-way used to be lost. Only interactive
+  emails the user is waiting for (verification codes, the contact form) call
+  `app.utils.email.send_email` directly. Reminder/digest kinds need a preference `category`.
 - **Preview / "View class as student"** (offered only in a class you teach) is a frontend-only
   read-only simulation of that class as its students see it (`previewContext` + `previewGuard`) —
   no backend act-as, so it does not show a specific student's real data.

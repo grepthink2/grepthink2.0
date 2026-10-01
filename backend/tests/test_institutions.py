@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 import time
+from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,7 +13,7 @@ from fastapi.testclient import TestClient
 from app.core.errors import DatabaseError, DatabaseUnavailableError
 from app.institutions import controller as institutions
 from app.limiter import limiter
-from tests.conftest import ISTINYE_INSTITUTION
+from tests.conftest import ISTINYE_INSTITUTION, UCSC_INSTITUTION
 from tests.fake_supabase import FakeSupabase
 
 UCSC = {
@@ -19,6 +21,7 @@ UCSC = {
     "name": "UC Santa Cruz",
     "slug": "ucsc",
     "email_domains": ["ucsc.edu"],
+    "timezone": "America/Los_Angeles",
 }
 # The row as it would actually sit in the database: mixed case and stray whitespace, to exercise
 # _normalized_domain. Compare against the already-clean ISTINYE_INSTITUTION from conftest.
@@ -413,6 +416,20 @@ def test_is_known_institution_normalizes_the_id(db):
     assert institutions.is_known_institution(None) is False
 
 
+@pytest.mark.parametrize("institution_id", [None, "not-a-uuid"], ids=["none", "not-an-id"])
+def test_is_known_institution_needs_no_lookup_for_an_id_that_is_not_a_uuid(
+    monkeypatch, institution_id
+):
+    # Nothing that is not a UUID can name a school, so it is unknown without reading the list:
+    # an institutions outage cannot turn that answer into an error.
+    def load_institutions():
+        raise AssertionError("load_institutions must not be called")
+
+    monkeypatch.setattr(institutions, "load_institutions", load_institutions)
+
+    assert institutions.is_known_institution(institution_id) is False
+
+
 @pytest.mark.parametrize(
     ("email", "expected"),
     [
@@ -443,6 +460,7 @@ def test_the_list_is_public_and_cacheable(client: TestClient, db):
     assert res.status_code == 200
     assert res.headers["cache-control"] == "public, max-age=300"
     by_slug = {i["slug"]: i for i in res.json()["institutions"]}
+    # Each expected row includes its school's timezone, so this is also what pins that field.
     assert by_slug == {
         "ucsc": UCSC,
         "istinye": ISTINYE_INSTITUTION,
@@ -460,3 +478,238 @@ def test_the_list_is_empty_before_the_migration(client: TestClient, unmigrated):
 
 def test_the_list_is_rate_limited():
     assert "app.institutions.views.list_institutions" in limiter._route_limits
+
+
+# Timezones: ``institutions.timezone`` (2026-09-30_institution_timezones.sql) is the IANA zone a
+# school's dates are in. PROD has no such column until the migration is applied.
+
+ZONE_SCHOOL = {
+    "id": "77777777-7777-4777-8777-777777777777",
+    "name": "Zone University",
+    "slug": "zone",
+    "email_domains": ["zone.edu"],
+}
+
+
+def _load_zone_school(monkeypatch, **columns) -> dict:
+    """Load a school whose row is ``ZONE_SCHOOL`` plus ``columns``, through the real loader.
+
+    Pass ``timezone=...`` to set one (``None`` is NULL); leave it out for a database the
+    migration has not reached, where the row has no such column at all.
+    """
+    fake = FakeSupabase(institutions=[{**ZONE_SCHOOL, **columns}])
+    monkeypatch.setattr(institutions, "get_client", lambda: fake)
+    institutions.clear_institutions_cache()
+    [school] = institutions.load_institutions()
+    return school
+
+
+@pytest.mark.parametrize(
+    ("columns", "expected"),
+    [
+        pytest.param({}, "America/Los_Angeles", id="no-column-yet"),
+        pytest.param({"timezone": None}, "America/Los_Angeles", id="null"),
+        pytest.param({"timezone": ""}, "America/Los_Angeles", id="empty"),
+        pytest.param({"timezone": "America/Los_Angeles"}, "America/Los_Angeles", id="pacific"),
+        pytest.param({"timezone": "Europe/Istanbul"}, "Europe/Istanbul", id="istanbul"),
+    ],
+)
+def test_a_school_keeps_its_own_timezone_else_gets_the_default_without_an_error(
+    monkeypatch, caplog, columns, expected
+):
+    with caplog.at_level(logging.WARNING, logger="app.institutions.controller"):
+        school = _load_zone_school(monkeypatch, **columns)
+
+    assert school["timezone"] == expected
+    # Not set is an ordinary state (PROD until the migration is applied): nothing to report.
+    assert [r for r in caplog.records if r.name == "app.institutions.controller"] == []
+
+
+@pytest.mark.parametrize(
+    "bad_name",
+    [
+        pytest.param("Mars/Olympus", id="no-such-zone"),
+        pytest.param(" Europe/Istanbul", id="stray-space"),
+        pytest.param("../etc", id="leaves-the-tz-database"),
+        pytest.param("Europe", id="a-region-not-a-zone"),
+        pytest.param("x" * 300, id="name-too-long"),
+    ],
+)
+def test_an_unknown_timezone_gets_the_default_and_an_error_log(monkeypatch, caplog, bad_name):
+    # An ERROR, not a WARNING: Sentry files a WARNING as a breadcrumb only, and a maintainer's
+    # typo would otherwise have reminders go out in the wrong zone until someone read the log.
+    # These names make zoneinfo raise four kinds of exception: not found; ValueError; OSError (a
+    # name over the file-name limit, on every Python version); and IsADirectoryError (a directory
+    # of the tz database, "Europe", on Python 3.12 and older: 3.14 reports a not-found instead,
+    # so there "x" * 300 is what covers OSError). None may escape, or one row's typo would fail
+    # the read of every school.
+    with caplog.at_level(logging.WARNING, logger="app.institutions.controller"):
+        school = _load_zone_school(monkeypatch, timezone=bad_name)
+
+    assert school["timezone"] == "America/Los_Angeles"
+    # Only the zone fell back: the school keeps everything else.
+    assert (school["slug"], school["email_domains"]) == ("zone", ["zone.edu"])
+    [record] = [r for r in caplog.records if r.name == "app.institutions.controller"]
+    assert record.levelno == logging.ERROR
+    assert record.getMessage() == (
+        f"institutions: unknown timezone {bad_name!r} for 'zone'; using America/Los_Angeles"
+    )
+
+
+class _SelectSpy:
+    """Wraps a fake client and records the column list each ``.select(...)`` was given."""
+
+    def __init__(self, fake):
+        self._fake = fake
+        self.selects: list[str] = []
+
+    def table(self, name):
+        query = self._fake.table(name)
+        select = query.select
+
+        def recording_select(columns="*", *args, **kwargs):
+            self.selects.append(columns)
+            return select(columns, *args, **kwargs)
+
+        query.select = recording_select
+        return query
+
+
+def test_the_read_selects_every_column_so_it_works_before_the_timezone_column_exists(monkeypatch):
+    # Naming "timezone" would make PostgREST fail the whole read (42703, undefined column) on a
+    # database the migration has not reached (PROD until it is applied), taking every class list
+    # and school-email check down with it.
+    spy = _SelectSpy(FakeSupabase(institutions=[dict(UCSC)]))
+    monkeypatch.setattr(institutions, "get_client", lambda: spy)
+    institutions.clear_institutions_cache()
+
+    institutions.load_institutions()
+
+    assert spy.selects == ["*"]
+
+
+def test_columns_the_app_does_not_use_never_reach_the_cached_list(monkeypatch):
+    # select("*") brings back every column, so what is kept is decided by _normalized: a column
+    # added to the table later must not ride along into the cache.
+    school = _load_zone_school(
+        monkeypatch, timezone="Europe/Istanbul", created_at="2026-09-25T00:00:00Z", notes="x"
+    )
+
+    assert school == {**ZONE_SCHOOL, "timezone": "Europe/Istanbul"}
+
+
+@pytest.fixture
+def without_timezone_column(monkeypatch):
+    """The two schools as a database that has no ``institutions.timezone`` returns them."""
+    rows = [{k: v for k, v in row.items() if k != "timezone"} for row in (UCSC, IST_RAW)]
+    fake = FakeSupabase(institutions=rows)
+    monkeypatch.setattr(institutions, "get_client", lambda: fake)
+    institutions.clear_institutions_cache()
+
+
+def test_the_list_gives_every_school_the_default_zone_before_the_column_exists(
+    client: TestClient, without_timezone_column
+):
+    res = client.get("/api/institutions")
+
+    assert res.status_code == 200
+    assert res.headers["cache-control"] == "public, max-age=300"
+    # Temporary by design: İstinye is treated as Pacific until the migration sets Istanbul.
+    assert {i["slug"]: i["timezone"] for i in res.json()["institutions"]} == {
+        "ucsc": "America/Los_Angeles",
+        "istinye": "America/Los_Angeles",
+    }
+
+
+def test_a_cached_school_without_a_timezone_is_listed_with_the_default(
+    client: TestClient, monkeypatch
+):
+    # An entry primed into the cache by hand, from before the field existed.
+    old = {k: v for k, v in UCSC_INSTITUTION.items() if k != "timezone"}
+    monkeypatch.setattr(institutions, "_cache", (float("inf"), [old]))
+
+    res = client.get("/api/institutions")
+
+    assert res.json()["institutions"] == [{**old, "timezone": "America/Los_Angeles"}]
+
+
+@pytest.mark.parametrize(
+    ("institution", "zone"),
+    [(UCSC_INSTITUTION, "America/Los_Angeles"), (ISTINYE_INSTITUTION, "Europe/Istanbul")],
+    ids=["ucsc", "istinye"],
+)
+def test_institution_timezone_is_that_schools_zone(with_istinye, institution, zone):
+    result = institutions.institution_timezone(institution["id"])
+
+    assert isinstance(result, ZoneInfo)
+    assert result.key == zone
+
+
+def test_institution_timezone_reads_the_zone_through_the_loader(db):
+    # Row -> _normalized -> cache -> institution_timezone, with no entry primed by hand.
+    assert institutions.institution_timezone(ISTINYE_INSTITUTION["id"]).key == "Europe/Istanbul"
+    assert institutions.institution_timezone(UCSC["id"]).key == "America/Los_Angeles"
+
+
+@pytest.mark.parametrize(
+    "institution_id",
+    [UUID(ISTINYE_INSTITUTION["id"]), ISTINYE_INSTITUTION["id"].upper()],
+    ids=["uuid-object", "upper-case"],
+)
+def test_institution_timezone_finds_a_school_by_a_uuid_or_a_re_cased_id(
+    with_istinye, institution_id
+):
+    # Matched the way is_known_institution matches: the id a caller holds need not be spelled
+    # the way the database spells it.
+    assert institutions.institution_timezone(institution_id).key == "Europe/Istanbul"
+
+
+@pytest.mark.parametrize(
+    "institution_id",
+    [None, "33333333-3333-4333-8333-333333333333", "not-a-uuid"],
+    ids=["no-school", "unknown-id", "not-an-id"],
+)
+def test_institution_timezone_is_the_default_for_no_school_or_an_unknown_one(
+    with_istinye, institution_id
+):
+    result = institutions.institution_timezone(institution_id)
+
+    assert isinstance(result, ZoneInfo)
+    assert result.key == "America/Los_Angeles"
+
+
+def test_institution_timezone_is_the_default_before_the_institutions_table_exists(unmigrated):
+    assert institutions.institution_timezone(ISTINYE_INSTITUTION["id"]).key == "America/Los_Angeles"
+
+
+def test_institution_timezone_of_a_cached_school_without_one_is_the_default(monkeypatch):
+    old = {k: v for k, v in ISTINYE_INSTITUTION.items() if k != "timezone"}
+    monkeypatch.setattr(institutions, "_cache", (float("inf"), [old]))
+
+    assert institutions.institution_timezone(old["id"]).key == "America/Los_Angeles"
+
+
+@pytest.mark.parametrize("institution_id", [None, "not-a-uuid"], ids=["no-school", "not-an-id"])
+def test_institution_timezone_needs_no_lookup_for_an_id_that_cannot_match(
+    monkeypatch, institution_id
+):
+    # A class with no school, or an id that is no UUID, must not cost a cache lookup, or fail in
+    # an outage with a cold cache.
+    def load_institutions():
+        raise AssertionError("load_institutions must not be called")
+
+    monkeypatch.setattr(institutions, "load_institutions", load_institutions)
+
+    assert institutions.institution_timezone(institution_id).key == "America/Los_Angeles"
+
+
+def test_institution_timezone_does_not_hide_an_outage_as_an_unknown_school(monkeypatch):
+    # With nothing cached a failed read raises. Answering with the default zone would quietly
+    # schedule a school in another zone (İstinye is 10-11 hours ahead) at the wrong hour.
+    institutions.clear_institutions_cache()
+    monkeypatch.setattr(
+        institutions, "get_client", lambda: _FailingWith(pg_code="42501", pg_message="no grant")
+    )
+
+    with pytest.raises(DatabaseError):
+        institutions.institution_timezone(ISTINYE_INSTITUTION["id"])
