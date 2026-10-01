@@ -17,7 +17,11 @@ from app.core.db import get_client
 from app.core.errors import DatabaseConflictError, DatabaseError, DatabaseUnavailableError
 from app.institutions.controller import is_school_email
 from app.utils.email import send_email
-from app.utils.email_transport import EmailDeliveryError, PermanentEmailError
+from app.utils.email_transport import (
+    EmailDeliveryError,
+    EmailMisconfiguredError,
+    PermanentEmailError,
+)
 from app.utils.profiles import needs_roster_email
 
 logger = logging.getLogger(__name__)
@@ -309,7 +313,15 @@ def send_edu_verification(user_id: str, edu_email: str) -> dict:
         # pending: the once-a-minute limit reads its row, and the user would wait that minute
         # for nothing. The code is never logged.
         _forget_pending(client, user_id)
-        logger.warning("edu_verification: email delivery failed | user_id=%s err=%s", user_id, exc)
+        # A misconfigured provider (a bad key) while students verify has to reach Sentry: it is
+        # user-driven, so it shows the moment it starts, and low volume, so it cannot flood.
+        # An outage or a rejected address is only worth a warning.
+        logger.log(
+            logging.ERROR if isinstance(exc, EmailMisconfiguredError) else logging.WARNING,
+            "edu_verification: email delivery failed | user_id=%s err=%s",
+            user_id,
+            exc,
+        )
         # Only a permanent failure points at the address; the rest (an outage, our own settings)
         # are not the user's to fix, so they are told to try again.
         raise HTTPException(

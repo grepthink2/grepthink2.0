@@ -90,11 +90,15 @@ class Settings:
     #   SMTP_USER=you@gmail.com
     #   SMTP_PASSWORD=app-password
     #   SMTP_FROM=GrepThink <you@gmail.com>
-    SMTP_HOST: str = os.environ.get("SMTP_HOST", "")
+    #
+    # A stray newline (a pasted value) must not become part of the setting: smtplib would look up
+    # "smtp.example.com\n". Everything is stripped but the password, which may end in a space, so
+    # only its line ending goes.
+    SMTP_HOST: str = os.environ.get("SMTP_HOST", "").strip()
     SMTP_PORT: int = int(os.environ.get("SMTP_PORT", 587))
-    SMTP_USER: str = os.environ.get("SMTP_USER", "")
-    SMTP_PASSWORD: str = os.environ.get("SMTP_PASSWORD", "")
-    SMTP_FROM: str = os.environ.get("SMTP_FROM", "")
+    SMTP_USER: str = os.environ.get("SMTP_USER", "").strip()
+    SMTP_PASSWORD: str = os.environ.get("SMTP_PASSWORD", "").rstrip("\r\n")
+    SMTP_FROM: str = os.environ.get("SMTP_FROM", "").strip()
 
     # Maileroo HTTP API (app.utils.email_transport). When MAILEROO_API_KEY (a sending key) is
     # set, every email goes through the API instead of SMTP. EMAIL_FROM is the sender
@@ -104,7 +108,7 @@ class Settings:
         os.environ.get("MAILEROO_API_URL", "").strip().rstrip("/")
         or "https://smtp.maileroo.com/api/v2"
     )
-    EMAIL_FROM: str = os.environ.get("EMAIL_FROM", "")
+    EMAIL_FROM: str = os.environ.get("EMAIL_FROM", "").strip()
 
     # Email outbox (app.outbox). EMAIL_DISPATCH_SECRET turns on POST /api/email/dispatch for
     # the pg_cron schedule and turns off the in-process loop (app.jobs.email_dispatch), which

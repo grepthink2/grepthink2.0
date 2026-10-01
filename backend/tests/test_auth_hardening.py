@@ -425,16 +425,30 @@ CHECK_THE_ADDRESS = "We couldn't send a code to that address. Check it and try a
 
 
 @pytest.mark.parametrize(
-    ("failure", "detail"),
+    ("failure", "detail", "level"),
     [
-        pytest.param(TransientEmailError("provider unreachable"), TRY_AGAIN, id="transient"),
-        pytest.param(EmailMisconfiguredError("provider refused us"), TRY_AGAIN, id="misconfigured"),
+        pytest.param(
+            TransientEmailError("provider unreachable"), TRY_AGAIN, logging.WARNING, id="transient"
+        ),
+        # A bad key while students verify must reach Sentry: it is user-driven, so it is loud
+        # the moment it starts, and low volume, so it cannot flood. The others are not worth one.
+        pytest.param(
+            EmailMisconfiguredError("provider refused us"),
+            TRY_AGAIN,
+            logging.ERROR,
+            id="misconfigured",
+        ),
         # Only a permanent failure points at the address: the rest are not the user's to fix.
-        pytest.param(PermanentEmailError("address rejected"), CHECK_THE_ADDRESS, id="permanent"),
+        pytest.param(
+            PermanentEmailError("address rejected"),
+            CHECK_THE_ADDRESS,
+            logging.WARNING,
+            id="permanent",
+        ),
     ],
 )
 def test_send_answers_502_and_keeps_nothing_when_the_email_cannot_be_delivered(
-    client, auth_header, db, mailer, caplog, failure, detail
+    client, auth_header, db, mailer, caplog, failure, detail, level
 ):
     mailer.side_effect = failure
     with caplog.at_level(logging.WARNING, logger="app.profiles.controller"):
@@ -449,7 +463,8 @@ def test_send_answers_502_and_keeps_nothing_when_the_email_cannot_be_delivered(
     # Nobody has a code to enter, so none is left pending.
     assert _pending(db) == []
     # The failure is logged, but the code that never arrived is not.
-    assert "email delivery failed" in caplog.text
+    [record] = [r for r in caplog.records if "email delivery failed" in r.getMessage()]
+    assert record.levelno == level
     assert not re.search(r"\b\d{6}\b", caplog.text)
     assert not re.search(r"\d{6}", res.text)
 

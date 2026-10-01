@@ -16,6 +16,7 @@ from __future__ import annotations
 import base64
 import datetime
 import hashlib
+import http.server
 import ipaddress
 import json
 import logging
@@ -627,7 +628,23 @@ SMTP_COMPLETE = {
         pytest.param(
             {"MAILEROO_API_KEY": API_KEY, "SMTP_FROM": SENDER}, True, id="key-and-legacy-sender"
         ),
-        pytest.param(SMTP_COMPLETE, True, id="smtp"),
+        pytest.param({**SMTP_COMPLETE, "SMTP_FROM": SENDER}, True, id="smtp-with-a-sender"),
+        pytest.param({**SMTP_COMPLETE, "EMAIL_FROM": SENDER}, True, id="smtp-with-email-from"),
+        pytest.param(
+            {**SMTP_COMPLETE, "SMTP_USER": "mailer@grepthink.test"}, True, id="smtp-user-is-sender"
+        ),
+        # The sender falls back to SMTP_USER, which must then be an address ("resend" is not).
+        pytest.param(SMTP_COMPLETE, False, id="smtp-user-is-not-an-address"),
+        pytest.param(
+            {**SMTP_COMPLETE, "SMTP_FROM": "Gr\u00e9pthink <noreply@grepthink.test>"},
+            False,
+            id="smtp-sender-not-ascii",
+        ),
+        pytest.param(
+            {"SMTP_HOST": " \n", "SMTP_USER": "mailer@grepthink.test", "SMTP_PASSWORD": "s3cret"},
+            False,
+            id="smtp-host-blank",
+        ),
         pytest.param({"MAILEROO_API_KEY": API_KEY}, False, id="key-without-sender"),
         pytest.param(
             {"MAILEROO_API_KEY": API_KEY, "EMAIL_FROM": "GrepThink"},
@@ -639,7 +656,9 @@ SMTP_COMPLETE = {
         ),
         # With a key, send() takes the HTTP path and never falls back to SMTP, so neither does this.
         pytest.param(
-            {"MAILEROO_API_KEY": API_KEY, **SMTP_COMPLETE}, False, id="key-without-sender-smtp-ok"
+            {"MAILEROO_API_KEY": API_KEY, **SMTP_COMPLETE, "SMTP_USER": "mailer@grepthink.test"},
+            False,
+            id="key-without-sender-smtp-fully-usable",
         ),
         pytest.param(
             {"MAILEROO_API_KEY": "bad key", "EMAIL_FROM": SENDER, **SMTP_COMPLETE},
@@ -703,42 +722,112 @@ def test_a_key_of_only_spaces_is_not_configured(monkeypatch):
         transport.send(_message())
 
 
-def test_the_settings_strip_the_key_and_the_url():
-    """Run apart, reloading ``app.config`` here would swap the ``settings`` other tests hold."""
+def _settings_under(environments: list[dict[str, str]], names: list[str]) -> list[list[str]]:
+    """What ``Settings`` holds for ``names`` under each environment, read in a separate process:
+    reloading ``app.config`` here would swap the ``settings`` other tests hold."""
     script = """
 import importlib, json, os, sys
 os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
 os.environ.setdefault("SUPABASE_KEY", "k")
 os.environ.setdefault("CORS_ORIGINS", "http://localhost:5173")
 import app.config as config
+environments, names = json.loads(sys.argv[1]), json.loads(sys.argv[2])
 found = []
-for key, url in json.loads(sys.argv[1]):
-    os.environ["MAILEROO_API_KEY"], os.environ["MAILEROO_API_URL"] = key, url
+for environment in environments:
+    for name in names:
+        os.environ.pop(name, None)
+    os.environ.update(environment)
     importlib.reload(config)
-    found.append([config.Settings.MAILEROO_API_KEY, config.Settings.MAILEROO_API_URL])
+    found.append([getattr(config.Settings, name) for name in names])
 print(json.dumps(found))
 """
-    default = "https://smtp.maileroo.com/api/v2"
-    cases = [
-        (
-            f"  {API_KEY} \n",
-            " https://maileroo.test/api/v2/ \n",
-            API_KEY,
-            "https://maileroo.test/api/v2",
-        ),
-        (f"\t{API_KEY}", "https://maileroo.test/api/v2//", API_KEY, "https://maileroo.test/api/v2"),
-        ("   ", "   ", "", default),
-        ("", "", "", default),
-    ]
     run = subprocess.run(
-        [sys.executable, "-c", script, json.dumps([[key, url] for key, url, _, _ in cases])],
+        [sys.executable, "-c", script, json.dumps(environments), json.dumps(names)],
         cwd=BACKEND_DIR,
         capture_output=True,
         text=True,
         check=True,
     )
+    return json.loads(run.stdout.strip().splitlines()[-1])
 
-    assert json.loads(run.stdout.strip().splitlines()[-1]) == [[k, u] for _, _, k, u in cases]
+
+def test_the_settings_strip_the_key_and_the_url():
+    default = "https://smtp.maileroo.com/api/v2"
+    cases = [
+        (
+            {"MAILEROO_API_KEY": f"  {API_KEY} \n", "MAILEROO_API_URL": " https://m.test/v2/ \n"},
+            [API_KEY, "https://m.test/v2"],
+        ),
+        (
+            {"MAILEROO_API_KEY": f"\t{API_KEY}", "MAILEROO_API_URL": "https://m.test/v2//"},
+            [API_KEY, "https://m.test/v2"],
+        ),
+        ({"MAILEROO_API_KEY": "   ", "MAILEROO_API_URL": "   "}, ["", default]),
+        ({"MAILEROO_API_KEY": "", "MAILEROO_API_URL": ""}, ["", default]),
+    ]
+
+    found = _settings_under([env for env, _ in cases], ["MAILEROO_API_KEY", "MAILEROO_API_URL"])
+
+    assert found == [expected for _, expected in cases]
+
+
+def test_the_settings_strip_the_smtp_host_user_and_senders_but_only_a_passwords_newline():
+    """A stray newline in SMTP_HOST made smtplib look up "smtp.example.test\\n". A password may
+    end in a space, so only its line ending goes."""
+    names = ["SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM", "EMAIL_FROM"]
+    cases = [
+        (
+            {
+                "SMTP_HOST": " smtp.example.test\n",
+                "SMTP_USER": "\tmailer ",
+                "SMTP_PASSWORD": "pa ss \r\n",
+                "SMTP_FROM": " GrepThink <noreply@x.test>\n",
+                "EMAIL_FROM": "\tGrepThink <noreply@y.test> \r\n",
+            },
+            [
+                "smtp.example.test",
+                "mailer",
+                "pa ss ",
+                "GrepThink <noreply@x.test>",
+                "GrepThink <noreply@y.test>",
+            ],
+        ),
+        ({"SMTP_HOST": " \n", "SMTP_USER": "  ", "SMTP_PASSWORD": "\r\n"}, ["", "", "", "", ""]),
+        ({"SMTP_PASSWORD": "secret  "}, ["", "", "secret  ", "", ""]),
+    ]
+
+    found = _settings_under([env for env, _ in cases], names)
+
+    assert found == [expected for _, expected in cases]
+
+
+@pytest.mark.parametrize(
+    ("host", "login_user"),
+    [
+        pytest.param("smtp.maileroo.com\n", "mailer", id="maileroo-newline"),
+        pytest.param(" SMTP.Maileroo.com \r\n", "mailer", id="maileroo-padded"),
+        pytest.param("smtp.resend.com\n", "resend", id="resend-newline"),
+    ],
+)
+def test_the_relay_check_the_login_quirk_and_the_connection_use_the_same_stripped_host(
+    monkeypatch, host, login_user
+):
+    _use_smtp(monkeypatch, host=host)
+    smtp = _fake_smtp(monkeypatch)
+
+    transport.send(_message(reference_id=OUR_ID))
+
+    assert smtp.connections == [(host.strip(), 587, 10)]
+    parsed = message_from_string(_sendmail(smtp)[3])
+    assert (parsed["X-Maileroo-Track"] == "no") is (host.strip().lower() == RELAY)
+    assert next(call for call in smtp.calls if call[0] == "login")[1] == login_user
+
+
+def test_a_blank_smtp_host_is_not_configured(monkeypatch):
+    _use_smtp(monkeypatch, host=" \n")
+
+    with pytest.raises(EmailNotConfiguredError):
+        transport.send(_message())
 
 
 def test_the_api_key_picks_http_and_no_smtp_session_is_opened(monkeypatch):
@@ -1198,8 +1287,8 @@ SESSION_FAILURES = [
     pytest.param(
         "starttls",
         ssl.SSLCertVerificationError(1, "certificate verify failed"),
-        TransientEmailError,
-        id="tls-untrusted-certificate",
+        EmailMisconfiguredError,
+        id="tls-untrusted-certificate",  # a wrong host, a missing CA store, interception: not per row
     ),
     pytest.param(
         "login",
@@ -1362,6 +1451,33 @@ def test_a_refused_main_recipient_is_permanent_even_though_the_others_got_the_me
     assert _steps(smtp)[-2:] == ["quit", "close"]
 
 
+@pytest.mark.parametrize(
+    ("reply", "temporary"),
+    [
+        pytest.param((400, b"lowest 4xx"), True, id="400"),
+        pytest.param((450, b"mailbox busy"), True, id="450"),
+        pytest.param((499, b"highest 4xx"), True, id="499"),
+        pytest.param((451, b"greylisted, try again"), True, id="451"),
+        pytest.param((550, b"no such user"), False, id="550"),
+        pytest.param((500, b"syntax error"), False, id="500"),
+    ],
+)
+def test_a_refused_main_recipient_says_when_the_refusal_was_temporary(
+    monkeypatch, reply, temporary
+):
+    """A 4xx would normally be retried. Here it is not, or cc and bcc would get the email twice;
+    the price is the main recipient's copy, and the message says so rather than call it final."""
+    _use_smtp(monkeypatch)
+    _fake_smtp(monkeypatch, refused={"student@ucsc.edu": reply})
+
+    with pytest.raises(PermanentEmailError) as caught:
+        transport.send(_full_message())
+
+    assert type(caught.value) is PermanentEmailError
+    assert ("temporarily" in str(caught.value)) is temporary
+    assert "student" not in str(caught.value)
+
+
 def test_refused_cc_and_bcc_are_a_warning_with_the_count_only(monkeypatch, caplog):
     _use_smtp(monkeypatch)
     _fake_smtp(
@@ -1394,13 +1510,13 @@ def test_nothing_refused_is_no_warning(monkeypatch, caplog):
 NON_ASCII = "jos\u00e9@ucsc.edu"
 
 
-@pytest.mark.parametrize("field", ["to", "cc", "bcc", "reply_to"])
-def test_a_non_ascii_address_is_permanent_before_smtp_connects_and_is_never_quoted(
+@pytest.mark.parametrize("field", ["to", "cc", "bcc"])
+def test_a_non_ascii_recipient_is_permanent_before_smtp_connects_and_is_never_quoted(
     monkeypatch, caplog, field
 ):
     _use_smtp(monkeypatch)
     smtp = _fake_smtp(monkeypatch)
-    value = NON_ASCII if field in ("to", "reply_to") else (NON_ASCII,)
+    value = NON_ASCII if field == "to" else (NON_ASCII,)
 
     with caplog.at_level(logging.DEBUG), pytest.raises(PermanentEmailError) as caught:
         transport.send(_message(**{field: value}))
@@ -1410,13 +1526,44 @@ def test_a_non_ascii_address_is_permanent_before_smtp_connects_and_is_never_quot
     assert smtp.connections == []
 
 
+def test_a_non_ascii_reply_to_is_left_off_but_the_email_still_goes(monkeypatch, caplog):
+    """The contact form sets Reply-To to the visitor's own address, and "josé@example.com" is a
+    real one. SMTP cannot carry it, but losing the whole message over a Reply-To would be worse."""
+    _use_smtp(monkeypatch)
+    smtp = _fake_smtp(monkeypatch)
+
+    with caplog.at_level(logging.WARNING):
+        assert transport.send(_message(reply_to=NON_ASCII)) is None
+
+    parsed = message_from_string(_sendmail(smtp)[3])
+    assert parsed["Reply-To"] is None
+    assert parsed["To"] == "student@ucsc.edu"  # the rest of the email is as sent
+    [record] = _warnings(caplog)
+    assert "Reply-To" in record.getMessage()
+    assert "jos" not in record.getMessage()  # the address is not quoted
+    assert _errors(caplog) == []
+
+
+def test_an_ascii_reply_to_is_still_sent_over_smtp(monkeypatch, caplog):
+    _use_smtp(monkeypatch)
+    smtp = _fake_smtp(monkeypatch)
+
+    with caplog.at_level(logging.WARNING):
+        transport.send(_message(reply_to="visitor@example.com"))
+
+    assert message_from_string(_sendmail(smtp)[3])["Reply-To"] == "visitor@example.com"
+    assert _warnings(caplog) == []
+
+
 def test_the_http_path_leaves_non_ascii_addresses_to_the_provider(monkeypatch):
     _use_http(monkeypatch)
     seen = _http(monkeypatch, _reply(200, _accepted()))
 
-    transport.send(_message(to=NON_ASCII))
+    transport.send(_message(to=NON_ASCII, reply_to=NON_ASCII))
 
-    assert json.loads(seen[0].content)["to"] == [{"address": NON_ASCII}]
+    body = json.loads(seen[0].content)
+    assert body["to"] == [{"address": NON_ASCII}]
+    assert body["reply_to"] == {"address": NON_ASCII}
 
 
 def test_a_non_ascii_character_smtplib_chokes_on_while_sending_is_permanent(monkeypatch, caplog):
@@ -1455,37 +1602,43 @@ def test_a_non_ascii_smtp_setting_is_a_misconfiguration_and_is_never_quoted(monk
     assert "\u00e4" not in _chain_messages(caught.value) + caplog.text
 
 
-def test_an_smtp_sender_without_an_address_is_a_misconfiguration_that_never_connects(
-    monkeypatch, caplog
-):
-    """``SMTP_USER=resend`` and no SMTP_FROM would send "From: resend": the provider refuses every
-    email, so say so once instead of trying each."""
-    _use_smtp(monkeypatch, user="resend")
-    monkeypatch.setattr(settings, "SMTP_FROM", "")
-    smtp = _fake_smtp(monkeypatch)
+@pytest.mark.parametrize(
+    ("path", "values"),
+    [
+        pytest.param("http", {"EMAIL_FROM": ""}, id="http-no-sender"),
+        pytest.param("http", {"EMAIL_FROM": "GrepThink"}, id="http-no-address"),
+        # ``SMTP_USER=resend`` and no SMTP_FROM would send "From: resend": the provider refuses
+        # every email, so say so once instead of trying each.
+        pytest.param(
+            "smtp", {"SMTP_USER": "resend", "SMTP_FROM": ""}, id="smtp-user-not-an-address"
+        ),
+        pytest.param("smtp", {"SMTP_FROM": "GrepThink"}, id="smtp-no-address"),
+        # compat32 would encode the whole From value, address included, leaving no address in it.
+        pytest.param(
+            "smtp", {"SMTP_FROM": "Gr\u00e9pthink <noreply@grepthink.test>"}, id="smtp-non-ascii"
+        ),
+    ],
+)
+def test_a_missing_or_unusable_sender_is_not_configured_on_both_paths(monkeypatch, path, values):
+    """Nothing to fix per email, so it is EmailNotConfiguredError whichever path is in use."""
+    if path == "http":
+        monkeypatch.setattr(settings, "MAILEROO_API_KEY", API_KEY)
+        contacted = _http(monkeypatch, _reply(200, _accepted()))
+    else:
+        _use_smtp(monkeypatch)
+        contacted = _fake_smtp(monkeypatch).connections
+    for name, value in values.items():
+        monkeypatch.setattr(settings, name, value)
 
-    with caplog.at_level(logging.WARNING), pytest.raises(EmailMisconfiguredError) as caught:
+    with pytest.raises(EmailNotConfiguredError) as caught:
         transport.send(_message())
 
-    assert type(caught.value) is EmailMisconfiguredError
+    assert type(caught.value) is EmailNotConfiguredError
+    assert isinstance(caught.value, RuntimeError)
     assert "EMAIL_FROM" in str(caught.value)
-    assert len(_warnings(caplog)) == 1
-    assert smtp.connections == []
-
-
-def test_a_non_ascii_smtp_sender_is_a_misconfiguration_not_a_permanent_failure(monkeypatch, caplog):
-    """compat32 would encode the whole From value, address included, leaving no address in it.
-    It is a setting: every email would hit it, so none may be dropped as permanent."""
-    _use_smtp(monkeypatch)
-    monkeypatch.setattr(settings, "SMTP_FROM", "Gr\u00e9pthink <noreply@grepthink.test>")
-    smtp = _fake_smtp(monkeypatch)
-
-    with caplog.at_level(logging.WARNING), pytest.raises(EmailMisconfiguredError) as caught:
-        transport.send(_message())
-
-    assert type(caught.value) is EmailMisconfiguredError
     assert "pthink" not in str(caught.value)
-    assert smtp.connections == []
+    assert transport.is_configured() is False
+    assert contacted == []
 
 
 def test_the_http_path_takes_a_non_ascii_sender_name(monkeypatch):
@@ -1519,6 +1672,54 @@ LINE_BREAKS = [
     pytest.param({"cc": (f"{PERSON}@ucsc.edu\nx",)}, id="cc"),
     pytest.param({"bcc": (f"{PERSON}@ucsc.edu\nx",)}, id="bcc"),
 ]
+
+
+# A mail library or a provider may treat any of what ``str.splitlines()`` splits on as a line end,
+# not just CR and LF, so all of them are refused and the two paths agree without the email package.
+EXOTIC_SEPARATORS = ["\x0b", "\x0c", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"]
+LINE_BREAKS += [
+    pytest.param(
+        {"subject": f"Hello {PERSON}{separator}Bcc: x@y.test"}, id=f"subject-U+{ord(separator):04X}"
+    )
+    for separator in EXOTIC_SEPARATORS
+]
+LINE_BREAKS += [
+    # A trailing newline is what a subject taken from a textarea carries; splitting would not
+    # show it as a second line.
+    pytest.param({"subject": f"Hello {PERSON}\n"}, id="subject-trailing-lf"),
+    pytest.param({"subject": f"\r{PERSON}"}, id="subject-leading-cr"),
+    pytest.param({"subject": "\u2028"}, id="subject-only-a-separator"),
+    pytest.param({"headers": {"X-Note": f"{PERSON}\x0bBcc: x@y.test"}}, id="header-value-vt"),
+    pytest.param({"headers": {f"X-{PERSON}\x0cBcc": "v"}}, id="header-name-ff"),
+    pytest.param({"reply_to": f"{PERSON}@ucsc.edu\x85x"}, id="reply-to-nel"),
+    pytest.param({"to": f"{PERSON}@ucsc.edu\u2028x"}, id="to-line-separator"),
+    pytest.param({"cc": (f"{PERSON}@ucsc.edu\u2029x",)}, id="cc-paragraph-separator"),
+    pytest.param({"bcc": (f"{PERSON}@ucsc.edu\x1cx",)}, id="bcc-file-separator"),
+]
+
+
+def test_the_separators_tested_are_exactly_the_ones_splitlines_splits_on():
+    """All of them are in the BMP; this fails if Python ever splits on another."""
+    found = {chr(code) for code in range(0x10000) if len(f"a{chr(code)}b".splitlines()) > 1}
+
+    assert found == {"\n", "\r", *EXOTIC_SEPARATORS}
+
+
+@pytest.mark.parametrize("path", ["http", "smtp"])
+def test_other_whitespace_and_non_ascii_text_in_a_subject_or_header_is_fine(monkeypatch, path):
+    if path == "http":
+        _use_http(monkeypatch)
+        _http(monkeypatch, _reply(200, _accepted()))
+    else:
+        _use_smtp(monkeypatch)
+        _fake_smtp(monkeypatch)
+
+    transport.send(
+        _message(
+            subject="R\u00e9sum\u00e9 \u2615\tdigest\u00a0now",
+            headers={"X-Note": "caf\u00e9 \t ok"},
+        )
+    )
 
 
 @pytest.mark.parametrize("fields", LINE_BREAKS)
@@ -1795,19 +1996,54 @@ def smtp_server(tls_files):
     server.close()
 
 
+def _trusting_context(certificate) -> ssl.SSLContext:
+    """A client context that accepts ``certificate`` (and still checks the name and expiry)."""
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.load_verify_locations(cafile=str(certificate))
+    return context
+
+
 def _use_scripted_smtp(monkeypatch, server: ScriptedSmtp, *, trusted: bool = True) -> None:
     """Point the transport at ``server``. ``trusted`` makes its self-signed certificate count as
     valid; without it the transport's own default context (which has no such trust) is used."""
     _use_smtp(monkeypatch, host="127.0.0.1")
     monkeypatch.setattr(settings, "SMTP_PORT", server.port)
     if trusted:
+        monkeypatch.setattr(
+            transport.ssl, "create_default_context", lambda: _trusting_context(server.certificate)
+        )
 
-        def trusting_context():
-            context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)  # verifies the certificate and name
-            context.load_verify_locations(cafile=str(server.certificate))
-            return context
 
-        monkeypatch.setattr(transport.ssl, "create_default_context", trusting_context)
+@pytest.fixture
+def https_server(tls_files):
+    """An HTTPS endpoint on 127.0.0.1 that answers every POST the way Maileroo does when it
+    accepts an email, with the same throwaway certificate."""
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            body = json.dumps(_accepted()).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(tls_files.cert, tls_files.key)
+    server.socket = context.wrap_socket(server.socket, server_side=True)
+    threading.Thread(
+        target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True
+    ).start()
+    server.url = f"https://127.0.0.1:{server.server_address[1]}/api/v2"
+    server.certificate = tls_files.cert
+    yield server
+    server.shutdown()
+    server.server_close()
 
 
 def test_real_smtp_delivers_over_starttls_then_login_then_the_message(monkeypatch, smtp_server):
@@ -1841,18 +2077,35 @@ def test_real_smtp_delivers_over_starttls_then_login_then_the_message(monkeypatc
 
 
 def test_real_smtp_refuses_an_untrusted_certificate_before_the_password_is_sent(
-    monkeypatch, smtp_server
+    monkeypatch, caplog, smtp_server
 ):
+    """A certificate nobody trusts (a wrong host, a missing CA store, something intercepting the
+    connection) is the same for every email, so it is a misconfiguration: the outbox should pause,
+    not back every row off for hours."""
     _use_scripted_smtp(monkeypatch, smtp_server, trusted=False)
 
-    with pytest.raises(TransientEmailError) as caught:
+    with caplog.at_level(logging.WARNING), pytest.raises(EmailMisconfiguredError) as caught:
         transport.send(_message())
 
-    assert type(caught.value) is TransientEmailError
+    assert type(caught.value) is EmailMisconfiguredError
     assert isinstance(caught.value.__cause__, ssl.SSLCertVerificationError)
+    assert "certificate" in str(caught.value)
+    assert len(_warnings(caplog)) == 1
+    assert _errors(caplog) == []
     smtp_server.wait_idle()
     # The handshake failed: no login and no message were ever offered to the impostor.
     assert smtp_server.verbs() == ["EHLO", "STARTTLS"]
+
+
+def test_real_smtp_connects_although_the_host_setting_ends_in_a_newline(monkeypatch, smtp_server):
+    """smtplib would look up "127.0.0.1\\n" and fail; the transport connects to the stripped host."""
+    _use_scripted_smtp(monkeypatch, smtp_server)
+    monkeypatch.setattr(settings, "SMTP_HOST", "127.0.0.1\n")
+
+    assert transport.send(_message()) is None
+
+    smtp_server.wait_idle()
+    assert len(smtp_server.delivered) == 1
 
 
 def test_real_smtp_a_reply_to_quit_cannot_replace_the_real_error(monkeypatch, smtp_server):
@@ -1899,6 +2152,20 @@ def test_real_smtp_a_refused_main_recipient_is_permanent_though_the_others_got_t
     assert smtp_server.verbs()[-1] == "QUIT"  # the server took the message: a polite goodbye
 
 
+def test_real_smtp_a_temporarily_refused_main_recipient_is_still_permanent(
+    monkeypatch, smtp_server
+):
+    smtp_server.rcpt_replies = {"student@ucsc.edu": "450 4.2.0 mailbox busy"}
+    _use_scripted_smtp(monkeypatch, smtp_server)
+
+    with pytest.raises(PermanentEmailError) as caught:
+        transport.send(_full_message())
+
+    assert "temporarily" in str(caught.value)
+    smtp_server.wait_idle()
+    assert len(smtp_server.delivered) == 1  # cc and bcc have it, which is why it is not retried
+
+
 def test_real_smtp_refused_cc_and_bcc_are_a_warning_with_the_count_only(
     monkeypatch, caplog, smtp_server
 ):
@@ -1924,7 +2191,7 @@ def test_real_smtp_a_non_ascii_address_that_got_past_the_check_is_still_permanen
     """The backstop. The address check normally stops this before connecting; with it out of the
     way, the real smtplib fails halfway through with a UnicodeEncodeError that quotes the text."""
     _use_scripted_smtp(monkeypatch, smtp_server)
-    monkeypatch.setattr(transport, "_check_smtp_addresses", lambda message, sender: None)
+    monkeypatch.setattr(transport, "_check_smtp_recipients", lambda message: None)
 
     with caplog.at_level(logging.DEBUG), pytest.raises(PermanentEmailError) as caught:
         transport.send(_message(to=NON_ASCII))
@@ -1992,6 +2259,58 @@ def test_real_smtp_replies_are_classified_like_the_fakes(
     smtp_server.wait_idle()
     assert "QUIT" not in smtp_server.verbs()  # nothing was delivered, so no goodbye either
     assert len(_warnings(caplog)) == (1 if expected is EmailMisconfiguredError else 0)
+
+
+# ── the real httpx, against an HTTPS endpoint with the same certificate ──────────────
+
+
+def test_a_certificate_failure_behind_a_connect_error_is_a_misconfiguration(monkeypatch, caplog):
+    """httpx wraps it: ConnectError <- httpcore.ConnectError <- ssl.SSLCertVerificationError."""
+    _use_http(monkeypatch)
+    failure = httpx.ConnectError("[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed")
+    failure.__cause__ = ssl.SSLCertVerificationError(1, "certificate verify failed")
+
+    def respond(request):
+        raise failure
+
+    _http(monkeypatch, respond)
+
+    with caplog.at_level(logging.WARNING), pytest.raises(EmailMisconfiguredError) as caught:
+        transport.send(_message())
+
+    assert type(caught.value) is EmailMisconfiguredError
+    assert len(_warnings(caplog)) == 1
+    assert _errors(caplog) == []
+
+
+def test_an_untrusted_https_certificate_is_a_misconfiguration_on_the_http_path_too(
+    monkeypatch, caplog, https_server
+):
+    _use_http(monkeypatch)
+    monkeypatch.setattr(settings, "MAILEROO_API_URL", https_server.url)
+
+    # The transport's own client, whose CA store does not know the test certificate.
+    with caplog.at_level(logging.WARNING), pytest.raises(EmailMisconfiguredError) as caught:
+        transport.send(_message())
+
+    assert type(caught.value) is EmailMisconfiguredError
+    assert "certificate" in str(caught.value)
+    assert len(_warnings(caplog)) == 1
+    assert _errors(caplog) == []
+    assert API_KEY not in caplog.text + _chain_messages(caught.value)
+
+
+def test_the_same_https_endpoint_answers_once_its_certificate_is_trusted(monkeypatch, https_server):
+    """The control for the test above: nothing else was wrong with the server."""
+    _use_http(monkeypatch)
+    monkeypatch.setattr(settings, "MAILEROO_API_URL", https_server.url)
+    monkeypatch.setattr(
+        transport,
+        "_http_client",
+        lambda: httpx.Client(verify=_trusting_context(https_server.certificate)),
+    )
+
+    assert transport.send(_message()) == PROVIDER_ID
 
 
 # ── reference ids ────────────────────────────────────────────────────────────────────

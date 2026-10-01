@@ -28,7 +28,7 @@ import re
 import smtplib
 import ssl
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from email.errors import MessageError
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -59,6 +59,11 @@ _NOT_CONFIGURED = (
 _NO_SENDER = (
     "MAILEROO_API_KEY is set but there is no usable sender address. Set EMAIL_FROM (or "
     "SMTP_FROM) to an address such as 'GrepThink <noreply@your-domain>'."
+)
+_NO_SMTP_SENDER = (
+    "There is no usable SMTP sender address. Set EMAIL_FROM (or SMTP_FROM) to an ASCII address "
+    "such as 'GrepThink <noreply@your-domain>'; without one the sender is SMTP_USER, which must "
+    "then be an address."
 )
 
 
@@ -138,23 +143,51 @@ def is_configured() -> bool:
     """Whether ``send`` has what it needs, on the path it would take.
 
     With an API key that is the HTTP path and nothing else (``send`` never falls back to SMTP), so
-    it needs a usable key and sender; without one, it needs all of SMTP.
+    it needs a usable key and sender; without one, it needs all of SMTP and a sender it can use.
     """
     if settings.MAILEROO_API_KEY:
         return _is_header_safe(settings.MAILEROO_API_KEY) and _http_sender() is not None
-    return _smtp_configured()
+    return _smtp_configured() and _smtp_sender() is not None
+
+
+def _smtp_host() -> str:
+    """SMTP_HOST as every use of it sees it: connecting, the Maileroo relay check and the Resend
+    login quirk. A stray newline in the setting must not make them disagree."""
+    return settings.SMTP_HOST.strip()
 
 
 def _smtp_configured() -> bool:
-    return bool(settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD)
+    return bool(_smtp_host() and settings.SMTP_USER and settings.SMTP_PASSWORD)
+
+
+def _smtp_sender() -> str | None:
+    """The From for SMTP, or ``None`` when there is no usable one.
+
+    It needs an address (SMTP_USER stands in when neither EMAIL_FROM nor SMTP_FROM is set, and
+    "resend" is not one), and ASCII: compat32 would encode a non-ASCII From whole, address
+    included, leaving the header with no address in it. Either way every email would hit it, so it
+    is a setting to fix, not a reason to drop any.
+    """
+    sender = settings.EMAIL_FROM or settings.SMTP_FROM or settings.SMTP_USER
+    if "@" not in parseaddr(sender)[1] or not sender.isascii():
+        return None
+    return sender
+
+
+def _has_line_break(text: str) -> bool:
+    """Whether ``text`` has any character ``str.splitlines()`` splits on: CR and LF, but also VT,
+    FF, FS, GS, RS, NEL and the Unicode line and paragraph separators. A mail library or a provider
+    may take any of them for a line end, so none is let through."""
+    return "".join(text.splitlines()) != text
 
 
 def _reject_line_breaks(message: EmailMessage) -> None:
-    """Refuse a message with a CR or LF in its subject, addresses or headers.
+    """Refuse a message with a line break in its subject, addresses or headers.
 
     Each becomes a line of the message, so a line break would let whoever wrote the text add
     headers of their own (a Bcc, say). It is checked here so that both paths answer the same,
-    before anything is built, and the text is never echoed: a subject can carry a name.
+    before anything is built and without relying on the email package, and the text is never
+    echoed: a subject can carry a name.
     """
     fields = [
         message.to,
@@ -165,7 +198,7 @@ def _reject_line_breaks(message: EmailMessage) -> None:
         *message.headers,
         *message.headers.values(),
     ]
-    if any("\r" in text or "\n" in text for text in fields):
+    if any(_has_line_break(text) for text in fields):
         raise PermanentEmailError("header contains a line break")
 
 
@@ -174,6 +207,28 @@ def _misconfigured(summary: str) -> EmailMisconfiguredError:
     one error per run."""
     logger.warning("email_transport: %s", summary)
     return EmailMisconfiguredError(summary)
+
+
+def _certificate_failure(exc: BaseException) -> ssl.SSLCertVerificationError | None:
+    """The certificate failure behind ``exc``, if that is what it is.
+
+    A certificate nobody trusts (a wrong host, a missing CA store, a wrong clock, something
+    intercepting the connection) is the same for every email, so it is for the settings to fix, not
+    something each row should back off from. httpx wraps it: ConnectError <- httpcore.ConnectError
+    <- ssl.SSLCertVerificationError.
+    """
+    seen: set[int] = set()
+    while exc is not None and id(exc) not in seen:
+        if isinstance(exc, ssl.SSLCertVerificationError):
+            return exc
+        seen.add(id(exc))
+        exc = exc.__cause__ or exc.__context__
+    return None
+
+
+def _certificate_reason(failure: ssl.SSLCertVerificationError) -> str:
+    """OpenSSL's own words ("self-signed certificate", "certificate has expired")."""
+    return getattr(failure, "verify_message", None) or "certificate verify failed"
 
 
 # ── Maileroo HTTP API ────────────────────────────────────────────────────────────────
@@ -252,6 +307,12 @@ def _send_http(message: EmailMessage) -> str | None:
             f"MAILEROO_API_URL is not a usable URL ({type(exc).__name__})"
         ) from exc
     except httpx.RequestError as exc:  # timeouts, refused connections, dropped links, bad bodies
+        failure = _certificate_failure(exc)
+        if failure is not None:
+            raise _misconfigured(
+                f"Maileroo's certificate was not accepted ({_certificate_reason(failure)}). Check "
+                "the CA store, the system clock and whether something is intercepting the connection."
+            ) from exc
         # Only the type: h11 quotes a bad header value (the key) in its message, and any other
         # text could carry a URL or an address.
         raise TransientEmailError(f"Maileroo could not be reached ({type(exc).__name__})") from exc
@@ -337,23 +398,27 @@ def _smtp_login_user(host: str, configured_user: str) -> str:
     return configured_user
 
 
-def _check_smtp_addresses(message: EmailMessage, sender: str) -> None:
-    """Refuse, before connecting, what SMTP cannot carry. smtplib would fail halfway through, and
-    its error quotes the text."""
-    if "@" not in parseaddr(sender)[1]:
-        raise _misconfigured(
-            "The SMTP sender has no address. Set EMAIL_FROM (or SMTP_FROM) to an address such as "
-            "'GrepThink <noreply@your-domain>'."
-        )
-    if not sender.isascii():
-        # compat32 encodes a non-ASCII From value whole, address included, leaving the header
-        # with no address in it. It is a setting, so every email would hit it.
-        raise _misconfigured(
-            "EMAIL_FROM (or SMTP_FROM) must be ASCII to go over SMTP: the Maileroo API takes any name."
-        )
-    addresses = [message.to, *message.cc, *message.bcc, message.reply_to or ""]
-    if not all(address.isascii() for address in addresses):
+def _check_smtp_recipients(message: EmailMessage) -> None:
+    """Refuse, before connecting, a recipient SMTP cannot carry. smtplib would fail halfway
+    through, and its error quotes the address."""
+    if not all(address.isascii() for address in (message.to, *message.cc, *message.bcc)):
         raise PermanentEmailError("address is not ASCII")
+
+
+def _without_unsendable_reply_to(message: EmailMessage) -> EmailMessage:
+    """``message`` without a Reply-To that SMTP cannot carry.
+
+    compat32 would encode a non-ASCII Reply-To whole, leaving no address in the header. It is a
+    convenience for whoever answers, and the contact form sets it to the visitor's own address,
+    which may well be "josé@example.com": the email goes without it rather than not at all.
+    """
+    if message.reply_to and not message.reply_to.isascii():
+        logger.warning(
+            "email_transport: Reply-To is not ASCII, which SMTP cannot carry, so it was left "
+            "off the email"
+        )
+        return replace(message, reply_to=None)
+    return message
 
 
 def _maileroo_headers(message: EmailMessage, reference_id: str | None) -> dict[str, str]:
@@ -439,6 +504,14 @@ def _smtp_error(exc: OSError | UnicodeError, stage: str) -> EmailDeliveryError:
             f"An SMTP setting is not ASCII ({stage}). Check SMTP_HOST, SMTP_USER and SMTP_PASSWORD."
         )
 
+    failure = _certificate_failure(exc)
+    if failure is not None:
+        return _misconfigured(
+            f"The SMTP server's certificate was not accepted at {stage} "
+            f"({_certificate_reason(failure)}). Check SMTP_HOST, the CA store and whether "
+            "something is intercepting the connection."
+        )
+
     if isinstance(exc, smtplib.SMTPAuthenticationError):
         return _misconfigured(
             f"SMTP login failed ({_smtp_reason(exc)}). Check SMTP_USER and SMTP_PASSWORD."
@@ -503,14 +576,14 @@ def _end_session(smtp: smtplib.SMTP, message: EmailMessage) -> None:
         _close(smtp)
 
 
-def _smtp_session(message: EmailMessage, sender: str, raw: str) -> dict:
-    """Connect, log in and hand the server the message. Returns the recipients it refused while
-    taking the message for the others."""
+def _smtp_session(message: EmailMessage, sender: str, raw: str, host: str) -> dict:
+    """Connect to ``host``, log in and hand the server the message. Returns the recipients it
+    refused while taking the message for the others."""
     recipients = [message.to, *message.cc, *message.bcc]
-    login_user = _smtp_login_user(settings.SMTP_HOST, settings.SMTP_USER)
+    login_user = _smtp_login_user(host, settings.SMTP_USER)
     logger.info(
         "send_email: connecting | host=%s port=%s user=%s to=%s cc=%s bcc_count=%d",
-        settings.SMTP_HOST,
+        host,
         settings.SMTP_PORT,
         login_user,
         message.to,
@@ -521,7 +594,7 @@ def _smtp_session(message: EmailMessage, sender: str, raw: str) -> dict:
     smtp = None
     stage = "connect"  # the step in progress, which decides what a failure means
     try:
-        smtp = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+        smtp = smtplib.SMTP(host, settings.SMTP_PORT, timeout=10)
         stage = "ehlo"
         smtp.ehlo()
         stage = "starttls"
@@ -546,11 +619,15 @@ def _send_smtp(message: EmailMessage) -> str | None:
     if not _smtp_configured():
         raise EmailNotConfiguredError(_NOT_CONFIGURED)
 
-    sender = settings.EMAIL_FROM or settings.SMTP_FROM or settings.SMTP_USER
-    _check_smtp_addresses(message, sender)
+    sender = _smtp_sender()
+    if sender is None:
+        raise EmailNotConfiguredError(_NO_SMTP_SENDER)
+    _check_smtp_recipients(message)
+    message = _without_unsendable_reply_to(message)
 
     # Only the Maileroo relay reads the options, and only it reports the id back to webhooks.
-    relay = settings.SMTP_HOST.strip().lower() == _MAILEROO_RELAY_HOST
+    host = _smtp_host()
+    relay = host.lower() == _MAILEROO_RELAY_HOST
     reference_id = None
     if relay and _REFERENCE_ID.fullmatch(message.reference_id or ""):
         reference_id = message.reference_id
@@ -563,9 +640,18 @@ def _send_smtp(message: EmailMessage) -> str | None:
             f"The email cannot be serialised ({type(exc).__name__})"
         ) from None
 
-    refused = _smtp_session(message, sender, raw)
+    refused = _smtp_session(message, sender, raw, host)
     if message.to in refused:
-        # cc and bcc have the message, so a retry would send it to them again.
+        # cc and bcc have the message, so a retry would send it to them again. That holds for a
+        # 4xx too, which would otherwise be retried: the trade-off is that a temporary refusal
+        # (greylisting, a busy mailbox) costs the main recipient their copy. The message says so
+        # instead of calling the refusal final.
+        code = refused[message.to][0]
+        if isinstance(code, int) and 400 <= code < 500:
+            raise PermanentEmailError(
+                "The SMTP server temporarily refused the recipient after taking the message for "
+                "the others; it is not retried, or cc and bcc would get it twice"
+            )
         raise PermanentEmailError(
             "The SMTP server refused the recipient after taking the message for the others"
         )
