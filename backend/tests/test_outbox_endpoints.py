@@ -274,27 +274,39 @@ def test_the_dispatch_rate_limit_picks_its_bucket_by_token():
 SECRET_NAMES = ["EMAIL_DISPATCH_SECRET", "MAILEROO_WEBHOOK_SECRET", "EMAIL_UNSUBSCRIBE_SECRET"]
 
 
-def secrets_under(environments: list[dict[str, str]]) -> list[list[str]]:
-    """The ``SECRET_NAMES`` ``Settings`` reads under each environment, in a separate process:
-    reloading ``app.config`` here would swap the ``settings`` every other test holds. Each
-    environment should name every secret, so that nothing comes from a developer's .env."""
+def settings_under(
+    environments: list[dict[str, str | None]], names: list[str]
+) -> tuple[list[list], str]:
+    """What ``Settings`` holds for ``names`` under each environment, and what it logged (stderr).
+
+    Read in a separate process: reloading ``app.config`` here would swap the ``settings`` every
+    other test holds. Each environment sets its variables (``None`` unsets one) on top of the
+    previous one's, and .env files are not read, so a developer's cannot change the answer.
+    """
     script = """
 import importlib, json, os, sys
+import dotenv
+dotenv.load_dotenv = lambda *args, **kwargs: False
 import app.config as config
 environments, names = json.loads(sys.argv[1]), json.loads(sys.argv[2])
 for environment in environments:
-    os.environ.update(environment)
+    for name, value in environment.items():
+        if value is None:
+            os.environ.pop(name, None)
+        else:
+            os.environ[name] = value
     importlib.reload(config)
     print(json.dumps([getattr(config.Settings, name) for name in names]))
 """
     run = subprocess.run(
-        [sys.executable, "-c", script, json.dumps(environments), json.dumps(SECRET_NAMES)],
+        [sys.executable, "-c", script, json.dumps(environments), json.dumps(names)],
         cwd=Path(__file__).resolve().parent.parent,
         capture_output=True,
         text=True,
         check=True,
     )
-    return [json.loads(line) for line in run.stdout.strip().splitlines()[-len(environments) :]]
+    lines = run.stdout.strip().splitlines()[-len(environments) :]
+    return [json.loads(line) for line in lines], run.stderr
 
 
 def test_the_email_secrets_are_read_without_surrounding_whitespace():
@@ -310,11 +322,56 @@ def test_the_email_secrets_are_read_without_surrounding_whitespace():
         dict.fromkeys(SECRET_NAMES, ""),
     ]
 
-    assert secrets_under(environments) == [
+    found, _ = settings_under(environments, SECRET_NAMES)
+
+    assert found == [
         ["d1spatch-s3cret", "webh00k-s3cret", "uns-s3cret"],
         ["", "", ""],
         ["", "", ""],
     ]
+
+
+#: (EMAIL_DISPATCH_IN_PROCESS, VERCEL_ENV, what it comes to); None: the variable is unset.
+IN_PROCESS_CASES = [
+    ("1", None, True),
+    ("true", None, True),
+    ("TRUE", "preview", True),
+    (" yes ", None, True),
+    ("On\n", None, True),
+    ("0", "production", False),
+    ("false", "production", False),
+    ("No", "production", False),
+    (" OFF ", "production", False),
+    # Unset: on only on Vercel production. A local backend or a Preview pointed at a shared
+    # database must not dispatch it.
+    (None, "production", True),
+    (None, "preview", False),
+    (None, "development", False),
+    (None, None, False),
+    ("", "production", True),  # blank: unset
+    ("", None, False),
+    ("maybe", "production", True),  # neither on nor off: the default, and a warning
+    ("maybe", None, False),
+]
+
+
+def test_in_process_dispatch_is_opt_in_except_on_vercel_production():
+    environments = [
+        {"EMAIL_DISPATCH_IN_PROCESS": flag, "VERCEL_ENV": vercel}
+        for flag, vercel, _ in IN_PROCESS_CASES
+    ]
+
+    found, logged = settings_under(environments, ["EMAIL_DISPATCH_IN_PROCESS"])
+
+    assert [
+        (flag, vercel, value)
+        for (flag, vercel, _), [value] in zip(IN_PROCESS_CASES, found, strict=True)
+    ] == IN_PROCESS_CASES
+    for default in (True, False):
+        assert (
+            "EMAIL_DISPATCH_IN_PROCESS='maybe' is not 1/true/yes/on or 0/false/no/off; using the "
+            f"default ({default})"
+        ) in logged
 
 
 def test_a_dispatch_sends_a_due_scheduled_invite_end_to_end(client, dispatch_on, monkeypatch):
@@ -591,49 +648,115 @@ def loop_runs(monkeypatch) -> dict[str, list]:
     return runs
 
 
-def test_without_the_dispatch_secret_the_api_dispatches_from_its_own_process(loop_runs):
-    with TestClient(main.app) as api:
-        assert api.get("/health").status_code == 200  # the app is up, the loop has started
-        assert loop_runs == {"started": [7.5], "cancelled": []}
-    # Stopped with the app.
-    assert loop_runs == {"started": [7.5], "cancelled": [7.5]}
+IN_PROCESS_STARTED = "email dispatcher: in-process, every 7.5 s (EMAIL_DISPATCH_IN_PROCESS)"
+SCHEDULE_ACTIVE = "email dispatcher: the pg_cron schedule (POST /api/email/dispatch)"
+NO_DISPATCHER = (
+    "no email dispatcher: queued emails wait until EMAIL_DISPATCH_IN_PROCESS=1 or the pg_cron "
+    "schedule"
+)
 
 
-def test_with_the_dispatch_secret_only_the_schedule_dispatches(loop_runs, monkeypatch):
-    monkeypatch.setattr(settings, "EMAIL_DISPATCH_SECRET", DISPATCH_SECRET)
-    with TestClient(main.app) as api:
-        assert api.get("/health").status_code == 200
-    assert loop_runs == {"started": [], "cancelled": []}
-
-
-def test_the_loop_ticks_with_the_configured_budget_until_cancelled_whatever_a_run_raises(
-    monkeypatch, caplog
+@pytest.mark.parametrize(
+    ("secret", "in_process", "started", "logged"),
+    [
+        ("", True, [7.5], [("INFO", IN_PROCESS_STARTED)]),
+        (DISPATCH_SECRET, True, [], [("INFO", SCHEDULE_ACTIVE)]),
+        (DISPATCH_SECRET, False, [], [("INFO", SCHEDULE_ACTIVE)]),
+        ("", False, [], [("WARNING", NO_DISPATCHER)]),
+    ],
+    ids=["in-process", "schedule", "schedule-in-process-off", "none"],
+)
+def test_the_api_starts_the_dispatcher_its_settings_choose_and_says_which(
+    loop_runs, monkeypatch, caplog, secret, in_process, started, logged
 ):
+    monkeypatch.setattr(settings, "EMAIL_DISPATCH_SECRET", secret)
+    monkeypatch.setattr(settings, "EMAIL_DISPATCH_IN_PROCESS", in_process)
+
+    with caplog.at_level(logging.INFO, logger="app.main"), TestClient(main.app) as api:
+        assert api.get("/health").status_code == 200  # the app is up, a loop would have started
+        assert loop_runs == {"started": started, "cancelled": []}
+
+    assert loop_runs == {"started": started, "cancelled": started}  # stopped with the app
+    assert [(r.levelname, r.getMessage()) for r in caplog.records if r.name == "app.main"] == logged
+
+
+def run_dispatch_loop(monkeypatch, outcome, *, runs: int = 2) -> list[float]:
+    """Run ``email_dispatch.run_forever`` until ``dispatch_tick`` has run ``runs`` times, then
+    cancel it as the lifespan does. ``outcome(n)`` is what run n returns (or raises). Returns
+    the budget each run was given."""
     budgets: list[float] = []
-    monkeypatch.setattr(settings, "EMAIL_DISPATCH_BUDGET_SECONDS", 4.0)
 
     def tick(*, budget_seconds):
         budgets.append(budget_seconds)
-        if len(budgets) == 1:
-            raise RuntimeError("a bug in one run")
-        return {}
+        return outcome(len(budgets))
 
     monkeypatch.setattr(outbox, "dispatch_tick", tick)
 
-    async def run_until_two_ticks():
+    async def until_enough_runs():
         task = asyncio.create_task(email_dispatch.run_forever(0))
-        while len(budgets) < 2:
+        while len(budgets) < runs:
             await asyncio.sleep(0.001)
-        task.cancel()  # what the lifespan does at shutdown
+        task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await task
-        return task
+        assert task.cancelled()
 
-    with caplog.at_level(logging.ERROR, logger="app.jobs.email_dispatch"):
-        task = asyncio.run(run_until_two_ticks())
+    asyncio.run(until_enough_runs())
+    return budgets
 
-    assert task.cancelled()
+
+def test_the_loop_runs_with_the_configured_budget_until_cancelled(monkeypatch):
+    monkeypatch.setattr(settings, "EMAIL_DISPATCH_BUDGET_SECONDS", 4.0)
+    budgets = run_dispatch_loop(monkeypatch, lambda run: {})
     assert budgets[:2] == [4.0, 4.0] and set(budgets) == {4.0}
-    [logged] = caplog.records
-    assert logged.getMessage() == "email_dispatch: a dispatch run failed"
-    assert isinstance(logged.exc_info[1], RuntimeError)
+
+
+OUTAGE = DatabaseUnavailableError(
+    operation="write",
+    target="claim_email_outbox",
+    pg_code="57014",
+    pg_message="canceling statement due to statement timeout",
+)
+DENIED = DatabaseError(
+    operation="write",
+    target="claim_email_outbox",
+    pg_code="42501",
+    pg_message="permission denied for function claim_email_outbox",
+)
+
+
+@pytest.mark.parametrize(
+    ("error", "level", "message", "with_traceback"),
+    [
+        # Every awake instance would otherwise file an error every few seconds of an outage.
+        (
+            OUTAGE,
+            logging.WARNING,
+            "email_dispatch: the database is unavailable, trying again in 0 s | pg_code=57014",
+            False,
+        ),
+        (DENIED, logging.ERROR, "email_dispatch: a dispatch run failed", True),
+        (
+            RuntimeError("a bug in one run"),
+            logging.ERROR,
+            "email_dispatch: a dispatch run failed",
+            True,
+        ),
+    ],
+    ids=["outage", "denied", "bug"],
+)
+def test_a_failed_run_is_logged_and_the_loop_goes_on(
+    monkeypatch, caplog, error, level, message, with_traceback
+):
+    def outcome(run):
+        if run == 1:
+            raise error
+        return {}
+
+    with caplog.at_level(logging.DEBUG, logger="app.jobs.email_dispatch"):
+        budgets = run_dispatch_loop(monkeypatch, outcome)
+
+    assert len(budgets) >= 2  # it went on after the failure
+    [logged] = [r for r in caplog.records if r.name == "app.jobs.email_dispatch"]
+    assert (logged.levelno, logged.getMessage()) == (level, message)
+    assert (logged.exc_info[1] if logged.exc_info else None) is (error if with_traceback else None)

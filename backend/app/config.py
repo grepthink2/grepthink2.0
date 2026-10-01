@@ -48,6 +48,28 @@ _DEFAULT_DEV_ORIGINS = [
 ]
 
 
+_ON = frozenset({"1", "true", "yes", "on"})
+_OFF = frozenset({"0", "false", "no", "off"})
+
+
+def _on_or_off(name: str, *, default: bool) -> bool:
+    """An on/off variable: 1/true/yes/on or 0/false/no/off, in any case and with spaces around.
+
+    Unset or blank: ``default``. Anything else is logged and read as ``default`` too.
+    """
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    if raw.lower() in _ON:
+        return True
+    if raw.lower() in _OFF:
+        return False
+    logger.warning(
+        "%s=%r is not 1/true/yes/on or 0/false/no/off; using the default (%s)", name, raw, default
+    )
+    return default
+
+
 class Settings:
     """Application settings loaded from environment variables"""
 
@@ -112,9 +134,19 @@ class Settings:
 
     # Email outbox (app.outbox). EMAIL_DISPATCH_SECRET turns on POST /api/email/dispatch for
     # the pg_cron schedule and turns off the in-process loop (app.jobs.email_dispatch), which
-    # otherwise runs every EMAIL_DISPATCH_POLL_SECONDS. The budgets bound how long one dispatch
-    # run, or one request sending its own emails, keeps starting new sends.
+    # otherwise runs every EMAIL_DISPATCH_POLL_SECONDS where EMAIL_DISPATCH_IN_PROCESS is on.
+    # The budgets bound how long one dispatch run, or one request sending its own emails, keeps
+    # starting new sends.
     EMAIL_DISPATCH_SECRET: str = os.environ.get("EMAIL_DISPATCH_SECRET", "").strip()
+    # Whether this process may run that loop. On by default only on Vercel production
+    # (VERCEL_ENV=production): a local backend pointed at the shared DEV database would
+    # otherwise dispatch everyone's DEV outbox (and pause it, having no mail provider), and a
+    # Preview deployment given PROD database variables would send PROD email. Set it to 1 to
+    # dispatch locally. With it off and no schedule, queued emails wait (app.main warns).
+    EMAIL_DISPATCH_IN_PROCESS: bool = _on_or_off(
+        "EMAIL_DISPATCH_IN_PROCESS",
+        default=os.environ.get("VERCEL_ENV", "").strip().lower() == "production",
+    )
     EMAIL_DISPATCH_POLL_SECONDS: float = float(
         os.environ.get("EMAIL_DISPATCH_POLL_SECONDS")
         or os.environ.get("PENDING_INVITES_POLL_SECONDS")

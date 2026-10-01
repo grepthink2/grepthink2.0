@@ -45,11 +45,23 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # The email outbox is dispatched from inside the process until the pg_cron schedule takes
-    # over, which setting EMAIL_DISPATCH_SECRET marks (app/jobs/email_dispatch.py).
+    # Who dispatches the email outbox: the pg_cron schedule once EMAIL_DISPATCH_SECRET is set;
+    # until then this process, where EMAIL_DISPATCH_IN_PROCESS allows it (on by default only on
+    # Vercel production); otherwise nobody, and queued emails wait (app/jobs/email_dispatch.py).
     task = None
-    if not settings.EMAIL_DISPATCH_SECRET:
+    if settings.EMAIL_DISPATCH_SECRET:
+        logger.info("email dispatcher: the pg_cron schedule (POST /api/email/dispatch)")
+    elif settings.EMAIL_DISPATCH_IN_PROCESS:
+        logger.info(
+            "email dispatcher: in-process, every %s s (EMAIL_DISPATCH_IN_PROCESS)",
+            settings.EMAIL_DISPATCH_POLL_SECONDS,
+        )
         task = asyncio.create_task(run_email_dispatch(settings.EMAIL_DISPATCH_POLL_SECONDS))
+    else:
+        logger.warning(
+            "no email dispatcher: queued emails wait until EMAIL_DISPATCH_IN_PROCESS=1 or the "
+            "pg_cron schedule"
+        )
     try:
         yield
     finally:
