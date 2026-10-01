@@ -6,7 +6,8 @@ import csv
 import datetime
 import io
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException
@@ -20,6 +21,7 @@ from app.institutions.controller import (
     load_institutions,
 )
 from app.outbox import controller as outbox
+from app.outbox import invite_jobs
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code, normalize_course_code
 from app.utils.profiles import profile_display_name
@@ -225,15 +227,20 @@ def _enroll_students(client, class_id: str, user_ids) -> set[str]:
     return {str(row["user_id"]) for row in (res.data or [])}
 
 
+InviteStatus = Literal["invited", "enrolled", "already_enrolled", "class_instructor", "error"]
+
+
 @dataclass(frozen=True)
 class InvitePlan:
     """What inviting one address comes to, decided before any email is sent (``_plan_invites``)."""
 
     email: str  # the stripped, lower-cased address as given
-    status: str  # "invited" | "enrolled" | "already_enrolled" | "class_instructor" | "error"
+    status: InviteStatus
     deliver_to: str | None  # the address to email; None = no email
     registered: bool  # the address belongs to an account
     user_id: str | None  # that account
+    #: For an ``error`` plan, what the lookup or the enrollment raised.
+    error: Exception | None = field(default=None, compare=False, repr=False)
 
 
 def _plan_invites(client, cid: str, owner_id: str, clean_emails: list[str]) -> list[InvitePlan]:
@@ -247,44 +254,48 @@ def _plan_invites(client, cid: str, owner_id: str, clean_emails: list[str]) -> l
     student plan ``enrolled`` then ``already_enrolled``, and both are emailed.
 
     Nothing is raised: a failed lookup makes every plan ``error``, a failed enrollment read every
-    account's, a failed enrollment write every account's that was not enrolled before.
+    account's, a failed enrollment write every account's that was not enrolled before. Each such
+    plan carries the exception (``error``), for a caller that answers with it.
 
     Round trips: per 100 addresses at most one profile lookup, one enrollment read and one
     enrollment upsert.
     """
     profiles: dict[str, dict] = {}
-    lookup_failed = False
+    lookup_error: Exception | None = None
     try:
         profiles = _find_student_profiles_by_email(client, clean_emails)
-    except Exception:
+    except Exception as err:
         logger.warning("invite: profile lookup failed | class=%s", cid, exc_info=True)
-        lookup_failed = True
+        lookup_error = err
 
     student_ids = list(
         dict.fromkeys(str(p["id"]) for p in profiles.values() if str(p["id"]) != owner_id)
     )
     enrolled_before: set[str] = set()
     newly_enrolled: set[str] = set()
-    read_failed = write_failed = False
+    read_error: Exception | None = None
+    write_error: Exception | None = None
     if student_ids:
         try:
             enrolled_before = _enrolled_user_ids(client, cid, student_ids)
-        except Exception:
+        except Exception as err:
             logger.warning("invite: enrollment read failed | class=%s", cid, exc_info=True)
-            read_failed = True
+            read_error = err
         to_enroll = [uid for uid in student_ids if uid not in enrolled_before]
-        if to_enroll and not read_failed:
+        if to_enroll and read_error is None:
             try:
                 newly_enrolled = _enroll_students(client, cid, to_enroll)
-            except Exception:
+            except Exception as err:
                 logger.warning("invite: enrollment write failed | class=%s", cid, exc_info=True)
-                write_failed = True
+                write_error = err
 
     plans: list[InvitePlan] = []
     reported: set[str] = set()  # students an earlier address already reported on
     for email in clean_emails:
-        if lookup_failed:
-            plans.append(InvitePlan(email, "error", None, registered=False, user_id=None))
+        if lookup_error is not None:
+            plans.append(
+                InvitePlan(email, "error", None, registered=False, user_id=None, error=lookup_error)
+            )
             continue
 
         profile = profiles.get(email)
@@ -296,8 +307,11 @@ def _plan_invites(client, cid: str, owner_id: str, clean_emails: list[str]) -> l
         if uid == owner_id:
             plans.append(InvitePlan(email, "class_instructor", None, registered=True, user_id=uid))
             continue
-        if read_failed or (write_failed and uid not in enrolled_before):
-            plans.append(InvitePlan(email, "error", None, registered=True, user_id=uid))
+        if read_error is not None or (write_error is not None and uid not in enrolled_before):
+            failure = read_error if read_error is not None else write_error
+            plans.append(
+                InvitePlan(email, "error", None, registered=True, user_id=uid, error=failure)
+            )
             continue
 
         already_enrolled = uid not in newly_enrolled or uid in reported
@@ -877,7 +891,9 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
     and the email goes through the outbox (``_email_invites``). The answer says
     whether it was sent or queued for the dispatcher to retry. An invitation or
     reminder that cannot be delivered answers 502; a new enrollment stands either
-    way, and its answer says what became of the email.
+    way, and its answer says what became of the email. A lookup or an enrollment
+    that fails answers with its failure: a database outage 503 with Retry-After
+    (the ``DatabaseError`` handler), anything else 500.
 
     Round trips: the class with its instructor's profile, the profile lookup, one
     enrollment read and, for a student not enrolled yet, one enrollment upsert;
@@ -891,7 +907,11 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
         class_row = _require_owner(client, instructor_id, cid, columns=_INVITE_CLASS_COLUMNS)
         [plan] = _plan_invites(client, cid, str(class_row.get("created_by")), [normalized_email])
         if plan.status == "error":
-            raise HTTPException(status_code=500, detail="Failed to invite student")
+            # A DatabaseError passes ``except HTTPException`` below and answers as one does;
+            # anything else is logged there and answers 500.
+            if plan.error is None:
+                raise HTTPException(status_code=500, detail="Failed to invite student")
+            raise plan.error
         if plan.status == "class_instructor":
             raise HTTPException(status_code=409, detail="You are the instructor of this class")
 
@@ -1978,6 +1998,11 @@ def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
     when it did. The dispatcher may mark the job sent between the read and the update: then the
     update changes nothing, and a second read says why (409, or 404 for a job gone meanwhile).
     Retrying the whole call after a dropped connection is safe: a cancelled job cancels again.
+
+    Cancelling is final for every email of the job no dispatcher has claimed yet: rows a tick
+    already queued for it (one that failed before it could mark the job sent) are cancelled too
+    (``invite_jobs.cancel_pending_rows``; before the outbox migration there are none). Students
+    a standard job enrolled when it was expanded stay enrolled.
     """
     try:
         client = get_client()
@@ -1999,6 +2024,7 @@ def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
             # Still there and unsent, yet not cancelled: never claim it was.
             logger.error("cancel_invite: the job could not be cancelled | job=%s", job_id)
             raise HTTPException(status_code=500, detail="Failed to cancel invite")
+        invite_jobs.cancel_pending_rows(client, job_id)
         logger.info("cancel_invite: cancelled job=%s class=%s", job_id, class_id)
         return {"cancelled": True}
     except HTTPException:

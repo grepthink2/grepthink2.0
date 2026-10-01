@@ -15,6 +15,7 @@ instead of becoming a 500 first.
 
 from __future__ import annotations
 
+import logging
 import threading
 import uuid
 from types import SimpleNamespace
@@ -24,6 +25,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.classes import controller as classes
+from app.core.errors import DatabaseError, DatabaseUnavailableError
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "instr", "instr-2"
@@ -350,6 +352,83 @@ def test_a_cancel_that_changed_nothing_never_answers_cancelled(monkeypatch):
         classes.cancel_invite(CLASS, JOB, INSTR)
     assert (exc.value.status_code, exc.value.detail) == (500, "Failed to cancel invite")
     assert _job(fake)["cancelled"] is False
+
+
+def _outbox_row(row_id: str, batch_id: str, status: str) -> dict:
+    return {"id": row_id, "batch_id": batch_id, "status": status, "updated_at": None}
+
+
+def test_cancelling_a_job_cancels_its_emails_no_dispatcher_has_claimed(db):
+    # Rows a tick queued for the job before it could mark the job sent.
+    db.rows("email_outbox").extend(
+        [
+            _outbox_row("queued", JOB, "pending"),
+            _outbox_row("going-out", JOB, "sending"),  # past stopping
+            _outbox_row("another-job", "job-2", "pending"),
+        ]
+    )
+    assert classes.cancel_invite(CLASS, JOB, INSTR) == {"cancelled": True}
+    statuses = {row["id"]: row["status"] for row in db.rows("email_outbox")}
+    assert statuses == {"queued": "cancelled", "going-out": "sending", "another-job": "pending"}
+    assert next(r for r in db.rows("email_outbox") if r["id"] == "queued")["updated_at"]
+
+
+class _OutboxFails(FakeSupabase):
+    """Every request to ``email_outbox`` raises ``error``."""
+
+    def __init__(self, error, **tables):
+        super().__init__(**tables)
+        self._error = error
+
+    def table(self, name):
+        query = super().table(name)
+        if name == "email_outbox":
+
+            def fail():
+                raise self._error
+
+            query.execute = fail
+        return query
+
+
+@pytest.mark.parametrize(
+    ("error", "logged"),
+    [
+        # Before the outbox migration there are no queued emails to cancel: nothing to say.
+        pytest.param(
+            DatabaseError(
+                operation="write",
+                target="email_outbox",
+                pg_code="PGRST205",
+                pg_message="Could not find the table 'public.email_outbox' in the schema cache",
+            ),
+            False,
+            id="no-outbox-yet",
+        ),
+        # Any other failure is logged; the job itself is cancelled either way.
+        pytest.param(
+            DatabaseUnavailableError(
+                operation="write",
+                target="email_outbox",
+                pg_code="57014",
+                pg_message="canceling statement due to statement timeout",
+            ),
+            True,
+            id="outage",
+        ),
+    ],
+)
+def test_a_cancel_answers_cancelled_whatever_happens_to_the_queued_emails(
+    monkeypatch, caplog, error, logged
+):
+    fake = _OutboxFails(error, **_world())
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    with caplog.at_level(logging.WARNING, logger="app.outbox.invite_jobs"):
+        assert classes.cancel_invite(CLASS, JOB, INSTR) == {"cancelled": True}
+    assert _job(fake)["cancelled"] is True
+    errors = [r.getMessage() for r in caplog.records if r.name == "app.outbox.invite_jobs"]
+    assert bool(errors) is logged
+    assert all(JOB in message for message in errors)
 
 
 # -------------------------------------------------------------- class reads

@@ -16,6 +16,7 @@ over one matched by email.
 
 from __future__ import annotations
 
+import logging
 from collections import Counter
 
 import pytest
@@ -23,13 +24,14 @@ from fastapi import HTTPException
 
 from app.classes import controller as classes
 from app.config import settings
-from app.core.errors import DatabaseError
+from app.core.errors import DatabaseError, DatabaseUnavailableError
 from app.utils.email_transport import (
     EmailMessage,
     EmailMisconfiguredError,
     PermanentEmailError,
     TransientEmailError,
 )
+from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
 
 INSTR = "instr"
@@ -148,12 +150,24 @@ def mail(monkeypatch):
     return transport
 
 
-class _FailingDb(FakeSupabase):
-    """FakeSupabase whose ``execute()`` raises when ``fails(table, query)`` is true."""
+def _outage(table: str) -> Exception:
+    """What the client raises while the database is down."""
+    return DatabaseUnavailableError(
+        operation="read",
+        target=table,
+        pg_code="57014",
+        pg_message="canceling statement due to statement timeout",
+    )
 
-    def __init__(self, fails, **tables):
+
+class _FailingDb(FakeSupabase):
+    """FakeSupabase whose ``execute()`` raises ``error(table)`` when ``fails(table, query)`` is
+    true: a database outage unless the test says otherwise."""
+
+    def __init__(self, fails, error=_outage, **tables):
         super().__init__(**tables)
         self._fails = fails
+        self._error = error
 
     def table(self, name):
         query = super().table(name)
@@ -161,7 +175,7 @@ class _FailingDb(FakeSupabase):
 
         def maybe_fail():
             if self._fails(name, query):
-                raise RuntimeError("database unavailable")
+                raise self._error(name)
             return execute()
 
         query.execute = maybe_fail
@@ -574,14 +588,64 @@ def test_invite_refuses_the_class_instructor(db, mail):
 
 
 @pytest.mark.parametrize("fails", [_address_lookup, _enrollment_write], ids=["lookup", "enroll"])
-def test_invite_answers_500_when_the_lookup_or_the_enrollment_fails(monkeypatch, mail, fails):
+def test_a_single_invite_during_a_database_outage_answers_with_the_outage(monkeypatch, mail, fails):
+    # Raised as it was before the outbox: the DatabaseError handler answers 503 + Retry-After.
     fake = _FailingDb(fails, **_world())
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
-    with pytest.raises(HTTPException) as exc:
+    with pytest.raises(DatabaseUnavailableError) as exc:
         classes.invite_student_to_class(CLASS, "s2@ucsc.edu", INSTR)
-    assert (exc.value.status_code, exc.value.detail) == (500, "Failed to invite student")
+    assert (exc.value.status_code, exc.value.code, exc.value.headers) == (
+        503,
+        "database_unavailable",
+        {"Retry-After": "5"},
+    )
     assert mail.attempts == []
     assert fake.rows("email_outbox") == []
+
+
+@pytest.mark.parametrize("fails", [_address_lookup, _enrollment_write], ids=["lookup", "enroll"])
+def test_a_single_invite_answers_500_when_the_lookup_or_the_enrollment_breaks(
+    monkeypatch, mail, caplog, fails
+):
+    fake = _FailingDb(fails, lambda table: RuntimeError("a bug"), **_world())
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    with (
+        caplog.at_level(logging.ERROR, logger="app.classes.controller"),
+        pytest.raises(HTTPException) as exc,
+    ):
+        classes.invite_student_to_class(CLASS, "s2@ucsc.edu", INSTR)
+    assert type(exc.value) is HTTPException
+    assert (exc.value.status_code, exc.value.detail) == (500, "Failed to invite student")
+    [logged] = [r for r in caplog.records if r.levelno >= logging.ERROR]
+    assert isinstance(logged.exc_info[1], RuntimeError)
+    assert mail.attempts == []
+
+
+PROBE_INSTR = "11111111-2222-4333-8444-555555555555"
+PROBE_CLASS = "c1a55000-0000-4000-8000-000000000001"
+
+
+def test_the_invite_route_answers_503_with_retry_after_during_a_database_outage(
+    client, monkeypatch, mail
+):
+    world = _world()
+    world["profiles"].append(_profile(PROBE_INSTR, "probe@ucsc.edu", role="instructor"))
+    world["classes"].append(
+        {"id": PROBE_CLASS, "created_by": PROBE_INSTR, "name": "CSE 115A", "course_code": "WXYZ"}
+    )
+    fake = _FailingDb(_address_lookup, **world)
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+
+    res = client.post(
+        f"/api/classes/{PROBE_CLASS}/invite",
+        headers={"Authorization": f"Bearer {make_token(sub=PROBE_INSTR)}"},
+        json={"student_email": "s2@ucsc.edu"},
+    )
+
+    assert res.status_code == 503, res.text
+    assert res.headers["Retry-After"] == "5"
+    assert res.json()["code"] == "database_unavailable"
+    assert mail.attempts == []
 
 
 NO_ROLE = "no-role"  # signed up with Google and has not picked a role on /select yet
