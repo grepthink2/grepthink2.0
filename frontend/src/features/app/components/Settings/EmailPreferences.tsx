@@ -105,6 +105,9 @@ const PreferenceSwitches: React.FC<{ initial: ApiEmailPreference[] }> = ({ initi
  * The Email section of Settings: which optional emails GrepThink sends this account. The backend
  * owns the categories. Invites and verification codes are not optional, so they are not listed.
  * Mounted while the section is shown, so each visit reads the saved settings again.
+ *
+ * The reminder and digest emails are not sent yet, so a note under the intro says the choices
+ * apply once they start. Remove the note when they do.
  */
 const EmailPreferences: React.FC = () => {
   const [preferences, setPreferences] = useState<ApiEmailPreference[] | null>(null);
@@ -142,6 +145,9 @@ const EmailPreferences: React.FC = () => {
       </h3>
       <p className="settings-modal__section-subtitle">
         Choose which emails GrepThink sends you. Class invites and verification codes are always sent.
+      </p>
+      <p className="settings-modal__section-subtitle">
+        Deadline reminders and message digests are coming soon. What you choose here will apply when they start.
       </p>
       {preferences ? (
         <PreferenceSwitches initial={preferences} />

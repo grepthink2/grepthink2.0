@@ -30,7 +30,7 @@ import { api, ApiError } from '@/lib/api';
 import Roster from '../Roster';
 
 const REFUSED =
-  "Couldn't queue the invite. Remove any pasted images, keep the subject on one line, and invite at most 500 students at a time.";
+  "Couldn't queue the invite. Remove any pasted images, keep the subject to one line under 255 characters, and invite at most 500 students (20 CC and 20 BCC) at a time.";
 
 const ADA: ApiRosterStudent = {
   id: 's1',

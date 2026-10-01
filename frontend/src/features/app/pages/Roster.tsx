@@ -29,14 +29,14 @@ interface UnsendJob {
 
 /**
  * What the instructor sees when the backend refuses a queued invite as too large or malformed. It
- * answers 422 for more than 500 emails or 20 CC/BCC addresses, an address over 254 characters or
- * with a line break, a subject over 255 characters or with one, or a body over 50 000 (text) or
- * 100 000 (HTML) characters, most often a screenshot pasted into the editor (it becomes a base64
- * `data:` image). FastAPI's 422 `detail` is a list of field errors, which `ApiError` can only word
- * as "Request failed with status 422".
+ * answers 422 for more than 500 emails or more than 20 CC or 20 BCC addresses, an address over 254
+ * characters or with a line break, a subject over 255 characters or with a line break, or a body
+ * over 50 000 (text) or 100 000 (HTML) characters, most often a screenshot pasted into the editor
+ * (it becomes a base64 `data:` image). FastAPI's 422 `detail` is a list of field errors, which
+ * `ApiError` can only word as "Request failed with status 422".
  */
 const INVITE_REFUSED =
-  "Couldn't queue the invite. Remove any pasted images, keep the subject on one line, and invite at most 500 students at a time.";
+  "Couldn't queue the invite. Remove any pasted images, keep the subject to one line under 255 characters, and invite at most 500 students (20 CC and 20 BCC) at a time.";
 
 /** The invite modal's error line for a failed `queueInvite`: any other failure keeps its own words. */
 function inviteErrorMessage(err: unknown): string {

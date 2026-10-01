@@ -43,6 +43,11 @@ const PROFILE = { id: 'u1', email: 'ann@gmail.com', role: 'student', first_name:
 const LOAD_FAILED = "Couldn't load your email settings.";
 const SAVE_FAILED = "Couldn't save that change. Try again.";
 
+const INTRO = 'Choose which emails GrepThink sends you. Class invites and verification codes are always sent.';
+/** The reminder and digest emails do not exist yet; the section says so under its intro. */
+const COMING_SOON =
+  'Deadline reminders and message digests are coming soon. What you choose here will apply when they start.';
+
 /** The 503 the backend answers with before its preferences migration is applied. */
 const unavailable = () =>
   new ApiError(503, 'Email preferences are not available yet', 'Request failed with status 503');
@@ -140,9 +145,21 @@ describe('Settings — Email', () => {
       expect(digests()).not.toBeChecked();
       expect(digests()).toHaveAccessibleDescription(DIGESTS.description);
       expect(screen.getByRole('heading', { name: 'Email' })).toBeInTheDocument();
-      expect(
-        screen.getByText('Choose which emails GrepThink sends you. Class invites and verification codes are always sent.'),
-      ).toBeInTheDocument();
+      expect(screen.getByText(INTRO)).toBeInTheDocument();
+    });
+
+    it('says under the intro, in its muted style, that the emails are coming soon', async () => {
+      await openEmailSection();
+
+      const intro = await screen.findByText(INTRO);
+      const note = screen.getByText(COMING_SOON);
+      expect(note.tagName).toBe('P');
+      expect(intro.nextElementSibling).toBe(note);
+      expect(note).toHaveClass('settings-modal__section-subtitle');
+      expect(note.className).toBe(intro.className);
+      // Ahead of the switches it explains.
+      const first = await screen.findByRole('switch', { name: 'Deadline reminders' });
+      expect(note.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     it('marks Email as the current section and leaves out the profile form and its Save button', async () => {
@@ -186,6 +203,20 @@ describe('Settings — Email', () => {
   });
 
   describe('loading', () => {
+    it('keeps saying the emails are coming soon while loading and when loading fails', async () => {
+      const answer = deferred<{ preferences: ApiEmailPreference[] }>();
+      vi.mocked(api.getEmailPreferences).mockReturnValue(answer.promise);
+      await openEmailSection();
+
+      expect(screen.getByRole('status')).toHaveTextContent('Loading…');
+      expect(screen.getByText(COMING_SOON)).toBeInTheDocument();
+
+      await act(async () => answer.reject(unavailable()));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Email preferences are not available yet');
+      expect(screen.getByText(COMING_SOON)).toBeInTheDocument();
+    });
+
     it('says it is loading until the preferences arrive', async () => {
       const answer = deferred<{ preferences: ApiEmailPreference[] }>();
       vi.mocked(api.getEmailPreferences).mockReturnValue(answer.promise);
