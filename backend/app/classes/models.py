@@ -6,7 +6,7 @@ import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 ClassStatus = Literal["active", "complete"]
 
@@ -56,15 +56,34 @@ class BulkInviteRequest(BaseModel):
     emails: list[str]
 
 
+#: The longest subject Maileroo accepts. A longer one fails permanently for every recipient, so
+#: it is refused (422) before anything is queued.
+MAX_EMAIL_SUBJECT_LENGTH = 255
+
+
 class QueueInviteRequest(BaseModel):
     """Request model for queuing a delayed invite batch"""
 
     emails: list[str]
     cc: list[str] = []
     bcc: list[str] = []
-    custom_subject: str | None = None
+    custom_subject: str | None = Field(default=None, max_length=MAX_EMAIL_SUBJECT_LENGTH)
     custom_body: str | None = None
     custom_body_html: str | None = None
+
+    @field_validator("custom_subject")
+    @classmethod
+    def subject_is_one_line(cls, subject: str | None) -> str | None:
+        """Refuse a subject with a line break (422) before anything is queued.
+
+        The email transport refuses any email whose subject has one (it could smuggle in a
+        header), so every recipient would fail. As there, a line break is any character
+        ``str.splitlines()`` splits on: CR and LF, but also VT, FF, FS, GS, RS, NEL and the
+        Unicode line and paragraph separators.
+        """
+        if subject is not None and "".join(subject.splitlines()) != subject:
+            raise ValueError("The subject must be a single line")
+        return subject
 
 
 class QueueInviteResponse(BaseModel):

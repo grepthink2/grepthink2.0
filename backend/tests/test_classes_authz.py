@@ -16,6 +16,8 @@ instead of becoming a 500 first.
 from __future__ import annotations
 
 import threading
+import uuid
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -146,13 +148,14 @@ def db(monkeypatch):
 
 @pytest.fixture
 def emails(monkeypatch):
-    sent: list[dict] = []
+    """Every message handed to the email transport (invites go through the outbox)."""
+    sent: list = []
 
-    def record(**kwargs):
-        sent.append(kwargs)
+    def record(message):
+        sent.append(message)
+        return None
 
-    monkeypatch.setattr(classes, "send_class_invite_email", record)
-    monkeypatch.setattr(classes, "send_class_invite_email_or_raise", record)
+    monkeypatch.setattr("app.utils.email_transport.send", record)
     return sent
 
 
@@ -245,13 +248,16 @@ def test_owner_deletes_a_manual_roster_entry(db):
 def test_owner_queues_an_invite(db):
     out = classes.queue_invite(CLASS, ["new@ucsc.edu"], INSTR, delay_seconds=0)
     assert set(out) == {"job_id", "send_at"}
+    # The job id is chosen before the insert, so a retried insert cannot queue the batch twice.
+    assert str(uuid.UUID(out["job_id"])) == out["job_id"]
     job = next(r for r in db.rows("pending_invites") if r["id"] == out["job_id"])
-    assert (job["class_id"], job["instructor_id"], job["emails"]) == (
+    assert (job["class_id"], job["instructor_id"], job["emails"], job["send_at"]) == (
         CLASS,
         INSTR,
         ["new@ucsc.edu"],
+        out["send_at"],
     )
-    assert db.executes == 2, _trace(db)
+    assert _trace(db) == ["classes:select", "pending_invites:upsert"]
 
 
 def test_cancel_invite_answers(db):
@@ -265,6 +271,85 @@ def test_cancel_invite_answers(db):
     with pytest.raises(HTTPException) as sent:
         classes.cancel_invite(CLASS, JOB, INSTR)
     assert (sent.value.status_code, sent.value.detail) == (409, "Emails already sent")
+
+
+def test_cancelling_a_cancelled_job_again_still_answers_cancelled(db):
+    # What a retry after a dropped connection does when the first update did commit.
+    assert classes.cancel_invite(CLASS, JOB, INSTR) == {"cancelled": True}
+    assert classes.cancel_invite(CLASS, JOB, INSTR) == {"cancelled": True}
+    assert _job(db)["cancelled"] is True
+
+
+class _Meanwhile(FakeSupabase):
+    """Runs ``meanwhile(db)`` once, right after the first read of ``pending_invites``: what the
+    dispatcher (or anyone) does between ``cancel_invite``'s read and its update."""
+
+    def __init__(self, meanwhile, **tables):
+        super().__init__(**tables)
+        self._meanwhile = meanwhile
+
+    def table(self, name):
+        query = super().table(name)
+        if name == "pending_invites":
+            execute = query.execute
+
+            def then_meanwhile():
+                result = execute()
+                if query._op == "select" and self._meanwhile is not None:
+                    meanwhile, self._meanwhile = self._meanwhile, None
+                    meanwhile(self)
+                return result
+
+            query.execute = then_meanwhile
+        return query
+
+
+def _job(db) -> dict:
+    return next(row for row in db.rows("pending_invites") if row["id"] == JOB)
+
+
+def _racing(monkeypatch, meanwhile) -> FakeSupabase:
+    fake = _Meanwhile(meanwhile, **_world())
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    return fake
+
+
+def test_a_cancel_that_loses_the_race_to_the_dispatcher_answers_409(monkeypatch):
+    # The dispatcher marks the job sent between the read and the update. Its emails are on
+    # their way, so the answer cannot be "cancelled", and the job is not marked cancelled.
+    fake = _racing(monkeypatch, lambda db: _job(db).update(sent=True))
+    with pytest.raises(HTTPException) as exc:
+        classes.cancel_invite(CLASS, JOB, INSTR)
+    assert (exc.value.status_code, exc.value.detail) == (409, "Emails already sent")
+    assert (_job(fake)["sent"], _job(fake)["cancelled"]) == (True, False)
+
+
+def test_a_cancel_whose_job_is_gone_meanwhile_answers_404(monkeypatch):
+    _racing(monkeypatch, lambda db: db.rows("pending_invites").clear())
+    with pytest.raises(HTTPException) as exc:
+        classes.cancel_invite(CLASS, JOB, INSTR)
+    assert (exc.value.status_code, exc.value.detail) == (404, "Invite job not found")
+
+
+class _UpdateChangesNothing(FakeSupabase):
+    """An update of ``pending_invites`` that matches no row, whatever the rows say."""
+
+    def table(self, name):
+        query = super().table(name)
+        if name == "pending_invites":
+            execute = query.execute
+            query.execute = lambda: SimpleNamespace(data=[]) if query._op == "update" else execute()
+        return query
+
+
+def test_a_cancel_that_changed_nothing_never_answers_cancelled(monkeypatch):
+    # Postgres cannot get here (nothing un-sends a job), but the answer follows the update.
+    fake = _UpdateChangesNothing(**_world())
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    with pytest.raises(HTTPException) as exc:
+        classes.cancel_invite(CLASS, JOB, INSTR)
+    assert (exc.value.status_code, exc.value.detail) == (500, "Failed to cancel invite")
+    assert _job(fake)["cancelled"] is False
 
 
 # -------------------------------------------------------------- class reads
@@ -311,33 +396,45 @@ def test_class_reads_admit_the_instructor_and_enrolled_members(db, name, caller)
 
 
 class _DisconnectOnce(FakeSupabase):
-    """Raises a transient httpx error from the first ``table()`` call, then behaves."""
+    """Raises a transient httpx error from the first ``table()`` call (the first of ``on``,
+    when given), then behaves."""
 
-    def __init__(self, **tables):
+    def __init__(self, on: str | None = None, **tables):
         super().__init__(**tables)
         self._lock = threading.Lock()
+        self._on = on
         self.disconnects = 1
 
     def table(self, name):
         with self._lock:
-            if self.disconnects:
+            if self.disconnects and self._on in (None, name):
                 self.disconnects -= 1
                 raise httpx.RemoteProtocolError("Server disconnected")
         return super().table(name)
 
 
 @pytest.mark.parametrize(
-    "call",
+    ("call", "on"),
     [
-        lambda: classes.queue_invite(CLASS, ["new@ucsc.edu"], INSTR),
-        lambda: classes.cancel_invite(CLASS, JOB, INSTR),
-        lambda: classes.get_class_projects(CLASS, INSTR),
-        lambda: classes.get_class_projects_overview(CLASS, INSTR),
+        # queue_invite is not retried whole: its owner check and its insert are each retried
+        # on their own, the insert with the job id chosen before it (so a retry after an
+        # insert that did commit cannot queue the batch twice).
+        (lambda: classes.queue_invite(CLASS, ["new@ucsc.edu"], INSTR), "classes"),
+        (lambda: classes.queue_invite(CLASS, ["new@ucsc.edu"], INSTR), "pending_invites"),
+        (lambda: classes.cancel_invite(CLASS, JOB, INSTR), None),
+        (lambda: classes.get_class_projects(CLASS, INSTR), None),
+        (lambda: classes.get_class_projects_overview(CLASS, INSTR), None),
     ],
-    ids=["queue_invite", "cancel_invite", "get_class_projects", "get_class_projects_overview"],
+    ids=[
+        "queue_invite-owner-check",
+        "queue_invite-insert",
+        "cancel_invite",
+        "get_class_projects",
+        "get_class_projects_overview",
+    ],
 )
-def test_a_dropped_connection_is_retried_instead_of_answering_500(monkeypatch, call):
-    flaky = _DisconnectOnce(**_world())
+def test_a_dropped_connection_is_retried_instead_of_answering_500(monkeypatch, call, on):
+    flaky = _DisconnectOnce(on, **_world())
     monkeypatch.setattr("app.core.db.service_client", flaky, raising=False)
     call()
     assert flaky.disconnects == 0
