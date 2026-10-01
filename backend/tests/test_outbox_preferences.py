@@ -825,3 +825,11 @@ def test_a_failed_batch_lookup_is_raised_not_read_as_clear(make):
     with pytest.raises(DatabaseError) as caught:
         prefs.suppression_reasons(_Broken(make), ["ann@example.com"])
     assert caught.value.target == "email_suppressions"
+
+
+def test_addresses_are_compared_trimmed_and_lower_cased():
+    # The one normaliser the outbox uses too, so a lookup and the table always agree.
+    assert prefs.normalize_email("  Ann@Example.COM \n") == "ann@example.com"
+    db = FakeSupabase(email_suppressions=[{"email": "ann@example.com", "reason": "bounced"}])
+    reasons = prefs.suppression_reasons(db, ["ANN@example.com"])
+    assert reasons[prefs.normalize_email(" Ann@EXAMPLE.com")] == "bounced"

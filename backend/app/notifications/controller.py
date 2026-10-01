@@ -139,19 +139,23 @@ def notify_email_undeliverable(
 ) -> None:
     """Tell ``user_id`` (whoever queued an invite) that it could not be delivered, and why.
 
-    Nothing without a user. ``reason`` completes the sentence, e.g. "the address was rejected".
-    Never raises.
+    One unread notification per user and class: a later failure rewrites it with the latest
+    address and reason, so a batch that fails cannot flood anyone. Nothing without a user.
+    ``reason`` completes the sentence, e.g. "the mail server refused it". Never raises.
     """
     if user_id is None:
         return
-    _insert_notification(
-        user_id=user_id,
-        type="email_undeliverable",
-        title="An email couldn't be delivered",
-        body=f"Your invite to {to_email} couldn't be delivered ({reason}).",
-        entity_type="class" if class_id else None,
-        entity_id=str(class_id) if class_id else None,
-    )
+    try:
+        _upsert_unread_notification(
+            user_id=user_id,
+            type="email_undeliverable",
+            title="An email couldn't be delivered",
+            body=f"Your invite to {to_email} couldn't be delivered ({reason}).",
+            entity_type="class" if class_id else None,
+            entity_id=str(class_id) if class_id else None,
+        )
+    except HTTPException:  # no service client to write with
+        logger.warning("notify_email_undeliverable: skipped | user_id=%s", user_id)
 
 
 def _upsert_unread_notification(
@@ -163,7 +167,10 @@ def _upsert_unread_notification(
     entity_type: str | None,
     entity_id: str | None,
 ) -> None:
-    """Update an existing unread notification for the same entity, or insert."""
+    """Update an existing unread notification for the same entity, or insert.
+
+    ``entity_id=None`` matches only a notification that has no entity either.
+    """
     try:
         client = _client()
         query = (
@@ -175,6 +182,8 @@ def _upsert_unread_notification(
         )
         if entity_id is not None:
             query = query.eq("entity_id", entity_id)
+        else:
+            query = query.is_("entity_id", "null")
         existing = query.limit(1).execute()
 
         if existing.data:

@@ -18,7 +18,7 @@ Supported:
     table(t).insert(dict | list).execute()
     table(t).upsert(dict | list, on_conflict="a,b", ignore_duplicates=False).execute()
         # a NULL in a conflict column never conflicts (SQL NULLs are distinct)
-    table(t).update(dict, returning="minimal" | "representation").<filters>.execute()
+    table(t).update(dict, count="exact", returning="minimal" | "representation").<filters>.execute()
     table(t).delete().<filters>.execute()
     rpc(name, params).execute()          # FakeSupabase(rpc={"name": callable})
 
@@ -218,8 +218,9 @@ class _Query:
         self._ignore_duplicates = ignore_duplicates
         return self
 
-    def update(self, payload, returning: str = "representation", **_k):
+    def update(self, payload, count: str | None = None, returning: str = "representation", **_k):
         self._op, self._payload = "update", payload
+        self._count = count
         self._returning = returning
         return self
 
@@ -430,8 +431,11 @@ class _Query:
                 if self._match(r):
                     r.update(self._payload)
                     updated.append(dict(r))
-            # "Prefer: return=minimal" gets no rows back.
-            return _Result([] if self._returning == "minimal" else updated)
+            # "Prefer: return=minimal" gets no rows back; "count=exact" says how many changed.
+            return _Result(
+                [] if self._returning == "minimal" else updated,
+                count=len(updated) if self._count else None,
+            )
 
         if self._op == "delete":
             kept, removed = [], []

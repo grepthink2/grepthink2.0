@@ -150,8 +150,12 @@ def category_label(category: str) -> str | None:
 # -- suppressions ----------------------------------------------------------------------------
 
 
-def _address(email: str) -> str:
-    """``email`` the way ``email_suppressions`` stores it: trimmed and lower-cased."""
+def normalize_email(email: str) -> str:
+    """``email`` the way ``email_suppressions`` stores it: trimmed and lower-cased.
+
+    Compare an address with a suppressed one, or look it up in what ``suppression_reasons``
+    answers, in this form.
+    """
     return email.strip().lower()
 
 
@@ -164,7 +168,7 @@ def suppression_reason(client, email: str) -> str | None:
         rows = (
             client.table("email_suppressions")
             .select("reason")
-            .eq("email", _address(email))
+            .eq("email", normalize_email(email))
             .execute()
         ).data or []
     except DatabaseError as exc:
@@ -187,7 +191,7 @@ def suppression_reasons(client, emails: Iterable[str]) -> dict[str, str]:
     in ``suppression_reason``.
     """
     addresses = sorted(
-        {_address(email) for email in emails if isinstance(email, str) and email.strip()}
+        {normalize_email(email) for email in emails if isinstance(email, str) and email.strip()}
     )
     reasons: dict[str, str] = {}
     for start in range(0, len(addresses), _SUPPRESSION_LOOKUP_CHUNK):
@@ -204,7 +208,7 @@ def suppression_reasons(client, emails: Iterable[str]) -> dict[str, str]:
             raise
         for row in rows:
             if row.get("email") and row.get("reason"):
-                reasons[_address(row["email"])] = row["reason"]
+                reasons[normalize_email(row["email"])] = row["reason"]
     return reasons
 
 
@@ -217,7 +221,7 @@ def suppress(client, email: str, reason: str, detail: str | None = None) -> None
     if reason not in SUPPRESSION_REASONS:
         raise ValueError(f"Unknown suppression reason: {reason!r}")
     client.table("email_suppressions").upsert(
-        {"email": _address(email), "reason": reason, "detail": detail}, on_conflict="email"
+        {"email": normalize_email(email), "reason": reason, "detail": detail}, on_conflict="email"
     ).execute()
 
 

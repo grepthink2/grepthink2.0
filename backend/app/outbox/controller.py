@@ -6,9 +6,14 @@ Each email is one ``email_outbox`` row (one recipient). Its ``status`` moves:
   ``locked_until`` and counts an attempt. A row whose lease runs out (its dispatcher died, or a
   status write failed) is due again.
 * ``sending`` -> ``sent``; or back to ``pending`` with a later ``next_attempt_at`` after a
-  temporary failure (``BACKOFF_SECONDS``); or ``failed`` (the address was rejected, the row was
-  tried ``MAX_ATTEMPTS`` times, or it could not be built); or ``skipped`` (the address is
-  suppressed, the recipient switched the category off, the email is no longer relevant).
+  temporary failure (``BACKOFF_SECONDS``); or ``failed`` (the mail server refused the address,
+  the row was tried ``MAX_ATTEMPTS`` times, or it could not be built); or ``skipped`` (the
+  address is suppressed, the recipient switched the category off, the email is no longer
+  relevant).
+
+Every attempt counts toward ``attempts``, so ``attempts`` names the lease: each write a
+dispatcher makes about a row it leased checks both ``status = 'sending'`` and the ``attempts``
+it leased the row at. One whose lease ran out, and was taken over, changes nothing.
 
 Two ways in:
 
@@ -18,14 +23,17 @@ Two ways in:
   and sends them before it answers (``deliver_owned_rows``). What its budget leaves unsent goes
   back to the queue for the dispatcher.
 
+Either way no send starts later than ``SEND_MARGIN_SECONDS`` before its lease runs out, so a
+slow send cannot outlive its lease and be sent twice.
+
 Some failures are not about one email: a transport that refuses us (``EmailMisconfiguredError``:
 a wrong key or URL, a blocked IP, no provider at all), or a check before sending that cannot read
-the database (the suppression list, a preference, a kind's relevance check: an outage, a missing
-grant). Every other row would fail the same way, so the run *pauses* the whole outbox: the row
-that met it goes back without spending an attempt, the rows the run had not tried go back
-unsent, and every due row waits ``PAUSE_SECONDS``. One error is logged per pause, and the ticks
-during it find nothing due. No one is notified and nothing is given up on: a grants mistake holds
-emails, it does not lose them.
+a shared table (the suppression list or the preferences, for any reason, or a kind's relevance
+check during a database outage). Every other row would fail the same way, so the run *pauses*
+the whole outbox: the row that met it goes back without spending an attempt, the rows the run
+had not tried go back unsent, and every pending row waits at least ``PAUSE_SECONDS``. One error
+is logged per pause, and the ticks during it find nothing due. No one is notified and nothing is
+given up on: a grants mistake holds emails, it does not lose them.
 
 Before ``2026-09-30_email_outbox.sql`` is applied there is no table and no claim function:
 ``enqueue`` raises ``OutboxUnavailable`` so the caller can ``deliver_now`` (send directly, as
@@ -45,7 +53,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from postgrest.types import ReturnMethod
+from postgrest.types import CountMethod, ReturnMethod
 
 from app.core.db import MISSING_TABLE_CODES, get_client
 from app.core.errors import DatabaseError, DatabaseUnavailableError
@@ -68,9 +76,11 @@ logger = logging.getLogger(__name__)
 MAX_ATTEMPTS = 6
 #: The wait after a temporary failure of attempt 1, 2, ... 5 (the 6th gives up).
 BACKOFF_SECONDS = (60, 300, 1800, 7200, 43200)
-#: How long a claimed row stays leased. Longer than any one send can take (an SMTP send can
-#: spend ~90 s in per-operation timeouts): a send that outlives its lease is sent twice.
+#: How long a claimed (or owned) row stays leased.
 LEASE_SECONDS = 300
+#: No send starts later than this before its lease runs out: an SMTP send can spend ~90 s in
+#: per-operation timeouts, and a send that outlives its lease can be sent twice.
+SEND_MARGIN_SECONDS = 120
 #: Rows per claim.
 CLAIM_BATCH = 10
 #: How long a pause holds the outbox (see the module docstring).
@@ -198,7 +208,8 @@ def enqueue(client, rows: Sequence[OutboxRow], *, owned: bool = False) -> list[d
         )
     except DatabaseError as exc:
         if exc.pg_code in OUTBOX_MISSING_CODES:
-            logger.error("email_outbox: table missing, sending directly")
+            # Every invite says this until the migration is applied: not a Sentry event each.
+            logger.warning("email_outbox: table missing, sending directly")
             raise OutboxUnavailable("email_outbox does not exist yet") from exc
         raise
     return list(result.data or [])
@@ -210,19 +221,22 @@ def enqueue(client, rows: Sequence[OutboxRow], *, owned: bool = False) -> list[d
 def deliver_owned_rows(client, rows: Sequence[dict], *, budget_seconds: float) -> dict[str, str]:
     """Deliver rows leased to the caller (``enqueue(owned=True)``) while time remains.
 
-    Rows not attempted when the budget runs out go back to the queue (``pending``, due now, no
-    attempt counted) for the dispatcher. A pause (see the module docstring) puts them back due
-    when it ends, with every other due row. Never raises for a single row.
+    Sends start until the budget is spent or until ``SEND_MARGIN_SECONDS`` before the rows'
+    lease runs out, whichever comes first. The rows not attempted go back to the queue
+    (``pending``, due now, their attempt uncounted) for the dispatcher. A pause (see the module
+    docstring) puts them back due when it ends, with every other pending row. Never raises for a
+    single row.
 
     Returns:
         ``{row_id: "sent" | "queued" | "failed" | "skipped"}``. ``queued``: put back, or a retry
         is scheduled.
     """
-    deadline = _monotonic() + budget_seconds
-    outcomes, unattempted, paused = _deliver_batch(client, list(rows), deadline)
-    due = _pause_outbox(client) if paused else None
+    rows = list(rows)
+    send_by = min(_monotonic() + budget_seconds, _lease_end(rows) - SEND_MARGIN_SECONDS)
+    outcomes, unattempted, paused = _deliver_batch(client, rows, send_by)
+    due = _pause_outbox(client) if paused else _now().isoformat()
     if unattempted:
-        _put_back_owned(client, unattempted, due=due)
+        _put_back(client, unattempted, due=due)
         outcomes.update({str(row["id"]): "queued" for row in unattempted})
     return outcomes
 
@@ -230,11 +244,12 @@ def deliver_owned_rows(client, rows: Sequence[dict], *, budget_seconds: float) -
 def dispatch_tick(*, budget_seconds: float) -> dict[str, int | bool]:
     """One run of the dispatcher: queue scheduled work, then deliver due rows until time is up.
 
-    A producer that fails is logged and skipped; the others and delivery go on. Claims
-    ``CLAIM_BATCH`` rows at a time until nothing is due or the budget is spent; claimed rows it
-    has no time for go back unsent. A pause (see the module docstring) stops the run
-    (``paused``). ``unavailable`` when the outbox is not migrated yet. Never raises for a single
-    row; a claim that fails for another reason is raised.
+    A producer that fails is logged and skipped; the others and delivery go on. Then it claims
+    ``CLAIM_BATCH`` rows at a time while the budget lasts and nothing stops it. The sends of a
+    batch start until the budget is spent or until ``SEND_MARGIN_SECONDS`` before the batch's
+    lease runs out; its rows not attempted go back unsent. A pause (see the module docstring)
+    stops the run (``paused``). ``unavailable`` when the outbox is not migrated yet. Never raises
+    for a single row; a claim that fails for another reason is raised.
 
     Returns:
         Counts: ``expanded`` (rows producers queued), ``claimed``, ``sent``, ``retried``,
@@ -264,6 +279,7 @@ def dispatch_tick(*, budget_seconds: float) -> dict[str, int | bool]:
             logger.exception("email_outbox: producer %s failed", _name_of(producer))
 
     while _monotonic() < deadline:
+        claimed_at = _monotonic()  # the lease starts no earlier than the claim does
         rows = _claim(client)
         if rows is None:
             counts["unavailable"] = True
@@ -271,16 +287,16 @@ def dispatch_tick(*, budget_seconds: float) -> dict[str, int | bool]:
         if not rows:
             break
         counts["claimed"] += len(rows)
-        outcomes, unattempted, paused = _deliver_batch(client, rows, deadline)
+        send_by = min(deadline, claimed_at + LEASE_SECONDS - SEND_MARGIN_SECONDS)
+        outcomes, unattempted, paused = _deliver_batch(client, rows, send_by)
         for outcome in outcomes.values():
             counts[_COUNTED_AS[outcome]] += 1
-        due = _pause_outbox(client) if paused else None
-        for row in unattempted:
-            _put_back_claimed(client, row, due=due)
         if paused:
+            _put_back(client, unattempted, due=_pause_outbox(client))
             counts["paused"] = True
-        if paused or unattempted:
             break
+        # Cut short by the budget (the loop ends) or by the lease (the next claim takes them).
+        _put_back(client, unattempted, due=None)
     return counts
 
 
@@ -355,19 +371,19 @@ def _claim(client) -> list[dict] | None:
 
 
 def _deliver_batch(
-    client, rows: list[dict], deadline: float
+    client, rows: list[dict], send_by: float
 ) -> tuple[dict[str, str], list[dict], bool]:
-    """Deliver ``rows`` one by one while time remains.
+    """Deliver ``rows`` one by one, starting no send at or after ``send_by`` (``_monotonic``).
 
-    Suppressions are read once, for all of them, just before the first is attempted. Returns
-    ``(outcomes, rows not attempted, paused)``; ``paused`` when a row found that the run must
-    pause, which stops the batch (that row's outcome is "queued").
+    Suppressions are read once, for all of them (their cc and bcc too), just before the first
+    is attempted. Returns ``(outcomes, rows not attempted, paused)``; ``paused`` when a row found
+    that the run must pause, which stops the batch (that row's outcome is "queued").
     """
     outcomes: dict[str, str] = {}
     suppressed: Mapping[str, str] | None = None
     lookup_error: Exception | None = None
     for index, row in enumerate(rows):
-        if _monotonic() >= deadline:
+        if _monotonic() >= send_by:
             return outcomes, rows[index:], False
         if suppressed is None:
             suppressed, lookup_error = _read_suppressions(client, rows)
@@ -380,9 +396,13 @@ def _deliver_batch(
 
 
 def _read_suppressions(client, rows: list[dict]) -> tuple[Mapping[str, str], Exception | None]:
-    """The suppressed addresses among ``rows``, or ``({}, error)`` when they could not be read."""
+    """The suppressed addresses among ``rows`` (copies included), or ``({}, why it failed)``."""
+    addresses: list[Any] = []
+    for row in rows:
+        addresses.append(row.get("to_email"))
+        addresses.extend(_copies(row))
     try:
-        return preferences.suppression_reasons(client, [row.get("to_email") for row in rows]), None
+        return preferences.suppression_reasons(client, addresses), None
     except Exception as err:
         return {}, err
 
@@ -396,23 +416,20 @@ def _deliver_row(
     """Deliver one leased row and record what happened. Never raises.
 
     ``suppressed`` maps suppressed addresses to their reason, read once for the batch;
-    ``lookup_error`` is why that read failed, if it did. A database error in a check before
-    sending pauses the run. Returns "sent", "queued" (a retry is scheduled), "failed",
-    "skipped", or ``_PAUSED``.
+    ``lookup_error`` is why that read failed, if it did. Returns "sent", "queued" (a retry is
+    scheduled), "failed", "skipped", or ``_PAUSED``.
     """
-    kind: Kind | None = None
-    try:
-        kind = get_kind(row["kind"])
-        if kind is None:
-            logger.error("email_outbox: unknown kind | kind=%s row=%s", row.get("kind"), row["id"])
-            _finish(client, row, "failed", "unknown kind")
-            return "failed"
-        if isinstance(lookup_error, DatabaseError):
-            return _pause_for_check(client, row, "suppressions", lookup_error)
-        if lookup_error is not None:
-            return _on_error(client, row, kind, lookup_error)
+    if lookup_error is not None:  # first: the pause holds this row too, attempt and all
+        return _pause_for_check(client, row, "suppressions", lookup_error)
+    kind_name = row.get("kind")
+    kind = get_kind(kind_name) if isinstance(kind_name, str) else None
+    if kind is None:
+        # Perhaps a deploy that knows the kind was just rolled back: retried, given up on later.
+        logger.error("email_outbox: unknown kind | kind=%s row=%s", kind_name, row.get("id"))
+        return _retry_later(client, row, None, "unknown kind")
 
-        reason = suppressed.get(_address(row["to_email"]))
+    try:
+        reason = suppressed.get(preferences.normalize_email(row["to_email"]))
         if reason:
             if _finish(client, row, "skipped", f"suppressed: {reason}"):
                 because = _SUPPRESSED_BECAUSE.get(reason, "is suppressed")
@@ -421,7 +438,7 @@ def _deliver_row(
         if kind.category:
             try:
                 wanted = preferences.is_enabled(client, row.get("user_id"), kind.category)
-            except DatabaseError as err:
+            except Exception as err:  # a shared table: every row would fail the same way
                 return _pause_for_check(client, row, "preferences", err)
             if not wanted:
                 _finish(client, row, "skipped", "preference")
@@ -429,27 +446,30 @@ def _deliver_row(
         if kind.still_relevant is not None:
             try:
                 relevant = kind.still_relevant(client, row)
-            except DatabaseError as err:
+            except DatabaseUnavailableError as err:
                 return _pause_for_check(client, row, "relevance", err)
+            except Exception as err:  # this kind's problem: this row waits, the others go on
+                return _retry_later(client, row, kind, err, exc_info=True)
             if not relevant:
                 _finish(client, row, "skipped", "no longer relevant")
                 return "skipped"
-        message = _message(kind, row)
+        message = _message(kind, row, suppressed)
     except Exception as err:
         return _on_error(client, row, kind, err)
 
     try:
         reference = email_transport.send(message)
     except PermanentEmailError as err:
-        logger.error(
-            "email_outbox: gave up | kind=%s row=%s attempts=%s error=%s",
+        # A mistyped address, usually: whoever queued it hears; no developer needs to.
+        logger.warning(
+            "email_outbox: refused by the mail server | kind=%s row=%s attempts=%s error=%s",
             kind.name,
-            row["id"],
+            row.get("id"),
             _attempts(row),
             err,
         )
         if _finish(client, row, "failed", _error_text(err)):
-            _notify_creator(kind, row, "the address was rejected")
+            _notify_creator(kind, row, "the mail server refused it")
         return "failed"
     except Exception as err:
         return _on_error(client, row, kind, err)
@@ -464,23 +484,25 @@ def _deliver_row(
             "locked_until": None,
             "last_error": None,
         },
-        # Recorded whatever happened to the row meanwhile: the email did go out.
+        # Recorded whatever happened to the row meanwhile: the email did go out. Writing it
+        # again changes nothing, so a failed write is tried once more.
         only_if_sending=False,
+        tries=2,
     )
     return "sent"
 
 
-def _on_error(client, row: Mapping[str, Any], kind: Kind | None, err: Exception) -> str:
-    """What a failure means for the row (the caller has handled ``PermanentEmailError``).
+def _on_error(client, row: Mapping[str, Any], kind: Kind, err: Exception) -> str:
+    """What a failure building or sending the email means for the row.
 
-    A misconfigured transport pauses the run; a temporary failure or a database outage
-    schedules a retry; anything else is a bug and fails the row.
+    The caller has handled ``PermanentEmailError``. A misconfigured transport pauses the run; a
+    temporary failure schedules a retry; anything else is a bug and fails the row.
     """
     if isinstance(err, EmailMisconfiguredError):
         return _pause_row(
             client, row, err, "email_outbox: transport misconfigured, pausing | error=%s", err
         )
-    if isinstance(err, TransientEmailError | DatabaseUnavailableError):
+    if isinstance(err, TransientEmailError):
         return _retry_later(client, row, kind, err)
     logger.error(
         "email_outbox: delivery failed unexpectedly | kind=%s row=%s attempts=%s",
@@ -493,26 +515,38 @@ def _on_error(client, row: Mapping[str, Any], kind: Kind | None, err: Exception)
     return "failed"
 
 
-def _pause_for_check(client, row: Mapping[str, Any], check: str, err: DatabaseError) -> str:
-    """A check before sending (``check``: what it reads) cannot read the database: pause."""
+def _pause_for_check(client, row: Mapping[str, Any], check: str, err: Exception) -> str:
+    """A check before sending (``check``: what it reads) could not be made: pause the run.
+
+    A database error is logged with its code; anything else (a body PostgREST answered that is
+    not JSON, say) with its traceback too.
+    """
     return _pause_row(
         client,
         row,
         err,
         "email_outbox: cannot check %s, pausing | code=%s error=%s",
         check,
-        err.pg_code,
+        getattr(err, "pg_code", None),
         err,
+        exc_info=None if isinstance(err, DatabaseError) else err,
     )
 
 
-def _pause_row(client, row: Mapping[str, Any], err: Exception, message: str, *args: Any) -> str:
+def _pause_row(
+    client,
+    row: Mapping[str, Any],
+    err: Exception,
+    message: str,
+    *args: Any,
+    exc_info: BaseException | None = None,
+) -> str:
     """Stop the run at ``row``: log ``message`` and put the row back due when the pause ends.
 
     The row spends no attempt: the one its lease counted is taken back. Logged here because the
     run stops here, so it is logged once per run. The caller pauses the rest.
     """
-    logger.error(message, *args)
+    logger.error(message, *args, exc_info=exc_info)
     _record(
         client,
         row,
@@ -527,18 +561,30 @@ def _pause_row(client, row: Mapping[str, Any], err: Exception, message: str, *ar
     return _PAUSED
 
 
-def _retry_later(client, row: Mapping[str, Any], kind: Kind | None, err: Exception) -> str:
-    """Schedule the next attempt after a temporary failure, or give up after the last one."""
+def _retry_later(
+    client,
+    row: Mapping[str, Any],
+    kind: Kind | None,
+    error: BaseException | str,
+    *,
+    exc_info: bool = False,
+) -> str:
+    """Schedule the next attempt after a temporary failure, or give up after the last one.
+
+    ``exc_info``: log the traceback of ``error`` (a bug, not a delivery problem).
+    """
     attempts = _attempts(row)
+    traceback = error if exc_info and isinstance(error, BaseException) else None
     if attempts >= MAX_ATTEMPTS:
         logger.error(
             "email_outbox: gave up | kind=%s row=%s attempts=%s error=%s",
             row.get("kind"),
             row.get("id"),
             attempts,
-            err,
+            error,
+            exc_info=traceback,
         )
-        if _finish(client, row, "failed", _error_text(err)):
+        if _finish(client, row, "failed", _error_text(error)):
             _notify_creator(kind, row, "delivery kept failing")
         return "failed"
 
@@ -550,7 +596,7 @@ def _retry_later(client, row: Mapping[str, Any], kind: Kind | None, err: Excepti
             "status": "pending",
             "next_attempt_at": (_now() + timedelta(seconds=wait)).isoformat(),
             "locked_until": None,
-            "last_error": _error_text(err),
+            "last_error": _error_text(error),
         },
     )
     logger.warning(
@@ -559,17 +605,21 @@ def _retry_later(client, row: Mapping[str, Any], kind: Kind | None, err: Excepti
         row.get("id"),
         attempts,
         wait,
-        err,
+        error,
+        exc_info=traceback,
     )
     return "queued"
 
 
-def _message(kind: Kind, row: Mapping[str, Any]) -> EmailMessage:
+def _message(
+    kind: Kind, row: Mapping[str, Any], suppressed: Mapping[str, str] | None = None
+) -> EmailMessage:
     """Render ``row`` into the message the transport sends.
 
     An email of a category, to an account, carries unsubscribe links: the page link goes to the
     renderer for the footer, and both links into ``List-Unsubscribe`` (one-click first, which
-    ``List-Unsubscribe-Post`` announces when there is one).
+    ``List-Unsubscribe-Post`` announces when there is one). Copies (cc, bcc) to a ``suppressed``
+    address are left out.
     """
     page_url = one_click_url = None
     user_id = row.get("user_id")
@@ -584,13 +634,26 @@ def _message(kind: Kind, row: Mapping[str, Any]) -> EmailMessage:
     if one_click_url:
         headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
 
+    cc, bcc = tuple(rendered.cc), tuple(rendered.bcc)
+    if suppressed:
+        cc = tuple(address for address in cc if not _is_suppressed(address, suppressed))
+        bcc = tuple(address for address in bcc if not _is_suppressed(address, suppressed))
+        left_out = len(rendered.cc) + len(rendered.bcc) - len(cc) - len(bcc)
+        if left_out:
+            logger.warning(
+                "email_outbox: left suppressed copies out | kind=%s row=%s count=%d",
+                kind.name,
+                row.get("id"),
+                left_out,
+            )
+
     return EmailMessage(
         to=row["to_email"],
         subject=rendered.subject,
         text=rendered.text,
         html=rendered.html,
-        cc=tuple(rendered.cc),
-        bcc=tuple(rendered.bcc),
+        cc=cc,
+        bcc=bcc,
         headers=headers,
         tags={"kind": kind.name},
         # A row being sent is on attempt 1 at least; each attempt gets its own id.
@@ -602,44 +665,70 @@ def _message(kind: Kind, row: Mapping[str, Any]) -> EmailMessage:
 
 
 def _record(
-    client, row: Mapping[str, Any], fields: Mapping[str, Any], *, only_if_sending: bool = True
-) -> bool:
-    """Write ``fields`` (and ``updated_at``) to the row. Returns whether a row was updated.
+    client,
+    row: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    *,
+    only_if_sending: bool = True,
+    tries: int = 1,
+) -> int | None:
+    """Write ``fields`` (and ``updated_at``) to the row, up to ``tries`` times if the write fails.
 
-    Never raises: a failed write is logged and the row keeps its lease, so it is tried again
-    once the lease runs out. ``only_if_sending`` leaves alone a row that is no longer
-    ``sending`` (someone else finished or cancelled it meanwhile).
+    Returns how many rows it changed, or ``None`` when every try failed (logged; never raised:
+    the row keeps its lease, so it is tried again once the lease runs out). ``only_if_sending``
+    changes the row only while it is still ``sending`` at the ``attempts`` it was leased at, so
+    a row someone else finished, cancelled or leased since is left alone (0).
     """
-    try:
-        query = (
-            client.table("email_outbox")
-            .update({**fields, "updated_at": _now().isoformat()})
-            .eq("id", str(row["id"]))
-        )
-        if only_if_sending:
-            query = query.eq("status", "sending")
-        result = query.execute()
-    except Exception:
-        logger.exception(
-            "email_outbox: could not record the outcome | kind=%s row=%s status=%s",
-            row.get("kind"),
-            row.get("id"),
-            fields.get("status"),
-        )
-        return False
-    return bool(result.data)
+    for attempt in range(1, tries + 1):
+        try:
+            query = (
+                client.table("email_outbox")
+                .update(
+                    {**fields, "updated_at": _now().isoformat()},
+                    count=CountMethod.exact,
+                    returning=ReturnMethod.minimal,
+                )
+                .eq("id", str(row["id"]))
+            )
+            if only_if_sending:
+                query = query.eq("status", "sending").eq("attempts", row.get("attempts"))
+            result = query.execute()
+        except Exception:
+            if attempt < tries:
+                logger.warning(
+                    "email_outbox: could not record the outcome, trying again | kind=%s row=%s "
+                    "status=%s",
+                    row.get("kind"),
+                    row.get("id"),
+                    fields.get("status"),
+                    exc_info=True,
+                )
+                continue
+            logger.exception(
+                "email_outbox: could not record the outcome | kind=%s row=%s status=%s",
+                row.get("kind"),
+                row.get("id"),
+                fields.get("status"),
+            )
+            return None
+        # PostgREST reports the count in Content-Range. Without one, assume the write applied.
+        return result.count if result.count is not None else 1
+    return None
 
 
 def _finish(client, row: Mapping[str, Any], status: str, last_error: str) -> bool:
-    """Record a final ``failed`` or ``skipped``. Returns whether it was recorded."""
-    return _record(client, row, {"status": status, "last_error": last_error, "locked_until": None})
+    """Record a final ``failed`` or ``skipped``. Returns whether it changed the row."""
+    return bool(
+        _record(client, row, {"status": status, "last_error": last_error, "locked_until": None})
+    )
 
 
 def _pause_outbox(client) -> str:
-    """Hold the outbox for ``PAUSE_SECONDS``: every pending row that is due waits until then.
+    """Hold the outbox for ``PAUSE_SECONDS``: no pending row comes due before the pause ends.
 
-    One update. Returns the time the pause ends, for the rows the caller puts back. Never
-    raises: if the update fails, the next run meets the same error and pauses again.
+    One update (rows due sooner are moved to its end). Returns the time it ends, for the rows
+    the caller puts back. Never raises: if the update fails, the next run meets the same error
+    and pauses again.
     """
     now = _now()
     until = (now + timedelta(seconds=PAUSE_SECONDS)).isoformat()
@@ -647,63 +736,52 @@ def _pause_outbox(client) -> str:
         client.table("email_outbox").update(
             {"next_attempt_at": until, "updated_at": now.isoformat()},
             returning=ReturnMethod.minimal,
-        ).eq("status", "pending").lte("next_attempt_at", now.isoformat()).execute()
+        ).eq("status", "pending").lt("next_attempt_at", until).execute()
     except Exception:
-        logger.exception("email_outbox: could not hold the due rows for the pause")
+        logger.exception("email_outbox: could not hold the pending rows for the pause")
     return until
 
 
-def _put_back_owned(client, rows: Sequence[Mapping[str, Any]], *, due: str | None = None) -> None:
-    """Return owned rows that were never attempted to the queue, no attempt counted.
+def _put_back(client, rows: Sequence[Mapping[str, Any]], *, due: str | None) -> None:
+    """Return leased rows that were never attempted to the queue, their attempt uncounted.
 
-    Due ``due`` (the end of a pause), else now. One update (per 100 rows). Never raises: rows
-    it could not put back keep their lease, and the dispatcher takes them once it runs out.
+    ``due`` becomes their ``next_attempt_at`` (``None`` keeps it). One update per distinct
+    ``attempts`` (per 100 rows), which it filters on along with ``status``, so a row someone
+    else has leased since is left alone; a row that is not ``sending`` was never leased to us and
+    is skipped. Never raises: rows it could not put back keep their lease until it runs out.
     """
     now = _now().isoformat()
-    ids = [str(row["id"]) for row in rows]
-    for start in range(0, len(ids), _IDS_PER_UPDATE):
-        chunk = ids[start : start + _IDS_PER_UPDATE]
-        try:
-            client.table("email_outbox").update(
-                {
-                    "status": "pending",
-                    "attempts": 0,
-                    "locked_until": None,
-                    "next_attempt_at": due or now,
-                    "updated_at": now,
-                },
-                returning=ReturnMethod.minimal,
-            ).in_("id", chunk).eq("status", "sending").execute()
-        except Exception:
-            logger.exception(
-                "email_outbox: could not put rows back, their lease will run out | rows=%d",
-                len(chunk),
+    by_attempts: dict[Any, list[str]] = {}
+    for row in rows:
+        if row.get("status") != "sending":
+            logger.warning(
+                "email_outbox: not putting back a row that was not leased | row=%s status=%s",
+                row.get("id"),
+                row.get("status"),
             )
+            continue
+        by_attempts.setdefault(row.get("attempts"), []).append(str(row["id"]))
 
-
-def _put_back_claimed(client, row: Mapping[str, Any], *, due: str | None = None) -> None:
-    """Return a claimed row that was never attempted, uncounting the attempt the claim counted.
-
-    Due ``due`` (the end of a pause), else when it was due before. Never raises (see
-    ``_put_back_owned``).
-    """
-    fields: dict[str, Any] = {
-        "status": "pending",
-        "attempts": max(_attempts(row) - 1, 0),
-        "locked_until": None,
-        "updated_at": _now().isoformat(),
-    }
-    if due is not None:
-        fields["next_attempt_at"] = due
-    try:
-        client.table("email_outbox").update(fields, returning=ReturnMethod.minimal).eq(
-            "id", str(row["id"])
-        ).eq("status", "sending").execute()
-    except Exception:
-        logger.exception(
-            "email_outbox: could not put a row back, its lease will run out | row=%s",
-            row.get("id"),
-        )
+    for attempts, ids in by_attempts.items():
+        fields: dict[str, Any] = {
+            "status": "pending",
+            "attempts": max(_count(attempts) - 1, 0),
+            "locked_until": None,
+            "updated_at": now,
+        }
+        if due is not None:
+            fields["next_attempt_at"] = due
+        for start in range(0, len(ids), _IDS_PER_UPDATE):
+            chunk = ids[start : start + _IDS_PER_UPDATE]
+            try:
+                client.table("email_outbox").update(fields, returning=ReturnMethod.minimal).in_(
+                    "id", chunk
+                ).eq("status", "sending").eq("attempts", attempts).execute()
+            except Exception:
+                logger.exception(
+                    "email_outbox: could not put rows back, their lease will run out | rows=%d",
+                    len(chunk),
+                )
 
 
 def _notify_creator(kind: Kind | None, row: Mapping[str, Any], reason: str) -> None:
@@ -731,18 +809,64 @@ def _name_of(producer: Callable[..., Any]) -> str:
     return getattr(producer, "__name__", None) or repr(producer)
 
 
-def _address(email: str | None) -> str:
-    """``email`` the way suppressions are stored: trimmed and lower-cased."""
-    return (email or "").strip().lower()
+def _copies(row: Mapping[str, Any]) -> list[str]:
+    """The cc and bcc addresses a row's payload names (custom invites have them)."""
+    payload = row.get("payload")
+    if not isinstance(payload, Mapping):
+        return []
+    addresses: list[str] = []
+    for key in ("cc", "bcc"):
+        value = payload.get(key)
+        if isinstance(value, list | tuple):
+            addresses.extend(address for address in value if isinstance(address, str))
+    return addresses
 
 
-def _attempts(row: Mapping[str, Any]) -> int:
-    """The row's attempt count (0 when it holds none, or nothing usable)."""
+def _is_suppressed(address: Any, suppressed: Mapping[str, str]) -> bool:
+    return isinstance(address, str) and preferences.normalize_email(address) in suppressed
+
+
+def _lease_end(rows: Sequence[Mapping[str, Any]]) -> float:
+    """When the first of the rows' leases runs out, on the ``_monotonic`` clock.
+
+    Read from ``locked_until``; a row without a readable one counts as leased just now.
+    """
+    now = _now()
+    ends = [
+        _parse_time(row.get("locked_until")) or now + timedelta(seconds=LEASE_SECONDS)
+        for row in rows
+    ]
+    if not ends:
+        return _monotonic() + LEASE_SECONDS
+    return _monotonic() + (min(ends) - now).total_seconds()
+
+
+def _parse_time(value: Any) -> datetime | None:
+    """A timestamp as an aware datetime (UTC when it names no zone), or ``None``."""
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value)
+        except ValueError:
+            return None
+    else:
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+
+
+def _count(value: Any) -> int:
+    """A count from the database as an int (0 when it is none, or nothing usable)."""
     try:
-        return int(row.get("attempts") or 0)
+        return int(value or 0)
     except (TypeError, ValueError):
         return 0
 
 
-def _error_text(err: BaseException) -> str:
-    return str(err)[:_ERROR_LIMIT]
+def _attempts(row: Mapping[str, Any]) -> int:
+    """The row's attempt count (0 when it holds none, or nothing usable)."""
+    return _count(row.get("attempts"))
+
+
+def _error_text(error: BaseException | str) -> str:
+    return str(error)[:_ERROR_LIMIT]

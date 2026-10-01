@@ -185,6 +185,24 @@ def test_upsert_does_not_match_a_stored_null_with_the_text_none():
     assert [r["id"] for r in res.data] == ["o2"]
 
 
+@pytest.mark.parametrize("returning", ["minimal", "representation"])
+def test_update_with_count_exact_answers_how_many_rows_it_changed(returning):
+    # PostgREST reports the count in Content-Range, with or without the rows.
+    db = _db()
+    res = (
+        db.table("projects")
+        .update({"num_members": 7}, count="exact", returning=returning)
+        .eq("class_id", "c1")
+        .execute()
+    )
+    assert res.count == 2
+    assert len(res.data) == (0 if returning == "minimal" else 2)
+    missed = db.table("projects").update({"num_members": 1}, count="exact").eq("id", "nope")
+    assert missed.execute().count == 0
+    # Without count, none is reported.
+    assert db.table("projects").update({"num_members": 1}).eq("id", "p1").execute().count is None
+
+
 def test_update_with_returning_minimal_writes_and_answers_no_rows():
     # PostgREST answers "Prefer: return=minimal" with no body.
     db = _db()
