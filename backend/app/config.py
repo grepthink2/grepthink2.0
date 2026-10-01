@@ -114,23 +114,21 @@ class Settings:
     # the pg_cron schedule and turns off the in-process loop (app.jobs.email_dispatch), which
     # otherwise runs every EMAIL_DISPATCH_POLL_SECONDS. The budgets bound how long one dispatch
     # run, or one request sending its own emails, keeps starting new sends.
-    EMAIL_DISPATCH_SECRET: str = os.environ.get("EMAIL_DISPATCH_SECRET", "")
+    EMAIL_DISPATCH_SECRET: str = os.environ.get("EMAIL_DISPATCH_SECRET", "").strip()
     EMAIL_DISPATCH_POLL_SECONDS: float = float(
         os.environ.get("EMAIL_DISPATCH_POLL_SECONDS")
         or os.environ.get("PENDING_INVITES_POLL_SECONDS")
         or 5
     )
-    # Legacy name read by app.main until the lifespan switches to app.jobs.email_dispatch.
-    PENDING_INVITES_POLL_SECONDS: float = EMAIL_DISPATCH_POLL_SECONDS
     EMAIL_DISPATCH_BUDGET_SECONDS: float = float(os.environ.get("EMAIL_DISPATCH_BUDGET_SECONDS", 8))
     EMAIL_INLINE_BUDGET_SECONDS: float = float(os.environ.get("EMAIL_INLINE_BUDGET_SECONDS", 8))
 
     # Maileroo webhook shared secret (POST /api/email/webhooks/maileroo). Unset: the endpoint
     # answers 503, so Maileroo keeps retrying until it is configured.
-    MAILEROO_WEBHOOK_SECRET: str = os.environ.get("MAILEROO_WEBHOOK_SECRET", "")
+    MAILEROO_WEBHOOK_SECRET: str = os.environ.get("MAILEROO_WEBHOOK_SECRET", "").strip()
 
     # Signs unsubscribe links. Unset: a key derived from SUPABASE_JWT_SECRET is used.
-    EMAIL_UNSUBSCRIBE_SECRET: str = os.environ.get("EMAIL_UNSUBSCRIBE_SECRET", "")
+    EMAIL_UNSUBSCRIBE_SECRET: str = os.environ.get("EMAIL_UNSUBSCRIBE_SECRET", "").strip()
 
     # Public URL of this API (https://api.example.com), for the one-click unsubscribe link in
     # the List-Unsubscribe header. Unset: emails carry only the frontend unsubscribe page link.

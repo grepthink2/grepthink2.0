@@ -27,11 +27,12 @@ from app.core.errors import install_exception_handlers
 from app.core.sentry import SentryFlushMiddleware, init_sentry
 from app.health.url import router as health_router
 from app.institutions.url import router as institutions_router
-from app.jobs.pending_invites import run_forever as run_pending_invites
+from app.jobs.email_dispatch import run_forever as run_email_dispatch
 from app.limiter import limiter
 from app.messages.url import router as messages_router
 from app.middleware import SecurityHeadersMiddleware
 from app.notifications.url import router as notifications_router
+from app.outbox.url import router as email_router
 from app.profiles.url import router as profiles_router
 from app.projects.url import router as projects_router
 from app.staffing.url import router as staffing_router
@@ -44,13 +45,18 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(run_pending_invites(settings.PENDING_INVITES_POLL_SECONDS))
+    # The email outbox is dispatched from inside the process until the pg_cron schedule takes
+    # over, which setting EMAIL_DISPATCH_SECRET marks (app/jobs/email_dispatch.py).
+    task = None
+    if not settings.EMAIL_DISPATCH_SECRET:
+        task = asyncio.create_task(run_email_dispatch(settings.EMAIL_DISPATCH_POLL_SECONDS))
     try:
         yield
     finally:
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+        if task is not None:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
 
 
 # Error reporting: a no-op unless SENTRY_DSN is set (app/core/sentry.py). It starts
@@ -102,5 +108,6 @@ for router in (
     tas_router,
     stats_router,
     attendance_router,
+    email_router,
 ):
     app.include_router(router)

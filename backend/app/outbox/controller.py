@@ -244,16 +244,18 @@ def deliver_owned_rows(client, rows: Sequence[dict], *, budget_seconds: float) -
 def dispatch_tick(*, budget_seconds: float) -> dict[str, int | bool]:
     """One run of the dispatcher: queue scheduled work, then deliver due rows until time is up.
 
-    A producer that fails is logged and skipped; the others and delivery go on. Then it claims
-    ``CLAIM_BATCH`` rows at a time while the budget lasts and nothing stops it. The sends of a
-    batch start until the budget is spent or until ``SEND_MARGIN_SECONDS`` before the batch's
-    lease runs out; its rows not attempted go back unsent. A pause (see the module docstring)
-    stops the run (``paused``). ``unavailable`` when the outbox is not migrated yet. Never raises
-    for a single row; a claim that fails for another reason is raised.
+    First the producers (``_producers``) turn due scheduled jobs into rows, which the same run
+    delivers. A producer that fails is logged and skipped; the others and delivery go on. Then
+    it claims ``CLAIM_BATCH`` rows at a time while the budget lasts and nothing stops it. The
+    sends of a batch start until the budget is spent or until ``SEND_MARGIN_SECONDS`` before the
+    batch's lease runs out; its rows not attempted go back unsent. A pause (see the module
+    docstring) stops the run (``paused``). ``unavailable`` when the outbox is not migrated yet.
+    Never raises for a single row; a claim that fails for another reason is raised.
 
     Returns:
-        Counts: ``expanded`` (rows producers queued), ``claimed``, ``sent``, ``retried``,
-        ``failed``, ``skipped``, and the flags ``unavailable`` and ``paused``.
+        Counts: ``expanded`` (scheduled jobs the producers turned into rows, not the rows),
+        ``claimed``, ``sent``, ``retried``, ``failed``, ``skipped`` (rows), and the flags
+        ``unavailable`` and ``paused``.
     """
     deadline = _monotonic() + budget_seconds
     counts: dict[str, int | bool] = {
@@ -347,9 +349,13 @@ def _producers() -> tuple[Callable[[Any, float], int], ...]:
     """Jobs that turn scheduled work into outbox rows at the start of each tick.
 
     Each is called with the client and the tick's deadline on the ``_monotonic`` clock, returns
-    how many rows it queued, and may raise ``OutboxUnavailable``.
+    how many jobs it turned into rows, and may raise ``OutboxUnavailable``. There is one: the
+    scheduled class invites (``app.outbox.invite_jobs``).
     """
-    return ()
+    # Imported here, not at the top: invite_jobs imports this module.
+    from app.outbox import invite_jobs
+
+    return (invite_jobs.expand_due_invite_jobs,)
 
 
 def _claim(client) -> list[dict] | None:

@@ -23,7 +23,7 @@ from app.core.db import get_client
 from app.core.errors import DatabaseError, DatabaseUnavailableError
 from app.notifications import controller as notifications
 from app.outbox import controller as outbox
-from app.outbox import kinds
+from app.outbox import invite_jobs, kinds
 from app.outbox import preferences as prefs
 from app.outbox.kinds import KINDS, Kind, RenderContext, Rendered, get_kind
 from app.utils.email import wrap_editor_html_for_email
@@ -1928,7 +1928,8 @@ def test_a_tick_claims_batch_after_batch_until_nothing_is_due(db, mail, monkeypa
 
 def test_a_tick_with_nothing_due_claims_once(db, mail):
     assert tick() == NO_COUNTS
-    assert [query["table"] for query in db.queries] == ["rpc:claim_email_outbox"]
+    # The scheduled invites are looked at first (one read), then one claim finds nothing.
+    assert [query["table"] for query in db.queries] == ["pending_invites", "rpc:claim_email_outbox"]
 
 
 def test_a_tick_without_time_claims_nothing(db, mail):
@@ -2001,8 +2002,9 @@ def test_a_producer_that_finds_no_outbox_ends_the_tick(db, mail, monkeypatch):
     assert reads_of(db, "rpc:claim_email_outbox") == []
 
 
-def test_there_are_no_producers_yet():
-    assert tuple(outbox._producers()) == ()
+def test_the_scheduled_invite_jobs_are_the_one_producer():
+    # It replaced the old pending-invites poller: with both, a job could be sent twice.
+    assert tuple(outbox._producers()) == (invite_jobs.expand_due_invite_jobs,)
 
 
 # -- deliver_now -----------------------------------------------------------------------------
