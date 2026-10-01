@@ -31,9 +31,10 @@ from app.jobs import email_dispatch
 from app.limiter import limiter
 from app.outbox import controller as outbox
 from app.outbox import preferences as prefs
+from app.outbox import views
 from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
-from tests.test_outbox_dispatch import NOW, Clock, Mailbox, claim_function
+from tests.outbox_support import NOW, Clock, Mailbox, claim_function
 
 DISPATCH = "/api/email/dispatch"
 UNSUBSCRIBE = "/api/email/unsubscribe"
@@ -227,7 +228,47 @@ def test_the_dispatch_token_is_compared_in_constant_time(client, ticks, dispatch
 
     monkeypatch.setattr(hmac, "compare_digest", spy)
     assert client.post(DISPATCH, headers=BEARER).status_code == 200
-    assert compared == [(BEARER["Authorization"], BEARER["Authorization"])]
+    # Once to pick the rate-limit bucket, once to let the call in.
+    assert compared == [(BEARER["Authorization"], BEARER["Authorization"])] * 2
+
+
+@pytest.mark.parametrize(
+    "headers", [{}, {"Authorization": "Bearer not-the-secret-4f2a"}], ids=["missing", "wrong"]
+)
+def test_a_refused_dispatch_call_is_logged_without_its_token(
+    client, ticks, dispatch_on, caplog, headers
+):
+    with caplog.at_level(logging.DEBUG):
+        assert client.post(DISPATCH, headers=headers).status_code == 401
+
+    assert [
+        (r.levelname, r.getMessage()) for r in caplog.records if r.name == "app.outbox.views"
+    ] == [("WARNING", "dispatch: rejected a call with a wrong or missing token")]
+    assert "not-the-secret-4f2a" not in caplog.text
+
+
+def test_calls_without_the_token_cannot_use_up_the_schedules_rate_limit(client, ticks, dispatch_on):
+    # On Vercel every caller arrives from the proxy's address, so they would all share one bucket
+    # with the schedule. Calls with the token have a bucket of their own.
+    wrong = {"Authorization": "Bearer wrong"}
+    for _ in range(30):
+        assert client.post(DISPATCH, headers=wrong).status_code == 401
+    assert client.post(DISPATCH, headers=wrong).status_code == 429
+
+    assert client.post(DISPATCH, headers=BEARER).status_code == 200
+    assert len(ticks) == 1
+
+
+def test_the_schedules_own_bucket_still_holds_30_calls_a_minute(client, ticks, dispatch_on):
+    for _ in range(30):
+        assert client.post(DISPATCH, headers=BEARER).status_code == 200
+    assert client.post(DISPATCH, headers=BEARER).status_code == 429
+    assert len(ticks) == 30
+
+
+def test_the_dispatch_rate_limit_picks_its_bucket_by_token():
+    [rule] = limiter._route_limits["app.outbox.views.dispatch"]
+    assert rule.key_func is views._dispatch_rate_key
 
 
 SECRET_NAMES = ["EMAIL_DISPATCH_SECRET", "MAILEROO_WEBHOOK_SECRET", "EMAIL_UNSUBSCRIBE_SECRET"]

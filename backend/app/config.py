@@ -124,7 +124,7 @@ class Settings:
     EMAIL_INLINE_BUDGET_SECONDS: float = float(os.environ.get("EMAIL_INLINE_BUDGET_SECONDS", 8))
 
     # Maileroo webhook shared secret (POST /api/email/webhooks/maileroo). Unset: the endpoint
-    # answers 503, so Maileroo keeps retrying until it is configured.
+    # answers 503, and Maileroo sends each event again 8 times over about 14 hours, then drops it.
     MAILEROO_WEBHOOK_SECRET: str = os.environ.get("MAILEROO_WEBHOOK_SECRET", "").strip()
 
     # Signs unsubscribe links. Unset: a key derived from SUPABASE_JWT_SECRET is used.

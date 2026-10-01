@@ -12,6 +12,7 @@ import json
 import logging
 
 from fastapi import Depends, HTTPException, Request
+from slowapi.util import get_remote_address
 from starlette.concurrency import run_in_threadpool
 
 from app.config import settings
@@ -34,22 +35,52 @@ logger = logging.getLogger(__name__)
 
 INVALID_UNSUBSCRIBE_LINK = "This unsubscribe link isn't valid."
 
+#: The rate-limit bucket of dispatch calls that carry the right token (``_dispatch_rate_key``).
+AUTHORIZED_DISPATCH_KEY = "email-dispatch-authorized"
+#: The largest webhook body read, in bytes: Maileroo's events are a kilobyte or two.
+MAX_WEBHOOK_BODY = 262_144
+
 
 # -- the dispatcher and the webhook (internal) -------------------------------------------------
 
 
-@limiter.limit("30/minute")
+def _is_bearer(header: str | None, secret: str) -> bool:
+    """Whether ``header`` is exactly ``Bearer <secret>``, compared in constant time.
+
+    ``compare_digest`` raises on text that is not ASCII, so a header (or a secret) that is not
+    ASCII never matches instead.
+    """
+    expected = f"Bearer {secret}"
+    return bool(
+        header and header.isascii() and expected.isascii() and hmac.compare_digest(header, expected)
+    )
+
+
+def _dispatch_rate_key(request: Request) -> str:
+    """The rate-limit bucket of a dispatch call: calls with the right token have one of their own.
+
+    The others share their address's bucket. On Vercel that address is the proxy's, so without a
+    bucket of its own the schedule could be starved by anyone calling 30 times a minute.
+    """
+    secret = settings.EMAIL_DISPATCH_SECRET
+    if secret and _is_bearer(request.headers.get("authorization"), secret):
+        return AUTHORIZED_DISPATCH_KEY
+    return get_remote_address(request)
+
+
+@limiter.limit("30/minute", key_func=_dispatch_rate_key)
 def dispatch(request: Request):
     """One dispatcher run (``outbox.dispatch_tick``), for the ``pg_cron`` schedule.
 
-    Needs ``Authorization: Bearer <EMAIL_DISPATCH_SECRET>`` (401 otherwise). While that secret is
-    unset the route is off (404) and the API dispatches from inside its own process instead
-    (``app.jobs.email_dispatch``). Answers the run's counts.
+    Needs ``Authorization: Bearer <EMAIL_DISPATCH_SECRET>`` (401 otherwise, logged without the
+    header). While that secret is unset the route is off (404) and the API dispatches from inside
+    its own process instead (``app.jobs.email_dispatch``). Answers the run's counts.
     """
     secret = settings.EMAIL_DISPATCH_SECRET
     if not secret:
         raise HTTPException(status_code=404, detail="Not Found")
     if not _is_bearer(request.headers.get("authorization"), secret):
+        logger.warning("dispatch: rejected a call with a wrong or missing token")
         raise HTTPException(status_code=401, detail="Invalid dispatch token")
     return outbox.dispatch_tick(budget_seconds=settings.EMAIL_DISPATCH_BUDGET_SECONDS)
 
@@ -59,14 +90,15 @@ async def maileroo_webhook(request: Request):
     """Maileroo's delivery events (bounces, rejections, complaints, deliveries): ``webhooks``.
 
     The body is one event or a list of them, signed with ``MAILEROO_WEBHOOK_SECRET`` in
-    ``x-maileroo-signature`` (401 when missing or wrong; 400 when the body is not JSON).
-    Maileroo retries anything but a 200, and handling an event again is harmless, so the
-    answer is 503 while the secret is unset or while an event cannot be recorded.
+    ``x-maileroo-signature`` (401 when missing or wrong; 400 when the body is not JSON; 413 over
+    ``MAX_WEBHOOK_BODY`` bytes). Maileroo sends an event that does not get a 200 again, 8 times
+    over about 14 hours, and handling an event again is harmless: so the answer is 503 while the
+    secret is unset or while an event cannot be recorded.
     """
     secret = settings.MAILEROO_WEBHOOK_SECRET
     if not secret:
         raise HTTPException(status_code=503, detail="Webhook not configured")
-    body = await request.body()
+    body = await _read_body(request)
     if not webhooks.verify_signature(secret, body, request.headers.get("x-maileroo-signature")):
         raise HTTPException(status_code=401, detail="Invalid signature")
     try:
@@ -90,21 +122,29 @@ async def maileroo_webhook(request: Request):
     return {"ok": True}
 
 
+async def _read_body(request: Request) -> bytes:
+    """The request body, or 413 when it is over ``MAX_WEBHOOK_BODY`` bytes.
+
+    A ``Content-Length`` over the limit is refused before anything is read; without one, the
+    body is read in chunks and the reading stops as soon as it passes the limit.
+    """
+    try:
+        declared = int(request.headers.get("content-length", ""))
+    except ValueError:
+        declared = None
+    if declared is not None and declared > MAX_WEBHOOK_BODY:
+        raise HTTPException(status_code=413, detail="The body is too large")
+    body = bytearray()
+    async for chunk in request.stream():
+        body += chunk
+        if len(body) > MAX_WEBHOOK_BODY:
+            raise HTTPException(status_code=413, detail="The body is too large")
+    return bytes(body)
+
+
 def _handle_events(events: list) -> list[str]:
     client = get_client()
     return [webhooks.handle_event(client, event) for event in events]
-
-
-def _is_bearer(header: str | None, secret: str) -> bool:
-    """Whether ``header`` is exactly ``Bearer <secret>``, compared in constant time.
-
-    ``compare_digest`` raises on text that is not ASCII, so a header (or a secret) that is not
-    ASCII never matches instead.
-    """
-    expected = f"Bearer {secret}"
-    return bool(
-        header and header.isascii() and expected.isascii() and hmac.compare_digest(header, expected)
-    )
 
 
 # -- unsubscribe links (public) ----------------------------------------------------------------

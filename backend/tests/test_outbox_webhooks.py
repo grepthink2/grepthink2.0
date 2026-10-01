@@ -1,14 +1,15 @@
 """The Maileroo webhook (``POST /api/email/webhooks/maileroo``, app.outbox.webhooks).
 
-Maileroo signs each request with the shared secret (hex HMAC-SHA256 of the raw body) and retries
-anything but a 200, so every event must be safe to handle twice. The events below have the shape
-Maileroo documents: a ``failed`` event's ``event_data`` holds ``to`` and ``reason``, a
-``rejected`` one a list of ``to`` addresses and a ``reject_reason``. Everything runs against
-FakeSupabase; no request leaves the process.
+Maileroo signs each request with the shared secret (hex HMAC-SHA256 of the raw body) and sends an
+event that does not get a 200 again (8 times over about 14 hours), so every event must be safe to
+handle twice. The events below have the shape Maileroo documents: a ``failed`` event's
+``event_data`` holds ``to`` and ``reason``, a ``rejected`` one a list of ``to`` addresses and a
+``reject_reason``. Everything runs against FakeSupabase; no request leaves the process.
 """
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import json
@@ -16,13 +17,15 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from fastapi import HTTPException
+from starlette.requests import Request
 
 from app.config import settings
 from app.core.db import get_client
 from app.core.errors import DatabaseError, DatabaseUnavailableError
 from app.limiter import limiter
 from app.outbox import controller as outbox
-from app.outbox import webhooks
+from app.outbox import views, webhooks
 from app.outbox.kinds import KINDS, Kind, Rendered
 from tests.fake_supabase import FakeSupabase
 
@@ -251,7 +254,7 @@ def test_the_signature_is_compared_in_constant_time(monkeypatch):
 # -- the request: configuration, signature, body ---------------------------------------------------
 
 
-def test_without_a_secret_the_webhook_answers_503_so_maileroo_keeps_retrying(
+def test_without_a_secret_the_webhook_answers_503_so_maileroo_sends_the_event_again(
     client, db, monkeypatch
 ):
     monkeypatch.setattr(settings, "MAILEROO_WEBHOOK_SECRET", "")
@@ -295,6 +298,89 @@ def test_a_signed_body_that_is_not_json_is_a_400(client, db, body):
 def test_the_webhook_is_rate_limited():
     [rule] = limiter._route_limits["app.outbox.views.maileroo_webhook"]
     assert str(rule.limit) == "600 per 1 minute"
+
+
+# -- the size of the body ---------------------------------------------------------------------
+
+
+def padded_to(size: int) -> bytes:
+    """A delivered event whose JSON is exactly ``size`` bytes."""
+    payload = {**event("delivered", to=STUDENT), "padding": ""}
+    payload["padding"] = "x" * (size - len(json.dumps(payload).encode()))
+    body = json.dumps(payload).encode()
+    assert len(body) == size
+    return body
+
+
+def test_the_limit_is_256_kib():
+    assert views.MAX_WEBHOOK_BODY == 262_144
+
+
+def test_a_body_at_the_limit_is_read(client, db):
+    assert post(client, body=padded_to(views.MAX_WEBHOOK_BODY)).status_code == 200
+    assert outbox_row(db)["delivered_at"] is not None
+
+
+def test_a_body_declared_over_the_limit_is_refused_before_it_is_read(client, db, monkeypatch):
+    checked = []
+    monkeypatch.setattr(webhooks, "verify_signature", lambda *args: checked.append(args))
+
+    res = post(client, body=padded_to(views.MAX_WEBHOOK_BODY + 1))
+
+    assert res.status_code == 413
+    assert res.json() == {"detail": "The body is too large"}
+    assert checked == []  # never got as far as the signature
+    assert db.executes == 0
+
+
+def test_a_body_without_a_length_is_read_up_to_the_limit(client, db):
+    # Sent in chunks (Transfer-Encoding: chunked), with no Content-Length to check first.
+    for body, status in (
+        (padded_to(views.MAX_WEBHOOK_BODY + 1), 413),
+        (json.dumps(event("delivered", to=STUDENT)).encode(), 200),
+    ):
+        res = client.post(
+            URL,
+            content=iter([body]),
+            headers={"Content-Type": "application/json", "x-maileroo-signature": sign(body)},
+        )
+        assert res.request.headers.get("content-length") is None
+        assert res.status_code == status
+    assert outbox_row(db)["delivered_at"] is not None
+
+
+def body_request(headers: list[tuple[bytes, bytes]], pulled: list[int]) -> Request:
+    """A request whose body never ends, 100 000 bytes per chunk; ``pulled`` counts the chunks
+    read. Past ten chunks the reading is a failure, not an endless loop."""
+
+    async def receive():
+        pulled.append(100_000)
+        if len(pulled) > 10:
+            raise AssertionError("read far past the limit")
+        return {"type": "http.request", "body": b"x" * 100_000, "more_body": True}
+
+    return Request({"type": "http", "method": "POST", "path": URL, "headers": headers}, receive)
+
+
+def test_reading_a_body_without_a_length_stops_as_soon_as_it_passes_the_limit():
+    pulled: list[int] = []
+
+    with pytest.raises(HTTPException) as caught:
+        asyncio.run(views._read_body(body_request([], pulled)))
+
+    assert caught.value.status_code == 413
+    assert len(pulled) == 3  # 300 000 bytes: past 262 144, so nothing more is asked for
+
+
+def test_a_declared_length_over_the_limit_is_refused_without_reading_anything():
+    pulled: list[int] = []
+    request = body_request([(b"content-length", b"262145")], pulled)
+
+    with pytest.raises(HTTPException) as caught:
+        asyncio.run(views._read_body(request))
+
+    assert caught.value.status_code == 413
+    assert pulled == []
 
 
 # -- failed and rejected: bounced rows, suppressed addresses ---------------------------------------
@@ -388,39 +474,70 @@ def test_a_rejected_email_suppresses_the_address_as_rejected(client, db, make):
         "Recipient address previously bounced",
         "Address is on the SUPPRESSION list",
         "Recipient Blocked by the receiving server",
-        "Invalid recipient address",
+        "The recipient address is invalid",
+        "Recipient mailbox not found",
         "The mailbox does not exist",
+        "Invalid recipient address",
         "550 5.1.1 unknown user",
+        "Non-existent mailbox",
         "x" * 600 + " unknown user",  # matched in the whole reason, though only 500 are stored
     ],
     ids=[
-        "bounce",
-        "suppress",
-        "block",
+        "previously-bounced",
+        "suppression-list",
+        "recipient-blocked",
+        "recipient-address-invalid",
+        "mailbox-not-found",
+        "mailbox-does-not-exist",
         "invalid-recipient",
-        "does-not-exist",
         "unknown-user",
+        "non-existent-mailbox",
         "long",
     ],
 )
-def test_a_rejection_that_says_the_recipient_was_refused_suppresses_the_address(client, db, reason):
+def test_a_rejection_whose_reason_names_the_recipient_suppresses_the_address(client, db, reason):
     assert post(client, rejected(reason=reason)).status_code == 200
     assert suppressions(db) == {STUDENT: ("rejected", reason[:500])}
     assert outbox_row(db)["status"] == "bounced"
+    assert notes(db) == [
+        f"Your invite to {STUDENT} couldn't be delivered (the address was rejected)."
+    ]
 
 
 @pytest.mark.parametrize(
     "data",
     [
+        # Found in review: the email, its content or its sender, never the recipient.
+        {"reject_reason": "Message blocked as spam content"},
+        {"reject_reason": "Blocked by content policy"},
+        {"reject_reason": "Sender domain is blocklisted"},
+        {"reject_reason": "Sending blocked: account bounce rate too high"},
+        {"reject_reason": "Attachment type blocked"},
+        {"reject_reason": "Template does not exist"},
+        # The sender's address, not the recipient's.
+        {"reject_reason": "Sender address is invalid"},
+        {"reject_reason": "From address is invalid"},
+        {"reject_reason": "Sending IP address blocked"},
         {"reject_reason": "Malformed email: the From header is missing"},
         {"reject_reason": "Message size exceeds the limit"},
         {},
     ],
-    ids=["malformed", "too-large", "no-reason"],
+    ids=[
+        "spam-content",
+        "content-policy",
+        "sender-domain",
+        "bounce-rate",
+        "attachment",
+        "template",
+        "sender-address",
+        "from-address",
+        "sending-ip",
+        "malformed",
+        "too-large",
+        "no-reason",
+    ],
 )
-def test_a_rejection_of_the_message_bounces_the_row_but_suppresses_nothing(
-    client, db, caplog, data
-):
+def test_a_rejection_of_the_email_bounces_the_row_but_suppresses_nobody(client, db, caplog, data):
     # The address may be fine: suppressing it would stop every later email to it.
     with caplog.at_level(logging.WARNING, logger="app.outbox.webhooks"):
         res = post(client, event("rejected", to=[STUDENT], **data))
@@ -430,13 +547,77 @@ def test_a_rejection_of_the_message_bounces_the_row_but_suppresses_nothing(
     assert "email_suppressions" not in [query["table"] for query in db.queries]
     assert outbox_row(db)["status"] == "bounced"
     assert notes(db) == [
-        f"Your invite to {STUDENT} couldn't be delivered (the address was rejected)."
+        f"Your invite to {STUDENT} couldn't be delivered (the mail server rejected the email)."
     ]
     # Logged with the event type and the reference only: a reason can quote the address.
     assert [r.getMessage() for r in caplog.records if r.name == "app.outbox.webhooks"] == [
         "maileroo_webhook: rejected for a reason that is not the recipient, address not "
         f"suppressed | event=rejected ref={REF}"
     ]
+
+
+SEVERAL_RECIPIENTS = (
+    "maileroo_webhook: rejected an email with several recipients, nobody suppressed | "
+    f"event=rejected ref={REF}"
+)
+
+
+@pytest.mark.parametrize(
+    "copies",
+    [{"cc": ["ta@ucsc.edu"], "bcc": []}, {"cc": [], "bcc": ["records@ucsc.edu"]}],
+    ids=["cc", "bcc"],
+)
+def test_a_rejected_email_with_copies_suppresses_nobody(client, monkeypatch, clock, caplog, copies):
+    # Which of its recipients made Maileroo refuse it cannot be told, even with a reason that
+    # names "the recipients".
+    db = install(monkeypatch, FakeSupabase(**{name: [] for name in TABLES}))
+    payload = {"subject": "Welcome", "body_text": "Hi", **copies}
+    db.rows("email_outbox").append(sent_row(kind="custom_invite", payload=payload))
+
+    with caplog.at_level(logging.WARNING, logger="app.outbox.webhooks"):
+        assert post(client, rejected()).status_code == 200
+
+    assert suppressions(db) == {}
+    assert outbox_row(db)["status"] == "bounced"
+    assert notes(db) == [
+        f"Your invite to {STUDENT} couldn't be delivered (the mail server rejected the email)."
+    ]
+    assert [r.getMessage() for r in caplog.records if r.name == "app.outbox.webhooks"] == [
+        SEVERAL_RECIPIENTS
+    ]
+
+
+def test_a_rejected_email_to_several_addresses_suppresses_nobody(client, db, caplog):
+    with caplog.at_level(logging.WARNING, logger="app.outbox.webhooks"):
+        assert post(client, rejected(to=[STUDENT, "ta@ucsc.edu"])).status_code == 200
+
+    assert suppressions(db) == {}
+    assert outbox_row(db)["status"] == "bounced"  # the student's row: the event names them
+    assert notes(db) == [
+        f"Your invite to {STUDENT} couldn't be delivered (the mail server rejected the email)."
+    ]
+    assert [r.getMessage() for r in caplog.records if r.name == "app.outbox.webhooks"] == [
+        SEVERAL_RECIPIENTS
+    ]
+
+
+@pytest.mark.parametrize(
+    ("copies", "to"),
+    [
+        ({"cc": [], "bcc": []}, [STUDENT]),
+        ({"cc": ["  "], "bcc": None}, [STUDENT]),
+        ({}, ["Student <student@ucsc.edu>", "STUDENT@ucsc.edu"]),  # one address, twice
+    ],
+    ids=["empty-copies", "blank-copies", "same-address-twice"],
+)
+def test_a_rejected_email_with_one_recipient_suppresses_it(client, monkeypatch, clock, copies, to):
+    db = install(monkeypatch, FakeSupabase(**{name: [] for name in TABLES}))
+    payload = {"subject": "Welcome", "body_text": "Hi", **copies}
+    db.rows("email_outbox").append(sent_row(kind="custom_invite", payload=payload))
+
+    assert post(client, rejected(to=to)).status_code == 200
+
+    assert suppressions(db) == {STUDENT: ("rejected", REJECTED_WHY)}
 
 
 def test_a_rejection_of_the_message_needs_no_suppressions_table(client, monkeypatch, clock):
@@ -509,6 +690,23 @@ def test_a_long_reason_is_cut_to_500_characters(client, db):
     assert outbox_row(db)["last_error"] == "x" * 500
 
 
+@pytest.mark.parametrize(
+    "to", ["Student <Student@UCSC.edu>", '"One, Student" <student@ucsc.edu>', "<student@ucsc.edu>"]
+)
+def test_an_address_with_a_display_name_is_read_as_the_address(client, db, to):
+    assert post(client, failed(to)).status_code == 200
+    assert outbox_row(db)["status"] == "bounced"
+    assert suppressions(db) == {STUDENT: ("bounced", BOUNCE)}
+
+
+@pytest.mark.parametrize("to", ["not an address", "a@ucsc.edu, b@ucsc.edu", ""])
+def test_a_to_that_names_no_single_address_counts_as_none(client, db, to):
+    # Nothing to compare with the row: like an event without "to", it is about its rows.
+    assert post(client, failed(to)).status_code == 200
+    assert outbox_row(db)["status"] == "bounced"
+    assert suppressions(db) == {STUDENT: ("bounced", BOUNCE)}
+
+
 @pytest.mark.parametrize("kind", ["no_such_kind", "test_quiet"])
 def test_a_bounced_row_whose_kind_does_not_notify_tells_nobody(client, monkeypatch, clock, kind):
     quiet = Kind(name="test_quiet", render=lambda payload, ctx: Rendered(subject="s", text="t"))
@@ -528,11 +726,26 @@ def test_a_bounced_row_whose_kind_does_not_notify_tells_nobody(client, monkeypat
 def test_a_complaint_suppresses_the_address(client, db):
     before = dict(outbox_row(db))
 
-    assert post(client, event("complained", to="Student@ucsc.edu ")).status_code == 200
+    assert post(client, event("complained", to="Student <Student@ucsc.edu> ")).status_code == 200
 
     assert suppressions(db) == {STUDENT: ("complained", "complained")}
     assert outbox_row(db) == before
     assert db.rows("notifications") == []
+    assert [query["table"] for query in db.queries] == ["email_suppressions"]  # no outbox read
+
+
+def test_a_complaint_that_names_no_address_suppresses_its_rows_recipient(client, db):
+    before = dict(outbox_row(db))
+
+    assert post(client, event("complained")).status_code == 200
+
+    assert suppressions(db) == {STUDENT: ("complained", "complained")}
+    assert outbox_row(db) == before
+
+
+def test_a_complaint_without_an_address_or_a_known_reference_suppresses_nobody(client, db):
+    assert post(client, event("complained", ref=OTHER_REF)).status_code == 200
+    assert suppressions(db) == {}
 
 
 def test_a_delivery_is_recorded_once(client, db, clock):
@@ -566,6 +779,51 @@ def test_a_delivery_before_the_outbox_migration_is_ignored(client, monkeypatch, 
         FailingDb(lambda table, op: table == "email_outbox", missing_table, email_suppressions=[]),
     )
     assert post(client, event("delivered")).status_code == 200
+
+
+def test_the_delivery_of_a_copy_does_not_stamp_the_recipients_row(client, db):
+    before = dict(outbox_row(db))
+    assert post(client, event("delivered", to="ta@ucsc.edu")).status_code == 200
+    assert outbox_row(db) == before
+
+
+def test_a_delivery_after_a_bounce_is_not_recorded(client, db, clock):
+    assert post(client, failed()).status_code == 200
+    bounced = dict(outbox_row(db))
+    clock.advance(60)
+    db.reset_counter()
+
+    assert post(client, event("delivered", to=STUDENT)).status_code == 200
+
+    assert outbox_row(db) == bounced
+    assert bounced["delivered_at"] is None
+    assert [(q["table"], q["op"]) for q in db.queries] == [("email_outbox", "select")]  # no write
+
+
+def test_a_delivery_that_meets_a_bounce_recorded_meanwhile_stamps_nothing(monkeypatch, clock):
+    # Read as sent, bounced by a concurrent event before this update: the update checks again.
+    db = FakeSupabase(**{name: [] for name in TABLES})
+    db.rows("email_outbox").append(sent_row())
+    table = db.table
+
+    def bounced_meanwhile(name):
+        query = table(name)
+        if name == "email_outbox":
+            execute = query.execute
+
+            def execute_after_the_bounce():
+                if query._op == "update":
+                    outbox_row(db)["status"] = "bounced"
+                return execute()
+
+            query.execute = execute_after_the_bounce
+        return query
+
+    monkeypatch.setattr(db, "table", bounced_meanwhile)
+    install(monkeypatch, db)
+
+    assert webhooks.handle_event(get_client(), event("delivered", to=STUDENT)) == "delivered"
+    assert outbox_row(db)["delivered_at"] is None
 
 
 # -- other events, other bodies -------------------------------------------------------------------
@@ -628,15 +886,23 @@ def test_a_list_of_events_is_handled_event_by_event(client, db):
 def test_the_log_names_the_event_and_the_reference_never_the_address_or_the_reason(
     client, db, caplog
 ):
+    payloads = (
+        failed(),
+        rejected(),
+        rejected(reason="Message size exceeds the limit"),
+        rejected(to=[STUDENT, "ta@ucsc.edu"]),
+        event("complained", to=STUDENT),
+        event("delivered"),
+    )
     with caplog.at_level(logging.DEBUG):
-        for payload in (failed(), rejected(), event("complained", to=STUDENT), event("delivered")):
+        for payload in payloads:
             assert post(client, payload).status_code == 200
 
     logged = "\n".join(r.getMessage() for r in caplog.records if r.name.startswith("app."))
     assert f"maileroo_webhook: bounced | event=failed ref={REF} rows=1" in logged
-    assert STUDENT not in logged
-    assert "no such user" not in logged
-    assert "suppression list" not in logged
+    assert SEVERAL_RECIPIENTS in logged
+    for private in (STUDENT, "ta@ucsc.edu", "no such user", "suppression list", "Message size"):
+        assert private not in logged
 
 
 # -- what cannot be recorded --------------------------------------------------------------------
