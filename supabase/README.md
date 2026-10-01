@@ -142,6 +142,11 @@ before giving up and notifying whoever sent the invite. In this order:
 - **Maileroo webhook (bounces and complaints):** in the Maileroo dashboard add a webhook for
   `https://api.grepthink2.com/api/email/webhooks/maileroo` with the `failed`, `rejected`,
   `complained` and `delivered` events, then set its secret as `MAILEROO_WEBHOOK_SECRET` in Vercel.
-  A bounced or rejected address lands in `email_suppressions` and is not emailed again.
+  A bounced address (and a rejected one, when the reason names the recipient) lands in
+  `email_suppressions` and is not emailed again. Before turning the webhook on, export Maileroo's
+  existing suppression list and insert those addresses (`reason = 'bounced'`, lower-cased) so the
+  outbox already knows them — otherwise a cc'd address that Maileroo blocks makes it reject whole
+  emails without saying which recipient, and those emails are bounced without suppressing anyone.
+  Maileroo retries a webhook 8 times over about 14 hours; events refused for longer are lost.
 - **Allowing a suppressed address again:** `DELETE FROM email_suppressions WHERE email = '<address>';`
   (addresses are stored lower-cased).
