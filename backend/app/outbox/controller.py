@@ -311,6 +311,14 @@ def dispatch_tick(*, budget_seconds: float) -> dict[str, int | bool]:
         except OutboxUnavailable:
             counts["unavailable"] = True
             return counts
+        except DatabaseUnavailableError as err:
+            # An outage is no bug, and the in-process loop ticks every few seconds: a warning,
+            # so it is not a Sentry event each time. The next tick tries again.
+            logger.warning(
+                "email_outbox: producer %s skipped, the database is unavailable | error=%s",
+                _name_of(producer),
+                err,
+            )
         except Exception:
             # One broken producer must not hold up the others, or the emails already queued.
             logger.exception("email_outbox: producer %s failed", _name_of(producer))

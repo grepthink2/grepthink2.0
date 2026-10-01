@@ -1,16 +1,17 @@
-"""Transactional emails for class roster invitations."""
+"""What a class roster invitation says.
+
+Invitations are sent through the outbox (``app.outbox``, kind ``class_invite``), which renders
+them with ``render_class_invite`` when they go out. There is deliberately no helper here that
+sends one directly: an invite sent around the outbox gets no retry, no suppression check and no
+record.
+"""
 
 from __future__ import annotations
 
 import html
-import logging
 
 from app.outbox.rendered import Rendered
-from app.utils.email import send_email
-from app.utils.email_transport import EmailDeliveryError
 from app.utils.urls import frontend_url
-
-logger = logging.getLogger(__name__)
 
 
 def render_class_invite(
@@ -22,8 +23,7 @@ def render_class_invite(
 ) -> Rendered:
     """The roster invite for an existing (``registered``) or prospective student.
 
-    Links point at ``frontend_url()`` as it is when this runs. The outbox's ``class_invite``
-    kind renders with this, so an invite reads the same however it is sent.
+    Links point at ``frontend_url()`` as it is when this runs (when the outbox sends it).
     """
     app_url = frontend_url()
     signup_url = f"{app_url}/studentsignup"
@@ -79,57 +79,3 @@ def render_class_invite(
 """
 
     return Rendered(subject=subject, text=body_text, html=body_html)
-
-
-def send_class_invite_email(
-    *,
-    to: str,
-    class_name: str,
-    course_code: str,
-    instructor_name: str,
-    registered: bool,
-) -> None:
-    """Send a roster invite email to an existing or prospective student.
-
-    Raises:
-        EmailNotConfiguredError: No email provider is configured (a RuntimeError).
-        EmailDeliveryError: Delivery failed.
-    """
-    rendered = render_class_invite(
-        class_name=class_name,
-        course_code=course_code,
-        instructor_name=instructor_name,
-        registered=registered,
-    )
-    send_email(
-        to=to,
-        subject=rendered.subject,
-        body_text=rendered.text,
-        body_html=rendered.html,
-    )
-    logger.info(
-        "class_invite_email: sent | to=%s class=%r registered=%s",
-        to,
-        class_name,
-        registered,
-    )
-
-
-def send_class_invite_email_or_raise(*, to: str, **kwargs) -> None:
-    """Send invite email; translate delivery failures into HTTP-friendly errors."""
-    from fastapi import HTTPException
-
-    try:
-        send_class_invite_email(to=to, **kwargs)
-    except RuntimeError as exc:
-        logger.warning("class_invite_email: email delivery not configured | to=%s", to)
-        raise HTTPException(
-            status_code=503,
-            detail="Email delivery is not configured on this server.",
-        ) from exc
-    except EmailDeliveryError as exc:
-        logger.error("class_invite_email: delivery failed | to=%s err=%s", to, exc)
-        raise HTTPException(
-            status_code=502,
-            detail="Failed to send invitation email",
-        ) from exc

@@ -7,8 +7,8 @@ HTTP runs on ``httpx.MockTransport``, and most SMTP tests on a recording stand-i
 ``smtplib.SMTP``. The tests that need the real ``smtplib`` (what ``sendmail`` returns for a partial
 refusal, what QUIT does, what a non-ASCII address does, the certificate check) talk to a scripted
 SMTP server on 127.0.0.1 inside the test process: no external network. The end of the file covers
-``app.utils.email.send_email`` and the two callers that turn a delivery error into an HTTP answer
-(the contact form, the class invite).
+``app.utils.email.send_email`` and the caller that turns a delivery error into an HTTP answer (the
+contact form). Class invites go through the outbox (tests/test_outbox_dispatch.py).
 """
 
 from __future__ import annotations
@@ -43,7 +43,6 @@ from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 from fastapi import HTTPException
 from sentry_sdk.utils import walk_exception_chain
 
-from app.classes.invite_email import send_class_invite_email_or_raise
 from app.config import settings
 from app.contact.controller import submit_contact
 from app.utils import email as email_utils
@@ -2415,7 +2414,7 @@ def test_the_editor_html_helpers_are_untouched():
     assert email_utils.wrap_editor_html_for_email("<div>x</div>").startswith("<html><body")
 
 
-# ── callers that turn a delivery error into an HTTP answer ───────────────────────────
+# ── the caller that turns a delivery error into an HTTP answer ───────────────────────
 
 
 def _raising(error: Exception):
@@ -2441,41 +2440,4 @@ def test_the_contact_form_answers_502_when_delivery_fails(monkeypatch, error):
 
     assert caught.value.status_code == 502
     assert caught.value.detail == "Failed to send message"
-    assert caught.value.__cause__ is error
-
-
-INVITE = {
-    "class_name": "CSE 115C",
-    "course_code": "ABCD1234",
-    "instructor_name": "Ina Structor",
-    "registered": False,
-}
-
-
-def test_a_class_invite_answers_503_when_email_is_not_configured(monkeypatch):
-    error = EmailNotConfiguredError("nothing set")
-    monkeypatch.setattr("app.classes.invite_email.send_email", _raising(error))
-
-    with pytest.raises(HTTPException) as caught:
-        send_class_invite_email_or_raise(to="student@ucsc.edu", **INVITE)
-
-    assert caught.value.status_code == 503
-    # The cause may be a missing sender or key, so the answer does not send anyone to SMTP_*.
-    assert caught.value.detail == "Email delivery is not configured on this server."
-    assert caught.value.__cause__ is error
-
-
-@pytest.mark.parametrize(
-    "error",
-    [TransientEmailError("provider down"), PermanentEmailError("bad address")],
-    ids=["transient", "permanent"],
-)
-def test_a_class_invite_answers_502_when_delivery_fails(monkeypatch, error):
-    monkeypatch.setattr("app.classes.invite_email.send_email", _raising(error))
-
-    with pytest.raises(HTTPException) as caught:
-        send_class_invite_email_or_raise(to="student@ucsc.edu", **INVITE)
-
-    assert caught.value.status_code == 502
-    assert caught.value.detail == "Failed to send invitation email"
     assert caught.value.__cause__ is error

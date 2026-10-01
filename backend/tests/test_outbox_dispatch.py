@@ -2056,6 +2056,29 @@ def test_a_broken_producer_holds_up_neither_the_others_nor_delivery(db, mail, mo
     assert isinstance(logged.exc_info[1], ValueError)
 
 
+def test_a_producer_during_a_database_outage_is_a_warning(db, mail, monkeypatch, caplog):
+    # The in-process loop runs a tick every few seconds: an outage must not be an ERROR (a
+    # Sentry event) each time. Delivery still goes on.
+    error = outage("read", "pending_invites")
+
+    def scheduled(client, deadline):
+        raise error
+
+    monkeypatch.setattr(outbox, "_producers", lambda: (scheduled,))
+
+    with caplog.at_level(logging.DEBUG, logger="app.outbox.controller"):
+        assert tick() == NO_COUNTS
+
+    assert reads_of(db, "rpc:claim_email_outbox") != []
+    assert outbox_logs(caplog) == [
+        (
+            "WARNING",
+            f"email_outbox: producer scheduled skipped, the database is unavailable | error={error}",
+        )
+    ]
+    assert all(record.exc_info is None for record in caplog.records)
+
+
 def test_a_producer_that_finds_no_outbox_ends_the_tick(db, mail, monkeypatch):
     monkeypatch.setattr(
         outbox, "_producers", lambda: (raising(outbox.OutboxUnavailable("no table")),)
@@ -2178,8 +2201,8 @@ def test_custom_invite_without_html_or_copies(rest):
     )
 
 
-#: What send_class_invite_email sent before the outbox, with FRONTEND_URL=https://app.example.com.
-#: Copied from its output at 396f241; a change here changes what students receive.
+#: What a class invite said before the outbox, with FRONTEND_URL=https://app.example.com.
+#: Copied from the sender's output at 396f241; a change here changes what students receive.
 REGISTERED_INVITE = Rendered(
     subject="You've been added to CSE 115C <Fall> on GrepThink",
     text=(
@@ -2250,23 +2273,6 @@ def test_the_class_invite_kind_renders_its_payload_with_render_class_invite():
     rendered = get_kind("class_invite").render(INVITE_PAYLOAD, RenderContext())
     assert rendered == render_class_invite(**INVITE_PAYLOAD)
     assert (rendered.cc, rendered.bcc) == ((), ())
-
-
-def test_send_class_invite_email_sends_what_render_class_invite_renders(monkeypatch):
-    sent = []
-    monkeypatch.setattr(invite_email, "send_email", lambda **kwargs: sent.append(kwargs))
-
-    invite_email.send_class_invite_email(to="student@ucsc.edu", **INVITE_PAYLOAD)
-
-    expected = render_class_invite(**INVITE_PAYLOAD)
-    assert sent == [
-        {
-            "to": "student@ucsc.edu",
-            "subject": expected.subject,
-            "body_text": expected.text,
-            "body_html": expected.html,
-        }
-    ]
 
 
 def test_both_invite_kinds_are_transactional_and_report_failures_to_their_creator():
