@@ -14,6 +14,12 @@ missing-table codes) — never "some read failed". Any other database failure ke
 last known-good list instead, the same way ``app.auth.controller.get_user_role`` never caches a
 failure as "no role": a dropped connection or a missing grant is an outage, and treating it as
 "not migrated yet" would answer a whole class of requests wrong for up to a minute.
+
+Each school also has a ``timezone``: the IANA zone its dates are in. Until
+``2026-09-30_institution_timezones.sql`` is applied the column does not exist, so the table is
+read with ``select("*")`` (naming a missing column fails the whole read) and every school gets
+``DEFAULT_TIMEZONE``; so does one whose value ``zoneinfo`` does not know, which is logged as an
+error.
 """
 
 from __future__ import annotations
@@ -23,13 +29,17 @@ import re
 import threading
 import time
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from app.core.db import get_client, retry_on_disconnect
+from app.core.db import MISSING_TABLE_CODES, get_client, retry_on_disconnect
 from app.core.errors import DatabaseError, DatabaseUnavailableError
 
 logger = logging.getLogger(__name__)
 
-INSTITUTION_COLUMNS = "id, name, slug, email_domains"
+#: The zone a school's dates are in when its row has none (no ``timezone`` column yet, NULL or
+#: empty) or names one ``zoneinfo`` does not know. The column's own default in
+#: ``2026-09-30_institution_timezones.sql`` is the same zone.
+DEFAULT_TIMEZONE = "America/Los_Angeles"
 
 #: How long a good list is served from memory. A school a maintainer adds appears within this long.
 _TTL_SECONDS = 300.0
@@ -39,10 +49,11 @@ _MISSING_TABLE_TTL_SECONDS = 60.0
 #: How long a stale-but-good list is re-served after some other read failure, before retrying.
 _STALE_TTL_SECONDS = 10.0
 
-#: PostgREST's and Postgres's own "this table does not exist" codes — the only failures that
-#: mean "the migration has not been applied yet". Anything else (a timeout, a dropped
-#: connection, a missing grant, ...) is a real outage, not a schema state.
-_MISSING_TABLE_CODES = frozenset({"PGRST205", "42P01"})
+#: PostgREST's and Postgres's own "this table does not exist" codes (defined once, in
+#: ``app.core.db``) — the only failures that mean "the migration has not been applied yet".
+#: Anything else (a timeout, a dropped connection, a missing grant, ...) is a real outage, not a
+#: schema state.
+_MISSING_TABLE_CODES = MISSING_TABLE_CODES
 
 _lock = threading.Lock()
 #: ``(expires_at, institutions or None)``; ``expires_at`` is on the ``time.monotonic()`` clock.
@@ -77,6 +88,32 @@ def _normalized_domain(raw: object) -> str | None:
     return domain
 
 
+def _normalized_timezone(raw: object, slug: str) -> str:
+    """The IANA zone name a school's dates are in: the row's own, or ``DEFAULT_TIMEZONE``.
+
+    Not set (no column yet, NULL, ``""``) takes the default quietly: that is an ordinary state.
+    A name ``zoneinfo`` cannot load is a maintainer's typo (``Europe/Istanbull``, or ``Europe``,
+    a region rather than a zone): it takes the default too, but as an ERROR so Sentry reports it
+    (it files a WARNING as a breadcrumb only), the same as a bad email domain.
+    """
+    if raw is None or raw == "":
+        return DEFAULT_TIMEZONE
+    name = str(raw)
+    try:
+        ZoneInfo(name)
+    except (ZoneInfoNotFoundError, ValueError, OSError):
+        # Not found; or a key zoneinfo refuses outright ("../etc", a NUL byte); or a name the
+        # file system rejects: one over the file-name limit raises OSError on every Python
+        # version, and a directory of the tz database (``Europe``) raises IsADirectoryError on
+        # Python 3.12 and older (3.14 reports a not-found instead, gh-85702). Any of them
+        # escaping would fail the whole read of the list, for every school, over one row's typo.
+        logger.error(
+            "institutions: unknown timezone %r for %r; using %s", raw, slug, DEFAULT_TIMEZONE
+        )
+        return DEFAULT_TIMEZONE
+    return name
+
+
 def _normalized(row: dict) -> dict:
     slug = row.get("slug") or ""
     domains = []
@@ -99,20 +136,25 @@ def _normalized(row: dict) -> dict:
         "name": row.get("name") or "",
         "slug": slug,
         "email_domains": domains,
+        "timezone": _normalized_timezone(row.get("timezone"), slug),
     }
 
 
 @retry_on_disconnect()
 def _fetch_institutions() -> list[dict]:
-    """One read of the institutions table, normalized. Retried once on a dropped connection."""
-    rows = (
-        get_client().table("institutions").select(INSTITUTION_COLUMNS).order("name").execute()
-    ).data or []
+    """One read of the institutions table, normalized. Retried once on a dropped connection.
+
+    Selects ``*`` on purpose: naming ``timezone`` would make PostgREST fail the whole read
+    (``42703``, undefined column) on a database the timezone migration has not reached yet, taking
+    every class list and school-email check down with it. ``_normalized`` keeps only the fields
+    the app uses, so a column added to the table later does not end up in the cache.
+    """
+    rows = get_client().table("institutions").select("*").order("name").execute().data or []
     return [_normalized(row) for row in rows]
 
 
 def load_institutions() -> list[dict] | None:
-    """Every institution as ``{id, name, slug, email_domains}``.
+    """Every institution as ``{id, name, slug, email_domains, timezone}``.
 
     ``None`` only when the ``institutions`` table itself does not exist (the migration has not
     been applied yet). Any other failure — a timeout, a dropped connection (retried once), a
@@ -177,6 +219,18 @@ def institution_summaries(institutions: list[dict] | None) -> dict[str, dict]:
     }
 
 
+def _normalized_id(institution_id: object) -> str | None:
+    """``institution_id`` spelled the way ``load_institutions`` spells ids, or ``None``.
+
+    A ``UUID``, or an upper-case (or otherwise re-cased) string, of a known id still matches it;
+    anything that is not a UUID at all (``None``, ``"not-a-uuid"``) is ``None``, not an error.
+    """
+    try:
+        return str(UUID(str(institution_id)))
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
 def is_known_institution(institution_id) -> bool:
     """True when ``institution_id`` names an existing institution.
 
@@ -186,11 +240,31 @@ def is_known_institution(institution_id) -> bool:
     Can raise ``DatabaseError`` (see ``load_institutions``) when the list can't be read and
     nothing is cached.
     """
-    try:
-        normalized = str(UUID(str(institution_id)))
-    except (ValueError, TypeError):
-        return False
-    return normalized in {i["id"] for i in load_institutions() or []}
+    normalized = _normalized_id(institution_id)
+    return normalized is not None and normalized in {i["id"] for i in load_institutions() or []}
+
+
+def institution_timezone(institution_id: UUID | str | None) -> ZoneInfo:
+    """The time zone a school's dates are in, for reminder scheduling.
+
+    ``assignments.open_date`` and ``close_date`` are bare dates in the school's own zone, so "due
+    tomorrow" is only right when worked out there. ``DEFAULT_TIMEZONE`` for a class with no school
+    (``None``), for an id that names none, and before the institutions table exists.
+
+    ``institution_id`` is matched the way ``is_known_institution`` matches it: a ``UUID``, or a
+    string in any case, finds its school.
+
+    Can raise ``DatabaseError`` (see ``load_institutions``) when the list can't be read and
+    nothing is cached: an outage must not pass for "unknown school" and schedule in the wrong
+    zone. ``None``, or anything else that is not a UUID, needs no lookup, so it never raises.
+    """
+    wanted = _normalized_id(institution_id)
+    if wanted is not None:
+        for institution in load_institutions() or []:
+            if institution["id"] == wanted:
+                # Defensive: the cache may hold an entry primed before ``timezone`` existed.
+                return ZoneInfo(institution.get("timezone") or DEFAULT_TIMEZONE)
+    return ZoneInfo(DEFAULT_TIMEZONE)
 
 
 def email_domain(email: str | None) -> str:

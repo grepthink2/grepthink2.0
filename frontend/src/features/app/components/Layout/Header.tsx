@@ -12,13 +12,21 @@ import { apiRequest, type ApiProfile } from '@/lib/api';
 import SchoolSwitcher from './SchoolSwitcher';
 import './Header.scss';
 
+/**
+ * Notices the class's instructor answers on that class's Roster: its roster is missing, or an
+ * invite email to it could not be delivered. `entity_id` is the class.
+ */
+function isRosterNotice(type: string): boolean {
+  return type === 'upload_roster' || type === 'email_undeliverable';
+}
+
 function notificationPath(notification: {
   type: string;
   entity_type: string | null;
   entity_id: string | null;
 }): string | null {
   if (notification.type === 'complete_profile') return null;
-  if (notification.type === 'upload_roster') return '/app/roster';
+  if (isRosterNotice(notification.type)) return '/app/roster';
   if (notification.entity_type === 'conversation' && notification.entity_id) {
     return `/app/messages/${notification.entity_id}`;
   }
@@ -221,7 +229,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
     }
 
     const target =
-      notification.type === 'upload_roster' && notification.entity_id
+      isRosterNotice(notification.type) && notification.entity_id
         ? classes.find((c) => c.id === notification.entity_id)
         : undefined;
     const path = notificationPath(notification);

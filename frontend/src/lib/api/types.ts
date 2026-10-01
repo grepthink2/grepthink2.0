@@ -13,6 +13,8 @@ export interface ApiInstitutionSummary {
 /** A school with the email domains that count as its school email (GET /api/institutions). */
 export interface ApiInstitution extends ApiInstitutionSummary {
   email_domains: string[];
+  /** The school's IANA time zone, e.g. "Europe/Istanbul". Missing from older backends. */
+  timezone?: string;
 }
 
 export interface ApiClass {
@@ -256,9 +258,12 @@ export interface ApiRosterUploadResult {
 }
 
 export interface ApiBulkInviteResult {
+  /** `status` is "queued" for an email the outbox is still trying to send. */
   results: { email: string; status: string }[];
   enrolled_count: number;
   invited_count: number;
+  /** Invite emails waiting in the outbox. Missing from older backends. */
+  queued_count?: number;
 }
 
 export interface ApiProfile {
@@ -571,13 +576,50 @@ export interface ApiContact {
 
 export interface ApiNotification {
   id: string;
-  type: 'join_request' | 'join_rejected' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster' | 'member_removed';
+  /** `email_undeliverable`: an invite email failed for good; `entity_id` is the class it was for. */
+  type:
+    | 'join_request'
+    | 'join_rejected'
+    | 'message'
+    | 'project_created'
+    | 'complete_profile'
+    | 'upload_roster'
+    | 'member_removed'
+    | 'email_undeliverable';
   title: string;
   body: string;
   entity_type: string | null;
   entity_id: string | null;
   read_at: string | null;
   created_at: string;
+}
+
+// ----- Email preferences and unsubscribe -----------------------------------
+
+/** One category of optional email and whether this account gets it (GET /api/email/preferences). */
+export interface ApiEmailPreference {
+  category: string;
+  /** The category's name, e.g. "Deadline reminders". */
+  label: string;
+  description: string;
+  enabled: boolean;
+}
+
+/**
+ * What an unsubscribe link is for (GET /api/email/unsubscribe): `valid` is false when the backend
+ * does not accept the token, and then there is no category.
+ */
+export interface ApiUnsubscribeInfo {
+  valid: boolean;
+  category?: string;
+  label?: string;
+}
+
+/** The category an unsubscribe link just turned off (POST /api/email/unsubscribe). */
+export interface ApiUnsubscribeResult {
+  unsubscribed: boolean;
+  category: string;
+  label: string;
 }
 
 // ----- Staffing / Interest form -------------------------------------------

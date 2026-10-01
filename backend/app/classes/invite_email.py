@@ -1,40 +1,29 @@
-"""Transactional emails for class roster invitations."""
+"""What a class roster invitation says.
+
+Invitations are sent through the outbox (``app.outbox``, kind ``class_invite``), which renders
+them with ``render_class_invite`` when they go out. There is deliberately no helper here that
+sends one directly: an invite sent around the outbox gets no retry, no suppression check and no
+record.
+"""
 
 from __future__ import annotations
 
 import html
-import logging
-import smtplib
 
-from app.config import settings
-from app.utils.email import send_email
-
-logger = logging.getLogger(__name__)
+from app.outbox.rendered import Rendered
+from app.utils.urls import frontend_url
 
 
-def frontend_url() -> str:
-    """Public app base URL for links in invitation emails."""
-    explicit = (settings.FRONTEND_URL or "").strip().rstrip("/")
-    if explicit:
-        return explicit
-    if settings.CORS_ORIGINS:
-        return settings.CORS_ORIGINS[0].rstrip("/")
-    return "http://localhost:5173"
-
-
-def send_class_invite_email(
+def render_class_invite(
     *,
-    to: str,
     class_name: str,
     course_code: str,
     instructor_name: str,
     registered: bool,
-) -> None:
-    """Send a roster invite email to an existing or prospective student.
+) -> Rendered:
+    """The roster invite for an existing (``registered``) or prospective student.
 
-    Raises:
-        RuntimeError: SMTP is not configured.
-        smtplib.SMTPException: Delivery failed.
+    Links point at ``frontend_url()`` as it is when this runs (when the outbox sends it).
     """
     app_url = frontend_url()
     signup_url = f"{app_url}/studentsignup"
@@ -89,38 +78,4 @@ def send_class_invite_email(
 </html>
 """
 
-    send_email(
-        to=to,
-        subject=subject,
-        body_text=body_text,
-        body_html=body_html,
-    )
-    logger.info(
-        "class_invite_email: sent | to=%s class=%r registered=%s",
-        to,
-        class_name,
-        registered,
-    )
-
-
-def send_class_invite_email_or_raise(*, to: str, **kwargs) -> None:
-    """Send invite email; translate SMTP failures into HTTP-friendly errors."""
-    from fastapi import HTTPException
-
-    try:
-        send_class_invite_email(to=to, **kwargs)
-    except RuntimeError as exc:
-        logger.warning("class_invite_email: SMTP not configured | to=%s", to)
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "Email delivery is not configured on this server. "
-                "Set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in .env."
-            ),
-        ) from exc
-    except smtplib.SMTPException as exc:
-        logger.error("class_invite_email: delivery failed | to=%s err=%s", to, exc)
-        raise HTTPException(
-            status_code=502,
-            detail="Failed to send invitation email",
-        ) from exc
+    return Rendered(subject=subject, text=body_text, html=body_html)

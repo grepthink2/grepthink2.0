@@ -28,7 +28,8 @@ SUPABASE_JWK_JSON=
 VITE_SUPABASE_URL=         # frontend: same project as SUPABASE_URL
 VITE_SUPABASE_ANON_KEY=    # frontend: anon key
 VITE_API_BASE_URL=         # ignored in dev (see Nuance 5)
-# optional: CORS_ORIGINS, HOST, PORT, SMTP_*, SENTRY_DSN (error reporting; off when unset)
+# optional: CORS_ORIGINS, HOST, PORT, SMTP_*, MAILEROO_API_KEY/EMAIL_FROM (email via Maileroo's API),
+#           EMAIL_DISPATCH_* (outbox; see DEPLOY.md > Email delivery), SENTRY_DSN (off when unset)
 ```
 
 Then install both halves:

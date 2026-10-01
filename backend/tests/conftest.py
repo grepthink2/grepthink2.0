@@ -81,6 +81,7 @@ UCSC_INSTITUTION = {
     "name": "UC Santa Cruz",
     "slug": "ucsc",
     "email_domains": ["ucsc.edu"],
+    "timezone": "America/Los_Angeles",
 }
 
 # Contains a hex letter on purpose: some tests check that a differently-cased form of this id
@@ -90,6 +91,7 @@ ISTINYE_INSTITUTION = {
     "name": "İstinye University",
     "slug": "istinye",
     "email_domains": ["istinye.edu.tr"],
+    "timezone": "Europe/Istanbul",
 }
 
 

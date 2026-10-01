@@ -48,6 +48,28 @@ _DEFAULT_DEV_ORIGINS = [
 ]
 
 
+_ON = frozenset({"1", "true", "yes", "on"})
+_OFF = frozenset({"0", "false", "no", "off"})
+
+
+def _on_or_off(name: str, *, default: bool) -> bool:
+    """An on/off variable: 1/true/yes/on or 0/false/no/off, in any case and with spaces around.
+
+    Unset or blank: ``default``. Anything else is logged and read as ``default`` too.
+    """
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    if raw.lower() in _ON:
+        return True
+    if raw.lower() in _OFF:
+        return False
+    logger.warning(
+        "%s=%r is not 1/true/yes/on or 0/false/no/off; using the default (%s)", name, raw, default
+    )
+    return default
+
+
 class Settings:
     """Application settings loaded from environment variables"""
 
@@ -90,14 +112,59 @@ class Settings:
     #   SMTP_USER=you@gmail.com
     #   SMTP_PASSWORD=app-password
     #   SMTP_FROM=GrepThink <you@gmail.com>
-    SMTP_HOST: str = os.environ.get("SMTP_HOST", "")
+    #
+    # A stray newline (a pasted value) must not become part of the setting: smtplib would look up
+    # "smtp.example.com\n". Everything is stripped but the password, which may end in a space, so
+    # only its line ending goes.
+    SMTP_HOST: str = os.environ.get("SMTP_HOST", "").strip()
     SMTP_PORT: int = int(os.environ.get("SMTP_PORT", 587))
-    SMTP_USER: str = os.environ.get("SMTP_USER", "")
-    SMTP_PASSWORD: str = os.environ.get("SMTP_PASSWORD", "")
-    SMTP_FROM: str = os.environ.get("SMTP_FROM", "")
+    SMTP_USER: str = os.environ.get("SMTP_USER", "").strip()
+    SMTP_PASSWORD: str = os.environ.get("SMTP_PASSWORD", "").rstrip("\r\n")
+    SMTP_FROM: str = os.environ.get("SMTP_FROM", "").strip()
 
-    # Scheduled-invite poller interval (app.jobs.pending_invites), seconds.
-    PENDING_INVITES_POLL_SECONDS: float = float(os.environ.get("PENDING_INVITES_POLL_SECONDS", 5))
+    # Maileroo HTTP API (app.utils.email_transport). When MAILEROO_API_KEY (a sending key) is
+    # set, every email goes through the API instead of SMTP. EMAIL_FROM is the sender
+    # ("GrepThink <noreply@example.com>"); it falls back to SMTP_FROM.
+    MAILEROO_API_KEY: str = os.environ.get("MAILEROO_API_KEY", "").strip()
+    MAILEROO_API_URL: str = (
+        os.environ.get("MAILEROO_API_URL", "").strip().rstrip("/")
+        or "https://smtp.maileroo.com/api/v2"
+    )
+    EMAIL_FROM: str = os.environ.get("EMAIL_FROM", "").strip()
+
+    # Email outbox (app.outbox). EMAIL_DISPATCH_SECRET turns on POST /api/email/dispatch for
+    # the pg_cron schedule and turns off the in-process loop (app.jobs.email_dispatch), which
+    # otherwise runs every EMAIL_DISPATCH_POLL_SECONDS where EMAIL_DISPATCH_IN_PROCESS is on.
+    # The budgets bound how long one dispatch run, or one request sending its own emails, keeps
+    # starting new sends.
+    EMAIL_DISPATCH_SECRET: str = os.environ.get("EMAIL_DISPATCH_SECRET", "").strip()
+    # Whether this process may run that loop. On by default only on Vercel production
+    # (VERCEL_ENV=production): a local backend pointed at the shared DEV database would
+    # otherwise dispatch everyone's DEV outbox (and pause it, having no mail provider), and a
+    # Preview deployment given PROD database variables would send PROD email. Set it to 1 to
+    # dispatch locally. With it off and no schedule, queued emails wait (app.main warns).
+    EMAIL_DISPATCH_IN_PROCESS: bool = _on_or_off(
+        "EMAIL_DISPATCH_IN_PROCESS",
+        default=os.environ.get("VERCEL_ENV", "").strip().lower() == "production",
+    )
+    EMAIL_DISPATCH_POLL_SECONDS: float = float(
+        os.environ.get("EMAIL_DISPATCH_POLL_SECONDS")
+        or os.environ.get("PENDING_INVITES_POLL_SECONDS")
+        or 5
+    )
+    EMAIL_DISPATCH_BUDGET_SECONDS: float = float(os.environ.get("EMAIL_DISPATCH_BUDGET_SECONDS", 8))
+    EMAIL_INLINE_BUDGET_SECONDS: float = float(os.environ.get("EMAIL_INLINE_BUDGET_SECONDS", 8))
+
+    # Maileroo webhook shared secret (POST /api/email/webhooks/maileroo). Unset: the endpoint
+    # answers 503, and Maileroo sends each event again 8 times over about 14 hours, then drops it.
+    MAILEROO_WEBHOOK_SECRET: str = os.environ.get("MAILEROO_WEBHOOK_SECRET", "").strip()
+
+    # Signs unsubscribe links. Unset: a key derived from SUPABASE_JWT_SECRET is used.
+    EMAIL_UNSUBSCRIBE_SECRET: str = os.environ.get("EMAIL_UNSUBSCRIBE_SECRET", "").strip()
+
+    # Public URL of this API (https://api.example.com), for the one-click unsubscribe link in
+    # the List-Unsubscribe header. Unset: emails carry only the frontend unsubscribe page link.
+    PUBLIC_API_URL: str = (os.environ.get("PUBLIC_API_URL") or "").strip().rstrip("/")
 
     # Public frontend URL for links in transactional emails (signup, class join).
     # Falls back to the first CORS origin when unset.
