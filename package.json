@@ -5,6 +5,6 @@
   "scripts": {
     "test": "npm run test:frontend && npm run test:backend",
     "test:frontend": "npm --prefix frontend run test",
-    "test:backend": "cd backend && if [ -x venv/bin/python ]; then venv/bin/python -m pytest; else python3 -m pytest; fi"
+    "test:backend": "cd backend && if [ -x .venv/bin/python ]; then .venv/bin/python -m pytest; elif [ -x venv/bin/python ]; then venv/bin/python -m pytest; else python3 -m pytest; fi"
   }
 }
