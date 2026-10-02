@@ -20,7 +20,7 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 | Styling   | SCSS + design tokens (`src/styles/`), lucide-react icons |
 | Routing   | React Router DOM v7                         |
 | State     | React Context (auth, class, preview, conversations, notifications) |
-| Backend   | Python 3.11 FastAPI + Uvicorn, slowapi (rate limiting) |
+| Backend   | Python 3.12 FastAPI + Uvicorn, slowapi (rate limiting) |
 | Database  | Supabase (managed PostgreSQL) through supabase-py / PostgREST |
 | Auth      | Supabase Auth (JWT); PyJWT verification (HS256 + ES256) |
 | Tests     | pytest + `tests/fake_supabase.py` (backend), Vitest 5 + Testing Library (frontend) |
@@ -111,7 +111,7 @@ design/               # Claude Design export (design system); replace it wholesa
 
 ## Run / test
 ```bash
-# Backend (Python 3.11 venv at backend/.venv)
+# Backend (Python 3.12 venv at backend/.venv; CI runs 3.12)
 cd backend && .venv/bin/pip install -r requirements-dev.txt   # runtime + test/lint tools
 .venv/bin/ruff format . && .venv/bin/ruff check .             # lint gate
 .venv/bin/python -m pytest                  # no network: conftest stubs SUPABASE_* env

@@ -20,8 +20,8 @@
 ```bash
 # From the backend directory (or project root with backend as cwd for run.py)
 
-# Create a virtual environment (Python 3.11)
-python3.11 -m venv .venv
+# Create a virtual environment (Python 3.12 or newer; CI runs 3.12)
+python3 -m venv .venv
 source .venv/bin/activate   # On Windows: .venv\Scripts\activate
 
 # Install dependencies
