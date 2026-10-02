@@ -1,6 +1,8 @@
 -- 2026-09-20 — bring PROD level with dev: one script, one transaction
 --
--- STAGED, NOT APPLIED. Nothing runs the files in this directory. Target: PROD
+-- APPLIED TO PROD 2026-09-23. DO NOT RE-RUN: once 2026-09-21_role_chosen_by_its_owner.sql is
+-- applied, step 3 below would put the old handle_new_user back. Nothing runs the files in
+-- this directory. Target: PROD
 -- yfezwtoeoexfksvbpxmi. Assembled by concatenating the migration files named in each step,
 -- verbatim, so every statement here is byte-identical to what dev has already run (steps
 -- 2 and 8 exist only here and were run on dev on 2026-09-20 as a no-op and a check).
@@ -15,7 +17,9 @@
 -- Claude applies the steps one by one, which also records them in the project's
 -- migration history (the SQL editor does not).
 --
--- Applied: PROD ____-__-__
+-- Applied: PROD 2026-09-23 (by the maintainer). Verified the same day from a schema + data dump
+-- (scripts/supabase.sh prod db dump): every step-10 check passes, the eight function hashes
+-- match dev, and all 51 DMs and 162 messages survived, with 3 channels for each of the 15 projects.
 --
 -- ── What this does, and what it deliberately does not ─────────────────────────────
 --   * NO TABLE IS DROPPED AND NO ROW IS DELETED. Dropping PROD's messaging data was

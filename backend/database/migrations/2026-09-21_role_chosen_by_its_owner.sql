@@ -8,7 +8,7 @@
 --                               shows that as an error.
 -- Idempotent.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-09-23   PROD ____-__-__ (only after the release that carries #179 is live)
 -- Rehearsed on dev 2026-09-21 inside a rolled-back transaction, through the real trigger on
 -- auth.users: a signup with no role in its metadata (Google) and one with a made-up role both
 -- got role NULL, a password signup as instructor got 'instructor', the first

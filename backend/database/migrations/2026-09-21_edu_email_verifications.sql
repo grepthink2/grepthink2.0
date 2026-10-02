@@ -3,7 +3,7 @@
 -- EXPAND: apply BEFORE deploying the code that uses it (the verify-edu-email flow answers 500
 -- without this table); harmless to older code, which never looks at it. Idempotent.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__ (queued in prod/2026-09-20_align_prod.sql)
+-- Applied: DEV 2026-09-23   PROD 2026-09-23 (step 8 of prod/2026-09-20_align_prod.sql)
 -- Rehearsed on dev 2026-09-21 inside a rolled-back transaction: the upsert keeps one row per
 -- user, and the conditional attempt claim updates one row the first time and none the second.
 --
