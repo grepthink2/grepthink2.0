@@ -1,0 +1,164 @@
+@use '@styles/index.scss' as *;
+
+.board-settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--gt-z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--gt-scrim);
+}
+
+.board-settings {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 22px 24px;
+  background: var(--gt-gray-0);
+  border-radius: var(--gt-radius-md);
+  box-shadow: var(--gt-shadow-modal);
+  font-family: $primary-font;
+
+  &__close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    padding: 4px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background: transparent;
+    color: var(--gt-text-tertiary);
+    cursor: pointer;
+    @include gt-transition(background-color, color);
+
+    &:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__title { margin: 0 0 18px; font-size: 17px; font-weight: 600; color: var(--gt-text-primary); }
+
+  &__section {
+    padding-top: 16px;
+    border-top: 1px solid var(--gt-border);
+
+    &:first-of-type { padding-top: 0; border-top: none; }
+    & + & { margin-top: 18px; }
+  }
+
+  &__section-title {
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__hint {
+    margin: 0 0 12px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--gt-text-tertiary);
+  }
+
+  &__loading,
+  &__empty { margin: 0 0 12px; font-size: 12.5px; color: var(--gt-text-tertiary); }
+
+  &__repos { list-style: none; margin: 0 0 14px; padding: 0; }
+
+  &__repo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gt-border-subtle);
+    color: var(--gt-text-secondary);
+
+    &:last-child { border-bottom: none; }
+  }
+
+  &__repo-url {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--gt-font-mono);
+    font-size: 11.5px;
+    color: var(--gt-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__token-chip {
+    padding: 2px 8px;
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-success-soft);
+    color: var(--gt-success-text);
+    font-size: 10px;
+    font-weight: var(--gt-weight-semibold);
+    flex-shrink: 0;
+  }
+
+  &__repo-remove {
+    display: inline-flex;
+    padding: 4px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background: transparent;
+    color: var(--gt-text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    @include gt-transition(background-color, color);
+
+    &:hover { background: var(--gt-error-soft); color: var(--gt-error-text); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__add {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    label { display: flex; flex-direction: column; gap: 4px; }
+
+    input {
+      padding: 7px 12px;
+      border: 1px solid var(--gt-border);
+      border-radius: var(--gt-radius-sm);
+      font-family: $primary-font;
+      font-size: 12.5px;
+      color: var(--gt-text-primary);
+
+      &::placeholder { color: var(--gt-text-tertiary); }
+      &:focus { outline: none; border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+    }
+  }
+
+  &__label {
+    font-size: 10.5px;
+    font-weight: var(--gt-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--gt-tracking-wide);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__add-button {
+    align-self: flex-start;
+    padding: 7px 16px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-primary);
+    color: var(--gt-gray-0);
+    font-family: $primary-font;
+    font-size: 12px;
+    font-weight: var(--gt-weight-medium);
+    cursor: pointer;
+    @include gt-transition(background-color, opacity);
+
+    &:hover:not(:disabled) { background: var(--gt-primary-hover); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+}

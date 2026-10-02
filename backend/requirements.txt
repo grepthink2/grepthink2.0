@@ -9,6 +9,7 @@ watchfiles==1.2.0          # native-event reload backend; required for run.py re
 python-multipart==0.0.32   # UploadFile (roster CSV upload)
 python-dotenv==1.2.3
 supabase==2.31.0
+httpx==0.28.1              # scrum PR/MR state fetch (app/scrum/pr_links.py); supabase also pulls it in
 PyJWT[crypto]==2.13.0      # [crypto] pulls `cryptography`, needed to verify RS256/ES256 tokens
 slowapi==0.1.10
 sentry-sdk[fastapi]==2.69.2   # error reporting; inert unless SENTRY_DSN is set (app/core/sentry.py)

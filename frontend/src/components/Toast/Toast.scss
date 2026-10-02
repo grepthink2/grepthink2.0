@@ -1,0 +1,72 @@
+// Toast layer — ported from design/components/feedback/feedback.css so the two
+// stay diffable. Shared, not scrum-local: messages and settings reuse this stack.
+
+/* ── Toast — white surface, 3px semantic accent bar ─────── */
+.gt-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 280px;
+  max-width: 380px;
+  padding: 10px 12px 10px 13px;
+  background: var(--gt-gray-0);
+  border: 1px solid var(--gt-border-subtle);
+  border-left: 3px solid var(--gt-info);
+  border-radius: var(--gt-radius-md);
+  box-shadow: var(--gt-shadow-pop);
+  font-family: var(--gt-font-sans);
+  box-sizing: border-box;
+  animation: gt-rise-in 0.25s ease-out;
+}
+.gt-toast--success { border-left-color: var(--gt-success); }
+.gt-toast--success .gt-toast__icon { color: var(--gt-success); }
+.gt-toast--error { border-left-color: var(--gt-error); }
+.gt-toast--error .gt-toast__icon { color: var(--gt-error); }
+.gt-toast--info { border-left-color: var(--gt-info); }
+.gt-toast--info .gt-toast__icon { color: var(--gt-info); }
+.gt-toast--leaving { animation: gt-fade-out 0.15s ease-out forwards; }
+.gt-toast__icon { display: inline-flex; flex-shrink: 0; }
+.gt-toast__msg { flex: 1; margin: 0; font-size: 12.5px; color: var(--gt-text-primary); line-height: var(--gt-leading-snug); }
+.gt-toast__action {
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: var(--gt-font-sans);
+  font-size: 12px;
+  font-weight: var(--gt-weight-semibold);
+  color: var(--gt-text-link);
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.gt-toast__action:hover { text-decoration: underline; }
+.gt-toast__action:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+.gt-toast__dismiss {
+  border: none;
+  background: transparent;
+  color: var(--gt-text-tertiary);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.gt-toast__dismiss:hover { color: var(--gt-text-primary); }
+.gt-toast__dismiss:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+@keyframes gt-rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes gt-fade-out { to { opacity: 0; } }
+@keyframes gt-fade-in { from { opacity: 0; } }
+.gt-toast-stack {
+  position: fixed;
+  bottom: var(--gt-space-lg);
+  right: var(--gt-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gt-space-sm);
+  z-index: var(--gt-z-tooltip);
+}
+
