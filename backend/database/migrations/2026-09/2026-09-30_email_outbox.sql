@@ -7,7 +7,7 @@
 -- Applied: DEV 2026-09-30 (by Claude, via the Supabase connector)   PROD ____-__-__
 --
 -- ⚠️  ORDER: this file (with 2026-09-30_email_preferences.sql) BEFORE the release that ships
---     the outbox, then prod/2026-09-30_email_dispatch_cron.sql AFTER that release is live. See
+--     the outbox, then prod/2026-09/2026-09-30_email_dispatch_cron.sql AFTER that release is live. See
 --     supabase/README.md, "Email outbox and dispatch schedule".
 --
 --   * email_outbox: one row per recipient. `status` moves pending → sending → sent, or back

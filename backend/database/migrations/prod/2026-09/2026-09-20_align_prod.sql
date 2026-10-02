@@ -486,7 +486,7 @@ $$;
 --      do not — PROD has messages, conversations, conversation_reads and
 --      conversation_deletes, but no conversation_participants and none of the group
 --      messaging functions. Re-run the preflight rather than trusting this line.
---      prod/2026-09-20_align_prod.sql runs the group messaging migration first (in place,
+--      prod/2026-09/2026-09-20_align_prod.sql runs the group messaging migration first (in place,
 --      no data lost) and then this whole file, so on PROD use that bundle rather than
 --      applying parts of this file on their own.
 --   3. record the apply dates here and regenerate supabase/schema.sql
@@ -729,7 +729,7 @@ ALTER FUNCTION public.handle_auth_sync()                         SET search_path
 -- return a PostgREST "column does not exist" 400 and breaks attendance/meeting
 -- editing. They were a dead select (never read), so the code change is behavior-
 -- preserving; this drop is purely mechanical once it is deployed.
--- Applied: DEV 2026-09-20   PROD ____-__-__ (queued in prod/2026-09-20_align_prod.sql).
+-- Applied: DEV 2026-09-20   PROD ____-__-__ (queued in prod/2026-09/2026-09-20_align_prod.sql).
 -- Re-verified 2026-09-20: 0 non-null values in all three columns on both databases, and
 -- neither `main` nor `beta` selects them from `projects`.
 ALTER TABLE public.projects
@@ -751,7 +751,7 @@ ALTER TABLE public.projects
 --
 -- Applied: DEV 2026-09-20 (recorded as `schema_cleanup` and
 -- `drop_legacy_project_meeting_columns` in the project's migration history)
---          PROD ____-__-__  (queued in prod/2026-09-20_align_prod.sql)
+--          PROD ____-__-__  (queued in prod/2026-09/2026-09-20_align_prod.sql)
 --
 -- Companion: 2026-06-30_drop_legacy_project_meeting_columns.sql was staged since June and
 -- applied alongside this file. projects.zoom_url / meeting_day / meeting_time were NULL in
@@ -804,7 +804,7 @@ REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM PUBLIC, anon, authentic
 -- EXPAND: apply BEFORE deploying the code that uses it (the verify-edu-email flow answers 500
 -- without this table); harmless to older code, which never looks at it. Idempotent.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__ (queued in prod/2026-09-20_align_prod.sql)
+-- Applied: DEV ____-__-__   PROD ____-__-__ (queued in prod/2026-09/2026-09-20_align_prod.sql)
 -- Rehearsed on dev 2026-09-21 inside a rolled-back transaction: the upsert keeps one row per
 -- user, and the conditional attempt claim updates one row the first time and none the second.
 --
@@ -844,7 +844,7 @@ REVOKE ALL ON public.edu_email_verifications FROM anon, authenticated;
 -- SAFE TO RUN ON ITS OWN, ON ANY ENVIRONMENT, AT ANY TIME, AND URGENT ON PROD. It does not
 -- depend on any other migration (tables that do not exist yet are skipped), it is idempotent,
 -- and it changes nothing the application does: the backend reaches every table with the
--- service-role key, which none of this touches. prod/2026-09-20_align_prod.sql runs it again
+-- service-role key, which none of this touches. prod/2026-09/2026-09-20_align_prod.sql runs it again
 -- as its last step, because the group messaging migration re-grants ALL on one table.
 --
 -- Applied: DEV ____-__-__   PROD 2026-09-21 (by the maintainer, in the SQL editor)

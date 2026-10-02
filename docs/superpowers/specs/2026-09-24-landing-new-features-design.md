@@ -256,7 +256,7 @@ announcement.
 
 ## Assets from Claude Design
 
-Handoff: `docs/superpowers/handoffs/2026-09-24-landing-claude-design/`. Delivered 2026-09-24,
+Handoff: `design/uploads/grepthink-landing-claude-design-handoff/` (the copy uploaded to Claude Design). Delivered 2026-09-24,
 followed by a round of fixes the same day, and imported as `design/` (`git show` on each import
 commit is its changelog; the return notes, with a "Round 2" section, are
 `design/design_handoff_landing/NOTES.md`).

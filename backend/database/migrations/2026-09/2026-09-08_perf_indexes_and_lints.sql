@@ -14,7 +14,7 @@
 --      do not — PROD has messages, conversations, conversation_reads and
 --      conversation_deletes, but no conversation_participants and none of the group
 --      messaging functions. Re-run the preflight rather than trusting this line.
---      prod/2026-09-20_align_prod.sql runs the group messaging migration first (in place,
+--      prod/2026-09/2026-09-20_align_prod.sql runs the group messaging migration first (in place,
 --      no data lost) and then this whole file, so on PROD use that bundle rather than
 --      applying parts of this file on their own.
 --   3. record the apply dates here and regenerate supabase/schema.sql

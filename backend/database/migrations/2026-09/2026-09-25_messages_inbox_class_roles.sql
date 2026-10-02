@@ -6,7 +6,7 @@
 -- decides whether the web client enables a thread's composer; POST /api/messages runs
 -- can_message() itself on every send, so what the server allows never depended on it. One file
 -- for DEV and PROD: both run the function from 2026-07-14_group_messaging.sql (PROD through
--- prod/2026-09-20_align_prod.sql, byte-identical). Idempotent. Update supabase/schema.sql once
+-- prod/2026-09/2026-09-20_align_prod.sql, byte-identical). Idempotent. Update supabase/schema.sql once
 -- this is applied (AGENTS.md).
 --
 -- Applied on PROD before the per-class-roles release, it runs ahead of the code there: the old
@@ -14,7 +14,7 @@
 -- such a pair sees an enabled composer whose send answers 403 until the release is live.
 -- Harmless (the server still enforces its own rule), and gone once the new code is deployed.
 --
--- ⚠️  ORDER: apply it on PROD before prod/2026-09-25_scott_class_creation.sql. Once Scott's
+-- ⚠️  ORDER: apply it on PROD before prod/2026-09/2026-09-25_scott_class_creation.sql. Once Scott's
 --     account is an instructor, the function this replaces disables the composer of their DM
 --     with the UCSC instructor they TA for, although the backend allows the send.
 --
@@ -130,7 +130,7 @@ $$;
 -- Check. Expected after applying: instructor_rule_gone = t, config = {search_path=public},
 -- body_hash = daa60cbf (this file's function body, byte for byte).
 -- Before applying: instructor_rule_gone = f, body_hash = a434e227 (2026-07-14_group_messaging.sql).
--- body_hash is the first 8 hex of md5(prosrc), as prod/2026-09-20_align_prod.sql computes it.
+-- body_hash is the first 8 hex of md5(prosrc), as prod/2026-09/2026-09-20_align_prod.sql computes it.
 SELECT pg_get_functiondef(p.oid) NOT LIKE '%''instructor''%' AS instructor_rule_gone,
        p.proconfig                                         AS config,
        left(md5(p.prosrc), 8)                              AS body_hash

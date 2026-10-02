@@ -52,7 +52,7 @@
 
 ## Part 1 — Backend
 
-### 1.1 Schema (additive migration: `backend/database/migrations/2026-07-14_group_messaging.sql`)
+### 1.1 Schema (additive migration: `backend/database/migrations/2026-07/2026-07-14_group_messaging.sql`)
 
 ```sql
 -- conversations: add group support

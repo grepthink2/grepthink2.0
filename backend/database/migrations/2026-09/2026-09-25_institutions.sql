@@ -13,7 +13,7 @@
 --     İstinye class created earlier would become a UCSC class. Until the seed runs, İstinye is
 --     not there to pick. Either way the class then needs a hand-written UPDATE: re-running
 --     this file is not a fix (see the last point below). In practice: both before
---     prod/2026-09-25_scott_class_creation.sql, since Scott's İstinye class is the first.
+--     prod/2026-09/2026-09-25_scott_class_creation.sql, since Scott's İstinye class is the first.
 --
 --   * institutions (name, slug, email_domains): one row per school, added by a maintainer
 --     (supabase/README.md, "Institutions"). RLS on with no policies and no client privileges:

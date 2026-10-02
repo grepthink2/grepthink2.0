@@ -1,7 +1,7 @@
 -- 2026-09-21 — a profile's role stays empty until its owner picks one
 --
 -- ⚠️  NOT AN EXPAND. Apply AFTER the code from the auth-hardening PR is live on the environment
--- (PROD: after beta → main has deployed). Deliberately NOT part of prod/2026-09-20_align_prod.sql.
+-- (PROD: after beta → main has deployed). Deliberately NOT part of prod/2026-09/2026-09-20_align_prod.sql.
 --     new code + old trigger  → works exactly as before (Google signups silently become students)
 --     old code + new trigger  → a first-time Google signup cannot finish: the old create-user
 --                               answers 409 for the role-less row and the old role picker

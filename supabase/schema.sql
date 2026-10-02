@@ -1424,7 +1424,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 -- ===== Scrum board (2026-08-12_scrum_board.sql) =====
--- Mirrors backend/database/migrations/2026-08-12_scrum_board.sql verbatim
+-- Mirrors backend/database/migrations/2026-08/2026-08-12_scrum_board.sql verbatim
 -- below (raw DDL, appended as-is — not rewritten into this file's
 -- pg_dump-style quoted-identifier sections above). schema.sql already has
 -- known drift from the live/dev schema (e.g. the 2026-07-14 group-messaging
@@ -1604,7 +1604,7 @@ ALTER TABLE ai_draft_usage ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON TABLE ai_draft_usage TO anon, authenticated, service_role;
 
 -- ===== Scrum repos (2026-08-21_scrum_repos.sql) =====
--- Mirrors backend/database/migrations/2026-08-21_scrum_repos.sql verbatim.
+-- Mirrors backend/database/migrations/2026-08/2026-08-21_scrum_repos.sql verbatim.
 
 -- Scrum board D8 revision: per-project repo registry with write-only tokens.
 -- Teams register their repo URL(s); an optional access token is used by the
