@@ -5,11 +5,16 @@
 // the design system's scrum components. The merged-PR purple is the marketing token shared
 // with the design system's PRLinkChip.
 
+// The moment loops on the approved mockup's 6s cycle: GT-12 waits in In Progress, slides to Done
+// as the column counts change and the burnup line draws, holds, then everything resets.
+$cycle: 6s;
+
 .scrum-board-card {
   top: 7%;
   left: 4%;
   z-index: 2;
   width: 360px;
+  --swap-duration: #{$cycle};
   --tilt: -2deg;
   --float-duration: 8s;
   --float-y: -10px;
@@ -138,22 +143,23 @@
 }
 
 .is-seen .scrum-mini--mover {
-  animation: scrum-move 2.2s cubic-bezier(0.65, 0, 0.35, 1) 0.9s both;
+  animation: scrum-move $cycle cubic-bezier(0.65, 0, 0.35, 1) infinite both;
 }
 
 @keyframes scrum-move {
   0%,
-  20% {
+  34%,
+  100% {
     transform: translateX(calc(-100% - 20px));
     box-shadow:
       0 0 0 1.5px var(--gt-accent),
       0 8px 18px -6px rgba(39, 113, 255, 0.45);
   }
-  38% {
+  42% {
     transform: translateX(calc(-50% - 10px)) translateY(-6px) rotate(2deg);
   }
-  55%,
-  100% {
+  50%,
+  94% {
     transform: none;
     box-shadow:
       0 0 0 1.5px $primary-color,
@@ -344,16 +350,17 @@
 }
 
 .is-seen .scrum-burnup__done {
-  animation: scrum-draw 2.2s ease 0.9s both;
+  animation: scrum-draw $cycle ease infinite both;
 }
 
 @keyframes scrum-draw {
   0%,
-  30% {
+  20%,
+  100% {
     stroke-dashoffset: 260;
   }
-  90%,
-  100% {
+  55%,
+  94% {
     stroke-dashoffset: 0;
   }
 }

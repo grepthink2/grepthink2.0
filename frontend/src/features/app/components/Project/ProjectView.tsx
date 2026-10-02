@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore, ChevronDown, LogOut/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
 import { useClickOutside } from '@features/app/components/Interest/useClickOutside';
@@ -158,6 +159,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   // sponsorDescription,
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { selectedClass } = useClass();
   // Your role in the project's class. The Create Project preview has no class yet: the project
   // goes to the selected class.
@@ -414,6 +416,26 @@ const ProjectView: React.FC<ProjectViewProps> = ({
             )}
           </div>
         </div>
+      </div>
+
+      <div className="project-view__tabs" role="tablist" aria-label="Project views">
+        <button type="button" role="tab" aria-selected="true" className="project-view__tab project-view__tab--active">
+          Overview
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected="false"
+          className="project-view__tab"
+          onClick={() =>
+            projectId &&
+            navigate(`/app/projects/${projectId}/board`, {
+              state: { projectName: displayTitle },
+            })
+          }
+        >
+          Scrum Board
+        </button>
       </div>
 
       {/* Main Content */}

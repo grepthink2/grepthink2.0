@@ -144,8 +144,13 @@ mirrored toward the text.
   visibility ratio, so bands taller than the screen still trigger), its text fades up 16px and
   its cards drift 24px in from their side, 80ms apart. Once per page view.
 - **Float:** cards float ±8–10px on 8–10s ease-in-out loops, tilt preserved (the CSS `translate`
-  property composes with `rotate`). Floating pauses while the band is off-screen.
-- **Moment:** plays once, starting 0.9–1.2s after the reveal begins, when the cards have settled.
+  property composes with `rotate`).
+- **Moment:** loops while the band is on screen, on the approved mockups' cycles: 6s for band 1,
+  7s for bands 2 and 3. Each cycle holds the starting frame, makes its change at about the
+  halfway mark, holds the result, then resets. The maintainer chose looping on 2026-09-25; until
+  then each moment played once. Claude Design's motion guideline still says "plays once", so sync
+  that back next round.
+- **Off screen:** floats and moments pause while their band is off screen.
 - **Reduced motion:** no reveal, no float, no moment; the band renders its final frame.
 - **Phones:** no moments either (see Responsive).
 - Only `transform`, `translate` and `opacity` animate (plus `max-height` in the thread and

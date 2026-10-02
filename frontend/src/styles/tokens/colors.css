@@ -53,6 +53,8 @@
 
   /* ---- UCSC institutional accents (reserved use) ---- */
   --gt-gold:      #FDC700;   /* achievements, stars, "team set" only */
+  --gt-purple:    #7D3C98;   /* ui/ux tag, merged PR chip, chart accent */
+  --gt-gold-text: #8A6D00;   /* readable text on the gold-soft tag background */
   --gt-ucsc-blue: #003C6C;   /* optional institutional blue */
 
   /* ============================================================

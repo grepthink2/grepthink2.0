@@ -308,8 +308,12 @@ $avatar-purple: #7d3c98;
   animation: stage-float var(--float-duration, 9s) ease-in-out infinite;
 }
 
-.is-offscreen .stage-card {
-  animation-play-state: paused;
+// Floats and moments hold still while their band is off screen. `!important` because each band's
+// `animation` shorthand, declared later, would otherwise reset the play state to running.
+.is-offscreen .spotlight__stage *,
+.is-offscreen .spotlight__stage *::before,
+.is-offscreen .spotlight__stage *::after {
+  animation-play-state: paused !important;
 }
 
 @keyframes stage-float {
@@ -387,7 +391,9 @@ $avatar-purple: #7d3c98;
   }
 }
 
-// Stacked values that trade places mid-moment; `after` is the resting state.
+// Stacked values that trade places halfway through each moment's cycle and trade back as it
+// resets. `after` is the resting state (phones, reduced motion). A band sets --swap-duration to
+// its cycle so the swap lines up with the rest of its moment.
 .stage-swap {
   display: inline-grid;
 
@@ -401,31 +407,33 @@ $avatar-purple: #7d3c98;
 }
 
 .is-seen .stage-swap__before {
-  animation: stage-swap-out var(--swap-duration, 2.2s) linear var(--swap-delay, 0.9s) both;
+  animation: stage-swap-out var(--swap-duration, 7s) linear infinite both;
 }
 
 .is-seen .stage-swap__after {
-  animation: stage-swap-in var(--swap-duration, 2.2s) linear var(--swap-delay, 0.9s) both;
+  animation: stage-swap-in var(--swap-duration, 7s) linear infinite both;
 }
 
 @keyframes stage-swap-out {
   0%,
-  57% {
+  50%,
+  100% {
     opacity: 1;
   }
-  62%,
-  100% {
+  54%,
+  94% {
     opacity: 0;
   }
 }
 
 @keyframes stage-swap-in {
   0%,
-  57% {
+  50%,
+  100% {
     opacity: 0;
   }
-  62%,
-  100% {
+  54%,
+  94% {
     opacity: 1;
   }
 }

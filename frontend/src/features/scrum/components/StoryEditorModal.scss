@@ -1,0 +1,129 @@
+@use '@styles/index.scss' as *;
+
+.story-editor-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--gt-z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--gt-scrim);
+}
+
+.story-editor {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 24px;
+  background: var(--gt-gray-0);
+  border-radius: var(--gt-radius-md);
+  box-shadow: var(--gt-shadow-modal);
+  font-family: $primary-font;
+
+  &__close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    padding: 4px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background: transparent;
+    color: var(--gt-text-tertiary);
+    cursor: pointer;
+    @include gt-transition(background-color, color);
+
+    &:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__title { margin: 0; font-size: 17px; font-weight: 600; color: var(--gt-text-primary); }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: 10.5px;
+    font-weight: var(--gt-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--gt-tracking-wide);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__hint {
+    font-family: var(--gt-font-mono);
+    font-size: 10px;
+    color: var(--gt-text-tertiary);
+  }
+
+  &__row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  // Explicit surface + text: a global input rule otherwise renders these dark.
+  input,
+  textarea,
+  select {
+    padding: 8px 12px;
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+    font-family: $primary-font;
+    font-size: 12.5px;
+    color: var(--gt-text-primary);
+    box-sizing: border-box;
+
+    &::placeholder { color: var(--gt-text-tertiary); }
+    &:focus { outline: none; border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+  }
+
+  textarea { resize: vertical; line-height: var(--gt-leading-normal); }
+  select { cursor: pointer; }
+
+  &__foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--gt-border);
+  }
+
+  &__cancel,
+  &__submit {
+    padding: 8px 16px;
+    border-radius: var(--gt-radius-sm);
+    font-family: $primary-font;
+    font-size: 12.5px;
+    font-weight: var(--gt-weight-medium);
+    cursor: pointer;
+    @include gt-transition(background-color, border-color, color, opacity);
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__cancel {
+    border: 1px solid var(--gt-border);
+    background: var(--gt-gray-0);
+    color: var(--gt-text-secondary);
+
+    &:hover { border-color: var(--gt-border-strong); color: var(--gt-text-primary); }
+  }
+
+  &__submit {
+    border: none;
+    background: var(--gt-primary);
+    color: var(--gt-gray-0);
+
+    &:hover:not(:disabled) { background: var(--gt-primary-hover); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+}

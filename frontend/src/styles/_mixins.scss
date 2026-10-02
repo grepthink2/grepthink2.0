@@ -11,3 +11,19 @@
     padding-bottom: $base + $message-widget-clearance;
   }
 }
+
+/// Hide an element visually while leaving it in the accessibility tree.
+/// The clip-rect technique rather than `display:none` or `visibility:hidden`,
+/// both of which remove the node from screen readers too. Use for labels that
+/// name a control whose purpose is already obvious to sighted users.
+@mixin gt-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
