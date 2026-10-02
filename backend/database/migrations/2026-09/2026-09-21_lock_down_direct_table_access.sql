@@ -3,7 +3,7 @@
 -- SAFE TO RUN ON ITS OWN, ON ANY ENVIRONMENT, AT ANY TIME, AND URGENT ON PROD. It does not
 -- depend on any other migration (tables that do not exist yet are skipped), it is idempotent,
 -- and it changes nothing the application does: the backend reaches every table with the
--- service-role key, which none of this touches. prod/2026-09-20_align_prod.sql runs it again
+-- service-role key, which none of this touches. prod/2026-09/2026-09-20_align_prod.sql runs it again
 -- as its last step, because the group messaging migration re-grants ALL on one table.
 --
 -- Applied: DEV ____-__-__   PROD 2026-09-21 (by the maintainer, in the SQL editor)

@@ -16,7 +16,7 @@
 --
 -- Applied: DEV 2026-09-20 (function + trigger + revoke; recorded as `rls_auto_enable_guard`)
 --          PROD ____-__-__  (needs only the REVOKE — the function and trigger are already
---          there, byte-identical; queued in prod/2026-09-20_align_prod.sql)
+--          there, byte-identical; queued in prod/2026-09/2026-09-20_align_prod.sql)
 
 CREATE OR REPLACE FUNCTION public.rls_auto_enable()
 RETURNS event_trigger

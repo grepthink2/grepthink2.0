@@ -1,7 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ⛔ SUPERSEDED — NEVER APPLIED — DO NOT RUN
 --    Superseded by 2026-09-08_perf_indexes_and_lints.sql (PR #178), applied on
---    DEV 2026-09-20 and on PROD 2026-09-23 through prod/2026-09-20_align_prod.sql.
+--    DEV 2026-09-20 and on PROD 2026-09-23 through prod/2026-09/2026-09-20_align_prod.sql.
 --
 --    That file indexes every (table, columns) pair this one does, rewrites the
 --    policies on every table this one touches, and also pins function search_path.

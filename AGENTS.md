@@ -44,7 +44,8 @@ backend/app/<feature>/{url,views,controller,models}.py   # one module per featur
   config.py          # settings from the repo-root .env
   dependencies.py    # require_user / require_instructor (JWT verify)
   database/client.py # supabase (anon) + service_client (service role, bypasses RLS)
-backend/database/migrations/*.sql   # per-change SQL, applied by hand (merging never applies it)
+backend/database/migrations/<YYYY-MM>/       # per-change SQL by month, applied by hand (merging never applies it)
+backend/database/migrations/prod/<YYYY-MM>/  # PROD-only bundles and data fixes, same rule
 backend/tests/                      # pytest: conftest mints HS256 JWTs; fake_supabase.py is the DB double
 
 frontend/src/
@@ -201,4 +202,5 @@ The full agent-facing action catalog (method, params, role) lives at
 - Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest` (all green).
 - Frontend: `npm run lint && npm run lint:design && npm run build && npx vitest run` (no lint findings, all green).
 - New backend route → add the matching method to `frontend/src/lib/api/<domain>.ts`.
-- New `backend/database/migrations/*.sql` → update `supabase/schema.sql` once it is applied.
+- New migration → `backend/database/migrations/<YYYY-MM>/<YYYY-MM-DD>_<name>.sql`, in the folder for its
+  month; update `supabase/schema.sql` once it is applied.

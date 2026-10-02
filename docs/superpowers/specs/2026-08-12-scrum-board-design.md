@@ -99,7 +99,7 @@ Stories**, stories contain **tasks**. Requirements 1–12 from the handoff:
 
 ## Part 1 — Data model
 
-One additive, idempotent migration: `backend/database/migrations/2026-08-12_scrum_board.sql`
+One additive, idempotent migration: `backend/database/migrations/2026-08/2026-08-12_scrum_board.sql`
 (+ mirror into `supabase/schema.sql`, + staged prod copy under `migrations/prod/` at ship
 time). RLS enabled, **no policies** (service-role only). All tables get the standard GRANT.
 

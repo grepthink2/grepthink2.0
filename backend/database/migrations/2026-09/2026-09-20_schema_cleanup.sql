@@ -6,7 +6,7 @@
 --
 -- Applied: DEV 2026-09-20 (recorded as `schema_cleanup` and
 -- `drop_legacy_project_meeting_columns` in the project's migration history)
---          PROD ____-__-__  (queued in prod/2026-09-20_align_prod.sql)
+--          PROD ____-__-__  (queued in prod/2026-09/2026-09-20_align_prod.sql)
 --
 -- Companion: 2026-06-30_drop_legacy_project_meeting_columns.sql was staged since June and
 -- applied alongside this file. projects.zoom_url / meeting_day / meeting_time were NULL in

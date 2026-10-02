@@ -75,7 +75,8 @@ backend/
 │   ├── messages/            # Direct and group messaging
 │   └── notifications/       # In-app notifications
 │
-├── database/migrations/     # SQL applied by hand (dev, then prod); merging does not apply it
+├── database/migrations/     # SQL by month (<YYYY-MM>/, PROD-only in prod/<YYYY-MM>/), applied by hand
+│                            # (dev, then prod); merging does not apply it
 ├── docs/FRONTEND_API.md
 ├── tests/
 │   ├── conftest.py          # Env stubs, HS256 test tokens
