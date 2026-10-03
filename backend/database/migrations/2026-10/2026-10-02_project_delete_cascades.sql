@@ -2,7 +2,7 @@
 --
 -- Idempotent, one transaction, safe on either side of a deploy: no code changes with it.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-10-02 (MCP apply_migration)   PROD ____-__-__
 --
 -- Why: on PROD, DELETE /api/projects/{id} failed on 2026-09-30 with "update or delete on table
 -- conversations violates foreign key constraint conversation_reads_conversation_id_fkey"
