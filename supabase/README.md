@@ -9,7 +9,7 @@
 > tables (see `AUTH.md`, "The browser has no table access"). *Keeping dev and
 > prod in sync:* the "re-run the dump and re-apply by hand" model is what let PROD fall three
 > migrations behind; changes now live in `backend/database/migrations/` and the plan to automate
-> them is in `docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md`. The table and
+> them is tracked in [#192](https://github.com/grepthink2/grepthink2.0/issues/192). The table and
 > function inventory further down is from June — trust `list_migrations` and the database, not
 > this page. `schema.sql` has not been regenerated since 2026-09-08.
 
@@ -77,3 +77,82 @@ for the known inconsistencies before mirroring.
 Fresh-build model, no auto-migrate: when the dev schema changes, re-run the
 `db dump`, re-apply the changed DDL to prod, and update `auth_glue.sql` if any
 trigger/function/Auth-hook/bucket changed.
+
+## Institutions and class creation (maintainer steps)
+
+In this order (the SQL files are in `backend/database/migrations/2026-09/`):
+
+1. `2026-09-25_institutions.sql`, then `2026-09-25_seed_istinye.sql`, DEV then PROD, before anyone
+   creates a class outside UC Santa Cruz. Until the first file runs, no class can be given a school,
+   and that file's one-time backfill labels every existing class UC Santa Cruz; a non-UCSC class
+   created before both files have run would be mislabeled the same way, and re-running the backfill
+   afterwards is not a fix (see the migration's own header). The backend works on either schema (the
+   institutions loader in `app/institutions/controller.py` falls back to "no schools" while the
+   table is missing), so both may be applied before or after the per-class-roles release.
+2. `2026-09-25_messages_inbox_class_roles.sql` (the inbox's `can_send` now follows shared classes,
+   not the account role), DEV then PROD. It is independent of the release and may be applied on
+   either side of it, but it must run before the role flip in step 4: until it does, the inbox
+   disables the composer of every DM between two instructor accounts, so once Scott is flipped,
+   their thread with the UCSC instructor they TA for shows sending disabled, although the backend
+   would allow the send.
+3. Release beta → main.
+4. Only once steps 1–3 are done on PROD: the role flip, `prod/2026-09/2026-09-25_scott_class_creation.sql`
+   (below).
+
+- **Add a school:** copy `backend/database/migrations/2026-09/2026-09-25_seed_istinye.sql`, change the name,
+  slug (lower-case, hyphens) and base email domains, run it on DEV then PROD. The app shows it within
+  about ten minutes: the backend caches the list for five minutes, and browsers keep it for another
+  five (`Cache-Control: max-age=300`). An app tab that is already open keeps the list it loaded until
+  it is reloaded. Subdomains of a listed domain count automatically — never list a public suffix
+  (`edu.tr`, `ac.uk`, `com`, ...) in `email_domains`, since that would make every address under it
+  a school email. (The loader also drops a small denylist of two-part public suffixes and any
+  domain with no dot, logging an error (so Sentry reports it) rather than failing.)
+- **Letting an existing account create classes:** edit and run
+  `backend/database/migrations/prod/2026-09/2026-09-25_scott_class_creation.sql` (it flips `student → instructor`
+  for one email and refuses to change anything else). Run it only once steps 1–3 above are done on
+  PROD. It takes effect within a minute; the user sees "Create Class" after reloading. Their classes
+  as a TA or student are unaffected.
+- **A school's timezone:** `institutions.timezone` (added by `2026-09-30_institution_timezones.sql`)
+  is the IANA zone its dates are in (`America/Los_Angeles`, `Europe/Istanbul`). Set it in the same
+  insert when adding a school; a name `zoneinfo` does not know falls back to `America/Los_Angeles`
+  and logs an error.
+
+## Email outbox and dispatch schedule (maintainer steps)
+
+Class invites (and, later, reminders and digests) are rows in `email_outbox`, one per recipient.
+`POST /api/email/dispatch` delivers the due rows, retrying temporary failures for about 14 hours
+before giving up and notifying whoever sent the invite. In this order:
+
+1. `2026-09-30_email_outbox.sql` and `2026-09-30_email_preferences.sql`, DEV then PROD, **before**
+   the release. The code works without them (it sends invites directly, as before the outbox, and
+   treats every email category as on), but until they run scheduled invites keep the old
+   mark-sent-then-send path — the bug this fixes. Before releasing, look for stale due jobs, which
+   the first dispatch would send however old they are:
+   `SELECT id, send_at FROM pending_invites WHERE NOT sent AND NOT cancelled AND send_at < now() - interval '1 hour';`
+2. `2026-09-30_institution_timezones.sql`, DEV then PROD, any time.
+3. Release beta → main. Until step 5 the API dispatches from inside its own process every few
+   seconds (like the old invite poller, but through the outbox, so a failed send is retried).
+4. PROD SQL editor: `prod/2026-09/2026-09-30_email_dispatch_cron.sql`, with a new random secret and the API
+   URL filled in. It schedules a `pg_net` call to the dispatcher every minute (the secret lives in
+   Vault), a nightly job that deletes sent rows older than 90 days, and one that keeps a week of
+   pg_cron's own run log (`cron.job_run_details`, which pg_cron never prunes).
+5. Vercel, backend project, Production: set `EMAIL_DISPATCH_SECRET` to the same secret and redeploy.
+   From then on only the schedule dispatches. Check: `SELECT status_code, created FROM
+   net._http_response ORDER BY created DESC LIMIT 5;` shows 200s.
+
+- **Rolling back** to code from before the outbox leaves `pending` and leased `email_outbox` rows
+  where they are; they go out once the outbox code is back (nothing reads them in between).
+- **Watching the outbox:** `SELECT status, count(*) FROM email_outbox GROUP BY 1;` — rows stuck in
+  `pending` with a past `next_attempt_at` mean nothing is dispatching; `failed` rows carry
+  `last_error`.
+- **Maileroo webhook (bounces and complaints):** in the Maileroo dashboard add a webhook for
+  `https://api.grepthink2.com/api/email/webhooks/maileroo` with the `failed`, `rejected`,
+  `complained` and `delivered` events, then set its secret as `MAILEROO_WEBHOOK_SECRET` in Vercel.
+  A bounced address (and a rejected one, when the reason names the recipient) lands in
+  `email_suppressions` and is not emailed again. Before turning the webhook on, export Maileroo's
+  existing suppression list and insert those addresses (`reason = 'bounced'`, lower-cased) so the
+  outbox already knows them — otherwise a cc'd address that Maileroo blocks makes it reject whole
+  emails without saying which recipient, and those emails are bounced without suppressing anyone.
+  Maileroo retries a webhook 8 times over about 14 hours; events refused for longer are lost.
+- **Allowing a suppressed address again:** `DELETE FROM email_suppressions WHERE email = '<address>';`
+  (addresses are stored lower-cased).

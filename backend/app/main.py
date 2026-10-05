@@ -26,13 +26,16 @@ from app.contact.url import router as contact_router
 from app.core.errors import install_exception_handlers
 from app.core.sentry import SentryFlushMiddleware, init_sentry
 from app.health.url import router as health_router
-from app.jobs.pending_invites import run_forever as run_pending_invites
+from app.institutions.url import router as institutions_router
+from app.jobs.email_dispatch import run_forever as run_email_dispatch
 from app.limiter import limiter
 from app.messages.url import router as messages_router
 from app.middleware import SecurityHeadersMiddleware
 from app.notifications.url import router as notifications_router
+from app.outbox.url import router as email_router
 from app.profiles.url import router as profiles_router
 from app.projects.url import router as projects_router
+from app.scrum.url import router as scrum_router
 from app.staffing.url import router as staffing_router
 from app.stats.url import router as stats_router
 from app.tas.url import router as tas_router
@@ -43,13 +46,30 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(run_pending_invites(settings.PENDING_INVITES_POLL_SECONDS))
+    # Who dispatches the email outbox: the pg_cron schedule once EMAIL_DISPATCH_SECRET is set;
+    # until then this process, where EMAIL_DISPATCH_IN_PROCESS allows it (on by default only on
+    # Vercel production); otherwise nobody, and queued emails wait (app/jobs/email_dispatch.py).
+    task = None
+    if settings.EMAIL_DISPATCH_SECRET:
+        logger.info("email dispatcher: the pg_cron schedule (POST /api/email/dispatch)")
+    elif settings.EMAIL_DISPATCH_IN_PROCESS:
+        logger.info(
+            "email dispatcher: in-process, every %s s (EMAIL_DISPATCH_IN_PROCESS)",
+            settings.EMAIL_DISPATCH_POLL_SECONDS,
+        )
+        task = asyncio.create_task(run_email_dispatch(settings.EMAIL_DISPATCH_POLL_SECONDS))
+    else:
+        logger.warning(
+            "no email dispatcher: queued emails wait until EMAIL_DISPATCH_IN_PROCESS=1 or the "
+            "pg_cron schedule"
+        )
     try:
         yield
     finally:
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+        if task is not None:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
 
 
 # Error reporting: a no-op unless SENTRY_DSN is set (app/core/sentry.py). It starts
@@ -89,6 +109,7 @@ for router in (
     health_router,
     auth_router,
     classes_router,
+    institutions_router,
     projects_router,
     assignments_router,
     tsr_router,
@@ -100,5 +121,7 @@ for router in (
     tas_router,
     stats_router,
     attendance_router,
+    email_router,
+    scrum_router,
 ):
     app.include_router(router)

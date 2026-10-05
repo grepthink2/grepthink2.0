@@ -4,7 +4,7 @@
  * When email confirmation is enabled, signup is split across two page loads:
  * the email/password step, then the confirmation-link click. The in-orchestrator
  * name step (AccountDetails) never runs, so AuthCallback sends users whose
- * profile has no name here to collect it (and a roster .edu email for students)
+ * profile has no name here to collect it (and a roster school email for students)
  * before dropping them in the app.
  *
  * The profile row itself already exists — Supabase's handle_new_user trigger

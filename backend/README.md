@@ -20,8 +20,8 @@
 ```bash
 # From the backend directory (or project root with backend as cwd for run.py)
 
-# Create a virtual environment (Python 3.11)
-python3.11 -m venv .venv
+# Create a virtual environment (Python 3.12 or newer; CI runs 3.12)
+python3 -m venv .venv
 source .venv/bin/activate   # On Windows: .venv\Scripts\activate
 
 # Install dependencies
@@ -59,7 +59,8 @@ backend/
 │   │   ├── errors.py        # DatabaseError types; handlers answer {"detail", "code"}
 │   │   └── sentry.py        # Optional Sentry error reporting (SENTRY_DSN)
 │   ├── jobs/
-│   │   └── pending_invites.py  # Poller that sends queued class-invite emails
+│   │   └── email_dispatch.py   # In-process outbox dispatch, only while EMAIL_DISPATCH_SECRET is unset
+│   ├── outbox/              # Email outbox: enqueue, dispatcher, kinds, preferences, Maileroo webhook
 │   ├── database/client.py   # Supabase clients (anon + service role)
 │   ├── utils/               # Helpers (profiles, code generators)
 │   │
@@ -74,7 +75,8 @@ backend/
 │   ├── messages/            # Direct and group messaging
 │   └── notifications/       # In-app notifications
 │
-├── database/migrations/     # SQL applied by hand (dev, then prod); merging does not apply it
+├── database/migrations/     # SQL by month (<YYYY-MM>/, PROD-only in prod/<YYYY-MM>/), applied by hand
+│                            # (dev, then prod); merging does not apply it
 ├── docs/FRONTEND_API.md
 ├── tests/
 │   ├── conftest.py          # Env stubs, HS256 test tokens

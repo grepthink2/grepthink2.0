@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore, ChevronDown, LogOut/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
 import { useClickOutside } from '@features/app/components/Interest/useClickOutside';
@@ -8,7 +9,7 @@ import LinkedInIcon from '@assets/mdi_linkedin.svg';
 import CodeIcon from '@assets/material-symbols_code-rounded.svg';
 import './ProjectView.scss';
 import { useAuth } from '@/lib/auth';
-import { useEnrollmentRole } from '@/lib/enrollmentRole';
+import { useClass, useClassRole } from '@/lib/classContext';
 import { MessageButton } from '@features/messages/components/MessageButton';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
@@ -157,8 +158,13 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   // sponsorWebsite,
   // sponsorDescription,
 }) => {
-  const { role, user } = useAuth();
-  const isInstructor = role === 'instructor';
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { selectedClass } = useClass();
+  // Your role in the project's class. The Create Project preview has no class yet: the project
+  // goes to the selected class.
+  const classRole = useClassRole(classId ?? selectedClass?.id);
+  const isInstructor = classRole === 'instructor';
   const canManageProject =
     isInstructor ||
     (userRoleOnProject != null && MANAGER_ROLES.includes(userRoleOnProject as (typeof MANAGER_ROLES)[number]));
@@ -173,9 +179,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   useClickOutside(joinedDropdownRef, useCallback(() => setJoinedDropdownOpen(false), []));
 
   // The class instructor and class TAs may manage project admins.
-  const classRole = useEnrollmentRole(classId && !isInstructor ? classId : undefined);
-  const canManageAdmins =
-    Boolean(classId) && (isInstructor || classRole === 'instructor' || classRole === 'ta');
+  const canManageAdmins = Boolean(classId) && (classRole === 'instructor' || classRole === 'ta');
 
   const handleCancelRequest = useCallback(async () => {
     if (!pendingRequestId || cancellingRequest) return;
@@ -412,6 +416,26 @@ const ProjectView: React.FC<ProjectViewProps> = ({
             )}
           </div>
         </div>
+      </div>
+
+      <div className="project-view__tabs" role="tablist" aria-label="Project views">
+        <button type="button" role="tab" aria-selected="true" className="project-view__tab project-view__tab--active">
+          Overview
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected="false"
+          className="project-view__tab"
+          onClick={() =>
+            projectId &&
+            navigate(`/app/projects/${projectId}/board`, {
+              state: { projectName: displayTitle },
+            })
+          }
+        >
+          Scrum Board
+        </button>
       </div>
 
       {/* Main Content */}

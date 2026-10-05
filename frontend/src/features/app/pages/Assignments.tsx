@@ -174,8 +174,8 @@ function buildRows(
 
 /**
  * Loads a class's assignments and the student's teams and submissions, and
- * builds the table rows both as a student sees them and as "View as Student"
- * preview shows them, so a bad row still surfaces as a load error.
+ * builds the table rows both as a student sees them and as "View class as student"
+ * preview (of a class you teach) shows them, so a bad row still surfaces as a load error.
  */
 async function loadRows(classId: string) {
   const today = format(new Date(), 'yyyy-MM-dd');

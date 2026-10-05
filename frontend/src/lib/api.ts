@@ -8,6 +8,8 @@
  */
 import { authApi } from './api/auth';
 import { classesApi } from './api/classes';
+import { emailApi } from './api/email';
+import { institutionsApi } from './api/institutions';
 import { projectsApi } from './api/projects';
 import { assignmentsApi } from './api/assignments';
 import { tasApi } from './api/tas';
@@ -15,6 +17,7 @@ import { messagesApi } from './api/messages';
 import { notificationsApi } from './api/notifications';
 import { interestApi } from './api/interest';
 import { staffingApi } from './api/staffing';
+import { scrumApi } from './api/scrum';
 
 export * from './api/types';
 export { ApiError, apiRequest, apiUpload } from './api/client';
@@ -22,6 +25,8 @@ export { ApiError, apiRequest, apiUpload } from './api/client';
 export const api = {
   ...authApi,
   ...classesApi,
+  ...emailApi,
+  ...institutionsApi,
   ...projectsApi,
   ...assignmentsApi,
   ...tasApi,
@@ -29,4 +34,5 @@ export const api = {
   ...notificationsApi,
   ...interestApi,
   ...staffingApi,
+  ...scrumApi,
 };

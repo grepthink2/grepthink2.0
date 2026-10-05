@@ -9,7 +9,8 @@ from fastapi import HTTPException
 
 from app.core import db as core_db
 from app.core.db import get_client
-from app.utils.profiles import profile_display_name
+from app.core.errors import DatabaseError, DatabaseUnavailableError
+from app.utils.profiles import needs_roster_email, profile_display_name
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ NOTIFICATION_TYPES = frozenset(
         "complete_profile",
         "upload_roster",
         "member_removed",
+        "email_undeliverable",
     }
 )
 
@@ -132,6 +134,38 @@ def notify_member_departure(
     )
 
 
+def notify_email_undeliverable(
+    *, user_id: str | None, to_email: str, class_id: str | None, reason: str
+) -> None:
+    """Tell ``user_id`` (whoever queued an invite) that it could not be delivered, and why.
+
+    One unread notification per user and class: a later failure rewrites it with the latest
+    address and reason, so a batch that fails cannot flood anyone. Nothing without a user.
+    ``reason`` completes the sentence, e.g. "the mail server refused it". Never raises.
+    """
+    if user_id is None:
+        return
+    try:
+        _upsert_unread_notification(
+            user_id=user_id,
+            type="email_undeliverable",
+            title="An email couldn't be delivered",
+            body=f"Your invite to {to_email} couldn't be delivered ({reason}).",
+            entity_type="class" if class_id else None,
+            entity_id=str(class_id) if class_id else None,
+        )
+    except DatabaseError:  # an HTTPException too, so caught first: this one is worth an event
+        logger.error(
+            "notify_email_undeliverable: could not save the notification | user_id=%s",
+            user_id,
+            exc_info=True,
+        )
+    except HTTPException:  # the 503 of a server without a service client: nothing to fix here
+        logger.warning(
+            "notify_email_undeliverable: skipped, no service client | user_id=%s", user_id
+        )
+
+
 def _upsert_unread_notification(
     *,
     user_id: str,
@@ -141,7 +175,10 @@ def _upsert_unread_notification(
     entity_type: str | None,
     entity_id: str | None,
 ) -> None:
-    """Update an existing unread notification for the same entity, or insert."""
+    """Update an existing unread notification for the same entity, or insert.
+
+    ``entity_id=None`` matches only a notification that has no entity either.
+    """
     try:
         client = _client()
         query = (
@@ -153,6 +190,8 @@ def _upsert_unread_notification(
         )
         if entity_id is not None:
             query = query.eq("entity_id", entity_id)
+        else:
+            query = query.is_("entity_id", "null")
         existing = query.limit(1).execute()
 
         if existing.data:
@@ -203,19 +242,6 @@ def _get_profile(user_id: str) -> dict:
     return res.data or {}
 
 
-def _profile_needs_completion(profile: dict) -> bool:
-    """True when name is missing or a student lacks a roster .edu email."""
-    first = (profile.get("first_name") or "").strip()
-    last = (profile.get("last_name") or "").strip()
-    if not first or not last:
-        return True
-
-    role = profile.get("role")
-    email = (profile.get("email") or "").strip().lower()
-    edu_email = (profile.get("edu_email") or "").strip()
-    return role == "student" and not email.endswith(".edu") and not edu_email
-
-
 _PROFILE_NOTIFICATION_COOLDOWN_SECONDS = 300  # 5 minutes
 
 
@@ -224,9 +250,16 @@ def ensure_profile_completion_notification(user_id: str) -> None:
 
     After dismissal the notification re-surfaces after a 5-minute cooldown so
     the user isn't immediately re-notified on the next poll.
+
+    Best-effort on the roster-email check itself (``needs_roster_email``, which can read the
+    institutions table): this runs on every ``GET /api/notifications``, so an outage there is
+    logged and skipped rather than turning an otherwise-successful list into a 500. The
+    reminder catches up next time this runs with a healthy read. The log level follows
+    ``app.core.errors``: WARNING for an outage, ERROR for anything lasting (a missing grant,
+    say), which Sentry records as an event rather than a breadcrumb.
     """
     profile = _get_profile(user_id)
-    if not profile or not _profile_needs_completion(profile):
+    if not profile:
         dismiss_profile_completion_notification(user_id)
         return
 
@@ -235,11 +268,24 @@ def ensure_profile_completion_notification(user_id: str) -> None:
         missing.append("first name")
     if not (profile.get("last_name") or "").strip():
         missing.append("last name")
-    role = profile.get("role")
-    email = (profile.get("email") or "").strip().lower()
-    edu_email = (profile.get("edu_email") or "").strip()
-    if role == "student" and not email.endswith(".edu") and not edu_email:
-        missing.append("roster .edu email")
+
+    try:
+        roster_email_missing = needs_roster_email(profile)
+    except DatabaseError as exc:
+        log = logger.warning if isinstance(exc, DatabaseUnavailableError) else logger.error
+        log(
+            "ensure_profile_completion_notification: roster-email check failed, "
+            "skipping | user_id=%s",
+            user_id,
+            exc_info=True,
+        )
+        return
+    if roster_email_missing:
+        missing.append("roster school email")
+
+    if not missing:
+        dismiss_profile_completion_notification(user_id)
+        return
 
     body = f"Please add your {' and '.join(missing)} in Settings to finish setting up your account."
     title = "Complete your profile"
@@ -330,11 +376,13 @@ def _class_has_roster(client, class_id: str) -> bool:
 
 
 def ensure_roster_upload_notifications(user_id: str) -> None:
-    """Remind instructors to upload roster CSV for each class that has none."""
-    profile = _get_profile(user_id)
-    if profile.get("role") != "instructor":
-        return
+    """Remind a class's instructor to upload the roster CSV for each of their classes without one.
 
+    Decided by ``classes.created_by`` alone, like every other class-instructor check, never by
+    ``profiles.role``: an account whose role is ``student`` can own a class, and an
+    ``instructor`` account that is only a TA or student somewhere owns none. An account that
+    owns no class costs one read.
+    """
     client = _client()
     classes_res = client.table("classes").select("id, name").eq("created_by", user_id).execute()
     for cls in classes_res.data or []:

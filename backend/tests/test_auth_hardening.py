@@ -2,7 +2,7 @@
 
 - A join code is eight characters from the generator's alphabet and is matched exactly,
   so ``%`` or ``Q%`` no longer joins whichever class PostgREST lists first.
-- The roster .edu address is written only after its owner proves they hold it. Codes live
+- The roster school email address is written only after its owner proves they hold it. Codes live
   in the database (serverless instances share no memory), are stored hashed, expire, can
   be re-sent at most once a minute, and die after five wrong guesses.
 - A profile's role stays empty until its owner picks one, and is picked exactly once.
@@ -17,7 +17,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from tests.conftest import header_for
+from app.utils.email_transport import (
+    EmailMisconfiguredError,
+    EmailNotConfiguredError,
+    PermanentEmailError,
+    TransientEmailError,
+)
+from tests.conftest import header_for, make_token
 from tests.fake_supabase import FakeSupabase
 
 USER = "user-abc"  # the `sub` of conftest's auth_header token
@@ -69,6 +75,10 @@ def db(monkeypatch):
                 "name": "CSE 115A",
                 "course_code": "QASBX26A",
                 "created_by": "inst-1",
+                # Staff-only columns a join response must never carry back to the joiner.
+                "review_zoom_url": "https://zoom.example/staff-only",
+                "review_period_open": True,
+                "can_students_make_project": False,
             },
             {"id": "class-2", "name": "Other", "course_code": "ZZ99ZZ99", "created_by": "inst-1"},
         ],
@@ -127,6 +137,59 @@ def test_join_answers_404_for_a_well_formed_code_nobody_uses(client, auth_header
 
     assert res.status_code == 404
     assert db.rows("class_enrollments") == []
+
+
+def _header(sub: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {make_token(sub=sub)}"}
+
+
+def test_an_instructor_account_can_join_another_instructors_class(client, db):
+    db.rows("profiles").append({"id": "inst-join-2", "email": "i2@ucsc.edu", "role": "instructor"})
+    res = client.post(
+        "/api/classes/join", headers=_header("inst-join-2"), json={"course_code": "QASBX26A"}
+    )
+    assert res.status_code == 200, res.text
+    assert [(e["class_id"], e["user_id"]) for e in db.rows("class_enrollments")] == [
+        ("class-1", "inst-join-2")
+    ]
+
+
+def test_the_instructor_of_a_class_cannot_join_it(client, db):
+    db.rows("profiles").append({"id": "inst-1", "email": "i1@ucsc.edu", "role": "instructor"})
+    res = client.post(
+        "/api/classes/join", headers=_header("inst-1"), json={"course_code": "QASBX26A"}
+    )
+    assert (res.status_code, res.json()["detail"]) == (409, "You are the instructor of this class")
+    assert db.rows("class_enrollments") == []
+
+
+def test_an_account_without_a_role_cannot_join(client, db):
+    db.rows("profiles").append({"id": "no-role-join", "email": "n@gmail.com", "role": None})
+    res = client.post(
+        "/api/classes/join", headers=_header("no-role-join"), json={"course_code": "QASBX26A"}
+    )
+    assert (res.status_code, res.json()["detail"]) == (
+        403,
+        "Choose whether you are a student or an instructor first",
+    )
+    assert db.rows("class_enrollments") == []
+
+
+STAFF_ONLY_CLASS_COLUMNS = {"review_zoom_url", "review_period_open", "can_students_make_project"}
+
+
+def test_join_response_never_carries_staff_only_columns(client, auth_header, db):
+    # class-1 has real values in all three staff-only columns (hidden from students elsewhere);
+    # a joiner must not get them back, on first join or on a repeat "Already enrolled" post.
+    first = client.post("/api/classes/join", headers=auth_header, json={"course_code": "QASBX26A"})
+    assert first.status_code == 200, first.text
+    assert first.json()["message"] == "Joined class successfully"
+    assert STAFF_ONLY_CLASS_COLUMNS.isdisjoint(first.json()["class"])
+
+    again = client.post("/api/classes/join", headers=auth_header, json={"course_code": "QASBX26A"})
+    assert again.status_code == 200
+    assert again.json()["message"] == "Already enrolled"
+    assert STAFF_ONLY_CLASS_COLUMNS.isdisjoint(again.json()["class"])
 
 
 # ── the profile endpoint can no longer claim a roster address ────────────────────
@@ -195,6 +258,8 @@ def test_send_keeps_a_hashed_code_in_the_database(client, auth_header, db, maile
         "@ucsc.edu",
         "ann@@ucsc.edu",
         "<b>ann</b>@ucsc.edu",
+        "ann@evil.com,ucsc.edu",  # a comma can turn one address into several downstream
+        "İpek@ucsc.edu",  # lower-cases to "i̇pek@..." — a combining mark, not plain ASCII
     ],
 )
 def test_send_refuses_anything_but_one_plain_edu_mailbox(client, auth_header, db, mailer, address):
@@ -205,6 +270,33 @@ def test_send_refuses_anything_but_one_plain_edu_mailbox(client, auth_header, db
     assert res.status_code == 400
     assert _pending(db) == []
     mailer.assert_not_called()
+
+
+def test_an_apostrophe_in_the_mailbox_is_accepted_and_escaped_in_the_email(
+    client, auth_header, db, mailer
+):
+    # Google Workspace and Microsoft 365 both allow "'" in the local part (o'brien@...), and it
+    # is plain atext in a To: header; the HTML body escapes it.
+    res = client.post(
+        "/api/profiles/send-edu-verification",
+        headers=auth_header,
+        json={"edu_email": "O'Brien@ucsc.edu"},
+    )
+
+    assert res.status_code == 200, res.text
+    sent = mailer.call_args.kwargs
+    assert sent["to"] == "o'brien@ucsc.edu"
+    assert "<strong>o&#x27;brien@ucsc.edu</strong>" in sent["body_html"]
+    assert "o'brien" not in sent["body_html"]
+    assert _pending(db)[0]["edu_email"] == "o'brien@ucsc.edu"
+
+    verified = client.post(
+        "/api/profiles/verify-edu-email",
+        headers=auth_header,
+        json={"edu_email": "o'brien@ucsc.edu", "code": mailer.code()},
+    )
+    assert verified.status_code == 200, verified.text
+    assert _profile(db)["edu_email"] == "o'brien@ucsc.edu"
 
 
 def test_send_answers_409_when_another_account_holds_the_address(client, auth_header, db, mailer):
@@ -298,6 +390,148 @@ def test_send_without_smtp_on_a_deployment_answers_503_and_keeps_nothing(
         )
 
     assert res.status_code == 503
+    assert _pending(db) == []
+
+
+@pytest.mark.parametrize(
+    ("on_a_deployment", "status"),
+    [(False, 200), (True, 503)],
+    ids=["developer-machine", "deployment"],
+)
+def test_send_with_no_email_provider_keeps_its_own_answer_not_the_delivery_failure_one(
+    client, auth_header, db, monkeypatch, on_a_deployment, status
+):
+    """EmailNotConfiguredError is a delivery error too, but the RuntimeError branch comes first:
+    a missing provider is the administrator's problem (503, or the log on a developer machine),
+    not "try again in a minute"."""
+    if on_a_deployment:
+        monkeypatch.setenv("VERCEL", "1")
+    else:
+        monkeypatch.delenv("VERCEL", raising=False)
+    with patch(
+        "app.profiles.controller.send_email", side_effect=EmailNotConfiguredError("nothing set")
+    ):
+        res = client.post(
+            "/api/profiles/send-edu-verification",
+            headers=auth_header,
+            json={"edu_email": "ann@ucsc.edu"},
+        )
+
+    assert res.status_code == status, res.text
+
+
+TRY_AGAIN = "Couldn't send the verification email. Try again in a minute."
+CHECK_THE_ADDRESS = "We couldn't send a code to that address. Check it and try again."
+
+
+@pytest.mark.parametrize(
+    ("failure", "detail", "level"),
+    [
+        pytest.param(
+            TransientEmailError("provider unreachable"), TRY_AGAIN, logging.WARNING, id="transient"
+        ),
+        # A bad key while students verify must reach Sentry: it is user-driven, so it is loud
+        # the moment it starts, and low volume, so it cannot flood. The others are not worth one.
+        pytest.param(
+            EmailMisconfiguredError("provider refused us"),
+            TRY_AGAIN,
+            logging.ERROR,
+            id="misconfigured",
+        ),
+        # Only a permanent failure points at the address: the rest are not the user's to fix.
+        pytest.param(
+            PermanentEmailError("address rejected"),
+            CHECK_THE_ADDRESS,
+            logging.WARNING,
+            id="permanent",
+        ),
+    ],
+)
+def test_send_answers_502_and_keeps_nothing_when_the_email_cannot_be_delivered(
+    client, auth_header, db, mailer, caplog, failure, detail, level
+):
+    mailer.side_effect = failure
+    with caplog.at_level(logging.WARNING, logger="app.profiles.controller"):
+        res = client.post(
+            "/api/profiles/send-edu-verification",
+            headers=auth_header,
+            json={"edu_email": "ann@ucsc.edu"},
+        )
+
+    assert res.status_code == 502, res.text
+    assert res.json()["detail"] == detail
+    # Nobody has a code to enter, so none is left pending.
+    assert _pending(db) == []
+    # The failure is logged, but the code that never arrived is not.
+    [record] = [r for r in caplog.records if "email delivery failed" in r.getMessage()]
+    assert record.levelno == level
+    assert not re.search(r"\b\d{6}\b", caplog.text)
+    assert not re.search(r"\d{6}", res.text)
+
+
+def test_a_retry_right_after_a_failed_delivery_is_not_rate_limited(client, auth_header, db, mailer):
+    """The once-a-minute limit reads the pending row's last_sent_at, and a failed send leaves no
+    row, so a code that never went out does not cost the user a minute."""
+    body = {"edu_email": "ann@ucsc.edu"}
+    mailer.side_effect = TransientEmailError("provider unreachable")
+    failed = client.post("/api/profiles/send-edu-verification", headers=auth_header, json=body)
+    assert failed.status_code == 502
+
+    mailer.side_effect = None  # the provider is back
+    retry = client.post("/api/profiles/send-edu-verification", headers=auth_header, json=body)
+
+    assert retry.status_code == 200, retry.text
+    assert len(_pending(db)) == 1
+    assert mailer.call_count == 2
+
+
+def test_a_failed_delivery_forgets_the_code_it_replaced_too(client, auth_header, db, mailer):
+    """A new code replaces the old one before it is emailed, so after a failed send there is no
+    code that could still be valid: the row goes, rather than keeping one nobody was sent."""
+    _pending(db).append(
+        {
+            "user_id": USER,
+            "edu_email": "old@ucsc.edu",
+            "code_hash": "stale",
+            "attempts": 1,
+            "expires_at": "2099-01-01T00:00:00+00:00",
+            "last_sent_at": OLD,
+        }
+    )
+    mailer.side_effect = PermanentEmailError("address rejected")
+
+    res = client.post(
+        "/api/profiles/send-edu-verification",
+        headers=auth_header,
+        json={"edu_email": "ann@ucsc.edu"},
+    )
+
+    assert res.status_code == 502
+    assert _pending(db) == []
+
+
+# ── school email: .edu or an institution's domains ───────────────────────────────
+
+
+def test_an_institution_domain_can_be_verified_as_a_school_email(
+    client, auth_header, db, mailer, with_istinye
+):
+    res = client.post(
+        "/api/profiles/send-edu-verification",
+        headers=auth_header,
+        json={"edu_email": "ann@stu.istinye.edu.tr"},
+    )
+    assert res.status_code == 200, res.text
+    assert _pending(db)[0]["edu_email"] == "ann@stu.istinye.edu.tr"
+
+
+def test_an_address_at_no_school_is_refused(client, auth_header, db, mailer, with_istinye):
+    res = client.post(
+        "/api/profiles/send-edu-verification",
+        headers=auth_header,
+        json={"edu_email": "ann@example.com"},
+    )
+    assert (res.status_code, res.json()["detail"]) == (400, "Must be a valid school email address")
     assert _pending(db) == []
 
 

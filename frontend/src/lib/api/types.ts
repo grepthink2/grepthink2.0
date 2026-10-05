@@ -1,5 +1,22 @@
 /** Request and response types for the backend API, re-exported by lib/api.ts. */
 
+/** The signed-in user's role in one class: its creator, a TA, or an enrolled student. */
+export type ClassRole = 'instructor' | 'ta' | 'student';
+
+/** A school, as a class row embeds it. */
+export interface ApiInstitutionSummary {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+/** A school with the email domains that count as its school email (GET /api/institutions). */
+export interface ApiInstitution extends ApiInstitutionSummary {
+  email_domains: string[];
+  /** The school's IANA time zone, e.g. "Europe/Istanbul". Missing from older backends. */
+  timezone?: string;
+}
+
 export interface ApiClass {
   id: string;
   name: string;
@@ -15,9 +32,17 @@ export interface ApiClass {
   status?: 'active' | 'complete';
   /** My Classes: live enrollment count from class_enrollments. */
   enrolled_count?: number;
+  /** The caller's role in this class (GET /api/classes). Missing from older backends. */
+  my_role?: ClassRole;
+  /** The school the class belongs to; null when unassigned or before the institutions migration. */
+  institution?: ApiInstitutionSummary | null;
+  institution_id?: string | null;
 }
 
-/** Class-level role on a class_enrollments row. TAs keep global role 'student'. */
+/**
+ * Class-level role on a class_enrollments row. A TA is an enrollment with 'ta', whatever the
+ * account role (profiles.role) is.
+ */
 export type EnrollmentRole = 'student' | 'ta';
 
 export interface ApiStudent {
@@ -233,9 +258,12 @@ export interface ApiRosterUploadResult {
 }
 
 export interface ApiBulkInviteResult {
+  /** `status` is "queued" for an email the outbox is still trying to send. */
   results: { email: string; status: string }[];
   enrolled_count: number;
   invited_count: number;
+  /** Invite emails waiting in the outbox. Missing from older backends. */
+  queued_count?: number;
 }
 
 export interface ApiProfile {
@@ -548,13 +576,50 @@ export interface ApiContact {
 
 export interface ApiNotification {
   id: string;
-  type: 'join_request' | 'join_rejected' | 'message' | 'project_created' | 'complete_profile' | 'upload_roster' | 'member_removed';
+  /** `email_undeliverable`: an invite email failed for good; `entity_id` is the class it was for. */
+  type:
+    | 'join_request'
+    | 'join_rejected'
+    | 'message'
+    | 'project_created'
+    | 'complete_profile'
+    | 'upload_roster'
+    | 'member_removed'
+    | 'email_undeliverable';
   title: string;
   body: string;
   entity_type: string | null;
   entity_id: string | null;
   read_at: string | null;
   created_at: string;
+}
+
+// ----- Email preferences and unsubscribe -----------------------------------
+
+/** One category of optional email and whether this account gets it (GET /api/email/preferences). */
+export interface ApiEmailPreference {
+  category: string;
+  /** The category's name, e.g. "Deadline reminders". */
+  label: string;
+  description: string;
+  enabled: boolean;
+}
+
+/**
+ * What an unsubscribe link is for (GET /api/email/unsubscribe): `valid` is false when the backend
+ * does not accept the token, and then there is no category.
+ */
+export interface ApiUnsubscribeInfo {
+  valid: boolean;
+  category?: string;
+  label?: string;
+}
+
+/** The category an unsubscribe link just turned off (POST /api/email/unsubscribe). */
+export interface ApiUnsubscribeResult {
+  unsubscribed: boolean;
+  category: string;
+  label: string;
 }
 
 // ----- Staffing / Interest form -------------------------------------------
@@ -659,4 +724,164 @@ export interface ApiStaffingPlacement {
   project_id: string;
   project_name: string | null;
   interest_value: number;
+}
+
+// ----- Scrum board (app/scrum backend) --------------------------------------
+
+export type ApiEstimateScale = 'linear' | 'exponential' | 'fibonacci';
+export type ApiBoardStatus = 'todo' | 'in_progress' | 'done';
+
+export interface ApiScrumMember {
+  user_id: string;
+  name: string;
+  image_url: string | null;
+  project_role: string | null;
+}
+
+export interface ApiScrumSprint {
+  id: string;
+  name: string;
+  /** ISO date "YYYY-MM-DD". */
+  starts_at: string;
+  ends_at: string;
+  status: 'planned' | 'active' | 'completed';
+}
+
+export interface ApiScrumTask {
+  id: string;
+  story_id: string;
+  /** Per-project human key, e.g. "T-12". */
+  key: string;
+  title: string;
+  description_md: string | null;
+  points: number | null;
+  time_estimate: string | null;
+  status: ApiBoardStatus;
+  reporter_id: string;
+  assignee_id: string | null;
+  tags: string[];
+  pr_url: string | null;
+  pr_provider: string | null;
+  pr_state: string | null;
+  moved_by: string | null;
+  moved_by_name: string | null;
+  moved_at: string | null;
+  comment_count: number;
+}
+
+export interface ApiScrumStory {
+  id: string;
+  /** null = backlog. */
+  sprint_id: string | null;
+  /** Per-project human key, e.g. "US-3". */
+  key: string;
+  title: string;
+  description_md: string | null;
+  points: number | null;
+  time_estimate: string | null;
+  reporter_id: string;
+  assignee_id: string | null;
+  /** Set = story lives in the archive view. */
+  archived_at: string | null;
+  comment_count: number;
+  tasks: ApiScrumTask[];
+}
+
+export interface ApiBurnupSeries {
+  labels: string[];
+  scope: number[];
+  completed: number[];
+  subtitle: string | null;
+}
+
+export interface ApiScrumBoard {
+  project: { id: string; name: string; estimate_scale: ApiEstimateScale };
+  ai_enabled: boolean;
+  sprints: ApiScrumSprint[];
+  /** Sprint being viewed (null = no sprints yet / backlog only). */
+  sprint_id: string | null;
+  stories: ApiScrumStory[];
+  backlog: ApiScrumStory[];
+  burnup: { sprint: ApiBurnupSeries | null; cumulative: ApiBurnupSeries };
+  members: ApiScrumMember[];
+  /** 'member' = full read/write; 'staff' = read + comments. */
+  access: 'member' | 'staff';
+}
+
+export interface ApiScrumComment {
+  id: string;
+  author_id: string;
+  author_name: string;
+  body_md: string;
+  created_at: string;
+}
+
+export interface ApiAiDraftTask {
+  title: string;
+  tags: string[];
+  points: number | null;
+  time_estimate: string | null;
+}
+
+export interface ApiAiDraft {
+  title: string | null;
+  description_md: string | null;
+  points: number | null;
+  time_estimate: string | null;
+  tasks: ApiAiDraftTask[];
+}
+
+export interface ApiScrumRepo {
+  id: string;
+  repo_url: string;
+  provider: 'github' | 'gitlab';
+  has_token: boolean;   // tokens are write-only; the API never returns them
+}
+
+export type ApiUpdateSprintBody = Partial<
+  Pick<ApiScrumSprint, 'name' | 'starts_at' | 'ends_at' | 'status'>
+>;
+
+export interface ApiCreateStoryBody {
+  title: string;
+  description_md?: string;
+  points?: number;
+  time_estimate?: string;
+  assignee_id?: string;
+  /** Omit for backlog. */
+  sprint_id?: string;
+}
+
+export interface ApiUpdateStoryBody {
+  title?: string;
+  /** Explicit null clears it (an omitted key leaves it as it is). */
+  description_md?: string | null;
+  points?: number;
+  time_estimate?: string;
+  assignee_id?: string;
+  /** Explicit null moves the story to the backlog. */
+  sprint_id?: string | null;
+  /** true sets archived_at, false clears it. */
+  archived?: boolean;
+}
+
+export interface ApiCreateTaskBody {
+  title: string;
+  description_md?: string;
+  points?: number;
+  time_estimate?: string;
+  assignee_id?: string;
+  tags?: string[];
+}
+
+export interface ApiUpdateTaskBody {
+  title?: string;
+  /** Explicit null clears it (an omitted key leaves it as it is). */
+  description_md?: string | null;
+  points?: number;
+  time_estimate?: string | null;
+  assignee_id?: string | null;
+  tags?: string[];
+  /** Explicit null unlinks the PR. */
+  pr_url?: string | null;
 }

@@ -13,6 +13,7 @@ import {
   UserX,
   X,
 } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
 import { useClass, type Class } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import { lazyModal } from '@/lib/lazyModal';
@@ -57,6 +58,9 @@ function persistDismissedAlerts(ids: Set<string>): void {
 const InstructorHomeDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { visibleClasses, setSelectedClass, getClassStatus } = useClass();
+  // Teaching the selected class is not the same as being allowed to create one (POST
+  // /api/classes answers 403 then), so Create Class follows the account, as in My Classes.
+  const { canCreateClasses } = useAuth();
 
   // The alerts last built, and the active-class list they were built for.
   const [alertsResult, setAlertsResult] = useState<{
@@ -66,9 +70,10 @@ const InstructorHomeDashboard: React.FC = () => {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(loadDismissedAlerts);
   const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
 
-  // Active classes are the ones worth triaging for "needs attention".
+  // The active classes you teach are the ones worth triaging for "needs attention" (the summary
+  // covers only classes you created); classes you TA or take are not listed here.
   const activeClasses = useMemo(
-    () => visibleClasses.filter((c) => getClassStatus(c) === 'active'),
+    () => visibleClasses.filter((c) => c.my_role === 'instructor' && getClassStatus(c) === 'active'),
     [visibleClasses, getClassStatus],
   );
 
@@ -235,14 +240,16 @@ const InstructorHomeDashboard: React.FC = () => {
 
         {/* ── Aside column ── */}
         <div className="instructor-home__column">
-          <button
-            type="button"
-            className="add-assignment-btn instructor-home__create-btn"
-            onClick={() => setIsCreateClassOpen(true)}
-          >
-            <PlusCircle size={16} aria-hidden />
-            Create Class
-          </button>
+          {canCreateClasses && (
+            <button
+              type="button"
+              className="add-assignment-btn instructor-home__create-btn"
+              onClick={() => setIsCreateClassOpen(true)}
+            >
+              <PlusCircle size={16} aria-hidden />
+              Create Class
+            </button>
+          )}
 
           <section className="instructor-home__card" aria-labelledby="classes-heading">
             <div className="instructor-home__card-header">
@@ -253,7 +260,9 @@ const InstructorHomeDashboard: React.FC = () => {
 
             {activeClasses.length === 0 ? (
               <p className="instructor-home__muted">
-                No active classes. Create one or reactivate a class from My Classes.
+                {canCreateClasses
+                  ? 'No active classes. Create one or reactivate a class from My Classes.'
+                  : 'No active classes. Reactivate a class from My Classes.'}
               </p>
             ) : (
               <ul className="instructor-home__class-list">
@@ -298,10 +307,12 @@ const InstructorHomeDashboard: React.FC = () => {
         </div>
       </div>
 
-      <CreateClassModal
-        isOpen={isCreateClassOpen}
-        onClose={() => setIsCreateClassOpen(false)}
-      />
+      {canCreateClasses && (
+        <CreateClassModal
+          isOpen={isCreateClassOpen}
+          onClose={() => setIsCreateClassOpen(false)}
+        />
+      )}
     </div>
   );
 };

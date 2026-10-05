@@ -6,13 +6,22 @@ import csv
 import datetime
 import io
 import logging
-from uuid import UUID
+from dataclasses import dataclass, field
+from typing import Literal
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 
-from app.classes.invite_email import send_class_invite_email, send_class_invite_email_or_raise
+from app.config import settings
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
+from app.institutions.controller import (
+    institution_summaries,
+    is_known_institution,
+    load_institutions,
+)
+from app.outbox import controller as outbox
+from app.outbox import invite_jobs
 from app.utils.class_banner import upload_class_banner
 from app.utils.generators import generate_course_code, normalize_course_code
 from app.utils.profiles import profile_display_name
@@ -103,7 +112,7 @@ def _resolve_roster_display_name(
 #: Addresses or ids per ``in.(...)`` filter. Keeps every lookup URL short even when
 #: an instructor invites a whole roster at once.
 _LOOKUP_BATCH = 100
-_PROFILE_LOOKUP_COLUMNS = "id, role, email, edu_email, first_name, last_name"
+_PROFILE_LOOKUP_COLUMNS = "id, email, edu_email, first_name, last_name"
 
 
 def _postgrest_value(value: str) -> str:
@@ -149,7 +158,7 @@ def _find_student_profiles_by_email(client, emails) -> dict[str, dict]:
 
 
 def _find_student_profile_by_email(client, email: str) -> dict | None:
-    """Look up a student profile by UCSC edu_email first, then primary email (one read)."""
+    """Look up a student profile by school email (edu_email) first, then primary email (one read)."""
     normalized = email.strip().lower()
     return _find_student_profiles_by_email(client, [normalized]).get(normalized)
 
@@ -216,6 +225,181 @@ def _enroll_students(client, class_id: str, user_ids) -> set[str]:
         .execute()
     )
     return {str(row["user_id"]) for row in (res.data or [])}
+
+
+InviteStatus = Literal["invited", "enrolled", "already_enrolled", "class_instructor", "error"]
+
+
+@dataclass(frozen=True)
+class InvitePlan:
+    """What inviting one address comes to, decided before any email is sent (``_plan_invites``)."""
+
+    email: str  # the stripped, lower-cased address as given
+    status: InviteStatus
+    deliver_to: str | None  # the address to email; None = no email
+    registered: bool  # the address belongs to an account
+    user_id: str | None  # that account
+    #: For an ``error`` plan, what the lookup or the enrollment raised.
+    error: Exception | None = field(default=None, compare=False, repr=False)
+
+
+def _plan_invites(client, cid: str, owner_id: str, clean_emails: list[str]) -> list[InvitePlan]:
+    """Look ``clean_emails`` up and enroll the accounts among them. One plan per address, in order.
+
+    ``clean_emails`` are stripped, lower-cased and free of repeats. Any account but the class
+    instructor's (``owner_id``: ``class_instructor``, nothing done) is enrolled, whatever its role.
+    An address without an account is to get the signup invite (``invited``), an account the
+    "added to the class" email at its primary address, or at the address given when it has none
+    (``enrolled``, or ``already_enrolled`` when it was enrolled before). Two addresses of the same
+    student plan ``enrolled`` then ``already_enrolled``, and both are emailed.
+
+    Nothing is raised: a failed lookup makes every plan ``error``, a failed enrollment read every
+    account's, a failed enrollment write every account's that was not enrolled before. Each such
+    plan carries the exception (``error``), for a caller that answers with it.
+
+    Round trips: per 100 addresses at most one profile lookup, one enrollment read and one
+    enrollment upsert.
+    """
+    profiles: dict[str, dict] = {}
+    lookup_error: Exception | None = None
+    try:
+        profiles = _find_student_profiles_by_email(client, clean_emails)
+    except Exception as err:
+        logger.warning("invite: profile lookup failed | class=%s", cid, exc_info=True)
+        lookup_error = err
+
+    student_ids = list(
+        dict.fromkeys(str(p["id"]) for p in profiles.values() if str(p["id"]) != owner_id)
+    )
+    enrolled_before: set[str] = set()
+    newly_enrolled: set[str] = set()
+    read_error: Exception | None = None
+    write_error: Exception | None = None
+    if student_ids:
+        try:
+            enrolled_before = _enrolled_user_ids(client, cid, student_ids)
+        except Exception as err:
+            logger.warning("invite: enrollment read failed | class=%s", cid, exc_info=True)
+            read_error = err
+        to_enroll = [uid for uid in student_ids if uid not in enrolled_before]
+        if to_enroll and read_error is None:
+            try:
+                newly_enrolled = _enroll_students(client, cid, to_enroll)
+            except Exception as err:
+                logger.warning("invite: enrollment write failed | class=%s", cid, exc_info=True)
+                write_error = err
+
+    plans: list[InvitePlan] = []
+    reported: set[str] = set()  # students an earlier address already reported on
+    for email in clean_emails:
+        if lookup_error is not None:
+            plans.append(
+                InvitePlan(email, "error", None, registered=False, user_id=None, error=lookup_error)
+            )
+            continue
+
+        profile = profiles.get(email)
+        if not profile:
+            plans.append(InvitePlan(email, "invited", email, registered=False, user_id=None))
+            continue
+
+        uid = str(profile["id"])
+        if uid == owner_id:
+            plans.append(InvitePlan(email, "class_instructor", None, registered=True, user_id=uid))
+            continue
+        if read_error is not None or (write_error is not None and uid not in enrolled_before):
+            failure = read_error if read_error is not None else write_error
+            plans.append(
+                InvitePlan(email, "error", None, registered=True, user_id=uid, error=failure)
+            )
+            continue
+
+        already_enrolled = uid not in newly_enrolled or uid in reported
+        reported.add(uid)
+        plans.append(
+            InvitePlan(
+                email,
+                "already_enrolled" if already_enrolled else "enrolled",
+                (profile.get("email") or email).strip().lower(),
+                registered=True,
+                user_id=uid,
+            )
+        )
+    return plans
+
+
+def _email_invites(
+    client, cid: str, class_row: dict, plans: list[InvitePlan], instructor_id: str
+) -> list[str | None]:
+    """Email every plan that has an address to email, through the outbox. The outcome per plan.
+
+    One ``class_invite`` row per email, all inserted in one round trip and leased to the
+    calling request, which sends them before it answers, for up to
+    ``settings.EMAIL_INLINE_BUDGET_SECONDS``. What that leaves unsent, and what fails for now,
+    the dispatcher retries. Before the outbox migration the emails are sent directly instead
+    (``deliver_now``), as they were before the outbox.
+
+    Returns, in the order of ``plans``: "sent", "queued", "failed" or "skipped", and ``None`` for
+    a plan with nothing to send.
+    """
+    context = _invite_email_context(class_row)
+    rows = [
+        outbox.OutboxRow(
+            kind="class_invite",
+            to_email=plan.deliver_to,
+            payload={**context, "registered": plan.registered},
+            user_id=plan.user_id,
+            class_id=cid,
+            created_by=instructor_id,
+        )
+        if plan.deliver_to
+        else None
+        for plan in plans
+    ]
+    to_send = [row for row in rows if row is not None]
+    if not to_send:
+        return [None] * len(plans)
+    try:
+        inserted = outbox.enqueue(client, to_send, owned=True)
+    except outbox.OutboxUnavailable:
+        outcomes = outbox.deliver_now(to_send)
+    else:
+        outcomes = outbox.deliver_owned_rows(
+            client, inserted, budget_seconds=settings.EMAIL_INLINE_BUDGET_SECONDS
+        )
+    # Without a dedupe key every row is inserted; one that somehow was not was never sent.
+    return [None if row is None else outcomes.get(row.id, "failed") for row in rows]
+
+
+def _reported_status(plan: InvitePlan, outcome: str | None) -> str:
+    """The status ``bulk_invite_students`` reports for ``plan`` once its email's ``outcome`` is in.
+
+    A new enrollment stands whatever became of its email. An invite or a reminder is ``queued``
+    while the outbox keeps trying, and ``email_failed`` once it gave up or skipped the address.
+    """
+    if plan.status not in ("invited", "already_enrolled") or outcome == "sent":
+        return plan.status
+    return "queued" if outcome == "queued" else "email_failed"
+
+
+#: The answer ``invite_student_to_class`` gives for each plan status and email outcome. An
+#: outcome missing here answers 502.
+_INVITE_ANSWERS: dict[str, dict[str, str]] = {
+    "invited": {
+        "sent": "Invitation email sent",
+        "queued": "Invitation email queued; it will be sent shortly",
+    },
+    "enrolled": {
+        "sent": "Student invited successfully",
+        "queued": "Student enrolled; the notification email is queued and will be retried",
+        "failed": "Student enrolled, but the notification email could not be sent",
+        "skipped": "Student enrolled, but the notification email could not be sent",
+    },
+    "already_enrolled": {
+        "sent": "Student already enrolled; invitation email resent",
+        "queued": "Student already enrolled; invitation email queued",
+    },
+}
 
 
 def _build_profile_email_map(profiles: list[dict]) -> dict[str, dict]:
@@ -368,15 +552,20 @@ def create_class(
     start_date: datetime.date,
     user_id: str,
     tsr_count: int | None = None,
+    institution_id: UUID | str | None = None,
 ) -> dict:
     """
     Create a new class with a unique course code and auto-generate TSR assignments.
 
     After the class is created, TSR assignments are automatically generated
     starting after the first 2 weeks of class. tsr_count overrides the
-    term-based default (5 for Fall/Winter/Spring, 3 for Summer).
+    term-based default (5 for Fall/Winter/Spring, 3 for Summer). ``institution_id`` must name
+    an existing institution (400 otherwise); omitted, the class has none.
     """
     try:
+        if institution_id is not None and not is_known_institution(institution_id):
+            raise HTTPException(status_code=400, detail="Unknown institution")
+
         client = get_client()
 
         year = start_date.year
@@ -397,6 +586,8 @@ def create_class(
         }
         if description is not None:
             class_data["description"] = description
+        if institution_id is not None:
+            class_data["institution_id"] = str(institution_id)
 
         result = client.table("classes").insert(class_data).execute()
         new_class = result.data[0]
@@ -461,64 +652,77 @@ def _attach_enrolled_counts(classes: list[dict], count_by_class: dict[str, int])
         cls["enrolled_count"] = count_by_class.get(cls["id"], 0)
 
 
-def get_classes_for_user(user_id: str, role: str) -> list:
-    """
-    Get all classes for a user based on their role
+#: The class columns an enrolled student or TA may see (no review Zoom room, no settings).
+_ENROLLED_CLASS_COLUMNS = (
+    "id, name, description, created_by, created_at, course_code, status, term, start_date, "
+    "year, image_url"
+)
 
-    Instructors get every class they created (the full row). Students get the
-    classes they are enrolled in with ``teacher_email``, the instructor's email
-    the class list shows. Both carry ``enrolled_count`` (students, not TAs).
 
-    Round trips: 2, the classes and then the enrollment counts. A student's
-    classes arrive with their instructors' emails embedded (was 3).
+def get_classes_for_user(user_id: str) -> list:
+    """Every class the user created or is enrolled in, each with ``my_role``.
 
-    Args:
-        user_id: User's unique identifier
-        role: User's role (instructor or student)
+    ``my_role`` is ``'instructor'`` for a class the user created, else the enrollment role
+    (``'ta'``, or ``'student'`` for anything else). A class the user both created and is
+    enrolled in is listed once, as taught. Created classes come first with the full row;
+    enrolled ones carry the columns students may see plus ``teacher_email``. Every class carries
+    ``enrolled_count`` (students, not TAs) and ``institution`` (``{id, name, slug}`` or ``None``).
 
-    Returns:
-        List of class dictionaries
-
-    Raises:
-        HTTPException: If database error occurs
+    Round trips: the created and the enrolled classes in one concurrent wave, then the
+    enrollment counts. Institutions come from their in-process cache; before the institutions
+    migration is applied (``load_institutions() is None``) ``institution_id`` is not selected.
     """
     try:
         client = get_client()
-
-        if role == "instructor":
-            # Instructors see classes they created
-            result = client.table("classes").select("*").eq("created_by", user_id).execute()
-            classes = result.data or []
-            if not classes:
-                return []
-
-            _attach_enrolled_counts(
-                classes, _enrollment_counts_by_class(client, [c["id"] for c in classes])
-            )
-            return classes
-
-        # Students: enrollments with the class and its instructor's email embedded.
-        enrollments = (
-            client.table("class_enrollments")
-            .select(
-                "class_id, classes(id, name, description, created_by, created_at, course_code, "
-                "status, term, start_date, year, image_url, "
-                "instructor:profiles!classes_created_by_fkey(email))"
-            )
-            .eq("user_id", user_id)
-            .execute()
+        institutions = load_institutions()
+        enrolled_columns = _ENROLLED_CLASS_COLUMNS
+        if institutions is not None:
+            enrolled_columns += ", institution_id"
+        reads = fan_out(
+            {
+                "owned": lambda: (
+                    (client.table("classes").select("*").eq("created_by", user_id).execute()).data
+                    or []
+                ),
+                "enrolled": lambda: (
+                    (
+                        client.table("class_enrollments")
+                        .select(
+                            f"enrollment_role, classes({enrolled_columns}, "
+                            "instructor:profiles!classes_created_by_fkey(email))"
+                        )
+                        .eq("user_id", user_id)
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
         )
-        if not enrollments.data:
-            return []
 
-        classes = []
-        for row in enrollments.data:
+        classes: list[dict] = []
+        seen: set[str] = set()
+        for cls in reads["owned"]:
+            cls["my_role"] = authz.ROLE_INSTRUCTOR
+            classes.append(cls)
+            seen.add(str(cls["id"]))
+        for row in reads["enrolled"]:
             cls = row.get("classes")
-            if not cls:
+            if not cls or str(cls["id"]) in seen:
                 continue
             instructor = cls.pop("instructor", None) or {}
             cls["teacher_email"] = instructor.get("email")
+            cls["my_role"] = (
+                authz.ROLE_TA if row.get("enrollment_role") == authz.ROLE_TA else authz.ROLE_STUDENT
+            )
             classes.append(cls)
+            seen.add(str(cls["id"]))
+        if not classes:
+            return []
+
+        summaries = institution_summaries(institutions)
+        for cls in classes:
+            institution_id = cls.get("institution_id")
+            cls["institution"] = summaries.get(str(institution_id)) if institution_id else None
 
         _attach_enrolled_counts(
             classes, _enrollment_counts_by_class(client, [c["id"] for c in classes])
@@ -527,7 +731,7 @@ def get_classes_for_user(user_id: str, role: str) -> list:
     except HTTPException:
         raise
     except Exception:
-        logger.exception("Error fetching classes | user_id=%s role=%s", user_id, role)
+        logger.exception("Error fetching classes | user_id=%s", user_id)
         raise HTTPException(status_code=500, detail="Failed to fetch classes")
 
 
@@ -569,11 +773,11 @@ def update_class_status(class_id: UUID, status: str, instructor_id: str) -> dict
 
 def join_class_by_code(course_code: str, user_id: str) -> dict:
     """
-    Enroll a student in a class using a course code
+    Enroll the caller in a class using its course code (anyone but its instructor)
 
     Args:
         course_code: Course code to join
-        user_id: Student's unique identifier
+        user_id: the caller's user id
 
     Returns:
         Dictionary with message and class data
@@ -590,11 +794,22 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
         course_code = code
 
         client = get_client()
-        class_result = client.table("classes").select("*").eq("course_code", course_code).execute()
+        # The columns an enrolled student or TA may see: the instructor-only ones
+        # (review_zoom_url, review_period_open, can_students_make_project, ...) never reach the
+        # joiner, on this call or by re-posting the same code once already enrolled.
+        class_result = (
+            client.table("classes")
+            .select(_ENROLLED_CLASS_COLUMNS)
+            .eq("course_code", course_code)
+            .execute()
+        )
         if not class_result.data or len(class_result.data) == 0:
             raise HTTPException(status_code=404, detail="Invalid course code")
 
         class_row = class_result.data[0]
+
+        if str(class_row.get("created_by")) == str(user_id):
+            raise HTTPException(status_code=409, detail="You are the instructor of this class")
 
         # Check if already enrolled
         existing = (
@@ -617,7 +832,7 @@ def join_class_by_code(course_code: str, user_id: str) -> dict:
         client.table("class_enrollments").insert(enrollment_data).execute()
 
         logger.info(
-            "Student joined class | user_id=%s class_id=%s course_code=%s",
+            "User joined class | user_id=%s class_id=%s course_code=%s",
             user_id,
             class_row["id"],
             course_code,
@@ -637,9 +852,24 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
     If the student already has a GrepThink account, enroll them and send a
     notification email. If they are on the roster but not registered yet, send
     a signup invitation with the class access code instead of returning 404.
+    Any account can be enrolled, whatever its role (an account that teaches
+    elsewhere can be enrolled here, and made a TA later), except the class
+    instructor's own: 409, the answer ``join_class_by_code`` gives them too. That
+    includes an account that has not picked a role yet, which joining by code
+    refuses: here the instructor named the address, and the app sends such a user
+    to /select before they can use anything.
 
-    Round trips: the class with its instructor's profile, the profile lookup, and
-    one enrollment upsert (was 6).
+    The address is planned as one address of a bulk invite is (``_plan_invites``)
+    and the email goes through the outbox (``_email_invites``). The answer says
+    whether it was sent or queued for the dispatcher to retry. An invitation or
+    reminder that cannot be delivered answers 502; a new enrollment stands either
+    way, and its answer says what became of the email. A lookup or an enrollment
+    that fails answers with its failure: a database outage 503 with Retry-After
+    (the ``DatabaseError`` handler), anything else 500.
+
+    Round trips: the class with its instructor's profile, the profile lookup, one
+    enrollment read and, for a student not enrolled yet, one enrollment upsert;
+    then the outbox row's insert, the suppression read and its status write.
     """
     try:
         client = get_client()
@@ -647,64 +877,28 @@ def invite_student_to_class(class_id: UUID, student_email: str, instructor_id: s
         normalized_email = student_email.strip().lower()
 
         class_row = _require_owner(client, instructor_id, cid, columns=_INVITE_CLASS_COLUMNS)
-        email_ctx = _invite_email_context(class_row)
+        [plan] = _plan_invites(client, cid, str(class_row.get("created_by")), [normalized_email])
+        if plan.status == "error":
+            # A DatabaseError passes ``except HTTPException`` below and answers as one does;
+            # anything else is logged there and answers 500.
+            if plan.error is None:
+                raise HTTPException(status_code=500, detail="Failed to invite student")
+            raise plan.error
+        if plan.status == "class_instructor":
+            raise HTTPException(status_code=409, detail="You are the instructor of this class")
 
-        student = _find_student_profile_by_email(client, normalized_email)
-        if not student:
-            send_class_invite_email_or_raise(
-                to=normalized_email,
-                registered=False,
-                **email_ctx,
-            )
-            logger.info(
-                "Signup invite email sent | class_id=%s student_email=%s invited_by=%s",
-                class_id,
-                normalized_email,
-                instructor_id,
-            )
-            return {
-                "message": "Invitation email sent",
-                "student_email": normalized_email,
-            }
-
-        if student["role"] != "student":
-            raise HTTPException(status_code=400, detail="User is not a student")
-
-        already_enrolled = str(student["id"]) not in _enroll_students(client, cid, [student["id"]])
-
-        delivery_email = (student.get("email") or normalized_email).strip().lower()
-        try:
-            send_class_invite_email(
-                to=delivery_email,
-                registered=True,
-                **email_ctx,
-            )
-        except Exception:
-            logger.exception(
-                "Enrollment succeeded but invite email failed | class_id=%s email=%s",
-                class_id,
-                delivery_email,
-            )
-            if not already_enrolled:
-                return {
-                    "message": "Student enrolled, but the notification email could not be sent",
-                    "student_email": normalized_email,
-                }
-            raise HTTPException(status_code=502, detail="Failed to send invitation email")
-
+        [outcome] = _email_invites(client, cid, class_row, [plan], instructor_id)
         logger.info(
-            "Student invited to class | class_id=%s student_email=%s invited_by=%s enrolled=%s",
+            "Student invited to class | class_id=%s invited_by=%s status=%s delivery=%s",
             class_id,
-            normalized_email,
             instructor_id,
-            not already_enrolled,
+            plan.status,
+            outcome,
         )
-        if already_enrolled:
-            return {
-                "message": "Student already enrolled; invitation email resent",
-                "student_email": normalized_email,
-            }
-        return {"message": "Student invited successfully", "student_email": normalized_email}
+        message = _INVITE_ANSWERS[plan.status].get(outcome)
+        if message is None:
+            raise HTTPException(status_code=502, detail="Failed to send invitation email")
+        return {"message": message, "student_email": normalized_email}
     except HTTPException:
         raise
     except Exception:
@@ -1036,7 +1230,7 @@ def get_attention_summary(user_id: str) -> dict:
 
 
 def get_class_roster_timeline(class_id: UUID, instructor_id: str) -> dict:
-    """Enrollment, team-join, and drop timestamps for roster students (instructor only).
+    """Enrollment, team-join, and drop timestamps for roster students (class instructor only).
 
     - ``enrolled_at``: from ``class_enrollments.enrolled_at`` when the student joined
       the course on GrepThink.
@@ -1387,7 +1581,7 @@ def add_manual_roster_student(
     instructor_id: str,
 ) -> dict:
     """
-    Manually add a student to the class roster (instructor only).
+    Manually add a student to the class roster (class instructor only).
 
     Manual rows are flagged with ``is_manual = true`` so a later CSV roster
     upload — which replaces non-manual rows — never deletes them. Class
@@ -1457,7 +1651,7 @@ def add_manual_roster_student(
 
 def delete_manual_roster_entry(class_id: UUID, entry_id: str, instructor_id: str) -> dict:
     """
-    Delete a manually-added roster row (instructor only).
+    Delete a manually-added roster row (class instructor only).
 
     Only rows with ``is_manual = true`` may be deleted this way — CSV-sourced
     rows are managed exclusively via roster re-upload.
@@ -1556,7 +1750,7 @@ def _purge_student_from_class(client, class_id: UUID, student_id: str) -> None:
 
 def remove_student_from_class(class_id: UUID, student_id: str, instructor_id: str) -> dict:
     """
-    Remove a student's enrollment from a class (instructor only).
+    Remove a student's enrollment from a class (class instructor only).
 
     Cleans up all class-related state for the student via
     :func:`_purge_student_from_class`.
@@ -1622,134 +1816,66 @@ def leave_class(class_id: UUID, user_id: str) -> dict:
 
 def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) -> dict:
     """
-    Invite a batch of roster students by email (instructor only).
+    Invite a batch of roster students by email (class instructor only).
 
     For each email the possible statuses are:
-    - ``enrolled``         – existing GrepThink student enrolled + email sent.
+    - ``enrolled``         – existing GrepThink account enrolled; the enrollment stands
+      whether its email was sent, is queued or failed.
     - ``invited``          – no account yet; signup invitation email sent.
     - ``already_enrolled`` – student was already in the class; reminder email sent.
-    - ``not_a_student``    – profile exists but the role is not 'student'.
-    - ``email_failed``     – SMTP/delivery error for this address.
+    - ``queued``           – the invitation or reminder is not sent yet and the outbox
+      keeps trying (it failed for now, or this request ran out of time to send it).
+    - ``class_instructor`` – the address belongs to the class instructor; nothing done.
+    - ``email_failed``     – the invitation or reminder could not be delivered (the
+      address was rejected or is suppressed).
     - ``error``            – the profile lookup or the enrollment failed for this email.
+
+    Any account but the class instructor's is enrolled, whatever its role, including one
+    that has not picked a role yet (joining by code refuses those): the instructor named
+    the address, and the app sends such a user to /select before they can use anything.
 
     Addresses are handled in the order given, duplicates dropped. Two addresses of
     the same student report ``enrolled`` then ``already_enrolled`` and both are
     emailed, as when every address was handled on its own.
 
+    Emails go through the outbox once the enrollments are written (``_email_invites``):
+    this request sends what it can within ``settings.EMAIL_INLINE_BUDGET_SECONDS`` and
+    the dispatcher retries the rest.
+
     Round trips: the class with its instructor's profile, then per 100 addresses at
     most one profile lookup, one enrollment read and one enrollment upsert: 4 for a
-    typical batch (was 2 + up to 4 per address). Emails are still sent
-    synchronously, once the enrollments are written.
+    typical batch (was 2 + up to 4 per address). Then the outbox: one insert for every
+    email, one suppression read per 100 addresses, and one status write per email.
     """
     try:
         client = get_client()
         cid = str(class_id)
         class_row = _require_owner(client, instructor_id, cid, columns=_INVITE_CLASS_COLUMNS)
-        email_ctx = _invite_email_context(class_row)
-
         clean_emails = list(dict.fromkeys(e.strip().lower() for e in emails if e.strip()))
 
-        profiles: dict[str, dict] = {}
-        lookup_failed = False
-        try:
-            profiles = _find_student_profiles_by_email(client, clean_emails)
-        except Exception:
-            logger.warning("bulk_invite: profile lookup failed | class=%s", class_id, exc_info=True)
-            lookup_failed = True
-
-        student_ids = list(
-            dict.fromkeys(str(p["id"]) for p in profiles.values() if p.get("role") == "student")
-        )
-        enrolled_before: set[str] = set()
-        newly_enrolled: set[str] = set()
-        read_failed = write_failed = False
-        if student_ids:
-            try:
-                enrolled_before = _enrolled_user_ids(client, cid, student_ids)
-            except Exception:
-                logger.warning(
-                    "bulk_invite: enrollment read failed | class=%s", class_id, exc_info=True
-                )
-                read_failed = True
-            to_enroll = [uid for uid in student_ids if uid not in enrolled_before]
-            if to_enroll and not read_failed:
-                try:
-                    newly_enrolled = _enroll_students(client, cid, to_enroll)
-                except Exception:
-                    logger.warning(
-                        "bulk_invite: enrollment write failed | class=%s", class_id, exc_info=True
-                    )
-                    write_failed = True
-
-        results = []
-        reported: set[str] = set()  # students an earlier address already reported on
-        for email in clean_emails:
-            if lookup_failed:
-                results.append({"email": email, "status": "error"})
-                continue
-
-            profile = profiles.get(email)
-            if not profile:
-                try:
-                    send_class_invite_email(to=email, registered=False, **email_ctx)
-                    results.append({"email": email, "status": "invited"})
-                except Exception as exc:
-                    logger.warning(
-                        "bulk_invite: email failed for unregistered | email=%s err=%s",
-                        email,
-                        exc,
-                    )
-                    results.append({"email": email, "status": "email_failed"})
-                continue
-
-            if profile.get("role") != "student":
-                results.append({"email": email, "status": "not_a_student"})
-                continue
-
-            uid = str(profile["id"])
-            if read_failed or (write_failed and uid not in enrolled_before):
-                results.append({"email": email, "status": "error"})
-                continue
-
-            already_enrolled = uid not in newly_enrolled or uid in reported
-            reported.add(uid)
-            delivery_email = (profile.get("email") or email).strip().lower()
-            try:
-                send_class_invite_email(
-                    to=delivery_email,
-                    registered=True,
-                    **email_ctx,
-                )
-                results.append(
-                    {
-                        "email": email,
-                        "status": "already_enrolled" if already_enrolled else "enrolled",
-                    }
-                )
-            except Exception as exc:
-                logger.warning(
-                    "bulk_invite: email failed for registered | email=%s err=%s",
-                    email,
-                    exc,
-                )
-                if already_enrolled:
-                    results.append({"email": email, "status": "email_failed"})
-                else:
-                    results.append({"email": email, "status": "enrolled"})
+        plans = _plan_invites(client, cid, str(class_row.get("created_by")), clean_emails)
+        outcomes = _email_invites(client, cid, class_row, plans, instructor_id)
+        results = [
+            {"email": plan.email, "status": _reported_status(plan, outcome)}
+            for plan, outcome in zip(plans, outcomes, strict=True)
+        ]
 
         enrolled_count = sum(1 for r in results if r["status"] == "enrolled")
         invited_count = sum(1 for r in results if r["status"] == "invited")
+        queued_count = sum(1 for r in results if r["status"] == "queued")
         logger.info(
-            "bulk_invite_students: class=%s enrolled=%d invited=%d total=%d",
+            "bulk_invite_students: class=%s enrolled=%d invited=%d queued=%d total=%d",
             class_id,
             enrolled_count,
             invited_count,
+            queued_count,
             len(results),
         )
         return {
             "results": results,
             "enrolled_count": enrolled_count,
             "invited_count": invited_count,
+            "queued_count": queued_count,
         }
     except HTTPException:
         raise
@@ -1758,7 +1884,6 @@ def bulk_invite_students(class_id: UUID, emails: list[str], instructor_id: str) 
         raise HTTPException(status_code=500, detail="Failed to bulk invite students")
 
 
-@retry_on_disconnect()
 def queue_invite(
     class_id: UUID,
     emails: list[str],
@@ -1770,13 +1895,20 @@ def queue_invite(
     custom_body: str | None = None,
     custom_body_html: str | None = None,
 ) -> dict:
-    """Store a pending invite batch; the background worker sends it after delay_seconds."""
+    """Store a pending invite batch; the email dispatcher sends it after ``delay_seconds``.
+
+    Not retried whole: the owner check and the insert are each retried after a dropped
+    connection on their own (``_require_owner_retried``, ``_insert_pending_invite``). The job's
+    id is chosen here rather than by the database, so a retried insert cannot queue the batch
+    twice. ``app.outbox.invite_jobs`` turns the job into emails once it is due.
+    """
     try:
         client = get_client()
-        _require_owner(client, instructor_id, class_id)
+        _require_owner_retried(client, instructor_id, class_id)
 
         send_at = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=delay_seconds)
         payload: dict = {
+            "id": str(uuid4()),
             "class_id": str(class_id),
             "instructor_id": instructor_id,
             "emails": emails,
@@ -1792,12 +1924,11 @@ def queue_invite(
             payload["custom_body"] = custom_body
         if custom_body_html is not None:
             payload["custom_body_html"] = custom_body_html
-        row = client.table("pending_invites").insert(payload).execute()
-        inserted = row.data[0]
+        _insert_pending_invite(client, payload)
         logger.info(
-            "queue_invite: queued job=%s class=%s emails=%d", inserted["id"], class_id, len(emails)
+            "queue_invite: queued job=%s class=%s emails=%d", payload["id"], class_id, len(emails)
         )
-        return {"job_id": inserted["id"], "send_at": inserted["send_at"]}
+        return {"job_id": payload["id"], "send_at": payload["send_at"]}
     except HTTPException:
         raise
     except Exception:
@@ -1806,24 +1937,68 @@ def queue_invite(
 
 
 @retry_on_disconnect()
+def _require_owner_retried(client, user_id: str, class_id) -> dict:
+    """``_require_owner``, retried after a dropped connection: it only reads, so it is safe.
+
+    For a function that is not retried whole (``queue_invite``). Its first request is the one
+    most likely to meet a connection Supabase dropped while it sat idle.
+    """
+    return _require_owner(client, user_id, class_id)
+
+
+@retry_on_disconnect()
+def _insert_pending_invite(client, payload: dict) -> None:
+    """Insert the ``pending_invites`` row ``payload``, whose ``id`` the caller chose.
+
+    Retried after a dropped connection. When the first attempt did commit (only its answer
+    was lost), the retry finds that id taken and leaves the row as it is
+    (``ignore_duplicates``): the batch is queued once.
+    """
+    client.table("pending_invites").upsert(
+        payload, on_conflict="id", ignore_duplicates=True
+    ).execute()
+
+
+@retry_on_disconnect()
 def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
-    """Cancel a queued invite batch before it is sent."""
+    """Cancel a queued invite batch before it is sent.
+
+    404 when the class does not exist, 403 unless the caller created it. Then 404 when the
+    caller queued no such job in this class, and 409 once it has been sent.
+
+    The update cancels the job only while it is unsent, and the answer is ``cancelled`` only
+    when it did. The dispatcher may mark the job sent between the read and the update: then the
+    update changes nothing, and a second read says why (409, or 404 for a job gone meanwhile).
+    Retrying the whole call after a dropped connection is safe: a cancelled job cancels again.
+
+    Cancelling is final for every email of the job no dispatcher has claimed yet: rows a tick
+    already queued for it (one that failed before it could mark the job sent) are cancelled too
+    (``invite_jobs.cancel_pending_rows``; before the outbox migration there are none). A dropped
+    connection there is raised, so ``@retry_on_disconnect`` runs the whole cancel again; any
+    other failure to cancel those rows is logged and the job stays cancelled. Students a
+    standard job enrolled when it was expanded stay enrolled.
+    """
     try:
         client = get_client()
-        result = (
+        cid = str(class_id)
+        _require_owner(client, instructor_id, cid)
+        _refuse_uncancellable(_find_invite_job(client, job_id, cid, instructor_id))
+
+        cancelled = (
             client.table("pending_invites")
-            .select("id, sent, cancelled")
+            .update({"cancelled": True})
             .eq("id", job_id)
-            .eq("class_id", str(class_id))
+            .eq("class_id", cid)
             .eq("instructor_id", instructor_id)
+            .eq("sent", False)
             .execute()
-        )
-        if not result.data:
-            raise HTTPException(status_code=404, detail="Invite job not found")
-        row = result.data[0]
-        if row["sent"]:
-            raise HTTPException(status_code=409, detail="Emails already sent")
-        client.table("pending_invites").update({"cancelled": True}).eq("id", job_id).execute()
+        ).data
+        if not cancelled:
+            _refuse_uncancellable(_find_invite_job(client, job_id, cid, instructor_id))
+            # Still there and unsent, yet not cancelled: never claim it was.
+            logger.error("cancel_invite: the job could not be cancelled | job=%s", job_id)
+            raise HTTPException(status_code=500, detail="Failed to cancel invite")
+        invite_jobs.cancel_pending_rows(client, job_id, raise_retryable=True)
         logger.info("cancel_invite: cancelled job=%s class=%s", job_id, class_id)
         return {"cancelled": True}
     except HTTPException:
@@ -1833,15 +2008,36 @@ def cancel_invite(class_id: UUID, job_id: str, instructor_id: str) -> dict:
         raise HTTPException(status_code=500, detail="Failed to cancel invite")
 
 
+def _find_invite_job(client, job_id: str, class_id: str, instructor_id: str) -> dict | None:
+    """The caller's ``pending_invites`` job in this class (its ``sent`` flag), or ``None``."""
+    found = (
+        client.table("pending_invites")
+        .select("id, sent, cancelled")
+        .eq("id", job_id)
+        .eq("class_id", class_id)
+        .eq("instructor_id", instructor_id)
+        .execute()
+    ).data
+    return found[0] if found else None
+
+
+def _refuse_uncancellable(job: dict | None) -> None:
+    """404 for a job that is not there, 409 for one that has been sent."""
+    if job is None:
+        raise HTTPException(status_code=404, detail="Invite job not found")
+    if job["sent"]:
+        raise HTTPException(status_code=409, detail="Emails already sent")
+
+
 @retry_on_disconnect()
-def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
+def get_class_projects(class_id: UUID, user_id: str) -> list:
     """
     Get all projects for a class.
 
     Access rules: the class instructor and students / TAs enrolled in the class.
 
     Each project returns:
-    - name, team_size, image_url, member_count, sentiment (instructors only)
+    - name, team_size, image_url, member_count, sentiment (class instructor only)
     - product_owner_name, product_owner_email
     - scrum_master_name, scrum_master_email (None if no scrum master assigned)
 
@@ -1849,7 +2045,10 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
     on every navigation. The access check runs alongside one projects read that
     embeds every member with their profile, so the call is a single concurrent
     wave: 2 queries for the instructor, 3 for a member (was 5 in 3 waves).
-    ``sentiment`` is always selected so that read does not wait on the role.
+    ``sentiment`` is always selected so that read does not wait on the access check; whether it
+    is shown depends on ``reads["access"]["is_instructor"]`` — this class's instructor, never the
+    caller's global ``profiles.role`` (an account can be an instructor elsewhere and only a
+    student or TA here).
     """
     try:
         client = get_client()
@@ -1872,7 +2071,8 @@ def get_class_projects(class_id: UUID, user_id: str, role: str) -> list:
                 ),
             }
         )
-        return _project_cards(reads["projects"], role, lambda m: m.get("profile") or {})
+        show_sentiment = reads["access"]["is_instructor"]
+        return _project_cards(reads["projects"], show_sentiment, lambda m: m.get("profile") or {})
     except HTTPException:
         raise
     except Exception:
@@ -1892,12 +2092,14 @@ def _key_role_name(profile: dict) -> str | None:
     return full or profile.get("email")
 
 
-def _project_cards(projects: list[dict], role: str, lead_profile) -> list[dict]:
+def _project_cards(projects: list[dict], show_sentiment: bool, lead_profile) -> list[dict]:
     """Project cards in the shape ``get_class_projects`` returns.
 
     ``projects`` embed ``project_members(user_id, role, ...)``. ``lead_profile(member)``
     returns the profile that names an owner or scrum master (``{}`` when unknown).
-    ``sentiment`` is shown to instructors only.
+    ``sentiment`` is shown only when ``show_sentiment`` — pass the caller's ``is_instructor``
+    for *this class*, never their account-wide ``profiles.role``: an instructor-role account
+    that is only a TA or student here must not see the room's sentiment.
     """
     key_roles = {"product owner", "owner", "scrum master"}
     cards = []
@@ -1913,7 +2115,7 @@ def _project_cards(projects: list[dict], role: str, lead_profile) -> list[dict]:
                 "team_size": project.get("team_size"),
                 "image_url": project.get("image_url"),
                 "member_count": len(members),
-                "sentiment": project.get("sentiment") if role == "instructor" else None,
+                "sentiment": project.get("sentiment") if show_sentiment else None,
                 "product_owner_name": _key_role_name(owner_profile),
                 "product_owner_email": owner_profile.get("email"),
                 "scrum_master_name": _key_role_name(scrum_profile) if scrum_profile else None,
@@ -1924,13 +2126,14 @@ def _project_cards(projects: list[dict], role: str, lead_profile) -> list[dict]:
 
 
 @retry_on_disconnect()
-def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict:
+def get_class_projects_overview(class_id: UUID, user_id: str) -> dict:
     """Projects list + enrolled-student list for the Projects page in one call.
 
     Returns ``{"projects": [...], "students": [...]}`` in the shapes of
     ``get_class_projects`` and ``get_class_students``. Owners and scrum masters
     are named from the enrolled users' profiles, so a lead who is not enrolled in
-    the class shows no name or email here.
+    the class shows no name or email here. ``sentiment`` is shown only to this class's
+    instructor (``reads["access"]["is_instructor"]``), never by the caller's account-wide role.
 
     Round trips: the access check (1 for the instructor, 2 for a member), the
     enrollments with profiles, and the projects with their members, all in one
@@ -1961,9 +2164,10 @@ def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict
         )
         enrollments, projects = reads["enrollments"], reads["projects"]
         profile_by_id = {p["id"]: p for p in _enrolled_profiles(enrollments)}
+        show_sentiment = reads["access"]["is_instructor"]
         return {
             "projects": _project_cards(
-                projects, role, lambda m: profile_by_id.get(m.get("user_id"), {})
+                projects, show_sentiment, lambda m: profile_by_id.get(m.get("user_id"), {})
             ),
             "students": _student_rows(enrollments, projects),
         }
@@ -1980,7 +2184,7 @@ def get_class_projects_overview(class_id: UUID, user_id: str, role: str) -> dict
 
 def get_class_turn_in_stats(class_id: UUID, user_id: str) -> dict:
     """
-    Turn-in stats for the class's current TSR assignment (instructor only).
+    Turn-in stats for the class's current TSR assignment (class instructor only).
 
     A team is fully submitted when every project member has at least one TSR
     row for the assignment (one evaluator_id per member). Partial means some

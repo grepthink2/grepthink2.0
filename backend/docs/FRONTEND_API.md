@@ -46,12 +46,23 @@ All routes require auth unless stated otherwise.
 
 | Method | Path | Who | Description |
 |--------|------|-----|-------------|
-| `POST` | `/api/classes` | **Instructor** | Create a course. Body: `name`, `description?`, `term`, `start_date` (date). |
-| `GET` | `/api/classes` | Any logged-in user | List classes the user can see (depends on role and enrollment). |
-| `POST` | `/api/classes/join` | **Student** | Enroll using a course code. Body: `course_code`. Non-students get **403**. |
-| `POST` | `/api/classes/{class_id}/invite` | **Instructor** | Invite a student by email. Body: `student_email`. |
+| `POST` | `/api/classes` | **Instructor account** | Create a course. Body: `name`, `description?`, `term`, `start_date` (date), `institution_id?` (from `GET /api/institutions`; an unknown id → **400**). The only route the account role (`profiles.role`) opens; every other class route checks the caller's role in that class. |
+| `GET` | `/api/classes` | Any logged-in user | Every class the caller created or is enrolled in, each with the caller's `my_role` (`instructor` \| `ta` \| `student`) and its `institution` (`{id, name, slug}` or `null`). |
+| `POST` | `/api/classes/join` | Any account that has picked a role | Enroll (as a student) using a course code. Body: `course_code`. **403** until the account has picked a role; **409** "You are the instructor of this class" for the class's own instructor. |
+| `POST` | `/api/classes/{class_id}/invite` | **Class instructor** | Invite by email. Body: `student_email`. An existing account is enrolled whatever its role, even one that has not picked a role yet (the app sends that user to `/select` first); an unknown address gets a signup email. The email goes through the outbox: when it cannot go out at once it is queued and retried, and `message` says so; **502** only when the address is rejected or on the do-not-email list (it bounced before). **409** "You are the instructor of this class" for the instructor's own address. |
+| `POST` | `/api/classes/{class_id}/students/bulk-invite` | **Class instructor** | The same for a list. Body: `emails` (at most 500, each ≤ 254 characters on one line, else **422**). Returns `results[]` of `{email, status}` with `status` one of `enrolled`, `invited`, `already_enrolled`, `queued` (the email could not go out yet; the outbox keeps retrying it), `class_instructor` (the instructor's own address; nothing done), `email_failed` (the address was rejected), `error`; plus `enrolled_count`, `invited_count` and `queued_count` (addresses reported `queued`; a new enrollment whose email is still waiting is reported `enrolled`). A database outage while looking addresses up answers **503** for a single invite; bulk reports those addresses as `error`. |
+| `POST` | `/api/classes/{class_id}/invites/queue` | **Class instructor** | Queue an invite batch to go out after 60 s (the Roster page's Unsend window). Body: `emails`, optional `custom_subject` + `custom_body` (+ `custom_body_html`) for a custom email, `cc`, `bcc`. **422** for more than 500 emails or 20 cc / 20 bcc, an address over 254 characters, a subject over 255, a text body over 50 000 or HTML body over 100 000 characters (usually a pasted screenshot), or a line break in any address or the subject. Returns `{job_id, send_at}`. A batch that keeps failing is retried every 5 minutes and given up once it is more than 24 hours old and has been retried at least once (the instructor is notified); cancelling also cancels any of its emails still waiting in the outbox. When it is due, the dispatcher turns the batch into one outbox email per address (enrolling existing accounts for a standard invite). |
+| `DELETE` | `/api/classes/{class_id}/invites/{job_id}` | **Class instructor** | Cancel a queued batch before it goes out: `{cancelled: true}`. **404** unknown job, **409** "Emails already sent" once it has been handed to the outbox. |
 | `GET` | `/api/classes/{class_id}/students` | Authenticated | Roster: enrolled students for the class. |
 | `GET` | `/api/classes/{class_id}/projects` | Authenticated | Projects in this class, filtered by what the user is allowed to see. |
+
+---
+
+## Institutions (`/api/institutions`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/institutions` | No | Public. The schools GrepThink knows: `{institutions: [{id, name, slug, email_domains, timezone}]}` (`timezone` is an IANA zone, `America/Los_Angeles` when unset), empty until the migration is applied. Feeds the Create Class institution picker and the school-email check at sign-up (before the user is signed in). Rate-limited 60/min; `Cache-Control: public, max-age=300` (`no-store` while the table doesn't exist yet). |
 
 ---
 
@@ -61,7 +72,7 @@ All routes require auth unless stated otherwise.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/projects` | Create a project. Body: `class_id`, `name`, `description`, `team_size`, optional `looking_for_roles`, `skills`, and **instructor-only** sponsor fields. Enrolled students can create projects with stricter sponsor rules in the controller. |
+| `POST` | `/api/projects` | Create a project. Body: `class_id`, `name`, `description`, `team_size`, optional `looking_for_roles`, `skills`, and sponsor fields only the **class instructor** can set. Anyone enrolled (student or TA) can create one without them and becomes its product owner; anyone else → **403**. |
 | `GET` | `/api/projects` | List projects for the current user. **Query:** `class_id` (optional UUID) to filter. |
 | `GET` | `/api/projects/pending-invites` | **Query:** `class_id` (required). Pending **team invitations** where the **current user** is the invitee (rows with `invited_by` set). Same shape as other join-request UIs where possible. **Register this path before `/{project_id}` in the router** (already done in `url.py`). |
 | `GET` | `/api/projects/{project_id}` | Project details; may include `user_role` when applicable. |
@@ -96,23 +107,17 @@ All routes require auth unless stated otherwise.
 | `POST` | `/api/projects/{project_id}/remove-scrum-master` | Body: `user_id`. Demote scrum master to `member`. |
 | `POST` | `/api/projects/{project_id}/remove-admin` | Body: `user_id`. Demote admin to `member`. |
 
-### Test-only (avoid in production UI)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/projects/test-create` | Same body as normal create. **Bypasses normal role checks**—any authenticated user could create a project in a class that exists. Intended for legacy demo pages; **do not use** in real product flows. |
-
 ---
 
 ## Assignments (`/api/assignments`)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/assignments` | Create assignment. Body: `class_id`, `title`, `open_date`, `close_date`, `status` (`draft` \| `publish`), optional `assignment_type`. Instructor-only in controller. |
-| `GET` | `/api/assignments` | **Query:** `class_id` (**required**). List assignments for that class. |
+| `POST` | `/api/assignments` | Create assignment. Body: `class_id`, `title`, `open_date`, `close_date`, `status` (`draft` \| `publish`), optional `assignment_type`. **Class instructor** only (checked in the controller). |
+| `GET` | `/api/assignments` | **Query:** `class_id` (**required**). The class instructor gets every assignment with turn-in stats; anyone enrolled (student or TA) gets the published ones; anyone else → **403**. |
 | `PATCH` | `/api/assignments/{assignment_id}` | Partial update: `title`, dates, `status`, `assignment_type` (all optional in body). |
 | `GET` | `/api/assignments/{assignment_id}/tsrs` | **Student:** TSR entries **you** submitted for this assignment. |
-| `GET` | `/api/assignments/{assignment_id}/tsrs/about/{evaluatee_id}` | **Instructor:** all TSR rows about a given student for this assignment. |
+| `GET` | `/api/assignments/{assignment_id}/tsrs/about/{evaluatee_id}` | **Class instructor:** all TSR rows about a given student for this assignment. |
 | `PATCH` | `/api/assignments/{assignment_id}/tsrs/{tsr_id}` | Update editable TSR fields (`percent_contribution`, feedback fields, `scrum_master_notes`). |
 
 ---
@@ -168,14 +173,27 @@ All routes require the caller to be the class instructor: **404** if the class d
 
 ## Messages (`/api/messages`)
 
-Direct peer-to-peer messaging between enrolled users. A **conversation** is a canonical (user_a, user_b) pair; messages nest inside a conversation. Instructors can message any student they share a class with; students can message other students and instructors in shared classes. Instructor-to-instructor messaging is not permitted.
+Direct peer-to-peer messaging between enrolled users. A **conversation** is a canonical (user_a, user_b) pair; messages nest inside a conversation. Any two people who share a class (as its instructor, a TA or a student) can message each other, whatever their account roles.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/api/messages/conversations` | Yes | Inbox: all conversations the current user participates in, sorted by `last_message_at` desc. Each row includes `other_user` (id, name, email), `last_message` preview, `unread_count`, `other_user_last_read_at`, `can_send`, and `last_message_at`. Conversations with no messages are omitted. |
-| `POST` | `/api/messages` | Yes | Send a message. Body: `to_user_id` (string), `body` (string, max 1 024 chars). Returns `{"conversation_id": "...", "message": {...}}`. **403** if the two users are not eligible to message each other (no shared class, or instructor↔instructor). |
+| `POST` | `/api/messages` | Yes | Send a message. Body: `to_user_id` (string), `body` (string, max 1 024 chars). Returns `{"conversation_id": "...", "message": {...}}`. **403** if the two users share no class. |
 | `GET` | `/api/messages/conversations/{conversation_id}/messages` | Yes | Latest 50 messages in the conversation (newest first). **403** if the caller is not a participant; **404** if the conversation doesn't exist. |
 | `POST` | `/api/messages/conversations/{conversation_id}/read` | Yes | Mark the conversation as read up to now (upserts the caller's `last_read_at` row). Returns **204 No Content**. |
+
+---
+
+## Email (`/api/email`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/email/preferences` | Yes | The caller's email categories: `{preferences: [{category, label, description, enabled}]}` (`reminders`, `digests`; on unless turned off). Invites and verification codes have no category and are always sent. |
+| `PUT` | `/api/email/preferences` | Yes | Body `{preferences: {<category>: true \| false}}`; returns the full list. **400** unknown category or a non-boolean; **503** before the preferences migration is applied. |
+| `GET` | `/api/email/unsubscribe?token=` | No | Public, for the unsubscribe page: `{valid: true, category, label}` or `{valid: false}`. Rate-limited 30/min. |
+| `POST` | `/api/email/unsubscribe?token=` | No | Public: turns the token's category off → `{unsubscribed: true, category, label}`; **400** invalid token. Also the RFC 8058 one-click target of the `List-Unsubscribe` header (the form body is ignored). Rate-limited 30/min. |
+| `POST` | `/api/email/dispatch` | Bearer `EMAIL_DISPATCH_SECRET` | Internal, for the `pg_cron` schedule: turns due invite batches into outbox rows and delivers due rows for up to `EMAIL_DISPATCH_BUDGET_SECONDS`. **404** while the secret is unset, **401** on a wrong token. Not called by the frontend. |
+| `POST` | `/api/email/webhooks/maileroo` | `x-maileroo-signature` | Internal, for Maileroo: HMAC-SHA256 of the raw body with `MAILEROO_WEBHOOK_SECRET`. `failed` (a permanent delivery failure) marks the matching outbox row bounced and suppresses the address; `rejected` marks it bounced and suppresses only when the reason names the recipient (e.g. Maileroo's suppression list) and the email had a single recipient; `complained` suppresses; `delivered` records `delivered_at`. The instructor is notified once per class. **503** while the secret is unset or the database fails (Maileroo retries 8 times over about 14 hours); **413** for a body over 256 KB. Not called by the frontend. |
 
 ---
 

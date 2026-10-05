@@ -13,7 +13,6 @@ import AppView from '@/features/app/AppView';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
 import AuthCallback from '@features/auth/pages/AuthCallback';
-import ClassManagement from '@features/classes/pages/ClassManagement';
 import Modules from '@features/app/pages/Modules';
 import TAManagement from '@features/app/pages/TAManagement';
 import { RequireReviewAccess } from '@features/app/components/RequireReviewAccess';
@@ -47,6 +46,7 @@ const FinalReviewDetail = lazy(() => import('@features/app/pages/FinalReviewDeta
 const TSRViewPage = lazy(() => import('@features/app/pages/TSRViewPage'));
 const FeedbackViewPage = lazy(() => import('@features/app/pages/FeedbackViewPage'));
 const ProjectDetails = lazy(() => import('@features/app/pages/ProjectDetails'));
+const ScrumBoardPage = lazy(() => import('@features/scrum/pages/ScrumBoardPage'));
 const CreateProject = lazy(() => import('@features/app/pages/CreateProject'));
 // Assign is Staffing's sibling in the same folder/pattern — same size
 // profile, fully isolated component subtree (no other route imports it).
@@ -66,6 +66,8 @@ const CompleteProfile = lazy(() => import('@features/auth/pages/CompleteProfile'
 const ForgetPassword = lazy(() => import('@features/auth/pages/ForgotPassword'));
 const VerifyResetPassword = lazy(() => import('@features/auth/pages/VerifyResetPassword'));
 const ResetPassword = lazy(() => import('@features/auth/pages/ResetPassword'));
+// The page an unsubscribe link in an email opens (signed out).
+const Unsubscribe = lazy(() => import('@features/auth/pages/Unsubscribe'));
 function App() {
   return (
     <ErrorBoundary>
@@ -86,6 +88,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgetPassword />} />
             <Route path="/verify-reset-password" element={<VerifyResetPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/unsubscribe" element={<Unsubscribe />} />
           </Route>
 
           {/* App routes with persistent sidebar (protected: requires auth).
@@ -113,6 +116,7 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="projects" element={<Projects />} />
               <Route path="projects/:projectId" element={<ProjectDetails />} />
+              <Route path="projects/:projectId/board" element={<ScrumBoardPage />} />
               <Route path="roster" element={<Roster />} />
               <Route path="modules" element={<Modules />} />
               <Route path="modules/tsr/:assignmentId" element={<TSRViewPage />} />
@@ -136,8 +140,6 @@ function App() {
               <Route path="help-center" element={<div>Help Center - Coming Soon</div>} />
             </Route>
           </Route>
-
-          <Route path="/classes" element={<ClassManagement />} />
         </Routes>
       </Router>
     </ErrorBoundary>

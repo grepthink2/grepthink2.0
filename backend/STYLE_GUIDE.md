@@ -58,9 +58,11 @@ def get_assignments(class_id: UUID = Query(...), user_id: str = Depends(require_
 ```
 
 - `require_user` answers 401 without a valid token and returns the user id.
-- `require_instructor` also requires `profiles.role == 'instructor'` (403 otherwise).
-- Class and project rules (class owner, enrolled student or TA, project role) live in the
-  controller, through `app.core.authz`:
+- `require_instructor` also requires `profiles.role == 'instructor'` (403 otherwise). It gates only
+  account-level actions — today, just `POST /api/classes`, the one thing the account role decides.
+- A class-scoped endpoint uses `require_user` plus an owner/membership check from `app.core.authz`,
+  not `require_instructor`: class and project rules (class owner, enrolled student or TA, project
+  role) live in the controller:
 
 ```python
 from app.core import authz
@@ -224,7 +226,9 @@ def assign_user(user_id: str, class_id: UUID, target_user_id: UUID, project_id: 
 - Standard library first, then third-party, then `app.*`
 - Prefer explicit imports; avoid `from module import *`
 - Use `from app.core.db import get_client` (plus `fan_out` where reads are independent)
-- Use `from app.dependencies import require_user` (or `require_instructor`) for auth
+- Use `from app.dependencies import require_user` for auth; reach for `require_instructor` only for
+  an account-level action (creating a class) — a class-scoped endpoint uses `require_user` plus an
+  owner/membership check from `app.core.authz` instead
 
 ---
 

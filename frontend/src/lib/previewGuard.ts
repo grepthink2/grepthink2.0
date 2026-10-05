@@ -1,9 +1,9 @@
 /**
- * Read-only guard for "View as Student" preview mode.
+ * Read-only guard for "View class as student" preview mode.
  *
- * Preview mode lets an instructor experience the student UI without touching
- * the database. This module is the enforcement point: while read-only is on,
- * the centralized API client (`apiRequest` / `apiUpload`) refuses every
+ * Preview mode lets you see a class you teach as its students see it, without
+ * touching the database. This module is the enforcement point: while read-only
+ * is on, the centralized API client (`apiRequest` / `apiUpload`) refuses every
  * mutating request (anything that isn't GET/HEAD).
  *
  * It lives outside React because `api.ts` is a plain module — it can't read

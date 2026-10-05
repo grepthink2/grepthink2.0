@@ -65,3 +65,8 @@ supabase/.temp/
 
 # ---- Repo-specific artifacts (should never be committed) ----
 *.xlsx
+# Design-system exports and other archives: import them, never commit them.
+*.zip
+
+# Implementation plans are working notes: keep them local and track open work in issues.
+docs/superpowers/plans/
