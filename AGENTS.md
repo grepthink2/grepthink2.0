@@ -57,7 +57,7 @@ frontend/src/
   lib/institutions.ts   # useInstitutions(): the public schools list, fetched once
   lib/schoolEmail.ts   # isSchoolEmail(): .edu or an institution domain
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
-  components/         # shared UI (Skeleton, ErrorBoundary)
+  components/         # shared UI (Skeleton, ErrorBoundary, Popover, Menu, Tooltip, Toast, Markdown)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
@@ -137,7 +137,7 @@ The full agent-facing action catalog (method, params, role) lives at
 
 ## Gotchas (read before changing these areas)
 - **`service_client` bypasses RLS.** Controllers query Postgres with the service
-  role, so Row-Level Security does **not** protect you (14 of 22 RLS-enabled tables
+  role, so Row-Level Security does **not** protect you (RLS is on for every table, and most
   have no policies). A missing membership/ownership check in a controller is an
   IDOR — authorization correctness is 100% in Python. Verify access on every read/write.
 - **Two distinct project-TA roles (by design):** `projects.assigned_ta_id` = the
@@ -180,14 +180,14 @@ The full agent-facing action catalog (method, params, role) lives at
   `PASSWORD`, ...) and anything shaped like an email, IP address, JWT or provider token. Name
   new credentials that way, and keep names, grades and review text out of exception and log
   messages: nothing can recognise those.
-- **Rate limiting** (slowapi) covers `create_user`, `check_email`, `login_check`,
-  `contact`, `stats`, `list_institutions` (`GET /api/institutions`, 60/min), and the `/api/email`
-  dispatch, webhook and unsubscribe routes. Add `@limiter.limit(...)` (+ a `request: Request`
-  param) for new abuse-prone endpoints.
+- **Rate limiting** (slowapi) is per route: `@limiter.limit(...)` (+ a `request: Request` param)
+  sits on the auth routes, contact, `GET /api/institutions`, message sending, the `/api/email`
+  dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts, and stats.
+  Add one to any new public or abuse-prone endpoint.
 - **Email goes through the outbox.** Queue an email with `app.outbox.controller.enqueue`
   (one row per recipient, a `kind` registered in `app/outbox/kinds.py`, a `dedupe_key` when the
   producer may run twice) instead of sending from a request or a background task: Vercel pauses
-  an instance between requests, and a send cut off mid-way used to be lost. Only interactive
+  an instance between requests, so a send started inside one can be cut off and lost. Only interactive
   emails the user is waiting for (verification codes, the contact form) call
   `app.utils.email.send_email` directly. Reminder/digest kinds need a preference `category`.
 - **Preview / "View class as student"** (offered only in a class you teach) is a frontend-only
@@ -195,8 +195,8 @@ The full agent-facing action catalog (method, params, role) lives at
   no backend act-as, so it does not show a specific student's real data.
 
 ## Path aliases (frontend)
-`@/`→`src/`, `@features/`→`src/features/`, `@pages/`→`src/pages/`,
-`@components/`→`src/components/`, `@assets/`→`src/assets/`, `@styles/`→`src/styles/`.
+`@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,
+`@assets/`→`src/assets/`, `@styles/`→`src/styles/`.
 
 ## Before you commit
 - Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest` (all green).
