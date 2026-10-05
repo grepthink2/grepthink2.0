@@ -290,6 +290,45 @@ $settings-close-size: 30px;
     }
   }
 
+  // A read-only value with an action beside it (the login email and its Change button).
+  &__inline {
+    display: flex;
+    align-items: stretch;
+    gap: $spacing-sm;
+
+    .settings-modal__input {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  &__change {
+    padding: 0 $spacing-md;
+    background: $white;
+    color: $primary-color;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-family: $primary-font;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    white-space: nowrap;
+    @include gt-transition(border-color, background);
+
+    &:hover {
+      border-color: $primary-color;
+      background: var(--gt-primary-soft);
+    }
+  }
+
+  // The change-email modal's form: fields and the button stacked, full width of the modal.
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    width: 100%;
+  }
+
   &__input-group {
     display: flex;
     align-items: center;

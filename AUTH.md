@@ -487,6 +487,28 @@ email confirmation switched off in the Auth settings, a password signup can
 name an address its owner has never seen. That is a dashboard setting, not
 code.
 
+## Changing the login email
+
+**Files:** `frontend/src/features/app/components/Settings/ChangeEmailModal.tsx`,
+`frontend/src/features/auth/pages/AuthConfirm.tsx`, `backend/app/profiles/views.py`
+
+The login email is Supabase Auth's. Settings → Profile → **Change** calls
+`supabase.auth.updateUser({ email })` after `/api/check-email` says the address is
+free; Supabase emails the new address a confirmation link (its "Change Email
+Address" template) and applies the change only when the link is opened. With
+"Secure email change" on (the default) the current address gets a link too and
+both must be opened; the modal's copy says so. The link lands on
+`/auth/callback?source=email-change` (the default template, PKCE `code`, same
+browser only) or on `/auth/confirm?token_hash=…&type=email_change` (a
+`token_hash` template, any browser), and both end at `/app/home`.
+
+`profiles.email` is never written from a request body. It mirrors the token:
+`create_user` writes it once, and `GET /api/profiles/me` rewrites it when the
+verified token's `email` claim differs (lower-cased), so the row heals on the first
+profile read after the change, on whichever device opened the link. `edu_email` is
+untouched; it is proven separately. Design notes:
+`docs/superpowers/specs/2026-10-05-login-email-change-design.md`.
+
 ## The browser has no table access
 
 All table access goes through the backend's service-role client. The browser

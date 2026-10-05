@@ -1,7 +1,8 @@
 /**
  * Handles Supabase email links that carry token_hash (password recovery,
- * email confirmation). Uses verifyOtp so the flow works when the user opens
- * the link in a different browser or device — unlike PKCE ?code= exchange.
+ * email confirmation, a login email change). Uses verifyOtp so the flow works
+ * when the user opens the link in a different browser or device — unlike PKCE
+ * ?code= exchange.
  */
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -34,7 +35,9 @@ const AuthConfirm: React.FC = () => {
     const confirm = async () => {
       const tokenHash = searchParams.get('token_hash');
       const type = searchParams.get('type') as EmailOtpType | null;
-      const next = searchParams.get('next') || '/reset-password';
+      // A confirmed email change lands in the app (the backend mirrors the new address
+      // on the next profile read); every other link is a password reset.
+      const next = searchParams.get('next') || (type === 'email_change' ? '/app/home' : '/reset-password');
 
       if (!tokenHash || !type) {
         if (!cancelled) {
