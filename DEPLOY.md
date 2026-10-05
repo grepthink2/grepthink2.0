@@ -64,7 +64,7 @@ buckets from `supabase/storage.sql`. After adding any new public table, re-run
 
 ## Database migrations
 
-`backend/database/migrations/*.sql` are **staged scripts, not auto-applied
+`backend/database/migrations/<YYYY-MM>/*.sql` (and the PROD-only `prod/<YYYY-MM>/*.sql`) are **staged scripts, not auto-applied
 migrations**. Merging a migration changes nothing in the database. Before deploying
 code that depends on a schema change:
 
@@ -77,7 +77,7 @@ code that depends on a schema change:
 4. Regenerate `supabase/schema.sql` (`npx supabase db dump -f supabase/schema.sql
    --schema public`) so the schema-as-code stays current.
 
-**Pending on PROD as of 2026-09-20:** `backend/database/migrations/prod/2026-09-20_align_prod.sql`.
+**Pending on PROD as of 2026-09-20:** `backend/database/migrations/prod/2026-09/2026-09-20_align_prod.sql`.
 PROD is three migrations behind dev (group messaging, the `handle_new_user` fix, the perf
 migration) and its realtime publication is empty, so live messages and notifications do not
 arrive there. The bundle applies all of it in one transaction, drops no table and deletes no
@@ -86,19 +86,19 @@ row, is safe under the code `main` runs today, and **must run before `beta` is m
 nowhere yet.
 
 **Applied to PROD on 2026-09-21, on its own:**
-`backend/database/migrations/2026-09-21_lock_down_direct_table_access.sql`. Until then any
+`backend/database/migrations/2026-09/2026-09-21_lock_down_direct_table_access.sql`. Until then any
 signed-in user on PROD could set their own `profiles.role` to `instructor` with the public anon
 key. It is still the bundle's last step, because the group messaging step re-grants ALL on a
 table PROD does not have yet; re-running it is harmless. Not applied to dev.
 
 **Only after `beta` is live on `main`:**
-`backend/database/migrations/2026-09-21_role_chosen_by_its_owner.sql`. It is not an expand — the
+`backend/database/migrations/2026-09/2026-09-21_role_chosen_by_its_owner.sql`. It is not an expand — the
 code `main` runs today cannot finish a Google signup once it is applied — so it is deliberately
 not in the bundle.
 
 PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. See
-`docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md` for that and for the rest of
-the deployment gaps (no CI or branch protection on `main`, squash-merged releases, no staging).
+[#192](https://github.com/grepthink2/grepthink2.0/issues/192) for that and for the rest of the deployment gaps
+(no CI or branch protection on `main`, no staging).
 
 ## Email delivery
 
@@ -118,7 +118,7 @@ dispatch schedule":
 1. Apply `2026-09-30_email_outbox.sql` and `2026-09-30_email_preferences.sql` (DEV, then PROD).
 2. Deploy. With `EMAIL_DISPATCH_SECRET` unset, each API instance dispatches every few seconds
    from inside its process, as the old invite poller did (now with retries).
-3. Run `backend/database/migrations/prod/2026-09-30_email_dispatch_cron.sql` on PROD: `pg_cron`
+3. Run `backend/database/migrations/prod/2026-09/2026-09-30_email_dispatch_cron.sql` on PROD: `pg_cron`
    calls the dispatcher every minute through `pg_net`, with the secret kept in Vault.
 4. Set `EMAIL_DISPATCH_SECRET` (the same value) in the backend project and redeploy. The
    in-process loop stops; the schedule is the only dispatcher. Before this step, check the backend

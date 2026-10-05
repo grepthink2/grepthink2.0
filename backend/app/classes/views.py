@@ -40,11 +40,6 @@ def get_classes(user_id: str = Depends(require_user)):
     return {"classes": controller.get_classes_for_user(user_id)}
 
 
-def get_class(class_id: UUID, user_id: str = Depends(require_user)):
-    class_data = controller.get_class_by_id(class_id)
-    return {"class": class_data}
-
-
 def update_class_status(
     class_id: UUID,
     data: UpdateClassStatusRequest,

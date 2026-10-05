@@ -20,7 +20,7 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 | Styling   | SCSS + design tokens (`src/styles/`), lucide-react icons |
 | Routing   | React Router DOM v7                         |
 | State     | React Context (auth, class, preview, conversations, notifications) |
-| Backend   | Python 3.11 FastAPI + Uvicorn, slowapi (rate limiting) |
+| Backend   | Python 3.12 FastAPI + Uvicorn, slowapi (rate limiting) |
 | Database  | Supabase (managed PostgreSQL) through supabase-py / PostgREST |
 | Auth      | Supabase Auth (JWT); PyJWT verification (HS256 + ES256) |
 | Tests     | pytest + `tests/fake_supabase.py` (backend), Vitest 5 + Testing Library (frontend) |
@@ -44,7 +44,8 @@ backend/app/<feature>/{url,views,controller,models}.py   # one module per featur
   config.py          # settings from the repo-root .env
   dependencies.py    # require_user / require_instructor (JWT verify)
   database/client.py # supabase (anon) + service_client (service role, bypasses RLS)
-backend/database/migrations/*.sql   # per-change SQL, applied by hand (merging never applies it)
+backend/database/migrations/<YYYY-MM>/       # per-change SQL by month, applied by hand (merging never applies it)
+backend/database/migrations/prod/<YYYY-MM>/  # PROD-only bundles and data fixes, same rule
 backend/tests/                      # pytest: conftest mints HS256 JWTs; fake_supabase.py is the DB double
 
 frontend/src/
@@ -56,7 +57,7 @@ frontend/src/
   lib/institutions.ts   # useInstitutions(): the public schools list, fetched once
   lib/schoolEmail.ts   # isSchoolEmail(): .edu or an institution domain
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
-  components/         # shared UI (Skeleton, ErrorBoundary)
+  components/         # shared UI (Skeleton, ErrorBoundary, Popover, Menu, Tooltip, Toast, Markdown)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
@@ -110,7 +111,7 @@ design/               # Claude Design export (design system); replace it wholesa
 
 ## Run / test
 ```bash
-# Backend (Python 3.11 venv at backend/.venv)
+# Backend (Python 3.12 venv at backend/.venv; CI runs 3.12)
 cd backend && .venv/bin/pip install -r requirements-dev.txt   # runtime + test/lint tools
 .venv/bin/ruff format . && .venv/bin/ruff check .             # lint gate
 .venv/bin/python -m pytest                  # no network: conftest stubs SUPABASE_* env
@@ -136,7 +137,7 @@ The full agent-facing action catalog (method, params, role) lives at
 
 ## Gotchas (read before changing these areas)
 - **`service_client` bypasses RLS.** Controllers query Postgres with the service
-  role, so Row-Level Security does **not** protect you (14 of 22 RLS-enabled tables
+  role, so Row-Level Security does **not** protect you (RLS is on for every table, and most
   have no policies). A missing membership/ownership check in a controller is an
   IDOR — authorization correctness is 100% in Python. Verify access on every read/write.
 - **Two distinct project-TA roles (by design):** `projects.assigned_ta_id` = the
@@ -156,7 +157,8 @@ The full agent-facing action catalog (method, params, role) lives at
   comes from the verified token, `edu_email` is written only by `verify_edu_email` (or from the
   token's address when it is a school email — `.edu`, or an institution's `email_domains`;
   `app/institutions/controller.py` `is_school_email` — not just `.edu`), and the role is written
-  once by `create_user`. See `AUTH.md`.
+  once by `create_user`. A login email change goes through Supabase Auth (Settings → Change),
+  and `GET /api/profiles/me` re-mirrors the token's email afterwards. See `AUTH.md`.
 - **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
   code once let `%` join any class. Validate the shape first, then match exactly.
 - **`lib/api/*.ts` can drift from routes** — the client is hand-maintained, no codegen.
@@ -179,14 +181,14 @@ The full agent-facing action catalog (method, params, role) lives at
   `PASSWORD`, ...) and anything shaped like an email, IP address, JWT or provider token. Name
   new credentials that way, and keep names, grades and review text out of exception and log
   messages: nothing can recognise those.
-- **Rate limiting** (slowapi) covers `create_user`, `check_email`, `login_check`,
-  `contact`, `stats`, `list_institutions` (`GET /api/institutions`, 60/min), and the `/api/email`
-  dispatch, webhook and unsubscribe routes. Add `@limiter.limit(...)` (+ a `request: Request`
-  param) for new abuse-prone endpoints.
+- **Rate limiting** (slowapi) is per route: `@limiter.limit(...)` (+ a `request: Request` param)
+  sits on the auth routes, contact, `GET /api/institutions`, message sending, the `/api/email`
+  dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts, and stats.
+  Add one to any new public or abuse-prone endpoint.
 - **Email goes through the outbox.** Queue an email with `app.outbox.controller.enqueue`
   (one row per recipient, a `kind` registered in `app/outbox/kinds.py`, a `dedupe_key` when the
   producer may run twice) instead of sending from a request or a background task: Vercel pauses
-  an instance between requests, and a send cut off mid-way used to be lost. Only interactive
+  an instance between requests, so a send started inside one can be cut off and lost. Only interactive
   emails the user is waiting for (verification codes, the contact form) call
   `app.utils.email.send_email` directly. Reminder/digest kinds need a preference `category`.
 - **Preview / "View class as student"** (offered only in a class you teach) is a frontend-only
@@ -194,11 +196,12 @@ The full agent-facing action catalog (method, params, role) lives at
   no backend act-as, so it does not show a specific student's real data.
 
 ## Path aliases (frontend)
-`@/`→`src/`, `@features/`→`src/features/`, `@pages/`→`src/pages/`,
-`@components/`→`src/components/`, `@assets/`→`src/assets/`, `@styles/`→`src/styles/`.
+`@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,
+`@assets/`→`src/assets/`, `@styles/`→`src/styles/`.
 
 ## Before you commit
 - Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest` (all green).
 - Frontend: `npm run lint && npm run lint:design && npm run build && npx vitest run` (no lint findings, all green).
 - New backend route → add the matching method to `frontend/src/lib/api/<domain>.ts`.
-- New `backend/database/migrations/*.sql` → update `supabase/schema.sql` once it is applied.
+- New migration → `backend/database/migrations/<YYYY-MM>/<YYYY-MM-DD>_<name>.sql`, in the folder for its
+  month; update `supabase/schema.sql` once it is applied.

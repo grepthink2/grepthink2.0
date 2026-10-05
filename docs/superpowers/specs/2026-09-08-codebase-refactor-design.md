@@ -110,7 +110,7 @@ backend/app/
   jobs/pending_invites.py    # the poller, moved out of main.py
   main.py                    # wiring only: middleware, handlers, routers, lifespan
   <feature>/{url,views,controller,models}.py   # unchanged layout
-backend/database/migrations/2026-09-08_perf_indexes_and_lints.sql   # staged, not applied
+backend/database/migrations/2026-09/2026-09-08_perf_indexes_and_lints.sql   # staged, not applied
 ```
 
 Controllers keep their public function names and return shapes. Query batching rules:

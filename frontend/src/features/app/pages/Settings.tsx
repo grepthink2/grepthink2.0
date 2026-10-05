@@ -9,6 +9,7 @@ import { isSchoolEmail } from '@/lib/schoolEmail';
 import { supabase } from '@/lib/supabaseClient';
 import { apiRequest, api, type ApiProfile } from '@/lib/api';
 import EduVerifyModal from '@features/app/components/Settings/EduVerifyModal';
+import ChangeEmailModal from '@features/app/components/Settings/ChangeEmailModal';
 import EmailPreferences from '@features/app/components/Settings/EmailPreferences';
 import './Settings.scss';
 
@@ -49,6 +50,8 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   // A new roster address is only saved by the server once a code sent to it comes back.
   const [verifyingEduEmail, setVerifyingEduEmail] = useState<string | null>(null);
+  // The login email is changed through Supabase Auth, in its own modal.
+  const [changingEmail, setChangingEmail] = useState(false);
   const [codeWasLogged, setCodeWasLogged] = useState(false);
 
   const [saving, setSaving] = useState(false);
@@ -334,16 +337,25 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   </div>
                 </div>
 
-                {/* Email */}
+                {/* Email: the login address lives in Supabase Auth, so it is changed through it */}
                 <div className="settings-modal__field">
                   <label className="settings-modal__label" htmlFor="sm-email">Email Address</label>
-                  <input
-                    id="sm-email"
-                    type="email"
-                    className="settings-modal__input settings-modal__input--readonly"
-                    value={user?.email ?? ''}
-                    readOnly
-                  />
+                  <div className="settings-modal__inline">
+                    <input
+                      id="sm-email"
+                      type="email"
+                      className="settings-modal__input settings-modal__input--readonly"
+                      value={user?.email ?? ''}
+                      readOnly
+                    />
+                    <button
+                      type="button"
+                      className="settings-modal__change"
+                      onClick={() => setChangingEmail(true)}
+                    >
+                      Change
+                    </button>
+                  </div>
                 </div>
 
                 {/* Roster school email — students and TAs */}
@@ -451,6 +463,11 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         </div>
       </div>
     </div>
+    <ChangeEmailModal
+      isOpen={changingEmail}
+      currentEmail={user?.email ?? ''}
+      onClose={() => setChangingEmail(false)}
+    />
     <EduVerifyModal
       isOpen={verifyingEduEmail !== null}
       eduEmail={verifyingEduEmail ?? ''}

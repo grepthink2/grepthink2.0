@@ -78,7 +78,7 @@ ClassContext ─┬─► useClassRole ──────► sidebar · route gu
 
 ## Data model
 
-New migration `backend/database/migrations/2026-09-25_institutions.sql` (expand only, idempotent);
+New migration `backend/database/migrations/2026-09/2026-09-25_institutions.sql` (expand only, idempotent);
 `supabase/schema.sql` is updated once it is applied (AGENTS.md):
 
 ```sql
@@ -322,7 +322,7 @@ Frontend (Vitest; `npm run build` is the completeness check for D8):
    instructor shows a disabled composer, although the backend would allow the send.
 3. Merge and release (beta → main). The backend works with the current frontend, and the new
    frontend tolerates a missing `my_role` (see Role source).
-4. Flip Scott: run `prod/2026-09-25_scott_class_creation.sql` (`role = 'instructor'` for their
+4. Flip Scott: run `prod/2026-09/2026-09-25_scott_class_creation.sql` (`role = 'instructor'` for their
    email, only while it is `'student'`), only after steps 1–3 are done on PROD. Before the release
    their UCSC classes disappear; before the seed İstinye is not there for their new class to pick;
    before the inbox migration their DM with the UCSC instructor cannot be answered from the thread.

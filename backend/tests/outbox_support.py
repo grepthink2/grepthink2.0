@@ -4,7 +4,7 @@
   its methods, and leases, backoff and budgets become exact.
 * ``Mailbox``: stands in for ``app.utils.email_transport.send``.
 * ``claim_function``: the ``claim_email_outbox`` database function (see
-  backend/database/migrations/2026-09-30_email_outbox.sql), in Python, against a FakeSupabase's
+  backend/database/migrations/2026-09/2026-09-30_email_outbox.sql), in Python, against a FakeSupabase's
   rows. Register it as ``db.rpcs["claim_email_outbox"]``.
 """
 

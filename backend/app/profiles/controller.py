@@ -55,13 +55,27 @@ _MAX_ATTEMPTS = 5
 _MAILBOX = re.compile(r"[a-z0-9._%+'-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+")
 
 
-def get_profile(user_id: str) -> dict:
+def get_profile(user_id: str, *, token_email: str | None = None) -> dict:
     """
     Fetch a user's full profile row.
+
+    ``token_email`` is the verified token's ``email`` claim. ``profiles.email`` mirrors it
+    (``create_user`` wrote it from the token), and it is the only thing allowed to change
+    it: when the two differ the row is updated before it is returned. Supabase lower-cases
+    addresses, and so does the mirror.
     """
     client = get_client()
     result = client.table("profiles").select(PROFILE_FIELDS).eq("id", user_id).limit(1).execute()
-    return result.data[0] if result.data else {}
+    profile = result.data[0] if result.data else {}
+    if not profile or not token_email:
+        return profile
+
+    email = token_email.strip().lower()
+    if email and email != (profile.get("email") or "").strip().lower():
+        client.table("profiles").update({"email": email}).eq("id", user_id).execute()
+        logger.info("get_profile: login email mirrored from the token | user_id=%s", user_id)
+        profile = {**profile, "email": email}
+    return profile
 
 
 def _user_has_class_access(client, user_id: str, class_id: str, created_by: str) -> bool:

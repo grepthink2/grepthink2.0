@@ -783,3 +783,32 @@ def test_a_chosen_role_is_still_cached(db):
 
     assert get_user_role(USER) == "student"
     assert db.executes == 0
+
+
+# ── the login email follows the token ────────────────────────────────────────────
+
+
+def test_get_me_mirrors_a_changed_login_email_from_the_token(client, db):
+    """After a Supabase email change the token names the new address; the profile follows."""
+    res = client.get("/api/profiles/me", headers=header_for("Ann@NewMail.com"))
+
+    assert res.status_code == 200, res.text
+    assert res.json()["email"] == "ann@newmail.com"
+    assert _profile(db)["email"] == "ann@newmail.com"
+
+
+@pytest.mark.parametrize("claim", ["ann@gmail.com", "Ann@Gmail.com"])
+def test_get_me_writes_nothing_when_the_token_agrees(client, db, claim):
+    res = client.get("/api/profiles/me", headers=header_for(claim))
+
+    assert res.status_code == 200, res.text
+    assert _profile(db)["email"] == "ann@gmail.com"
+    assert "profiles:update" not in [f"{q['table']}:{q['op']}" for q in db.queries]
+
+
+def test_get_me_leaves_the_email_alone_without_a_claim(client, auth_header, db):
+    res = client.get("/api/profiles/me", headers=auth_header)
+
+    assert res.status_code == 200, res.text
+    assert _profile(db)["email"] == "ann@gmail.com"
+    assert "profiles:update" not in [f"{q['table']}:{q['op']}" for q in db.queries]

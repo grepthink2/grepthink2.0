@@ -9,7 +9,7 @@
 > tables (see `AUTH.md`, "The browser has no table access"). *Keeping dev and
 > prod in sync:* the "re-run the dump and re-apply by hand" model is what let PROD fall three
 > migrations behind; changes now live in `backend/database/migrations/` and the plan to automate
-> them is in `docs/superpowers/plans/2026-09-20-low-touch-operations-plan.md`. The table and
+> them is tracked in [#192](https://github.com/grepthink2/grepthink2.0/issues/192). The table and
 > function inventory further down is from June — trust `list_migrations` and the database, not
 > this page. `schema.sql` has not been regenerated since 2026-09-08.
 
@@ -80,7 +80,7 @@ trigger/function/Auth-hook/bucket changed.
 
 ## Institutions and class creation (maintainer steps)
 
-In this order (the SQL files are in `backend/database/migrations/`):
+In this order (the SQL files are in `backend/database/migrations/2026-09/`):
 
 1. `2026-09-25_institutions.sql`, then `2026-09-25_seed_istinye.sql`, DEV then PROD, before anyone
    creates a class outside UC Santa Cruz. Until the first file runs, no class can be given a school,
@@ -96,10 +96,10 @@ In this order (the SQL files are in `backend/database/migrations/`):
    their thread with the UCSC instructor they TA for shows sending disabled, although the backend
    would allow the send.
 3. Release beta → main.
-4. Only once steps 1–3 are done on PROD: the role flip, `prod/2026-09-25_scott_class_creation.sql`
+4. Only once steps 1–3 are done on PROD: the role flip, `prod/2026-09/2026-09-25_scott_class_creation.sql`
    (below).
 
-- **Add a school:** copy `backend/database/migrations/2026-09-25_seed_istinye.sql`, change the name,
+- **Add a school:** copy `backend/database/migrations/2026-09/2026-09-25_seed_istinye.sql`, change the name,
   slug (lower-case, hyphens) and base email domains, run it on DEV then PROD. The app shows it within
   about ten minutes: the backend caches the list for five minutes, and browsers keep it for another
   five (`Cache-Control: max-age=300`). An app tab that is already open keeps the list it loaded until
@@ -108,7 +108,7 @@ In this order (the SQL files are in `backend/database/migrations/`):
   a school email. (The loader also drops a small denylist of two-part public suffixes and any
   domain with no dot, logging an error (so Sentry reports it) rather than failing.)
 - **Letting an existing account create classes:** edit and run
-  `backend/database/migrations/prod/2026-09-25_scott_class_creation.sql` (it flips `student → instructor`
+  `backend/database/migrations/prod/2026-09/2026-09-25_scott_class_creation.sql` (it flips `student → instructor`
   for one email and refuses to change anything else). Run it only once steps 1–3 above are done on
   PROD. It takes effect within a minute; the user sees "Create Class" after reloading. Their classes
   as a TA or student are unaffected.
@@ -132,7 +132,7 @@ before giving up and notifying whoever sent the invite. In this order:
 2. `2026-09-30_institution_timezones.sql`, DEV then PROD, any time.
 3. Release beta → main. Until step 5 the API dispatches from inside its own process every few
    seconds (like the old invite poller, but through the outbox, so a failed send is retried).
-4. PROD SQL editor: `prod/2026-09-30_email_dispatch_cron.sql`, with a new random secret and the API
+4. PROD SQL editor: `prod/2026-09/2026-09-30_email_dispatch_cron.sql`, with a new random secret and the API
    URL filled in. It schedules a `pg_net` call to the dispatcher every minute (the secret lives in
    Vault), a nightly job that deletes sent rows older than 90 days, and one that keeps a week of
    pg_cron's own run log (`cron.job_run_details`, which pg_cron never prunes).
