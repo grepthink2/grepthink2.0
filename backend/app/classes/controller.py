@@ -771,34 +771,6 @@ def update_class_status(class_id: UUID, status: str, instructor_id: str) -> dict
         raise HTTPException(status_code=500, detail="Failed to update class status")
 
 
-def get_class_by_id(class_id: UUID) -> dict:
-    """
-    Get a specific class by ID
-
-    Args:
-        class_id: Class unique identifier
-
-    Returns:
-        Class dictionary
-
-    Raises:
-        HTTPException: If class not found or database error occurs
-    """
-    try:
-        client = get_client()
-        result = client.table("classes").select("*").eq("id", str(class_id)).execute()
-
-        if not result.data or len(result.data) == 0:
-            raise HTTPException(status_code=404, detail=authz.CLASS_NOT_FOUND)
-
-        return result.data[0]
-    except HTTPException:
-        raise
-    except Exception:
-        logger.exception("Error fetching class | class_id=%s", class_id)
-        raise HTTPException(status_code=500, detail="Failed to fetch class")
-
-
 def join_class_by_code(course_code: str, user_id: str) -> dict:
     """
     Enroll the caller in a class using its course code (anyone but its instructor)
