@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import Depends, HTTPException, Query
 
-from app.dependencies import require_user
+from app.dependencies import require_user, require_user_payload
 from app.profiles import controller
 from app.profiles.models import (
     ProfileUpdateRequest,
@@ -18,12 +18,20 @@ from app.profiles.models import (
 logger = logging.getLogger(__name__)
 
 
-def get_my_profile(user_id: str = Depends(require_user)):
+def get_my_profile(
+    user_id: str = Depends(require_user),
+    payload: dict = Depends(require_user_payload),
+):
     """
     Return the authenticated user's profile row.
+
+    The token's ``email`` claim is the login address Supabase has confirmed. When it differs
+    from ``profiles.email`` (the user changed it in Settings and opened the confirmation
+    link) the row is brought up to date first, so the mirror heals on the first request
+    after the change, on whichever device opened the link.
     """
     try:
-        profile = controller.get_profile(user_id)
+        profile = controller.get_profile(user_id, token_email=payload.get("email"))
         if not profile:
             raise HTTPException(status_code=404, detail="Profile not found")
         return profile

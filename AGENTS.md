@@ -157,7 +157,8 @@ The full agent-facing action catalog (method, params, role) lives at
   comes from the verified token, `edu_email` is written only by `verify_edu_email` (or from the
   token's address when it is a school email — `.edu`, or an institution's `email_domains`;
   `app/institutions/controller.py` `is_school_email` — not just `.edu`), and the role is written
-  once by `create_user`. See `AUTH.md`.
+  once by `create_user`. A login email change goes through Supabase Auth (Settings → Change),
+  and `GET /api/profiles/me` re-mirrors the token's email afterwards. See `AUTH.md`.
 - **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
   code once let `%` join any class. Validate the shape first, then match exactly.
 - **`lib/api/*.ts` can drift from routes** — the client is hand-maintained, no codegen.
