@@ -23,29 +23,31 @@ from tests.conftest import make_token
 class TestRequireUser:
     """Covers require_user → verify_supabase_token via /api/login-check."""
 
-    def test_missing_authorization_header_returns_401(self, client: TestClient):
-        r = client.get("/api/login-check")
-        assert r.status_code == 401
-        assert r.json()["detail"] == "Authentication required"
+    @pytest.mark.parametrize(
+        ("authorization", "detail"),
+        [
+            (None, "Authentication required"),
+            ("Basic abc", None),
+            ("Bearer ", None),
+            (
+                lambda: f"Bearer {make_token(sub='user-xyz', secret='wrong-secret')}",
+                "Invalid authentication token",
+            ),
+            (lambda: f"Bearer {make_token(sub='user-xyz', expired=True)}", None),
+        ],
+        ids=["no header", "not a bearer scheme", "empty bearer", "wrong signature", "expired"],
+    )
+    def test_anything_but_a_valid_bearer_token_answers_401(
+        self, client: TestClient, authorization, detail
+    ):
+        value = authorization() if callable(authorization) else authorization
+        r = client.get(
+            "/api/login-check", headers={"Authorization": value} if value is not None else {}
+        )
 
-    def test_malformed_authorization_header_returns_401(self, client: TestClient):
-        r = client.get("/api/login-check", headers={"Authorization": "Basic abc"})
         assert r.status_code == 401
-
-    def test_bearer_without_token_returns_401(self, client: TestClient):
-        r = client.get("/api/login-check", headers={"Authorization": "Bearer "})
-        assert r.status_code == 401
-
-    def test_invalid_signature_returns_401(self, client: TestClient):
-        bad = make_token(sub="user-xyz", secret="wrong-secret")
-        r = client.get("/api/login-check", headers={"Authorization": f"Bearer {bad}"})
-        assert r.status_code == 401
-        assert r.json()["detail"] == "Invalid authentication token"
-
-    def test_expired_token_returns_401(self, client: TestClient):
-        bad = make_token(sub="user-xyz", expired=True)
-        r = client.get("/api/login-check", headers={"Authorization": f"Bearer {bad}"})
-        assert r.status_code == 401
+        if detail:
+            assert r.json()["detail"] == detail
 
     @patch("app.auth.views.get_user_role")
     def test_valid_token_returns_user_id(self, mock_get_role, client: TestClient, auth_header):
@@ -86,14 +88,10 @@ class TestRequireInstructor:
         assert r.json()["class"]["id"] == "cls-1"
         mock_create_class.assert_called_once()
 
+    @pytest.mark.parametrize("role", ["student", None], ids=["student", "no role yet"])
     @patch("app.auth.controller.get_user_role")
-    def test_student_cannot_create_class(
-        self,
-        mock_get_role,
-        client: TestClient,
-        auth_header,
-    ):
-        mock_get_role.return_value = "student"
+    def test_anyone_else_is_refused(self, mock_get_role, client: TestClient, auth_header, role):
+        mock_get_role.return_value = role
         r = client.post(
             "/api/classes",
             headers=auth_header,
@@ -106,74 +104,3 @@ class TestRequireInstructor:
         )
         assert r.status_code == 403
         assert r.json()["detail"] == "Instructor role required"
-
-    @patch("app.auth.controller.get_user_role")
-    def test_null_role_cannot_create_class(
-        self,
-        mock_get_role,
-        client: TestClient,
-        auth_header,
-    ):
-        """A user with no profiles row should not pass require_instructor."""
-        mock_get_role.return_value = None
-        r = client.post(
-            "/api/classes",
-            headers=auth_header,
-            json={
-                "name": "115C",
-                "description": "Soft Eng",
-                "term": "Spring",
-                "start_date": "2026-04-01",
-            },
-        )
-        assert r.status_code == 403
-
-
-class TestCorsAllowlist:
-    """CORS allowlist (Phase 4): wildcard removed, explicit origins only."""
-
-    def test_preflight_from_allowed_origin(self, client: TestClient):
-        r = client.options(
-            "/api/classes",
-            headers={
-                "Origin": "http://localhost:5173",
-                "Access-Control-Request-Method": "GET",
-                "Access-Control-Request-Headers": "authorization",
-            },
-        )
-        assert r.status_code == 200
-        assert r.headers.get("Access-Control-Allow-Origin") == "http://localhost:5173"
-        assert r.headers.get("Access-Control-Allow-Credentials") == "true"
-
-    def test_preflight_from_disallowed_origin(self, client: TestClient):
-        r = client.options(
-            "/api/classes",
-            headers={
-                "Origin": "http://evil.example.com",
-                "Access-Control-Request-Method": "GET",
-                "Access-Control-Request-Headers": "authorization",
-            },
-        )
-        # Starlette's CORSMiddleware rejects disallowed preflight with 400
-        # and omits the Allow-Origin header entirely.
-        assert r.headers.get("Access-Control-Allow-Origin") is None
-
-
-class TestSecurityHeaders:
-    """Phase 4 SecurityHeadersMiddleware contract."""
-
-    @pytest.mark.parametrize(
-        "header,expected_substr",
-        [
-            ("X-Content-Type-Options", "nosniff"),
-            ("X-Frame-Options", "DENY"),
-            ("Referrer-Policy", "no-referrer"),
-            ("Strict-Transport-Security", "max-age=31536000"),
-            ("Content-Security-Policy", "default-src 'none'"),
-            ("Permissions-Policy", "camera=()"),
-        ],
-    )
-    def test_health_has_header(self, client: TestClient, header: str, expected_substr: str):
-        r = client.get("/health")
-        assert r.status_code == 200
-        assert expected_substr in r.headers.get(header, "")

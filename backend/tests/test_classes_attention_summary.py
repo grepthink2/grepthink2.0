@@ -203,7 +203,3 @@ def test_route_passes_the_caller_and_is_not_shadowed_by_class_id(mock_fn, client
     assert r.status_code == 200, r.text
     assert r.json() == {"classes": []}
     assert mock_fn.call_args.kwargs == {"user_id": "user-abc"}
-
-
-def test_route_requires_a_signed_in_user(client):
-    assert client.get("/api/classes/attention-summary").status_code == 401

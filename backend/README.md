@@ -134,6 +134,28 @@ result = controller.some_read(...)
 assert fake.executes <= 3
 ```
 
+Where a test goes, so the suite stays one assertion per fact:
+
+- **One test per call.** What a function returns and what it costs share an arrange and an act,
+  so they are one test (`assert out == EXPECTED` and `assert fake.executes <= n`), not a
+  `_shape` test and a `_budget` test. Inputs that differ only in data are `parametrize` cases.
+- **Who is refused, and how,** lives in `tests/test_authz_status_policy.py` (every module) and
+  `tests/test_classes_authz.py` (every class route): status, message, and that nothing was
+  written. Do not re-assert a 403 or 404 next to the feature's other tests.
+- **What every route guarantees** lives in `tests/test_api_surface.py`: it walks every
+  registered route, so a new route is covered by "needs a signed-in user" without a new test.
+  A route that is meant to be public has to be added to its `PUBLIC` list.
+- **Do not test the framework or a mock:** a controller patched to raise a 403 "answers 403", a
+  required query parameter "answers 422", a mocked delete "is idempotent".
+- Files are named for the unit under test (`test_<module>_<topic>.py`), never for the ticket,
+  review or version that produced the tests.
+
+Before removing or merging tests, record coverage and check nothing was lost:
+
+```bash
+python -m pytest --cov=app --cov-branch --cov-report=term-missing   # 69.11% line+branch, 2026-09-21
+```
+
 ## Style Guide
 
 See [STYLE_GUIDE.md](STYLE_GUIDE.md) for conventions on module structure, naming, auth, error handling, and adding new features.

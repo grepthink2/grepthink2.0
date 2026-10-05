@@ -244,10 +244,3 @@ def test_route_passes_the_caller_and_class_through(mock_fn, client, auth_header)
     assert r.status_code == 200, r.text
     assert r.json() == {"requests": [{"request_id": "r1"}]}
     assert mock_fn.call_args.kwargs == {"user_id": "user-abc", "class_id": UUID(CLASS_UUID)}
-
-
-@patch("app.projects.views.controller.get_incoming_join_requests")
-def test_route_requires_a_class_id(mock_fn, client, auth_header):
-    r = client.get("/api/projects/incoming-join-requests", headers=auth_header)
-    assert r.status_code == 422, r.text
-    mock_fn.assert_not_called()

@@ -213,10 +213,8 @@ def test_bulk_invite_statuses_recipients_and_rows(db, mail):
     ta_row = next(r for r in db.rows("class_enrollments") if r["user_id"] == TA1)
     assert ta_row["enrollment_role"] == "ta"
 
-
-def test_bulk_invite_budget(db, mail):
-    classes.bulk_invite_students(CLASS, BULK, INSTR)
-    # class + instructor profile, profiles, enrollments, one enrollment write
+    # All ten addresses cost: class + instructor profile, profiles, enrollments, and one
+    # enrollment write.
     assert db.executes <= 4, _trace(db)
     assert sum(1 for q in db.queries if q["op"] in WRITE_OPS) == 1, _trace(db)
 

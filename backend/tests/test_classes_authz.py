@@ -4,7 +4,9 @@ answer everyone else gets.
 Instructor-only routes answer 404 "Class not found" when the class does not
 exist and 403 "Only the class instructor can do this" to everyone else. Class
 reads (students, roster, projects) are open to the class instructor and to
-enrolled students and TAs: 404 for a missing class, 403 for everyone else.
+enrolled students and TAs: 404 for a missing class, 403 for everyone else. That the
+instructor, a TA and a student are each let in is asserted, with what it costs them,
+by the budget tests in ``test_classes_reads.py``.
 
 These tests pin those status codes and messages, and assert that a denied call
 writes nothing and sends no email. The retry tests cover
@@ -19,13 +21,18 @@ import threading
 import httpx
 import pytest
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
 from app.classes import controller as classes
+from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "instr", "instr-2"
 TA1, S1, OUTSIDER = "ta-1", "s1", "outsider"
-CLASS, MISSING = "class-1", "no-such-class"
+# UUID-shaped because one test goes through the real route, which validates the path.
+CLASS = "c0000000-0000-0000-0000-000000000001"
+MISSING = "c0000000-0000-0000-0000-00000000dead"
+EMPTY_CLASS = "class-empty"  # INSTR's too, with nobody enrolled
 P1 = "proj-1"
 MANUAL_ENTRY = "roster-manual"
 JOB = "job-1"
@@ -75,7 +82,14 @@ def _world() -> dict:
                 "name": "CSE 115C",
                 "course_code": "ABCD1234",
                 "status": "active",
-            }
+            },
+            {
+                "id": EMPTY_CLASS,
+                "created_by": INSTR,
+                "name": "CSE 110",
+                "course_code": "EMPT1234",
+                "status": "active",
+            },
         ],
         "class_enrollments": [
             {"id": "e-ta", "class_id": CLASS, "user_id": TA1, "enrollment_role": "ta"},
@@ -292,9 +306,30 @@ def test_class_reads_answer_403_to_strangers_and_404_for_a_missing_class(db, nam
 
 
 @pytest.mark.parametrize("name", sorted(CLASS_READS))
-@pytest.mark.parametrize("caller", [INSTR, S1, TA1])
-def test_class_reads_admit_the_instructor_and_enrolled_members(db, name, caller):
-    CLASS_READS[name][0](caller, CLASS)
+def test_class_reads_refuse_a_stranger_before_noticing_the_class_is_empty(db, name):
+    # A class nobody has joined yet must answer 403, not leak an empty 200: the access check
+    # has to run before any "no enrollments, nothing to return" shortcut.
+    with pytest.raises(HTTPException) as exc:
+        CLASS_READS[name][0](OUTSIDER, EMPTY_CLASS)
+    assert exc.value.status_code == 403
+
+
+@pytest.mark.parametrize(("caller", "status"), [(OUTSIDER, 403), (S1, 200)])
+def test_the_students_route_passes_the_caller_on_to_the_access_check(
+    client: TestClient, db, monkeypatch, caller, status
+):
+    # GET /api/classes/{id}/students once injected the user id and then dropped it, so the
+    # controller checked that the class existed and nothing else: any signed-in user could read
+    # any class's roster. Through the real route, so re-breaking the wiring fails here.
+    monkeypatch.setattr("app.classes.views.get_user_role", lambda _uid: "student")
+    response = client.get(
+        f"/api/classes/{CLASS}/students",
+        headers={"Authorization": f"Bearer {make_token(sub=caller)}"},
+    )
+
+    assert response.status_code == status
+    if status == 200:
+        assert {s["id"] for s in response.json()["students"]} == {TA1, S1}
 
 
 # ------------------------------------------------------------------ retries

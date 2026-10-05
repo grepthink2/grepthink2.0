@@ -89,30 +89,18 @@ def test_cursor_filter_smuggling_400():
         assert exc.value.status_code == 400
 
 
+@pytest.mark.parametrize(("asked", "used"), [(500, 100), (0, 1)], ids=["too high", "too low"])
 @patch("app.messages.controller._require_participant")
 @patch("app.core.db.service_client")
-def test_limit_clamped_high(client, _auth):
+def test_limit_is_clamped_to_1_through_100(client, _auth, asked, used):
     from app.messages.controller import list_messages
 
     q = client.table.return_value.select.return_value.eq.return_value
     q.order.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
         data=[]
     )
-    list_messages(conversation_id="c1", caller_id="alice", limit=500)
-    q.order.return_value.order.return_value.limit.assert_called_once_with(100)
-
-
-@patch("app.messages.controller._require_participant")
-@patch("app.core.db.service_client")
-def test_limit_clamped_low(client, _auth):
-    from app.messages.controller import list_messages
-
-    q = client.table.return_value.select.return_value.eq.return_value
-    q.order.return_value.order.return_value.limit.return_value.execute.return_value = MagicMock(
-        data=[]
-    )
-    list_messages(conversation_id="c1", caller_id="alice", limit=0)
-    q.order.return_value.order.return_value.limit.assert_called_once_with(1)
+    list_messages(conversation_id="c1", caller_id="alice", limit=asked)
+    q.order.return_value.order.return_value.limit.assert_called_once_with(used)
 
 
 @patch("app.core.db.service_client")
