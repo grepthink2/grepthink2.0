@@ -8,20 +8,29 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from app.core import authz
+from app.assignments import deadlines
+from app.core import authz, events
 from app.core.db import fan_out, get_client
 from app.database.client import (
     retry_on_disconnect,
 )
+from app.institutions.controller import institution_timezone
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
 ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form", "feedback"}
 
+DEADLINE_PASSED = "The deadline has passed; set a late-submission window instead"
+ACCEPT_UNTIL_BEFORE_DEADLINE = "accept_until must be after the deadline"
+NO_DEADLINE_TO_EXTEND = "This assignment has no deadline"
 
-def _require_class_instructor(user_id: str, class_id: str) -> None:
-    """Raise 404 if the class does not exist and 403 unless the user is its instructor."""
-    authz.require_class_instructor(get_client(), user_id, class_id)
+
+def _require_class_instructor(user_id: str, class_id: str) -> dict:
+    """The class row (id, created_by, institution_id). 404 if the class does not exist, 403
+    unless the user is its instructor."""
+    return authz.require_class_instructor(
+        get_client(), user_id, class_id, columns="id, created_by, institution_id"
+    )
 
 
 def _tsr_overview_scope(
@@ -61,9 +70,10 @@ def create_assignment(
 
     Uses the assignments.class_id FK column to link the assignment to its class.
 
-    Returns the created assignment row.
+    Returns the created assignment row, whose ``due_at`` is the first instant after
+    ``close_date`` in the school's zone.
     """
-    _require_class_instructor(user_id, str(class_id))
+    cls = _require_class_instructor(user_id, str(class_id))
 
     if open_date > close_date:
         raise HTTPException(status_code=400, detail="open_date must be on or before close_date")
@@ -76,6 +86,8 @@ def create_assignment(
             "status": status,
             "class_id": str(class_id),
         }
+        due_at = deadlines.due_at_for(close_date, institution_timezone(cls.get("institution_id")))
+        assignment_data["due_at"] = due_at.isoformat() if due_at else None
         if assignment_type is not None:
             normalized_type = assignment_type.strip().lower()
             if normalized_type not in ALLOWED_ASSIGNMENT_TYPES:
@@ -208,9 +220,16 @@ def update_assignment(
     close_date: datetime.date | None,
     status: str | None,
     assignment_type: str | None = None,
+    accept_until: datetime.datetime | None = None,
+    clear_accept_until: bool = False,
 ) -> dict:
     """
     Edit an existing assignment's title, dates, or status (the class instructor only).
+
+    Before the deadline (``due_at``) a new ``close_date`` reschedules it and ``due_at`` follows;
+    once it has passed, moving ``close_date`` is refused (400) and ``accept_until`` sets a
+    late-submission window instead, recorded as an ``assignment_reopened`` event. Re-sending the
+    unchanged ``close_date`` is not a move.
 
     Only the instructor who owns the class the assignment belongs to may edit it.
     Returns the updated assignment row. If the assignment type is 'tsr', a
@@ -228,15 +247,35 @@ def update_assignment(
             raise HTTPException(status_code=404, detail="Assignment not found")
 
         assignment = assignment_result.data[0]
-        _require_class_instructor(user_id, assignment.get("class_id"))
+        cls = _require_class_instructor(user_id, assignment.get("class_id"))
 
         updates: dict = {}
         if title is not None:
             updates["Title"] = title
         if open_date is not None:
             updates["open_date"] = open_date.isoformat()
-        if close_date is not None:
+        tz = institution_timezone(cls.get("institution_id"))
+        now = deadlines.now_utc()
+        current_due_at = deadlines.parse_ts(assignment.get("due_at"))
+        deadline_passed = current_due_at is not None and now >= current_due_at
+        if close_date is not None and close_date.isoformat() != assignment.get("close_date"):
+            if deadline_passed:
+                raise HTTPException(status_code=400, detail=DEADLINE_PASSED)
             updates["close_date"] = close_date.isoformat()
+            new_due_at = deadlines.due_at_for(close_date, tz)
+            updates["due_at"] = new_due_at.isoformat() if new_due_at else None
+        reopened = False
+        if accept_until is not None:
+            if current_due_at is None:
+                raise HTTPException(status_code=400, detail=NO_DEADLINE_TO_EXTEND)
+            if accept_until.tzinfo is None:
+                accept_until = accept_until.replace(tzinfo=datetime.UTC)
+            if accept_until <= current_due_at:
+                raise HTTPException(status_code=400, detail=ACCEPT_UNTIL_BEFORE_DEADLINE)
+            updates["accept_until"] = accept_until.astimezone(datetime.UTC).isoformat()
+            reopened = True
+        elif clear_accept_until:
+            updates["accept_until"] = None
         if status is not None:
             updates["status"] = status
         if assignment_type is not None:
@@ -254,11 +293,8 @@ def update_assignment(
                 if assignment.get("open_date")
                 else None
             )
-            effective_close = close_date or (
-                datetime.date.fromisoformat(assignment["close_date"])
-                if assignment.get("close_date")
-                else None
-            )
+            close_iso = updates.get("close_date") or assignment.get("close_date")
+            effective_close = datetime.date.fromisoformat(close_iso) if close_iso else None
             if effective_open and effective_close and effective_open > effective_close:
                 raise HTTPException(
                     status_code=400, detail="open_date must be on or before close_date"
@@ -270,6 +306,16 @@ def update_assignment(
             if not result.data:
                 raise HTTPException(status_code=500, detail="Failed to update assignment")
             assignment = result.data[0]
+            if reopened:
+                events.record(
+                    "assignment_reopened",
+                    actor_id=user_id,
+                    class_id=assignment.get("class_id"),
+                    meta={
+                        "assignment_id": str(assignment_id),
+                        "accept_until": updates["accept_until"],
+                    },
+                )
 
         effective_type = (
             assignment_type.strip().lower()
@@ -721,7 +767,10 @@ def get_instructor_tsr_overview(user_id: str, assignment_id: UUID) -> dict:
 
         assignment_result = (
             client.table("assignments")
-            .select("id, Title, open_date, close_date, status, class_id, assignment_type")
+            .select(
+                "id, Title, open_date, close_date, due_at, accept_until, status, class_id, "
+                "assignment_type"
+            )
             .eq("id", aid)
             .limit(1)
             .execute()

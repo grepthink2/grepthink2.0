@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import datetime
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi import HTTPException
 
+from app.assignments import deadlines
 from app.classes import controller as classes
 from tests.conftest import ISTINYE_INSTITUTION, UCSC_INSTITUTION, make_token
 from tests.fake_supabase import FakeSupabase
@@ -123,6 +125,25 @@ def test_create_class_without_an_institution_leaves_it_unset(create_db, monkeypa
     _codes(monkeypatch, ["FREE0001"] * 5)
     created = classes.create_class("SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR)
     assert "institution_id" not in created
+
+
+def test_auto_created_tsrs_carry_their_deadline_in_the_schools_zone(
+    create_db, monkeypatch, with_istinye
+):
+    _codes(monkeypatch, ["FREE0001"] * 5)
+    istanbul = classes.create_class(
+        "SE 301", None, "Fall", datetime.date(2026, 9, 21), INSTR, institution_id=IST_ID
+    )
+    _codes(monkeypatch, ["FREE0002"] * 5)
+    santa_cruz = classes.create_class("CSE 115A", None, "Fall", datetime.date(2026, 9, 24), INSTR)
+    for created, zone in ((istanbul, "Europe/Istanbul"), (santa_cruz, "America/Los_Angeles")):
+        tsrs = [a for a in create_db.rows("assignments") if a["class_id"] == created["id"]]
+        assert tsrs
+        for a in tsrs:
+            expected = deadlines.due_at_for(
+                datetime.date.fromisoformat(a["close_date"]), ZoneInfo(zone)
+            )
+            assert a["due_at"] == expected.isoformat()
 
 
 # --------------------------------------------------- the create route (view)

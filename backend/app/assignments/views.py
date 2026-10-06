@@ -45,6 +45,8 @@ def update_assignment(
         close_date=data.close_date,
         status=data.status,
         assignment_type=data.assignment_type,
+        accept_until=data.accept_until,
+        clear_accept_until=data.clear_accept_until,
     )
     return {"message": "Assignment updated successfully", "assignment": assignment}
 

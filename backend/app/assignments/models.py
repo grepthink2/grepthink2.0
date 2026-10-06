@@ -21,13 +21,20 @@ class CreateAssignmentRequest(BaseModel):
 
 
 class UpdateAssignmentRequest(BaseModel):
-    """Request model for editing an existing assignment. All fields optional."""
+    """Request model for editing an existing assignment. All fields optional.
+
+    ``accept_until`` opens a late-submission window after the deadline (must be after ``due_at``);
+    ``clear_accept_until`` closes it again. Once the deadline has passed, ``close_date`` can no
+    longer be moved (400): the original deadline is kept and late work shows as late.
+    """
 
     title: str | None = None
     open_date: datetime.date | None = None
     close_date: datetime.date | None = None
     status: Literal["draft", "publish"] | None = None
     assignment_type: Literal["tsr", "interest_form", "feedback"] | None = None
+    accept_until: datetime.datetime | None = None
+    clear_accept_until: bool = False
 
 
 class UpdateTSREntryRequest(BaseModel):

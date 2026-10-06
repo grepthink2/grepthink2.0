@@ -8,6 +8,7 @@ student Assignments page and dashboard.
 
 from __future__ import annotations
 
+import datetime as dt
 from unittest.mock import patch
 from uuid import UUID
 
@@ -15,6 +16,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.assignments import controller as assignments
+from app.assignments import deadlines
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "instr", "instr-2"
@@ -82,6 +84,7 @@ def db(monkeypatch):
                 "status": "publish",
                 "open_date": "2026-01-01",
                 "close_date": "2026-01-08",
+                "due_at": "2026-01-09T08:00:00+00:00",
                 "created_at": "2026-01-01T00:00:00+00:00",
             },
             {
@@ -92,6 +95,7 @@ def db(monkeypatch):
                 "status": "draft",
                 "open_date": "2026-02-01",
                 "close_date": "2026-02-08",
+                "due_at": "2026-02-09T08:00:00+00:00",
                 "created_at": "2026-01-02T00:00:00+00:00",
             },
             {
@@ -102,6 +106,7 @@ def db(monkeypatch):
                 "status": "publish",
                 "open_date": "2026-03-01",
                 "close_date": "2026-03-08",
+                "due_at": "2026-03-09T07:00:00+00:00",
                 "created_at": "2026-01-03T00:00:00+00:00",
             },
             {
@@ -112,6 +117,7 @@ def db(monkeypatch):
                 "status": "publish",
                 "open_date": "2026-01-01",
                 "close_date": "2026-01-02",
+                "due_at": "2026-01-03T08:00:00+00:00",
                 "created_at": "2026-01-04T00:00:00+00:00",
             },
         ],
@@ -173,10 +179,12 @@ def db(monkeypatch):
                 "updated_at": "2026-03-02T00:00:00+00:00",
             },
         ],
+        events=[],
         relations={
             ("projects", "classes"): ("class_id", "id", False),
             ("projects", "project_members"): ("id", "project_id", True),
             ("TSRs", "projects"): ("project_id", "id", False),
+            ("assignments", "classes"): ("class_id", "id", False),
         },
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
@@ -297,6 +305,8 @@ def test_instructor_overview_shape_and_budget(db):
         "Title",
         "open_date",
         "close_date",
+        "due_at",
+        "accept_until",
         "status",
         "class_id",
         "assignment_type",
@@ -404,3 +414,116 @@ def test_my_submissions_route_is_not_shadowed(mock_fn, client, auth_header):
     r = client.get(f"/api/assignments/my-submissions?class_id={CLASS_UUID}", headers=auth_header)
     assert r.status_code == 200, r.text
     assert mock_fn.call_args.kwargs == {"user_id": "user-abc", "class_id": UUID(CLASS_UUID)}
+
+
+# ------------------------------------------------------------- deadlines (A2)
+
+# TSR 1 due 2026-01-08 → due_at 01-09 08:00 UTC
+NOW_BEFORE = dt.datetime(2026, 1, 5, 12, 0, tzinfo=dt.UTC)
+NOW_AFTER = dt.datetime(2026, 1, 10, 12, 0, tzinfo=dt.UTC)
+
+
+@pytest.fixture
+def clock(monkeypatch):
+    def set_now(value):
+        monkeypatch.setattr(deadlines, "now_utc", lambda: value)
+
+    return set_now
+
+
+def test_create_assignment_derives_due_at_in_the_schools_zone(db, clock):
+    clock(NOW_BEFORE)
+    row = assignments.create_assignment(
+        INSTR, CLASS, "TSR 9", dt.date(2026, 3, 1), dt.date(2026, 3, 7), "publish", "tsr"
+    )
+    # Pacific Standard Time on March 7, 2026 → midnight after the 7th is 08:00 UTC on the 8th.
+    assert row["due_at"] == "2026-03-08T08:00:00+00:00"
+    assert row.get("accept_until") is None
+
+
+def test_reschedule_before_the_deadline_moves_due_at(db, clock):
+    clock(NOW_BEFORE)
+    row = assignments.update_assignment(INSTR, A_TSR, None, None, dt.date(2026, 1, 15), None)
+    assert (row["close_date"], row["due_at"]) == ("2026-01-15", "2026-01-16T08:00:00+00:00")
+
+
+def test_moving_the_due_date_after_the_deadline_is_refused(db, clock):
+    clock(NOW_AFTER)
+    with pytest.raises(HTTPException) as exc:
+        assignments.update_assignment(INSTR, A_TSR, None, None, dt.date(2026, 1, 15), None)
+    assert (exc.value.status_code, exc.value.detail) == (400, assignments.DEADLINE_PASSED)
+    assert db.rows("assignments")[0]["close_date"] == "2026-01-08"
+
+
+def test_resending_the_same_close_date_after_the_deadline_is_fine(db, clock):
+    # The editor re-sends every field; an unchanged due date is not a move.
+    clock(NOW_AFTER)
+    row = assignments.update_assignment(
+        INSTR, A_TSR, "TSR 1 (renamed)", None, dt.date(2026, 1, 8), None
+    )
+    assert (row["Title"], row["close_date"]) == ("TSR 1 (renamed)", "2026-01-08")
+
+
+def test_late_window_after_the_deadline_is_recorded_as_a_reopening(db, clock):
+    clock(NOW_AFTER)
+    late = dt.datetime(2026, 1, 12, 8, 0, tzinfo=dt.UTC)
+    row = assignments.update_assignment(INSTR, A_TSR, None, None, None, None, accept_until=late)
+    assert row["accept_until"] == "2026-01-12T08:00:00+00:00"
+    assert row["due_at"] == "2026-01-09T08:00:00+00:00"  # untouched
+    assert [e["kind"] for e in db.rows("events")] == ["assignment_reopened"]
+    assert db.rows("events")[0]["meta"] == {
+        "assignment_id": A_TSR,
+        "accept_until": "2026-01-12T08:00:00+00:00",
+    }
+    assert db.rows("events")[0]["class_id"] == CLASS
+    # assignment, class, update, event; then the TSR entries a TSR assignment's response
+    # carries (TSR rows, profiles), which update_assignment read before deadlines existed
+    assert db.executes <= 6, _trace(db)
+
+
+def test_late_window_must_be_after_the_deadline(db, clock):
+    clock(NOW_AFTER)
+    too_early = dt.datetime(2026, 1, 9, 7, 0, tzinfo=dt.UTC)
+    with pytest.raises(HTTPException) as exc:
+        assignments.update_assignment(INSTR, A_TSR, None, None, None, None, accept_until=too_early)
+    assert (exc.value.status_code, exc.value.detail) == (
+        400,
+        assignments.ACCEPT_UNTIL_BEFORE_DEADLINE,
+    )
+    assert db.rows("events") == []
+
+
+def test_late_window_needs_a_deadline(db, clock):
+    clock(NOW_AFTER)
+    db.rows("assignments").append(
+        {
+            "id": "a-open",
+            "class_id": CLASS,
+            "Title": "Open-ended",
+            "assignment_type": "tsr",
+            "status": "publish",
+            "open_date": "2026-01-01",
+            "close_date": None,
+            "due_at": None,
+        }
+    )
+    with pytest.raises(HTTPException) as exc:
+        assignments.update_assignment(
+            INSTR,
+            "a-open",
+            None,
+            None,
+            None,
+            None,
+            accept_until=dt.datetime(2026, 2, 1, tzinfo=dt.UTC),
+        )
+    assert (exc.value.status_code, exc.value.detail) == (400, assignments.NO_DEADLINE_TO_EXTEND)
+
+
+def test_clearing_the_late_window(db, clock):
+    clock(NOW_AFTER)
+    db.rows("assignments")[0]["accept_until"] = "2026-01-12T08:00:00+00:00"
+    row = assignments.update_assignment(
+        INSTR, A_TSR, None, None, None, None, clear_accept_until=True
+    )
+    assert row["accept_until"] is None
