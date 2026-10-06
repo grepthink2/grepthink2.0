@@ -24,8 +24,9 @@ class UpdateAssignmentRequest(BaseModel):
     """Request model for editing an existing assignment. All fields optional.
 
     ``accept_until`` opens a late-submission window after the deadline (must be after ``due_at``);
-    ``clear_accept_until`` closes it again. Once the deadline has passed, ``close_date`` can no
-    longer be moved (400): the original deadline is kept and late work shows as late.
+    ``clear_accept_until`` closes it again. Once a published assignment's deadline has passed,
+    ``close_date`` can no longer be moved and the assignment can no longer be unpublished (400):
+    the original deadline is kept and late work shows as late. A draft can always be rescheduled.
     """
 
     title: str | None = None

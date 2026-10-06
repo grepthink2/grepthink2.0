@@ -607,3 +607,15 @@ def test_a_draft_can_always_be_rescheduled(db, clock):
     clock(dt.datetime(2026, 2, 15, 12, 0, tzinfo=dt.UTC))
     row = assignments.update_assignment(INSTR, A_DRAFT, None, None, dt.date(2026, 2, 20), None)
     assert (row["close_date"], row["due_at"]) == ("2026-02-20", "2026-02-21T08:00:00+00:00")
+
+
+def test_a_closed_published_assignment_cannot_be_unpublished(db, clock):
+    # Otherwise unpublish → move → republish would rewrite a frozen deadline with no event.
+    clock(NOW_AFTER)
+    with pytest.raises(HTTPException) as exc:
+        assignments.update_assignment(INSTR, A_TSR, None, None, None, "draft")
+    assert (exc.value.status_code, exc.value.detail) == (
+        400,
+        assignments.DEADLINE_PASSED_UNPUBLISH,
+    )
+    assert db.rows("assignments")[0]["status"] == "publish"

@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form", "feedback"}
 
 DEADLINE_PASSED = "The deadline has passed; set a late-submission window instead"
+DEADLINE_PASSED_UNPUBLISH = "The deadline has passed; the assignment can no longer be unpublished"
 ACCEPT_UNTIL_BEFORE_DEADLINE = "accept_until must be after the deadline"
 NO_DEADLINE_TO_EXTEND = "This assignment has no deadline"
 
@@ -227,9 +228,10 @@ def update_assignment(
     Edit an existing assignment's title, dates, or status (the class instructor only).
 
     Before the deadline (``due_at``) a new ``close_date`` reschedules it and ``due_at`` follows;
-    once a published assignment's deadline has passed, moving ``close_date`` is refused (400) and
-    ``accept_until`` sets a late-submission window instead, recorded as an ``assignment_reopened``
-    event. Re-sending an unchanged ``close_date`` or ``accept_until`` changes nothing.
+    once a published assignment's deadline has passed, moving ``close_date`` or unpublishing it is
+    refused (400) and ``accept_until`` sets a late-submission window instead, recorded as an
+    ``assignment_reopened`` event. Re-sending an unchanged ``close_date`` or ``accept_until``
+    changes nothing.
 
     Only the instructor who owns the class the assignment belongs to may edit it.
     Returns the updated assignment row. If the assignment type is 'tsr', a
@@ -264,6 +266,10 @@ def update_assignment(
             and current_due_at is not None
             and now >= current_due_at
         )
+        if status == "draft" and deadline_passed:
+            # Unpublish → move → republish would rewrite a frozen deadline with no event. Deleting
+            # the assignment is still how an instructor removes it from view.
+            raise HTTPException(status_code=400, detail=DEADLINE_PASSED_UNPUBLISH)
         if accept_until is not None:
             if accept_until.tzinfo is None:
                 accept_until = accept_until.replace(tzinfo=datetime.UTC)
