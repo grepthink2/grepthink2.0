@@ -9,6 +9,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
+import { api } from '@/lib/api';
 import './Login.scss';
 import GradientBackgroundWrapper from '@features/auth/components/GradientBackGroundWrapper';
 import eyeIcon from '@assets/ph_eye.svg?url';
@@ -92,6 +93,9 @@ const Login: React.FC = () => {
         throw signInError;
       }
 
+      // Lets the backend record the sign-in (GET /api/login-check writes a `login` event);
+      // the result is not needed and a failure must not block the user.
+      void api.loginCheck().catch(() => {});
       navigate(from, { replace: true });
     } catch (err: unknown) {
       console.error('Login error:', err);

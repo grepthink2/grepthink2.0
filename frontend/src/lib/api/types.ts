@@ -408,6 +408,8 @@ export interface ApiAssignmentTsrEntry {
   scrum_master_tickets?: string;
   scrum_master_assessment?: string;
   scrum_master_notes?: string;
+  submitted_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface UpdateAssignmentTsrPayload {
@@ -435,6 +437,10 @@ export interface ApiAssignment {
   teams_total?: number;
   feedback_submitted?: number;
   feedback_total?: number;
+  /** The deadline instant: the first moment after close_date in the school's time zone. Missing from older backends. */
+  due_at?: string | null;
+  /** Late-submission window; null or missing = the assignment closes at due_at. */
+  accept_until?: string | null;
 }
 
 /** The caller's own submissions across a class's assignments (GET /api/assignments/my-submissions). */
@@ -480,6 +486,8 @@ export interface UpdateAssignmentPayload {
   close_date?: string;
   status?: 'draft' | 'publish';
   assignment_type?: string;
+  accept_until?: string;
+  clear_accept_until?: boolean;
 }
 
 export interface SubmitFeedbackPayload {
