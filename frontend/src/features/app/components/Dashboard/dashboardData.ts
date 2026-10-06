@@ -1,5 +1,6 @@
 import { format, parseISO } from 'date-fns';
 import type { ApiAssignment, ApiProject, ApiRosterStudent } from '@/lib/api';
+import { assignmentClosesAt } from '@/lib/dateUtils';
 import type {
   ProjectHealthItem,
   HealthStatus,
@@ -73,11 +74,12 @@ export interface DashboardAssignment {
 
 /** Map an API assignment to a dashboard row with a derived status pill. */
 export function mapDashboardAssignment(a: ApiAssignment): DashboardAssignment {
-  const today = format(new Date(), 'yyyy-MM-dd');
+  // Closed once submissions stop: the late window when one is set, else the deadline.
+  const closes = assignmentClosesAt(a);
   let status: AssignmentStatus;
   if (a.status === 'draft') {
     status = 'draft';
-  } else if (a.close_date < today) {
+  } else if (closes && closes <= new Date()) {
     status = 'closed';
   } else {
     status = 'active';

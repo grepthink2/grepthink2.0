@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { formatAssignmentDueDate } from '@/lib/dateUtils';
+import { assignmentClosesAt, formatDeadline } from '@/lib/dateUtils';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import type { ApiAssignment } from '@/lib/api';
@@ -49,11 +48,12 @@ const AssignmentEditorModal = lazyModal(
 // ];
 
 function mapApiAssignment(a: ApiAssignment): Assignment {
-  const today = format(new Date(), 'yyyy-MM-dd');
+  // Closed once submissions stop: the late window when one is set, else the deadline.
+  const closes = assignmentClosesAt(a);
   let status: AssignmentStatus;
   if (a.status === 'draft') {
     status = 'draft';
-  } else if (a.close_date < today) {
+  } else if (closes && closes <= new Date()) {
     status = 'closed';
   } else {
     status = 'active';
@@ -61,7 +61,7 @@ function mapApiAssignment(a: ApiAssignment): Assignment {
   return {
     id: a.id,
     title: a.Title,
-    dueDate: formatAssignmentDueDate(a.close_date),
+    dueDate: formatDeadline(a),
     openDate: `${a.open_date} 00:00`,
     dueDatetime: `${a.close_date} 23:59`,
     submitted: a.assignment_type === 'feedback'
@@ -74,6 +74,8 @@ function mapApiAssignment(a: ApiAssignment): Assignment {
     assignmentType: a.assignment_type,
     hasTsrResponses: a.has_tsr_responses ?? false,
     hasFeedbackResponses: (a.feedback_submitted ?? 0) > 0,
+    dueAt: a.due_at ?? null,
+    acceptUntil: a.accept_until ?? null,
   };
 }
 
@@ -167,13 +169,27 @@ const Modules: React.FC = () => {
 
   const handleSaveAssignment = async (
     id: string,
-    data: { name: string; openDate: string; dueDate: string; status: 'draft' | 'published' },
+    data: {
+      name: string;
+      openDate: string;
+      dueDate: string;
+      status: 'draft' | 'published';
+      /** "yyyy-MM-dd HH:mm" in the viewer's local time; null clears the window; undefined leaves it. */
+      acceptUntil?: string | null;
+    },
   ) => {
     await api.updateAssignment(id, {
       title: data.name,
       open_date: data.openDate.split(' ')[0],
       close_date: data.dueDate.split(' ')[0],
       status: data.status === 'published' ? 'publish' : 'draft',
+      // The picker's text is local time, which `new Date('yyyy-MM-ddTHH:mm')` reads as local, so the
+      // instant sent is the one the instructor meant.
+      ...(data.acceptUntil === null
+        ? { clear_accept_until: true }
+        : data.acceptUntil
+          ? { accept_until: new Date(data.acceptUntil.replace(' ', 'T')).toISOString() }
+          : {}),
     });
     await reloadAssignments();
     await refetchTurnInStats();

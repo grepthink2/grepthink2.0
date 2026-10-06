@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { DayPicker } from 'react-day-picker';
 import { format, parse, isValid } from 'date-fns';
@@ -40,6 +40,8 @@ export interface DatePickerFieldProps {
   disabledBefore?: Date;
   /** CSS class applied to the `<label>` element */
   labelClassName?: string;
+  /** Disable the field: the trigger does not open the picker. */
+  disabled?: boolean;
 }
 
 // ── Component ──────────────────────────────────────────────────
@@ -50,7 +52,10 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
   showTime = false,
   disabledBefore,
   labelClassName = 'dpf__label',
+  disabled = false,
 }) => {
+  // Ties the <label> to the trigger, the field's control.
+  const triggerId = useId();
   const [open, setOpen]               = useState(false);
   const [popoverDir, setPopoverDir]   = useState<'down' | 'up'>('down');
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
@@ -160,11 +165,13 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
   // ── Render ────────────────────────────────────────────────────
   return (
     <div className="dpf" ref={containerRef}>
-      <label className={labelClassName}>{label}</label>
+      <label className={labelClassName} htmlFor={triggerId}>{label}</label>
 
       <button
         ref={triggerRef}
+        id={triggerId}
         type="button"
+        disabled={disabled}
         className={[
           'dpf__trigger',
           open  ? 'dpf__trigger--open'   : '',
@@ -177,7 +184,7 @@ const DatePickerField: React.FC<DatePickerFieldProps> = ({
         <CalendarDays size={16} className="dpf__trigger-icon" />
       </button>
 
-      {open &&
+      {open && !disabled &&
         createPortal(
           <div
             ref={popoverRef}

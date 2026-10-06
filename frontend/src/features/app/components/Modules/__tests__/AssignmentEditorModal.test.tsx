@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import AssignmentEditorModal from '../AssignmentEditorModal';
@@ -45,5 +45,43 @@ describe('AssignmentEditorModal', () => {
     await user.clear(nameInput);
     await user.type(nameInput, 'Team Status Report 2 (revised)');
     expect(screen.getByRole('button', { name: 'Save Assignment' })).toBeEnabled();
+  });
+});
+
+describe('AssignmentEditorModal — after the deadline', () => {
+  const PAST: Assignment = {
+    ...TSR_1,
+    dueAt: '2026-10-13T07:00:00+00:00',
+    acceptUntil: null,
+  };
+
+  it('offers a late-submission window instead of a movable due date, and saves it', async () => {
+    vi.useFakeTimers({ now: new Date('2026-10-20T12:00:00Z'), shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const onSave = vi.fn(() => Promise.resolve());
+    render(<AssignmentEditorModal assignment={PAST} onClose={() => {}} onSave={onSave} />);
+
+    expect(screen.getByText(/the deadline has passed/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Due Date & Time')).toBeDisabled();
+    // The backend refuses an unpublish after the deadline, so Draft is not offered.
+    expect(screen.getByRole('button', { name: /^Draft/ })).toBeDisabled();
+
+    // The picker is a calendar popover, not a text box: open it, pick the day, then set the
+    // time in its time box (which starts at 08:00).
+    await user.click(screen.getByLabelText('Accept late submissions until'));
+    await user.click(screen.getByRole('button', { name: /October 22nd, 2026/ }));
+    fireEvent.change(screen.getByDisplayValue('08:00'), { target: { value: '23:59' } });
+    await user.click(screen.getByRole('button', { name: 'Save Assignment' }));
+
+    expect(onSave).toHaveBeenCalledWith('assignment-1', expect.objectContaining({ acceptUntil: '2026-10-22 23:59' }));
+    vi.useRealTimers();
+  });
+
+  it('keeps the due date editable before the deadline', () => {
+    vi.useFakeTimers({ now: new Date('2026-10-10T12:00:00Z') });
+    render(<AssignmentEditorModal assignment={PAST} onClose={() => {}} />);
+    expect(screen.queryByText(/the deadline has passed/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Due Date & Time')).toBeEnabled();
+    vi.useRealTimers();
   });
 });

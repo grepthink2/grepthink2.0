@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useEffectEvent } from 'react';
-import { parse, isValid } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 import { X, FileText, Globe, Trash2 } from 'lucide-react';
 import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
 import { type Assignment, type AssignmentStatus } from './AssignmentList';
@@ -13,13 +13,23 @@ interface AssignmentEditorModalProps {
   onClose: () => void;
   onSave?: (
     id: string,
-    data: { name: string; openDate: string; dueDate: string; status: EditorStatus },
+    data: {
+      name: string;
+      openDate: string;
+      dueDate: string;
+      status: EditorStatus;
+      /** DATETIME_FORMAT text; null clears a window that was set; undefined leaves it untouched. */
+      acceptUntil?: string | null;
+    },
   ) => void | Promise<void>;
   onDelete?: (id: string) => void | Promise<void>;
 }
 
 const toEditorStatus = (s: AssignmentStatus): EditorStatus =>
   s === 'draft' ? 'draft' : 'published';
+
+/** An ISO instant as the picker's DATETIME_FORMAT text, in the viewer's local time. */
+const toPickerText = (iso?: string | null) => (iso ? format(new Date(iso), DATETIME_FORMAT) : '');
 
 // ── Component ──────────────────────────────────────────────────
 const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
@@ -36,6 +46,7 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
   const [status,       setStatus]       = useState<EditorStatus>(() =>
     assignment ? toEditorStatus(assignment.status) : 'published',
   );
+  const [acceptUntil,  setAcceptUntil]  = useState(toPickerText(assignment?.acceptUntil));
   const [isClosing,      setIsClosing]      = useState(false);
   const [isSubmitting,   setIsSubmitting]   = useState(false);
   const [isDeleting,     setIsDeleting]     = useState(false);
@@ -47,6 +58,7 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
   const [origOpenDate, setOrigOpenDate] = useState(openDate);
   const [origDueDate,  setOrigDueDate]  = useState(dueDate);
   const [origStatus,   setOrigStatus]   = useState(status);
+  const [origAcceptUntil, setOrigAcceptUntil] = useState(acceptUntil);
 
   // The modal stays mounted between openings (lazyModal), so load the chosen
   // assignment into the form whenever a different one opens.
@@ -58,21 +70,30 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
       const od = assignment.openDate ?? '';
       const dd = assignment.dueDatetime ?? '';
       const st = toEditorStatus(assignment.status);
+      const au = toPickerText(assignment.acceptUntil);
       setName(n);  setOrigName(n);
       setOpenDate(od); setOrigOpenDate(od);
       setDueDate(dd);  setOrigDueDate(dd);
       setStatus(st);   setOrigStatus(st);
+      setAcceptUntil(au); setOrigAcceptUntil(au);
       setError(null);
       setConfirmDelete(false);
       setIsDeleting(false);
     }
   }
 
+  // A published assignment's deadline is fixed once it passes (the backend refuses a moved due date
+  // or an unpublish), so a late-submission window takes the due date's place. A draft can always be
+  // rescheduled, so it is never frozen.
+  const deadlinePassed =
+    assignment?.status !== 'draft' && Boolean(assignment?.dueAt) && new Date(assignment!.dueAt!) <= new Date();
+
   const isDirty =
     name.trim() !== origName.trim() ||
     openDate    !== origOpenDate    ||
     dueDate     !== origDueDate     ||
-    status      !== origStatus;
+    status      !== origStatus      ||
+    acceptUntil !== origAcceptUntil;
 
   const handleClose = () => {
     setIsClosing(true);
@@ -101,13 +122,20 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
 
     const openParsed = parse(openDate, DATETIME_FORMAT, new Date());
     const dueParsed  = parse(dueDate,  DATETIME_FORMAT, new Date());
-    if (isValid(openParsed) && isValid(dueParsed) && dueParsed < openParsed) {
+    if (!deadlinePassed && isValid(openParsed) && isValid(dueParsed) && dueParsed < openParsed) {
       setError('Due date must be on or after open date'); return;
     }
 
     setIsSubmitting(true);
     try {
-      await onSave?.(assignment!.id, { name: name.trim(), openDate, dueDate, status });
+      await onSave?.(assignment!.id, {
+        name: name.trim(),
+        openDate,
+        dueDate,
+        status,
+        // Typed text sets the window; clearing one that was set removes it; none stays untouched.
+        acceptUntil: acceptUntil ? acceptUntil : origAcceptUntil ? null : undefined,
+      });
       handleClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save assignment');
@@ -183,9 +211,27 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
               value={dueDate}
               onChange={setDueDate}
               showTime
+              disabled={deadlinePassed}
               disabledBefore={openDateObj && isValid(openDateObj) ? openDateObj : undefined}
               labelClassName="aem__sublabel"
             />
+
+            {deadlinePassed && (
+              <>
+                <p className="aem__hint">
+                  The deadline has passed. Set a late-submission window instead of moving the due date; late work
+                  stays marked late.
+                </p>
+                <DatePickerField
+                  label="Accept late submissions until"
+                  value={acceptUntil}
+                  onChange={setAcceptUntil}
+                  showTime
+                  disabledBefore={assignment?.dueAt ? new Date(assignment.dueAt) : undefined}
+                  labelClassName="aem__sublabel"
+                />
+              </>
+            )}
           </div>
 
           {/* Status */}
@@ -196,6 +242,8 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
               type="button"
               className={`aem__status-card ${status === 'draft' ? 'aem__status-card--selected' : ''}`}
               onClick={() => setStatus('draft')}
+              disabled={deadlinePassed}
+              title={deadlinePassed ? 'A closed assignment can no longer be unpublished; delete it instead' : undefined}
             >
               <div className="aem__status-radio">
                 <div className="aem__status-radio-dot" />
