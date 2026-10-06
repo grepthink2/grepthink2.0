@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '@styles/index.scss' as *;
 
 $panel-width: 420px;
@@ -186,7 +187,7 @@ $panel-width: 420px;
   text-align: left;
   @include gt-transition(border-color, background-color);
 
-  &:hover { border-color: darken($border-color, 12%); }
+  &:hover { border-color: color.adjust($border-color, $lightness: -12%); }
   &:focus { outline: none; }
   // After :hover so a disabled card keeps its resting border.
   &:disabled { opacity: 0.5; cursor: not-allowed; border-color: $border-color; }

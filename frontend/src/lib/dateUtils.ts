@@ -17,7 +17,7 @@
  * resolves a zone's UTC offset on the target date (daylight saving included),
  * and date-fns format() handles display.
  */
-import { format } from 'date-fns';
+import { format, isValid, parse } from 'date-fns';
 
 /**
  * Convert a YYYY-MM-DD date string to a JS Date representing 23:59:00
@@ -130,6 +130,28 @@ export function assignmentDeadline(a: AssignmentDates): Date | null {
 export function assignmentClosesAt(a: AssignmentDates): Date | null {
   if (a.accept_until) return new Date(a.accept_until);
   return assignmentDeadline(a);
+}
+
+/**
+ * The status an instructor sees: a draft stays a draft; anything else is closed once submissions
+ * stop (`assignmentClosesAt`: the late window when one is set, else the deadline) and active until then.
+ */
+export function assignmentStatus(
+  a: AssignmentDates & { status?: string | null },
+  now: Date = new Date(),
+): 'draft' | 'active' | 'closed' {
+  if (a.status === 'draft') return 'draft';
+  const closes = assignmentClosesAt(a);
+  return closes && closes <= now ? 'closed' : 'active';
+}
+
+/** The date picker's text (DatePickerField's DATETIME_FORMAT): a wall-clock time in the viewer's zone. */
+const PICKER_TEXT_FORMAT = 'yyyy-MM-dd HH:mm';
+
+/** Date-picker text as an ISO instant, read in the viewer's local time; null when incomplete or malformed. */
+export function pickerTextToIso(text: string): string | null {
+  const parsed = parse(text, PICKER_TEXT_FORMAT, new Date());
+  return isValid(parsed) ? parsed.toISOString() : null;
 }
 
 /** An instant for display, in the viewer's local time: "Oct 7, 2026 at 11:59 PM". */

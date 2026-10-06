@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { assignmentClosesAt, formatDeadline } from '@/lib/dateUtils';
+import { assignmentStatus, formatDeadline, pickerTextToIso } from '@/lib/dateUtils';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import type { ApiAssignment } from '@/lib/api';
 import AddAssignmentButton from '@features/app/components/Modules/AddAssignmentButton';
-import AssignmentList, { type Assignment, type AssignmentStatus } from '@features/app/components/Modules/AssignmentList';
+import AssignmentList, { type Assignment } from '@features/app/components/Modules/AssignmentList';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import AssignmentTurnInRate from '@/features/app/components/Stats/AssignmentTurnInRate';
 // import ProjectHealth, { type ProjectHealthItem } from '@/features/app/components/Stats/ProjectHealth';
@@ -48,16 +48,6 @@ const AssignmentEditorModal = lazyModal(
 // ];
 
 function mapApiAssignment(a: ApiAssignment): Assignment {
-  // Closed once submissions stop: the late window when one is set, else the deadline.
-  const closes = assignmentClosesAt(a);
-  let status: AssignmentStatus;
-  if (a.status === 'draft') {
-    status = 'draft';
-  } else if (closes && closes <= new Date()) {
-    status = 'closed';
-  } else {
-    status = 'active';
-  }
   return {
     id: a.id,
     title: a.Title,
@@ -70,7 +60,7 @@ function mapApiAssignment(a: ApiAssignment): Assignment {
     total: a.assignment_type === 'feedback'
       ? (a.feedback_total ?? 0)
       : (a.teams_total ?? 0),
-    status,
+    status: assignmentStatus(a),
     assignmentType: a.assignment_type,
     hasTsrResponses: a.has_tsr_responses ?? false,
     hasFeedbackResponses: (a.feedback_submitted ?? 0) > 0,
@@ -178,17 +168,18 @@ const Modules: React.FC = () => {
       acceptUntil?: string | null;
     },
   ) => {
+    // The picker's text is the viewer's local time, and pickerTextToIso reads it that way, so the
+    // instant sent is the one the instructor meant.
+    const acceptUntilIso = data.acceptUntil ? pickerTextToIso(data.acceptUntil) : null;
     await api.updateAssignment(id, {
       title: data.name,
       open_date: data.openDate.split(' ')[0],
       close_date: data.dueDate.split(' ')[0],
       status: data.status === 'published' ? 'publish' : 'draft',
-      // The picker's text is local time, which `new Date('yyyy-MM-ddTHH:mm')` reads as local, so the
-      // instant sent is the one the instructor meant.
       ...(data.acceptUntil === null
         ? { clear_accept_until: true }
-        : data.acceptUntil
-          ? { accept_until: new Date(data.acceptUntil.replace(' ', 'T')).toISOString() }
+        : acceptUntilIso
+          ? { accept_until: acceptUntilIso }
           : {}),
     });
     await reloadAssignments();

@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import AssignmentEditorModal from '../AssignmentEditorModal';
 import type { Assignment } from '../AssignmentList';
 
@@ -55,6 +55,10 @@ describe('AssignmentEditorModal — after the deadline', () => {
     acceptUntil: null,
   };
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('offers a late-submission window instead of a movable due date, and saves it', async () => {
     vi.useFakeTimers({ now: new Date('2026-10-20T12:00:00Z'), shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
@@ -65,6 +69,10 @@ describe('AssignmentEditorModal — after the deadline', () => {
     expect(screen.getByLabelText('Due Date & Time')).toBeDisabled();
     // The backend refuses an unpublish after the deadline, so Draft is not offered.
     expect(screen.getByRole('button', { name: /^Draft/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Draft/ })).toHaveAttribute(
+      'title',
+      'A closed assignment can no longer be unpublished; delete it instead',
+    );
     // No window is saved yet, so there is nothing to remove.
     expect(screen.queryByRole('button', { name: 'Remove late window' })).not.toBeInTheDocument();
 
@@ -75,8 +83,13 @@ describe('AssignmentEditorModal — after the deadline', () => {
     fireEvent.change(screen.getByDisplayValue('08:00'), { target: { value: '23:59' } });
     await user.click(screen.getByRole('button', { name: 'Save Assignment' }));
 
-    expect(onSave).toHaveBeenCalledWith('assignment-1', expect.objectContaining({ acceptUntil: '2026-10-22 23:59' }));
-    vi.useRealTimers();
+    // The frozen due date and the status go back exactly as loaded: the backend refuses a moved due
+    // date or an unpublish once the deadline has passed. 'published' is the editor's value for any
+    // non-draft assignment.
+    expect(onSave).toHaveBeenCalledWith(
+      'assignment-1',
+      expect.objectContaining({ acceptUntil: '2026-10-22 23:59', dueDate: PAST.dueDatetime, status: 'published' }),
+    );
   });
 
   it('removes a saved late window', async () => {
@@ -95,7 +108,6 @@ describe('AssignmentEditorModal — after the deadline', () => {
     await user.click(screen.getByRole('button', { name: 'Save Assignment' }));
 
     expect(onSave).toHaveBeenCalledWith('assignment-1', expect.objectContaining({ acceptUntil: null }));
-    vi.useRealTimers();
   });
 
   it('keeps the open date from passing a frozen due date', async () => {
@@ -111,7 +123,56 @@ describe('AssignmentEditorModal — after the deadline', () => {
 
     expect(screen.getByText('Due date must be on or after open date')).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
-    vi.useRealTimers();
+  });
+
+  it('never freezes a draft, even past its due date', () => {
+    vi.useFakeTimers({ now: new Date('2026-10-20T12:00:00Z') });
+    render(<AssignmentEditorModal assignment={{ ...PAST, status: 'draft' }} onClose={() => {}} />);
+
+    expect(screen.queryByText(/the deadline has passed/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Due Date & Time')).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^Draft/ })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Remove late window' })).not.toBeInTheDocument();
+  });
+
+  it('refuses an incomplete late-submission date & time', async () => {
+    vi.useFakeTimers({ now: new Date('2026-10-20T12:00:00Z'), shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const onSave = vi.fn(() => Promise.resolve());
+    render(<AssignmentEditorModal assignment={PAST} onClose={() => {}} onSave={onSave} />);
+
+    // Clearing the time box after picking the day leaves "2026-10-22 " in the field.
+    await user.click(screen.getByLabelText('Accept late submissions until'));
+    await user.click(screen.getByRole('button', { name: /October 22nd, 2026/ }));
+    fireEvent.change(screen.getByDisplayValue('08:00'), { target: { value: '' } });
+    await user.click(screen.getByRole('button', { name: 'Save Assignment' }));
+
+    expect(screen.getByText('Late-submission date & time is incomplete')).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('leaves an unchanged late window out of the save', async () => {
+    vi.useFakeTimers({ now: new Date('2026-10-20T12:00:00Z'), shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const onSave = vi.fn<(id: string, data: { acceptUntil?: string | null }) => Promise<void>>(() =>
+      Promise.resolve(),
+    );
+    render(
+      <AssignmentEditorModal
+        assignment={{ ...PAST, acceptUntil: '2026-10-22T06:59:00+00:00' }}
+        onClose={() => {}}
+        onSave={onSave}
+      />,
+    );
+
+    const nameInput = screen.getByLabelText('Assignment Name');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Team Status Report 1 (late)');
+    await user.click(screen.getByRole('button', { name: 'Save Assignment' }));
+
+    // An untouched saved window is never re-sent, so its seconds survive and the backend writes nothing.
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave.mock.lastCall?.[1].acceptUntil).toBeUndefined();
   });
 
   it('keeps the due date editable before the deadline', () => {
@@ -119,6 +180,5 @@ describe('AssignmentEditorModal — after the deadline', () => {
     render(<AssignmentEditorModal assignment={PAST} onClose={() => {}} />);
     expect(screen.queryByText(/the deadline has passed/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText('Due Date & Time')).toBeEnabled();
-    vi.useRealTimers();
   });
 });

@@ -1,6 +1,6 @@
 import { format, parseISO } from 'date-fns';
 import type { ApiAssignment, ApiProject, ApiRosterStudent } from '@/lib/api';
-import { assignmentClosesAt } from '@/lib/dateUtils';
+import { assignmentStatus } from '@/lib/dateUtils';
 import type {
   ProjectHealthItem,
   HealthStatus,
@@ -74,23 +74,13 @@ export interface DashboardAssignment {
 
 /** Map an API assignment to a dashboard row with a derived status pill. */
 export function mapDashboardAssignment(a: ApiAssignment): DashboardAssignment {
-  // Closed once submissions stop: the late window when one is set, else the deadline.
-  const closes = assignmentClosesAt(a);
-  let status: AssignmentStatus;
-  if (a.status === 'draft') {
-    status = 'draft';
-  } else if (closes && closes <= new Date()) {
-    status = 'closed';
-  } else {
-    status = 'active';
-  }
   const isFeedback = a.assignment_type === 'feedback';
   return {
     id: a.id,
     title: a.Title,
     dueLabel: format(parseISO(a.close_date), 'MMM d, yyyy'),
     closeDate: a.close_date,
-    status,
+    status: assignmentStatus(a),
     submitted: isFeedback ? (a.feedback_submitted ?? 0) : (a.teams_submitted ?? 0),
     total: isFeedback ? (a.feedback_total ?? 0) : (a.teams_total ?? 0),
     assignmentType: a.assignment_type,

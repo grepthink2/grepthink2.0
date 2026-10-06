@@ -2,6 +2,7 @@ import React, { useState, useEffect, useEffectEvent } from 'react';
 import { format, parse, isValid } from 'date-fns';
 import { X, FileText, Globe, Trash2 } from 'lucide-react';
 import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
+import { pickerTextToIso } from '@/lib/dateUtils';
 import { type Assignment, type AssignmentStatus } from './AssignmentList';
 import './AssignmentEditorModal.scss';
 
@@ -125,6 +126,10 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
     if (isValid(openParsed) && isValid(dueParsed) && dueParsed < openParsed) {
       setError('Due date must be on or after open date'); return;
     }
+    // A cleared time box leaves the day alone in the field ("2026-10-22 ").
+    if (acceptUntil && pickerTextToIso(acceptUntil) === null) {
+      setError('Late-submission date & time is incomplete'); return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -133,8 +138,9 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
         openDate,
         dueDate,
         status,
-        // Typed text sets the window; clearing one that was set removes it; none stays untouched.
-        acceptUntil: acceptUntil ? acceptUntil : origAcceptUntil ? null : undefined,
+        // Only a changed window is sent: new text sets it, an emptied one (null) clears the saved
+        // window, and an untouched one is left out so it is never rewritten.
+        acceptUntil: acceptUntil === origAcceptUntil ? undefined : acceptUntil ? acceptUntil : null,
       });
       handleClose();
     } catch (err) {

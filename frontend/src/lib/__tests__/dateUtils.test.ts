@@ -1,11 +1,15 @@
+import { format } from 'date-fns';
 import { describe, expect, it } from 'vitest';
+import { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
 import {
   assignmentClosesAt,
   assignmentDeadline,
   assignmentOpensAt,
+  assignmentStatus,
   formatAssignmentDueDate,
   formatDeadline,
   formatInstant,
+  pickerTextToIso,
   startOfDayIn,
 } from '@/lib/dateUtils';
 
@@ -92,5 +96,55 @@ describe('dateUtils — the opening instant', () => {
   it("assignmentOpensAt opens at midnight in the school's zone", () => {
     const a = { open_date: '2026-10-05', close_date: '2026-10-07' };
     expect(assignmentOpensAt(a, 'Europe/Istanbul')?.toISOString()).toBe('2026-10-04T21:00:00.000Z');
+  });
+});
+
+describe('dateUtils — assignment status', () => {
+  const PUBLISHED = {
+    open_date: '2026-10-05',
+    close_date: '2026-10-12',
+    due_at: '2026-10-13T07:00:00+00:00',
+    status: 'publish',
+  };
+
+  it('keeps a draft a draft, whatever the time', () => {
+    expect(assignmentStatus({ ...PUBLISHED, status: 'draft' }, new Date('2026-10-20T12:00:00Z'))).toBe('draft');
+  });
+
+  it('is active before the deadline and closed from that moment', () => {
+    expect(assignmentStatus(PUBLISHED, new Date('2026-10-13T06:59:59Z'))).toBe('active');
+    expect(assignmentStatus(PUBLISHED, new Date('2026-10-13T07:00:00Z'))).toBe('closed');
+  });
+
+  it('stays active inside the late window', () => {
+    const late = { ...PUBLISHED, accept_until: '2026-10-22T06:59:00+00:00' };
+    expect(assignmentStatus(late, new Date('2026-10-20T12:00:00Z'))).toBe('active');
+  });
+
+  it('is closed once the late window has ended', () => {
+    const late = { ...PUBLISHED, accept_until: '2026-10-22T06:59:00+00:00' };
+    expect(assignmentStatus(late, new Date('2026-10-22T06:59:00Z'))).toBe('closed');
+  });
+
+  it('uses 11:59 PM Pacific on close_date when due_at is missing', () => {
+    const legacy = { open_date: '2026-10-05', close_date: '2026-10-12', status: 'publish' };
+    expect(assignmentStatus(legacy, new Date('2026-10-13T06:58:59Z'))).toBe('active');
+    expect(assignmentStatus(legacy, new Date('2026-10-13T06:59:00Z'))).toBe('closed');
+  });
+});
+
+describe('dateUtils — picker text', () => {
+  it('reads complete picker text as the viewer\'s local time', () => {
+    expect(pickerTextToIso('2026-10-22 23:59')).toBe(new Date(2026, 9, 22, 23, 59).toISOString());
+  });
+
+  it('reads the date picker\'s own format', () => {
+    const when = new Date(2026, 9, 7, 9, 5);
+    expect(pickerTextToIso(format(when, DATETIME_FORMAT))).toBe(when.toISOString());
+  });
+
+  it('returns null for incomplete or malformed text', () => {
+    expect(pickerTextToIso('2026-10-22 ')).toBeNull();
+    expect(pickerTextToIso('2026-10-22 2:')).toBeNull();
   });
 });
