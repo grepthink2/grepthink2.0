@@ -137,6 +137,24 @@ $panel-width: 420px;
   margin: 4px 0 12px;
 }
 
+// Text button under the late-window picker; hover takes Delete's error color.
+.aem__remove-window-btn {
+  align-self: flex-start;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  color: $text-secondary;
+  text-decoration: underline;
+  cursor: pointer;
+  @include gt-transition(color);
+
+  &:hover { color: var(--gt-error); }
+  &:focus { outline: none; }
+  // The global :focus-visible rule (index.css) still draws the keyboard ring.
+}
+
 // ── Text input ─────────────────────────────────────────────────
 .aem__input {
   width: 100%;

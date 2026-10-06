@@ -65,6 +65,8 @@ describe('AssignmentEditorModal — after the deadline', () => {
     expect(screen.getByLabelText('Due Date & Time')).toBeDisabled();
     // The backend refuses an unpublish after the deadline, so Draft is not offered.
     expect(screen.getByRole('button', { name: /^Draft/ })).toBeDisabled();
+    // No window is saved yet, so there is nothing to remove.
+    expect(screen.queryByRole('button', { name: 'Remove late window' })).not.toBeInTheDocument();
 
     // The picker is a calendar popover, not a text box: open it, pick the day, then set the
     // time in its time box (which starts at 08:00).
@@ -74,6 +76,41 @@ describe('AssignmentEditorModal — after the deadline', () => {
     await user.click(screen.getByRole('button', { name: 'Save Assignment' }));
 
     expect(onSave).toHaveBeenCalledWith('assignment-1', expect.objectContaining({ acceptUntil: '2026-10-22 23:59' }));
+    vi.useRealTimers();
+  });
+
+  it('removes a saved late window', async () => {
+    vi.useFakeTimers({ now: new Date('2026-10-20T12:00:00Z'), shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const onSave = vi.fn(() => Promise.resolve());
+    render(
+      <AssignmentEditorModal
+        assignment={{ ...PAST, acceptUntil: '2026-10-22T06:59:00+00:00' }}
+        onClose={() => {}}
+        onSave={onSave}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Remove late window' }));
+    await user.click(screen.getByRole('button', { name: 'Save Assignment' }));
+
+    expect(onSave).toHaveBeenCalledWith('assignment-1', expect.objectContaining({ acceptUntil: null }));
+    vi.useRealTimers();
+  });
+
+  it('keeps the open date from passing a frozen due date', async () => {
+    vi.useFakeTimers({ now: new Date('2026-10-20T12:00:00Z'), shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const onSave = vi.fn(() => Promise.resolve());
+    render(<AssignmentEditorModal assignment={PAST} onClose={() => {}} onSave={onSave} />);
+
+    // The open date's calendar starts on its own month, October 2026: move it past the Oct 12 due date.
+    await user.click(screen.getByLabelText('Open Date & Time'));
+    await user.click(screen.getByRole('button', { name: /October 15th, 2026/ }));
+    await user.click(screen.getByRole('button', { name: 'Save Assignment' }));
+
+    expect(screen.getByText('Due date must be on or after open date')).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
 

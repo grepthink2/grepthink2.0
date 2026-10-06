@@ -122,7 +122,7 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
 
     const openParsed = parse(openDate, DATETIME_FORMAT, new Date());
     const dueParsed  = parse(dueDate,  DATETIME_FORMAT, new Date());
-    if (!deadlinePassed && isValid(openParsed) && isValid(dueParsed) && dueParsed < openParsed) {
+    if (isValid(openParsed) && isValid(dueParsed) && dueParsed < openParsed) {
       setError('Due date must be on or after open date'); return;
     }
 
@@ -230,6 +230,15 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
                   disabledBefore={assignment?.dueAt ? new Date(assignment.dueAt) : undefined}
                   labelClassName="aem__sublabel"
                 />
+                {acceptUntil && (
+                  <button
+                    type="button"
+                    className="aem__remove-window-btn"
+                    onClick={() => setAcceptUntil('')}
+                  >
+                    Remove late window
+                  </button>
+                )}
               </>
             )}
           </div>
