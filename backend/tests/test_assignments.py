@@ -527,3 +527,51 @@ def test_clearing_the_late_window(db, clock):
         INSTR, A_TSR, None, None, None, None, clear_accept_until=True
     )
     assert row["accept_until"] is None
+
+
+def test_late_window_is_checked_against_the_rescheduled_deadline(db, clock):
+    # One request moves the due date to Jan 15 (due_at Jan 16 08:00 UTC) and sets a window on
+    # Jan 12: after the OLD deadline, before the NEW one — it must be refused, nothing written.
+    clock(NOW_BEFORE)
+    late = dt.datetime(2026, 1, 12, 8, 0, tzinfo=dt.UTC)
+    with pytest.raises(HTTPException) as exc:
+        assignments.update_assignment(
+            INSTR, A_TSR, None, None, dt.date(2026, 1, 15), None, accept_until=late
+        )
+    assert (exc.value.status_code, exc.value.detail) == (
+        400,
+        assignments.ACCEPT_UNTIL_BEFORE_DEADLINE,
+    )
+    assert db.rows("assignments")[0]["close_date"] == "2026-01-08"
+
+
+def test_reschedule_past_a_late_window_drops_it(db, clock):
+    clock(NOW_BEFORE)
+    db.rows("assignments")[0]["accept_until"] = "2026-01-12T08:00:00+00:00"
+    row = assignments.update_assignment(INSTR, A_TSR, None, None, dt.date(2026, 1, 20), None)
+    assert (row["due_at"], row["accept_until"]) == ("2026-01-21T08:00:00+00:00", None)
+
+
+def test_reschedule_before_a_late_window_keeps_it(db, clock):
+    clock(NOW_BEFORE)
+    db.rows("assignments")[0]["accept_until"] = "2026-01-12T08:00:00+00:00"
+    row = assignments.update_assignment(INSTR, A_TSR, None, None, dt.date(2026, 1, 10), None)
+    assert (row["due_at"], row["accept_until"]) == (
+        "2026-01-11T08:00:00+00:00",
+        "2026-01-12T08:00:00+00:00",
+    )
+
+
+def test_resending_the_same_late_window_is_not_a_reopening(db, clock):
+    # The editor re-sends the window it loaded on every save.
+    clock(NOW_AFTER)
+    db.rows("assignments")[0]["accept_until"] = "2026-01-12T08:00:00+00:00"
+    same = dt.datetime(2026, 1, 12, 8, 0, tzinfo=dt.UTC)
+    row = assignments.update_assignment(
+        INSTR, A_TSR, "TSR 1 (renamed)", None, None, None, accept_until=same
+    )
+    assert row["accept_until"] == "2026-01-12T08:00:00+00:00"
+    assert db.rows("events") == []
+    later = dt.datetime(2026, 1, 14, 8, 0, tzinfo=dt.UTC)
+    assignments.update_assignment(INSTR, A_TSR, None, None, None, None, accept_until=later)
+    assert [e["kind"] for e in db.rows("events")] == ["assignment_reopened"]

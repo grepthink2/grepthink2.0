@@ -257,24 +257,39 @@ def update_assignment(
         tz = institution_timezone(cls.get("institution_id"))
         now = deadlines.now_utc()
         current_due_at = deadlines.parse_ts(assignment.get("due_at"))
+        current_accept_until = deadlines.parse_ts(assignment.get("accept_until"))
         deadline_passed = current_due_at is not None and now >= current_due_at
+        # The deadline every later check compares against: the new one when this request moves it.
+        effective_due_at = current_due_at
         if close_date is not None and close_date.isoformat() != assignment.get("close_date"):
             if deadline_passed:
                 raise HTTPException(status_code=400, detail=DEADLINE_PASSED)
             updates["close_date"] = close_date.isoformat()
-            new_due_at = deadlines.due_at_for(close_date, tz)
-            updates["due_at"] = new_due_at.isoformat() if new_due_at else None
+            effective_due_at = deadlines.due_at_for(close_date, tz)
+            updates["due_at"] = effective_due_at.isoformat() if effective_due_at else None
+            # A late window the new deadline has reached or passed would close the assignment
+            # before its deadline: drop it (unless this request also sets a new one, checked below).
+            if (
+                accept_until is None
+                and current_accept_until is not None
+                and effective_due_at is not None
+                and current_accept_until <= effective_due_at
+            ):
+                updates["accept_until"] = None
         reopened = False
         if accept_until is not None:
-            if current_due_at is None:
+            if effective_due_at is None:
                 raise HTTPException(status_code=400, detail=NO_DEADLINE_TO_EXTEND)
             if accept_until.tzinfo is None:
                 accept_until = accept_until.replace(tzinfo=datetime.UTC)
-            if accept_until <= current_due_at:
+            accept_until = accept_until.astimezone(datetime.UTC)
+            if accept_until <= effective_due_at:
                 raise HTTPException(status_code=400, detail=ACCEPT_UNTIL_BEFORE_DEADLINE)
-            updates["accept_until"] = accept_until.astimezone(datetime.UTC).isoformat()
-            reopened = True
-        elif clear_accept_until:
+            # The editor re-sends the window it loaded; an unchanged value is not a reopening.
+            if accept_until != current_accept_until:
+                updates["accept_until"] = accept_until.isoformat()
+                reopened = True
+        elif clear_accept_until and current_accept_until is not None:
             updates["accept_until"] = None
         if status is not None:
             updates["status"] = status
