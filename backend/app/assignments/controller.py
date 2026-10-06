@@ -156,7 +156,7 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
     Always includes tsr_id, evaluator_id, evaluator_name, evaluatee_name,
     percent_contribution, positive_feedback, constructive_feedback, and
     Scrum Master fields, plus submitted_at (the row's created_at) and
-    updated_at, which are None when the caller's select omits those columns.
+    updated_at; every caller's rows include both columns.
     """
     evaluator_profile = profile_map.get(row["evaluator_id"], {})
     evaluatee_profile = profile_map.get(row["evaluatee_id"], {})
@@ -680,10 +680,9 @@ def update_tsr_entry(
                 .limit(1)
                 .execute()
             ).data
-            if window:
-                _require_window_open(
-                    window[0], (window[0].get("classes") or {}).get("institution_id")
-                )
+            if not window:  # deleted since the TSR read: fail closed rather than skip the check
+                raise HTTPException(status_code=404, detail="Assignment not found")
+            _require_window_open(window[0], (window[0].get("classes") or {}).get("institution_id"))
 
         result = client.table("TSRs").update(updates).eq("id", str(tsr_id)).execute()
         if not result.data:
@@ -808,7 +807,7 @@ def get_tsr_responses_about_user(
             .select(
                 "id, evaluator_id, evaluatee_id, percent_contribution, "
                 "positive_feedback, constructive_feedback, scrum_master_tickets, "
-                "scrum_master_assessment, scrum_master_notes"
+                "scrum_master_assessment, scrum_master_notes, created_at, updated_at"
             )
             .eq("assignment_id", str(assignment_id))
             .eq("evaluatee_id", str(evaluatee_id))
@@ -971,7 +970,6 @@ def submit_feedback(
             raise HTTPException(status_code=400, detail="Assignment is not a feedback assignment")
         if assignment.get("status") != "publish":
             raise HTTPException(status_code=400, detail="Assignment is not published")
-        _require_window_open(assignment, (assignment.get("classes") or {}).get("institution_id"))
 
         enrollment = (
             client.table("class_enrollments")
@@ -982,6 +980,8 @@ def submit_feedback(
         )
         if not enrollment.data:
             raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
+        # Only after every permission check: an outsider gets NOT_ENROLLED, never the window state.
+        _require_window_open(assignment, (assignment.get("classes") or {}).get("institution_id"))
 
         row = {
             "assignment_id": str(assignment_id),
