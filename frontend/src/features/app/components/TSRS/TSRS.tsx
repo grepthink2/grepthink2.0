@@ -202,6 +202,13 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
   const currentUser   = members.find((m) => m.isCurrentUser);
   const isScrumMaster = currentUser?.isScrumMaster ?? false;
 
+  // Late = first submitted at or after the deadline: the server closes on-time submissions at
+  // due_at exactly. Editing later does not change submitted_at.
+  const dueAt = assignment.dueAt ? new Date(assignment.dueAt) : null;
+  const submittedLate = priorEntries.some(
+    (e) => e.submitted_at && dueAt && new Date(e.submitted_at) >= dueAt,
+  );
+
   const contributionsTotal = Object.values(contributions).reduce((s, v) => s + v, 0);
 
   // Whenever the open tab, the contribution total or the feedback changes, mark
@@ -393,6 +400,8 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
           You are editing your previous submission. Save to update your answers.
         </div>
       )}
+
+      {submittedLate && <p className="tsrs__late-note">Submitted after the deadline</p>}
 
       <TsrsStepper
         activeTab={activeTab}

@@ -12,12 +12,17 @@ import {
 } from 'lucide-react';
 import {
   differenceInCalendarDays,
-  format,
   parseISO,
   startOfDay,
 } from 'date-fns';
-import { formatAssignmentDueDate } from '@/lib/dateUtils';
+import {
+  assignmentClosesAt,
+  assignmentDeadline,
+  assignmentOpensAt,
+  formatDeadline,
+} from '@/lib/dateUtils';
 import { useClass } from '@/lib/classContext';
+import { useSchoolTimezone } from '@/lib/institutions';
 import { useUser } from '@/lib/auth';
 import { emptyMySubmissions, api, type ApiAssignment } from '@/lib/api';
 import {
@@ -94,9 +99,15 @@ function parseLocalAssignmentDate(iso: string): Date {
   return parseISO(iso);
 }
 
-/** Display string for assignment due date, pinned to 11:59 PM PST → local time. */
-function formatDueLabel(closeDate: string): string {
-  return formatAssignmentDueDate(closeDate);
+/** Display string for the assignment's deadline, in the viewer's local time. */
+function formatDueLabel(a: ApiAssignment): string {
+  return formatDeadline(a);
+}
+
+/** True once submissions are no longer accepted: the late window's end, else the deadline. */
+function hasClosed(a: ApiAssignment, now: Date): boolean {
+  const closes = assignmentClosesAt(a);
+  return closes !== null && now >= closes;
 }
 
 function initialsFromName(
@@ -134,23 +145,31 @@ function displayNameFromParts(
     .join(' ');
 }
 
+/**
+ * Open and closed are decided on instants, as the server decides them: open from midnight of the
+ * open day in the school's `zone`, closed from the late window's end, else the deadline. "Due
+ * soon" still counts calendar days to the close date.
+ */
 function computeDeadlineStatus(params: {
   assignment: ApiAssignment;
   allPairsSubmitted: boolean;
   anySubmitted: boolean;
+  now: Date;
+  zone: string;
 }): DeadlineDisplayStatus | null {
-  const today = startOfDay(new Date());
-  const closeDay = startOfDay(parseLocalAssignmentDate(params.assignment.close_date));
+  const { assignment, now } = params;
+  const closed = hasClosed(assignment, now);
 
   if (params.allPairsSubmitted) {
-    if (closeDay >= today) return 'completed';
+    if (!closed) return 'completed';
     return null;
   }
 
-  const openDay = startOfDay(parseLocalAssignmentDate(params.assignment.open_date));
+  const today = startOfDay(now);
+  const closeDay = startOfDay(parseLocalAssignmentDate(assignment.close_date));
   const daysToClose = differenceInCalendarDays(closeDay, today);
 
-  if (daysToClose < 0) {
+  if (closed) {
     return 'due_soon';
   }
   if (daysToClose <= 7) {
@@ -159,7 +178,8 @@ function computeDeadlineStatus(params: {
   if (params.anySubmitted && !params.allPairsSubmitted) {
     return 'in_progress';
   }
-  if (openDay <= today && today <= closeDay) {
+  const opens = assignmentOpensAt(assignment, params.zone);
+  if (opens === null || now >= opens) {
     return 'in_progress';
   }
   return 'not_started';
@@ -170,9 +190,9 @@ function buildDeadlineRows(
   myClassProjects: { id: string; name: string }[],
   tsrsByProject: Record<string, string[]>,
   courseLabel: string,
+  now: Date,
+  zone: string,
 ): DeadlineRow[] {
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-
   type Internal = DeadlineRow & { closeMs: number };
   const rows: Internal[] = [];
 
@@ -184,18 +204,20 @@ function buildDeadlineRows(
         assignment: a,
         allPairsSubmitted,
         anySubmitted,
+        now,
+        zone,
       });
       if (st === null) continue;
-      if (assignmentDatePart(a.close_date) < todayStr) continue;
+      if (hasClosed(a, now)) continue;
       rows.push({
         id: a.id,
         name: a.Title,
         courseLabel,
-        dueLabel: formatDueLabel(a.close_date),
+        dueLabel: formatDueLabel(a),
         status: st,
         highlight: false,
         assignmentType: a.assignment_type,
-        closeMs: parseLocalAssignmentDate(a.close_date).getTime(),
+        closeMs: assignmentDeadline(a)?.getTime() ?? parseLocalAssignmentDate(a.close_date).getTime(),
       });
       continue;
     }
@@ -205,26 +227,26 @@ function buildDeadlineRows(
     );
     const allPairsSubmitted = submittedFlags.every(Boolean);
     const anySubmitted = submittedFlags.some(Boolean);
-    const st = computeDeadlineStatus({ assignment: a, allPairsSubmitted, anySubmitted });
+    const st = computeDeadlineStatus({ assignment: a, allPairsSubmitted, anySubmitted, now, zone });
     if (st === null) continue;
 
     const pickProjectIdx = submittedFlags.findIndex((s) => !s);
     const projIdx = pickProjectIdx >= 0 ? pickProjectIdx : 0;
     const proj = myClassProjects[projIdx];
 
-    if (assignmentDatePart(a.close_date) < todayStr && allPairsSubmitted) continue;
+    if (hasClosed(a, now) && allPairsSubmitted) continue;
 
     rows.push({
       id: a.id,
       name: a.Title,
       courseLabel,
-      dueLabel: formatDueLabel(a.close_date),
+      dueLabel: formatDueLabel(a),
       status: st,
       projectId: proj.id,
       projectName: proj.name,
       highlight: false,
       assignmentType: a.assignment_type,
-      closeMs: parseLocalAssignmentDate(a.close_date).getTime(),
+      closeMs: assignmentDeadline(a)?.getTime() ?? parseLocalAssignmentDate(a.close_date).getTime(),
     });
   }
 
@@ -299,6 +321,7 @@ const StudentHomeDashboard: React.FC = () => {
   const location = useLocation();
   const { openJoinClassModal } = useOutletContext<AppOutletContext>();
   const { selectedClass } = useClass();
+  const zone = useSchoolTimezone(selectedClass?.institution?.id);
   const { user } = useUser();
 
   const classId = selectedClass?.id;
@@ -313,6 +336,7 @@ const StudentHomeDashboard: React.FC = () => {
   const [loadedDeadlines, setLoadedDeadlines] = useState<{
     teams: ClassTeams;
     courseLabel: string;
+    zone: string;
     rows: DeadlineRow[];
   } | null>(null);
   const [loadedMembers, setLoadedMembers] = useState<{
@@ -381,7 +405,8 @@ const StudentHomeDashboard: React.FC = () => {
   const deadlinesCurrent =
     loadedDeadlines !== null &&
     loadedDeadlines.teams === teamsForClass &&
-    loadedDeadlines.courseLabel === courseLabel;
+    loadedDeadlines.courseLabel === courseLabel &&
+    loadedDeadlines.zone === zone;
   const deadlineRows = deadlinesCurrent ? loadedDeadlines.rows : NO_DEADLINES;
   const deadlinesLoading = classId !== undefined && !deadlinesCurrent;
 
@@ -442,10 +467,17 @@ const StudentHomeDashboard: React.FC = () => {
 
         if (cancelled) return;
 
-        const rows = buildDeadlineRows(assignments, teams.projects, tsrsByProject, courseLabel);
-        setLoadedDeadlines({ teams, courseLabel, rows });
+        const rows = buildDeadlineRows(
+          assignments,
+          teams.projects,
+          tsrsByProject,
+          courseLabel,
+          new Date(),
+          zone,
+        );
+        setLoadedDeadlines({ teams, courseLabel, zone, rows });
       } catch {
-        if (!cancelled) setLoadedDeadlines({ teams, courseLabel, rows: [] });
+        if (!cancelled) setLoadedDeadlines({ teams, courseLabel, zone, rows: [] });
       }
     };
 
@@ -453,7 +485,7 @@ const StudentHomeDashboard: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [classId, courseLabel, teamsForClass]);
+  }, [classId, courseLabel, teamsForClass, zone]);
 
   useEffect(() => {
     if (!classId) return;

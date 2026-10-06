@@ -19,6 +19,8 @@ interface AssignmentDetailState {
   projectName?: string;
   projectId?: string;
   isSubmitted?: boolean;
+  /** The deadline instant (`due_at`), when the backend sent one. */
+  dueAt?: string | null;
 }
 
 const AssignmentDetail: React.FC = () => {
@@ -36,6 +38,7 @@ const AssignmentDetail: React.FC = () => {
   const projectName     = stateData.projectName     ?? '';
   const projectId       = stateData.projectId       ?? '';
   const isSubmitted     = stateData.isSubmitted     ?? false;
+  const dueAt           = stateData.dueAt           ?? null;
 
   if (!selectedClass) {
     return (
@@ -54,6 +57,7 @@ const AssignmentDetail: React.FC = () => {
     dueDate,
     projectName,
     projectId,
+    dueAt,
   };
 
   const interestAssignment: InterestFormAssignment = {

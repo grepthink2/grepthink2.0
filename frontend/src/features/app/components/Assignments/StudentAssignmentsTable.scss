@@ -102,6 +102,13 @@
   white-space: nowrap;
 }
 
+// Under the due date while the late window is open.
+.student-assignments__late {
+  display: block;
+  color: var(--gt-warning-text);
+  font-size: var(--gt-text-caption);
+}
+
 .student-assignments__td-project {
   color: $text-primary;
 }

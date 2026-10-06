@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { formatAssignmentDueDate } from '@/lib/dateUtils';
+import React, { useState, useEffect, useMemo } from 'react';
+import { formatDeadline, formatInstant } from '@/lib/dateUtils';
 import { useNavigate } from 'react-router-dom';
 import { useClass } from '@/lib/classContext';
 import {
@@ -10,43 +9,20 @@ import {
   type ApiMySubmissions,
   type ApiProject,
 } from '@/lib/api';
+import { useSchoolTimezone } from '@/lib/institutions';
 import { usePreview } from '@/lib/previewContext';
 import StudentAssignmentsTable, {
   type StudentAssignment,
-  type StudentAssignmentAction,
-  type StudentAssignmentStatus,
   type AssignmentType,
 } from '../components/Assignments/StudentAssignmentsTable';
+import { resolveAssignmentState } from '../utils/assignmentState';
 import { TableSkeleton } from '@/components/Skeleton/TableSkeleton';
 import './Assignments.scss';
 
-function resolveAssignmentState(
-  openDate: string,
-  closeDate: string,
-  today: string,
-  isSubmitted: boolean,
-  canStart: boolean,
-): { status: StudentAssignmentStatus; action: StudentAssignmentAction } {
-  const status: StudentAssignmentStatus = isSubmitted ? 'submitted' : 'not_started';
-
-  if (today < openDate) {
-    return { status, action: 'opens_later' };
-  }
-  if (closeDate < today) {
-    return { status, action: 'closed' };
-  }
-  if (!canStart) {
-    return { status, action: 'closed' };
-  }
-  if (isSubmitted) {
-    return { status: 'submitted', action: 'edit_submission' };
-  }
-  return { status: 'not_started', action: 'start' };
-}
-
 function toStudentRow(
   a: ApiAssignment,
-  today: string,
+  now: Date,
+  zone: string,
   opts: {
     projectName: string;
     projectId?: string;
@@ -55,18 +31,20 @@ function toStudentRow(
     canStart: boolean;
   },
 ): StudentAssignment {
-  const { status, action } = resolveAssignmentState(
-    a.open_date,
-    a.close_date,
-    today,
+  const { status, action, lateUntil } = resolveAssignmentState(
+    a,
+    now,
     opts.isSubmitted,
     opts.canStart,
+    zone,
   );
   return {
     id: a.id,
     name: a.Title,
-    dueDate: formatAssignmentDueDate(a.close_date),
-    dueDateIso: a.close_date,
+    dueDate: formatDeadline(a),
+    dueDateIso: a.due_at ?? a.close_date,
+    dueAt: a.due_at ?? null,
+    lateUntil: lateUntil ? formatInstant(lateUntil) : undefined,
     projectName: opts.projectName,
     projectId: opts.projectId,
     status,
@@ -78,7 +56,8 @@ function toStudentRow(
 }
 
 interface RowSources {
-  today: string;
+  /** When the data was read: decides which assignments are open. */
+  now: Date;
   /** Sorted by close date. */
   assignments: ApiAssignment[];
   /** The student's teams in this class. */
@@ -87,7 +66,8 @@ interface RowSources {
 }
 
 function buildRows(
-  { today, assignments, myClassProjects, mySubmissions }: RowSources,
+  { now, assignments, myClassProjects, mySubmissions }: RowSources,
+  zone: string,
   isPreviewing: boolean,
 ): StudentAssignment[] {
   if (assignments.length === 0) {
@@ -99,7 +79,7 @@ function buildRows(
       const isInterestForm = a.assignment_type === 'interest_form';
       const isFeedback = a.assignment_type === 'feedback';
       const isTsr = !isInterestForm && !isFeedback;
-      return toStudentRow(a, today, {
+      return toStudentRow(a, now, zone, {
         projectName: isPreviewing && isTsr ? 'Preview Mode' : '—',
         type: isFeedback ? 'feedback' : isInterestForm ? 'interest_form' : 'tsrs',
         isSubmitted: false,
@@ -133,7 +113,7 @@ function buildRows(
   for (const a of assignments) {
     if (a.assignment_type === 'interest_form') {
       result.push(
-        toStudentRow(a, today, {
+        toStudentRow(a, now, zone, {
           projectName: '—',
           type: 'interest_form',
           isSubmitted: false,
@@ -145,7 +125,7 @@ function buildRows(
 
     if (a.assignment_type === 'feedback') {
       result.push(
-        toStudentRow(a, today, {
+        toStudentRow(a, now, zone, {
           projectName: '—',
           type: 'feedback',
           isSubmitted: submittedFeedbackIds.has(a.id),
@@ -158,7 +138,7 @@ function buildRows(
     for (const p of myClassProjects) {
       const isSubmitted = submittedByAssignmentProject[a.id]?.has(p.id) ?? false;
       result.push(
-        toStudentRow(a, today, {
+        toStudentRow(a, now, zone, {
           projectName: p.name,
           projectId: p.id,
           type: 'tsrs',
@@ -172,13 +152,9 @@ function buildRows(
   return result;
 }
 
-/**
- * Loads a class's assignments and the student's teams and submissions, and
- * builds the table rows both as a student sees them and as "View class as student"
- * preview (of a class you teach) shows them, so a bad row still surfaces as a load error.
- */
-async function loadRows(classId: string) {
-  const today = format(new Date(), 'yyyy-MM-dd');
+/** Loads a class's assignments and the student's teams and submissions. */
+async function loadRowSources(classId: string): Promise<RowSources> {
+  const now = new Date();
 
   const [{ assignments }, { projects: myAllProjects }, { projects: classProjects }, mySubmissions] =
     await Promise.all([
@@ -192,40 +168,65 @@ async function loadRows(classId: string) {
   const myProjectIds = new Set(myAllProjects.map((p) => p.id));
   const myClassProjects = classProjects.filter((p) => myProjectIds.has(p.id));
 
-  const sources: RowSources = { today, assignments, myClassProjects, mySubmissions };
-  return { rows: buildRows(sources, false), previewRows: buildRows(sources, true) };
+  return { now, assignments, myClassProjects, mySubmissions };
 }
 
 /** The last completed load, and the class it was made for. */
-interface RowsLoad {
+interface SourcesLoad {
   classId: string;
+  sources: RowSources | null;
+  error: string | null;
+}
+
+interface AssignmentTables {
   rows: StudentAssignment[];
   previewRows: StudentAssignment[];
   error: string | null;
 }
 
+/**
+ * The table rows both as a student sees them and as "View class as student" preview (of a class
+ * you teach) shows them, opened in the school's zone. A bad row surfaces as a load error.
+ */
+function buildTables(load: SourcesLoad, zone: string): AssignmentTables {
+  if (!load.sources) return { rows: [], previewRows: [], error: load.error };
+  try {
+    return {
+      rows: buildRows(load.sources, zone, false),
+      previewRows: buildRows(load.sources, zone, true),
+      error: null,
+    };
+  } catch (e) {
+    return {
+      rows: [],
+      previewRows: [],
+      error: e instanceof Error ? e.message : 'Failed to load assignments',
+    };
+  }
+}
+
 const Assignments: React.FC = () => {
   const { selectedClass } = useClass();
+  const zone = useSchoolTimezone(selectedClass?.institution?.id);
   const { isPreviewing } = usePreview();
   const navigate = useNavigate();
   const classId = selectedClass?.id;
-  const [loaded, setLoaded] = useState<RowsLoad | null>(null);
+  const [loaded, setLoaded] = useState<SourcesLoad | null>(null);
 
   useEffect(() => {
     if (!classId) return;
 
     let cancelled = false;
 
-    loadRows(classId).then(
-      ({ rows, previewRows }) => {
-        if (!cancelled) setLoaded({ classId, rows, previewRows, error: null });
+    loadRowSources(classId).then(
+      (sources) => {
+        if (!cancelled) setLoaded({ classId, sources, error: null });
       },
       (e: unknown) => {
         if (!cancelled) {
           setLoaded({
             classId,
-            rows: [],
-            previewRows: [],
+            sources: null,
             error: e instanceof Error ? e.message : 'Failed to load assignments',
           });
         }
@@ -239,6 +240,8 @@ const Assignments: React.FC = () => {
 
   // Until a load for this class lands, it is still loading.
   const current = loaded?.classId === classId ? loaded : null;
+  // Rebuilt without a new load when the school's zone becomes known (Pacific until then).
+  const tables = useMemo(() => (current ? buildTables(current, zone) : null), [current, zone]);
 
   if (!selectedClass) {
     return (
@@ -260,11 +263,12 @@ const Assignments: React.FC = () => {
         projectName: assignment.projectName,
         projectId: assignment.projectId,
         isSubmitted: assignment.isSubmitted,
+        dueAt: assignment.dueAt,
       },
     });
   };
 
-  if (!current) {
+  if (!tables) {
     return (
       <div className="assignments">
         <div className="assignments__content">
@@ -280,12 +284,12 @@ const Assignments: React.FC = () => {
     );
   }
 
-  if (current.error) {
+  if (tables.error) {
     return (
       <div className="assignments">
         <div className="assignments__empty">
           <h2>Error</h2>
-          <p>{current.error}</p>
+          <p>{tables.error}</p>
         </div>
       </div>
     );
@@ -296,7 +300,7 @@ const Assignments: React.FC = () => {
       <div className="assignments__content">
         <StudentAssignmentsTable
           key={selectedClass?.id}
-          assignments={isPreviewing ? current.previewRows : current.rows}
+          assignments={isPreviewing ? tables.previewRows : tables.rows}
           onStart={handleOpen}
           onEditSubmission={handleOpen}
         />

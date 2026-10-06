@@ -56,3 +56,9 @@ export function useInstitutionsWithRetry(): {
 export function useInstitutions(): ApiInstitution[] | null | undefined {
   return useInstitutionsWithRetry().institutions;
 }
+
+/** The IANA zone the selected class's school keeps its dates in; Pacific until the list is known. */
+export function useSchoolTimezone(institutionId: string | null | undefined): string {
+  const institutions = useInstitutions();
+  return institutions?.find((i) => i.id === institutionId)?.timezone ?? 'America/Los_Angeles';
+}

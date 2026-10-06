@@ -6,6 +6,7 @@ import {
   formatAssignmentDueDate,
   formatDeadline,
   formatInstant,
+  startOfDayIn,
 } from '@/lib/dateUtils';
 
 describe('dateUtils — deadlines', () => {
@@ -67,5 +68,29 @@ describe('dateUtils — deadlines', () => {
   it('answers null without a close date', () => {
     expect(assignmentDeadline({ open_date: '2026-10-05', close_date: '' })).toBeNull();
     expect(assignmentClosesAt({ open_date: '2026-10-05', close_date: '', due_at: null })).toBeNull();
+  });
+});
+
+describe('dateUtils — the opening instant', () => {
+  it('startOfDayIn is midnight in the named zone', () => {
+    expect(startOfDayIn('America/Los_Angeles', '2026-10-05').toISOString()).toBe('2026-10-05T07:00:00.000Z');
+    expect(startOfDayIn('Europe/Istanbul', '2026-10-05').toISOString()).toBe('2026-10-04T21:00:00.000Z');
+  });
+
+  it('startOfDayIn takes the offset in force at midnight on the day DST ends', () => {
+    expect(startOfDayIn('America/Los_Angeles', '2026-11-01').toISOString()).toBe('2026-11-01T07:00:00.000Z'); // still PDT
+    expect(startOfDayIn('America/Los_Angeles', '2026-11-02').toISOString()).toBe('2026-11-02T08:00:00.000Z');
+  });
+
+  it('startOfDayIn agrees with the server where the clocks change at midnight', () => {
+    // The Azores spring from 00:00 to 01:00 and fall back from 01:00 to 00:00. The server
+    // (zoneinfo, fold=0) opens at the day's first moment: the change itself, then the first 00:00.
+    expect(startOfDayIn('Atlantic/Azores', '2026-03-29').toISOString()).toBe('2026-03-29T01:00:00.000Z');
+    expect(startOfDayIn('Atlantic/Azores', '2026-10-25').toISOString()).toBe('2026-10-25T00:00:00.000Z');
+  });
+
+  it("assignmentOpensAt opens at midnight in the school's zone", () => {
+    const a = { open_date: '2026-10-05', close_date: '2026-10-07' };
+    expect(assignmentOpensAt(a, 'Europe/Istanbul')?.toISOString()).toBe('2026-10-04T21:00:00.000Z');
   });
 });

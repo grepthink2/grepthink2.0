@@ -12,6 +12,8 @@ export interface TsrsAssignment {
   dueDate: string;
   projectName: string;
   projectId: string;
+  /** The deadline instant from the backend; null or missing when not known. */
+  dueAt?: string | null;
 }
 
 export type TsrsTab = 'contributions' | 'team_feedback' | 'scrum_master';

@@ -4,14 +4,18 @@
  * The backend sends an assignment's deadline as an instant, `due_at` (the first
  * moment after `close_date` in the school's time zone), with an optional late
  * window, `accept_until`; the deadline helpers at the end of this file read them.
- * The legacy rule, kept for older backends that send only the dates, is
- * "11:59 PM America/Los_Angeles" on the stored calendar date: `toLA2359` converts
- * a bare YYYY-MM-DD string into that UTC instant.  date-fns format() renders
- * every instant in the *viewer's* local timezone automatically.
+ * No field carries the opening instant: `assignmentOpensAt` works it out from
+ * `open_date` in the school's zone, as the server does.
  *
- * No external timezone library is needed: we use the built-in
- * Intl.DateTimeFormat API to resolve the UTC offset for LA on the target date
- * (handling PST -8 / PDT -7 correctly), and date-fns format() for display.
+ * America/Los_Angeles is the zone whenever no other is known: the default for
+ * the opening instant, and for the deadline of an assignment sent without
+ * `due_at`, 11:59 PM Pacific on the stored calendar date (`toLA2359` converts a
+ * bare YYYY-MM-DD string into that UTC instant). date-fns format() renders every
+ * instant in the *viewer's* local timezone automatically.
+ *
+ * No external timezone library is needed: the built-in Intl.DateTimeFormat API
+ * resolves a zone's UTC offset on the target date (daylight saving included),
+ * and date-fns format() handles display.
  */
 import { format } from 'date-fns';
 
@@ -45,11 +49,10 @@ export function toLA2359(dateStr: string): Date {
 }
 
 /**
- * Format a YYYY-MM-DD assignment due date for display.
- *
- * The canonical deadline is 11:59 PM America/Los_Angeles; the result is
- * rendered in the viewer's local timezone so everyone sees their local
- * equivalent of that moment.
+ * Format a YYYY-MM-DD close date as the legacy deadline label: 11:59 PM
+ * America/Los_Angeles on that date, rendered in the viewer's local timezone so
+ * everyone sees their local equivalent of that moment. Assignment deadlines come
+ * from `due_at` now; `formatDeadline` shows them.
  *
  * Examples (same instant, different viewers):
  *   PST (UTC-8): "Jan 12, 2026 at 11:59 PM"
@@ -67,17 +70,53 @@ export interface AssignmentDates {
   accept_until?: string | null;
 }
 
+const DAY_MS = 86_400_000;
+
+/** Midnight at the start of `dateStr` (YYYY-MM-DD) in the IANA zone `zone`, as a UTC instant. */
+export function startOfDayIn(zone: string, dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const clock = new Intl.DateTimeFormat('en-US', {
+    timeZone: zone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+  });
+  // The zone's UTC offset at an instant: its wall clock read as if it were UTC, minus the instant.
+  const offsetAt = (instant: number): number => {
+    const parts = clock.formatToParts(instant);
+    const field = (type: Intl.DateTimeFormatPartTypes) =>
+      Number(parts.find((p) => p.type === type)!.value);
+    const wall = Date.UTC(
+      field('year'), field('month') - 1, field('day'), field('hour') % 24, field('minute'), field('second'),
+    );
+    return wall - instant;
+  };
+  // 00:00 that day written as if it were UTC, then read with the offset in force before the day
+  // and, when the clocks have changed by then, with the one after it. The offset at another hour
+  // of the day is not enough: a daylight-saving change between midnight and that hour shifts it.
+  const wall = Date.UTC(year, month - 1, day);
+  const before = offsetAt(wall - DAY_MS);
+  const early = wall - before;
+  if (offsetAt(early) === before) return new Date(early);
+  const after = offsetAt(wall + DAY_MS);
+  const late = wall - after;
+  // Where the clocks skip midnight neither reading is on the zone's clock; the earlier offset
+  // lands on the change itself, the day's first moment, as on the server (zoneinfo, fold=0).
+  return new Date(offsetAt(late) === after ? late : early);
+}
+
 /**
- * Start of the open day. Older backends send no instant for it; the school-zone generalization
- * lives in the backend (`due_at`), so the client assumes Pacific like the legacy rule.
+ * When the assignment opens: midnight starting `open_date` in the school's zone, Pacific when no
+ * zone is known. The server computes the opening instant the same way, from `open_date` in the
+ * school's zone; no backend field carries it.
  */
-export function assignmentOpensAt(a: AssignmentDates): Date | null {
+export function assignmentOpensAt(a: AssignmentDates, zone = 'America/Los_Angeles'): Date | null {
   if (!a.open_date) return null;
-  // Midnight Pacific = 11:59 PM Pacific of the day before, plus one minute.
-  const [y, m, d] = a.open_date.split('-').map(Number);
-  const dayBefore = new Date(Date.UTC(y, m - 1, d - 1));
-  const iso = dayBefore.toISOString().slice(0, 10);
-  return new Date(toLA2359(iso).getTime() + 60_000);
+  return startOfDayIn(zone, a.open_date);
 }
 
 /** The deadline: `due_at` from the backend, else 11:59 PM Pacific on `close_date`. */
