@@ -486,6 +486,7 @@ export interface UpdateAssignmentPayload {
   close_date?: string;
   status?: 'draft' | 'publish';
   assignment_type?: string;
+  /** An ISO instant with its offset (e.g. `date.toISOString()`): the backend reads a value without one as UTC. */
   accept_until?: string;
   clear_accept_until?: boolean;
 }
