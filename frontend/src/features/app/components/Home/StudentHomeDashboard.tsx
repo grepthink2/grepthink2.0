@@ -57,6 +57,8 @@ interface DeadlineRow {
   projectName?: string;
   highlight: boolean;
   assignmentType?: string;
+  /** The deadline instant (`due_at`) for the TSR form's late note; null from older backends. */
+  dueAt?: string | null;
 }
 
 interface TeamMemberRow {
@@ -217,6 +219,7 @@ function buildDeadlineRows(
         status: st,
         highlight: false,
         assignmentType: a.assignment_type,
+        dueAt: a.due_at ?? null,
         closeMs: assignmentDeadline(a)?.getTime() ?? parseLocalAssignmentDate(a.close_date).getTime(),
       });
       continue;
@@ -246,6 +249,7 @@ function buildDeadlineRows(
       projectName: proj.name,
       highlight: false,
       assignmentType: a.assignment_type,
+      dueAt: a.due_at ?? null,
       closeMs: assignmentDeadline(a)?.getTime() ?? parseLocalAssignmentDate(a.close_date).getTime(),
     });
   }
@@ -591,6 +595,7 @@ const StudentHomeDashboard: React.FC = () => {
           dueDate: r.dueLabel,
           projectName: r.projectName ?? '—',
           projectId: r.projectId,
+          dueAt: r.dueAt,
         },
       });
     },

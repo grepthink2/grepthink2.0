@@ -72,6 +72,7 @@ const AssignmentDetail: React.FC = () => {
     name: assignmentName,
     dueDate,
     classId: selectedClass.id,
+    dueAt,
   };
 
   return (

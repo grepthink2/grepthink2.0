@@ -107,6 +107,16 @@ describe('useSchoolTimezone', () => {
     });
   });
 
+  it('is Pacific for a zone this browser does not know', async () => {
+    api.getInstitutions.mockResolvedValue([ISTINYE, { ...ISTINYE, id: 'olympus', timezone: 'Mars/Olympus' }]);
+    const { result } = renderHook(() => ({
+      known: useSchoolTimezone('istinye'),
+      unknown: useSchoolTimezone('olympus'),
+    }));
+    await waitFor(() => expect(result.current.known).toBe('Europe/Istanbul'));
+    expect(result.current.unknown).toBe('America/Los_Angeles');
+  });
+
   it('is Pacific when the list could not be read', async () => {
     api.getInstitutions.mockResolvedValue(null);
     const { result } = renderHook(() => ({ list: useInstitutions(), zone: useSchoolTimezone('istinye') }));

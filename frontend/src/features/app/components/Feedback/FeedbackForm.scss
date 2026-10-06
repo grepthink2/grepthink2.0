@@ -69,6 +69,13 @@
   font-family: $primary-font;
 }
 
+// ── Late note (the color of .tsrs__late-note, inset like the banner) ──────────
+.feedback-form__late-note {
+  margin: $spacing-lg $spacing-xl 0;
+  font-size: $font-size-sm;
+  color: var(--gt-warning-text);
+}
+
 // ── Questions list ────────────────────────────────────────────────────────────
 .feedback-form__questions {
   display: flex;

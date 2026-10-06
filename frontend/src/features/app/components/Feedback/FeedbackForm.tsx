@@ -10,6 +10,8 @@ export interface FeedbackFormAssignment {
   name: string;
   dueDate: string;
   classId: string;
+  /** The deadline instant from the backend; null or missing when not known. */
+  dueAt?: string | null;
 }
 
 const QUESTIONS: { key: keyof SubmitFeedbackPayload; label: string; placeholder: string }[] = [
@@ -61,6 +63,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [isEditMode, setIsEditMode] = useState(isSubmitted);
   const [error, setError] = useState<string | null>(null);
+  /** When the loaded submission was first made (its created_at). */
+  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
 
   // An Effect Event reads the latest isSubmitted without making a change to it
   // a reason to fetch the submission again.
@@ -84,6 +88,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
           q4_bugs: submission.q4_bugs,
           q5_suggestions: submission.q5_suggestions,
         });
+        setSubmittedAt(submission.created_at ?? null);
         setIsEditMode(true);
       })
       .catch((err) => onLoadError(err))
@@ -97,6 +102,11 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   };
 
   const isValid = Object.values(form).every((v) => v.trim().length > 0);
+
+  // Late = first submitted at or after the deadline, as on the TSR form: the server closes
+  // on-time submissions at due_at exactly.
+  const dueAt = assignment.dueAt ? new Date(assignment.dueAt) : null;
+  const submittedLate = Boolean(submittedAt && dueAt && new Date(submittedAt) >= dueAt);
 
   const handleSubmit = async () => {
     setError(null);
@@ -174,6 +184,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
             You are editing your previous submission. Submit to update your answers.
           </div>
         )}
+
+        {submittedLate && <p className="feedback-form__late-note">Submitted after the deadline</p>}
 
         <div className="feedback-form__questions">
           {QUESTIONS.map(({ key, label, placeholder }, idx) => (

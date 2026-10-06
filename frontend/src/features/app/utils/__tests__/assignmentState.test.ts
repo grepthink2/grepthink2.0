@@ -24,6 +24,15 @@ describe('resolveAssignmentState', () => {
     expect(resolveAssignmentState(A, now, false, false).action).toBe('closed');
   });
 
+  it('reports no late window to a student who cannot start', () => {
+    const late = { ...A, accept_until: '2026-10-10T07:00:00+00:00' };
+    expect(resolveAssignmentState(late, new Date('2026-10-09T12:00:00Z'), false, false)).toEqual({
+      status: 'not_started',
+      action: 'closed',
+      lateUntil: null,
+    });
+  });
+
   it('falls back to the Pacific day rule without due_at', () => {
     const legacy = { open_date: '2026-10-05', close_date: '2026-10-07' };
     expect(resolveAssignmentState(legacy, new Date('2026-10-08T06:58:00Z'), false, true).action).toBe('start');

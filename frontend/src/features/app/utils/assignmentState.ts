@@ -12,7 +12,7 @@ import type {
 export interface AssignmentState {
   status: StudentAssignmentStatus;
   action: StudentAssignmentAction;
-  /** Set while submissions are accepted after the deadline (the late window's end). */
+  /** The late window's end, while this student may still submit after the deadline. */
   lateUntil: Date | null;
 }
 
@@ -36,7 +36,7 @@ export function resolveAssignmentState(
 
   if (opens && now < opens) return { status, action: 'opens_later', lateUntil: null };
   if (closes && now >= closes) return { status, action: 'closed', lateUntil: null };
-  if (!canStart) return { status, action: 'closed', lateUntil };
+  if (!canStart) return { status, action: 'closed', lateUntil: null };
   if (isSubmitted) return { status: 'submitted', action: 'edit_submission', lateUntil };
   return { status: 'not_started', action: 'start', lateUntil };
 }

@@ -1,5 +1,5 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiAssignment, ApiInstitution } from '@/lib/api';
 import { formatDeadline } from '@/lib/dateUtils';
@@ -66,6 +66,10 @@ const SUBMITTED_LATE_WINDOW: ApiAssignment = {
   assignment_type: 'tsr',
 };
 
+function LocationState() {
+  return <pre data-testid="location-state">{JSON.stringify(useLocation().state)}</pre>;
+}
+
 function renderDashboard() {
   return render(
     <MemoryRouter>
@@ -73,6 +77,7 @@ function renderDashboard() {
         <Route element={<Outlet context={{ openJoinClassModal: () => {} }} />}>
           <Route path="/" element={<StudentHomeDashboard />} />
         </Route>
+        <Route path="/app/assignments/:assignmentId" element={<LocationState />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -108,6 +113,14 @@ describe('StudentHomeDashboard deadlines', () => {
     renderDashboard();
     await waitFor(() => expect(within(rowOf('TSR Week 3')).getByText('In Progress')).toBeInTheDocument());
     expect(within(rowOf('TSR Week 3')).getByText(formatDeadline(OPENED))).toBeInTheDocument();
+  });
+
+  it('passes the deadline instant to the assignment page', async () => {
+    renderDashboard();
+    await waitFor(() => expect(within(rowOf('TSR Week 3')).getByText('In Progress')).toBeInTheDocument());
+    fireEvent.click(rowOf('TSR Week 3'));
+    const state = JSON.parse((await screen.findByTestId('location-state')).textContent ?? 'null');
+    expect(state).toMatchObject({ projectId: 'p1', dueAt: '2026-10-20T21:00:00+00:00' });
   });
 
   it('keeps a submitted assignment while its late window is open', async () => {
