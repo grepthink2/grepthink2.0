@@ -37,7 +37,7 @@ backend/app/<feature>/{url,views,controller,models}.py   # one module per featur
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
   core/sentry.py     # optional Sentry reporting (SENTRY_DSN): event scrubbing, delivery before the response
-  core/events.py     # record(kind, ...) → events table; never raises; ids and enums only in meta
+  core/events.py     # record(kind, ...) → events table; DB failures never raise; ids and enums only in meta
   outbox/             # email outbox: enqueue, dispatcher, kinds, preferences, Maileroo webhook
   jobs/email_dispatch.py  # in-process dispatch loop, only while EMAIL_DISPATCH_SECRET is unset
   utils/email_transport.py  # Maileroo HTTP API or SMTP; transient vs permanent errors
@@ -194,15 +194,18 @@ The full agent-facing action catalog (method, params, role) lives at
 - **Preview / "View class as student"** (offered only in a class you teach) is a frontend-only
   read-only simulation of that class as its students see it (`previewContext` + `previewGuard`) —
   no backend act-as, so it does not show a specific student's real data.
-- **Deadlines are instants.** `assignments.due_at` (first moment after `close_date` in the school's zone,
-  derived by the backend) is the deadline; `accept_until` is a late window. After `due_at` passes, a
-  `close_date` change is refused (400): set `accept_until`. `create_tsr`, `update_tsr_entry` (students)
-  and `submit_feedback` enforce the window (403 `"This assignment is closed"`). `app.assignments.deadlines`
-  holds the arithmetic and the clock (`now_utc`, patched in tests).
-- **Product events** go through `app.core.events.record(kind, ...)` (one insert, never raises; kinds
-  registered in `KINDS`; `meta` holds ids and short enums only — never names, emails, grades or text).
-  Pass ids and timestamps as strings: a `UUID` or `datetime` is not JSON-serializable, and the event
-  would be dropped with only a warning.
+- **Deadlines are instants.** `assignments.due_at` (first moment after `close_date` in the school's
+  zone, derived by the backend) is the deadline; `accept_until` is a late window. After a published
+  assignment's `due_at` passes, moving `close_date` or unpublishing is refused (400): set
+  `accept_until`. A draft can always be rescheduled. `create_tsr`, `update_tsr_entry` (students) and
+  `submit_feedback` enforce the window (403 `"This assignment is not open yet"` / `"This assignment
+  is closed"`). `app.assignments.deadlines` holds the arithmetic and the clock (`now_utc`, patched in
+  tests).
+- **Product events** go through `app.core.events.record(kind, ...)` (one insert; a database failure
+  is logged at WARNING and never raised, an unregistered kind raises `ValueError`; kinds live in
+  `KINDS`; `meta` holds ids and short enums only — never names, emails, grades or text). Pass ids
+  and timestamps as strings: a `UUID` or `datetime` is not JSON-serializable, and the event would be
+  dropped with only a warning.
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,

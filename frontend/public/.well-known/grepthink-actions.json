@@ -146,7 +146,7 @@
     {
       "id": "update_assignment", "title": "Edit an assignment (title, dates, status, late window)", "role": "instructor",
       "method": "PATCH", "endpoint": "/api/assignments/{assignment_id}",
-      "params": {"title": "string", "open_date": "date", "close_date": "date", "status": "enum(draft|publish)", "assignment_type": "enum(tsr|feedback|interest_form)", "accept_until": "datetime (ISO 8601; opens a late-submission window after the deadline)", "clear_accept_until": "bool"},
+      "params": {"title": "string", "open_date": "date", "close_date": "date", "status": "enum(draft|publish)", "assignment_type": "enum(tsr|feedback|interest_form)", "accept_until": "datetime (ISO 8601 with offset, none = UTC; opens a late-submission window after the deadline)", "clear_accept_until": "bool"},
       "uiRoute": "/app/modules",
       "note": "Once a published assignment's deadline (due_at, the end of close_date in the school's time zone) has passed, close_date cannot be moved and the assignment cannot be unpublished (400); set accept_until to accept late submissions instead. A draft can always be rescheduled."
     },
