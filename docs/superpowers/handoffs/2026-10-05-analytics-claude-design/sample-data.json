@@ -1,15 +1,12 @@
 {
   "meta": {
-    "institution": { "id": "6f2c3a2e-0000-4000-8000-000000000001", "name": "UC Santa Cruz", "slug": "ucsc", "timezone": "America/Los_Angeles", "term_system": "quarter" },
-    "term": { "term": "Fall", "year": 2026, "label": "Fall 2026" },
-    "class_id": null,
-    "window": "30d",
-    "from": "2026-09-06",
-    "to": "2026-10-05",
+    "institution": { "id": "6f2c3a2e-0000-4000-8000-000000000001", "name": "UC Santa Cruz", "slug": "ucsc", "timezone": "America/Los_Angeles" },
+    "class": null,
+    "range": { "preset": "30d", "from": "2026-09-06", "to": "2026-10-05", "previous_from": "2026-08-07", "previous_to": "2026-09-05" },
     "generated_at": "2026-10-05T17:42:11Z",
     "cached": false,
     "k_anonymity": 3,
-    "rollup_as_of": "2026-10-05"
+    "rollup_as_of": "2026-10-04"
   },
   "overview": {
     "active_classes": 4,
@@ -79,12 +76,53 @@
       { "key": "folded", "label": "Smaller groups (1)", "kind": "folded", "expected": 2, "buckets": { "early": 1, "on_time": 1, "late": 0, "missing": 0, "not_due": 0 }, "edited_late": 0 }
     ]
   },
-  "terms": {
-    "as_of": "2026-10-05",
-    "rows": [
-      { "term": "Fall", "year": 2026, "label": "Fall 2026", "current": true, "weeks": 4, "classes": 4, "teams": 23, "students": 118, "team_messages_per_team_week": 12.4, "dm_per_week": 178, "tasks_per_team_week": 6.1, "points_done_per_team": 9.8, "on_time_rate": 0.82, "trend": [3.1, 7.9, 12.0, 14.6] },
-      { "term": "Spring", "year": 2026, "label": "Spring 2026", "current": false, "weeks": 11, "classes": 3, "teams": 19, "students": 94, "team_messages_per_team_week": 9.7, "dm_per_week": 131, "tasks_per_team_week": 4.8, "points_done_per_team": 11.2, "on_time_rate": 0.79, "trend": [2.4, 5.8, 9.1, 11.2, 12.0, 11.4, 10.3, 9.9, 9.2, 8.1, 6.6] },
-      { "term": "Winter", "year": 2026, "label": "Winter 2026", "current": false, "weeks": 11, "classes": 2, "teams": 12, "students": 61, "team_messages_per_team_week": null, "dm_per_week": null, "tasks_per_team_week": null, "points_done_per_team": null, "on_time_rate": 0.74, "trend": [] }
+  "trends": {
+    "as_of": "2026-10-04",
+    "panels": [
+      {
+        "key": "team_messages_per_team", "title": "Messages per team", "unit": "per team per week",
+        "current": [
+          { "week_start": "2026-09-07", "value": 0.9 }, { "week_start": "2026-09-14", "value": 2.5 },
+          { "week_start": "2026-09-21", "value": 5.7 }, { "week_start": "2026-09-28", "value": 8.2 },
+          { "week_start": "2026-10-05", "value": null }
+        ],
+        "previous": [
+          { "week_start": "2026-08-10", "value": 0.0 }, { "week_start": "2026-08-17", "value": 0.0 },
+          { "week_start": "2026-08-24", "value": 0.3 }, { "week_start": "2026-08-31", "value": 0.8 },
+          { "week_start": "2026-09-07", "value": 0.9 }
+        ]
+      },
+      {
+        "key": "tasks_per_team", "title": "Tasks created per team", "unit": "per team per week",
+        "current": [
+          { "week_start": "2026-09-07", "value": 1.1 }, { "week_start": "2026-09-14", "value": 2.9 },
+          { "week_start": "2026-09-21", "value": 4.6 }, { "week_start": "2026-09-28", "value": 4.5 },
+          { "week_start": "2026-10-05", "value": null }
+        ],
+        "previous": [
+          { "week_start": "2026-08-10", "value": 0.0 }, { "week_start": "2026-08-17", "value": 0.0 },
+          { "week_start": "2026-08-24", "value": 0.2 }, { "week_start": "2026-08-31", "value": 0.6 },
+          { "week_start": "2026-09-07", "value": 1.1 }
+        ]
+      },
+      {
+        "key": "points_done_per_team", "title": "Points done per team", "unit": "per team",
+        "current": [
+          { "week_start": "2026-09-07", "value": 0.4 }, { "week_start": "2026-09-14", "value": 2.1 },
+          { "week_start": "2026-09-21", "value": 5.3 }, { "week_start": "2026-09-28", "value": 9.8 },
+          { "week_start": "2026-10-05", "value": null }
+        ],
+        "previous": null
+      },
+      {
+        "key": "on_time_rate", "title": "On-time rate", "unit": "rate",
+        "current": [
+          { "week_start": "2026-09-07", "value": null }, { "week_start": "2026-09-14", "value": 0.91 },
+          { "week_start": "2026-09-21", "value": 0.84 }, { "week_start": "2026-09-28", "value": 0.79 },
+          { "week_start": "2026-10-05", "value": null }
+        ],
+        "previous": null
+      }
     ]
   },
   "breakdown": {
