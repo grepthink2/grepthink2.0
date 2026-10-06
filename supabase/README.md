@@ -156,3 +156,14 @@ before giving up and notifying whoever sent the invite. In this order:
   Maileroo retries a webhook 8 times over about 14 hours; events refused for longer are lost.
 - **Allowing a suppressed address again:** `DELETE FROM email_suppressions WHERE email = '<address>';`
   (addresses are stored lower-cased).
+
+## Assignment deadlines and events (maintainer steps)
+
+1. `backend/database/migrations/2026-10/2026-10-06_assignment_deadlines_and_events.sql`, DEV then PROD
+   (DEV: applied 2026-10-06), **before** the release that ships deadlines-as-instants (the code reads
+   `due_at` and writes `events` without checking for them), and **after** `2026-09-25_institutions.sql`
+   and `2026-09-30_institution_timezones.sql` (its backfill reads `institutions.timezone`; PROD had
+   neither as of 2026-10-06). It backfills `due_at` from each class's school time zone, adds the TSR
+   `updated_at` trigger and creates `events` (RLS on, no client privileges).
+2. Release beta → main in the same sitting, then re-run the file once and confirm the Check's
+   `stale_due_at` reads 0 (it repairs any assignment created or rescheduled between the two).
