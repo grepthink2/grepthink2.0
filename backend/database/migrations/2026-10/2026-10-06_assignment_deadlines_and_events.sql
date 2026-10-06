@@ -5,7 +5,7 @@
 -- docs/superpowers/specs/2026-10-05-analytics-dashboard-design.md: that code reads due_at and
 -- accept_until and writes events without feature-detecting them.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-10-06 (by Claude, via the Supabase connector)   PROD ____-__-__
 --
 -- ⚠️  ORDER: after 2026-09/2026-09-25_institutions.sql and 2026-09/2026-09-30_institution_timezones.sql
 --     (the due_at backfill reads institutions.timezone; on a database without them this file fails
