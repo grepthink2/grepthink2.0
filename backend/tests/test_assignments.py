@@ -761,6 +761,27 @@ def test_resubmitting_updates_in_place_and_records_an_update(db, clock):
     assert [e["kind"] for e in db.rows("events")] == ["tsr_submitted", "tsr_updated"]
 
 
+def test_a_week_based_submission_does_not_edit_an_assignment_linked_row(db, clock):
+    # Assignment-linked rows store week too (the web client sends week ?? 1). After A_TSR closes,
+    # the same review sent without assignment_id gets its own row instead of editing S2's A_TSR
+    # row in place: only a request naming the assignment is checked against its window.
+    clock(NOW_BEFORE)
+    _forget_s2_reviews(db)
+    tsr_controller.create_tsr(S2, _tsr_request(S1))
+    clock(NOW_AFTER)
+    late = _tsr_request(S1).model_copy(update={"assignment_id": None, "percent_contribution": 90})
+    tsr_controller.create_tsr(S2, late)
+    assert {
+        (r.get("assignment_id"), r["week"], r["percent_contribution"])
+        for r in db.rows("TSRs")
+        if r["evaluator_id"] == S2
+    } == {(A_TSR, 1, 50), (None, 1, 90)}
+    assert [(e["kind"], e["meta"]["assignment_id"]) for e in db.rows("events")] == [
+        ("tsr_submitted", A_TSR),
+        ("tsr_submitted", None),
+    ]
+
+
 def test_student_edit_of_a_tsr_entry_after_close_is_refused_but_the_instructor_may(db, clock):
     clock(NOW_AFTER)
     with pytest.raises(HTTPException) as exc:

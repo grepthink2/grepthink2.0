@@ -166,7 +166,9 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
         if data.assignment_id:
             existing_query = existing_query.eq("assignment_id", str(data.assignment_id))
         else:
-            existing_query = existing_query.eq("week", data.week)
+            # Assignment-linked rows store week too: without the NULL filter, a request that omits
+            # assignment_id would find one and edit it in place with no window check.
+            existing_query = existing_query.eq("week", data.week).is_("assignment_id", "null")
 
         existing_result = existing_query.limit(1).execute()
         existing_id = existing_result.data[0]["id"] if existing_result.data else None
