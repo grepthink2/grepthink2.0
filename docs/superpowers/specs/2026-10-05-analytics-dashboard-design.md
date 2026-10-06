@@ -1,160 +1,241 @@
 # Analytics per Institution — Design Spec
 
-**Date:** 2026-10-05
+**Date:** 2026-10-05, revised 2026-10-06 with the maintainer's answers
 **Branch:** `feat/analytics-dashboard-design`
-**Status:** DRAFT — written in an autonomous session. The **Decisions** table is recommendations, not
-maintainer-approved choices; rows marked ⚑ most need review. Section 11 lists the questions whose answers
-change the numbers.
+**Status:** DESIGN AGREED in substance. Section 4 records the maintainer's decisions of 2026-10-06; the few
+items still open are in section 11 (each has a default). The work is split into three sub-projects
+(section 2); each gets its own implementation plan, in order.
 **Design brief (to Claude Design):** `docs/superpowers/handoffs/2026-10-05-analytics-claude-design/README.md`
 (components, chart rules, validated palette, sample data, the dashboard's data contract).
 
 ## 1. Goals
 
-From the maintainer's request:
+From the maintainer's request of 2026-10-05:
 
 1. Analytics infrastructure that fits what we already pay nothing for — Vercel Hobby (web + API) and Supabase
    Free (Postgres) — and a dashboard in the GrepThink design language, with a brief so Claude Design can build
    the visualization components.
-2. **One dashboard per university** (institution).
-3. **Conversations:** total messages sent, excluding team ↔ TA and team ↔ instructor channels.
-4. **Scrum board:** total stories and tasks created; a live snapshot of tasks across all teams in To do /
-   In progress / Done by sprint; average character counts per task and per story across sprints.
-5. **Timeliness** of TSR submissions and of the other assignments (feedback, interest forms).
-6. The list of ambiguities to resolve to make this truly data-driven (section 11).
+2. **One dashboard per university** (institution), internal, for instructors and maintainers.
+3. **Conversations:** total messages sent, excluding staff ↔ student conversations.
+4. **Scrum board:** stories and tasks created (counts and story points); a live snapshot of tasks across all
+   teams in To do / In progress / Done by sprint; median character counts per task and per story.
+5. **Timeliness** of TSR submissions and of the other assignments (feedback, interest forms), on top of a
+   TSR flow that records submission times correctly.
+6. **Trends across terms**, which needs history that survives deletions (a nightly rollup) and standardized
+   terms per institution (quarters at UC Santa Cruz, semesters at İstinye).
+7. An **events table** for product events the schema does not record (sign-ins, board views, TSR edits).
 
-Minerva (`~/personal/minerva`) is inspiration only. What we take: one JSON payload per dashboard, filters kept
-in the URL so views are shareable, per-panel failure tolerance (`failures[]`), refetches that hold the previous
-render, an "aggregate only" footnote. What we do not take: its stack (Astro, Cloudflare Analytics Engine, KV)
-or its dark admin look.
+Minerva (`~/personal/minerva`) is inspiration only: one JSON payload per dashboard, filters in the URL,
+per-panel failure tolerance, refetches that hold the previous render, an "aggregate only" footnote. Not its
+stack or its dark admin look.
 
-## 2. Non-goals (v1)
+## 2. Sub-projects and order
 
-- Page-view analytics. Vercel Web Analytics is free on Hobby (50k events/month, no custom events) and is a
-  one-line add, independent of this work (D15).
-- A product-events table for things the schema does not record (logins, board views, TSR edits) (D16).
-- History that survives deletions, trends across terms (phase 2 rollup, D3).
-- Anything student-facing, and per-student rows anywhere.
-- Dark mode (the app has none).
+The maintainer asked for the TSR flow to be fixed first. Three sub-projects, each with its own plan:
+
+| | Sub-project | Delivers | Depends on |
+|---|---|---|---|
+| **A** | **Time foundations** | A1 term system per institution (standardized terms, create-class picker, TSR defaults). A2 assignment deadlines as instants (`due_at`, `accept_until`), server-side enforcement, reopening that keeps the original deadline, `"TSRs".updated_at`, the `events` table and the first events. | — |
+| **B** | **Analytics core** | SQL functions, `analytics_daily` rollup + pg_cron, `app/analytics` API, the page with Conversations, Scrum, Terms and Breakdown cards, CSV export; Claude Design port. | A1 (terms), A2 (events) |
+| **C** | **Timeliness** | The timeliness SQL function, assignment outcomes in the rollup, the Timeliness cards. | A2 |
+
+B and C can be one plan if A has landed by then. Nothing in B's data layer is blocked by A except the term
+filter's vocabulary and the active-users tile, so B's SQL can start as soon as A's migration is written.
 
 ## 3. What we checked: the free tiers (verified 2026-10-05)
 
 | Item | Limit | Consequence here |
 |---|---|---|
-| Vercel Hobby cron jobs | once **per day** minimum, ±59 min precision, best-effort (skips, duplicates, no retry) | Not usable for scheduling anything that matters. pg_cron if a schedule is ever needed. |
+| Vercel Hobby cron jobs | once **per day** minimum, ±59 min precision, best-effort (skips, duplicates, no retry) | Not used. The nightly rollup runs under pg_cron inside Postgres. |
 | Vercel functions (Fluid) | 300 s max, 2 GB; 1M invocations/month | A 5-RPC aggregation request fits trivially. |
-| Vercel Web Analytics | 50k events/month, 1-month window, **no custom events** on Hobby | Page views only; product events must land in Postgres. |
+| Vercel Web Analytics | 50k events/month, 1-month window, **no custom events** on Hobby | Page views only; product events land in our `events` table. |
 | Vercel logs / Observability | runtime logs 1 h, Observability 12 h | Nothing we want to look back on may live in logs. |
-| Supabase Free database | **500 MB**, Nano compute (shared CPU, 0.5 GB RAM) | DEV is 18.6 MB today. Aggregation on demand is fine for years. |
-| Supabase Free pausing | paused after **7 days** of low activity | Unchanged; the keep-alive exists (DEV only, see ops notes). |
+| Supabase Free database | **500 MB**, Nano compute (shared CPU, 0.5 GB RAM) | DEV is 18.6 MB today. The rollup and events add well under 1 MB a month at current volume. |
+| Supabase Free pausing | paused after **7 days** of low activity | Unchanged. Whether pg_cron runs count as activity is unverified; keep the existing keep-alive. |
 | Supabase projects | **2 active** | Both used (DEV, PROD): no third "analytics" project. |
-| pg_cron / pg_net | available on Free (1.6.4 / 0.19.5, listed in our org); **not installed on DEV** (`cron.job` does not exist); the PROD email-dispatch cron SQL is staged, not applied | A schedule is possible when wanted; the pattern (Vault secret, retention jobs) is already written. |
+| pg_cron / pg_net | available on Free (1.6.4 / 0.19.5, listed in our org); **not installed on DEV**; the PROD email-dispatch cron SQL is staged, not applied | `CREATE EXTENSION pg_cron` is a maintainer step on DEV and PROD; the Vault-and-retention pattern is already written in the email cron file. |
 | Supabase logs / Reports | 1 day / last 24 h | Same conclusion: derived numbers must be computed from our tables. |
 | Supabase Analytics Buckets (Iceberg) | private alpha | Not planned on. |
 | Materialized views, `REFRESH … CONCURRENTLY`, `GENERATED … STORED` | plain Postgres 17 (STORED only) | Available if volumes ever call for them. |
-| PostHog Free (1M events), Umami Cloud (100k, 1 site), Grafana Cloud Free (3 users, Postgres source via the Supabase pooler), Evidence (MIT static build) | free | All would move or expose student data to a third party, or add a vendor for numbers Postgres already has. Not chosen. Plausible, Metabase Cloud, Tinybird: paid or oversized. |
+| PostHog Free, Umami Cloud, Grafana Cloud Free, Evidence | free tiers exist | Each moves or exposes student data to a third party, or adds a vendor for numbers Postgres already has. Not chosen. |
 
 Volume on DEV (2026-10-05): 43 messages, 13 tasks, 8 stories, 2 sprints, 30 TSRs, 134 TSR assignments, 57
-projects, 36 classes, 2 institutions. Every metric below is a `GROUP BY` over a few thousand rows at most; the
-cost that matters is the PostgREST round trip, not the SQL. PROD was not read (production-read policy); it is
-the same shape, one active term.
+projects, 36 classes, 2 institutions. Every metric is a `GROUP BY` over a few thousand rows at most. PROD was not
+read (production-read policy); it is the same shape with one active term.
 
-**Conclusion.** Analytics stays inside Supabase Postgres as SQL functions called over RPC by the existing
-FastAPI, rendered by a React page. No new vendor, no new project, no schedule in v1, and student data never
-leaves the stack.
+**Conclusion.** Analytics stays inside Supabase Postgres: SQL functions called over RPC by the existing FastAPI,
+a small rollup table filled nightly by pg_cron, an events table written by the backend, and a React page. No
+new vendor, no new project, and student data never leaves the stack.
 
-## 4. Decisions (recommended — ⚑ = review before implementing)
+## 4. Decisions
 
-| # | Question | Recommendation | Why / alternative |
+### 4.1 Resolved by the maintainer on 2026-10-06
+
+| # | Question | Decision | Effect on the design |
 |---|---|---|---|
-| D1 ⚑ | Who may open an institution's dashboard? | **Instructors** see every institution in which they created at least one class; **maintainers** listed in a new `ANALYTICS_ADMIN_EMAILS` env var (matched against the token's verified email) see all institutions. TAs and students: 403. | No admin concept exists in the codebase (checked: none). An env allowlist is the smallest honest one and follows "secrets stay server-side". Alt: an `institution_admins` table — add when a second school has its own staff. **Open:** whether an instructor should see other instructors' classes at the same school (section 11, Q3). |
-| D2 | Compute strategy | **On demand**: one SQL function per section, `STABLE`, called over `.rpc()`; the controller fans the four calls out concurrently and caches the assembled payload in process for 60 s. | Tiny data, sub-second queries, nothing to keep fresh. Precedents: `messages_inbox`, `scrum_next_key`, `claim_email_outbox`. Alt: pull rows through PostgREST and aggregate in Python — pays N round trips and the 1000-row page limit for nothing. |
-| D3 ⚑ | History and deletions | **None in v1.** Deleting a project cascades to its conversations, messages, tasks and TSRs (#197), so totals shrink. Phase 2: a nightly `analytics_daily` rollup by pg_cron. | The five requested metrics are totals, a live snapshot, averages and per-assignment rates — none needs history. Deciding now whether trends matter (Q29–30) decides whether the rollup ships. |
-| D4 ⚑ | Which messages count, and to which school | Count `messages` whose conversation `type ∈ {dm, team_members}`. A team channel belongs to its project's class's institution. A DM belongs to the institution of the **most recent class both participants share** (deterministic); a DM with no shared class is excluded and reported as `conversations.unattributed`. | The request excludes `team_ta` and `team_instructor` by type. Users have no institution of their own; the shared-class rule attributes without inventing one. Alt: the sender's school from `edu_email` domain (fails for Gmail accounts), or exclude DMs from per-school totals (loses most traffic: DEV has 40 DM messages out of 43). |
-| D5 ⚑ | "By sprint" across teams | Align sprints by **ordinal within each project** (`row_number()` over `starts_at`): "Sprint 1" is every team's first sprint. Stories with no sprint are **Backlog** (ordinal 0). Tasks of archived stories are excluded from the live snapshot but count as created. | Sprints are per project with free-text names and different dates; the burnup's cumulative chart already labels them S1…Sn. Alt: align by calendar week — breaks when classes start on different weeks. |
-| D6 ⚑ | Characters per task / story | `char_length(title) + char_length(coalesce(description_md, ''))`, markdown as typed; report **median and mean**, overall and per sprint ordinal. | One long description skews a mean of 13 tasks; the median is the honest headline, the mean is what was asked for. Alt: description only, strip markdown, include comments. |
-| D7 ⚑ | Timeliness | Deadline = the first instant after `close_date` in the institution's time zone. Expected submitters: current team members for a TSR (teams with ≥ 2 members), currently enrolled students for feedback and interest forms. Submission time = **first** submission (TSR: earliest `created_at` among the evaluator's rows for that assignment; feedback: `created_at`; interest form: `submitted_at`). Buckets: early (> 24 h before), on time (last 24 h), late, missing (deadline passed, nothing), not due yet. On-time rate = (early + on time) / expected over assignments whose deadline has passed. | Matches the student UI, which pins due dates to 11:59 PM Pacific (`StudentHomeDashboard.tsx`), generalized through `institutions.timezone`. TSR rows are updated in place without an `updated_at` (the first `created_at` survives edits). Section 11 lists the eight sub-questions. |
-| D8 | Windows and terms | Counts are by `created_at` within `[from, to]`; the snapshot is live. Windows: 7d / 30d / 90d / term / all; "term" runs from the earliest `start_date` of the classes in scope. Deltas compare with the previous window of equal length (null for term/all). A term is the pair `(classes.term, classes.year)` as entered; the label is "Fall 2026". | `assignments.close_date` and `sprints.starts_at` are bare dates; everything else is `timestamptz`. The term pair is free text today (Q31). |
-| D9 | Route and navigation | `/app/analytics`, lazy route, **not class-scoped**; sidebar item "Analytics" in the Main section for accounts that can create classes; filters (`institution`, `term`, `year`, `class`, `window`) in the query string. | Mirrors the brief. The page ignores the sidebar's selected class; the class filter is its own control. A maintainer with a student account reaches it by URL. |
-| D10 | Chart technology | Token-driven SVG components in the `BurnupChart` idiom (colors via CSS classes bound to `--gt-*`), delivered by Claude Design per the brief; recharts primitives allowed underneath where cheaper; no new dependency. | Passes `lint:design` by construction. Scrum D13 precedent. |
-| D11 | Payload | One `GET /api/analytics/dashboard` answers the whole page; the controller composes `overview` and `breakdown` from the three section functions plus a scope-counts function, and lists any section that failed in `failures[]` while the rest renders. | One request per filter change; a slow or broken section cannot blank the page. |
-| D12 | Caching and limits | `@limiter.limit("30/minute")`; in-process cache 60 s keyed by (institution, term, year, class, window), capped at 128 entries; `Cache-Control: private, max-age=60`; `?fresh=1` bypasses the server cache (still rate limited). | The `get_user_count` pattern. Vercel instances are independent, so the cache is best effort — the queries are cheap enough that this only smooths bursts. |
-| D13 ⚑ | Privacy | Aggregates only. No per-student row or name anywhere. Per-team rows only when a class is selected. No minimum-group suppression in v1. | Instructors already see their teams' names and TSRs in the app. Suppression thresholds (k-anonymity) are a policy question (Q32). |
-| D14 | Export | CSV of the breakdown table, built in the browser from the payload (`exportClassCsv.ts` precedent). | "Data-driven" people want the numbers in a spreadsheet; no new endpoint. |
-| D15 | Web analytics | Out of scope; recommend enabling Vercel Web Analytics on the frontend project separately. | Free on Hobby; page views are a different question from product usage. |
-| D16 ⚑ | Product events the schema lacks | Not in v1. If wanted later: an `events(occurred_at, kind, actor_id, class_id, project_id, meta jsonb)` table written by the backend, with a retention job. | The five requested metrics are fully served by existing timestamps. Logins, board views, message reads and TSR edits are not recorded anywhere today (Q36). |
-| D17 | SQL function hygiene | `LANGUAGE sql STABLE SET search_path = public`; `REVOKE EXECUTE … FROM PUBLIC, anon, authenticated; GRANT EXECUTE … TO service_role`; idempotent `CREATE OR REPLACE`; a `-- Check` block with expected values on DEV. | The browser roles hold no table grants, so an invoker-rights function would fail for them anyway; revoking EXECUTE states the lockdown policy explicitly (`2026-09-21_lock_down_direct_table_access.sql`). |
+| 1 | Who sees a university's dashboard | Instructors and maintainers; an instructor sees every class at their institution(s) | §6.1 authorization. Instructors: institutions where they created a class. Maintainers: `ANALYTICS_ADMIN_EMAILS`. |
+| 2 | Internal or public | Internal, signed in | No anonymous route. |
+| 3 | Which messages count | Everything that is **not** instructor ↔ student or TA ↔ student. No attribution of DMs by shared class; totals are fine | §7: team ↔ TA and team ↔ instructor channels excluded by type; a DM is excluded when the pair shares a class in which one is staff (instructor or TA) and the other a student. DMs are counted **school-wide**, never per class or per term; team-channel messages carry the per-class breakdown. |
+| 4 | Messages, conversations or people | Messages | No distinct-sender or active-conversation figures. |
+| 5 | "By sprint" across teams | Calendar weeks if easier, else each team's first sprint aligned as Sprint 1 | Ordinal alignment for the live snapshot (one window function; calendar weeks fragment rows when teams start on different weeks). Calendar weeks appear in the rollup's weekly trends. |
+| 6 | Text length | Median; title + description as typed | The mean is dropped everywhere. |
+| 7 | Counts or points; PR links | Story points **and** counts; PR links do not count | Snapshot and "created" figures carry both units; the card has a count/points toggle (one axis at a time). |
+| 8 | Deadline instant | The school's time zone | `due_at` is computed from `close_date` in `institutions.timezone` (A2). Follow-up: a repo-wide time-zone registry (section 12). |
+| 9 | A TSR's submission time | Last row | `submitted_at` = the latest `created_at` among the evaluator's rows for the assignment (when they finished the set). Edits after the deadline are reported as "edited late", not as late submissions. |
+| 10, 11 | Reopening overwrites the deadline; late is impossible through the UI | Refactor the TSR flow to record submission times correctly first | Sub-project A2 (§5.2): deadlines as instants, a late window instead of moving the deadline, server-side enforcement, `updated_at` on TSR rows. |
+| 12 | Expected submitters | Current members; no membership history | TSR: current project members (teams of ≥ 2); feedback and interest: current enrolled students. |
+| 13 | Interest forms (no `assignment_id`) | Class level | One interest form per class: the class's latest `interest_form` assignment by `close_date`; submissions match by `class_id`. |
+| 14 | Trends across terms | Yes | The nightly `analytics_daily` rollup ships in B, with a Terms card. |
+| 15 | Term identity | Standardize per university: quarters at UCSC, semesters at İstinye | A1 (§5.1): `institutions.term_system`, a constrained term vocabulary, normalized existing rows, a picker driven by the institution. |
+| 16 | Minimum group size; student visibility | 3; students never see this | Rows (class, team, assignment) with fewer than 3 people are folded into one "Smaller groups" row. No student-facing route. |
+| 17 | Events table | Yes | A2 creates `events`; the backend records sign-ins, board views, TSR submissions and edits, reopenings, analytics views; B reads it (active users). |
 
-## 5. Current-state facts the design relies on (verified in the codebase and on DEV)
+### 4.2 Standing recommendations (unchanged from the first draft)
 
-- **Authorization is Python-only**; `service_client` bypasses RLS (AGENTS.md). Every analytics endpoint gates in
-  the controller. There is **no platform-admin concept** anywhere in `backend/app`.
-- **Conversations:** `type ∈ {dm, team_ta, team_instructor, team_members}`; team channels carry `project_id`;
-  DMs carry `user_a < user_b`; `conversation_participants` holds roles. Messages: `body` (1–1024 chars),
-  `sender_id`, `created_at`. Project deletion cascades through conversations to messages (migration
-  `2026-10-02_project_delete_cascades.sql`).
-- **Scrum:** `sprints(project_id, starts_at, ends_at, status)`, `user_stories(project_id, sprint_id nullable,
-  title, description_md ≤ 20000, points, archived_at, created_at)`, `tasks(story_id, project_id, status
-  todo|in_progress|done, title, description_md, created_at, moved_at)`, `task_moves` audit,
-  `sprint_burnup_days` snapshots. Tasks reach their sprint through their story.
-- **TSRs:** `"TSRs"(evaluator_id, evaluatee_id, project_id, assignment_id nullable, week, created_at)`; one row
-  per (evaluator, evaluatee, project, assignment-or-week); a resubmission **updates the row in place** and keeps
-  `created_at`; there is no `updated_at`. On DEV 27 of 30 rows carry an `assignment_id`.
-- **Assignments:** `open_date`, `close_date` are bare `date`s; `status ∈ {draft, publish}`; `assignment_type ∈
-  {tsr, interest_form, feedback}`. **The backend never enforces `close_date`** (the lockout is in the web client
-  only). Reopening an assignment is an `UPDATE` of `close_date`, which overwrites the original deadline.
-  `feedback_submissions` has `created_at`/`updated_at`; `interest_submissions` has `submitted_at` and
-  `class_id` but **no `assignment_id`**.
-- **Institutions:** `institutions(id, name, slug, email_domains, timezone)`, `classes.institution_id` (all DEV
-  classes assigned). `classes.term` and `classes.year` are free text / float. Two institutions exist.
-- **Membership history is not recorded**: `project_members` and `class_enrollments` are current state.
-- **Frontend:** `DashboardMetricCard` (KPI tile), `BurnupChart` (SVG idiom), `useTableSort`, `Skeleton`,
-  `StatTooltip`, `exportClassCsv.ts` exist; recharts is a dependency (pie charts); `lint:design` fails on any raw
-  hex outside the token files; sidebar sections come from `buildSidebarConfig`, class-scoped page rules from
-  `routePermissions.ts`.
-- **Tests:** `tests/fake_supabase.py` supports `rpc={name: fn}` and counts `executes`; conftest mints HS256
-  tokens with an `email` claim.
+| # | Topic | Decision | Why |
+|---|---|---|---|
+| D2 | Compute strategy | On demand: one `STABLE` SQL function per section, called over `.rpc()`, fanned out concurrently, assembled payload cached in process for 60 s | Tiny data; precedents `messages_inbox`, `scrum_next_key`, `claim_email_outbox`. |
+| D9 | Route and navigation | `/app/analytics`, lazy, not class-scoped; sidebar item "Analytics" in Main for accounts that can create classes; filters in the query string | The institution is the frame; the class filter is its own control. |
+| D10 | Chart technology | Token-driven SVG components in the `BurnupChart` idiom, delivered by Claude Design; recharts primitives allowed underneath; no new dependency | Passes `lint:design` by construction. |
+| D11 | Payload | One `GET /api/analytics/dashboard` answers the page; `failures[]` names any section whose function failed while the rest renders | One request per filter change; one broken section cannot blank the page. |
+| D12 | Caching and limits | `@limiter.limit("30/minute")`; in-process cache 60 s keyed by the full filter tuple, 128 entries; `Cache-Control: private, max-age=60`; `?fresh=1` bypasses | The `get_user_count` pattern; Vercel instances are independent, so this only smooths bursts. |
+| D14 | Export | CSV of the breakdown table, built in the browser | No new endpoint. |
+| D15 | Web analytics | Out of scope; enable Vercel Web Analytics separately | Free on Hobby; a different question. |
+| D17 | SQL function hygiene | `LANGUAGE sql STABLE SET search_path = public`; `REVOKE EXECUTE … FROM PUBLIC, anon, authenticated; GRANT EXECUTE … TO service_role`; idempotent; a `-- Check` block | States the lockdown policy explicitly. |
 
-## 6. Architecture
+## 5. Sub-project A — Time foundations
+
+### 5.1 A1: one term vocabulary per institution
+
+Today `CreateClassModal` offers Fall / Winter / Spring / Summer to every school, `classes.term` is unconstrained
+text, `classes.year` is `double precision` derived from `start_date`, and the TSR auto-schedule assumes a
+quarter (5 TSRs for Fall/Winter/Spring, 3 for Summer; opens two weeks after `start_date`, one per week,
+Sunday to Wednesday).
+
+Migration `2026-10/<YYYY-MM-DD>_term_system.sql` (named by the day it is written, as AGENTS.md prescribes;
+expand, idempotent):
+
+```sql
+ALTER TABLE institutions ADD COLUMN IF NOT EXISTS term_system text NOT NULL DEFAULT 'quarter'
+  CHECK (term_system IN ('quarter', 'semester'));
+UPDATE institutions SET term_system = 'semester' WHERE slug = 'istinye' AND term_system <> 'semester';
+UPDATE classes SET term = initcap(lower(trim(term))) WHERE term IS NOT NULL AND term <> initcap(lower(trim(term)));
+ALTER TABLE classes DROP CONSTRAINT IF EXISTS classes_term_valid;
+ALTER TABLE classes ADD CONSTRAINT classes_term_valid
+  CHECK (term IS NULL OR term IN ('Fall', 'Winter', 'Spring', 'Summer'));
+ALTER TABLE classes ALTER COLUMN year TYPE integer USING round(year)::integer;
+```
+
+Vocabularies live in the backend (`app/institutions/terms.py`): `quarter → Fall, Winter, Spring, Summer`;
+`semester → Fall, Spring, Summer`. `create_class` rejects a term outside the institution's vocabulary (400) and
+picks the TSR default by system: quarter 5/5/5/3; semester Fall and Spring **8**, Summer **4** (⚑ Q-A1, a guess
+to confirm). `GET /api/institutions` adds `term_system` and `terms`; `CreateClassModal` builds its buttons from
+the selected institution. The term label everywhere is `"Fall 2026"`; ordering is by `year`, then season order.
+
+### 5.2 A2: deadlines as instants, a late window, submission timestamps, events
+
+**Deadline model.**
+
+```sql
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS due_at       timestamptz;  -- the deadline instant
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS accept_until timestamptz;  -- late window; NULL = closes at due_at
+UPDATE assignments a
+   SET due_at = ((a.close_date + 1)::timestamp AT TIME ZONE coalesce(i.timezone, 'America/Los_Angeles'))
+  FROM classes c LEFT JOIN institutions i ON i.id = c.institution_id
+ WHERE c.id = a.class_id AND a.due_at IS NULL AND a.close_date IS NOT NULL;
+ALTER TABLE "TSRs" ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+-- trigger: BEFORE UPDATE ON "TSRs" SET NEW.updated_at = now()  (the moddatetime idiom, written out)
+```
+
+- `close_date` stays the field instructors edit and students see; the backend derives `due_at` as the first
+  instant after that day in the school's zone, on create and on every change of `close_date`.
+- **Before** `due_at` passes, changing `close_date` is a reschedule (`due_at` follows). **After** it passes, a
+  change of `close_date` is refused (400 `"The deadline has passed; set a late-submission window instead"`) and
+  the instructor sets `accept_until` instead — so the original deadline survives and late work is visible as
+  late. The Modules page shows "Accept late submissions until …" once the deadline has passed.
+- **Server-side enforcement** (new): `create_tsr`, `update_tsr_entry` and `submit_feedback` refuse when
+  `now() < open_date` in the school's zone or `now() >= coalesce(accept_until, due_at)` (403 `"This assignment
+  is closed"`). The web client keeps its lockout, extended by `accept_until`, and shows a "Late" badge on a
+  submission made after `due_at`. Assignments with `due_at IS NULL` (no `close_date`) never close.
+- **Submission semantics** (decision 9): a student's submission time for a TSR assignment is the latest
+  `created_at` among their rows for it; `updated_at` records edits; "edited late" = `max(updated_at) > due_at`
+  with `submitted_at <= due_at`.
+- **Events table** (decision 17), created here because A2 writes the first events:
+
+```sql
+CREATE TABLE IF NOT EXISTS events (
+  id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  occurred_at timestamptz NOT NULL DEFAULT now(),
+  kind        text NOT NULL CHECK (kind ~ '^[a-z][a-z0-9_]{1,39}$'),
+  actor_id    uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  class_id    uuid REFERENCES classes(id)  ON DELETE SET NULL,
+  project_id  uuid REFERENCES projects(id) ON DELETE SET NULL,
+  meta        jsonb NOT NULL DEFAULT '{}' CHECK (pg_column_size(meta) <= 2048)
+);
+CREATE INDEX IF NOT EXISTS events_kind_time_idx  ON events (kind, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS events_class_time_idx ON events (class_id, occurred_at DESC) WHERE class_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS events_actor_time_idx ON events (actor_id, occurred_at DESC);
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;   -- no policies, no client grants (lockdown policy)
+```
+
+  `ON DELETE SET NULL` keeps the count when a project or class is deleted — the reason the table exists.
+  `app/core/events.py` exposes `record(kind, *, actor_id, class_id=None, project_id=None, meta=None)`: one
+  insert, inside the request (Vercel may freeze the function after the response), failures logged at WARNING
+  and never raised. `meta` holds ids and short enums only — never names, emails, grades or text (the Sentry
+  scrubbing rule, applied here by construction). Kinds in A2: `tsr_submitted`, `tsr_updated`,
+  `feedback_submitted`, `assignment_reopened` (meta: `{accept_until}`), `login` (from `POST /api/login-check`).
+  B adds `board_viewed` and `analytics_viewed`. Retention: 365 days, by the pg_cron job in B (⚑ Q-A2).
+
+**Tests (A).** Term validation per system and the TSR defaults; `due_at` derivation in both zones and across a
+DST boundary; reschedule allowed before the deadline, refused after; `accept_until` accepted and reflected;
+`create_tsr` 403 when closed, 200 inside the late window; `updated_at` bumped on update (fake-level: the
+controller sends no `updated_at`, the trigger is checked in the migration's Check block); `record()` never raises
+and costs one execute; migration Check block on DEV.
+
+**Frontend (A).** `CreateClassModal` term buttons from the institution; Modules: late-window control after the
+deadline; student assignment pages: lock at `accept_until ?? due_at`, "Late submissions accepted until …",
+"Late" badge; dates rendered in the viewer's local time with the school's zone in a tooltip (the registry
+follow-up generalizes this).
+
+## 6. Sub-project B — Analytics core
 
 ```
-Supabase Postgres                       FastAPI on Vercel                       React on Vercel
-analytics_* SQL functions   ── RPC ──▶  app/analytics/controller.py  ── JSON ──▶ features/analytics/AnalyticsPage
-  scope CTE: institution → classes        scope_for_user (D1)                     URL state ?institution&term&year&class&window
-  → projects, filtered by term/class      fan_out(4 rpcs) → compose payload        one payload → cards; CSV in the browser
-  STABLE, search_path = public            per-section failures[]                  refetch holds the previous render
-  EXECUTE: service_role only              60 s in-process cache, 30/min limiter
+Supabase Postgres                            FastAPI on Vercel                       React on Vercel
+analytics_* SQL functions (live)   ── RPC ──▶ app/analytics/controller.py ── JSON ──▶ features/analytics/AnalyticsPage
+analytics_daily (nightly, pg_cron)             scope_for_user (4.1 #1)                  URL state ?institution&term&year&class&window
+events (written by the backend)                fan_out(5 rpcs) → compose payload        one payload → cards; CSV in the browser
+  STABLE, search_path = public                 k = 3 folding, failures[]                refetch holds the previous render
+  EXECUTE: service_role only                   60 s cache, 30/min limiter
 ```
 
 ### 6.1 Backend module `backend/app/analytics/`
 
-Follows the url / views / controller / models convention.
+Follows url / views / controller / models.
 
 - `url.py` — `router = APIRouter(prefix="/api/analytics", tags=["analytics"])`; `GET /scope`, `GET /dashboard`;
-  both `@limiter.limit("30/minute")` with a `request: Request` parameter, both behind `require_user_payload`
-  (the email claim is needed for the maintainer allowlist).
-- `models.py` — `DashboardQuery` (`institution_id: UUID`, `term: str | None` ≤ 40 chars, `year: int | None`,
-  `class_id: UUID | None`, `window: Literal['7d','30d','90d','term','all'] = '30d'`, `fresh: bool = False`), and
-  response models mirroring the TypeScript contract in the brief (`AnalyticsDashboard`, `AnalyticsScope`).
-- `windows.py` — pure functions: `window_bounds(window, today, term_start) -> (from, to, prev_from, prev_to)`;
-  `term_label(term, year)`. Unit-tested without a database.
+  both `@limiter.limit("30/minute")` with `request: Request`, behind `require_user_payload` (the email claim
+  feeds the maintainer allowlist). `GET /dashboard` records an `analytics_viewed` event.
+- `models.py` — `DashboardQuery` (`institution_id: UUID`, `term: str | None`, `year: int | None`, `class_id:
+  UUID | None`, `window: Literal['7d','30d','90d','term','all'] = '30d'`, `fresh: bool = False`) and response
+  models mirroring the brief's TypeScript contract. The tasks/points unit is a client-side toggle, not a query
+  parameter.
+- `windows.py` — pure functions: `window_bounds(window, today, term_start)`, `term_label(term, year)`,
+  `fold_small_groups(rows, key, k=3)`.
 - `controller.py`
-  - `scope_for_user(user_id, email) -> Scope`: maintainer (`email.lower()` ∈ `settings.ANALYTICS_ADMIN_EMAILS`)
-    → all institutions (`load_institutions()`); else the institutions of `classes.created_by = user_id` (one
-    read). Empty scope → `[]` for `/scope`, 403 for `/dashboard`.
-  - `get_scope(...)`: institutions in scope, each with its `(term, year)` pairs and classes (`id`, `name`,
-    `course_code`) — one classes read for instructors, one for maintainers.
-  - `get_dashboard(...)`: validate the institution is in scope (403 `"Analytics is not available for this
-    institution"`), the class belongs to it (400 `"Class is not in this institution"`); compute bounds; serve
-    from cache unless `fresh`; `fan_out` the four RPCs, each wrapped so a `DatabaseError` adds the section to
-    `failures` and leaves it `None`; compose `overview` and `breakdown`; cache; return.
-- `config.py` — `ANALYTICS_ADMIN_EMAILS` (comma-separated, blank = none). Documented in `.env.example` and
-  DEPLOY.md.
+  - `scope_for_user(user_id, email)`: maintainer (`email.lower()` ∈ `settings.ANALYTICS_ADMIN_EMAILS`) → all
+    institutions; else the institutions of `classes.created_by = user_id`. Empty → `[]` for `/scope`, 403 for
+    `/dashboard`.
+  - `get_scope(...)`: institutions in scope with `term_system`, their `(term, year)` pairs and classes.
+  - `get_dashboard(...)`: validate scope (403) and class ∈ institution (400); bounds; cache; `fan_out` five
+    RPCs (`analytics_scope_counts`, `analytics_conversations`, `analytics_scrum`, `analytics_terms`,
+    `analytics_timeliness` once C lands), each wrapped so a `DatabaseError` adds the section to `failures`;
+    compose `overview` and `breakdown`; fold groups smaller than 3; cache; return.
+- `config.py` — `ANALYTICS_ADMIN_EMAILS` (comma-separated, blank = none).
 
-### 6.2 SQL — one migration `backend/database/migrations/2026-10/2026-10-05_analytics_functions.sql`
+### 6.2 SQL — migration `2026-10/<YYYY-MM-DD>_analytics.sql`
 
-Idempotent, functions only, no tables, no data. Applied DEV first, then PROD (AGENTS.md).
-
-Shared scoping, repeated in each function (SQL functions cannot share a CTE):
+Idempotent: the rollup table, the rollup function, the section functions. Shared scoping (repeated in each
+function):
 
 ```sql
 WITH scope AS (
@@ -162,80 +243,98 @@ WITH scope AS (
     FROM classes c
    WHERE c.institution_id = p_institution
      AND (p_class IS NULL OR c.id = p_class)
-     AND (p_term IS NULL OR (c.term = p_term AND c.year = p_year))
-),
-teams AS (
-  SELECT p.id AS project_id, p.class_id
-    FROM projects p JOIN scope s ON s.class_id = p.class_id
-)
+     AND (p_term IS NULL OR (c.term = p_term AND c.year = p_year))),
+teams AS (SELECT p.id AS project_id, p.class_id FROM projects p JOIN scope s ON s.class_id = p.class_id),
+user_roles AS (                                   -- everyone's role in every class
+  SELECT ce.user_id, ce.class_id, ce.enrollment_role AS role FROM class_enrollments ce
+  UNION ALL SELECT c.created_by, c.id, 'instructor' FROM classes c)
 ```
 
 Every function takes `(p_institution uuid, p_term text, p_year int, p_class uuid, p_from date, p_to date,
-p_prev_from date, p_prev_to date, p_tz text)` and `RETURNS jsonb`. Timestamps are bucketed in `p_tz`
-(`institutions.timezone`, read by the controller).
+p_prev_from date, p_prev_to date, p_tz text)` and `RETURNS jsonb`; timestamps are bucketed in `p_tz`.
 
-- `analytics_scope_counts` — classes, teams (projects with ≥ 1 member), students (distinct enrolled
-  `enrollment_role = 'student'`), per class.
-- `analytics_conversations` — `total`, `by_type`, `weekly` (`date_trunc('week', m.created_at AT TIME ZONE p_tz)`,
-  Monday), `previous_total`, `unattributed`, `by_class`. Attribution:
+- **`analytics_scope_counts`** — classes, teams (projects with ≥ 1 member), students (distinct `student`
+  enrollments), active users (distinct `login` actors in the last 7 days who hold a role at the institution;
+  `null` until events exist), per class.
+- **`analytics_conversations`** — decision 3:
 
   ```sql
-  user_classes AS (
-    SELECT user_id, class_id FROM class_enrollments
-    UNION SELECT created_by, id FROM classes),
-  dm_home AS (                     -- a DM lives in the most recent class both people share
-    SELECT c.id AS conversation_id, cl.id AS class_id
-      FROM conversations c
-      JOIN LATERAL (
-        SELECT cl.* FROM classes cl
-         WHERE EXISTS (SELECT 1 FROM user_classes ua WHERE ua.user_id = c.user_a AND ua.class_id = cl.id)
-           AND EXISTS (SELECT 1 FROM user_classes ub WHERE ub.user_id = c.user_b AND ub.class_id = cl.id)
-         ORDER BY cl.created_at DESC LIMIT 1) cl ON true
-     WHERE c.type = 'dm'),
-  team_home AS (
-    SELECT c.id AS conversation_id, t.class_id
-      FROM conversations c JOIN teams t ON t.project_id = c.project_id
+  staff_student_dm AS (                            -- excluded: staff and a student of the same class
+    SELECT DISTINCT c.id FROM conversations c
+      JOIN user_roles a ON a.user_id = c.user_a
+      JOIN user_roles b ON b.user_id = c.user_b AND b.class_id = a.class_id
+     WHERE c.type = 'dm'
+       AND ((a.role IN ('instructor','ta') AND b.role = 'student')
+         OR (b.role IN ('instructor','ta') AND a.role = 'student'))),
+  school_people AS (                               -- who belongs to this school, in any role
+    SELECT DISTINCT ur.user_id FROM user_roles ur JOIN classes c ON c.id = ur.class_id
+     WHERE c.institution_id = p_institution),
+  counted_dm AS (                                  -- school-wide; ignores p_term and p_class by design
+    SELECT c.id FROM conversations c
+     WHERE c.type = 'dm' AND c.id NOT IN (SELECT id FROM staff_student_dm)
+       AND c.user_a IN (SELECT user_id FROM school_people)
+       AND c.user_b IN (SELECT user_id FROM school_people)),
+  counted_team AS (                                -- per class, follows the filters
+    SELECT c.id, t.class_id FROM conversations c JOIN teams t ON t.project_id = c.project_id
      WHERE c.type = 'team_members')
   ```
 
-  Messages join `dm_home ∪ team_home`, then `scope`. `team_ta` and `team_instructor` never appear.
-- `analytics_scrum` — `stories_created`, `tasks_created` (by `created_at` in window, with previous-window
-  values), `weekly_tasks` (for the sparkline), `by_sprint` (live: `tasks` ⋈ `user_stories` with
-  `archived_at IS NULL`, ordinal via `row_number() OVER (PARTITION BY sp.project_id ORDER BY sp.starts_at,
-  sp.created_at)`, `NULL` sprint → 0 "Backlog"; `teams` = distinct projects with any task in that ordinal),
-  `chars` (`percentile_cont(0.5) WITHIN GROUP (ORDER BY len)` and `avg(len)`, per entity, per ordinal and
-  overall; all stories/tasks ever created in scope, not windowed), `by_class`.
-- `analytics_timeliness` — for published assignments of scope classes with a `close_date`:
+  Returns `team_members`, `dm`, `total`, `weekly` (both series, Monday weeks in `p_tz`), previous-window
+  values, `by_class` (team-channel messages only). `team_ta` and `team_instructor` never appear.
+- **`analytics_scrum`** — `stories_created`, `tasks_created`, `story_points_created`, `task_points_created`
+  (window and previous window), `weekly_tasks`, `by_sprint` (live: `tasks` ⋈ `user_stories` with `archived_at
+  IS NULL`; ordinal `row_number() OVER (PARTITION BY sp.project_id ORDER BY sp.starts_at, sp.created_at)`;
+  `NULL` sprint → 0 "Backlog"; counts and `sum(coalesce(points, 0))` per status; `teams` = distinct projects),
+  `chars` (`percentile_cont(0.5) WITHIN GROUP (ORDER BY char_length(title) + char_length(coalesce(description_md,
+  '')))` per entity, per ordinal and overall, all time), `by_class`.
+- **`analytics_terms(p_institution uuid)`** — reads `analytics_daily` joined to `classes(term, year)`: per term
+  the weeks elapsed (first `start_date` to the last rolled-up day, capped at today), classes, teams, students,
+  team messages per team per week, direct messages per week, tasks created per team per week, points done per
+  team, on-time rate (from C's outcomes), and a weekly trend of team messages per team. Normalized per team
+  because class sizes differ; marked `as_of` the last rollup.
+- **Rollup.**
 
   ```sql
-  deadline  := ((a.close_date + 1)::timestamp AT TIME ZONE p_tz)   -- first instant after the due day
-  expected  := TSR: (assignment × project_members of the class's projects having ≥ 2 members)
-               feedback, interest_form: (assignment × enrolled students of the class)
-  submitted := TSR: min("TSRs".created_at) per (assignment_id, evaluator_id)
-               feedback: feedback_submissions.created_at per (assignment_id, student_id)
-               interest_form: interest_submissions.submitted_at per (class_id, user_id), matched to the
-                 class's interest assignment whose [open_date, close_date] contains submitted_at::date,
-                 else the class's latest interest assignment
-  bucket    := CASE WHEN submitted IS NULL AND now() >= deadline THEN 'missing'
-                    WHEN submitted IS NULL                       THEN 'not_due'
-                    WHEN submitted >= deadline                   THEN 'late'
-                    WHEN submitted >= deadline - interval '24 hours' THEN 'on_time'
-                    ELSE 'early' END
+  CREATE TABLE IF NOT EXISTS analytics_daily (
+    institution_id uuid NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+    class_id       uuid REFERENCES classes(id) ON DELETE SET NULL,   -- NULL = school-wide metric
+    class_term     text, class_year int,                               -- copied so a deleted class keeps its term
+    day            date NOT NULL,
+    metric         text NOT NULL,
+    value          numeric NOT NULL,
+    computed_at    timestamptz NOT NULL DEFAULT now(),
+    UNIQUE NULLS NOT DISTINCT (institution_id, class_id, day, metric)
+  );
+  ALTER TABLE analytics_daily ENABLE ROW LEVEL SECURITY;              -- no policies, no client grants
   ```
 
-  Returns `on_time_rate`, `expected`, `late`, `missing`, `rows` per class (or per assignment when `p_class` is
-  set, ordered by `close_date`), `by_class`. Assignments whose deadline has not passed are reported but excluded
-  from the rate.
+  `analytics_rollup_day(p_day date)` upserts, for every institution in its own zone: per class and day —
+  `team_messages`, `stories_created`, `tasks_created`, `story_points_created`, `task_points_created`,
+  `active_teams` (teams with a message, task, story or move that day), `board_views` (events), and the board
+  snapshot as of the run (`tasks_todo`, `tasks_in_progress`, `tasks_done`, `points_todo`, `points_in_progress`,
+  `points_done`); per institution and day (`class_id NULL`) — `dm_messages`, `active_users` (distinct `login`
+  actors). `analytics_rollup_range(p_from, p_to)` backfills activity metrics (snapshots cannot be backfilled;
+  they start at go-live). Idempotent upserts, so a re-run is safe. Rows survive class and project deletion
+  (`SET NULL` plus the copied term).
 
-Indexes: none needed at current volume. When `messages` passes ~100k rows, add `messages (created_at)` and
-`tasks (created_at)`; `"TSRs" (assignment_id, evaluator_id, created_at)` when TSRs pass ~50k. Noted in the
-migration header, not created now.
+  pg_cron (`prod/2026-10/…_analytics_cron.sql`, applied by hand on DEV then PROD after `CREATE EXTENSION
+  pg_cron`): `analytics-rollup` at `0 9 * * *` UTC → `SELECT analytics_rollup_day(current_date - 1)` (01:00 or
+  02:00 in Santa Cruz, 12:00 in Istanbul — the snapshot skew is documented in the Terms card's definition),
+  `events-retention` daily (`DELETE FROM events WHERE occurred_at < now() - interval '365 days'`), and
+  `cron-run-details-retention` if the email cron has not created it. Everything the rollup needs is in the
+  database, so unlike the email dispatcher there is no HTTP call, no secret and no Vault entry.
+- **Folding (k = 3)** happens in Python after the RPCs: a class row with fewer than 3 students, a team row with
+  fewer than 3 members, or a timeliness row with fewer than 3 expected submitters is summed into one row
+  `kind: 'folded'`, label "Smaller groups (n)". Institution totals are unaffected.
+
+Indexes: none needed at current volume. When `messages` passes ~100k rows add `messages (created_at)` and
+`tasks (created_at)`; noted in the migration header.
 
 ### 6.3 API
 
 ```
 GET /api/analytics/scope
-  → { institutions: [{ id, name, slug, timezone, access: 'maintainer' | 'instructor',
+  → { institutions: [{ id, name, slug, timezone, term_system, access: 'maintainer' | 'instructor',
                        terms: [{ term, year, label, classes: [{ id, name, course_code }] }] }] }
 GET /api/analytics/dashboard?institution_id=…&term=Fall&year=2026&class_id=…&window=30d[&fresh=1]
   → AnalyticsDashboard (brief §5)
@@ -243,193 +342,119 @@ GET /api/analytics/dashboard?institution_id=…&term=Fall&year=2026&class_id=…
   429 rate limit · 503 database unavailable · 200 with failures[] when a section's function fails
 ```
 
-Errors use the standard `{detail, code}` body. Both routes are added to
-`frontend/public/.well-known/grepthink-actions.json` (`view_analytics_scope`, `view_analytics_dashboard`, role
-`instructor`) and to the API-surface line in AGENTS.md.
+Both routes join `frontend/public/.well-known/grepthink-actions.json` (`view_analytics_scope`,
+`view_analytics_dashboard`, role `instructor`) and AGENTS.md's API-surface line.
 
 ### 6.4 Frontend
 
-- `lib/api/analytics.ts` (`getAnalyticsScope`, `getAnalyticsDashboard`) spread into `api`; types
-  `ApiAnalyticsScope`, `ApiAnalyticsDashboard` in `lib/api/types.ts`, matching the brief's contract.
-- `features/analytics/` — `pages/AnalyticsPage.tsx` (lazy route), `hooks/useAnalyticsDashboard.ts` (query-string
-  ↔ state, fetch with a sequence counter so a stale response is ignored, hold the previous payload while
-  refetching, 60 s auto-refresh paused while the tab is hidden), `components/` (ported from the Claude Design
-  kit: `AnalyticsFilterRow`, `StatTile` as an extension of `DashboardMetricCard`, `ChartCard`, `WeeklyLine`,
-  `SplitBar`, `StackedBars`, `TimelinessBars`, `OnTimeMeter`, `BarsBySprint`, `BreakdownTable`, `ChartLegend`,
-  `ChartTooltip`, `DefinitionPopover`, `EmptyState`, `LivePill`), `utils/analyticsFormat.ts` (compact numbers,
-  percentages, signed deltas, week labels, CSV), `analytics.scss` (tokens only, `.gt-*` classes verbatim from
-  the kit — scrum D12 precedent).
-- Sidebar: `{ label: 'Analytics', path: '/app/analytics', icon: BarChart3 }` appended to the Main section when
-  `canCreateClasses`. `routePermissions.ts` is untouched: the page is not class-scoped; the backend decides, and
-  a 403 renders "Analytics is available to instructors and maintainers."
-- Preview mode ("View class as student") is unaffected: the page only reads.
-- Until the kit arrives, the page ships with interim components that honour the brief's rules (tokens, mark
-  specs, legend + table twin); the port replaces them file by file when `git diff design/` lands.
+- `lib/api/analytics.ts` (`getAnalyticsScope`, `getAnalyticsDashboard`) spread into `api`; types in
+  `lib/api/types.ts` matching the brief's contract.
+- `features/analytics/` — `pages/AnalyticsPage.tsx` (lazy route), `hooks/useAnalyticsDashboard.ts` (query
+  string ↔ state, sequence counter so a stale response is ignored, previous payload held while refetching, 60 s
+  auto-refresh while visible), `components/` (ported from the kit: `AnalyticsFilterRow`, `StatTile` as an
+  extension of `DashboardMetricCard`, `ChartCard`, `UnitToggle`, `WeeklyLine`, `SplitBar`, `StackedBars`,
+  `TimelinessBars`, `OnTimeMeter`, `BarsBySprint`, `TermComparison`, `BreakdownTable`, `ChartLegend`,
+  `ChartTooltip`, `DefinitionPopover`, `EmptyState`, `LivePill`), `utils/analyticsFormat.ts`, `analytics.scss`
+  (tokens only, `.gt-*` classes verbatim from the kit).
+- Sidebar: `{ label: 'Analytics', path: '/app/analytics', icon: BarChart3 }` in Main when `canCreateClasses`;
+  `routePermissions.ts` untouched (not class-scoped; the backend decides; 403 renders "Analytics is available to
+  instructors and maintainers.").
+- Interim components honour the brief's rules until the kit arrives; the port replaces them file by file.
 
-## 7. Metric definitions (what the numbers mean)
+## 7. Metric definitions
 
 | Metric | Definition | Excludes |
 |---|---|---|
-| Messages | `messages` rows created in the window whose conversation is a DM or a team-member channel attributed to a class in scope (D4). | `team_ta`, `team_instructor`; DMs with no shared class (reported as unattributed). |
-| Stories / tasks created | `user_stories` / `tasks` with `created_at` in the window on boards of teams in scope. Archived stories count. | Nothing else. |
-| Live board snapshot | Current `tasks.status` grouped by the story's sprint ordinal within its project; Backlog for stories without a sprint; across all teams in scope. Not windowed. | Tasks of archived stories. |
-| Characters per task / story | `char_length(title) + char_length(description_md)` as typed; median and mean; per sprint ordinal and overall; all time. | Comments. |
-| Timeliness | Per assignment, each expected submitter's first submission bucketed against the end of the due date in the school's time zone (D7). On-time rate over assignments whose deadline has passed. | Draft assignments, assignments without a due date, teams of one (TSR). |
-| Deltas | Current window vs the previous window of equal length. | Term and all-time windows (null). |
+| Messages | Team-channel messages of teams in scope, plus direct messages between two people of the school, in the window. | Team ↔ TA and team ↔ instructor channels; DMs between staff and a student of a class they share. DMs are never per class or per term. |
+| Stories / tasks created | `user_stories` / `tasks` created in the window on boards of teams in scope; counts and points. Archived stories count. | — |
+| Live board snapshot | Current `tasks.status` by the story's sprint ordinal within its project; Backlog for stories without a sprint; counts and points; across all teams in scope. Not windowed. | Tasks of archived stories. |
+| Characters per task / story | Median of `char_length(title) + char_length(description_md)` as typed; per sprint ordinal and overall; all time. | Comments. |
+| Active users | Distinct people of the school with a `login` event in the last 7 days. | Before the events table exists: not shown. |
+| Terms | From the nightly rollup: per term, per-team-per-week rates and the on-time rate; survives deletions. | The current day (rolled up tonight). |
+| Timeliness (C) | Per assignment, each expected submitter's submission time (TSR: latest row) bucketed against `due_at`: early (> 24 h before), on time, late (before `accept_until`), missing, not due. On-time rate over passed deadlines. "Edited late" counted separately. | Draft assignments, assignments without a deadline, teams of one (TSR). |
+| Folding | Any class, team or assignment row with fewer than 3 people becomes part of "Smaller groups". | Institution totals. |
 
-## 8. Testing
+## 8. Sub-project C — Timeliness
 
-**Backend (pytest, `FakeSupabase`).**
-- Scope: maintainer by env → all institutions; instructor with classes at two institutions → both; instructor
-  with none → empty list (200); TA-only and student accounts → `/dashboard` 403; `email` claim missing →
-  instructor path only.
-- Dashboard: four `rpc` stubs → payload shape and composed `overview`/`breakdown`; one stub raising
-  `DatabaseError` → 200 with `failures == ['scrum']` and `scrum is None`; institution outside scope → 403; class
-  of another institution → 400; bad `window` → 422; second identical call → 0 executes (cache); `fresh=1` →
-  executes again; round-trip budget pinned (scope read + 4 RPCs).
-- `windows.py`: bounds for every window, previous-window math, month boundaries, term with no `start_date`.
-- Config: `ANALYTICS_ADMIN_EMAILS` parsing (blank, spaces, case).
+- **`analytics_timeliness(...)`** on A2's columns:
 
-**SQL.** The migration ends with a `-- Check` block whose expected values on DEV are hand-computed from the
-seed (for example the UCSC messages total equals a direct count over `dm`/`team_members` conversations). An
-optional `-m integration` pytest runs the four functions against DEV when `ANALYTICS_IT_DATABASE=1` and asserts
-shape, non-negativity and cross-consistency (per-class sums equal totals; bucket counts sum to `expected`).
-pgTAP is available on Supabase but unused in the repo; not introduced here.
+  ```sql
+  expected  := TSR: assignment × members of the class's projects having ≥ 2 members
+               feedback: assignment × enrolled students
+               interest_form: the class's latest interest assignment × enrolled students
+  submitted := TSR: max("TSRs".created_at) per (assignment_id, evaluator_id)
+               feedback: feedback_submissions.created_at
+               interest_form: interest_submissions.submitted_at (matched by class_id)
+  edited    := TSR: max("TSRs".updated_at); feedback: updated_at
+  bucket    := CASE WHEN submitted IS NULL AND now() >= a.due_at THEN 'missing'
+                    WHEN submitted IS NULL                        THEN 'not_due'
+                    WHEN submitted >= a.due_at                    THEN 'late'
+                    WHEN submitted >= a.due_at - interval '24 hours' THEN 'on_time'
+                    ELSE 'early' END
+  edited_late := submitted < a.due_at AND edited >= a.due_at
+  ```
 
-**Frontend (vitest).** `analyticsFormat` (compact numbers, percent, delta sign and tone, week labels, CSV
-escaping); `useAnalyticsDashboard` (URL round trip, stale response ignored, previous payload held while
-refetching); components (`StackedBars` renders a legend and labels only segments that fit; `TimelinessBars`
-not-due row; `ChartCard` states); page test with a mocked `api` (first institution selected from scope, 403
-message). `npm run lint:design` passes with no ledger comments.
+  Returns `on_time_rate`, `expected`, `late`, `missing`, `edited_late`, rows per class (or per assignment when
+  `p_class` is set, ordered by `due_at`), `by_class`.
+- **Outcomes in the rollup:** `analytics_assignment_outcomes(assignment_id, class_id, class_term, class_year,
+  finalized_at, expected, early, on_time, late, missing, edited_late)`, upserted by the nightly job for every
+  assignment whose `coalesce(accept_until, due_at)` passed more than 7 days ago and not yet finalized; feeds the
+  Terms card's on-time rate and survives deletion.
+- **Cards:** Timeliness card (meter + buckets per class or per assignment), the on-time stat tile, the on-time
+  column in the breakdown.
 
-## 9. Rollout
+## 9. Testing
 
-1. DEV: apply the functions migration; run its Check block; record the applied date in the header.
-2. PR onto `beta`: backend module, frontend page, actions catalog, AGENTS.md API line, `.env.example` and
-   DEPLOY.md entries for `ANALYTICS_ADMIN_EMAILS`. Gates: ruff, pytest, eslint, `lint:design`, build, vitest.
-3. Send the brief to Claude Design; port the returned kit (`design/PORTING.md`), replacing the interim
-   components; record deviations from the brief in the kit's NOTES.md.
-4. PROD: apply the migration before or after the release — either order is safe (a missing function makes
-   that section's card show an error while the page renders). Set `ANALYTICS_ADMIN_EMAILS` in Vercel (backend,
-   Production) only if maintainers need every institution.
-5. Verify on PROD: `SELECT analytics_conversations(<ucsc>, NULL, NULL, NULL, current_date - 30, current_date,
-   current_date - 61, current_date - 31, 'America/Los_Angeles')`; open `/app/analytics` as an instructor;
-   compare the messages total with a direct count.
+**Backend (pytest, `FakeSupabase`).** A: section 5.2. B: scope (maintainer by env; instructor at two
+institutions; none → `[]`; TA-only and student accounts → `/dashboard` 403); dashboard (RPC stubs → payload
+shape; one stub raising `DatabaseError` → 200 with that section in `failures`; institution outside scope → 403;
+class of another institution → 400; bad `window` → 422; second identical call → 0 executes; `fresh=1` executes
+again; round-trip budget pinned); `windows.py` bounds and previous windows; `fold_small_groups` (exact k
+boundary, mixed kinds, totals preserved); `ANALYTICS_ADMIN_EMAILS` parsing; `events.record` never raises.
+**SQL.** Each migration ends with a `-- Check` block with hand-computed expected values on DEV (for example the
+UCSC team-message total equals a direct count; the staff ↔ student exclusion removes a known DM). An optional
+`-m integration` pytest runs the functions and `analytics_rollup_day` against DEV when
+`ANALYTICS_IT_DATABASE=1`, asserting shape, non-negativity and cross-consistency (per-class sums equal totals;
+buckets sum to `expected`; a second rollup run changes nothing).
+**Frontend (vitest).** `analyticsFormat`; `useAnalyticsDashboard` (URL round trip, stale response ignored,
+payload held while refetching); components (legend + table twin; `StackedBars` unit toggle swaps the series
+without recoloring; folded row rendering; `TimelinessBars` not-due row; `ChartCard` states); page test with a
+mocked `api`. `npm run lint:design` passes with no ledger comments.
 
-## 10. Phase 2 (only if the answers below ask for it)
+## 10. Rollout
 
-- `analytics_daily(institution_id, class_id, day, metric, value)` filled nightly by `analytics_rollup_day(date)`
-  under pg_cron (with the `cron.job_run_details` retention job, as the email cron does) — trends across terms,
-  totals that survive project deletion.
-- `assignments.original_close_date` or an `assignment_deadline_changes` log, so reopening does not rewrite
-  timeliness; `"TSRs".updated_at` so edits are visible.
-- `events` table for product events the schema does not record.
-- A weekly instructor digest through the email outbox (`kinds.py`, preference category required).
-- Vercel Web Analytics on the frontend project.
+1. **A** — migrations on DEV (`term_system`, then `due_at`/`accept_until`/`updated_at`/`events`); Check blocks;
+   PR onto `beta`; PROD migrations **before** the release (the code reads `due_at` and writes `events`; both
+   tolerate absence for one release only by feature-detecting the columns the way institutions did — avoid that
+   by applying first).
+2. **B** — `CREATE EXTENSION pg_cron` on DEV (maintainer); `analytics.sql` on DEV; cron SQL on DEV; verify
+   `cron.job` and one rollup run; PR onto `beta` with `ANALYTICS_ADMIN_EMAILS` documented in `.env.example` and
+   DEPLOY.md; Claude Design round and port; PROD: `CREATE EXTENSION pg_cron` (also unblocks the staged email
+   cron), `analytics.sql`, cron SQL, `analytics_rollup_range` backfill of activity metrics from the first class's
+   `start_date`; set `ANALYTICS_ADMIN_EMAILS` in Vercel if maintainers need every institution.
+3. **C** — `analytics_timeliness` and outcomes on DEV then PROD; PR onto `beta`.
+4. Verify on PROD after each step: the Check blocks, `/app/analytics` as an instructor, a direct count against
+   the messages total, `SELECT jobname, active FROM cron.job`, and `SELECT max(day) FROM analytics_daily` the
+   morning after.
 
-## 11. Ambiguities to resolve — the questions that change the numbers
+## 11. Still open (each has a default; answer when convenient)
 
-Each item: the question, why it matters, and the default this spec assumes if it goes unanswered.
+| # | Question | Default in this spec |
+|---|---|---|
+| Q-A1 | Default TSR counts for a semester school (Fall/Spring, Summer) | 8 / 4, overridable at class creation as today |
+| Q-A2 | Late policy: with no late window, does an assignment close exactly at `due_at`? Retention of `events`? | Yes, closes at `due_at`; reopening is always an explicit late window. Events kept 365 days. |
+| Q-B1 | Rollup time 09:00 UTC (one run for both schools) | Yes; the snapshot skew for Istanbul is documented |
+| Q-B2 | Which events in v1 beyond `login`, `tsr_submitted`, `tsr_updated`, `feedback_submitted`, `assignment_reopened`, `board_viewed`, `analytics_viewed` | None |
+| Q-B3 | Term comparison normalized per team per week | Yes |
+| Q-B4 | Messages card when a class is selected: team-channel messages of that class, with the school-wide DM figure shown separately | Yes |
 
-### Scope and access
-1. **Who sees a university's dashboard?** Instructors of that school, maintainers, department staff, TAs?
-   Decides authorization and whether an admin concept is needed. *Default:* D1.
-2. **Internal page or a public per-university page** (a `grepthink2.com/ucsc` showcase)? Public means
-   anonymous access, caching and a much stricter privacy bar. *Default:* internal, signed in.
-3. **Cross-class visibility.** May an instructor see other instructors' classes at the same school, in
-   aggregate and per class? This is a data-sharing policy, not a technical choice. *Default:* yes, aggregate
-   and per-class rows; per-team rows only inside a class they can already open.
-4. **Class-level analytics for TAs** (an Insights tab on the class Dashboard / TA pages)? *Default:* not in v1;
-   the class filter on the institution page covers instructors.
+## 12. Follow-ups outside these sub-projects
 
-### Conversations
-5. **Type-based exclusion only?** A DM between a student and their TA is a "team ↔ TA chat" in spirit. Exclude
-   DMs where either party is a TA or the instructor of a class they share? *Default:* no; exclude by
-   conversation type only, as requested.
-6. **How a DM gets a school.** Shared-class rule (D4), the sender's `edu_email` domain, or exclude DMs from
-   per-school totals? *Default:* shared-class rule, most recent class.
-7. **Messages, conversations or people?** "Total messages" hides whether 3 or 100 people talk. Add distinct
-   senders and active conversations? *Default:* messages only (both extras are one-line additions).
-8. **Hidden conversations.** A participant's `conversation_deletes` hides a thread for them; its messages still
-   happened. Count them? *Default:* count.
-9. **Deleted projects.** Their channels and messages vanish with them (#197). Should totals be frozen before
-   deletion (phase 2 rollup)? *Default:* no; totals reflect the live database.
-
-### Scrum board
-10. **Sprint alignment:** ordinal within each team (D5), calendar week, or matching sprint names? *Default:*
-    ordinal.
-11. **Backlog** as its own row in the live snapshot? *Default:* yes, first.
-12. **Archived stories' tasks** in the snapshot? *Default:* excluded from the snapshot, included in "created".
-13. **What counts as the text of a task or story:** title + description, description only, markdown stripped,
-    comments included? *Default:* title + description as typed.
-14. **Median, mean or both;** quartiles? *Default:* both; bars show the median.
-15. **Normalize by team size or class size?** Raw totals favour big classes. *Default:* raw totals plus per-team
-    columns in the breakdown.
-16. **Counts or story points?** *Default:* counts; points are optional and uneven across teams.
-17. **PR linkage as a metric** (tasks with a linked, merged PR) — not asked, but the strongest signal of real
-    work on the board. *Default:* not in v1.
-18. **"Created" vs "active":** a team that created 40 tasks in week 1 and never moved one looks busy. Add
-    tasks moved (`task_moves`) in the window? *Default:* not in v1.
-
-### Timeliness
-19. **The deadline instant.** End of `close_date` in the school's zone (D7), or 11:59 PM Pacific for everyone
-    (what the student UI shows today)? İstinye is 10–11 hours ahead. *Default:* school's zone.
-20. **Submission time of a TSR:** first row, last row, or the moment every teammate is covered? *Default:*
-    first row.
-21. **Edits.** TSR rows have no `updated_at`; a student who submits early and rewrites late is "early". Add
-    `updated_at` and report edit timeliness? *Default:* no.
-22. **Reopened assignments.** Reopening overwrites `close_date`, so the original deadline is lost and late
-    submitters look on time. Keep the original deadline (phase 2)? *Default:* current `close_date`; flagged in
-    the card's definition popover.
-23. **Expected submitters.** Current members (D7) or members at the deadline; students who joined late;
-    teams of one? Membership history does not exist. *Default:* current members; TSR teams need ≥ 2 members.
-24. **Interest forms** have no `assignment_id`. Match by class and the assignment's date window, or treat the
-    interest form as class-level (one per class)? *Default:* date-window match, else the class's latest.
-25. **Late is nearly impossible through the UI** (the web client locks the form after `close_date`; the API
-    does not). The metric is therefore mostly on-time vs missing plus how early. Should the app accept late
-    submissions and mark them late, which is the richer dataset but a policy change? *Default:* unchanged.
-26. **Bucket edges.** Early = more than 24 h before? Also 48 h / 72 h? *Default:* 24 h; the SQL takes the edge
-    as a constant to change in one place.
-27. **Per student or per team?** The class Dashboard counts "teams submitted" (any member). *Default:* per
-    expected submitter; team-level is derivable in the breakdown.
-28. **Feedback assignments:** expected = enrolled students only, or TAs too (today's class Dashboard counts
-    every enrollment)? *Default:* students only.
-
-### Time, terms and history
-29. **Do trends across terms matter** ("is Fall 2026 more active than Spring 2026")? If yes, the nightly
-    rollup (D3) ships in v1 and term comparisons become a card. *Default:* no rollup; "term" is a filter.
-30. **Freeze numbers at term end?** Deletions and late edits change the past otherwise. *Default:* live.
-31. **Term identity.** `classes.term` and `year` are free text (`"Fall"`, `"fall 2026"`, …). Standardize the
-    values (a constraint or a picker) so grouping is reliable? *Default:* group by the pair as entered.
-32. **Week boundaries:** Monday in the school's zone? *Default:* yes.
-
-### Privacy and policy
-33. **Minimum group size** before a per-class or per-team row is shown (k-anonymity)? A class with one team
-    exposes that team. *Default:* none; no per-student rows anywhere.
-34. **Will students ever see any of this** (their team vs the class median)? Changes the authorization model
-    and the suppression question. *Default:* no.
-35. **Research use / FERPA.** Is any of this data meant for research or external sharing (the Jev evaluation
-    raised FERPA sign-off)? *Default:* internal operations only; no export beyond the breakdown CSV.
-36. **Retention of derived data.** Nothing new is stored in v1. If the rollup or an events table comes,
-    how long is it kept? *Default:* not applicable in v1.
-
-### Product and infrastructure
-37. **Product events the schema does not record** — logins, board views, message reads, TSR edits, invite
-    acceptance. Which of them matter enough to start an `events` table? *Default:* none in v1.
-38. **Page views** (Vercel Web Analytics, free, no custom events on Hobby): enable it? *Default:* recommend
-    yes, separately.
-39. **Alerts and digests** (weekly instructor email with the on-time rate and quiet teams) via the outbox?
-    *Default:* later.
-40. **Export depth.** CSV of the breakdown table, or a full per-assignment export for a spreadsheet model?
-    *Default:* breakdown CSV.
-41. **Freshness.** 60 s server cache plus a manual refresh — enough, or should the live snapshot card refresh
-    on its own? *Default:* 60 s auto-refresh while the tab is visible.
-
-## 12. Open follow-ups
-
-- Claude Design round for `components/analytics/` (brief in `docs/superpowers/handoffs/`); the kit's NOTES.md
-  may change the layout choices in brief §9.
+- **Time-zone registry (maintainer, 2026-10-06):** one source for the zone each surface formats in —
+  `institutions.timezone` on the backend (`institution_timezone()` exists), a frontend hook fed by the class's
+  institution — replacing the hard-coded America/Los_Angeles in `reviewDates.ts`, the 11:59 PM PST label in
+  `StudentHomeDashboard.tsx`, and the scrum board's day bucketing. To be opened as an issue.
 - `supabase/schema.sql` does not yet reflect institutions, conversation participants or the email outbox; the
-  analytics functions will be added to it once applied, as AGENTS.md requires.
-- PROD volume was not measured (production-read policy); measure it when applying the migration and record
-  the counts in the migration's Check block.
+  A and B objects join it once applied, as AGENTS.md requires.
+- PROD volume was not measured (production-read policy); record the counts in the migration Check blocks.
+- Claude Design round for `components/analytics/`; the kit's NOTES.md may change layout choices in brief §9.

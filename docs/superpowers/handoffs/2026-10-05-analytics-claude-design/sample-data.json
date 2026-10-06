@@ -1,23 +1,28 @@
 {
   "meta": {
-    "institution": { "id": "6f2c3a2e-0000-4000-8000-000000000001", "name": "UC Santa Cruz", "slug": "ucsc", "timezone": "America/Los_Angeles" },
-    "term": "Fall 2026",
+    "institution": { "id": "6f2c3a2e-0000-4000-8000-000000000001", "name": "UC Santa Cruz", "slug": "ucsc", "timezone": "America/Los_Angeles", "term_system": "quarter" },
+    "term": { "term": "Fall", "year": 2026, "label": "Fall 2026" },
     "class_id": null,
     "window": "30d",
     "from": "2026-09-06",
     "to": "2026-10-05",
     "generated_at": "2026-10-05T17:42:11Z",
-    "cached": false
+    "cached": false,
+    "k_anonymity": 3,
+    "rollup_as_of": "2026-10-05"
   },
   "overview": {
     "active_classes": 4,
     "teams": 23,
     "students": 118,
+    "active_users_7d": 96,
     "messages": 1284,
     "stories_created": 61,
     "tasks_created": 302,
+    "story_points_created": 188,
+    "task_points_created": 611,
     "on_time_rate": 0.82,
-    "deltas": { "messages": 0.18, "stories_created": -0.05, "tasks_created": 0.22, "on_time_rate": 0.03 },
+    "deltas": { "messages": 0.18, "stories_created": -0.05, "tasks_created": 0.22, "on_time_rate": 0.03, "active_users_7d": 0.09 },
     "trends": {
       "messages": [12, 18, 25, 31, 44, 52, 61, 58, 73, 88, 95, 102],
       "tasks_created": [3, 6, 4, 9, 14, 12, 18, 21, 17, 26, 24, 29]
@@ -25,35 +30,38 @@
   },
   "conversations": {
     "total": 1284,
-    "by_type": { "dm": 712, "team_members": 572 },
+    "team_members": 572,
+    "dm": 712,
     "weekly": [
-      { "week_start": "2026-09-07", "value": 61 },
-      { "week_start": "2026-09-14", "value": 148 },
-      { "week_start": "2026-09-21", "value": 287 },
-      { "week_start": "2026-09-28", "value": 402 },
-      { "week_start": "2026-10-05", "value": 386 }
+      { "week_start": "2026-09-07", "team_members": 21, "dm": 40 },
+      { "week_start": "2026-09-14", "team_members": 58, "dm": 90 },
+      { "week_start": "2026-09-21", "team_members": 131, "dm": 156 },
+      { "week_start": "2026-09-28", "team_members": 188, "dm": 214 },
+      { "week_start": "2026-10-05", "team_members": 174, "dm": 212 }
     ],
-    "excluded_types": ["team_ta", "team_instructor"]
+    "excluded": ["team_ta", "team_instructor", "dm between staff and a student of their class"]
   },
   "scrum": {
     "live_as_of": "2026-10-05T17:42:11Z",
     "stories_created": 61,
     "tasks_created": 302,
+    "story_points_created": 188,
+    "task_points_created": 611,
     "by_sprint": [
-      { "ordinal": 0, "label": "Backlog", "teams": 23, "todo": 94, "in_progress": 0, "done": 0 },
-      { "ordinal": 1, "label": "Sprint 1", "teams": 23, "todo": 11, "in_progress": 6, "done": 118 },
-      { "ordinal": 2, "label": "Sprint 2", "teams": 21, "todo": 38, "in_progress": 27, "done": 64 },
-      { "ordinal": 3, "label": "Sprint 3", "teams": 9, "todo": 41, "in_progress": 12, "done": 7 }
+      { "ordinal": 0, "label": "Backlog", "teams": 23, "todo": 94, "in_progress": 0, "done": 0, "points_todo": 171, "points_in_progress": 0, "points_done": 0 },
+      { "ordinal": 1, "label": "Sprint 1", "teams": 23, "todo": 11, "in_progress": 6, "done": 118, "points_todo": 19, "points_in_progress": 13, "points_done": 226 },
+      { "ordinal": 2, "label": "Sprint 2", "teams": 21, "todo": 38, "in_progress": 27, "done": 64, "points_todo": 71, "points_in_progress": 58, "points_done": 139 },
+      { "ordinal": 3, "label": "Sprint 3", "teams": 9, "todo": 41, "in_progress": 12, "done": 7, "points_todo": 83, "points_in_progress": 27, "points_done": 16 }
     ],
     "chars": [
-      { "entity": "task", "ordinal": null, "label": "All sprints", "n": 418, "median": 29, "mean": 41.3 },
-      { "entity": "task", "ordinal": 1, "label": "Sprint 1", "n": 135, "median": 24, "mean": 33.0 },
-      { "entity": "task", "ordinal": 2, "label": "Sprint 2", "n": 129, "median": 31, "mean": 44.7 },
-      { "entity": "task", "ordinal": 3, "label": "Sprint 3", "n": 60, "median": 36, "mean": 52.1 },
-      { "entity": "story", "ordinal": null, "label": "All sprints", "n": 112, "median": 96, "mean": 107.4 },
-      { "entity": "story", "ordinal": 1, "label": "Sprint 1", "n": 41, "median": 78, "mean": 84.2 },
-      { "entity": "story", "ordinal": 2, "label": "Sprint 2", "n": 44, "median": 102, "mean": 118.9 },
-      { "entity": "story", "ordinal": 3, "label": "Sprint 3", "n": 27, "median": 131, "mean": 126.0 }
+      { "entity": "task", "ordinal": null, "label": "All sprints", "n": 418, "median": 29 },
+      { "entity": "task", "ordinal": 1, "label": "Sprint 1", "n": 135, "median": 24 },
+      { "entity": "task", "ordinal": 2, "label": "Sprint 2", "n": 129, "median": 31 },
+      { "entity": "task", "ordinal": 3, "label": "Sprint 3", "n": 60, "median": 36 },
+      { "entity": "story", "ordinal": null, "label": "All sprints", "n": 112, "median": 96 },
+      { "entity": "story", "ordinal": 1, "label": "Sprint 1", "n": 41, "median": 78 },
+      { "entity": "story", "ordinal": 2, "label": "Sprint 2", "n": 44, "median": 102 },
+      { "entity": "story", "ordinal": 3, "label": "Sprint 3", "n": 27, "median": 131 }
     ]
   },
   "timeliness": {
@@ -61,21 +69,32 @@
     "expected": 354,
     "late": 38,
     "missing": 26,
+    "edited_late": 9,
     "bucket_order": ["early", "on_time", "late", "missing", "not_due"],
     "rows": [
-      { "key": "c1", "label": "CSE 115A", "kind": "class", "class_id": "c1", "class_name": "CSE 115A", "expected": 123, "buckets": { "early": 71, "on_time": 37, "late": 9, "missing": 6, "not_due": 0 }, "href": "/app/modules" },
-      { "key": "c2", "label": "CSE 115B", "kind": "class", "class_id": "c2", "class_name": "CSE 115B", "expected": 96, "buckets": { "early": 58, "on_time": 24, "late": 10, "missing": 4, "not_due": 0 }, "href": "/app/modules" },
-      { "key": "c3", "label": "CSE 115C", "kind": "class", "class_id": "c3", "class_name": "CSE 115C", "expected": 87, "buckets": { "early": 40, "on_time": 22, "late": 13, "missing": 12, "not_due": 0 }, "href": "/app/modules" },
-      { "key": "c4", "label": "CSE 115D (pilot)", "kind": "class", "class_id": "c4", "class_name": "CSE 115D (pilot)", "expected": 48, "buckets": { "early": 22, "on_time": 14, "late": 6, "missing": 4, "not_due": 2 }, "href": "/app/modules" }
+      { "key": "c1", "label": "CSE 115A", "kind": "class", "class_id": "c1", "class_name": "CSE 115A", "expected": 123, "buckets": { "early": 71, "on_time": 37, "late": 9, "missing": 6, "not_due": 0 }, "edited_late": 4, "href": "/app/modules" },
+      { "key": "c2", "label": "CSE 115B", "kind": "class", "class_id": "c2", "class_name": "CSE 115B", "expected": 96, "buckets": { "early": 58, "on_time": 24, "late": 10, "missing": 4, "not_due": 0 }, "edited_late": 2, "href": "/app/modules" },
+      { "key": "c3", "label": "CSE 115C", "kind": "class", "class_id": "c3", "class_name": "CSE 115C", "expected": 87, "buckets": { "early": 40, "on_time": 22, "late": 13, "missing": 12, "not_due": 0 }, "edited_late": 3, "href": "/app/modules" },
+      { "key": "c4", "label": "CSE 115D (pilot)", "kind": "class", "class_id": "c4", "class_name": "CSE 115D (pilot)", "expected": 48, "buckets": { "early": 22, "on_time": 14, "late": 6, "missing": 4, "not_due": 2 }, "edited_late": 0, "href": "/app/modules" },
+      { "key": "folded", "label": "Smaller groups (1)", "kind": "folded", "expected": 2, "buckets": { "early": 1, "on_time": 1, "late": 0, "missing": 0, "not_due": 0 }, "edited_late": 0 }
+    ]
+  },
+  "terms": {
+    "as_of": "2026-10-05",
+    "rows": [
+      { "term": "Fall", "year": 2026, "label": "Fall 2026", "current": true, "weeks": 4, "classes": 4, "teams": 23, "students": 118, "team_messages_per_team_week": 12.4, "dm_per_week": 178, "tasks_per_team_week": 6.1, "points_done_per_team": 9.8, "on_time_rate": 0.82, "trend": [3.1, 7.9, 12.0, 14.6] },
+      { "term": "Spring", "year": 2026, "label": "Spring 2026", "current": false, "weeks": 11, "classes": 3, "teams": 19, "students": 94, "team_messages_per_team_week": 9.7, "dm_per_week": 131, "tasks_per_team_week": 4.8, "points_done_per_team": 11.2, "on_time_rate": 0.79, "trend": [2.4, 5.8, 9.1, 11.2, 12.0, 11.4, 10.3, 9.9, 9.2, 8.1, 6.6] },
+      { "term": "Winter", "year": 2026, "label": "Winter 2026", "current": false, "weeks": 11, "classes": 2, "teams": 12, "students": 61, "team_messages_per_team_week": null, "dm_per_week": null, "tasks_per_team_week": null, "points_done_per_team": null, "on_time_rate": 0.74, "trend": [] }
     ]
   },
   "breakdown": {
     "kind": "class",
     "rows": [
-      { "id": "c1", "name": "CSE 115A", "teams": 8, "students": 41, "messages": 512, "stories": 24, "tasks": 118, "done_rate": 0.61, "on_time_rate": 0.88, "missing": 6, "href": "/app/dashboard" },
-      { "id": "c2", "name": "CSE 115B", "teams": 6, "students": 31, "messages": 341, "stories": 17, "tasks": 92, "done_rate": 0.58, "on_time_rate": 0.85, "missing": 4, "href": "/app/dashboard" },
-      { "id": "c3", "name": "CSE 115C", "teams": 6, "students": 29, "messages": 298, "stories": 14, "tasks": 71, "done_rate": 0.44, "on_time_rate": 0.71, "missing": 12, "href": "/app/dashboard" },
-      { "id": "c4", "name": "CSE 115D (pilot)", "teams": 3, "students": 17, "messages": 133, "stories": 6, "tasks": 21, "done_rate": 0.33, "on_time_rate": 0.75, "missing": 4, "href": "/app/dashboard" }
+      { "id": "c1", "name": "CSE 115A", "kind": "row", "teams": 8, "students": 41, "team_messages": 228, "stories": 24, "tasks": 118, "points_done_rate": 0.61, "on_time_rate": 0.88, "missing": 6, "href": "/app/dashboard" },
+      { "id": "c2", "name": "CSE 115B", "kind": "row", "teams": 6, "students": 31, "team_messages": 151, "stories": 17, "tasks": 92, "points_done_rate": 0.58, "on_time_rate": 0.85, "missing": 4, "href": "/app/dashboard" },
+      { "id": "c3", "name": "CSE 115C", "kind": "row", "teams": 6, "students": 29, "team_messages": 133, "stories": 14, "tasks": 71, "points_done_rate": 0.44, "on_time_rate": 0.71, "missing": 12, "href": "/app/dashboard" },
+      { "id": "c4", "name": "CSE 115D (pilot)", "kind": "row", "teams": 3, "students": 17, "team_messages": 60, "stories": 6, "tasks": 21, "points_done_rate": 0.33, "on_time_rate": 0.75, "missing": 4, "href": "/app/dashboard" },
+      { "id": "folded", "name": "Smaller groups (1)", "kind": "folded", "teams": 1, "students": 2, "team_messages": 0, "stories": 0, "tasks": 0, "points_done_rate": null, "on_time_rate": 1.0, "missing": 0 }
     ]
   },
   "failures": []

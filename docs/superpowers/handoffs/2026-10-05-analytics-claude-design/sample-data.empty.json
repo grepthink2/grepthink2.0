@@ -1,28 +1,34 @@
 {
   "meta": {
-    "institution": { "id": "6f2c3a2e-0000-4000-8000-000000000002", "name": "İstinye University", "slug": "istinye", "timezone": "Europe/Istanbul" },
-    "term": "Fall 2026",
+    "institution": { "id": "6f2c3a2e-0000-4000-8000-000000000002", "name": "İstinye University", "slug": "istinye", "timezone": "Europe/Istanbul", "term_system": "semester" },
+    "term": { "term": "Fall", "year": 2026, "label": "Fall 2026" },
     "class_id": null,
     "window": "30d",
     "from": "2026-09-06",
     "to": "2026-10-05",
     "generated_at": "2026-10-05T17:42:11Z",
-    "cached": false
+    "cached": false,
+    "k_anonymity": 3,
+    "rollup_as_of": null
   },
   "overview": {
     "active_classes": 1,
     "teams": 0,
     "students": 0,
+    "active_users_7d": null,
     "messages": 0,
     "stories_created": 0,
     "tasks_created": 0,
+    "story_points_created": 0,
+    "task_points_created": 0,
     "on_time_rate": null,
     "deltas": {},
     "trends": {}
   },
-  "conversations": { "total": 0, "by_type": { "dm": 0, "team_members": 0 }, "weekly": [], "excluded_types": ["team_ta", "team_instructor"] },
-  "scrum": { "live_as_of": "2026-10-05T17:42:11Z", "stories_created": 0, "tasks_created": 0, "by_sprint": [], "chars": [] },
-  "timeliness": { "on_time_rate": null, "expected": 0, "late": 0, "missing": 0, "bucket_order": ["early", "on_time", "late", "missing", "not_due"], "rows": [] },
+  "conversations": { "total": 0, "team_members": 0, "dm": 0, "weekly": [], "excluded": ["team_ta", "team_instructor", "dm between staff and a student of their class"] },
+  "scrum": { "live_as_of": "2026-10-05T17:42:11Z", "stories_created": 0, "tasks_created": 0, "story_points_created": 0, "task_points_created": 0, "by_sprint": [], "chars": [] },
+  "timeliness": { "on_time_rate": null, "expected": 0, "late": 0, "missing": 0, "edited_late": 0, "bucket_order": ["early", "on_time", "late", "missing", "not_due"], "rows": [] },
+  "terms": { "as_of": null, "rows": [] },
   "breakdown": { "kind": "class", "rows": [] },
   "failures": ["scrum"]
 }
