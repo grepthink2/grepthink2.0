@@ -17,15 +17,31 @@ from fastapi import HTTPException
 
 from app.assignments import controller as assignments
 from app.assignments import deadlines
+from app.tsr import controller as tsr_controller
+from app.tsr.models import CreateTSRRequest
 from tests.conftest import ISTINYE_INSTITUTION
 from tests.fake_supabase import FakeSupabase
 
-INSTR, OTHER_INSTR = "instr", "instr-2"
-TA1 = "ta-1"
-S1, S2, S3, OUTSIDER = "s1", "s2", "s3", "outsider"
-CLASS = "class-1"
-P1, P2, P3 = "proj-1", "proj-2", "proj-3"
-A_TSR, A_DRAFT, A_FB, A_FORM = "a-tsr", "a-draft", "a-feedback", "a-form"
+INSTR, OTHER_INSTR = "00000000-0000-4000-8000-0000000000a1", "00000000-0000-4000-8000-0000000000a2"
+TA1 = "00000000-0000-4000-8000-0000000000b1"
+S1, S2, S3, OUTSIDER = (
+    "00000000-0000-4000-8000-000000000001",
+    "00000000-0000-4000-8000-000000000002",
+    "00000000-0000-4000-8000-000000000003",
+    "00000000-0000-4000-8000-000000000009",
+)
+CLASS = "00000000-0000-4000-8000-0000000000c1"
+P1, P2, P3 = (
+    "00000000-0000-4000-8000-0000000000d1",
+    "00000000-0000-4000-8000-0000000000d2",
+    "00000000-0000-4000-8000-0000000000d3",
+)
+A_TSR, A_DRAFT, A_FB, A_FORM = (
+    "00000000-0000-4000-8000-0000000000e1",
+    "00000000-0000-4000-8000-0000000000e2",
+    "00000000-0000-4000-8000-0000000000e3",
+    "00000000-0000-4000-8000-0000000000e4",
+)
 
 
 def _trace(db) -> list[str]:
@@ -136,6 +152,7 @@ def db(monkeypatch):
                 "scrum_master_assessment": None,
                 "scrum_master_notes": None,
                 "created_at": "2026-01-02T00:00:00+00:00",
+                "updated_at": "2026-01-02T00:00:00+00:00",
             },
             {
                 "id": "t-new",
@@ -150,6 +167,7 @@ def db(monkeypatch):
                 "scrum_master_assessment": None,
                 "scrum_master_notes": None,
                 "created_at": "2026-01-03T00:00:00+00:00",
+                "updated_at": "2026-01-03T00:00:00+00:00",
             },
             {
                 "id": "t-s2",
@@ -261,7 +279,8 @@ def test_the_class_owner_sees_every_status_whatever_the_account_role(db):
 # ------------------------------------------------------------ TSR entry edit
 
 
-def test_evaluator_edit_returns_the_entry_with_its_project_and_is_bounded(db):
+def test_evaluator_edit_returns_the_entry_with_its_project_and_is_bounded(db, clock):
+    clock(NOW_BEFORE)  # an evaluator may edit only inside the submission window
     entry = assignments.update_tsr_entry(
         S1, A_TSR, "t-new", percent_contribution=60, constructive_feedback="better"
     )
@@ -271,7 +290,9 @@ def test_evaluator_edit_returns_the_entry_with_its_project_and_is_bounded(db):
     assert (entry["evaluator_name"], entry["evaluatee_name"]) == ("Sam X", "Sara X")
     assert entry["scrum_master_tickets"] == ""
     assert next(r for r in db.rows("TSRs") if r["id"] == "t-new")["percent_contribution"] == 60
-    assert db.executes <= 3, _trace(db)
+    # the TSR (project and class embedded), the update, the profiles; plus the assignment's
+    # window read (the evaluator only) and the tsr_updated event write
+    assert db.executes <= 5, _trace(db)
 
 
 def test_instructor_may_edit_others_may_not(db):
@@ -281,6 +302,15 @@ def test_instructor_may_edit_others_may_not(db):
         with pytest.raises(HTTPException) as exc:
             assignments.update_tsr_entry(caller, A_TSR, "t-s2", positive_feedback="nope")
         assert exc.value.status_code == 403
+    # One event, by the instructor: analytics tells staff corrections from evaluator edits by actor.
+    (event,) = db.rows("events")
+    assert {k: event[k] for k in ("kind", "actor_id", "class_id", "project_id", "meta")} == {
+        "kind": "tsr_updated",
+        "actor_id": INSTR,
+        "class_id": CLASS,
+        "project_id": P1,
+        "meta": {"assignment_id": A_TSR, "evaluatee_id": S1},
+    }
 
 
 def test_tsr_edit_validation(db):
@@ -379,9 +409,11 @@ def test_feedback_overview_denies_non_owner(db):
     assert exc.value.status_code == 403
 
 
-def test_feedback_submission_timestamp_is_timezone_aware(db):
+def test_feedback_submission_timestamp_is_timezone_aware(db, clock):
+    clock(dt.datetime(2026, 3, 5, 7, 0, tzinfo=dt.UTC))  # inside the feedback window
     row = assignments.submit_feedback(S2, A_FB, "a", "b", "c", "d", "e")
     assert row["updated_at"].endswith("+00:00")
+    assert row["updated_at"] == "2026-03-05T07:00:00+00:00"  # the clock is deadlines.now_utc
 
 
 # ----------------------------------------------------------- my submissions
@@ -619,3 +651,155 @@ def test_a_closed_published_assignment_cannot_be_unpublished(db, clock):
         assignments.DEADLINE_PASSED_UNPUBLISH,
     )
     assert db.rows("assignments")[0]["status"] == "publish"
+
+
+# ------------------------------------------------- the window is enforced (A2)
+
+
+def _tsr_request(evaluatee: str, assignment: str = A_TSR) -> CreateTSRRequest:
+    return CreateTSRRequest(
+        evaluatee_id=evaluatee,
+        project_id=P1,
+        week=1,
+        percent_contribution=50,
+        positive_feedback="good",
+        constructive_feedback="more tests",
+        assignment_id=assignment,
+    )
+
+
+def _forget_s2_reviews(db) -> None:
+    """Drop S2's existing TSR rows so S2's next submission is a first one, not an edit."""
+    db.store["TSRs"] = [r for r in db.rows("TSRs") if r["evaluator_id"] != S2]
+
+
+def test_tsr_submission_inside_the_window_is_recorded_as_an_event(db, clock):
+    clock(NOW_BEFORE)
+    _forget_s2_reviews(db)
+    row = tsr_controller.create_tsr(S2, _tsr_request(S1))
+    assert row["evaluator_id"] == S2
+    assert [(e["kind"], e["meta"]) for e in db.rows("events")] == [
+        ("tsr_submitted", {"assignment_id": A_TSR, "evaluatee_id": S1})
+    ]
+    assert (db.rows("events")[0]["project_id"], db.rows("events")[0]["class_id"]) == (P1, CLASS)
+
+
+def test_tsr_submission_after_the_deadline_without_a_late_window_is_refused(db, clock):
+    clock(NOW_AFTER)
+    _forget_s2_reviews(db)
+    with pytest.raises(HTTPException) as exc:
+        tsr_controller.create_tsr(S2, _tsr_request(S1))
+    assert (exc.value.status_code, exc.value.detail) == (403, assignments.ASSIGNMENT_CLOSED)
+    assert db.rows("events") == []
+
+
+def test_tsr_submission_inside_the_late_window_is_accepted(db, clock):
+    clock(NOW_AFTER)
+    _forget_s2_reviews(db)
+    db.rows("assignments")[0]["accept_until"] = "2026-01-12T08:00:00+00:00"
+    tsr_controller.create_tsr(S2, _tsr_request(S1))
+    assert [e["kind"] for e in db.rows("events")] == ["tsr_submitted"]
+    clock(dt.datetime(2026, 1, 12, 8, 0, tzinfo=dt.UTC))  # the window closes at accept_until
+    with pytest.raises(HTTPException) as exc:
+        tsr_controller.create_tsr(S1, _tsr_request(S2))
+    assert exc.value.status_code == 403
+
+
+def test_tsr_submission_before_the_open_date_is_refused(db, clock):
+    clock(dt.datetime(2025, 12, 31, 12, 0, tzinfo=dt.UTC))
+    _forget_s2_reviews(db)
+    with pytest.raises(HTTPException) as exc:
+        tsr_controller.create_tsr(S2, _tsr_request(S1))
+    assert (exc.value.status_code, exc.value.detail) == (403, assignments.ASSIGNMENT_NOT_OPEN)
+
+
+def test_tsr_submission_to_a_draft_is_refused_before_the_window_check(db, clock):
+    # A_DRAFT is not open yet at NOW_BEFORE either (it opens Feb 1): the 400 comes first.
+    clock(NOW_BEFORE)
+    _forget_s2_reviews(db)
+    with pytest.raises(HTTPException) as exc:
+        tsr_controller.create_tsr(S2, _tsr_request(S1, A_DRAFT))
+    assert (exc.value.status_code, exc.value.detail) == (400, "Assignment is not published")
+    assert db.rows("events") == []
+    assert not [r for r in db.rows("TSRs") if r["evaluator_id"] == S2]
+
+
+def test_the_tsr_window_opens_at_midnight_in_the_schools_zone(db, clock, with_istinye):
+    # İstinye is UTC+3: A_TSR's open day, Jan 1, starts at 21:00 UTC on Dec 31, eleven hours
+    # before it starts in Los Angeles (the zone of a class without a school).
+    db.rows("classes")[0]["institution_id"] = ISTINYE_INSTITUTION["id"]
+    _forget_s2_reviews(db)
+    clock(dt.datetime(2025, 12, 31, 20, 59, 59, tzinfo=dt.UTC))
+    with pytest.raises(HTTPException) as exc:
+        tsr_controller.create_tsr(S2, _tsr_request(S1))
+    assert (exc.value.status_code, exc.value.detail) == (403, assignments.ASSIGNMENT_NOT_OPEN)
+    clock(dt.datetime(2025, 12, 31, 21, 0, tzinfo=dt.UTC))
+    row = tsr_controller.create_tsr(S2, _tsr_request(S1))
+    assignments.update_tsr_entry(S2, A_TSR, row["id"], percent_contribution=45)
+    assert [(e["kind"], e["actor_id"]) for e in db.rows("events")] == [
+        ("tsr_submitted", S2),
+        ("tsr_updated", S2),
+    ]
+
+
+def test_resubmitting_updates_in_place_and_records_an_update(db, clock):
+    clock(NOW_BEFORE)
+    _forget_s2_reviews(db)
+    first = tsr_controller.create_tsr(S2, _tsr_request(S1))
+    again = tsr_controller.create_tsr(S2, _tsr_request(S1))
+    assert again["id"] == first["id"]
+    assert [e["kind"] for e in db.rows("events")] == ["tsr_submitted", "tsr_updated"]
+
+
+def test_student_edit_of_a_tsr_entry_after_close_is_refused_but_the_instructor_may(db, clock):
+    clock(NOW_AFTER)
+    with pytest.raises(HTTPException) as exc:
+        assignments.update_tsr_entry(S1, A_TSR, "t-new", percent_contribution=40)
+    assert (exc.value.status_code, exc.value.detail) == (403, assignments.ASSIGNMENT_CLOSED)
+    entry = assignments.update_tsr_entry(INSTR, A_TSR, "t-new", percent_contribution=40)
+    assert entry["percent_contribution"] == 40
+    assert [e["kind"] for e in db.rows("events")] == ["tsr_updated"]
+
+
+def test_tsr_entries_carry_their_timestamps(db):
+    entries = assignments.get_my_tsr_entries(S1, A_TSR)
+    assert entries and all({"submitted_at", "updated_at"} <= set(e) for e in entries)
+    newest = next(r for r in db.rows("TSRs") if r["id"] == "t-new")
+    assert entries[0]["submitted_at"] == newest["created_at"]
+
+
+def test_an_edited_entry_keeps_its_submission_time(db):
+    # The database trigger bumps updated_at on an edit (the fake does not); created_at stays.
+    edited = next(r for r in db.rows("TSRs") if r["id"] == "t-new")
+    edited["updated_at"] = "2026-01-04T09:30:00+00:00"
+    (entry,) = assignments.get_my_tsr_entries(S1, A_TSR)
+    assert (entry["submitted_at"], entry["updated_at"]) == (
+        "2026-01-03T00:00:00+00:00",
+        "2026-01-04T09:30:00+00:00",
+    )
+
+
+def test_feedback_after_the_deadline_is_refused_and_inside_is_an_event(db, clock):
+    clock(dt.datetime(2026, 3, 9, 7, 0, tzinfo=dt.UTC))  # exactly the deadline
+    with pytest.raises(HTTPException) as exc:
+        assignments.submit_feedback(S2, A_FB, "a", "b", "c", "d", "e")
+    assert (exc.value.status_code, exc.value.detail) == (403, assignments.ASSIGNMENT_CLOSED)
+    clock(dt.datetime(2026, 3, 5, 7, 0, tzinfo=dt.UTC))
+    assignments.submit_feedback(S2, A_FB, "a", "b", "c", "d", "e")
+    assert [(e["kind"], e["meta"]) for e in db.rows("events")] == [
+        ("feedback_submitted", {"assignment_id": A_FB})
+    ]
+
+
+def test_the_feedback_window_opens_at_midnight_in_the_schools_zone(db, clock, with_istinye):
+    # A_FB's open day, Mar 1, starts at 21:00 UTC on Feb 28 in İstinye (UTC+3).
+    db.rows("classes")[0]["institution_id"] = ISTINYE_INSTITUTION["id"]
+    clock(dt.datetime(2026, 2, 28, 20, 59, 59, tzinfo=dt.UTC))
+    with pytest.raises(HTTPException) as exc:
+        assignments.submit_feedback(S2, A_FB, "a", "b", "c", "d", "e")
+    assert (exc.value.status_code, exc.value.detail) == (403, assignments.ASSIGNMENT_NOT_OPEN)
+    clock(dt.datetime(2026, 2, 28, 21, 0, tzinfo=dt.UTC))
+    assignments.submit_feedback(S2, A_FB, "a", "b", "c", "d", "e")
+    assert [(e["kind"], e["actor_id"], e["class_id"]) for e in db.rows("events")] == [
+        ("feedback_submitted", S2, CLASS)
+    ]

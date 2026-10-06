@@ -7,7 +7,8 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from app.core import authz
+from app.assignments.controller import WINDOW_COLUMNS, _require_window_open
+from app.core import authz, events
 from app.core.db import get_client
 from app.tsr.models import CreateTSRRequest
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
@@ -69,19 +70,27 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
     Validates:
     - The project exists.
     - The evaluator (submitting user) is enrolled in the class the project belongs to.
-    - If assignment_id is provided, it must belong to the same class and have assignment_type='tsr'.
+    - If assignment_id is provided, it must belong to the same class, have assignment_type='tsr'
+      and be published, and now must be inside its submission window (403 otherwise, see
+      ``_require_window_open``).
+
+    Records ``tsr_submitted`` for a first submission and ``tsr_updated`` when it replaces one.
     """
     try:
         client = get_client()
 
-        # Resolve project → class
+        # Resolve project → class (and the class's school, whose zone the window is in)
         project_result = (
-            client.table("projects").select("id, class_id").eq("id", str(data.project_id)).execute()
+            client.table("projects")
+            .select("id, class_id, classes(institution_id)")
+            .eq("id", str(data.project_id))
+            .execute()
         )
         if not project_result.data:
             raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
 
         class_id = project_result.data[0].get("class_id")
+        institution_id = (project_result.data[0].get("classes") or {}).get("institution_id")
 
         # Evaluator must be enrolled in the class
         enrollment = (
@@ -98,7 +107,7 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
         if data.assignment_id:
             assignment_result = (
                 client.table("assignments")
-                .select("id, assignment_type, class_id")
+                .select(f"id, assignment_type, status, class_id, {WINDOW_COLUMNS}")
                 .eq("id", str(data.assignment_id))
                 .execute()
             )
@@ -113,6 +122,10 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
                 raise HTTPException(
                     status_code=400, detail="Assignment does not belong to this project's class"
                 )
+            # A student never sees a draft, so a submission against one is an API misuse.
+            if assignment.get("status") != "publish":
+                raise HTTPException(status_code=400, detail="Assignment is not published")
+            _require_window_open(assignment, institution_id)
 
         tsr_data = {
             "evaluator_id": user_id,
@@ -131,6 +144,16 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
             tsr_data["scrum_master_notes"] = data.scrum_master_notes
         if data.assignment_id:
             tsr_data["assignment_id"] = str(data.assignment_id)
+        # Recorded after the write as tsr_updated (an edit in place) or tsr_submitted (a new row).
+        event = {
+            "actor_id": user_id,
+            "class_id": str(class_id),
+            "project_id": str(data.project_id),
+            "meta": {
+                "assignment_id": str(data.assignment_id) if data.assignment_id else None,
+                "evaluatee_id": str(data.evaluatee_id),
+            },
+        }
 
         # Upsert: one row per evaluator + evaluatee + project (+ assignment or week).
         existing_query = (
@@ -157,6 +180,7 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
             result = client.table("TSRs").update(update_fields).eq("id", existing_id).execute()
             if not result.data:
                 raise HTTPException(status_code=500, detail="Failed to update TSR")
+            events.record("tsr_updated", **event)
             logger.info(
                 "TSR updated | tsr_id=%s project_id=%s evaluator=%s evaluatee=%s",
                 existing_id,
@@ -171,6 +195,7 @@ def create_tsr(user_id: str, data: CreateTSRRequest) -> dict:
         result = client.table("TSRs").insert(tsr_data).execute()
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to create TSR")
+        events.record("tsr_submitted", **event)
         logger.info(
             "TSR created | tsr_id=%s project_id=%s evaluator=%s evaluatee=%s week=%s",
             result.data[0].get("id"),

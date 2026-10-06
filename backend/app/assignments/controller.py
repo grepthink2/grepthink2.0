@@ -24,6 +24,33 @@ DEADLINE_PASSED = "The deadline has passed; set a late-submission window instead
 DEADLINE_PASSED_UNPUBLISH = "The deadline has passed; the assignment can no longer be unpublished"
 ACCEPT_UNTIL_BEFORE_DEADLINE = "accept_until must be after the deadline"
 NO_DEADLINE_TO_EXTEND = "This assignment has no deadline"
+ASSIGNMENT_CLOSED = "This assignment is closed"
+ASSIGNMENT_NOT_OPEN = "This assignment is not open yet"
+
+#: What a controller must select from ``assignments`` to run ``_require_window_open``.
+WINDOW_COLUMNS = "open_date, due_at, accept_until"
+
+
+def _require_window_open(assignment: dict, institution_id) -> None:
+    """403 unless now is inside the assignment's submission window (spec §5).
+
+    The window opens at the start of ``open_date`` in the school's zone and closes at
+    ``accept_until`` when set, else at ``due_at``. An assignment without those bounds never
+    closes (legacy rows, drafts without dates).
+    """
+    tz = institution_timezone(institution_id)
+    now = deadlines.now_utc()
+    open_date = assignment.get("open_date")
+    opens = deadlines.opens_at(datetime.date.fromisoformat(open_date) if open_date else None, tz)
+    if opens is not None and now < opens:
+        raise HTTPException(status_code=403, detail=ASSIGNMENT_NOT_OPEN)
+    if not deadlines.is_open(
+        now,
+        opens=opens,
+        due_at=deadlines.parse_ts(assignment.get("due_at")),
+        accept_until=deadlines.parse_ts(assignment.get("accept_until")),
+    ):
+        raise HTTPException(status_code=403, detail=ASSIGNMENT_CLOSED)
 
 
 def _require_class_instructor(user_id: str, class_id: str) -> dict:
@@ -128,7 +155,8 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
 
     Always includes tsr_id, evaluator_id, evaluator_name, evaluatee_name,
     percent_contribution, positive_feedback, constructive_feedback, and
-    Scrum Master fields.
+    Scrum Master fields, plus submitted_at (the row's created_at) and
+    updated_at, which are None when the caller's select omits those columns.
     """
     evaluator_profile = profile_map.get(row["evaluator_id"], {})
     evaluatee_profile = profile_map.get(row["evaluatee_id"], {})
@@ -145,6 +173,8 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
         "scrum_master_tickets": row.get("scrum_master_tickets") or "",
         "scrum_master_assessment": row.get("scrum_master_assessment") or "",
         "scrum_master_notes": row.get("scrum_master_notes") or "",
+        "submitted_at": row.get("created_at"),
+        "updated_at": row.get("updated_at"),
     }
     return entry
 
@@ -165,7 +195,7 @@ def _latest_tsr_rows(rows: list) -> list:
 _TSR_COLUMNS = (
     "id, evaluator_id, evaluatee_id, project_id, percent_contribution, "
     "positive_feedback, constructive_feedback, scrum_master_tickets, "
-    "scrum_master_assessment, scrum_master_notes, created_at"
+    "scrum_master_assessment, scrum_master_notes, created_at, updated_at"
 )
 
 
@@ -578,14 +608,18 @@ def update_tsr_entry(
     Update the editable fields of a single TSR linked to an assignment.
 
     Who can update:
-    - The evaluator who originally submitted the TSR.
-    - The class instructor.
+    - The evaluator who originally submitted the TSR, while the assignment's
+      submission window is open (403 otherwise, see ``_require_window_open``).
+    - The class instructor, at any time.
 
     At least one field must be provided. Returns the updated TSR entry in the
-    same shape as _fetch_tsr_entries (including its project_id).
+    same shape as _fetch_tsr_entries (including its project_id), and records a
+    ``tsr_updated`` event.
 
-    Round trips: the TSR with its project and class embedded, the update (whose
-    returned row is used directly), and one profile read — 3 (was 6).
+    Round trips: the TSR with its project and class embedded, the assignment's
+    window (the evaluator only), the update (whose returned row is used
+    directly), one profile read and the event — 5 for the evaluator, 4 for the
+    instructor.
     """
     try:
         client = get_client()
@@ -637,12 +671,33 @@ def update_tsr_entry(
         if not updates:
             raise HTTPException(status_code=400, detail="No fields provided to update")
 
+        # The evaluator edits only inside the submission window; the instructor always may.
+        if is_evaluator and not is_instructor:
+            window = (
+                client.table("assignments")
+                .select(f"id, class_id, {WINDOW_COLUMNS}, classes(institution_id)")
+                .eq("id", str(assignment_id))
+                .limit(1)
+                .execute()
+            ).data
+            if window:
+                _require_window_open(
+                    window[0], (window[0].get("classes") or {}).get("institution_id")
+                )
+
         result = client.table("TSRs").update(updates).eq("id", str(tsr_id)).execute()
         if not result.data:
             raise HTTPException(status_code=404, detail="TSR not found")
         row = result.data[0]
         profile_map = _profiles_by_id(client, {row["evaluator_id"], row["evaluatee_id"]})
         entry = _serialize_tsr_entry(row, profile_map)
+        events.record(
+            "tsr_updated",
+            actor_id=user_id,
+            class_id=project.get("class_id"),
+            project_id=tsr.get("project_id"),
+            meta={"assignment_id": str(assignment_id), "evaluatee_id": row["evaluatee_id"]},
+        )
 
         logger.info(
             "TSR entry updated | tsr_id=%s assignment_id=%s user_id=%s fields=%s",
@@ -893,13 +948,19 @@ def submit_feedback(
     q4_bugs: str,
     q5_suggestions: str,
 ) -> dict:
-    """Upsert a student's feedback submission for a published feedback assignment."""
+    """Upsert a student's feedback submission for a published feedback assignment.
+
+    Refused (403, see ``_require_window_open``) outside the submission window; records a
+    ``feedback_submitted`` event.
+    """
     try:
         client = get_client()
 
         assignment_result = (
             client.table("assignments")
-            .select("id, assignment_type, status, class_id")
+            .select(
+                f"id, assignment_type, status, class_id, {WINDOW_COLUMNS}, classes(institution_id)"
+            )
             .eq("id", str(assignment_id))
             .execute()
         )
@@ -910,6 +971,7 @@ def submit_feedback(
             raise HTTPException(status_code=400, detail="Assignment is not a feedback assignment")
         if assignment.get("status") != "publish":
             raise HTTPException(status_code=400, detail="Assignment is not published")
+        _require_window_open(assignment, (assignment.get("classes") or {}).get("institution_id"))
 
         enrollment = (
             client.table("class_enrollments")
@@ -929,7 +991,7 @@ def submit_feedback(
             "q3_missing_feature": q3_missing_feature,
             "q4_bugs": q4_bugs,
             "q5_suggestions": q5_suggestions,
-            "updated_at": datetime.datetime.now(datetime.UTC).isoformat(),
+            "updated_at": deadlines.now_utc().isoformat(),
         }
         result = (
             client.table("feedback_submissions")
@@ -938,6 +1000,12 @@ def submit_feedback(
         )
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to save feedback")
+        events.record(
+            "feedback_submitted",
+            actor_id=user_id,
+            class_id=assignment["class_id"],
+            meta={"assignment_id": str(assignment_id)},
+        )
 
         logger.info(
             "Feedback submitted | assignment_id=%s user_id=%s",
