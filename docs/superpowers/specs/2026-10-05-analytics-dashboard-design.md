@@ -114,10 +114,16 @@ ALTER TABLE assignments ADD COLUMN IF NOT EXISTS accept_until timestamptz;  -- l
 UPDATE assignments a
    SET due_at = ((a.close_date + 1)::timestamp AT TIME ZONE coalesce(i.timezone, 'America/Los_Angeles'))
   FROM classes c LEFT JOIN institutions i ON i.id = c.institution_id
- WHERE c.id = a.class_id AND a.due_at IS NULL AND a.close_date IS NOT NULL;
+ WHERE c.id = a.class_id AND a.close_date IS NOT NULL
+   AND a.due_at IS DISTINCT FROM (<the same expression>);   -- repairs rows the old backend touched on a re-run
 ALTER TABLE "TSRs" ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
--- trigger: BEFORE UPDATE ON "TSRs" SET NEW.updated_at = now()  (the moddatetime idiom, written out)
+UPDATE "TSRs" SET updated_at = created_at WHERE updated_at = now();   -- pre-existing rows: last edit = submission
+-- trigger: BEFORE UPDATE ON "TSRs" WHEN (OLD.* IS DISTINCT FROM NEW.*) SET NEW.updated_at = now()
 ```
+
+The migration must be applied in the same sitting as the release: until the new backend is live, an
+assignment created in between keeps `due_at` NULL and a rescheduled one keeps a stale `due_at`; re-running
+the file once after the release repairs both (its Check's `stale_due_at` reads 0).
 
 - `close_date` stays the field instructors edit and students see; the backend derives `due_at` as the first
   instant after that day in the school's zone, on create and on every change of `close_date`.
@@ -368,6 +374,12 @@ Both routes join `frontend/public/.well-known/grepthink-actions.json` (`view_ana
                     ELSE 'early' END
   edited_late := submitted < a.due_at AND edited >= a.due_at
   ```
+
+  `updated_at` is bumped by any edit, the instructor's included (`update_tsr_entry` lets the class instructor
+  correct a student's row), so "edited late" must count the **evaluator's** edits only: take the latest
+  `tsr_updated` event with `actor_id = evaluator_id` for that assignment (A records one per edit) rather than
+  `updated_at` alone. Edits made before the migration are not recoverable (every pre-existing row has
+  `updated_at = created_at`), so the figure reads 0 for dates before it.
 
   Assignments whose `due_at` falls inside the range are the ones reported. Returns `on_time_rate`,
   `expected`, `late`, `missing`, `edited_late`, rows per class (or per assignment when `p_class` is set,
