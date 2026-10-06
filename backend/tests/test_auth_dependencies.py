@@ -48,8 +48,15 @@ class TestRequireUser:
         assert r.status_code == 401
 
     @patch("app.auth.views.get_user_role")
-    def test_valid_token_returns_user_id(self, mock_get_role, client: TestClient, auth_header):
-        # login_check reads the caller's role; stub it so the probe needs no DB.
+    def test_valid_token_returns_user_id(
+        self, mock_get_role, client: TestClient, auth_header, monkeypatch
+    ):
+        # login_check reads the caller's role (stubbed) and records a login event; the fake
+        # client takes that insert, so the probe never reaches the network.
+        from tests.fake_supabase import FakeSupabase
+
+        fake = FakeSupabase(events=[])
+        monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
         mock_get_role.return_value = "student"
         r = client.get("/api/login-check", headers=auth_header)
         assert r.status_code == 200
@@ -177,3 +184,31 @@ class TestSecurityHeaders:
         r = client.get("/health")
         assert r.status_code == 200
         assert expected_substr in r.headers.get(header, "")
+
+
+def test_login_check_records_a_login_event(client, auth_header, monkeypatch):
+    from tests.fake_supabase import FakeSupabase
+
+    fake = FakeSupabase(profiles=[{"id": "user-abc", "role": "student"}], events=[])
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    from app.auth.controller import invalidate_user_role
+
+    invalidate_user_role("user-abc")
+    r = client.get("/api/login-check", headers=auth_header)
+    assert r.status_code == 200
+    assert [(e["kind"], e["actor_id"]) for e in fake.rows("events")] == [("login", "user-abc")]
+
+
+def test_login_check_records_nothing_before_the_profile_exists(client, auth_header, monkeypatch):
+    # A first sign-in reaches login-check before POST /api/create-user has made the profiles row;
+    # events.actor_id references profiles(id), so recording then would only log a warning.
+    from tests.fake_supabase import FakeSupabase
+
+    fake = FakeSupabase(profiles=[], events=[])
+    monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
+    from app.auth.controller import invalidate_user_role
+
+    invalidate_user_role("user-abc")
+    r = client.get("/api/login-check", headers=auth_header)
+    assert r.status_code == 200 and r.json()["role"] is None
+    assert fake.rows("events") == []
