@@ -17,6 +17,7 @@ from fastapi import HTTPException
 
 from app.assignments import controller as assignments
 from app.assignments import deadlines
+from tests.conftest import ISTINYE_INSTITUTION
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "instr", "instr-2"
@@ -575,3 +576,34 @@ def test_resending_the_same_late_window_is_not_a_reopening(db, clock):
     later = dt.datetime(2026, 1, 14, 8, 0, tzinfo=dt.UTC)
     assignments.update_assignment(INSTR, A_TSR, None, None, None, None, accept_until=later)
     assert [e["kind"] for e in db.rows("events")] == ["assignment_reopened"]
+
+
+def test_due_at_follows_the_schools_zone_on_create_and_reschedule(db, clock, with_istinye):
+    # İstinye is UTC+3 with no DST: midnight after a day is 21:00 UTC on that day.
+    clock(NOW_BEFORE)
+    db.rows("classes")[0]["institution_id"] = ISTINYE_INSTITUTION["id"]
+    row = assignments.create_assignment(
+        INSTR, CLASS, "TSR 9", dt.date(2026, 3, 1), dt.date(2026, 3, 7), "publish", "tsr"
+    )
+    assert row["due_at"] == "2026-03-07T21:00:00+00:00"
+    moved = assignments.update_assignment(INSTR, A_TSR, None, None, dt.date(2026, 1, 15), None)
+    assert moved["due_at"] == "2026-01-15T21:00:00+00:00"
+
+
+def test_rescheduling_past_a_window_while_resending_it_drops_the_window(db, clock):
+    # The editor re-sends the window it loaded; moving the deadline past it must not 400.
+    clock(NOW_BEFORE)
+    db.rows("assignments")[0]["accept_until"] = "2026-01-12T08:00:00+00:00"
+    same = dt.datetime(2026, 1, 12, 8, 0, tzinfo=dt.UTC)
+    row = assignments.update_assignment(
+        INSTR, A_TSR, None, None, dt.date(2026, 1, 20), None, accept_until=same
+    )
+    assert (row["due_at"], row["accept_until"]) == ("2026-01-21T08:00:00+00:00", None)
+    assert db.rows("events") == []
+
+
+def test_a_draft_can_always_be_rescheduled(db, clock):
+    # A_DRAFT's deadline (2026-02-09 08:00 UTC) has passed, but students never saw it.
+    clock(dt.datetime(2026, 2, 15, 12, 0, tzinfo=dt.UTC))
+    row = assignments.update_assignment(INSTR, A_DRAFT, None, None, dt.date(2026, 2, 20), None)
+    assert (row["close_date"], row["due_at"]) == ("2026-02-20", "2026-02-21T08:00:00+00:00")

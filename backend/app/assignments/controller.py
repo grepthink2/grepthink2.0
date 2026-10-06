@@ -227,9 +227,9 @@ def update_assignment(
     Edit an existing assignment's title, dates, or status (the class instructor only).
 
     Before the deadline (``due_at``) a new ``close_date`` reschedules it and ``due_at`` follows;
-    once it has passed, moving ``close_date`` is refused (400) and ``accept_until`` sets a
-    late-submission window instead, recorded as an ``assignment_reopened`` event. Re-sending the
-    unchanged ``close_date`` is not a move.
+    once a published assignment's deadline has passed, moving ``close_date`` is refused (400) and
+    ``accept_until`` sets a late-submission window instead, recorded as an ``assignment_reopened``
+    event. Re-sending an unchanged ``close_date`` or ``accept_until`` changes nothing.
 
     Only the instructor who owns the class the assignment belongs to may edit it.
     Returns the updated assignment row. If the assignment type is 'tsr', a
@@ -254,17 +254,31 @@ def update_assignment(
             updates["Title"] = title
         if open_date is not None:
             updates["open_date"] = open_date.isoformat()
-        tz = institution_timezone(cls.get("institution_id"))
         now = deadlines.now_utc()
         current_due_at = deadlines.parse_ts(assignment.get("due_at"))
         current_accept_until = deadlines.parse_ts(assignment.get("accept_until"))
-        deadline_passed = current_due_at is not None and now >= current_due_at
+        # Only a published deadline is frozen: a draft is invisible to students, so moving its
+        # date rewrites nothing anyone could have submitted against.
+        deadline_passed = (
+            assignment.get("status") == "publish"
+            and current_due_at is not None
+            and now >= current_due_at
+        )
+        if accept_until is not None:
+            if accept_until.tzinfo is None:
+                accept_until = accept_until.replace(tzinfo=datetime.UTC)
+            accept_until = accept_until.astimezone(datetime.UTC)
+            if accept_until == current_accept_until:
+                # The editor re-sends the window it loaded; an unchanged value is as if absent
+                # (so it is neither re-validated nor recorded as a reopening).
+                accept_until = None
         # The deadline every later check compares against: the new one when this request moves it.
         effective_due_at = current_due_at
         if close_date is not None and close_date.isoformat() != assignment.get("close_date"):
             if deadline_passed:
                 raise HTTPException(status_code=400, detail=DEADLINE_PASSED)
             updates["close_date"] = close_date.isoformat()
+            tz = institution_timezone(cls.get("institution_id"))
             effective_due_at = deadlines.due_at_for(close_date, tz)
             updates["due_at"] = effective_due_at.isoformat() if effective_due_at else None
             # A late window the new deadline has reached or passed would close the assignment
@@ -280,15 +294,10 @@ def update_assignment(
         if accept_until is not None:
             if effective_due_at is None:
                 raise HTTPException(status_code=400, detail=NO_DEADLINE_TO_EXTEND)
-            if accept_until.tzinfo is None:
-                accept_until = accept_until.replace(tzinfo=datetime.UTC)
-            accept_until = accept_until.astimezone(datetime.UTC)
             if accept_until <= effective_due_at:
                 raise HTTPException(status_code=400, detail=ACCEPT_UNTIL_BEFORE_DEADLINE)
-            # The editor re-sends the window it loaded; an unchanged value is not a reopening.
-            if accept_until != current_accept_until:
-                updates["accept_until"] = accept_until.isoformat()
-                reopened = True
+            updates["accept_until"] = accept_until.isoformat()
+            reopened = True
         elif clear_accept_until and current_accept_until is not None:
             updates["accept_until"] = None
         if status is not None:
