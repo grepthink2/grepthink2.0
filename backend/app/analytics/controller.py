@@ -36,20 +36,22 @@ def class_label(row: dict) -> str:
 
 
 def is_maintainer(email: str | None) -> bool:
-    return bool(email) and email.lower() in settings.ANALYTICS_ADMIN_EMAILS
+    # ASCII only: str.lower() maps a few non-ASCII letters (the Kelvin sign) onto ASCII ones
+    return bool(email) and email.isascii() and email.lower() in settings.ANALYTICS_ADMIN_EMAILS
 
 
 def _name_key(name: str) -> str:
-    """A sort key that does not depend on the database's collation: accents folded, case ignored, so
-    "İstinye University" sorts with I rather than after Z."""
-    return unicodedata.normalize("NFKD", name).casefold()
+    """A sort key that does not depend on the database's collation: accents stripped and case ignored,
+    so "İstinye University" sorts under I and "École" under E (a letter with no plain form, such as Ł,
+    keeps its own place)."""
+    decomposed = unicodedata.normalize("NFKD", name)
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch)).casefold()
 
 
 def _scope_rows(rows: list[dict], access: str) -> list[dict]:
-    return [
-        {**r, "id": str(r["id"]), "access": access}
-        for r in sorted(rows, key=lambda r: _name_key(r["name"]))
-    ]
+    """Scope rows by name, then slug (unique), so equal names keep a fixed order."""
+    ordered = sorted(rows, key=lambda row: (_name_key(row["name"]), row["slug"]))
+    return [{**row, "id": str(row["id"]), "access": access} for row in ordered]
 
 
 def scope_for_user(user_id: str, email: str | None) -> list[dict]:
@@ -58,17 +60,26 @@ def scope_for_user(user_id: str, email: str | None) -> list[dict]:
     if is_maintainer(email):
         rows = client.table("institutions").select(INSTITUTION_COLUMNS).execute().data or []
         return _scope_rows(rows, "maintainer")
+    # one round trip: the classes the caller created, each with its institution embedded over the FK
     taught = (
-        client.table("classes").select("institution_id").eq("created_by", user_id).execute().data
+        client.table("classes")
+        .select(f"institution_id, institutions({INSTITUTION_COLUMNS})")
+        .eq("created_by", user_id)
+        .execute()
+        .data
         or []
     )
-    ids = sorted({str(r["institution_id"]) for r in taught if r.get("institution_id")})
-    if not ids:
-        return []
-    rows = (
-        client.table("institutions").select(INSTITUTION_COLUMNS).in_("id", ids).execute().data or []
-    )
-    return _scope_rows(rows, "instructor")
+    institutions: dict[str, dict] = {}
+    for row in taught:
+        institution = row.get("institutions")
+        if institution and institution.get("id"):  # a class with no institution grants nothing
+            institutions.setdefault(str(institution["id"]), institution)
+    return _scope_rows(list(institutions.values()), "instructor")
+
+
+def _class_key(row: dict) -> tuple[str, str, str]:
+    """Name (collation-independent), then start date, then id: same-name classes keep a fixed order."""
+    return (_name_key(row["name"]), row.get("start_date") or "", str(row["id"]))
 
 
 def get_scope(user_id: str, email: str | None) -> dict:
@@ -79,17 +90,12 @@ def get_scope(user_id: str, email: str | None) -> dict:
     client = get_client()
     ids = [s["id"] for s in scope]
     classes = (
-        client.table("classes")
-        .select(CLASS_COLUMNS)
-        .in_("institution_id", ids)
-        .order("name")
-        .execute()
-        .data
+        client.table("classes").select(CLASS_COLUMNS).in_("institution_id", ids).execute().data
         or []
     )
     by_inst: dict[str, list[dict]] = {i: [] for i in ids}
-    for c in classes:
-        by_inst.setdefault(str(c["institution_id"]), []).append(
+    for c in sorted(classes, key=_class_key):
+        by_inst[str(c["institution_id"])].append(
             {
                 "id": str(c["id"]),
                 "name": c["name"],
@@ -98,4 +104,4 @@ def get_scope(user_id: str, email: str | None) -> dict:
                 "label": class_label(c),
             }
         )
-    return {"institutions": [{**s, "classes": by_inst.get(s["id"], [])} for s in scope]}
+    return {"institutions": [{**s, "classes": by_inst[s["id"]]} for s in scope]}
