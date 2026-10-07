@@ -1,11 +1,15 @@
 """The analytics routes end to end: auth, scope, validation, headers, the viewed event, the limit."""
 
+import time
+
+import jwt
 import pytest
 
 from app.analytics import controller
 from app.config import settings
+from app.core.errors import DatabaseError
 from app.limiter import limiter
-from tests.conftest import header_for
+from tests.conftest import TEST_SECRET, header_for
 from tests.fake_supabase import FakeSupabase
 from tests.test_analytics_dashboard import (
     CLASSES,
@@ -24,16 +28,28 @@ BASE = "/api/analytics"
 C1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"
 C9 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa9"
 _UUIDS = {"c1": C1, "c9": C9}
+
+
+def _remap(rows: list[dict]) -> list[dict]:
+    return [{**r, "class_id": _UUIDS.get(r["class_id"], r["class_id"])} for r in rows]
+
+
 CLASSES_UUID = [{**c, "id": _UUIDS.get(c["id"], c["id"])} for c in CLASSES]
 COUNTS_UUID = {
     **COUNTS,
-    "by_class": [
-        {**r, "class_id": _UUIDS.get(r["class_id"], r["class_id"])} for r in COUNTS["by_class"]
-    ],
-    "by_team": [
-        {**t, "class_id": _UUIDS.get(t["class_id"], t["class_id"])} for t in COUNTS["by_team"]
-    ],
+    "by_class": _remap(COUNTS["by_class"]),
+    "by_team": _remap(COUNTS["by_team"]),
 }
+CONV_UUID = {**CONV, "by_class": _remap(CONV["by_class"])}
+SCRUM_UUID = {**SCRUM, "by_class": _remap(SCRUM["by_class"])}
+NOWHERE = "99999999-9999-4999-8999-999999999999"
+
+
+def _failing(target: str):
+    def run(params):
+        raise DatabaseError(operation="read", target=target)
+
+    return run
 
 
 @pytest.fixture(autouse=True)
@@ -45,8 +61,8 @@ def _setup(monkeypatch):
         events=[],
         rpc={
             "analytics_scope_counts": lambda p: COUNTS_UUID,
-            "analytics_conversations": lambda p: CONV,
-            "analytics_scrum": lambda p: SCRUM,
+            "analytics_conversations": lambda p: CONV_UUID,
+            "analytics_scrum": lambda p: SCRUM_UUID,
             "analytics_trends": lambda p: TRENDS,
         },
     )
@@ -62,6 +78,7 @@ def _setup(monkeypatch):
 
 PROF = header_for("prof@ucsc.edu", sub="prof")
 STUDENT = header_for("s@ucsc.edu", sub="student")
+MAINTAINER = header_for("maintainer@grepthink.dev", sub="m")
 
 
 def test_routes_need_a_token(client):
@@ -69,29 +86,71 @@ def test_routes_need_a_token(client):
     assert client.get(f"{BASE}/dashboard", params={"institution_id": UCSC["id"]}).status_code == 401
 
 
+def test_a_verified_token_without_a_subject_is_401_not_500(client):
+    # the shape of Supabase's public anon key: signed with the project secret, no sub
+    now = int(time.time())
+    anon = jwt.encode(
+        {"iss": "supabase", "role": "anon", "iat": now - 60, "exp": now + 3600},
+        TEST_SECRET,
+        algorithm="HS256",
+    )
+    headers = {"Authorization": f"Bearer {anon}"}
+    assert client.get(f"{BASE}/scope", headers=headers).status_code == 401
+    assert (
+        client.get(
+            f"{BASE}/dashboard", params={"institution_id": UCSC["id"]}, headers=headers
+        ).status_code
+        == 401
+    )
+
+
 def test_scope_lists_the_callers_institutions_and_is_empty_for_students(client):
     r = client.get(f"{BASE}/scope", headers=PROF)
-    assert r.status_code == 200 and r.headers["cache-control"] == "private, max-age=60"
+    assert (
+        r.status_code == 200
+        and r.headers["cache-control"] == "private, max-age=60"
+        and r.headers["vary"] == "Authorization"
+    )
     body = r.json()
-    assert [i["slug"] for i in body["institutions"]] == [
-        "ucsc"
-    ]  # prof created UCSC classes only; c9 is someone else's
+    # prof created UCSC classes only; c9 is someone else's
+    assert [i["slug"] for i in body["institutions"]] == ["ucsc"]
     ucsc = next(i for i in body["institutions"] if i["slug"] == "ucsc")
     assert ucsc["access"] == "instructor" and ucsc["classes"][0]["label"] == "CSE 115A · Fall 2026"
     assert client.get(f"{BASE}/scope", headers=STUDENT).json() == {"institutions": []}
 
 
-def test_dashboard_happy_path_sets_the_header_and_records_the_view(client, _setup):
+def test_a_maintainer_sees_every_institution_and_an_unknown_one_is_404(client):
+    r = client.get(f"{BASE}/scope", headers=MAINTAINER)
+    assert [(i["slug"], i["access"]) for i in r.json()["institutions"]] == [
+        ("istinye", "maintainer"),
+        ("ucsc", "maintainer"),
+    ]
+    r = client.get(f"{BASE}/dashboard", params={"institution_id": NOWHERE}, headers=MAINTAINER)
+    assert r.status_code == 404 and r.json()["detail"] == controller.INSTITUTION_NOT_FOUND
+    assert (
+        client.get(
+            f"{BASE}/dashboard", params={"institution_id": NOWHERE}, headers=PROF
+        ).status_code
+        == 403
+    )
+
+
+def test_dashboard_happy_path_sets_the_headers_and_records_the_view(client, _setup):
     r = client.get(
         f"{BASE}/dashboard",
         params={"institution_id": UCSC["id"], "class_id": C1, "window": "class"},
         headers=PROF,
     )
     assert r.status_code == 200, r.text
-    assert r.headers["cache-control"] == "private, max-age=60"
+    assert (
+        r.headers["cache-control"] == "private, max-age=60" and r.headers["vary"] == "Authorization"
+    )
     body = r.json()
     assert body["meta"]["class"] == {"id": C1, "label": "CSE 115A · Fall 2026"}
     assert body["overview"]["messages"] == 1284 and body["failures"] == []
+    assert (
+        body["breakdown"]["rows"][0]["team_messages"] == 300
+    )  # Team Alpha: the remapped fixtures line up
     events = _setup.store["events"]
     assert len(events) == 1
     event = {k: v for k, v in events[0].items() if k != "id"}
@@ -102,6 +161,32 @@ def test_dashboard_happy_path_sets_the_header_and_records_the_view(client, _setu
         "project_id": None,
         "meta": {"institution_id": UCSC["id"], "window": "class"},
     }
+
+
+def test_fresh_bypasses_the_cache_and_is_never_stored_by_the_browser(client):
+    params = {"institution_id": UCSC["id"]}
+    assert (
+        client.get(f"{BASE}/dashboard", params=params, headers=PROF).json()["meta"]["cached"]
+        is False
+    )
+    assert (
+        client.get(f"{BASE}/dashboard", params=params, headers=PROF).json()["meta"]["cached"]
+        is True
+    )
+    r = client.get(f"{BASE}/dashboard", params={**params, "fresh": "1"}, headers=PROF)
+    assert r.json()["meta"]["cached"] is False
+    assert r.headers["cache-control"] == "no-store" and r.headers["vary"] == "Authorization"
+
+
+def test_a_degraded_payload_still_answers_200(client, _setup):
+    for name in controller.SECTION_RPCS.values():
+        _setup.rpcs[name] = _failing(name)
+    r = client.get(f"{BASE}/dashboard", params={"institution_id": UCSC["id"]}, headers=PROF)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["failures"] == ["breakdown", "conversations", "overview", "scrum", "trends"]
+    assert body["overview"]["active_classes"] is None and body["conversations"]["total"] is None
+    assert len(_setup.store["events"]) == 1  # the view was still recorded
 
 
 def test_dashboard_authorization_answers(client):
@@ -117,6 +202,7 @@ def test_dashboard_authorization_answers(client):
         f"{BASE}/dashboard", params={"institution_id": UCSC["id"], "class_id": C9}, headers=PROF
     )
     assert r.status_code == 400 and r.json()["detail"] == controller.CLASS_NOT_IN_INSTITUTION
+    assert "cache-control" not in r.headers
 
 
 @pytest.mark.parametrize(
@@ -156,9 +242,8 @@ def test_from_and_to_are_ignored_outside_a_custom_range(client):
         },
         headers=PROF,
     )
-    assert (
-        r.status_code == 200 and r.json()["meta"]["range"]["from"] == "2026-09-08"
-    )  # the preset's own bounds
+    # the preset's own bounds
+    assert r.status_code == 200 and r.json()["meta"]["range"]["from"] == "2026-09-08"
 
 
 def test_an_unknown_window_or_a_bad_uuid_is_422(client):
@@ -199,7 +284,20 @@ def test_custom_range_round_trips_its_dates(client):
     }
 
 
-def test_the_thirty_first_call_in_a_minute_is_rate_limited(client):
+def test_the_thirty_first_call_in_a_minute_is_rate_limited_on_both_routes(client):
     for _ in range(30):
         assert client.get(f"{BASE}/scope", headers=PROF).status_code == 200
     assert client.get(f"{BASE}/scope", headers=PROF).status_code == 429
+    for _ in range(30):
+        assert (
+            client.get(
+                f"{BASE}/dashboard", params={"institution_id": UCSC["id"]}, headers=PROF
+            ).status_code
+            == 200
+        )
+    assert (
+        client.get(
+            f"{BASE}/dashboard", params={"institution_id": UCSC["id"]}, headers=PROF
+        ).status_code
+        == 429
+    )
