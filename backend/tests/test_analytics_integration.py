@@ -207,7 +207,12 @@ def test_rollup_is_idempotent_and_complete(db, ucsc):
     short = {cid: sorted(m) for cid, m in per_metric.items() if len(m) != METRICS_PER_CLASS}
     assert short == {}, f"classes without {METRICS_PER_CLASS} metric rows: {short}"
     assert {"dm_messages", "active_users"} <= {metric for (cid, metric) in after if cid is None}
+    # a backfill (snapshot off) rewrites the activity rows of an earlier day and leaves whatever snapshot
+    # rows that day already has (from the nightly job, the Check or an earlier run) untouched
     before_day = day - dt.timedelta(days=1)
+    snapshots_before = {
+        k: v for k, v in _day_values(db, ucsc, before_day).items() if k[1] in SNAPSHOT_METRICS
+    }
     ranged = (
         db.rpc(
             "analytics_rollup_range",
@@ -222,9 +227,10 @@ def test_rollup_is_idempotent_and_complete(db, ucsc):
         .data
     )
     assert ranged == single
-    assert not any(
-        metric in SNAPSHOT_METRICS for (_cid, metric) in _day_values(db, ucsc, before_day)
-    ), "a backfill day carries no snapshot rows"
+    snapshots_after = {
+        k: v for k, v in _day_values(db, ucsc, before_day).items() if k[1] in SNAPSHOT_METRICS
+    }
+    assert snapshots_before == snapshots_after, "a backfill must not touch a day's snapshot rows"
 
 
 def test_trends_rows_are_weekly(db, ucsc):
