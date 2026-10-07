@@ -44,6 +44,8 @@ function toStudentRow(
     dueDate: formatDeadline(a),
     dueDateIso: a.due_at ?? a.close_date,
     dueAt: a.due_at ?? null,
+    openDate: a.open_date,
+    acceptUntil: a.accept_until ?? null,
     lateUntil: lateUntil ? formatInstant(lateUntil) : undefined,
     projectName: opts.projectName,
     projectId: opts.projectId,
@@ -264,6 +266,8 @@ const Assignments: React.FC = () => {
         projectId: assignment.projectId,
         isSubmitted: assignment.isSubmitted,
         dueAt: assignment.dueAt,
+        openDate: assignment.openDate,
+        acceptUntil: assignment.acceptUntil,
       },
     });
   };

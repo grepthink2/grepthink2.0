@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiAssignment, ApiInstitution } from '@/lib/api';
-import { formatDeadline } from '@/lib/dateUtils';
+import { formatDeadline, formatInstant } from '@/lib/dateUtils';
 
 const api = vi.hoisted(() => ({
   getAssignments: vi.fn(),
@@ -66,6 +66,30 @@ const SUBMITTED_LATE_WINDOW: ApiAssignment = {
   assignment_type: 'tsr',
 };
 
+// Opens at midnight on Oct 12 in Istanbul (Oct 11 21:00Z).
+const NOT_YET_OPEN: ApiAssignment = {
+  id: 'a-later',
+  Title: 'TSR Week 5',
+  open_date: '2026-10-12',
+  close_date: '2026-10-18',
+  due_at: '2026-10-18T21:00:00+00:00',
+  status: 'publish',
+  class_id: 'c1',
+  assignment_type: 'tsr',
+};
+
+// Closed at its deadline (Sep 27 21:00Z), never submitted, no late window.
+const CLOSED: ApiAssignment = {
+  id: 'a-closed',
+  Title: 'TSR Week 0',
+  open_date: '2026-09-21',
+  close_date: '2026-09-27',
+  due_at: '2026-09-27T21:00:00+00:00',
+  status: 'publish',
+  class_id: 'c1',
+  assignment_type: 'tsr',
+};
+
 function LocationState() {
   return <pre data-testid="location-state">{JSON.stringify(useLocation().state)}</pre>;
 }
@@ -120,12 +144,59 @@ describe('StudentHomeDashboard deadlines', () => {
     await waitFor(() => expect(within(rowOf('TSR Week 3')).getByText('In Progress')).toBeInTheDocument());
     fireEvent.click(rowOf('TSR Week 3'));
     const state = JSON.parse((await screen.findByTestId('location-state')).textContent ?? 'null');
-    expect(state).toMatchObject({ projectId: 'p1', dueAt: '2026-10-20T21:00:00+00:00' });
+    expect(state).toMatchObject({
+      projectId: 'p1',
+      dueAt: '2026-10-20T21:00:00+00:00',
+      openDate: '2026-10-05',
+      acceptUntil: null,
+    });
   });
 
   it('keeps a submitted assignment while its late window is open', async () => {
     renderDashboard();
     await waitFor(() => expect(within(rowOf('TSR Week 1')).getByText('Completed')).toBeInTheDocument());
     expect(within(rowOf('TSR Week 1')).getByText(formatDeadline(SUBMITTED_LATE_WINDOW))).toBeInTheDocument();
+  });
+
+  it('says until when the late window accepts submissions', async () => {
+    renderDashboard();
+    const label = `Late submissions until ${formatInstant('2026-10-06T21:00:00+00:00')}`;
+    await waitFor(() => expect(within(rowOf('TSR Week 1')).getByText(label)).toBeInTheDocument());
+    expect(within(rowOf('TSR Week 3')).queryByText(/Late submissions until/)).not.toBeInTheDocument();
+  });
+
+  it('says when a not-yet-open assignment opens and does not open it', async () => {
+    api.getAssignments.mockResolvedValue({ assignments: [OPENED, NOT_YET_OPEN] });
+    renderDashboard();
+    const opens = `Opens ${formatInstant('2026-10-11T21:00:00Z')}`;
+    await waitFor(() => expect(within(rowOf('TSR Week 5')).getByText(opens)).toBeInTheDocument());
+    const row = rowOf('TSR Week 5');
+    expect(row).not.toHaveAttribute('role', 'button');
+    fireEvent.click(row);
+    expect(screen.queryByTestId('location-state')).not.toBeInTheDocument();
+  });
+
+  it('shows a closed assignment as closed and does not open it', async () => {
+    api.getAssignments.mockResolvedValue({ assignments: [OPENED, CLOSED] });
+    renderDashboard();
+    await waitFor(() => expect(within(rowOf('TSR Week 0')).getByText('Closed')).toBeInTheDocument());
+    const row = rowOf('TSR Week 0');
+    expect(row).not.toHaveAttribute('role', 'button');
+    fireEvent.click(row);
+    expect(screen.queryByTestId('location-state')).not.toBeInTheDocument();
+  });
+
+  it("rebuilds the rows when the school's zone arrives, without loading them again", async () => {
+    let schoolsLoaded: (list: ApiInstitution[]) => void = () => {};
+    api.getInstitutions.mockReturnValue(new Promise((resolve) => (schoolsLoaded = resolve)));
+    renderDashboard();
+    // Pacific until the schools list lands, where midnight on Oct 5 is still ahead (07:00Z).
+    const pacificOpens = `Opens ${formatInstant('2026-10-05T07:00:00Z')}`;
+    await waitFor(() => expect(within(rowOf('TSR Week 3')).getByText(pacificOpens)).toBeInTheDocument());
+    schoolsLoaded([ISTINYE]);
+    await waitFor(() => expect(within(rowOf('TSR Week 3')).getByText('In Progress')).toBeInTheDocument());
+    expect(within(rowOf('TSR Week 3')).queryByText(/^Opens /)).not.toBeInTheDocument();
+    expect(rowOf('TSR Week 3')).toHaveAttribute('role', 'button');
+    expect(api.getAssignments).toHaveBeenCalledTimes(1);
   });
 });

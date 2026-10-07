@@ -15,6 +15,15 @@
   color: var(--gt-warning-text);
 }
 
+// Why the form cannot be submitted now (not open yet, or closed).
+.tsrs__window-notice {
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: $border-radius-sm;
+  background: var(--gt-warning-soft);
+  color: var(--gt-warning-text);
+}
+
 // ── Success state ───────────────────────────────────────────────
 .tsrs__submitted {
   display: flex;

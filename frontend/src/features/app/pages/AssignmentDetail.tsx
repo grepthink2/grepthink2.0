@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, useLocation, Navigate } from 'react-router-dom';
 import { useClass } from '@/lib/classContext';
+import { useSchoolTimezone } from '@/lib/institutions';
 import TSRS from '@features/app/components/TSRS/TSRS';
 import type { TsrsAssignment } from '@features/app/components/TSRS/TSRS';
 import InterestForm from '@features/app/components/Interest/InterestForm';
@@ -21,12 +22,16 @@ interface AssignmentDetailState {
   isSubmitted?: boolean;
   /** The deadline instant (`due_at`), when the backend sent one. */
   dueAt?: string | null;
+  /** The open date (YYYY-MM-DD) and the late window's end, for the form's window check. */
+  openDate?: string | null;
+  acceptUntil?: string | null;
 }
 
 const AssignmentDetail: React.FC = () => {
   const { assignmentId } = useParams<{ assignmentId: string }>();
   const location = useLocation();
   const { selectedClass } = useClass();
+  const zone = useSchoolTimezone(selectedClass?.institution?.id);
 
   if (!assignmentId) return <Navigate to="/app/assignments" replace />;
 
@@ -39,6 +44,8 @@ const AssignmentDetail: React.FC = () => {
   const projectId       = stateData.projectId       ?? '';
   const isSubmitted     = stateData.isSubmitted     ?? false;
   const dueAt           = stateData.dueAt           ?? null;
+  const openDate        = stateData.openDate        ?? null;
+  const acceptUntil     = stateData.acceptUntil     ?? null;
 
   if (!selectedClass) {
     return (
@@ -58,6 +65,8 @@ const AssignmentDetail: React.FC = () => {
     projectName,
     projectId,
     dueAt,
+    openDate,
+    acceptUntil,
   };
 
   const interestAssignment: InterestFormAssignment = {
@@ -73,17 +82,19 @@ const AssignmentDetail: React.FC = () => {
     dueDate,
     classId: selectedClass.id,
     dueAt,
+    openDate,
+    acceptUntil,
   };
 
   return (
     <div className="assignment-detail">
       <div className="assignment-detail__body">
-        {assignmentType === 'tsrs' && <TSRS assignment={tsrsAssignment} />}
+        {assignmentType === 'tsrs' && <TSRS assignment={tsrsAssignment} zone={zone} />}
         {assignmentType === 'interest_form' && (
           <InterestForm assignment={interestAssignment} />
         )}
         {assignmentType === 'feedback' && (
-          <FeedbackForm assignment={feedbackAssignment} isSubmitted={isSubmitted} />
+          <FeedbackForm assignment={feedbackAssignment} isSubmitted={isSubmitted} zone={zone} />
         )}
       </div>
     </div>

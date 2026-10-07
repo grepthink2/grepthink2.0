@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import type { ApiAssignmentTsrEntry } from '@/lib/api';
 import { useUser } from '@/lib/auth';
 import { usePreview } from '@/lib/previewContext';
+import { submissionWindowNotice } from '@/features/app/utils/assignmentState';
 import TsrsStepper from './TsrsStepper';
 import ContributionsTab from './ContributionsTab';
 import TeamFeedbackTab from './TeamFeedbackTab';
@@ -51,9 +52,11 @@ const PREVIEW_MEMBERS: TeamMember[] = [1, 2, 3, 4].map((n) => ({
 
 interface TSRSProps {
   assignment: TsrsAssignment;
+  /** The school's IANA zone, where the open date starts; Pacific when not given. */
+  zone?: string;
 }
 
-const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
+const TSRS: React.FC<TSRSProps> = ({ assignment, zone }) => {
   const navigate = useNavigate();
   const { user } = useUser();
   const { isPreviewing } = usePreview();
@@ -208,6 +211,8 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
   const submittedLate = priorEntries.some(
     (e) => e.submitted_at && dueAt && new Date(e.submitted_at) >= dueAt,
   );
+  // Outside the window the server refuses the submission (403): say so before anything is typed.
+  const windowNotice = submissionWindowNotice(assignment, new Date(), zone);
 
   const contributionsTotal = Object.values(contributions).reduce((s, v) => s + v, 0);
 
@@ -403,6 +408,8 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
 
       {submittedLate && <p className="tsrs__late-note">Submitted after the deadline</p>}
 
+      {windowNotice && <p className="tsrs__window-notice">{windowNotice}</p>}
+
       <TsrsStepper
         activeTab={activeTab}
         completedSteps={completedSteps}
@@ -446,6 +453,7 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
               }
             }}
             isFinalStep={!isScrumMaster}
+            submitDisabled={windowNotice !== null}
           />
         )}
 
@@ -463,6 +471,7 @@ const TSRS: React.FC<TSRSProps> = ({ assignment }) => {
             }
             onBack={() => setActiveTab('team_feedback')}
             onSubmit={handleSubmit}
+            submitDisabled={windowNotice !== null}
           />
         )}
       </div>

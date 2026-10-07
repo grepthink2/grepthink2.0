@@ -28,10 +28,22 @@ interface TeamFeedbackTabProps {
   onBack: () => void;
   onNext: () => void;
   isFinalStep: boolean;
+  /** Disables the final step's Submit (the assignment is not open). */
+  submitDisabled?: boolean;
 }
 
 const TeamFeedbackTab = forwardRef<TeamFeedbackTabHandle, TeamFeedbackTabProps>(function TeamFeedbackTab(
-  { members, feedback, onFeedbackChange, onValidationSuccess, onFieldChange, onBack, onNext, isFinalStep },
+  {
+    members,
+    feedback,
+    onFeedbackChange,
+    onValidationSuccess,
+    onFieldChange,
+    onBack,
+    onNext,
+    isFinalStep,
+    submitDisabled = false,
+  },
   ref,
 ) {
   const fieldRefs = useRef<Record<FieldKey, HTMLTextAreaElement | null>>({} as Record<FieldKey, HTMLTextAreaElement | null>);
@@ -158,7 +170,12 @@ const TeamFeedbackTab = forwardRef<TeamFeedbackTabHandle, TeamFeedbackTabProps>(
         <button type="button" className="tsrs-btn tsrs-btn--secondary" onClick={onBack}>
           Back
         </button>
-        <button type="button" className="tsrs-btn tsrs-btn--primary" onClick={handleNext}>
+        <button
+          type="button"
+          className="tsrs-btn tsrs-btn--primary"
+          onClick={handleNext}
+          disabled={isFinalStep && submitDisabled}
+        >
           {isFinalStep ? 'Submit' : 'Next'}
         </button>
       </div>

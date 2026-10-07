@@ -24,6 +24,9 @@ export interface StudentAssignment {
   dueDateIso: string;
   /** The deadline instant from the backend; null from older backends. */
   dueAt?: string | null;
+  /** The open date (YYYY-MM-DD) and the late window's end, for the form's window check. */
+  openDate?: string;
+  acceptUntil?: string | null;
   /** End of the late window for display, while submissions are accepted past the deadline. */
   lateUntil?: string;
   projectName: string;

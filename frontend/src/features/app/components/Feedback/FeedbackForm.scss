@@ -76,6 +76,16 @@
   color: var(--gt-warning-text);
 }
 
+// ── Window notice: not open yet, or closed (the colors of .tsrs__window-notice) ──
+.feedback-form__window-notice {
+  margin: $spacing-lg $spacing-xl 0;
+  padding: 10px 16px;
+  border-radius: $border-radius-sm;
+  background: var(--gt-warning-soft);
+  color: var(--gt-warning-text);
+  font-size: $font-size-sm;
+}
+
 // ── Questions list ────────────────────────────────────────────────────────────
 .feedback-form__questions {
   display: flex;

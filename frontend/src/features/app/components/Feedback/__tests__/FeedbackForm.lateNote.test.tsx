@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiFeedbackSubmission } from '@/lib/api';
+import { formatInstant } from '@/lib/dateUtils';
 
 const api = vi.hoisted(() => ({ getMyFeedback: vi.fn() }));
 vi.mock('@/lib/api', () => ({ api }));
@@ -61,5 +62,60 @@ describe('FeedbackForm late note', () => {
   it('says nothing for a submission made before the deadline', async () => {
     await renderWithSubmission('2026-10-03T20:59:00+00:00');
     expect(screen.queryByText('Submitted after the deadline')).not.toBeInTheDocument();
+  });
+});
+
+describe('FeedbackForm submission window', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** Renders the form for `assignment`, with the student's earlier answers when there are any. */
+  function renderForm(
+    assignment: FeedbackFormAssignment,
+    earlier: ApiFeedbackSubmission | null,
+    zone?: string,
+  ) {
+    api.getMyFeedback.mockResolvedValue({ submission: earlier });
+    render(
+      <MemoryRouter>
+        <FeedbackForm assignment={assignment} zone={zone} />
+      </MemoryRouter>,
+    );
+  }
+
+  it('says the assignment is closed and disables Submit', async () => {
+    vi.setSystemTime(new Date('2026-10-04T09:15:00Z')); // past due_at, no late window
+    renderForm(ASSIGNMENT, submission('2026-10-03T20:00:00+00:00'));
+    expect(await screen.findByText('This assignment is closed')).toBeInTheDocument();
+    // Every answer is filled in: only the window keeps it disabled.
+    expect(screen.getByRole('button', { name: 'Update Feedback' })).toBeDisabled();
+  });
+
+  it('says when the assignment opens and disables Submit', async () => {
+    vi.setSystemTime(new Date('2026-09-27T12:00:00Z'));
+    renderForm({ ...ASSIGNMENT, openDate: '2026-09-28' }, null, 'Europe/Istanbul');
+    // Midnight on Sep 28 in Istanbul is Sep 27 21:00Z.
+    const notice = `This assignment opens ${formatInstant('2026-09-27T21:00:00Z')}`;
+    expect(await screen.findByText(notice)).toBeInTheDocument();
+    for (const answer of screen.getAllByRole('textbox')) {
+      fireEvent.change(answer, { target: { value: 'An answer' } });
+    }
+    expect(screen.getByRole('button', { name: 'Submit Feedback' })).toBeDisabled();
+  });
+
+  it('keeps Submit enabled inside the late window, with the late note', async () => {
+    vi.setSystemTime(new Date('2026-10-05T12:00:00Z')); // past due_at, inside the late window
+    renderForm(
+      { ...ASSIGNMENT, acceptUntil: '2026-10-06T21:00:00+00:00' },
+      submission('2026-10-04T09:15:00+00:00'),
+    );
+    expect(await screen.findByText('Submitted after the deadline')).toBeInTheDocument();
+    expect(screen.queryByText(/^This assignment (is closed|opens)/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Update Feedback' })).toBeEnabled();
   });
 });

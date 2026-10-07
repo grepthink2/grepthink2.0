@@ -126,6 +126,11 @@ describe('Assignments', () => {
     );
     fireEvent.click(within(rowOf('TSR Week 1')).getByRole('button', { name: 'Start' }));
     const state = JSON.parse((await screen.findByTestId('location-state')).textContent ?? 'null');
-    expect(state).toMatchObject({ projectId: 'p1', dueAt: '2026-10-03T21:00:00+00:00' });
+    expect(state).toMatchObject({
+      projectId: 'p1',
+      dueAt: '2026-10-03T21:00:00+00:00',
+      openDate: '2026-09-28',
+      acceptUntil: '2026-10-06T21:00:00+00:00',
+    });
   });
 });

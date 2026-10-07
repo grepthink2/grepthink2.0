@@ -13,6 +13,8 @@ interface ScrumMasterTabProps {
   onFieldChange?: () => void;
   onBack: () => void;
   onSubmit: () => void;
+  /** Disables Submit (the assignment is not open). */
+  submitDisabled?: boolean;
 }
 
 const ScrumMasterTab: React.FC<ScrumMasterTabProps> = ({
@@ -22,6 +24,7 @@ const ScrumMasterTab: React.FC<ScrumMasterTabProps> = ({
   onFieldChange,
   onBack,
   onSubmit,
+  submitDisabled = false,
 }) => {
   const fieldRefs = useRef<Record<RequiredFieldKey, HTMLTextAreaElement | null>>(
     {} as Record<RequiredFieldKey, HTMLTextAreaElement | null>,
@@ -166,7 +169,12 @@ const ScrumMasterTab: React.FC<ScrumMasterTabProps> = ({
         <button type="button" className="tsrs-btn tsrs-btn--secondary" onClick={onBack}>
           Back
         </button>
-        <button type="button" className="tsrs-btn tsrs-btn--primary" onClick={handleSubmit}>
+        <button
+          type="button"
+          className="tsrs-btn tsrs-btn--primary"
+          onClick={handleSubmit}
+          disabled={submitDisabled}
+        >
           Submit
         </button>
       </div>
