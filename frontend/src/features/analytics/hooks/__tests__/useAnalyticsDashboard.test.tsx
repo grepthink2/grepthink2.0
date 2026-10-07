@@ -139,5 +139,6 @@ describe('useAnalyticsDashboard', () => {
     await waitFor(() => expect(getAnalyticsDashboard).toHaveBeenLastCalledWith(expect.objectContaining({ fresh: true })));
     act(() => { vi.advanceTimersByTime(60_000); });
     await waitFor(() => expect(getAnalyticsDashboard).toHaveBeenCalledTimes(3));
+    expect(getAnalyticsDashboard).toHaveBeenLastCalledWith(expect.objectContaining({ fresh: true }));  // the poll is fresh too
   });
 });

@@ -144,7 +144,8 @@ export function useAnalyticsDashboard() {
 
   useEffect(() => {
     const id = window.setInterval(() => {
-      if (document.visibilityState === 'visible' && load(filters, false)) setRefetching(true);
+      // fresh: a poll the server's or the browser's 60 s cache could answer would refresh nothing
+      if (document.visibilityState === 'visible' && load(filters, true)) setRefetching(true);
     }, REFRESH_MS);
     return () => window.clearInterval(id);
   }, [filters, load]);
