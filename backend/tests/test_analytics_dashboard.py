@@ -407,9 +407,10 @@ def test_class_breakdown_folds_small_classes_in_a_fixed_order_and_keeps_totals(f
         "on_time_rate": None,
         "missing": 0,
     }  # the rate of the sums: 2 / 8
-    # institution totals are unaffected by folding: the rows still add up to them
+    # institution totals are unaffected by folding: the teams still add up to the total (students do not
+    # in general: the total counts a student once, the rows count each enrolment)
     assert sum(r["teams"] for r in rows["rows"]) == p["overview"]["teams"] == 11
-    assert sum(r["students"] for r in rows["rows"]) == p["overview"]["students"] == 47
+    assert p["overview"]["students"] == 47
 
 
 def test_team_breakdown_when_a_class_is_selected(fake):
