@@ -894,3 +894,140 @@ export interface ApiUpdateTaskBody {
   /** Explicit null unlinks the PR. */
   pr_url?: string | null;
 }
+
+// ── Analytics (spec §6.3; handoff brief §5 is the contract) ───────────────────────────────────────
+export type AnalyticsRangePreset = '7d' | '30d' | '90d' | 'class' | 'all' | 'custom';
+export type AnalyticsBoardStatus = 'todo' | 'in_progress' | 'done';
+export type AnalyticsTimelinessBucket = 'early' | 'on_time' | 'late' | 'missing' | 'not_due';
+/** A client-side toggle on the scrum card, never a request parameter. */
+export type AnalyticsUnit = 'count' | 'points';
+
+export interface ApiAnalyticsScopeClass {
+  id: string;
+  name: string;
+  term: string | null;
+  start_date: string | null;
+  /** "CSE 115A · Fall 2026" — the name, and the term when there is one. */
+  label: string;
+}
+export interface ApiAnalyticsScopeInstitution {
+  id: string;
+  name: string;
+  slug: string;
+  timezone: string;
+  access: 'maintainer' | 'instructor';
+  classes: ApiAnalyticsScopeClass[];
+}
+export interface ApiAnalyticsScope {
+  institutions: ApiAnalyticsScopeInstitution[];
+}
+
+export interface ApiAnalyticsOverview {
+  active_classes: number | null;
+  teams: number | null;
+  students: number | null;
+  active_users_7d: number | null;
+  messages: number | null;
+  stories_created: number | null;
+  tasks_created: number | null;
+  story_points_created: number | null;
+  task_points_created: number | null;
+  on_time_rate: number | null;
+  deltas: Partial<Record<'messages' | 'stories_created' | 'tasks_created' | 'on_time_rate' | 'active_users_7d', number | null>>;
+  /** Weekly totals from the nightly rollup, oldest first, up to 12 points; absent before the first rollup. */
+  trends: Partial<Record<'messages' | 'tasks_created', number[]>>;
+}
+export interface ApiAnalyticsConversations {
+  total: number | null;
+  team_members: number | null;
+  dm: number | null;
+  weekly: { week_start: string; team_members: number; dm: number }[];
+  excluded: string[];
+}
+export interface ApiAnalyticsSprintRow {
+  ordinal: number;
+  label: string;
+  teams: number;
+  todo: number;
+  in_progress: number;
+  done: number;
+  points_todo: number;
+  points_in_progress: number;
+  points_done: number;
+}
+export interface ApiAnalyticsScrum {
+  live_as_of: string;
+  stories_created: number | null;
+  tasks_created: number | null;
+  story_points_created: number | null;
+  task_points_created: number | null;
+  by_sprint: ApiAnalyticsSprintRow[];
+  chars: { entity: 'task' | 'story'; ordinal: number | null; label: string; n: number; median: number }[];
+}
+export interface ApiAnalyticsTimeliness {
+  on_time_rate: number | null;
+  expected: number;
+  late: number;
+  missing: number;
+  edited_late: number;
+  bucket_order: AnalyticsTimelinessBucket[];
+  rows: unknown[];
+}
+export interface ApiAnalyticsTrendPanel {
+  key: 'team_messages_per_team' | 'tasks_per_team' | 'points_done_per_team' | 'on_time_rate';
+  title: string;
+  unit: string;
+  current: { week_start: string; value: number | null }[];
+  previous: { week_start: string; value: number | null }[] | null;
+}
+export interface ApiAnalyticsTrends {
+  as_of: string | null;
+  panels: ApiAnalyticsTrendPanel[];
+}
+export interface ApiAnalyticsBreakdownRow {
+  id: string;
+  name: string;
+  kind: 'row' | 'folded';
+  teams?: number | null;
+  students?: number | null;
+  members?: number | null;
+  team_messages: number | null;
+  stories: number | null;
+  tasks: number | null;
+  points_done_rate: number | null;
+  on_time_rate: number | null;
+  missing: number;
+  href?: string | null;
+}
+export interface ApiAnalyticsBreakdown {
+  kind: 'class' | 'team';
+  rows: ApiAnalyticsBreakdownRow[];
+}
+export type AnalyticsSection = 'overview' | 'conversations' | 'scrum' | 'timeliness' | 'trends' | 'breakdown';
+export interface ApiAnalyticsDashboard {
+  meta: {
+    institution: { id: string; name: string; slug: string; timezone: string };
+    class: { id: string; label: string } | null;
+    range: { preset: AnalyticsRangePreset; from: string; to: string; previous_from: string | null; previous_to: string | null };
+    generated_at: string;
+    cached: boolean;
+    k_anonymity: number;
+    rollup_as_of: string | null;
+  };
+  overview: ApiAnalyticsOverview;
+  conversations: ApiAnalyticsConversations;
+  scrum: ApiAnalyticsScrum;
+  timeliness: ApiAnalyticsTimeliness;
+  trends: ApiAnalyticsTrends;
+  breakdown: ApiAnalyticsBreakdown;
+  failures: AnalyticsSection[];
+}
+export interface AnalyticsDashboardQuery {
+  institution_id: string;
+  class_id?: string | null;
+  window: AnalyticsRangePreset;
+  /** ISO dates, only sent with `window: 'custom'`. */
+  from?: string | null;
+  to?: string | null;
+  fresh?: boolean;
+}

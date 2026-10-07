@@ -18,6 +18,7 @@ import { notificationsApi } from './api/notifications';
 import { interestApi } from './api/interest';
 import { staffingApi } from './api/staffing';
 import { scrumApi } from './api/scrum';
+import { analyticsApi } from './api/analytics';
 
 export * from './api/types';
 export { ApiError, apiRequest, apiUpload } from './api/client';
@@ -35,4 +36,5 @@ export const api = {
   ...interestApi,
   ...staffingApi,
   ...scrumApi,
+  ...analyticsApi,
 };
