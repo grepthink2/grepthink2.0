@@ -5,17 +5,22 @@ applying 2026-10-07_analytics.sql on DEV:
 
     ANALYTICS_IT_DATABASE=1 .venv/bin/python -m pytest tests/test_analytics_integration.py -q
 
-The assertions are shape, non-negativity and cross-consistency (per-class sums equal totals, a
-second rollup run changes nothing), never exact counts — DEV data moves.
+The module builds its own client from the repo-root .env (conftest replaces SUPABASE_URL with a stub
+before the app loads, so the app's client would point the real key at a bogus host) and refuses to
+run against the PROD project. The assertions are shape, non-negativity and cross-consistency
+(per-class sums equal totals, a second rollup run changes nothing), never exact counts — DEV data moves.
 """
 
 from __future__ import annotations
 
 import datetime as dt
 import os
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
+
+PROD_PROJECT_REF = "yfezwtoeoexfksvbpxmi"
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("ANALYTICS_IT_DATABASE") != "1",
@@ -27,10 +32,15 @@ PARAMS = ("p_institution", "p_class", "p_from", "p_to", "p_prev_from", "p_prev_t
 
 @pytest.fixture(scope="module")
 def db():
-    from app.database.client import service_client
+    from dotenv import dotenv_values
+    from supabase import create_client
 
-    assert service_client is not None, "SUPABASE_SERVICE_ROLE_KEY is required"
-    return service_client
+    env_file = Path(__file__).resolve().parents[2] / ".env"
+    env = dotenv_values(env_file)
+    url, key = env.get("SUPABASE_URL"), env.get("SUPABASE_SERVICE_ROLE_KEY")
+    assert url and key, f"{env_file} must hold SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
+    assert PROD_PROJECT_REF not in url, "refusing to run the analytics checks against PROD"
+    return create_client(url, key)
 
 
 @pytest.fixture(scope="module")
