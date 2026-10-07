@@ -6,11 +6,14 @@ const TEAM = { key: 'team', label: 'Team channels', colorClass: 'gt-series--1', 
   { weekStart: '2026-09-07', value: 100 }, { weekStart: '2026-09-14', value: 160 }, { weekStart: '2026-09-21', value: 130 }] };
 const DM = { key: 'dm', label: 'Direct', colorClass: 'gt-series--2', points: [
   { weekStart: '2026-09-07', value: 120 }, { weekStart: '2026-09-14', value: 110 }, { weekStart: '2026-09-21', value: 190 }] };
+/** n consecutive Mondays from Jan 5, 2026, valued 10, 11, 12, … */
+const weeksOf = (n: number, key = 'team', colorClass = 'gt-series--1') => ({ key, label: key, colorClass, points: Array.from({ length: n }, (_, i) => ({
+  weekStart: new Date(Date.UTC(2026, 0, 5 + 7 * i)).toISOString().slice(0, 10), value: 10 + i })) });
 
 describe('WeeklyLine', () => {
   it('draws one path per series, a legend only for two, and names itself for screen readers', () => {
     const { container, rerender } = render(<WeeklyLine series={[TEAM]} ariaLabel="Messages per week" />);
-    expect(screen.getByRole('img', { name: 'Messages per week' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Messages per week; week of Sep 21: Team channels 130' })).toBeInTheDocument();
     expect(container.querySelectorAll('.gt-line__path')).toHaveLength(1);
     expect(container.querySelector('.gt-legend')).toBeNull();
     expect(container.querySelectorAll('.gt-line__area')).toHaveLength(1); // series 1 gets the 10 % wash
@@ -36,21 +39,21 @@ describe('WeeklyLine', () => {
     expect(container.querySelectorAll('.gt-line__end-label')).toHaveLength(2);
     expect(container.innerHTML).not.toMatch(/#[0-9a-f]{3,6}/i);
   });
-  it('keeps the tooltip inside the chart: the anchor is clamped to 10–90 % and the box shifts by the same share of its own width', () => {
+  it('anchors the tooltip at its point and shifts the box by the same share of its own width, so it stays inside the chart', () => {
     const { container } = render(<WeeklyLine series={[TEAM, DM]} ariaLabel="Messages per week" />);
     const svg = container.querySelector('svg')!;
     svg.getBoundingClientRect = () => ({ left: 0, top: 0, width: 600, height: 220, right: 600, bottom: 220, x: 0, y: 0, toJSON: () => ({}) });
     const wrap = container.querySelector<HTMLElement>('.gt-line')!;
-    fireEvent.mouseMove(svg, { clientX: 590, clientY: 100 }); // the last week sits at 90.7 % of the width
-    expect(screen.getByRole('tooltip').style.left).toBe('90%');
-    expect(wrap.style.getPropertyValue('--tip-shift')).toBe('-90%');
-    fireEvent.mouseMove(svg, { clientX: 10, clientY: 100 }); // the first week sits at 6.7 %
-    expect(screen.getByRole('tooltip').style.left).toBe('10%');
-    expect(wrap.style.getPropertyValue('--tip-shift')).toBe('-10%');
+    fireEvent.mouseMove(svg, { clientX: 590, clientY: 100 }); // the last week sits at 544 / 600 of the width
+    expect(screen.getByRole('tooltip').style.left).toBe('90.67%');
+    expect(wrap.style.getPropertyValue('--tip-shift')).toBe('-90.67%');
+    fireEvent.mouseMove(svg, { clientX: 10, clientY: 100 }); // the first week sits at 40 / 600
+    expect(screen.getByRole('tooltip').style.left).toBe('6.67%');
+    expect(wrap.style.getPropertyValue('--tip-shift')).toBe('-6.67%');
   });
   it('steps through the weeks from the keyboard with the same tooltip as hover', () => {
     render(<WeeklyLine series={[TEAM, DM]} ariaLabel="Messages per week" />);
-    const chart = screen.getByRole('img', { name: 'Messages per week' });
+    const chart = screen.getByRole('img', { name: /^Messages per week/ });
     fireEvent.focus(chart);
     expect(screen.getByRole('tooltip')).toHaveTextContent('Sep 21');
     fireEvent.keyDown(chart, { key: 'ArrowLeft' });
@@ -90,6 +93,39 @@ describe('WeeklyLine', () => {
     rerender(<WeeklyLine series={[TEAM, endAt(134)]} ariaLabel="x" />); // Direct ends 4 above Team channels
     [team, dm] = labelYs(container);
     expect(team - dm).toBeGreaterThanOrEqual(12);
+  });
+  it('appends the latest week to the summary, and nothing when there are no weeks', () => {
+    const { rerender } = render(<WeeklyLine series={[TEAM, DM]} ariaLabel="Messages per week" />);
+    expect(screen.getByRole('img', { name: 'Messages per week; week of Sep 21: Team channels 130, Direct 190' })).toBeInTheDocument();
+    rerender(<WeeklyLine series={[{ ...TEAM, points: [] }]} ariaLabel="Messages per week" />);
+    expect(screen.getByRole('img', { name: 'Messages per week' })).toBeInTheDocument();
+  });
+  it('labels at most one week per 48 units, always the first and the last, none crowding the last (n = 17, W = 600)', () => {
+    const { container } = render(<WeeklyLine series={[weeksOf(17)]} ariaLabel="x" />);
+    const labels = Array.from(container.querySelectorAll('text.gt-line__tick[text-anchor="middle"]'));
+    const xs = labels.map((t) => Number(t.getAttribute('x')));
+    expect(xs[0]).toBe(40);
+    expect(xs[xs.length - 1]).toBe(544);
+    expect(labels[labels.length - 1]).toHaveTextContent('Apr 27'); // the 17th Monday
+    xs.slice(1).forEach((v, i) => expect(v - xs[i]).toBeGreaterThanOrEqual(48));
+  });
+  it('marks every point up to 26 weeks and only each series\' last point beyond, the lines kept', () => {
+    const { container, rerender } = render(<WeeklyLine series={[weeksOf(26), weeksOf(26, 'dm', 'gt-series--2')]} ariaLabel="x" />);
+    expect(container.querySelectorAll('.gt-line__marker')).toHaveLength(52);
+    rerender(<WeeklyLine series={[weeksOf(27), weeksOf(27, 'dm', 'gt-series--2')]} ariaLabel="x" />);
+    const markers = Array.from(container.querySelectorAll('.gt-line__marker'));
+    expect(markers.map((m) => m.getAttribute('cx'))).toEqual(['544', '544']);
+    expect(container.querySelectorAll('.gt-line__path')).toHaveLength(2);
+  });
+  it('draws the Team channels line at its known coordinates (W = 600, axis max 200)', () => {
+    const { container } = render(<WeeklyLine series={[TEAM]} ariaLabel="x" />);
+    expect(container.querySelector('.gt-line__path')!.getAttribute('d')).toBe('M40 104L292 51.2L544 77.6');
+  });
+  it('draws a single week as one marker, with no area and no NaN', () => {
+    const { container } = render(<WeeklyLine series={[{ ...TEAM, points: TEAM.points.slice(0, 1) }]} ariaLabel="x" />);
+    expect(container.querySelectorAll('.gt-line__marker')).toHaveLength(1);
+    expect(container.querySelector('.gt-line__area')).toBeNull();
+    expect(container.innerHTML).not.toContain('NaN');
   });
   it('renders a flat zero line without NaN when every value is 0', () => {
     const { container } = render(<WeeklyLine series={[{ ...TEAM, points: TEAM.points.map((p) => ({ ...p, value: 0 })) }]} ariaLabel="x" />);

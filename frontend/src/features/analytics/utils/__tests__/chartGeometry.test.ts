@@ -6,11 +6,20 @@ describe('chartGeometry', () => {
     expect(linearScale(0, 10, 0, 100)(5)).toBe(50);
     expect(linearScale(0, 0, 0, 100)(0)).toBe(0);
   });
-  it('rounds the axis top to 1, 2 or 5 × 10^k and spreads ticks', () => {
+  it('rounds the axis top up to 1, 2, 2.5, 5 or 10 × 10^k', () => {
     expect([niceMax(0), niceMax(7), niceMax(23), niceMax(281), niceMax(1284)]).toEqual([1, 10, 25, 500, 2000]);
-    expect(ticks(300)).toEqual([0, 75, 150, 225, 300]);
-    expect(ticks(2.5).map(tickLabel)).toEqual(['0', '0.63', '1.25', '1.88', '2.5']);
+  });
+  it('steps ticks by the 1, 2 or 5 × 10^k nearest a quarter of the top (the smaller on a tie), by 1 up to an integer 4', () => {
+    expect(ticks(300)).toEqual([0, 50, 100, 150, 200, 250, 300]);
+    expect(ticks(25)).toEqual([0, 5, 10, 15, 20, 25]);
+    expect(ticks(250)).toEqual([0, 50, 100, 150, 200, 250]);
+    expect(ticks(10)).toEqual([0, 2, 4, 6, 8, 10]);
+    expect(ticks(2.5).map(tickLabel)).toEqual(['0', '0.5', '1', '1.5', '2', '2.5']);
+    expect(ticks(1)).toEqual([0, 1]);
+  });
+  it('labels ticks compactly, a fraction with up to two decimals', () => {
     expect(tickLabel(1300000)).toBe('1.3M');
+    expect(tickLabel(0.625)).toBe('0.63');
   });
   it('breaks the path where a point is missing', () => {
     expect(linePath([[0, 10], [10, 20], null, [30, 5], [40, 8]])).toBe('M0 10L10 20M30 5L40 8');

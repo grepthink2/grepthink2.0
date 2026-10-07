@@ -16,8 +16,20 @@ export function niceMax(max: number): number {
   return 10 * base;
 }
 
+/** 0, step, 2·step, … up to `max` (inclusive): by 1 for an integer `max` ≤ 4, otherwise by the 1, 2 or 5 × 10^k nearest `max / count`, so every tick is a round number. */
 export function ticks(max: number, count = 4): number[] {
-  return Array.from({ length: count + 1 }, (_, i) => (max / count) * i);
+  const step = Number.isInteger(max) && max <= 4 ? 1 : niceStep(max / count);
+  const out: number[] = [];
+  for (let i = 0; step > 0 && i * step <= max + 1e-9; i += 1) out.push(i * step);
+  return out;
+}
+
+/** The value of the ladder [1, 2, 5] × 10^k (the next decade's 1 included) nearest `target`, the smaller on a tie. */
+function niceStep(target: number): number {
+  const base = 10 ** Math.floor(Math.log10(target));
+  let best = base;
+  for (const m of [2, 5, 10]) if (Math.abs(m * base - target) < Math.abs(best - target)) best = m * base;
+  return best;
 }
 
 /** An axis tick's label: counts stay compact ("1.3M"); a fractional tick keeps up to two decimals ("1.25"). */

@@ -51,7 +51,8 @@
   &__swatch--line { width: 14px; height: 3px; border-radius: 2px; background: var(--series); }
   &__value { color: var(--gt-text-primary); font-weight: 600; } }
 
-.gt-chart-tip { position: absolute; z-index: 2; pointer-events: none; transform: translate(-50%, calc(-100% - 10px)); background: var(--gt-surface); border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); box-shadow: var(--gt-shadow-hover); padding: 8px 10px; font-size: 12px; width: max-content; min-width: 140px;
+// A chart may set --tip-shift on its wrapper (the anchor's share of the width, negated) so the box stays inside the chart; centred by default.
+.gt-chart-tip { position: absolute; z-index: 2; pointer-events: none; transform: translate(var(--tip-shift, -50%), calc(-100% - 10px)); background: var(--gt-surface); border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); box-shadow: var(--gt-shadow-hover); padding: 8px 10px; font-size: 12px; width: max-content; min-width: 140px;
   &__title { font-weight: 600; color: var(--gt-text-primary); margin-bottom: 4px; }
   &__row { display: flex; align-items: center; gap: 6px; }
   &__key { width: 10px; height: 3px; border-radius: 2px; background: var(--series); }
@@ -66,8 +67,6 @@
   &__title { margin: 0 0 6px; font-weight: 600; color: var(--gt-text-primary); } &__body { margin: 0; line-height: 1.45; } }
 
 .gt-line { position: relative; width: 100%;
-  // WeeklyLine sets --tip-shift to minus the tooltip's anchor share (left 90 % → −90 %): the box moves by that share of its own width, so it stays inside the chart.
-  .gt-chart-tip { transform: translate(var(--tip-shift, -50%), calc(-100% - 10px)); }
   &__svg { width: 100%; height: auto; display: block; } // focus: the house ring (index.css `[tabindex]:focus-visible`, 2px accent)
   &__grid { stroke: var(--gt-gray-200); stroke-width: 1; }
   &__axis { stroke: var(--gt-gray-400); stroke-width: 1; }
@@ -78,6 +77,6 @@
   &__end-label { font-size: 11px; font-weight: 600; fill: var(--gt-text-primary); }
   &__crosshair { stroke: var(--gt-gray-400); stroke-width: 1; stroke-dasharray: none; } }
 
-.gt-split { &__bar { display: flex; gap: 2px; height: 12px; border-radius: 4px; overflow: hidden; } &__segment { background: var(--series); min-width: 0; flex-basis: 0; } &--empty .gt-split__segment { background: var(--gt-gray-200); } }
+.gt-split { &__bar { display: flex; gap: 2px; height: 12px; border-radius: 0 4px 4px 0; overflow: hidden; } &__segment { background: var(--series); min-width: 0; flex-basis: 0; } &--empty .gt-split__segment { background: var(--gt-gray-200); } }
 
 @media (prefers-reduced-motion: reduce) { .gt-analytics *, .gt-chart-card * { transition: none !important; } }
