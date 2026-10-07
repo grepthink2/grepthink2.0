@@ -73,8 +73,8 @@ COUNTS = {
     "active_users_prev_7d": 25,
     "by_class": [  # in the database's order, which the breakdown must not depend on
         {"class_id": "c4", "label": "Seminar", "teams": 1, "students": 1},
-        {"class_id": "c1", "label": "CSE 115A · Fall 2026", "teams": 8, "students": 41},
         {"class_id": "c2", "label": "CSE 115B", "teams": 1, "students": 3},
+        {"class_id": "c1", "label": "CSE 115A · Fall 2026", "teams": 8, "students": 41},
         {"class_id": "c3", "label": "Pilot", "teams": 1, "students": 2},
     ],
     "by_team": [
