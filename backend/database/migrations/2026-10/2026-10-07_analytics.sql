@@ -43,14 +43,15 @@ LANGUAGE sql STABLE SET search_path = public AS $$
      AND (p_class IS NULL OR c.id = p_class);
 $$;
 
--- The projects of those classes with their current member count (0 included; callers filter).
+-- A team is a project with at least one current member (decision 12). Every section function and the
+-- rollup take teams from here, so a class total always equals the sum of its team rows.
 CREATE OR REPLACE FUNCTION public.analytics_scope_teams(p_institution uuid, p_class uuid)
 RETURNS TABLE (project_id uuid, class_id uuid, name text, members integer)
 LANGUAGE sql STABLE SET search_path = public AS $$
   SELECT p.id, p.class_id, p.name, count(pm.user_id)::int
     FROM projects p
     JOIN analytics_scope_classes(p_institution, p_class) s ON s.class_id = p.class_id
-    LEFT JOIN project_members pm ON pm.project_id = p.id
+    JOIN project_members pm ON pm.project_id = p.id
    GROUP BY p.id, p.class_id, p.name;
 $$;
 
@@ -113,7 +114,7 @@ CREATE OR REPLACE FUNCTION public.analytics_scope_counts(
   p_prev_from date, p_prev_to date, p_tz text)
 RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
   WITH scope AS (SELECT * FROM analytics_scope_classes(p_institution, p_class)),
-  teams AS (SELECT * FROM analytics_scope_teams(p_institution, p_class) WHERE members >= 1),
+  teams AS (SELECT * FROM analytics_scope_teams(p_institution, p_class)),
   students AS (
     SELECT DISTINCT ce.user_id, ce.class_id
       FROM class_enrollments ce JOIN scope s ON s.class_id = ce.class_id
@@ -333,7 +334,8 @@ GRANT EXECUTE ON FUNCTION public.analytics_scrum(uuid, uuid, date, date, date, d
 -- slug = 'ucsc') and a 30-day range ending today. Expected:
 --   fn_count = 8 (three section functions, five helpers)   [Task 2 adds analytics_trends and the two rollup functions: 11]
 --   client_execute = 0 rows (no anon/authenticated EXECUTE on any analytics_% function)
---   team_total = direct_team_total (the function agrees with a direct count of team_members messages)
+--   team_total = direct_team_total (the function agrees with a direct count of team_members messages of
+--                                  teams with members; dm_messages_counted is the DM message total)
 --   dm_excluded ≥ 0 and dm_counted + dm_excluded + dm_outside = dm_all (every DM is classified once)
 --   snapshot_tasks = live_tasks (the by_sprint counts sum to the non-archived task count)
 --   every weekly.week_start is a Monday (dow = 1)
@@ -353,7 +355,7 @@ SELECT (j->>'team_members')::int AS team_total,
          WHERE cv.type = 'team_members' AND c.institution_id = a.inst
            AND m.created_at >= (a.d0::timestamp AT TIME ZONE a.tz)
            AND m.created_at <  ((a.d1 + 1)::timestamp AT TIME ZONE a.tz)) AS direct_team_total,
-       (j->>'dm')::int AS dm_counted
+       (j->>'dm')::int AS dm_messages_counted
   FROM conv;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
      ur AS (SELECT * FROM analytics_user_roles()),
@@ -371,12 +373,12 @@ SELECT (SELECT count(*) FROM conversations WHERE type = 'dm') AS dm_all,
           AND NOT (cv.user_a IN (SELECT user_id FROM people) AND cv.user_b IN (SELECT user_id FROM people))) AS dm_outside;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
      sc AS (SELECT analytics_scrum(inst, NULL, current_date - 29, current_date, NULL, NULL, 'America/Los_Angeles') AS j FROM args)
-SELECT (SELECT sum((e->>'todo')::int + (e->>'in_progress')::int + (e->>'done')::int) FROM jsonb_array_elements(j->'by_sprint') e) AS snapshot_tasks,
+SELECT coalesce((SELECT sum((e->>'todo')::int + (e->>'in_progress')::int + (e->>'done')::int) FROM jsonb_array_elements(j->'by_sprint') e), 0) AS snapshot_tasks,
        (SELECT count(*) FROM tasks tk JOIN user_stories us ON us.id = tk.story_id AND us.archived_at IS NULL
           JOIN projects p ON p.id = tk.project_id JOIN classes c ON c.id = p.class_id, args a
          WHERE c.institution_id = a.inst) AS live_tasks
   FROM sc;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
      conv AS (SELECT analytics_conversations(inst, NULL, current_date - 89, current_date, NULL, NULL, 'America/Los_Angeles') AS j FROM args)
-SELECT bool_and(extract(isodow FROM (w->>'week_start')::date) = 1) AS weeks_start_on_monday
+SELECT coalesce(bool_and(extract(isodow FROM (w->>'week_start')::date) = 1), true) AS weeks_start_on_monday
   FROM conv, jsonb_array_elements(j->'weekly') w;
