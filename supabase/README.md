@@ -170,3 +170,6 @@ before giving up and notifying whoever sent the invite. In this order:
    re-run `edited_rows` is legitimately above 0 — do not run the file's repair block. Then sign in to the
    released app and submit a TSR; on PROD, `SELECT kind, actor_id FROM events ORDER BY id DESC LIMIT 5;`
    must show the `login` and `tsr_submitted` rows.
+3. DEV too: re-run the file once after this change reaches beta. DEV ran the old backend against the
+   applied migration from 2026-10-06 until that deploy, so assignments created or rescheduled in between
+   hold a NULL or stale `due_at` until the backfill runs again.
