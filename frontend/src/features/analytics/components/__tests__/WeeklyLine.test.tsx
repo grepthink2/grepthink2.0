@@ -117,6 +117,19 @@ describe('WeeklyLine', () => {
     expect(markers.map((m) => m.getAttribute('cx'))).toEqual(['544', '544']);
     expect(container.querySelectorAll('.gt-line__path')).toHaveLength(2);
   });
+  it('keeps the hovered or focused week\'s markers on a dense line', () => {
+    const { container } = render(<WeeklyLine series={[weeksOf(40), weeksOf(40, 'dm', 'gt-series--2')]} ariaLabel="Messages per week" />);
+    const chart = screen.getByRole('img', { name: /^Messages per week/ });
+    fireEvent.focus(chart); // the latest week, which already carries its markers
+    for (let i = 0; i < 20; i += 1) fireEvent.keyDown(chart, { key: 'ArrowLeft' }); // week 19 of 40
+    expect(container.querySelectorAll('.gt-line__marker')).toHaveLength(4); // each series' last point plus the focused week's
+    const hot = Array.from(container.querySelectorAll('.gt-line__marker--hot')).map((m) => m.getAttribute('cx'));
+    expect(hot).toHaveLength(2);
+    expect(hot[0]).toBe(hot[1]);
+    expect(hot[0]).not.toBe('544');
+    fireEvent.blur(chart);
+    expect(container.querySelectorAll('.gt-line__marker')).toHaveLength(2);
+  });
   it('draws the Team channels line at its known coordinates (W = 600, axis max 200)', () => {
     const { container } = render(<WeeklyLine series={[TEAM]} ariaLabel="x" />);
     expect(container.querySelector('.gt-line__path')!.getAttribute('d')).toBe('M40 104L292 51.2L544 77.6');

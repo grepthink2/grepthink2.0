@@ -16,11 +16,11 @@ export function niceMax(max: number): number {
   return 10 * base;
 }
 
-/** 0, step, 2·step, … up to `max` (inclusive): by 1 for an integer `max` ≤ 4, otherwise by the 1, 2 or 5 × 10^k nearest `max / count`, so every tick is a round number. */
+/** 0, step, 2·step, … up to `max` (inclusive, within a millionth of a step): by 1 for an integer `max` ≤ 4, otherwise by the 1, 2 or 5 × 10^k nearest `max / count`, so every tick is a round number. */
 export function ticks(max: number, count = 4): number[] {
   const step = Number.isInteger(max) && max <= 4 ? 1 : niceStep(max / count);
   const out: number[] = [];
-  for (let i = 0; step > 0 && i * step <= max + 1e-9; i += 1) out.push(i * step);
+  for (let i = 0; step > 0 && i * step <= max + step * 1e-6; i += 1) out.push(i * step);
   return out;
 }
 

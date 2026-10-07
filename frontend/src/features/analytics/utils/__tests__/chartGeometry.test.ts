@@ -17,6 +17,11 @@ describe('chartGeometry', () => {
     expect(ticks(2.5).map(tickLabel)).toEqual(['0', '0.5', '1', '1.5', '2', '2.5']);
     expect(ticks(1)).toEqual([0, 1]);
   });
+  it('bounds the tick loop relatively, so a tiny top cannot run away', () => {
+    const tiny = ticks(1e-12);
+    expect(tiny.length).toBeLessThanOrEqual(6);
+    expect(tiny.every((t) => t <= 1e-12 + 1e-18)).toBe(true);
+  });
   it('labels ticks compactly, a fraction with up to two decimals', () => {
     expect(tickLabel(1300000)).toBe('1.3M');
     expect(tickLabel(0.625)).toBe('0.63');

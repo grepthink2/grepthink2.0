@@ -17,7 +17,7 @@ const PAD = { top: 16, right: 56, bottom: 28, left: 40 };
 const LABEL_GAP = 12;
 /** The least distance between two week labels ("Sep 14" is about 34px at 11px). */
 const WEEK_LABEL_SPACING = 48;
-/** Points at least this far apart each carry a marker (10px with its ring, plus air); closer, only each series' last point does. */
+/** Points at least this far apart each carry a marker (10px with its ring, plus air); closer, only each series' last point and the hovered week do. */
 const MARKER_SPACING = 14;
 /** Left/Right step a week, Home/End jump to either end: the keyboard's way to the same tooltip as hover. */
 const KEY_MOVES = new Map<string, (at: number, last: number) => number>([
@@ -103,7 +103,7 @@ export function WeeklyLine({ series, height = 220, ariaLabel }: WeeklyLineProps)
                 <path className="gt-line__area" clipPath={`url(#${clipId})`} d={`${linePath(pts)}L${last[0]} ${plotBottom}L${pts[0][0]} ${plotBottom}Z`} />
               ) : null}
               <path className="gt-line__path" d={linePath(pts)} />
-              {pts.map(([px, py], i) => (markEvery || i === pts.length - 1 ? (
+              {pts.map(([px, py], i) => (markEvery || i === pts.length - 1 || i === at ? (
                 <circle key={i} className={`gt-line__marker${at === i ? ' gt-line__marker--hot' : ''}`} cx={px} cy={py} r={4} />
               ) : null))}
               {last ? <text className="gt-line__end-label" x={last[0] + 8} y={endY[si]}>{compactNumber(s.points[s.points.length - 1].value)}</text> : null}
