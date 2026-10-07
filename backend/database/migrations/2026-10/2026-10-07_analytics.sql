@@ -23,8 +23,8 @@
 --   * Lockdown (spec D17): EXECUTE on every function for service_role only; analytics_daily has RLS
 --     on, no policies and no client privileges. pg_cron runs as postgres.
 --   * Indexes: none added. Message reads start at the earliest bound of the two ranges, which the
---     existing messages_conv_created_idx (conversation_id, created_at) serves; stories and tasks are
---     read all-time for the medians (hundreds of rows today). Revisit when messages passes ~100k rows.
+--     existing messages_conv_created_id_idx (conversation_id, created_at DESC, id DESC) serves; stories
+--     and tasks are read all-time for the medians (hundreds of rows today). Revisit at ~100k messages.
 
 BEGIN;
 SET LOCAL lock_timeout = '5s';
@@ -337,6 +337,214 @@ GRANT EXECUTE ON FUNCTION public.analytics_scope_counts(uuid, uuid, date, date, 
 GRANT EXECUTE ON FUNCTION public.analytics_conversations(uuid, uuid, date, date, date, date, text)      TO service_role;
 GRANT EXECUTE ON FUNCTION public.analytics_scrum(uuid, uuid, date, date, date, date, text)              TO service_role;
 
+-- ------------------------------------------------------------------ nightly rollup ----
+-- One row per (institution, class or NULL, calendar day in the school's zone, metric). Written by
+-- analytics_rollup_day for yesterday (pg_cron, 09:00 UTC) and by analytics_rollup_range for a backfill
+-- (activity metrics only: a board snapshot cannot be reconstructed for a past day). Upserts, so a
+-- re-run changes nothing. class_id has no foreign key on purpose (header).
+CREATE TABLE IF NOT EXISTS public.analytics_daily (
+  institution_id uuid        NOT NULL REFERENCES public.institutions (id) ON DELETE CASCADE,
+  class_id       uuid,
+  day            date        NOT NULL,
+  metric         text        NOT NULL CHECK (metric ~ '^[a-z][a-z0-9_]{1,39}$'),
+  value          numeric     NOT NULL,
+  computed_at    timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT analytics_daily_uq UNIQUE NULLS NOT DISTINCT (institution_id, class_id, day, metric)
+);
+CREATE INDEX IF NOT EXISTS analytics_daily_inst_day_idx ON public.analytics_daily (institution_id, day);
+ALTER TABLE public.analytics_daily ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.analytics_daily FROM anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.analytics_rollup_day(p_day date, p_snapshot boolean DEFAULT true)
+RETURNS integer LANGUAGE plpgsql SET search_path = public AS $$
+DECLARE
+  inst      record;
+  day_start timestamptz;
+  day_end   timestamptz;
+  n         integer := 0;
+  k         integer;
+BEGIN
+  FOR inst IN SELECT id, timezone FROM institutions ORDER BY id LOOP
+    day_start := p_day::timestamp AT TIME ZONE inst.timezone;
+    day_end   := (p_day + 1)::timestamp AT TIME ZONE inst.timezone;
+
+    -- per class: one row per metric for EVERY class of the school, zeros included, so weekly
+    -- averages over the rollup never skip a quiet class
+    WITH scope AS (SELECT class_id FROM analytics_scope_classes(inst.id, NULL)),
+    teams AS (SELECT * FROM analytics_scope_teams(inst.id, NULL)),
+    channels AS (
+      SELECT cv.id, t.class_id, t.project_id
+        FROM conversations cv JOIN teams t ON t.project_id = cv.project_id
+       WHERE cv.type = 'team_members'),
+    day_msgs AS (
+      SELECT ch.class_id, ch.project_id
+        FROM messages m JOIN channels ch ON ch.id = m.conversation_id
+       WHERE m.created_at >= day_start AND m.created_at < day_end),
+    day_stories AS (
+      SELECT t.class_id, t.project_id, coalesce(us.points, 0) AS points
+        FROM user_stories us JOIN teams t ON t.project_id = us.project_id
+       WHERE us.created_at >= day_start AND us.created_at < day_end),
+    day_tasks AS (
+      SELECT t.class_id, t.project_id, coalesce(tk.points, 0) AS points
+        FROM tasks tk JOIN teams t ON t.project_id = tk.project_id
+       WHERE tk.created_at >= day_start AND tk.created_at < day_end),
+    day_moves AS (
+      SELECT t.class_id, t.project_id
+        FROM task_moves mv JOIN tasks tk ON tk.id = mv.task_id JOIN teams t ON t.project_id = tk.project_id
+       WHERE mv.moved_at >= day_start AND mv.moved_at < day_end),
+    day_views AS (
+      SELECT e.class_id
+        FROM events e JOIN scope s ON s.class_id = e.class_id
+       WHERE e.kind = 'board_viewed' AND e.occurred_at >= day_start AND e.occurred_at < day_end),
+    active_teams AS (
+      SELECT DISTINCT class_id, project_id FROM (
+        SELECT class_id, project_id FROM day_msgs
+        UNION ALL SELECT class_id, project_id FROM day_stories
+        UNION ALL SELECT class_id, project_id FROM day_tasks
+        UNION ALL SELECT class_id, project_id FROM day_moves) a),
+    live AS (SELECT class_id, status, points FROM analytics_live_tasks(inst.id, NULL)),
+    metrics AS (
+      SELECT s.class_id, 'team_messages'::text AS metric,
+             (SELECT count(*) FROM day_msgs d WHERE d.class_id = s.class_id)::numeric AS value FROM scope s
+      UNION ALL SELECT s.class_id, 'stories_created',
+             (SELECT count(*) FROM day_stories d WHERE d.class_id = s.class_id) FROM scope s
+      UNION ALL SELECT s.class_id, 'tasks_created',
+             (SELECT count(*) FROM day_tasks d WHERE d.class_id = s.class_id) FROM scope s
+      UNION ALL SELECT s.class_id, 'story_points_created',
+             (SELECT coalesce(sum(points), 0) FROM day_stories d WHERE d.class_id = s.class_id) FROM scope s
+      UNION ALL SELECT s.class_id, 'task_points_created',
+             (SELECT coalesce(sum(points), 0) FROM day_tasks d WHERE d.class_id = s.class_id) FROM scope s
+      UNION ALL SELECT s.class_id, 'active_teams',
+             (SELECT count(*) FROM active_teams a WHERE a.class_id = s.class_id) FROM scope s
+      UNION ALL SELECT s.class_id, 'board_views',
+             (SELECT count(*) FROM day_views v WHERE v.class_id = s.class_id) FROM scope s
+      UNION ALL SELECT s.class_id, 'teams',
+             (SELECT count(*) FROM teams t WHERE t.class_id = s.class_id AND t.members >= 1) FROM scope s
+      UNION ALL
+      SELECT s.class_id, m.metric, m.value
+        FROM scope s
+        CROSS JOIN LATERAL (
+          SELECT 'tasks_todo'::text AS metric, count(*) FILTER (WHERE status = 'todo')::numeric AS value
+            FROM live l WHERE l.class_id = s.class_id
+          UNION ALL SELECT 'tasks_in_progress', count(*) FILTER (WHERE status = 'in_progress')
+            FROM live l WHERE l.class_id = s.class_id
+          UNION ALL SELECT 'tasks_done', count(*) FILTER (WHERE status = 'done')
+            FROM live l WHERE l.class_id = s.class_id
+          UNION ALL SELECT 'points_todo', coalesce(sum(points) FILTER (WHERE status = 'todo'), 0)
+            FROM live l WHERE l.class_id = s.class_id
+          UNION ALL SELECT 'points_in_progress', coalesce(sum(points) FILTER (WHERE status = 'in_progress'), 0)
+            FROM live l WHERE l.class_id = s.class_id
+          UNION ALL SELECT 'points_done', coalesce(sum(points) FILTER (WHERE status = 'done'), 0)
+            FROM live l WHERE l.class_id = s.class_id) m
+       WHERE p_snapshot)
+    INSERT INTO analytics_daily (institution_id, class_id, day, metric, value)
+    SELECT inst.id, class_id, p_day, metric, value FROM metrics
+    ON CONFLICT (institution_id, class_id, day, metric)
+    DO UPDATE SET value = EXCLUDED.value, computed_at = now();
+    GET DIAGNOSTICS k = ROW_COUNT;
+    n := n + k;
+
+    -- per institution (class_id NULL): direct messages that count for the school (the rule is
+    -- analytics_counted_dm's) and the distinct people of the school who signed in that day
+    WITH school_people AS (
+      SELECT DISTINCT ur.user_id FROM analytics_user_roles() ur JOIN classes c ON c.id = ur.class_id
+       WHERE c.institution_id = inst.id),
+    counted_dm AS (SELECT conversation_id AS id FROM analytics_counted_dm(inst.id)),
+    metrics AS (
+      SELECT 'dm_messages'::text AS metric,
+             (SELECT count(*) FROM messages m JOIN counted_dm cd ON cd.id = m.conversation_id
+               WHERE m.created_at >= day_start AND m.created_at < day_end)::numeric AS value
+      UNION ALL
+      SELECT 'active_users',
+             (SELECT count(DISTINCT e.actor_id) FROM events e JOIN school_people sp ON sp.user_id = e.actor_id
+               WHERE e.kind = 'login' AND e.occurred_at >= day_start AND e.occurred_at < day_end))
+    INSERT INTO analytics_daily (institution_id, class_id, day, metric, value)
+    SELECT inst.id, NULL, p_day, metric, value FROM metrics
+    ON CONFLICT (institution_id, class_id, day, metric)
+    DO UPDATE SET value = EXCLUDED.value, computed_at = now();
+    GET DIAGNOSTICS k = ROW_COUNT;
+    n := n + k;
+  END LOOP;
+  RETURN n;
+END;
+$$;
+
+-- Backfill of activity metrics for a closed range; snapshots are skipped (they start at go-live).
+CREATE OR REPLACE FUNCTION public.analytics_rollup_range(p_from date, p_to date)
+RETURNS integer LANGUAGE plpgsql SET search_path = public AS $$
+DECLARE
+  d date;
+  n integer := 0;
+BEGIN
+  IF p_to < p_from THEN
+    RAISE EXCEPTION 'analytics_rollup_range: p_to % is before p_from %', p_to, p_from;
+  END IF;
+  FOR d IN SELECT generate_series(p_from, p_to, interval '1 day')::date LOOP
+    n := n + analytics_rollup_day(d, false);
+  END LOOP;
+  RETURN n;
+END;
+$$;
+
+-- ------------------------------------------------------------------ trends (from the rollup) ----
+-- Weekly rows the backend turns into the Trends panels and the tile sparklines: team messages,
+-- tasks created, the week's last points_done snapshot and the week's average team count, summed over
+-- the classes in scope; dm_messages from the institution rows. Weeks start on Monday (days are
+-- already calendar days in the school's zone). Covers from least(p_prev_from, as_of - 84 days) to
+-- p_to, so the previous range and a 12-week sparkline both fit.
+CREATE OR REPLACE FUNCTION public.analytics_trends(
+  p_institution uuid, p_class uuid, p_from date, p_to date,
+  p_prev_from date, p_prev_to date, p_tz text)
+RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
+  WITH scope AS (SELECT class_id FROM analytics_scope_classes(p_institution, p_class)),
+  as_of AS (SELECT max(day) AS d FROM analytics_daily WHERE institution_id = p_institution),
+  lo AS (SELECT least(coalesce(p_prev_from, p_from), coalesce((SELECT d FROM as_of), p_from) - 84) AS d),
+  class_rows AS (
+    SELECT ad.day, ad.metric, ad.value
+      FROM analytics_daily ad JOIN scope s ON s.class_id = ad.class_id
+     WHERE ad.institution_id = p_institution
+       AND ad.day >= (SELECT d FROM lo) AND ad.day <= p_to),
+  inst_rows AS (
+    SELECT ad.day, ad.metric, ad.value
+      FROM analytics_daily ad
+     WHERE ad.institution_id = p_institution AND ad.class_id IS NULL
+       AND ad.day >= (SELECT d FROM lo) AND ad.day <= p_to),
+  daily AS (
+    SELECT day,
+           sum(value) FILTER (WHERE metric = 'team_messages') AS team_messages,
+           sum(value) FILTER (WHERE metric = 'tasks_created') AS tasks_created,
+           sum(value) FILTER (WHERE metric = 'points_done')   AS points_done,
+           sum(value) FILTER (WHERE metric = 'teams')         AS teams
+      FROM class_rows GROUP BY day),
+  daily_inst AS (
+    SELECT day, sum(value) FILTER (WHERE metric = 'dm_messages') AS dm_messages
+      FROM inst_rows GROUP BY day),
+  weekly AS (
+    SELECT date_trunc('week', d.day::timestamp)::date AS week_start,
+           coalesce(sum(d.team_messages), 0) AS team_messages,
+           coalesce(sum(d.tasks_created), 0) AS tasks_created,
+           (array_agg(d.points_done ORDER BY d.day DESC) FILTER (WHERE d.points_done IS NOT NULL))[1] AS points_done,
+           avg(d.teams) AS teams,
+           coalesce(sum(di.dm_messages), 0) AS dm_messages
+      FROM daily d LEFT JOIN daily_inst di ON di.day = d.day
+     GROUP BY 1)
+  SELECT jsonb_build_object(
+    'as_of', (SELECT d FROM as_of),
+    'weekly', coalesce((SELECT jsonb_agg(jsonb_build_object(
+                'week_start', week_start, 'team_messages', team_messages, 'tasks_created', tasks_created,
+                'points_done', points_done, 'teams', teams, 'dm_messages', dm_messages)
+                ORDER BY week_start) FROM weekly), '[]'::jsonb));
+$$;
+
+REVOKE ALL ON FUNCTION public.analytics_rollup_day(date, boolean)                              FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.analytics_rollup_range(date, date)                               FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.analytics_trends(uuid, uuid, date, date, date, date, text)        FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.analytics_rollup_day(date, boolean)                           TO service_role;
+GRANT EXECUTE ON FUNCTION public.analytics_rollup_range(date, date)                            TO service_role;
+GRANT EXECUTE ON FUNCTION public.analytics_trends(uuid, uuid, date, date, date, date, text)     TO service_role;
+
+COMMIT;
+
 -- ======================================================================= CHECK (part 1) ====
 -- Run on DEV after applying (Task 2 adds the COMMIT and part 2). `ucsc` is the seeded slug, looked up
 -- inline. Every query names its expectation:
@@ -396,7 +604,8 @@ SELECT (SELECT (j->>'team_members')::int FROM conv)
           FROM conv) AS weekly_match,
        (SELECT (j->>'team_members')::int FROM conv_all) = (SELECT count(*) FROM team_direct) AS team_match_all_time;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
-     ur AS (SELECT * FROM analytics_user_roles()),
+     ur AS (SELECT ce.user_id, ce.class_id, ce.enrollment_role AS role FROM class_enrollments ce
+            UNION ALL SELECT c.created_by, c.id, 'instructor' FROM classes c),
      people AS (SELECT DISTINCT ur.user_id FROM ur JOIN classes c ON c.id = ur.class_id, args a WHERE c.institution_id = a.inst),
      excluded AS (SELECT DISTINCT cv.id FROM conversations cv JOIN ur a ON a.user_id = cv.user_a
                     JOIN ur b ON b.user_id = cv.user_b AND b.class_id = a.class_id
@@ -435,3 +644,67 @@ WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
      conv AS (SELECT analytics_conversations(inst, NULL, current_date - 89, current_date, NULL, NULL, 'America/Los_Angeles') AS j FROM args)
 SELECT coalesce(bool_and(extract(isodow FROM (w->>'week_start')::date) = 1), true) AS mondays
   FROM conv, jsonb_array_elements(j->'weekly') w;
+
+-- ======================================================================= CHECK (part 2) ====
+-- Expected: fn_count above is now 11; daily_rls = t; no client grants on analytics_daily;
+--   first_run_rows > 0 and second_run_rows = first_run_rows with every (class_id, metric) pair once
+--   (dupes = 0); a class with no activity still has a team_messages row with value 0 (zero_rows ≥ 1);
+--   trends.weekly is non-empty after one rollup and every week_start is a Monday;
+--   prev_bound_match = t (with a previous range set, the previous team and DM totals equal direct counts
+--   over the previous bounds — pins the message CTEs' lower bound); prev_active_rule = t
+--   (active_users_prev_7d is NULL exactly when no login event is older than 14 days).
+SELECT relrowsecurity AS daily_rls FROM pg_class WHERE oid = 'public.analytics_daily'::regclass;
+SELECT grantee, privilege_type FROM information_schema.role_table_grants
+ WHERE table_schema = 'public' AND table_name = 'analytics_daily' AND grantee IN ('anon', 'authenticated');
+SELECT analytics_rollup_day(current_date - 1) AS first_run_rows;
+SELECT analytics_rollup_day(current_date - 1) AS second_run_rows;
+SELECT count(*) - count(DISTINCT (institution_id, class_id, metric)) AS dupes
+  FROM analytics_daily WHERE day = current_date - 1;
+SELECT count(*) AS zero_rows FROM analytics_daily
+ WHERE day = current_date - 1 AND metric = 'team_messages' AND value = 0;
+WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
+     tr AS (SELECT analytics_trends(inst, NULL, current_date - 29, current_date, current_date - 59, current_date - 30,
+                                    'America/Los_Angeles') AS j FROM args)
+SELECT j->>'as_of' AS as_of, jsonb_array_length(j->'weekly') AS weeks,
+       bool_and(extract(isodow FROM (w->>'week_start')::date) = 1) AS weeks_start_on_monday
+  FROM tr, jsonb_array_elements(j->'weekly') w GROUP BY 1, 2;
+WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst,
+                     current_date - 29 AS d0, current_date AS d1, 'America/Los_Angeles'::text AS tz),
+     conv AS (SELECT analytics_conversations(inst, NULL, d0, d1, d0 - 30, d0 - 1, tz) AS j FROM args),
+     team_direct AS (
+       SELECT m.created_at
+         FROM messages m JOIN conversations cv ON cv.id = m.conversation_id
+         JOIN projects p ON p.id = cv.project_id JOIN classes c ON c.id = p.class_id, args a
+        WHERE cv.type = 'team_members' AND c.institution_id = a.inst
+          AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL)),
+     dm_direct AS (
+       SELECT m.created_at
+         FROM messages m JOIN analytics_counted_dm((SELECT inst FROM args)) cd ON cd.conversation_id = m.conversation_id)
+SELECT (SELECT (j->>'prev_team_members')::int FROM conv)
+         = (SELECT count(*) FROM team_direct t, args a
+             WHERE t.created_at >= ((a.d0 - 30)::timestamp AT TIME ZONE a.tz)
+               AND t.created_at <  (a.d0::timestamp AT TIME ZONE a.tz))
+   AND (SELECT (j->>'prev_dm')::int FROM conv)
+         = (SELECT count(*) FROM dm_direct d, args a
+             WHERE d.created_at >= ((a.d0 - 30)::timestamp AT TIME ZONE a.tz)
+               AND d.created_at <  (a.d0::timestamp AT TIME ZONE a.tz)) AS prev_bound_match;
+WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst, 'America/Los_Angeles'::text AS tz),
+     sc AS (SELECT analytics_scope_counts(inst, NULL, current_date - 29, current_date,
+                                         current_date - 59, current_date - 30, tz) AS j FROM args)
+SELECT (j->'active_users_prev_7d' = 'null'::jsonb)
+         = NOT EXISTS (SELECT 1 FROM events WHERE kind = 'login' AND occurred_at < now() - interval '14 days') AS prev_active_rule
+  FROM sc;
+
+-- Undo (the backend answers 200 with every section in failures[] while the functions are missing):
+--   DROP FUNCTION IF EXISTS public.analytics_trends(uuid, uuid, date, date, date, date, text);
+--   DROP FUNCTION IF EXISTS public.analytics_rollup_range(date, date);
+--   DROP FUNCTION IF EXISTS public.analytics_rollup_day(date, boolean);
+--   DROP TABLE IF EXISTS public.analytics_daily;
+--   DROP FUNCTION IF EXISTS public.analytics_scrum(uuid, uuid, date, date, date, date, text);
+--   DROP FUNCTION IF EXISTS public.analytics_conversations(uuid, uuid, date, date, date, date, text);
+--   DROP FUNCTION IF EXISTS public.analytics_scope_counts(uuid, uuid, date, date, date, date, text);
+--   DROP FUNCTION IF EXISTS public.analytics_live_tasks(uuid, uuid);
+--   DROP FUNCTION IF EXISTS public.analytics_counted_dm(uuid);
+--   DROP FUNCTION IF EXISTS public.analytics_user_roles();
+--   DROP FUNCTION IF EXISTS public.analytics_scope_teams(uuid, uuid);
+--   DROP FUNCTION IF EXISTS public.analytics_scope_classes(uuid, uuid);
