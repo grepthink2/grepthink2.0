@@ -97,7 +97,7 @@ Design against these; they override the brief where they differ.
   `__title`, `__badge`, `__refresh`, `__tiles`, `__grid`, `__footnote`, `__forbidden`), `.gt-chart-card`
   (`__head`, `__title`, `__subtitle`, `__actions`, `__body`, `__foot`, `__error`, `--wide`, `data-state`),
   `.gt-legend` (`__item`, `__item--off`, `__button`, `__swatch--rect`, `__swatch--line`, `__label`, `__value`),
-  `.gt-tooltip` (`__title`, `__row`, `__key`, `__label`, `__value`), `.gt-empty`, `.gt-live-pill` (`__dot`),
+  `.gt-chart-tip` (`__title`, `__row`, `__key`, `__label`, `__value`), `.gt-empty`, `.gt-live-pill` (`__dot`),
   `.gt-unit-toggle` (`__option`, `__option--active`), `.gt-definition` (`__trigger`, `__title`, `__body`),
   `.gt-filter` (`__field`, `__label`, `__select`, `__chips`, `__chip`, `__chip--active`, `__custom`, `__apply`),
   `.gt-line` (`__svg`, `__grid`, `__axis`, `__tick`, `__path`, `__area`, `__marker`, `__marker--hot`,

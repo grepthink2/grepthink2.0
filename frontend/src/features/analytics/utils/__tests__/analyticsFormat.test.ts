@@ -9,6 +9,15 @@ describe('analyticsFormat', () => {
     expect(compactNumber(1_250_000)).toBe('1.3M');
     expect(compactNumber(null)).toBe('—');
   });
+  it('rounds before it picks a unit and signs with a true minus', () => {
+    expect(compactNumber(999_950)).toBe('1M');
+    expect(compactNumber(10_000)).toBe('10K');
+    expect(compactNumber(9_999.6)).toBe('10K'); // the unit is picked after rounding
+    expect(compactNumber(12_900)).toBe('12.9K');
+    expect(compactNumber(1_300_000)).toBe('1.3M');
+    expect(compactNumber(-1284)).toBe('−1,284');
+    expect(compactNumber(-0)).toBe('0');
+  });
   it('formats rates and deltas', () => {
     expect(percent(0.82)).toBe('82%');
     expect(percent(0.8249, 1)).toBe('82.5%');

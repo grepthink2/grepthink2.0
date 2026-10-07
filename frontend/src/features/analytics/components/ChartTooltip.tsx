@@ -3,13 +3,13 @@ export interface ChartTooltipProps { title: string; rows: { label: string; value
 /** Text only; positioned by the chart inside its own wrapper (`left`/`top` take px numbers or percentage strings: layout, not colour). */
 export function ChartTooltip({ title, rows, x, y }: ChartTooltipProps) {
   return (
-    <div className="gt-tooltip" role="tooltip" style={{ left: x, top: y }}>
-      <div className="gt-tooltip__title">{title}</div>
+    <div className="gt-chart-tip" role="tooltip" style={{ left: x, top: y }}>
+      <div className="gt-chart-tip__title">{title}</div>
       {rows.map((r) => (
-        <div key={r.label} className="gt-tooltip__row">
-          {r.colorClass ? <span className={`gt-tooltip__key ${r.colorClass}`} aria-hidden="true" /> : null}
-          <span className="gt-tooltip__label">{r.label}</span>
-          <span className="gt-tooltip__value">{r.value}</span>
+        <div key={r.label} className="gt-chart-tip__row">
+          {r.colorClass ? <span className={`gt-chart-tip__key ${r.colorClass}`} aria-hidden="true" /> : null}
+          <span className="gt-chart-tip__label">{r.label}</span>
+          <span className="gt-chart-tip__value">{r.value}</span>
         </div>
       ))}
     </div>

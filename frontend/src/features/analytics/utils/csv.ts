@@ -1,9 +1,16 @@
-/** CSV built in the browser (spec D14): RFC 4180 quoting, CRLF rows, a header row from the column labels. */
+/**
+ * CSV built in the browser (spec D14): RFC 4180 quoting, CRLF rows, a header row from the column labels.
+ * Team names are student-chosen, so a string cell that a spreadsheet would run as a formula (one starting
+ * with =, +, -, @, a tab or a carriage return) gets a leading apostrophe; numbers stay numeric.
+ */
 export interface CsvColumn { key: string; label: string }
+
+const FORMULA_START = /^[=+\-@\t\r]/;
 
 function cell(value: unknown): string {
   if (value === null || value === undefined) return '';
-  const s = String(value);
+  const text = String(value);
+  const s = typeof value === 'string' && FORMULA_START.test(text) ? `'${text}` : text;
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

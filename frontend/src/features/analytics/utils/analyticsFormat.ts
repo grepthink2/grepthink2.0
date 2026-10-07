@@ -1,12 +1,14 @@
 /** Number and date formatting for the analytics page. Dates are ISO calendar dates; never shift them through a Date in the viewer's zone. */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const COMPACT = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+
+/** "1,284" under 10K, then "10K", "12.9K", "1.3M". Rounds before it picks a unit (999,950 is "1M", not "1000.0K"); a true minus sign; "0", never "-0". */
 export function compactNumber(n: number | null | undefined): string {
   if (n === null || n === undefined || Number.isNaN(n)) return '—';
-  const abs = Math.abs(n);
-  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (abs >= 10_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString('en-US');
+  const whole = Math.round(n) || 0;
+  const text = Math.abs(whole) < 10_000 ? whole.toLocaleString('en-US') : COMPACT.format(n);
+  return text.replace(/^-/, '−');
 }
 
 export function percent(rate: number | null | undefined, digits = 0): string {
