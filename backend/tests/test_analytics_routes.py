@@ -7,7 +7,6 @@ import pytest
 
 from app.analytics import controller
 from app.config import settings
-from app.core.errors import DatabaseError
 from app.limiter import limiter
 from tests.conftest import TEST_SECRET, header_for
 from tests.fake_supabase import FakeSupabase
@@ -21,6 +20,7 @@ from tests.test_analytics_dashboard import (
     SCRUM,
     TRENDS,
     UCSC,
+    failing,
 )
 
 BASE = "/api/analytics"
@@ -43,13 +43,6 @@ COUNTS_UUID = {
 CONV_UUID = {**CONV, "by_class": _remap(CONV["by_class"])}
 SCRUM_UUID = {**SCRUM, "by_class": _remap(SCRUM["by_class"])}
 NOWHERE = "99999999-9999-4999-8999-999999999999"
-
-
-def _failing(target: str):
-    def run(params):
-        raise DatabaseError(operation="read", target=target)
-
-    return run
 
 
 @pytest.fixture(autouse=True)
@@ -148,9 +141,8 @@ def test_dashboard_happy_path_sets_the_headers_and_records_the_view(client, _set
     body = r.json()
     assert body["meta"]["class"] == {"id": C1, "label": "CSE 115A · Fall 2026"}
     assert body["overview"]["messages"] == 1284 and body["failures"] == []
-    assert (
-        body["breakdown"]["rows"][0]["team_messages"] == 300
-    )  # Team Alpha: the remapped fixtures line up
+    # Team Alpha, the selected class's team
+    assert body["breakdown"]["rows"][0]["team_messages"] == 300
     events = _setup.store["events"]
     assert len(events) == 1
     event = {k: v for k, v in events[0].items() if k != "id"}
@@ -180,13 +172,28 @@ def test_fresh_bypasses_the_cache_and_is_never_stored_by_the_browser(client):
 
 def test_a_degraded_payload_still_answers_200(client, _setup):
     for name in controller.SECTION_RPCS.values():
-        _setup.rpcs[name] = _failing(name)
+        _setup.rpcs[name] = failing(name)
     r = client.get(f"{BASE}/dashboard", params={"institution_id": UCSC["id"]}, headers=PROF)
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["failures"] == ["breakdown", "conversations", "overview", "scrum", "trends"]
     assert body["overview"]["active_classes"] is None and body["conversations"]["total"] is None
+    # the server did not cache it; the browser must not either
+    assert r.headers["cache-control"] == "no-store"
     assert len(_setup.store["events"]) == 1  # the view was still recorded
+
+
+def test_the_class_rows_line_up_with_the_remapped_fixtures(client):
+    body = client.get(
+        f"{BASE}/dashboard", params={"institution_id": UCSC["id"]}, headers=PROF
+    ).json()
+    c1 = next(r for r in body["breakdown"]["rows"] if r["id"] == C1)
+    assert (c1["team_messages"], c1["stories"], c1["tasks"], c1["points_done_rate"]) == (
+        555,
+        58,
+        296,
+        0.61,
+    )
 
 
 def test_dashboard_authorization_answers(client):

@@ -15,12 +15,12 @@ from app.dependencies import require_user, require_user_payload
 from app.limiter import limiter
 
 CACHE_CONTROL = "private, max-age=60"
-NO_STORE = "no-store"  # an answer the caller asked to be fresh is never worth replaying from a browser cache
+NO_STORE = "no-store"  # what the server would not cache, the browser must not either: fresh or degraded answers
 VARY = "Authorization"  # a private answer is one account's: the next sign-in on the same browser gets its own
 
 
-def _cache_headers(response: Response, *, fresh: bool = False) -> None:
-    response.headers["Cache-Control"] = NO_STORE if fresh else CACHE_CONTROL
+def _cache_headers(response: Response, *, no_store: bool = False) -> None:
+    response.headers["Cache-Control"] = NO_STORE if no_store else CACHE_CONTROL
     response.headers["Vary"] = VARY
 
 
@@ -65,7 +65,7 @@ def get_dashboard(
     except windows.WindowError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     body = AnalyticsDashboardResponse(**data)  # validated before the view is recorded
-    _cache_headers(response, fresh=fresh)
+    _cache_headers(response, no_store=fresh or bool(data["failures"]))
     events.record(
         "analytics_viewed",
         actor_id=user_id,
