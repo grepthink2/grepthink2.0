@@ -480,6 +480,8 @@ def _generate_tsr_assignments(
     Assignments open after the first 2 weeks of class (start_date + 14 days)
     and are each one week long, one per sprint week.
     Each assignment also gets `due_at`, the first instant after its close_date in the school's zone.
+    One whose `due_at` has already passed (a back-dated start) is created as a draft: published,
+    it would be frozen the moment it exists. The instructor publishes it if wanted.
 
     Default counts (overridable via tsr_count):
       Fall / Winter / Spring  →  5 TSR assignments
@@ -492,6 +494,7 @@ def _generate_tsr_assignments(
 
     first_open = start_date + datetime.timedelta(days=14)
     tz = institution_timezone(institution_id)
+    now = deadlines.now_utc()
 
     assignments = []
     for week in range(1, count + 1):
@@ -507,7 +510,7 @@ def _generate_tsr_assignments(
                 "open_date": open_date.isoformat(),
                 "close_date": close_date.isoformat(),
                 "due_at": due_at.isoformat() if due_at else None,
-                "status": "publish",
+                "status": "draft" if due_at is not None and due_at <= now else "publish",
                 "class_id": class_id,
                 "assignment_type": "tsr",
             }

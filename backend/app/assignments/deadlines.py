@@ -1,4 +1,4 @@
-"""Deadline arithmetic for assignments (spec §5.2, decisions 8 and 10/11).
+"""Deadline arithmetic for assignments (spec §5, decisions 8 and 10/11).
 
 ``assignments.open_date`` and ``close_date`` are bare dates in the school's own zone. The deadline
 instant, ``due_at``, is the first moment after the due day in that zone; ``accept_until`` is an
@@ -19,6 +19,7 @@ def now_utc() -> datetime:
 
 
 def _midnight(day: date, tz: ZoneInfo) -> datetime:
+    # fold=0: the FIRST instant of a doubled local midnight (Postgres picks the later one; LA and Istanbul never double midnight).
     return datetime(day.year, day.month, day.day, tzinfo=tz).astimezone(UTC)
 
 

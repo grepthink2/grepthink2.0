@@ -204,8 +204,8 @@ The full agent-facing action catalog (method, params, role) lives at
 - **Product events** go through `app.core.events.record(kind, ...)` (one insert; a database failure
   is logged at WARNING and never raised, an unregistered kind raises `ValueError`; kinds live in
   `KINDS`; `meta` holds ids and short enums only — never names, emails, grades or text). Pass ids
-  and timestamps as strings: a `UUID` or `datetime` is not JSON-serializable, and the event would be
-  dropped with only a warning.
+  and timestamps as strings: a `UUID` or `datetime` raises `TypeError` before anything is written
+  (tests catch it; the fake client does not serialize).
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,

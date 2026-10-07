@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import datetime
 import logging
+import uuid
 
 import pytest
 
@@ -50,6 +52,30 @@ def test_record_refuses_a_kind_the_registry_does_not_know(db):
     with pytest.raises(ValueError):
         events.record("made_up_kind", actor_id="u1")
     assert db.rows("events") == []
+
+
+AN_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
+
+
+@pytest.mark.parametrize("value", [AN_ID, datetime.datetime(2026, 10, 6, tzinfo=datetime.UTC)])
+def test_record_raises_for_a_meta_value_json_cannot_hold(db, value):
+    # The fake client does not serialize; the real one would fail inside the insert and the
+    # event would be lost with only a warning. Raised before anything is written instead.
+    with pytest.raises(TypeError):
+        events.record("login", actor_id="u1", meta={"assignment_id": value})
+    assert db.rows("events") == []
+    assert db.executes == 0
+
+
+@pytest.mark.parametrize("field", ["actor_id", "class_id", "project_id"])
+def test_record_takes_ids_as_strings(db, field):
+    with pytest.raises(TypeError):
+        events.record("login", **{"actor_id": "u1", field: AN_ID})
+    assert db.rows("events") == []
+    assert db.executes == 0
+
+    events.record("login", **{"actor_id": "u1", field: str(AN_ID)})
+    assert [r[field] for r in db.rows("events")] == [str(AN_ID)]
 
 
 class _Failing:

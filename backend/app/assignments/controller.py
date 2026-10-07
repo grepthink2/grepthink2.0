@@ -374,6 +374,7 @@ def update_assignment(
                     meta={
                         "assignment_id": str(assignment_id),
                         "accept_until": updates["accept_until"],
+                        "after_deadline": current_due_at is not None and now >= current_due_at,
                     },
                 )
 

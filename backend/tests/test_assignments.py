@@ -514,11 +514,45 @@ def test_late_window_after_the_deadline_is_recorded_as_a_reopening(db, clock):
     assert db.rows("events")[0]["meta"] == {
         "assignment_id": A_TSR,
         "accept_until": "2026-01-12T08:00:00+00:00",
+        "after_deadline": True,
     }
     assert db.rows("events")[0]["class_id"] == CLASS
     # assignment, class, update, event; then the TSR entries a TSR assignment's response
     # carries (TSR rows, profiles), which update_assignment read before deadlines existed
     assert db.executes <= 6, _trace(db)
+
+
+def test_the_editors_save_after_the_deadline_sets_the_late_window(db, clock):
+    # The editor sends every field on save: the title it may rename, both dates and the status
+    # unchanged, and the window. Nothing there moves close_date or unpublishes.
+    clock(NOW_AFTER)
+    late = dt.datetime(2026, 1, 12, 8, 0, tzinfo=dt.UTC)
+    row = assignments.update_assignment(
+        INSTR,
+        A_TSR,
+        "TSR 1 (renamed)",
+        dt.date(2026, 1, 1),
+        dt.date(2026, 1, 8),
+        "publish",
+        accept_until=late,
+    )
+    assert row["accept_until"] == "2026-01-12T08:00:00+00:00"
+    assert db.rows("assignments")[0]["accept_until"] == "2026-01-12T08:00:00+00:00"
+    assert [e["kind"] for e in db.rows("events")] == ["assignment_reopened"]
+    assert db.executes <= 6, _trace(db)
+
+
+def test_a_late_window_set_before_the_deadline_is_not_after_it(db, clock):
+    clock(NOW_BEFORE)
+    late = dt.datetime(2026, 1, 12, 8, 0, tzinfo=dt.UTC)
+    assignments.update_assignment(INSTR, A_TSR, None, None, None, None, accept_until=late)
+    assert [e["meta"] for e in db.rows("events")] == [
+        {
+            "assignment_id": A_TSR,
+            "accept_until": "2026-01-12T08:00:00+00:00",
+            "after_deadline": False,
+        }
+    ]
 
 
 def test_late_window_must_be_after_the_deadline(db, clock):

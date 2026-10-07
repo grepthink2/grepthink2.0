@@ -1,4 +1,4 @@
-"""Deadline arithmetic (spec §5.2): the deadline is the first instant after close_date in the
+"""Deadline arithmetic (spec §5): the deadline is the first instant after close_date in the
 school's zone; a late window extends when submissions are accepted, never the deadline itself."""
 
 from __future__ import annotations
