@@ -38,6 +38,11 @@ def _parse_origins(raw: str | None) -> list[str]:
     return origins
 
 
+def _parse_emails(raw: str | None) -> frozenset[str]:
+    """Comma-separated e-mail addresses, lower-cased; blank → empty."""
+    return frozenset(e.strip().lower() for e in (raw or "").split(",") if e.strip())
+
+
 # Default allowlist covers local dev on Vite's default port plus the
 # FastAPI dev server (used when hitting the backend directly via nginx).
 _DEFAULT_DEV_ORIGINS = [
@@ -97,6 +102,10 @@ class Settings:
     CORS_CREDENTIALS: bool = True
     CORS_METHODS: list = ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"]
     CORS_HEADERS: list = ["Authorization", "Content-Type", "Accept"]
+
+    # Analytics (spec 4.1 #1): accounts that may see every institution's dashboard. Instructors
+    # see the institutions of the classes they created without being listed here.
+    ANALYTICS_ADMIN_EMAILS: frozenset[str] = _parse_emails(os.environ.get("ANALYTICS_ADMIN_EMAILS"))
 
     # SMTP / Email Configuration (required for school-email verification emails)
     #
