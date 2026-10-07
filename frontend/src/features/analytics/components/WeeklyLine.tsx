@@ -17,8 +17,8 @@ const PAD = { top: 16, right: 56, bottom: 28, left: 40 };
 const LABEL_GAP = 12;
 /** The least distance between two week labels ("Sep 14" is about 34px at 11px). */
 const WEEK_LABEL_SPACING = 48;
-/** Up to this many weeks every point carries a marker; beyond it only each series' last point does. */
-const MARKER_WEEKS = 26;
+/** Points at least this far apart each carry a marker (10px with its ring, plus air); closer, only each series' last point does. */
+const MARKER_SPACING = 14;
 /** Left/Right step a week, Home/End jump to either end: the keyboard's way to the same tooltip as hover. */
 const KEY_MOVES = new Map<string, (at: number, last: number) => number>([
   ['ArrowLeft', (at) => at - 1], ['ArrowRight', (at) => at + 1], ['Home', () => 0], ['End', (_at, last) => last],
@@ -49,6 +49,7 @@ export function WeeklyLine({ series, height = 220, ariaLabel }: WeeklyLineProps)
   const y = linearScale(0, max, height - PAD.bottom, PAD.top);
   const plotBottom = height - PAD.bottom;
   const labelled = labelledWeeks(n, plotW);
+  const markEvery = plotW / Math.max(n - 1, 1) >= MARKER_SPACING;
   const tipShare = at === null ? 0 : Math.round((x(at) / W) * 10000) / 100; // the hovered point's share of the width, in %
   const summary = n === 0 ? ariaLabel
     : `${ariaLabel}; week of ${weekLabel(weeks[n - 1])}: ${series.map((s) => `${s.label} ${compactNumber(s.points[n - 1]?.value ?? 0)}`).join(', ')}`;
@@ -102,7 +103,7 @@ export function WeeklyLine({ series, height = 220, ariaLabel }: WeeklyLineProps)
                 <path className="gt-line__area" clipPath={`url(#${clipId})`} d={`${linePath(pts)}L${last[0]} ${plotBottom}L${pts[0][0]} ${plotBottom}Z`} />
               ) : null}
               <path className="gt-line__path" d={linePath(pts)} />
-              {pts.map(([px, py], i) => (n <= MARKER_WEEKS || i === pts.length - 1 ? (
+              {pts.map(([px, py], i) => (markEvery || i === pts.length - 1 ? (
                 <circle key={i} className={`gt-line__marker${at === i ? ' gt-line__marker--hot' : ''}`} cx={px} cy={py} r={4} />
               ) : null))}
               {last ? <text className="gt-line__end-label" x={last[0] + 8} y={endY[si]}>{compactNumber(s.points[s.points.length - 1].value)}</text> : null}

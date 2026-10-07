@@ -109,10 +109,10 @@ describe('WeeklyLine', () => {
     expect(labels[labels.length - 1]).toHaveTextContent('Apr 27'); // the 17th Monday
     xs.slice(1).forEach((v, i) => expect(v - xs[i]).toBeGreaterThanOrEqual(48));
   });
-  it('marks every point up to 26 weeks and only each series\' last point beyond, the lines kept', () => {
-    const { container, rerender } = render(<WeeklyLine series={[weeksOf(26), weeksOf(26, 'dm', 'gt-series--2')]} ariaLabel="x" />);
-    expect(container.querySelectorAll('.gt-line__marker')).toHaveLength(52);
-    rerender(<WeeklyLine series={[weeksOf(27), weeksOf(27, 'dm', 'gt-series--2')]} ariaLabel="x" />);
+  it('marks every point while points are at least 14 units apart, else only each series\' last point, the lines kept', () => {
+    const { container, rerender } = render(<WeeklyLine series={[weeksOf(27), weeksOf(27, 'dm', 'gt-series--2')]} ariaLabel="x" />); // 504 / 26 ≈ 19.4 apart
+    expect(container.querySelectorAll('.gt-line__marker')).toHaveLength(54);
+    rerender(<WeeklyLine series={[weeksOf(40), weeksOf(40, 'dm', 'gt-series--2')]} ariaLabel="x" />); // 504 / 39 ≈ 12.9 apart
     const markers = Array.from(container.querySelectorAll('.gt-line__marker'));
     expect(markers.map((m) => m.getAttribute('cx'))).toEqual(['544', '544']);
     expect(container.querySelectorAll('.gt-line__path')).toHaveLength(2);
