@@ -401,8 +401,8 @@ BEGIN
       SELECT t.class_id, t.project_id
         FROM task_moves mv JOIN tasks tk ON tk.id = mv.task_id JOIN teams t ON t.project_id = tk.project_id
        WHERE mv.moved_at >= day_start AND mv.moved_at < day_end),
-    day_views AS (                                 -- by project, so the team rule applies like every other metric
-      SELECT t.class_id
+    day_views AS (                                 -- by project, so the team rule applies like every other metric;
+      SELECT DISTINCT t.class_id, e.actor_id, e.project_id   -- one row per person and board a day: a refetch is no visit
         FROM events e JOIN teams t ON t.project_id = e.project_id
        WHERE e.kind = 'board_viewed' AND e.occurred_at >= day_start AND e.occurred_at < day_end),
     active_teams AS (
