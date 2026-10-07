@@ -25,11 +25,13 @@ function isPreset(value: string | null): value is AnalyticsRangePreset {
 }
 
 function readFilters(params: URLSearchParams): AnalyticsFilters {
-  const window = params.get('window');
+  const preset = params.get('window');
+  const classId = params.get('class');
+  const range: AnalyticsRangePreset = isPreset(preset) ? preset : '30d';
   return {
     institutionId: params.get('institution'),
-    classId: params.get('class'),
-    window: isPreset(window) ? window : '30d',
+    classId,
+    window: range === 'class' && !classId ? '30d' : range, // a class window needs a class (hand-edited URLs)
     from: params.get('from'),
     to: params.get('to'),
   };
@@ -68,8 +70,8 @@ export function useAnalyticsDashboard() {
   // `refetching` is true while the newest request is in flight; its settle lowers it. It is raised where
   // a load starts, never inside `load`, so the load effect sets no state synchronously
   // (react-hooks/set-state-in-effect): the initial state covers the mount's load, a filter change raises
-  // it during render (react.dev, "adjusting state when a prop changes"), refresh and the interval raise
-  // it themselves.
+  // it during render (react.dev, "adjusting state when a prop changes"), and `refresh` (the button's and
+  // the interval's load) raises it itself.
   const [refetching, setRefetching] = useState(() => isComplete(filters));
   const [requestedFor, setRequestedFor] = useState(filters);
   if (requestedFor !== filters) {
@@ -99,7 +101,11 @@ export function useAnalyticsDashboard() {
   // No institution in the URL yet: take the first one in scope (and record it in the URL).
   useEffect(() => {
     if (filters.institutionId || !scope || scope.institutions.length === 0) return;
-    setSearchParams(writeFilters({ ...filters, institutionId: scope.institutions[0].id }), { replace: true });
+    // a class in the URL picks its own institution; a class of no institution in scope is dropped
+    const owner = filters.classId ? scope.institutions.find((i) => i.classes.some((c) => c.id === filters.classId)) : undefined;
+    const next: AnalyticsFilters = { ...filters, institutionId: (owner ?? scope.institutions[0]).id, classId: owner ? filters.classId : null };
+    if (!next.classId && next.window === 'class') next.window = '30d';
+    setSearchParams(writeFilters(next), { replace: true });
   }, [filters, scope, setSearchParams]);
 
   const setFilters = useCallback(
@@ -142,17 +148,17 @@ export function useAnalyticsDashboard() {
     load(filters, false);
   }, [filters, load]);
 
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      // fresh: a poll the server's or the browser's 60 s cache could answer would refresh nothing
-      if (document.visibilityState === 'visible' && load(filters, true)) setRefetching(true);
-    }, REFRESH_MS);
-    return () => window.clearInterval(id);
-  }, [filters, load]);
-
   const refresh = useCallback(() => {
     if (load(filters, true)) setRefetching(true);
   }, [filters, load]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      // fresh: a poll the server's or the browser's 60 s cache could answer would refresh nothing
+      if (document.visibilityState === 'visible') refresh();
+    }, REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [refresh]);
 
   return {
     scope,
