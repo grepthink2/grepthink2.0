@@ -19,7 +19,8 @@
 --     analytics_rollup_day(p_day) — pg_cron, 09:00 UTC, for yesterday — and backfilled by
 --     analytics_rollup_range(p_from, p_to). class_id is a plain uuid, not a foreign key: a deleted
 --     class keeps its own history rows (two deleted classes would otherwise collide on the unique
---     key once both were SET NULL), which is what makes long-range trends honest.
+--     key once both were SET NULL), which is what makes long-range trends honest. UNIQUE NULLS NOT
+--     DISTINCT needs Postgres 15+: DEV and PROD both run 17 (checked 2026-10-07).
 --   * Lockdown (spec D17): EXECUTE on every function for service_role only; analytics_daily has RLS
 --     on, no policies and no client privileges. pg_cron runs as postgres.
 --   * Indexes: none added. Message reads start at the earliest bound of the two ranges, which the
@@ -489,27 +490,30 @@ $$;
 -- ------------------------------------------------------------------ trends (from the rollup) ----
 -- Weekly rows the backend turns into the Trends panels and the tile sparklines: team messages,
 -- tasks created, the week's last points_done snapshot and the week's average team count, summed over
--- the classes in scope; dm_messages from the institution rows. Weeks start on Monday (days are
+-- the class rows in scope (every class the school ever had, deleted ones included, or the selected
+-- class); dm_messages from the institution rows, on days with or without class rows. Weeks start on Monday (days are
 -- already calendar days in the school's zone). Covers from least(p_prev_from, as_of - 84 days) to
 -- p_to, so the previous range and a 12-week sparkline both fit.
 CREATE OR REPLACE FUNCTION public.analytics_trends(
   p_institution uuid, p_class uuid, p_from date, p_to date,
   p_prev_from date, p_prev_to date, p_tz text)
 RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
-  WITH scope AS (SELECT class_id FROM analytics_scope_classes(p_institution, p_class)),
-  as_of AS (SELECT max(day) AS d FROM analytics_daily WHERE institution_id = p_institution),
+  WITH as_of AS (SELECT max(day) AS d FROM analytics_daily WHERE institution_id = p_institution),
   lo AS (SELECT least(coalesce(p_prev_from, p_from), coalesce((SELECT d FROM as_of), p_from) - 84) AS d),
+  -- class rows of every class the school ever had (a deleted class keeps its rows: that is the point
+  -- of the rollup), or of the one selected class
   class_rows AS (
     SELECT ad.day, ad.metric, ad.value
-      FROM analytics_daily ad JOIN scope s ON s.class_id = ad.class_id
-     WHERE ad.institution_id = p_institution
+      FROM analytics_daily ad
+     WHERE ad.institution_id = p_institution AND ad.class_id IS NOT NULL
+       AND (p_class IS NULL OR ad.class_id = p_class)
        AND ad.day >= (SELECT d FROM lo) AND ad.day <= p_to),
   inst_rows AS (
     SELECT ad.day, ad.metric, ad.value
       FROM analytics_daily ad
      WHERE ad.institution_id = p_institution AND ad.class_id IS NULL
        AND ad.day >= (SELECT d FROM lo) AND ad.day <= p_to),
-  daily AS (
+  daily_class AS (
     SELECT day,
            sum(value) FILTER (WHERE metric = 'team_messages') AS team_messages,
            sum(value) FILTER (WHERE metric = 'tasks_created') AS tasks_created,
@@ -519,14 +523,17 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
   daily_inst AS (
     SELECT day, sum(value) FILTER (WHERE metric = 'dm_messages') AS dm_messages
       FROM inst_rows GROUP BY day),
+  daily AS (                                      -- a day with DMs but no class rows still counts
+    SELECT coalesce(c.day, i.day) AS day, c.team_messages, c.tasks_created, c.points_done, c.teams, i.dm_messages
+      FROM daily_class c FULL OUTER JOIN daily_inst i ON i.day = c.day),
   weekly AS (
     SELECT date_trunc('week', d.day::timestamp)::date AS week_start,
            coalesce(sum(d.team_messages), 0) AS team_messages,
            coalesce(sum(d.tasks_created), 0) AS tasks_created,
            (array_agg(d.points_done ORDER BY d.day DESC) FILTER (WHERE d.points_done IS NOT NULL))[1] AS points_done,
            avg(d.teams) AS teams,
-           coalesce(sum(di.dm_messages), 0) AS dm_messages
-      FROM daily d LEFT JOIN daily_inst di ON di.day = d.day
+           coalesce(sum(d.dm_messages), 0) AS dm_messages
+      FROM daily d
      GROUP BY 1)
   SELECT jsonb_build_object(
     'as_of', (SELECT d FROM as_of),
@@ -647,9 +654,10 @@ SELECT coalesce(bool_and(extract(isodow FROM (w->>'week_start')::date) = 1), tru
 
 -- ======================================================================= CHECK (part 2) ====
 -- Expected: fn_count above is now 11; daily_rls = t; no client grants on analytics_daily;
---   first_run_rows > 0 and second_run_rows = first_run_rows with every (class_id, metric) pair once
---   (dupes = 0); a class with no activity still has a team_messages row with value 0 (zero_rows ≥ 1);
---   trends.weekly is non-empty after one rollup and every week_start is a Monday;
+--   first_run_rows > 0 and second_run_rows = first_run_rows; even_rows = t (every class of the day has
+--   the same number of metric rows: 14 with the snapshot) and inst_rows_ok = t (two institution rows per
+--   school); a class with no activity still has a team_messages row with value 0 (zero_rows ≥ 1);
+--   weeks > 0 after one rollup and weeks_start_on_monday = t (vacuously true on no data);
 --   prev_bound_match = t (with a previous range set, the previous team and DM totals equal direct counts
 --   over the previous bounds — pins the message CTEs' lower bound); prev_active_rule = t
 --   (active_users_prev_7d is NULL exactly when no login event is older than 14 days).
@@ -658,16 +666,20 @@ SELECT grantee, privilege_type FROM information_schema.role_table_grants
  WHERE table_schema = 'public' AND table_name = 'analytics_daily' AND grantee IN ('anon', 'authenticated');
 SELECT analytics_rollup_day(current_date - 1) AS first_run_rows;
 SELECT analytics_rollup_day(current_date - 1) AS second_run_rows;
-SELECT count(*) - count(DISTINCT (institution_id, class_id, metric)) AS dupes
-  FROM analytics_daily WHERE day = current_date - 1;
+SELECT count(DISTINCT c) = 1 AS even_rows
+  FROM (SELECT count(*) AS c FROM analytics_daily
+         WHERE day = current_date - 1 AND class_id IS NOT NULL GROUP BY class_id) x;
+SELECT count(*) = 2 * (SELECT count(*) FROM institutions) AS inst_rows_ok
+  FROM analytics_daily WHERE day = current_date - 1 AND class_id IS NULL;
 SELECT count(*) AS zero_rows FROM analytics_daily
  WHERE day = current_date - 1 AND metric = 'team_messages' AND value = 0;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
      tr AS (SELECT analytics_trends(inst, NULL, current_date - 29, current_date, current_date - 59, current_date - 30,
                                     'America/Los_Angeles') AS j FROM args)
 SELECT j->>'as_of' AS as_of, jsonb_array_length(j->'weekly') AS weeks,
-       bool_and(extract(isodow FROM (w->>'week_start')::date) = 1) AS weeks_start_on_monday
-  FROM tr, jsonb_array_elements(j->'weekly') w GROUP BY 1, 2;
+       coalesce((SELECT bool_and(extract(isodow FROM (w->>'week_start')::date) = 1)
+                   FROM jsonb_array_elements(j->'weekly') w), true) AS weeks_start_on_monday
+  FROM tr;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst,
                      current_date - 29 AS d0, current_date AS d1, 'America/Los_Angeles'::text AS tz),
      conv AS (SELECT analytics_conversations(inst, NULL, d0, d1, d0 - 30, d0 - 1, tz) AS j FROM args),
