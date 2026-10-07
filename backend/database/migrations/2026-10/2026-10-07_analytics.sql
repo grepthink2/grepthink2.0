@@ -22,8 +22,9 @@
 --     key once both were SET NULL), which is what makes long-range trends honest.
 --   * Lockdown (spec D17): EXECUTE on every function for service_role only; analytics_daily has RLS
 --     on, no policies and no client privileges. pg_cron runs as postgres.
---   * Indexes: none added at today's volume (DEV: ~hundreds of messages and tasks). When messages
---     passes ~100k rows add messages (created_at) and tasks (created_at).
+--   * Indexes: none added. Message reads start at the earliest bound of the two ranges, which the
+--     existing messages_conv_created_idx (conversation_id, created_at) serves; stories and tasks are
+--     read all-time for the medians (hundreds of rows today). Revisit when messages passes ~100k rows.
 
 BEGIN;
 SET LOCAL lock_timeout = '5s';
@@ -48,7 +49,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.analytics_scope_teams(p_institution uuid, p_class uuid)
 RETURNS TABLE (project_id uuid, class_id uuid, name text, members integer)
 LANGUAGE sql STABLE SET search_path = public AS $$
-  SELECT p.id, p.class_id, p.name, count(pm.user_id)::int
+  SELECT p.id, p.class_id, p.name, count(DISTINCT pm.user_id)::int
     FROM projects p
     JOIN analytics_scope_classes(p_institution, p_class) s ON s.class_id = p.class_id
     JOIN project_members pm ON pm.project_id = p.id AND pm.user_id IS NOT NULL
@@ -96,7 +97,7 @@ LANGUAGE sql STABLE SET search_path = public AS $$
   WITH teams AS (SELECT * FROM analytics_scope_teams(p_institution, p_class)),
   sprint_ordinals AS (
     SELECT sp.id AS sprint_id,
-           row_number() OVER (PARTITION BY sp.project_id ORDER BY sp.starts_at, sp.created_at)::int AS ordinal
+           row_number() OVER (PARTITION BY sp.project_id ORDER BY sp.starts_at, sp.created_at, sp.id)::int AS ordinal
       FROM sprints sp JOIN teams t ON t.project_id = sp.project_id)
   SELECT tk.project_id, t.class_id, tk.status, coalesce(tk.points, 0), coalesce(so.ordinal, 0)
     FROM tasks tk
@@ -107,8 +108,9 @@ $$;
 
 -- ------------------------------------------------------------------ scope counts ----
 -- Classes, teams (projects with at least one member), students (distinct student enrollments),
--- people of the school who signed in during the last 7 days (NULL until any login event exists),
--- and the per-class / per-team rows the breakdown table starts from.
+-- people of the school who signed in during the last 7 days (NULL until any login event exists; the
+-- previous 7-day figure stays NULL until login history covers it, so a launch week never compares
+-- against a fabricated 0), and the per-class / per-team rows the breakdown table starts from.
 CREATE OR REPLACE FUNCTION public.analytics_scope_counts(
   p_institution uuid, p_class uuid, p_from date, p_to date,
   p_prev_from date, p_prev_to date, p_tz text)
@@ -123,7 +125,10 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
     SELECT DISTINCT ur.user_id
       FROM analytics_user_roles() ur JOIN classes c ON c.id = ur.class_id
      WHERE c.institution_id = p_institution),
-  has_logins AS (SELECT EXISTS (SELECT 1 FROM events WHERE kind = 'login') AS yes),
+  has_logins AS (
+    SELECT EXISTS (SELECT 1 FROM events WHERE kind = 'login') AS cur,
+           EXISTS (SELECT 1 FROM events WHERE kind = 'login'
+                     AND occurred_at < now() - interval '14 days') AS prev),
   active AS (
     SELECT count(DISTINCT e.actor_id) AS n
       FROM events e JOIN school_people sp ON sp.user_id = e.actor_id
@@ -144,9 +149,9 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
     'teams',    (SELECT count(*) FROM teams),
     'students', (SELECT count(DISTINCT user_id) FROM students),
     'active_users_7d',
-      CASE WHEN (SELECT yes FROM has_logins) THEN (SELECT n FROM active) END,
+      CASE WHEN (SELECT cur FROM has_logins) THEN (SELECT n FROM active) END,
     'active_users_prev_7d',
-      CASE WHEN (SELECT yes FROM has_logins) THEN (SELECT n FROM active_prev) END,
+      CASE WHEN (SELECT prev FROM has_logins) THEN (SELECT n FROM active_prev) END,
     'by_class', coalesce((SELECT jsonb_agg(jsonb_build_object(
                   'class_id', class_id, 'label', label, 'teams', teams, 'students', students)
                   ORDER BY label) FROM by_class), '[]'::jsonb),
@@ -176,11 +181,14 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
            ((p_to + 1)::timestamp AT TIME ZONE p_tz)        AS cur_end,
            (p_prev_from::timestamp AT TIME ZONE p_tz)       AS prev_start,
            ((p_prev_to + 1)::timestamp AT TIME ZONE p_tz)   AS prev_end),
-  team_msgs AS (
-    SELECT m.created_at, ct.class_id, ct.project_id
-      FROM messages m JOIN counted_team ct ON ct.id = m.conversation_id),
+  team_msgs AS (                                   -- from the earliest bound of the two ranges, so the
+    SELECT m.created_at, ct.class_id, ct.project_id   -- (conversation_id, created_at) index serves it
+      FROM messages m JOIN counted_team ct ON ct.id = m.conversation_id, bounds b
+     WHERE m.created_at >= least(b.cur_start, coalesce(b.prev_start, b.cur_start))),
   dm_msgs AS (
-    SELECT m.created_at FROM messages m JOIN counted_dm cd ON cd.id = m.conversation_id),
+    SELECT m.created_at
+      FROM messages m JOIN counted_dm cd ON cd.id = m.conversation_id, bounds b
+     WHERE m.created_at >= least(b.cur_start, coalesce(b.prev_start, b.cur_start))),
   cur_team AS (SELECT tm.* FROM team_msgs tm, bounds b WHERE tm.created_at >= b.cur_start AND tm.created_at < b.cur_end),
   cur_dm   AS (SELECT dm.* FROM dm_msgs dm,   bounds b WHERE dm.created_at >= b.cur_start AND dm.created_at < b.cur_end),
   weekly AS (
@@ -235,7 +243,7 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
   prev_tasks   AS (SELECT k.* FROM tasks_all k, bounds b WHERE k.created_at >= b.prev_start AND k.created_at < b.prev_end),
   sprint_ordinals AS (
     SELECT sp.id AS sprint_id,
-           row_number() OVER (PARTITION BY sp.project_id ORDER BY sp.starts_at, sp.created_at)::int AS ordinal
+           row_number() OVER (PARTITION BY sp.project_id ORDER BY sp.starts_at, sp.created_at, sp.id)::int AS ordinal
       FROM sprints sp JOIN teams t ON t.project_id = sp.project_id),
   live AS (SELECT * FROM analytics_live_tasks(p_institution, p_class)),
   by_sprint AS (
@@ -330,15 +338,21 @@ GRANT EXECUTE ON FUNCTION public.analytics_conversations(uuid, uuid, date, date,
 GRANT EXECUTE ON FUNCTION public.analytics_scrum(uuid, uuid, date, date, date, date, text)              TO service_role;
 
 -- ======================================================================= CHECK (part 1) ====
--- Run on DEV after applying, with the UCSC institution id in :inst (SELECT id FROM institutions WHERE
--- slug = 'ucsc') and a 30-day range ending today. Expected:
+-- Run on DEV after applying (Task 2 adds the COMMIT and part 2). `ucsc` is the seeded slug, looked up
+-- inline. Every query names its expectation:
 --   fn_count = 8 (three section functions, five helpers)   [Task 2 adds analytics_trends and the two rollup functions: 11]
 --   client_execute = 0 rows (no anon/authenticated EXECUTE on any analytics_% function)
---   team_total = direct_team_total (the function agrees with a direct count of team_members messages of
---                                  teams with members; dm_messages_counted is the DM message total)
---   dm_excluded ≥ 0 and dm_counted + dm_excluded + dm_outside = dm_all (every DM is classified once)
---   snapshot_tasks = live_tasks (the by_sprint counts sum to the non-archived task count)
---   every weekly.week_start is a Monday (dow = 1)
+--   service_role_execute = fn_count (service_role may execute every analytics_% function)
+--   classes_match = t, teams_match = t, active_rule = t (scope counts agree with their own rows; the
+--          active-user figure is NULL exactly when no login event exists)
+--   team_match = t, dm_match = t, weekly_match = t, team_match_all_time = t (the function's team and DM
+--          message totals equal direct counts, the weekly rows sum to them, and an all-time range
+--          exercises real rows even when the last 30 days are quiet)
+--   dm_rule = t (analytics_counted_dm returns exactly the DM conversations a direct restatement counts)
+--   prev_null = t (with NULL previous bounds every prev_* key is JSON null)
+--   snapshot_match = t, created_match = t, overall_rows ≤ 2 (by_sprint sums to the live task count,
+--          stories_created equals a direct count, one all-sprints median per entity)
+--   mondays = t (every weekly.week_start over 90 days is a Monday; vacuously true on no data)
 SELECT count(*) AS fn_count FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
  WHERE n.nspname = 'public' AND p.proname LIKE 'analytics\_%';
 SELECT p.proname, r.rolname AS client_execute
@@ -346,41 +360,78 @@ SELECT p.proname, r.rolname AS client_execute
   CROSS JOIN (VALUES ('anon'), ('authenticated')) AS r(rolname)
  WHERE n.nspname = 'public' AND p.proname LIKE 'analytics\_%'
    AND has_function_privilege(r.rolname, p.oid, 'EXECUTE');
+SELECT count(*) AS service_role_execute FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+ WHERE n.nspname = 'public' AND p.proname LIKE 'analytics\_%'
+   AND has_function_privilege('service_role', p.oid, 'EXECUTE');
+WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst, 'America/Los_Angeles'::text AS tz),
+     sc AS (SELECT analytics_scope_counts(inst, NULL, current_date - 29, current_date,
+                                         current_date - 59, current_date - 30, tz) AS j FROM args)
+SELECT (j->>'classes')::int = jsonb_array_length(j->'by_class') AS classes_match,
+       (j->>'teams')::int = coalesce((SELECT sum((c->>'teams')::int) FROM jsonb_array_elements(j->'by_class') c), 0) AS teams_match,
+       (j->'active_users_7d' = 'null'::jsonb) = NOT EXISTS (SELECT 1 FROM events WHERE kind = 'login') AS active_rule
+  FROM sc;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst,
                      current_date - 29 AS d0, current_date AS d1, 'America/Los_Angeles'::text AS tz),
-     conv AS (SELECT analytics_conversations(inst, NULL, d0, d1, d0 - 30, d0 - 1, tz) AS j FROM args)
-SELECT (j->>'team_members')::int AS team_total,
-       (SELECT count(*) FROM messages m JOIN conversations cv ON cv.id = m.conversation_id
-          JOIN projects p ON p.id = cv.project_id JOIN classes c ON c.id = p.class_id, args a
-         WHERE cv.type = 'team_members' AND c.institution_id = a.inst
-           AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL)
-           AND m.created_at >= (a.d0::timestamp AT TIME ZONE a.tz)
-           AND m.created_at <  ((a.d1 + 1)::timestamp AT TIME ZONE a.tz)) AS direct_team_total,
-       (j->>'dm')::int AS dm_messages_counted
-  FROM conv;
+     conv AS (SELECT analytics_conversations(inst, NULL, d0, d1, d0 - 30, d0 - 1, tz) AS j FROM args),
+     conv_all AS (SELECT analytics_conversations(inst, NULL, '2000-01-01', d1, NULL, NULL, tz) AS j FROM args),
+     team_direct AS (
+       SELECT m.created_at
+         FROM messages m JOIN conversations cv ON cv.id = m.conversation_id
+         JOIN projects p ON p.id = cv.project_id JOIN classes c ON c.id = p.class_id, args a
+        WHERE cv.type = 'team_members' AND c.institution_id = a.inst
+          AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL)),
+     dm_direct AS (
+       SELECT m.created_at
+         FROM messages m JOIN analytics_counted_dm((SELECT inst FROM args)) cd ON cd.conversation_id = m.conversation_id)
+SELECT (SELECT (j->>'team_members')::int FROM conv)
+         = (SELECT count(*) FROM team_direct t, args a
+             WHERE t.created_at >= (a.d0::timestamp AT TIME ZONE a.tz)
+               AND t.created_at <  ((a.d1 + 1)::timestamp AT TIME ZONE a.tz)) AS team_match,
+       (SELECT (j->>'dm')::int FROM conv)
+         = (SELECT count(*) FROM dm_direct d, args a
+             WHERE d.created_at >= (a.d0::timestamp AT TIME ZONE a.tz)
+               AND d.created_at <  ((a.d1 + 1)::timestamp AT TIME ZONE a.tz)) AS dm_match,
+       (SELECT (j->>'team_members')::int = coalesce((SELECT sum((w->>'team_members')::int) FROM jsonb_array_elements(j->'weekly') w), 0)
+           AND (j->>'dm')::int = coalesce((SELECT sum((w->>'dm')::int) FROM jsonb_array_elements(j->'weekly') w), 0)
+          FROM conv) AS weekly_match,
+       (SELECT (j->>'team_members')::int FROM conv_all) = (SELECT count(*) FROM team_direct) AS team_match_all_time;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
      ur AS (SELECT * FROM analytics_user_roles()),
      people AS (SELECT DISTINCT ur.user_id FROM ur JOIN classes c ON c.id = ur.class_id, args a WHERE c.institution_id = a.inst),
      excluded AS (SELECT DISTINCT cv.id FROM conversations cv JOIN ur a ON a.user_id = cv.user_a
                     JOIN ur b ON b.user_id = cv.user_b AND b.class_id = a.class_id
-                   WHERE cv.type = 'dm' AND ((a.role IN ('instructor','ta') AND b.role = 'student')
-                                          OR (b.role IN ('instructor','ta') AND a.role = 'student')))
-SELECT (SELECT count(*) FROM conversations WHERE type = 'dm') AS dm_all,
-       (SELECT count(*) FROM conversations cv WHERE cv.type = 'dm' AND cv.id IN (SELECT id FROM excluded)
-          AND cv.user_a IN (SELECT user_id FROM people) AND cv.user_b IN (SELECT user_id FROM people)) AS dm_excluded,
-       (SELECT count(*) FROM conversations cv WHERE cv.type = 'dm' AND cv.id NOT IN (SELECT id FROM excluded)
-          AND cv.user_a IN (SELECT user_id FROM people) AND cv.user_b IN (SELECT user_id FROM people)) AS dm_counted,
-       (SELECT count(*) FROM conversations cv WHERE cv.type = 'dm'
-          AND NOT (cv.user_a IN (SELECT user_id FROM people) AND cv.user_b IN (SELECT user_id FROM people))) AS dm_outside;
+                   WHERE cv.type = 'dm' AND ((a.role IN ('instructor', 'ta') AND b.role = 'student')
+                                          OR (b.role IN ('instructor', 'ta') AND a.role = 'student'))),
+     direct AS (SELECT cv.id FROM conversations cv
+                 WHERE cv.type = 'dm' AND cv.id NOT IN (SELECT id FROM excluded)
+                   AND cv.user_a IN (SELECT user_id FROM people) AND cv.user_b IN (SELECT user_id FROM people)),
+     fn AS (SELECT conversation_id AS id FROM analytics_counted_dm((SELECT inst FROM args)))
+SELECT (SELECT count(*) FROM fn) = (SELECT count(*) FROM direct)
+       AND NOT EXISTS (SELECT 1 FROM fn WHERE fn.id NOT IN (SELECT id FROM direct)) AS dm_rule;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
-     sc AS (SELECT analytics_scrum(inst, NULL, current_date - 29, current_date, NULL, NULL, 'America/Los_Angeles') AS j FROM args)
-SELECT coalesce((SELECT sum((e->>'todo')::int + (e->>'in_progress')::int + (e->>'done')::int) FROM jsonb_array_elements(j->'by_sprint') e), 0) AS snapshot_tasks,
-       (SELECT count(*) FROM tasks tk JOIN user_stories us ON us.id = tk.story_id AND us.archived_at IS NULL
-          JOIN projects p ON p.id = tk.project_id JOIN classes c ON c.id = p.class_id, args a
-         WHERE c.institution_id = a.inst
-           AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL)) AS live_tasks
+     c AS (SELECT analytics_conversations(inst, NULL, current_date - 29, current_date, NULL, NULL, 'America/Los_Angeles') AS j FROM args),
+     s AS (SELECT analytics_scrum(inst, NULL, current_date - 29, current_date, NULL, NULL, 'America/Los_Angeles') AS j FROM args)
+SELECT (SELECT j->'prev_team_members' = 'null'::jsonb AND j->'prev_dm' = 'null'::jsonb FROM c)
+   AND (SELECT j->'prev_stories_created' = 'null'::jsonb AND j->'prev_tasks_created' = 'null'::jsonb
+          AND j->'prev_story_points_created' = 'null'::jsonb AND j->'prev_task_points_created' = 'null'::jsonb FROM s) AS prev_null;
+WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst,
+                     current_date - 29 AS d0, current_date AS d1, 'America/Los_Angeles'::text AS tz),
+     sc AS (SELECT analytics_scrum(inst, NULL, d0, d1, NULL, NULL, tz) AS j FROM args)
+SELECT coalesce((SELECT sum((e->>'todo')::int + (e->>'in_progress')::int + (e->>'done')::int)
+                   FROM jsonb_array_elements(j->'by_sprint') e), 0)
+         = (SELECT count(*) FROM tasks tk JOIN user_stories us ON us.id = tk.story_id AND us.archived_at IS NULL
+              JOIN projects p ON p.id = tk.project_id JOIN classes c ON c.id = p.class_id, args a
+             WHERE c.institution_id = a.inst
+               AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL)) AS snapshot_match,
+       (j->>'stories_created')::int
+         = (SELECT count(*) FROM user_stories us JOIN projects p ON p.id = us.project_id JOIN classes c ON c.id = p.class_id, args a
+             WHERE c.institution_id = a.inst
+               AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL)
+               AND us.created_at >= (a.d0::timestamp AT TIME ZONE a.tz)
+               AND us.created_at <  ((a.d1 + 1)::timestamp AT TIME ZONE a.tz)) AS created_match,
+       (SELECT count(*) FROM jsonb_array_elements(j->'chars') ch WHERE ch->'ordinal' = 'null'::jsonb) AS overall_rows
   FROM sc;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
      conv AS (SELECT analytics_conversations(inst, NULL, current_date - 89, current_date, NULL, NULL, 'America/Los_Angeles') AS j FROM args)
-SELECT coalesce(bool_and(extract(isodow FROM (w->>'week_start')::date) = 1), true) AS weeks_start_on_monday
+SELECT coalesce(bool_and(extract(isodow FROM (w->>'week_start')::date) = 1), true) AS mondays
   FROM conv, jsonb_array_elements(j->'weekly') w;
