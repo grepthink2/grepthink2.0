@@ -51,7 +51,7 @@ LANGUAGE sql STABLE SET search_path = public AS $$
   SELECT p.id, p.class_id, p.name, count(pm.user_id)::int
     FROM projects p
     JOIN analytics_scope_classes(p_institution, p_class) s ON s.class_id = p.class_id
-    JOIN project_members pm ON pm.project_id = p.id
+    JOIN project_members pm ON pm.project_id = p.id AND pm.user_id IS NOT NULL
    GROUP BY p.id, p.class_id, p.name;
 $$;
 
@@ -353,6 +353,7 @@ SELECT (j->>'team_members')::int AS team_total,
        (SELECT count(*) FROM messages m JOIN conversations cv ON cv.id = m.conversation_id
           JOIN projects p ON p.id = cv.project_id JOIN classes c ON c.id = p.class_id, args a
          WHERE cv.type = 'team_members' AND c.institution_id = a.inst
+           AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL)
            AND m.created_at >= (a.d0::timestamp AT TIME ZONE a.tz)
            AND m.created_at <  ((a.d1 + 1)::timestamp AT TIME ZONE a.tz)) AS direct_team_total,
        (j->>'dm')::int AS dm_messages_counted
@@ -376,7 +377,8 @@ WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
 SELECT coalesce((SELECT sum((e->>'todo')::int + (e->>'in_progress')::int + (e->>'done')::int) FROM jsonb_array_elements(j->'by_sprint') e), 0) AS snapshot_tasks,
        (SELECT count(*) FROM tasks tk JOIN user_stories us ON us.id = tk.story_id AND us.archived_at IS NULL
           JOIN projects p ON p.id = tk.project_id JOIN classes c ON c.id = p.class_id, args a
-         WHERE c.institution_id = a.inst) AS live_tasks
+         WHERE c.institution_id = a.inst
+           AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL)) AS live_tasks
   FROM sc;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
      conv AS (SELECT analytics_conversations(inst, NULL, current_date - 89, current_date, NULL, NULL, 'America/Los_Angeles') AS j FROM args)
