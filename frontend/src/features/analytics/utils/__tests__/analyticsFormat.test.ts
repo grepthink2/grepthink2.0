@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compactNumber, dateLabel, percent, rangeLabel, signedPercent, weekLabel } from '../analyticsFormat';
+import { compactNumber, dateLabel, deltaPoints, percent, rangeLabel, signedPercent, weekLabel } from '../analyticsFormat';
 
 describe('analyticsFormat', () => {
   it('compacts large numbers and keeps small ones exact', () => {
@@ -26,6 +26,13 @@ describe('analyticsFormat', () => {
     expect(signedPercent(-0.1)).toBe('−10%');
     expect(signedPercent(0)).toBe('0%');
     expect(signedPercent(null)).toBe('—');
+  });
+  it('rounds a delta to whole points once, for the figure and its tone; no baseline is null', () => {
+    expect(deltaPoints(0.184)).toBe(18);
+    expect(deltaPoints(-0.104)).toBe(-10);
+    expect(deltaPoints(null)).toBeNull();
+    expect(deltaPoints(NaN)).toBeNull();
+    expect(signedPercent(NaN)).toBe('—');
   });
   it('labels weeks and ranges without a time zone shift', () => {
     expect(weekLabel('2026-09-07')).toBe('Sep 7');

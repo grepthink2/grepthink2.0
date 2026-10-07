@@ -59,7 +59,7 @@
   // Optional slots (analytics StatTile): a delta and a sparkline. The class
   // Dashboard passes neither, so none of these render there.
   &__delta {
-    font-size: 12px;
+    font-size: $font-size-sm;
     display: flex;
     gap: 6px;
   }
