@@ -37,6 +37,14 @@ export function tickLabel(t: number): string {
   return Number.isInteger(t) ? compactNumber(t) : String(Number(t.toFixed(2)));
 }
 
+/** Per-character widths of the charts' 11px Poppins text, measured: regular labels run about 6.3px ("Backlog" is 43.7px, "S8" 13.4px) and a semibold digit is at most 7.1px. The one calibration every label fit uses; a font change means re-measuring it. */
+const CHAR_WIDTH = { regular: 6.3, semibold: 7.2 } as const;
+
+/** About how wide `text` renders at 11px: enough to keep labels apart and inside a chart, not a layout measurement. */
+export function textWidth(text: string, weight: keyof typeof CHAR_WIDTH): number {
+  return text.length * CHAR_WIDTH[weight];
+}
+
 /** "M x y L x y …", starting a new sub-path after every null (a gap, never a bridge). */
 export function linePath(points: ([number, number] | null)[]): string {
   let d = '';

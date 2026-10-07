@@ -91,7 +91,8 @@
     &:last-child { border-radius: 0 4px 4px 0; }
     &.gt-status--todo .gt-stack__value { color: var(--gt-text-primary); } } }
 
-.gt-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+.gt-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; // BarsBySprint mirrors the 16px gap and stacks the panels when one is too narrow for its caps
+  &--stacked { grid-template-columns: 1fr; }
   &__panel { margin: 0; min-width: 0; }
   &__head { display: flex; flex-direction: column; font-size: 12px; margin-bottom: 6px; }
   &__title { font-weight: 600; color: var(--gt-text-primary); }

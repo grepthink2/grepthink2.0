@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import type { ApiAnalyticsTrendPanel } from '@/lib/api/types';
 import { dateLabel, percent, weekLabel } from '../utils/analyticsFormat';
-import { linePath, linearScale, niceMax, tickLabel } from '../utils/chartGeometry';
+import { linePath, linearScale, niceMax, textWidth, tickLabel } from '../utils/chartGeometry';
 import { useMeasuredWidth } from '../utils/useMeasuredWidth';
 import { ChartLegend } from './ChartLegend';
 
@@ -14,8 +14,9 @@ type Point = [number, number] | null;
 
 const W = 260;
 const H = 120;
-/** The right margin holds the end label ("10.25" is 27px at 11px semibold, 8px clear of its point). */
-const PAD = { top: 10, right: 40, bottom: 10, left: 10 };
+const PAD = { top: 10, bottom: 10, left: 10 };
+/** The right margin holds the end label: 40px, or the label's estimated width plus its 8px offset and 4px of air when that is more. */
+const MIN_RIGHT = 40;
 /** `.gt-trend__panels` never makes a column narrower than 200px. */
 const FLOOR = 200;
 
@@ -64,21 +65,25 @@ function TrendPanel({ panel, compare }: { panel: ApiAnalyticsTrendPanel; compare
   const prev = compare && panel.previous ? panel.previous : null;
   const values = [...panel.current, ...(prev ?? [])].map((c) => c.value ?? 0);
   const max = niceMax(Math.max(0, ...values));
+  const latest = latestWeek(panel.current);
+  const latestText = latest ? valueLabel(panel, latest.value) : '';
+  const right = Math.max(MIN_RIGHT, textWidth(latestText, 'semibold') + 12);
   const n = Math.max(panel.current.length, prev?.length ?? 0, 2);
-  const x = linearScale(0, n - 1, PAD.left, w - PAD.right);
+  const x = linearScale(0, n - 1, PAD.left, w - right);
   const y = linearScale(0, max, H - PAD.bottom, PAD.top);
   const toPts = (pts: { value: number | null }[]): Point[] => pts.map((c, i) => (c.value === null ? null : [x(i), y(c.value)]));
   const current = toPts(panel.current);
   const previous = prev ? toPts(prev) : [];
-  const latest = latestWeek(panel.current);
-  const latestText = latest ? valueLabel(panel, latest.value) : '';
+  const previousAtLatest = latest && prev ? prev[latest.index]?.value ?? null : null;
   const weeks = panel.current.length === 1 ? '1 week' : `${panel.current.length} weeks`;
-  const summary = `${panel.title}, ${weeks}${latest ? `; week of ${weekLabel(latest.week_start)}: ${latestText}` : ''}`;
+  const summary = `${panel.title}, ${weeks}`
+    + (latest ? `; week of ${weekLabel(latest.week_start)}: ${latestText}` : '')
+    + (previousAtLatest !== null ? `; previous range: ${valueLabel(panel, previousAtLatest)}` : '');
   return (
     <figure ref={ref} className="gt-trend__panel">
       <figcaption className="gt-trend__title">{panel.title}<span className="gt-trend__unit">{panel.unit}</span></figcaption>
       <svg className="gt-trend__svg" width="100%" viewBox={`0 0 ${w} ${H}`} role="img" aria-label={summary}>
-        <line className="gt-trend__axis" x1={PAD.left} x2={w - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} />
+        <line className="gt-trend__axis" x1={PAD.left} x2={w - right} y1={H - PAD.bottom} y2={H - PAD.bottom} />
         {prev ? <path className="gt-trend__previous gt-series--gray" d={linePath(previous)} /> : null}
         <path className="gt-trend__current gt-series--1" d={linePath(current)} />
         {markedPoints(previous).map(([cx, cy]) => <circle key={`p${cx}`} className="gt-trend__marker gt-series--gray" cx={cx} cy={cy} r={4} />)}

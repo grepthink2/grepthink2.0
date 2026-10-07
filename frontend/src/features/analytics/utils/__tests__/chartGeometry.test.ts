@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { linePath, linearScale, niceMax, roundedTopRect, tickLabel, ticks } from '../chartGeometry';
+import { linePath, linearScale, niceMax, roundedTopRect, textWidth, tickLabel, ticks } from '../chartGeometry';
 
 describe('chartGeometry', () => {
   it('scales linearly and survives a flat domain', () => {
@@ -33,5 +33,11 @@ describe('chartGeometry', () => {
   it('draws a bar with a rounded top and a square baseline, clamping the radius to the height', () => {
     expect(roundedTopRect(8, 10, 24, 30, 4)).toBe('M8 14a4 4 0 0 1 4 -4h16a4 4 0 0 1 4 4v26h-24z');
     expect(roundedTopRect(0, 0, 24, 2, 4)).toBe('M0 2a2 2 0 0 1 2 -2h20a2 2 0 0 1 2 2v0h-24z');
+  });
+  it('estimates 11px Poppins label widths from one calibration', () => {
+    expect(textWidth('Backlog', 'regular')).toBeCloseTo(44.1); // measured 43.7px
+    expect(textWidth('S8', 'regular')).toBeCloseTo(12.6); // measured 13.4px: the air between labels absorbs it
+    expect(textWidth('110', 'semibold')).toBeCloseTo(21.6); // measured 15.1px; "000" would be 21.3px
+    expect(textWidth('', 'semibold')).toBe(0);
   });
 });

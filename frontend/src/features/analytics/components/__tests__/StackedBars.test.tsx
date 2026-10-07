@@ -1,5 +1,6 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { stubResizeObserver } from '../../test/resizeObserver';
 import { StackedBars } from '../StackedBars';
 
 const ROWS = [
@@ -43,12 +44,11 @@ describe('StackedBars', () => {
     expect(Array.from(small.querySelectorAll('.gt-stack__segment')).map((s) => s.getAttribute('title'))).toEqual(['To do: 2', 'In progress: 1', 'Done: 3']);
   });
   it('measures its track, so a figure that fits a wide card moves to the title on a phone card', () => {
-    let report: ResizeObserverCallback = () => {};
-    vi.stubGlobal('ResizeObserver', class { constructor(cb: ResizeObserverCallback) { report = cb; } observe() {} unobserve() {} disconnect() {} });
+    const { report } = stubResizeObserver();
     const { container } = render(<StackedBars rows={UNEVEN} unit="count" />);
     const big = container.querySelector<HTMLElement>('.gt-stack__row')!;
     expect(within(big).getByText('11')).toBeInTheDocument(); // 11 / 135 of 448px ≈ 37px
-    act(() => report([{ contentRect: { width: 311 } } as ResizeObserverEntry], {} as ResizeObserver)); // a 343px card: a 159px track
+    report(311); // a 343px card: a 159px track
     expect(within(big).queryByText('11')).toBeNull(); // ≈ 13px, narrower than "11" and its padding
     expect(within(big).getByText('118')).toBeInTheDocument();
   });
@@ -63,5 +63,14 @@ describe('StackedBars', () => {
     render(<StackedBars rows={ROWS} unit="count" onRowClick={onRowClick} />);
     fireEvent.click(screen.getByRole('button', { name: 'Sprint 1, 8 teams, tasks: 5 to do, 10 in progress, 35 done' }));
     expect(onRowClick).toHaveBeenCalledWith('1');
+  });
+  it('draws no segment when every figure is zero (Points before anyone estimates), keeping the labels and the legend', () => {
+    const unestimated = ROWS.map((r) => ({ ...r, segments: r.segments.map((s) => ({ ...s, points: 0 })) }));
+    const { container } = render(<StackedBars rows={unestimated} unit="points" />);
+    expect(container.querySelectorAll('.gt-stack__segment')).toHaveLength(0);
+    Array.from(container.querySelectorAll<HTMLElement>('.gt-stack__bar')).forEach((bar) => expect(bar.style.width).toBe('0%'));
+    expect(container.querySelector('.gt-legend')).not.toBeNull();
+    expect(screen.getByRole('img', { name: 'Sprint 1, 8 teams, points: 0 to do, 0 in progress, 0 done' })).toBeInTheDocument();
+    expect(container.innerHTML).not.toMatch(/NaN/);
   });
 });

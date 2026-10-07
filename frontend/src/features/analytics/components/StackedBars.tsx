@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import type { AnalyticsBoardStatus, AnalyticsUnit } from '@/lib/api/types';
 import { compactNumber } from '../utils/analyticsFormat';
+import { textWidth } from '../utils/chartGeometry';
 import { useMeasuredWidth } from '../utils/useMeasuredWidth';
 import { ChartLegend } from './ChartLegend';
 
@@ -12,8 +13,7 @@ const ORDER: AnalyticsBoardStatus[] = ['todo', 'in_progress', 'done'];
 const UNIT_LABEL: Record<AnalyticsUnit, string> = { count: 'tasks', points: 'points' };
 /** `.gt-stack__row`'s 140px label column and its 12px gap: the bars' track is the rest of the width. */
 const LABEL_COLUMN = 152;
-/** An 11px semibold Poppins digit is at most 7.1px; a figure goes inside its segment only with 4px of padding on each side. */
-const CHAR_WIDTH = 7.2;
+/** A figure goes inside its segment only when its share of the track exceeds the figure by 8px: the segment's part of the bar's 2px gaps (4px at most) comes out of that, leaving at least 2px on each side. */
 const LABEL_PADDING = 8;
 
 /** The live board by sprint ordinal (brief §4 #7). Row widths are shares of the largest row; colours follow the board and never change with the unit. A figure sits inside its segment only when it fits there (the track is measured), else in the segment's title; the row's aria-label carries every figure. The markup is all spans, so a clickable row is valid inside its button. */
@@ -41,7 +41,7 @@ export function StackedBars({ rows, unit, onRowClick }: StackedBarsProps) {
                 const v = value(s);
                 if (v === 0) return null;
                 const text = compactNumber(v);
-                const fits = (v / max) * track >= text.length * CHAR_WIDTH + LABEL_PADDING;
+                const fits = (v / max) * track >= textWidth(text, 'semibold') + LABEL_PADDING;
                 return (
                   <span key={s.status} className={`gt-stack__segment gt-status--${s.status}`} style={{ flexGrow: v }} title={`${STATUS_LABEL[s.status]}: ${text}`}>
                     {fits ? <span className="gt-stack__value">{text}</span> : null}
