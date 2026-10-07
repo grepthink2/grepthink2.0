@@ -10,6 +10,7 @@ from fastapi import Depends, HTTPException, Request
 from app.auth.controller import get_user_role
 from app.auth.models import CheckEmailRequest, SignupRequest
 from app.core import db as core_db
+from app.core import events
 from app.core.db import get_client
 from app.core.errors import DatabaseConflictError, DatabaseError
 from app.database.client import get_authenticated_client
@@ -41,6 +42,10 @@ def login_check(request: Request, user_id: str = Depends(require_user)):
     owner has not picked a role yet.
     """
     role = get_user_role(user_id)
+    if role is not None:
+        # Only once the profiles row exists: events.actor_id references profiles(id), and a
+        # first sign-in reaches this view before POST /api/create-user has made that row.
+        events.record("login", actor_id=user_id)
     return {
         "message": f"Backend connected & Authenticated. Hello {user_id}",
         "user_id": user_id,

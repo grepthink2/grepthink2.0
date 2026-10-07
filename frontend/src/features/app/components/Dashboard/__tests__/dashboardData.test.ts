@@ -1,5 +1,5 @@
-import { summarizeRoster } from '../dashboardData';
-import type { ApiRosterStudent } from '@/lib/api';
+import { mapDashboardAssignment, summarizeRoster } from '../dashboardData';
+import type { ApiAssignment, ApiRosterStudent } from '@/lib/api';
 
 function makeRosterStudent(overrides: Partial<ApiRosterStudent> = {}): ApiRosterStudent {
   return {
@@ -58,5 +58,29 @@ describe('summarizeRoster', () => {
       notOnRoster: 0,
       total: 0,
     });
+  });
+});
+
+describe('mapDashboardAssignment', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('keeps an assignment active through its late-submission window', () => {
+    vi.useFakeTimers({ now: new Date('2026-10-20T12:00:00Z') });
+    const lateWindow: ApiAssignment = {
+      id: 'assignment-1',
+      Title: 'Team Status Report 1',
+      open_date: '2026-10-05',
+      close_date: '2026-10-12',
+      status: 'publish',
+      class_id: 'class-1',
+      due_at: '2026-10-13T07:00:00+00:00',
+      accept_until: '2026-10-22T06:59:00+00:00',
+    };
+
+    expect(mapDashboardAssignment(lateWindow).status).toBe('active');
+    // ...and closed once the window has ended.
+    expect(mapDashboardAssignment({ ...lateWindow, accept_until: '2026-10-19T06:59:00+00:00' }).status).toBe('closed');
   });
 });

@@ -11,9 +11,17 @@ import {
   fetchInstitutions,
   useInstitutions,
   useInstitutionsWithRetry,
+  useSchoolTimezone,
 } from '../institutions';
 
 const UCSC: ApiInstitution = { id: 'ucsc', name: 'UC Santa Cruz', slug: 'ucsc', email_domains: ['ucsc.edu'] };
+const ISTINYE: ApiInstitution = {
+  id: 'istinye',
+  name: 'İstinye University',
+  slug: 'istinye',
+  email_domains: ['istinye.edu.tr'],
+  timezone: 'Europe/Istanbul',
+};
 
 beforeEach(() => {
   clearInstitutionsCache();
@@ -71,5 +79,48 @@ describe('useInstitutionsWithRetry', () => {
     expect(result.current.institutions).toBeUndefined();
     await waitFor(() => expect(result.current.institutions).toEqual([UCSC]));
     expect(api.getInstitutions).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('useSchoolTimezone', () => {
+  it("is Pacific until the list loads, then the school's zone", async () => {
+    api.getInstitutions.mockResolvedValue([UCSC, ISTINYE]);
+    const { result } = renderHook(() => useSchoolTimezone('istinye'));
+    expect(result.current).toBe('America/Los_Angeles');
+    await waitFor(() => expect(result.current).toBe('Europe/Istanbul'));
+  });
+
+  it('is Pacific for no school, an unknown one, and a school listed without a zone', async () => {
+    api.getInstitutions.mockResolvedValue([UCSC, ISTINYE]); // UCSC as an older backend lists it
+    const { result } = renderHook(() => ({
+      known: useSchoolTimezone('istinye'),
+      none: useSchoolTimezone(null),
+      unknown: useSchoolTimezone('elsewhere'),
+      unzoned: useSchoolTimezone('ucsc'),
+    }));
+    await waitFor(() => expect(result.current.known).toBe('Europe/Istanbul'));
+    expect(result.current).toEqual({
+      known: 'Europe/Istanbul',
+      none: 'America/Los_Angeles',
+      unknown: 'America/Los_Angeles',
+      unzoned: 'America/Los_Angeles',
+    });
+  });
+
+  it('is Pacific for a zone this browser does not know', async () => {
+    api.getInstitutions.mockResolvedValue([ISTINYE, { ...ISTINYE, id: 'olympus', timezone: 'Mars/Olympus' }]);
+    const { result } = renderHook(() => ({
+      known: useSchoolTimezone('istinye'),
+      unknown: useSchoolTimezone('olympus'),
+    }));
+    await waitFor(() => expect(result.current.known).toBe('Europe/Istanbul'));
+    expect(result.current.unknown).toBe('America/Los_Angeles');
+  });
+
+  it('is Pacific when the list could not be read', async () => {
+    api.getInstitutions.mockResolvedValue(null);
+    const { result } = renderHook(() => ({ list: useInstitutions(), zone: useSchoolTimezone('istinye') }));
+    await waitFor(() => expect(result.current.list).toBeNull());
+    expect(result.current.zone).toBe('America/Los_Angeles');
   });
 });

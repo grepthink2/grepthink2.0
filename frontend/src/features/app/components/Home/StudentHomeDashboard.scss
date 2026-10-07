@@ -282,6 +282,31 @@ $quick-purple-hover: #6a3382;
   font-weight: $font-weight-medium;
 }
 
+// Under the deadline: when a not-yet-open assignment opens.
+.student-home__deadline-opens {
+  display: block;
+  color: var(--gt-text-tertiary);
+  font-size: var(--gt-text-caption);
+  font-weight: $font-weight-normal;
+}
+
+// Under the deadline while the late window is open: the Assignments table's label and tokens.
+.student-home__deadline-late {
+  display: block;
+  white-space: normal;
+  color: var(--gt-warning-text);
+  font-size: var(--gt-text-caption);
+}
+
+// A row that does not open (not open yet, or closed): no pointer, no hover fill.
+.student-home__deadline-row--inert {
+  cursor: default;
+
+  &:hover {
+    background-color: transparent;
+  }
+}
+
 .student-home__chevron {
   color: $text-tertiary;
   text-align: right;
@@ -314,6 +339,11 @@ $quick-purple-hover: #6a3382;
   &--submitted {
     background: rgba(1, 129, 86, 0.14);
     color: $primary-hover;
+  }
+
+  &--closed {
+    background: var(--gt-surface-sunken);
+    color: var(--gt-text-tertiary);
   }
 }
 

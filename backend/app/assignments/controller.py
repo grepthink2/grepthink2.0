@@ -8,20 +8,57 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from app.core import authz
+from app.assignments import deadlines
+from app.core import authz, events
 from app.core.db import fan_out, get_client
 from app.database.client import (
     retry_on_disconnect,
 )
+from app.institutions.controller import institution_timezone
 from app.utils.profiles import PROFILE_SELECT, profile_display_name
 
 logger = logging.getLogger(__name__)
 ALLOWED_ASSIGNMENT_TYPES = {"tsr", "interest_form", "feedback"}
 
+DEADLINE_PASSED = "The deadline has passed; set a late-submission window instead"
+DEADLINE_PASSED_UNPUBLISH = "The deadline has passed; the assignment can no longer be unpublished"
+ACCEPT_UNTIL_BEFORE_DEADLINE = "accept_until must be after the deadline"
+NO_DEADLINE_TO_EXTEND = "This assignment has no deadline"
+ASSIGNMENT_CLOSED = "This assignment is closed"
+ASSIGNMENT_NOT_OPEN = "This assignment is not open yet"
 
-def _require_class_instructor(user_id: str, class_id: str) -> None:
-    """Raise 404 if the class does not exist and 403 unless the user is its instructor."""
-    authz.require_class_instructor(get_client(), user_id, class_id)
+#: What a controller must select from ``assignments`` to run ``_require_window_open``.
+WINDOW_COLUMNS = "open_date, due_at, accept_until"
+
+
+def _require_window_open(assignment: dict, institution_id) -> None:
+    """403 unless now is inside the assignment's submission window (spec §5).
+
+    The window opens at the start of ``open_date`` in the school's zone and closes at
+    ``accept_until`` when set, else at ``due_at``. An assignment without those bounds never
+    closes (legacy rows, drafts without dates).
+    """
+    tz = institution_timezone(institution_id)
+    now = deadlines.now_utc()
+    open_date = assignment.get("open_date")
+    opens = deadlines.opens_at(datetime.date.fromisoformat(open_date) if open_date else None, tz)
+    if opens is not None and now < opens:
+        raise HTTPException(status_code=403, detail=ASSIGNMENT_NOT_OPEN)
+    if not deadlines.is_open(
+        now,
+        opens=opens,
+        due_at=deadlines.parse_ts(assignment.get("due_at")),
+        accept_until=deadlines.parse_ts(assignment.get("accept_until")),
+    ):
+        raise HTTPException(status_code=403, detail=ASSIGNMENT_CLOSED)
+
+
+def _require_class_instructor(user_id: str, class_id: str) -> dict:
+    """The class row (id, created_by, institution_id). 404 if the class does not exist, 403
+    unless the user is its instructor."""
+    return authz.require_class_instructor(
+        get_client(), user_id, class_id, columns="id, created_by, institution_id"
+    )
 
 
 def _tsr_overview_scope(
@@ -61,9 +98,10 @@ def create_assignment(
 
     Uses the assignments.class_id FK column to link the assignment to its class.
 
-    Returns the created assignment row.
+    Returns the created assignment row, whose ``due_at`` is the first instant after
+    ``close_date`` in the school's zone.
     """
-    _require_class_instructor(user_id, str(class_id))
+    cls = _require_class_instructor(user_id, str(class_id))
 
     if open_date > close_date:
         raise HTTPException(status_code=400, detail="open_date must be on or before close_date")
@@ -76,6 +114,8 @@ def create_assignment(
             "status": status,
             "class_id": str(class_id),
         }
+        due_at = deadlines.due_at_for(close_date, institution_timezone(cls.get("institution_id")))
+        assignment_data["due_at"] = due_at.isoformat() if due_at else None
         if assignment_type is not None:
             normalized_type = assignment_type.strip().lower()
             if normalized_type not in ALLOWED_ASSIGNMENT_TYPES:
@@ -115,7 +155,8 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
 
     Always includes tsr_id, evaluator_id, evaluator_name, evaluatee_name,
     percent_contribution, positive_feedback, constructive_feedback, and
-    Scrum Master fields.
+    Scrum Master fields, plus submitted_at (the row's created_at) and
+    updated_at; every caller's rows include both columns.
     """
     evaluator_profile = profile_map.get(row["evaluator_id"], {})
     evaluatee_profile = profile_map.get(row["evaluatee_id"], {})
@@ -132,6 +173,8 @@ def _serialize_tsr_entry(row: dict, profile_map: dict) -> dict:
         "scrum_master_tickets": row.get("scrum_master_tickets") or "",
         "scrum_master_assessment": row.get("scrum_master_assessment") or "",
         "scrum_master_notes": row.get("scrum_master_notes") or "",
+        "submitted_at": row.get("created_at"),
+        "updated_at": row.get("updated_at"),
     }
     return entry
 
@@ -152,7 +195,7 @@ def _latest_tsr_rows(rows: list) -> list:
 _TSR_COLUMNS = (
     "id, evaluator_id, evaluatee_id, project_id, percent_contribution, "
     "positive_feedback, constructive_feedback, scrum_master_tickets, "
-    "scrum_master_assessment, scrum_master_notes, created_at"
+    "scrum_master_assessment, scrum_master_notes, created_at, updated_at"
 )
 
 
@@ -208,9 +251,17 @@ def update_assignment(
     close_date: datetime.date | None,
     status: str | None,
     assignment_type: str | None = None,
+    accept_until: datetime.datetime | None = None,
+    clear_accept_until: bool = False,
 ) -> dict:
     """
     Edit an existing assignment's title, dates, or status (the class instructor only).
+
+    Before the deadline (``due_at``) a new ``close_date`` reschedules it and ``due_at`` follows;
+    once a published assignment's deadline has passed, moving ``close_date`` or unpublishing it is
+    refused (400) and ``accept_until`` sets a late-submission window instead, recorded as an
+    ``assignment_reopened`` event. Re-sending an unchanged ``close_date`` or ``accept_until``
+    changes nothing.
 
     Only the instructor who owns the class the assignment belongs to may edit it.
     Returns the updated assignment row. If the assignment type is 'tsr', a
@@ -228,15 +279,63 @@ def update_assignment(
             raise HTTPException(status_code=404, detail="Assignment not found")
 
         assignment = assignment_result.data[0]
-        _require_class_instructor(user_id, assignment.get("class_id"))
+        cls = _require_class_instructor(user_id, assignment.get("class_id"))
 
         updates: dict = {}
         if title is not None:
             updates["Title"] = title
         if open_date is not None:
             updates["open_date"] = open_date.isoformat()
-        if close_date is not None:
+        now = deadlines.now_utc()
+        current_due_at = deadlines.parse_ts(assignment.get("due_at"))
+        current_accept_until = deadlines.parse_ts(assignment.get("accept_until"))
+        # Only a published deadline is frozen: a draft is invisible to students, so moving its
+        # date rewrites nothing anyone could have submitted against.
+        deadline_passed = (
+            assignment.get("status") == "publish"
+            and current_due_at is not None
+            and now >= current_due_at
+        )
+        if status == "draft" and deadline_passed:
+            # Unpublish → move → republish would rewrite a frozen deadline with no event. Deleting
+            # the assignment is still how an instructor removes it from view.
+            raise HTTPException(status_code=400, detail=DEADLINE_PASSED_UNPUBLISH)
+        if accept_until is not None:
+            if accept_until.tzinfo is None:
+                accept_until = accept_until.replace(tzinfo=datetime.UTC)
+            accept_until = accept_until.astimezone(datetime.UTC)
+            if accept_until == current_accept_until:
+                # The editor re-sends the window it loaded; an unchanged value is as if absent
+                # (so it is neither re-validated nor recorded as a reopening).
+                accept_until = None
+        # The deadline every later check compares against: the new one when this request moves it.
+        effective_due_at = current_due_at
+        if close_date is not None and close_date.isoformat() != assignment.get("close_date"):
+            if deadline_passed:
+                raise HTTPException(status_code=400, detail=DEADLINE_PASSED)
             updates["close_date"] = close_date.isoformat()
+            tz = institution_timezone(cls.get("institution_id"))
+            effective_due_at = deadlines.due_at_for(close_date, tz)
+            updates["due_at"] = effective_due_at.isoformat() if effective_due_at else None
+            # A late window the new deadline has reached or passed would close the assignment
+            # before its deadline: drop it (unless this request also sets a new one, checked below).
+            if (
+                accept_until is None
+                and current_accept_until is not None
+                and effective_due_at is not None
+                and current_accept_until <= effective_due_at
+            ):
+                updates["accept_until"] = None
+        reopened = False
+        if accept_until is not None:
+            if effective_due_at is None:
+                raise HTTPException(status_code=400, detail=NO_DEADLINE_TO_EXTEND)
+            if accept_until <= effective_due_at:
+                raise HTTPException(status_code=400, detail=ACCEPT_UNTIL_BEFORE_DEADLINE)
+            updates["accept_until"] = accept_until.isoformat()
+            reopened = True
+        elif clear_accept_until and current_accept_until is not None:
+            updates["accept_until"] = None
         if status is not None:
             updates["status"] = status
         if assignment_type is not None:
@@ -254,11 +353,8 @@ def update_assignment(
                 if assignment.get("open_date")
                 else None
             )
-            effective_close = close_date or (
-                datetime.date.fromisoformat(assignment["close_date"])
-                if assignment.get("close_date")
-                else None
-            )
+            close_iso = updates.get("close_date") or assignment.get("close_date")
+            effective_close = datetime.date.fromisoformat(close_iso) if close_iso else None
             if effective_open and effective_close and effective_open > effective_close:
                 raise HTTPException(
                     status_code=400, detail="open_date must be on or before close_date"
@@ -270,6 +366,17 @@ def update_assignment(
             if not result.data:
                 raise HTTPException(status_code=500, detail="Failed to update assignment")
             assignment = result.data[0]
+            if reopened:
+                events.record(
+                    "assignment_reopened",
+                    actor_id=user_id,
+                    class_id=assignment.get("class_id"),
+                    meta={
+                        "assignment_id": str(assignment_id),
+                        "accept_until": updates["accept_until"],
+                        "after_deadline": current_due_at is not None and now >= current_due_at,
+                    },
+                )
 
         effective_type = (
             assignment_type.strip().lower()
@@ -502,14 +609,18 @@ def update_tsr_entry(
     Update the editable fields of a single TSR linked to an assignment.
 
     Who can update:
-    - The evaluator who originally submitted the TSR.
-    - The class instructor.
+    - The evaluator who originally submitted the TSR, while the assignment's
+      submission window is open (403 otherwise, see ``_require_window_open``).
+    - The class instructor, at any time.
 
     At least one field must be provided. Returns the updated TSR entry in the
-    same shape as _fetch_tsr_entries (including its project_id).
+    same shape as _fetch_tsr_entries (including its project_id), and records a
+    ``tsr_updated`` event.
 
-    Round trips: the TSR with its project and class embedded, the update (whose
-    returned row is used directly), and one profile read — 3 (was 6).
+    Round trips: the TSR with its project and class embedded, the assignment's
+    window (the evaluator only), the update (whose returned row is used
+    directly), one profile read and the event — 5 for the evaluator, 4 for the
+    instructor.
     """
     try:
         client = get_client()
@@ -561,12 +672,32 @@ def update_tsr_entry(
         if not updates:
             raise HTTPException(status_code=400, detail="No fields provided to update")
 
+        # The evaluator edits only inside the submission window; the instructor always may.
+        if is_evaluator and not is_instructor:
+            window = (
+                client.table("assignments")
+                .select(f"id, class_id, {WINDOW_COLUMNS}, classes(institution_id)")
+                .eq("id", str(assignment_id))
+                .limit(1)
+                .execute()
+            ).data
+            if not window:  # deleted since the TSR read: fail closed rather than skip the check
+                raise HTTPException(status_code=404, detail="Assignment not found")
+            _require_window_open(window[0], (window[0].get("classes") or {}).get("institution_id"))
+
         result = client.table("TSRs").update(updates).eq("id", str(tsr_id)).execute()
         if not result.data:
             raise HTTPException(status_code=404, detail="TSR not found")
         row = result.data[0]
         profile_map = _profiles_by_id(client, {row["evaluator_id"], row["evaluatee_id"]})
         entry = _serialize_tsr_entry(row, profile_map)
+        events.record(
+            "tsr_updated",
+            actor_id=user_id,
+            class_id=project.get("class_id"),
+            project_id=tsr.get("project_id"),
+            meta={"assignment_id": str(assignment_id), "evaluatee_id": row["evaluatee_id"]},
+        )
 
         logger.info(
             "TSR entry updated | tsr_id=%s assignment_id=%s user_id=%s fields=%s",
@@ -677,7 +808,7 @@ def get_tsr_responses_about_user(
             .select(
                 "id, evaluator_id, evaluatee_id, percent_contribution, "
                 "positive_feedback, constructive_feedback, scrum_master_tickets, "
-                "scrum_master_assessment, scrum_master_notes"
+                "scrum_master_assessment, scrum_master_notes, created_at, updated_at"
             )
             .eq("assignment_id", str(assignment_id))
             .eq("evaluatee_id", str(evaluatee_id))
@@ -721,7 +852,10 @@ def get_instructor_tsr_overview(user_id: str, assignment_id: UUID) -> dict:
 
         assignment_result = (
             client.table("assignments")
-            .select("id, Title, open_date, close_date, status, class_id, assignment_type")
+            .select(
+                "id, Title, open_date, close_date, due_at, accept_until, status, class_id, "
+                "assignment_type"
+            )
             .eq("id", aid)
             .limit(1)
             .execute()
@@ -814,13 +948,19 @@ def submit_feedback(
     q4_bugs: str,
     q5_suggestions: str,
 ) -> dict:
-    """Upsert a student's feedback submission for a published feedback assignment."""
+    """Upsert a student's feedback submission for a published feedback assignment.
+
+    Refused (403, see ``_require_window_open``) outside the submission window; records a
+    ``feedback_submitted`` event.
+    """
     try:
         client = get_client()
 
         assignment_result = (
             client.table("assignments")
-            .select("id, assignment_type, status, class_id")
+            .select(
+                f"id, assignment_type, status, class_id, {WINDOW_COLUMNS}, classes(institution_id)"
+            )
             .eq("id", str(assignment_id))
             .execute()
         )
@@ -841,6 +981,8 @@ def submit_feedback(
         )
         if not enrollment.data:
             raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
+        # Only after every permission check: an outsider gets NOT_ENROLLED, never the window state.
+        _require_window_open(assignment, (assignment.get("classes") or {}).get("institution_id"))
 
         row = {
             "assignment_id": str(assignment_id),
@@ -850,7 +992,7 @@ def submit_feedback(
             "q3_missing_feature": q3_missing_feature,
             "q4_bugs": q4_bugs,
             "q5_suggestions": q5_suggestions,
-            "updated_at": datetime.datetime.now(datetime.UTC).isoformat(),
+            "updated_at": deadlines.now_utc().isoformat(),
         }
         result = (
             client.table("feedback_submissions")
@@ -859,6 +1001,12 @@ def submit_feedback(
         )
         if not result.data:
             raise HTTPException(status_code=500, detail="Failed to save feedback")
+        events.record(
+            "feedback_submitted",
+            actor_id=user_id,
+            class_id=assignment["class_id"],
+            meta={"assignment_id": str(assignment_id)},
+        )
 
         logger.info(
             "Feedback submitted | assignment_id=%s user_id=%s",

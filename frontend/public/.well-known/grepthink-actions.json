@@ -144,6 +144,13 @@
       "uiRoute": "/app/modules", "multiStep": true
     },
     {
+      "id": "update_assignment", "title": "Edit an assignment (title, dates, status, late window)", "role": "instructor",
+      "method": "PATCH", "endpoint": "/api/assignments/{assignment_id}",
+      "params": {"title": "string", "open_date": "date", "close_date": "date", "status": "enum(draft|publish)", "assignment_type": "enum(tsr|feedback|interest_form)", "accept_until": "datetime (ISO 8601 with offset, none = UTC; opens a late-submission window after the deadline)", "clear_accept_until": "bool"},
+      "uiRoute": "/app/modules",
+      "note": "Once a published assignment's deadline (due_at, the end of close_date in the school's time zone) has passed, close_date cannot be moved and the assignment cannot be unpublished (400); set accept_until to accept late submissions instead. A draft can always be rescheduled."
+    },
+    {
       "id": "list_assignments", "title": "List a class's assignments", "role": "any",
       "method": "GET", "endpoint": "/api/assignments?class_id={class_id}", "uiRoute": "/app/assignments"
     },
@@ -151,12 +158,14 @@
       "id": "submit_tsr", "title": "Submit a Team Status Report about a teammate", "role": "project-member",
       "method": "POST", "endpoint": "/api/tsrs",
       "params": {"project_id": "uuid!", "evaluatee_id": "uuid!", "percent_contribution": "int!", "positive_feedback": "string!", "constructive_feedback": "string", "scrum_master_tickets": "string", "scrum_master_assessment": "string", "scrum_master_notes": "string", "week": "int", "assignment_id": "uuid"},
-      "uiRoute": "/app/assignments/{id}", "multiStep": true
+      "uiRoute": "/app/assignments/{id}", "multiStep": true,
+      "note": "403 'This assignment is not open yet' / 'This assignment is closed' outside the window (accept_until ?? due_at, in the school's time zone); 400 for a draft assignment."
     },
     {
       "id": "submit_feedback", "title": "Submit a feedback survey", "role": "student",
       "method": "POST", "endpoint": "/api/assignments/{assignment_id}/feedback",
-      "params": {"q1_liked": "string", "q2_frustrating": "string", "q3_missing_feature": "string", "q4_bugs": "string", "q5_suggestions": "string"}, "multiStep": true
+      "params": {"q1_liked": "string", "q2_frustrating": "string", "q3_missing_feature": "string", "q4_bugs": "string", "q5_suggestions": "string"}, "multiStep": true,
+      "note": "403 'This assignment is not open yet' / 'This assignment is closed' outside the window (accept_until ?? due_at, in the school's time zone); 400 for a draft assignment."
     },
     {
       "id": "view_tsr_overview", "title": "View TSR responses for an assignment", "role": "instructor",

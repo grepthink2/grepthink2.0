@@ -43,6 +43,9 @@
   // Dead: the global :focus-visible rule (index.css) already forces a ring;
   // no resting box-shadow here to layer with, so nothing to add.
 
+  // After :hover so a disabled trigger keeps its resting border.
+  &:disabled { opacity: 0.5; cursor: not-allowed; border-color: $border-color; }
+
   &--open   { border-color: $primary-color; }
   &--filled { color: $text-primary; }
 }

@@ -21,6 +21,9 @@ export interface Assignment {
   hasTsrResponses?: boolean;
   /** True when at least one feedback response exists (instructor Modules list). */
   hasFeedbackResponses?: boolean;
+  /** ISO instants from the backend (missing on older backends). */
+  dueAt?: string | null;
+  acceptUntil?: string | null;
 }
 
 interface AssignmentListProps {

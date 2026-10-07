@@ -1627,3 +1627,45 @@ CREATE TABLE IF NOT EXISTS scrum_repos (
 CREATE INDEX IF NOT EXISTS scrum_repos_project_idx ON scrum_repos (project_id);
 ALTER TABLE scrum_repos ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON TABLE scrum_repos TO anon, authenticated, service_role;
+
+-- ===== Assignment deadlines, TSR edit timestamps and events (2026-10-06_assignment_deadlines_and_events.sql) =====
+-- Mirrors the DDL of backend/database/migrations/2026-10/2026-10-06_assignment_deadlines_and_events.sql.
+-- The one-off backfill UPDATEs (due_at from close_date in the school's zone; updated_at = created_at
+-- for pre-existing TSR rows) are not schema and are left out on purpose.
+
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS due_at       timestamptz;
+ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS accept_until timestamptz;
+
+ALTER TABLE public."TSRs" ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+CREATE OR REPLACE FUNCTION public.set_updated_at() RETURNS trigger
+LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS tsrs_set_updated_at ON public."TSRs";
+CREATE TRIGGER tsrs_set_updated_at BEFORE UPDATE ON public."TSRs"
+  FOR EACH ROW WHEN (OLD.* IS DISTINCT FROM NEW.*)
+  EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TABLE IF NOT EXISTS public.events (
+  id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  occurred_at timestamptz NOT NULL DEFAULT now(),
+  kind        text NOT NULL CHECK (kind ~ '^[a-z][a-z0-9_]{1,39}$'),
+  actor_id    uuid REFERENCES public.profiles (id) ON DELETE SET NULL,
+  class_id    uuid REFERENCES public.classes (id)  ON DELETE SET NULL,
+  project_id  uuid REFERENCES public.projects (id) ON DELETE SET NULL,
+  meta        jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (pg_column_size(meta) <= 2048)
+);
+CREATE INDEX IF NOT EXISTS events_kind_time_idx  ON public.events (kind, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS events_class_time_idx ON public.events (class_id, occurred_at DESC)
+  WHERE class_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS events_actor_time_idx ON public.events (actor_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS events_project_time_idx ON public.events (project_id, occurred_at DESC)
+  WHERE project_id IS NOT NULL;
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.events FROM anon, authenticated;
+REVOKE ALL ON SEQUENCE public.events_id_seq FROM anon, authenticated;

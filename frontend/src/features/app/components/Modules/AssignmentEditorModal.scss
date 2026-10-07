@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '@styles/index.scss' as *;
 
 $panel-width: 420px;
@@ -131,6 +132,30 @@ $panel-width: 420px;
   color: $text-secondary;
 }
 
+.aem__hint {
+  font-size: 12px;
+  color: var(--gt-text-tertiary);
+  margin: 4px 0 12px;
+}
+
+// Text button under the late-window picker; hover takes Delete's error color.
+.aem__remove-window-btn {
+  align-self: flex-start;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: $font-size-sm;
+  font-family: $primary-font;
+  color: $text-secondary;
+  text-decoration: underline;
+  cursor: pointer;
+  @include gt-transition(color);
+
+  &:hover { color: var(--gt-error); }
+  &:focus { outline: none; }
+  // The global :focus-visible rule (index.css) still draws the keyboard ring.
+}
+
 // ── Text input ─────────────────────────────────────────────────
 .aem__input {
   width: 100%;
@@ -162,8 +187,10 @@ $panel-width: 420px;
   text-align: left;
   @include gt-transition(border-color, background-color);
 
-  &:hover { border-color: darken($border-color, 12%); }
+  &:hover { border-color: color.adjust($border-color, $lightness: -12%); }
   &:focus { outline: none; }
+  // After :hover so a disabled card keeps its resting border.
+  &:disabled { opacity: 0.5; cursor: not-allowed; border-color: $border-color; }
 
   &--selected {
     border-color: $primary-color;
