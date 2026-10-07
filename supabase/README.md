@@ -166,4 +166,6 @@ before giving up and notifying whoever sent the invite. In this order:
    neither as of 2026-10-06). It backfills `due_at` from each class's school time zone, adds the TSR
    `updated_at` trigger and creates `events` (RLS on, no client privileges).
 2. Release beta → main in the same sitting, then re-run the file once and confirm the Check's
-   `stale_due_at` reads 0 (it repairs any assignment created or rescheduled between the two).
+   `stale_due_at` reads 0 (it repairs any assignment created or rescheduled between the two). On that
+   re-run `edited_rows` is legitimately above 0 — do not run the file's repair block. Then sign in on DEV
+   and submit a TSR: `SELECT kind, actor_id FROM events ORDER BY id DESC LIMIT 5;` must show the rows.

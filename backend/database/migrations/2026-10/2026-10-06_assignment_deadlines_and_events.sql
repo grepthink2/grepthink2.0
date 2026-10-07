@@ -35,6 +35,9 @@
 
 BEGIN;
 
+-- Fail fast if a lock is contended rather than queue live traffic behind the ALTERs.
+SET LOCAL lock_timeout = '5s';
+
 ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS due_at       timestamptz;
 ALTER TABLE public.assignments ADD COLUMN IF NOT EXISTS accept_until timestamptz;
 
@@ -96,11 +99,12 @@ COMMIT;
 --   stale_due_at = 0   every assignment with a class and a close_date has the matching due_at
 --   orphans = 0        assignments with a close_date but no class (legacy rows; they get no due_at
 --                      because there is no school to take a zone from — fix by hand if any)
---   edited_rows = 0    ONLY right after applying: it counts TSRs edited since their submission, so
---                      once students edit again it grows legitimately and the repair below must
---                      not be run
+--   edited_rows = 0    ONLY right after the FIRST apply. On the prescribed re-run after the release
+--                      it is legitimately > 0 (the old backend's TSR edits fired the trigger) and
+--                      the repair below must NOT run
 --   one row for the trigger; events_rls = t; no client grants on events; anon_seq = f and
 --   auth_seq = f (no client privileges on the identity sequence either);
+--   service_role_can_insert = t;
 --   due_local = close_date + 1 at 00:00 for every sample row (the zone was applied).
 SELECT count(*) AS stale_due_at FROM public.assignments a
   JOIN public.classes c ON c.id = a.class_id
@@ -116,6 +120,7 @@ SELECT grantee, privilege_type FROM information_schema.role_table_grants
  WHERE table_schema = 'public' AND table_name = 'events' AND grantee IN ('anon', 'authenticated');
 SELECT has_sequence_privilege('anon', 'public.events_id_seq', 'USAGE')          AS anon_seq,
        has_sequence_privilege('authenticated', 'public.events_id_seq', 'USAGE') AS auth_seq;
+SELECT has_table_privilege('service_role', 'public.events', 'INSERT') AS service_role_can_insert;
 SELECT a.close_date,
        a.due_at AT TIME ZONE coalesce(i.timezone, 'America/Los_Angeles') AS due_local
   FROM public.assignments a
@@ -123,10 +128,10 @@ SELECT a.close_date,
   LEFT JOIN public.institutions i ON i.id = c.institution_id
  WHERE a.due_at IS NOT NULL ORDER BY a.due_at DESC LIMIT 3;
 
--- If edited_rows > 0 RIGHT AFTER applying, the file was not run as one transaction (the DEFAULT
--- and the backfill saw different now() values). Repair before anyone edits a TSR, in one
--- transaction with the trigger off (it would otherwise rewrite updated_at to now()). Never run
--- this later: it would erase real edit times.
+-- If edited_rows > 0 RIGHT AFTER THE FIRST apply (never after the re-run), the file was not run
+-- as one transaction (the DEFAULT and the backfill saw different now() values). Repair before
+-- anyone edits a TSR, in one transaction with the trigger off (it would otherwise rewrite
+-- updated_at to now()). Never run this later: it would erase real edit times.
 --   BEGIN; ALTER TABLE public."TSRs" DISABLE TRIGGER tsrs_set_updated_at;
 --   UPDATE public."TSRs" SET updated_at = created_at;
 --   ALTER TABLE public."TSRs" ENABLE TRIGGER tsrs_set_updated_at; COMMIT;
