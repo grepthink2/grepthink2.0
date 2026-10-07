@@ -6,9 +6,12 @@ applying 2026-10-07_analytics.sql on DEV:
     ANALYTICS_IT_DATABASE=1 .venv/bin/python -m pytest tests/test_analytics_integration.py -q
 
 The module builds its own client from the repo-root .env (conftest replaces SUPABASE_URL with a stub
-before the app loads, so the app's client would point the real key at a bogus host) and refuses to
-run against the PROD project. The assertions are shape, non-negativity and cross-consistency
-(per-class sums equal totals, a second rollup run changes nothing), never exact counts — DEV data moves.
+before the app loads, so the app's client would point the real key at a bogus host) and runs against the
+DEV project only. The run WRITES to DEV: it re-runs yesterday's rollup with the snapshot (replacing that
+day's board snapshot with the current board) and rewrites the activity rows of the day before. Ranges end
+yesterday in the school's zone so a message written during the run cannot race a comparison. The
+assertions are shape, non-negativity and cross-consistency (per-class sums equal totals, a second rollup
+run changes no activity value), never exact counts — DEV data moves.
 """
 
 from __future__ import annotations
@@ -20,26 +23,37 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-PROD_PROJECT_REF = "yfezwtoeoexfksvbpxmi"
-
 pytestmark = pytest.mark.skipif(
     os.environ.get("ANALYTICS_IT_DATABASE") != "1",
     reason="set ANALYTICS_IT_DATABASE=1 to run the analytics SQL against DEV",
 )
 
 PARAMS = ("p_institution", "p_class", "p_from", "p_to", "p_prev_from", "p_prev_to", "p_tz")
+DEV_PROJECT_REF = "jfbagjjvryqcwxsyeyeg"
+SNAPSHOT_METRICS = {
+    "tasks_todo",
+    "tasks_in_progress",
+    "tasks_done",
+    "points_todo",
+    "points_in_progress",
+    "points_done",
+}
+ACTIVITY_METRICS = 8
+METRICS_PER_CLASS = ACTIVITY_METRICS + len(SNAPSHOT_METRICS)
 
 
 @pytest.fixture(scope="module")
 def db():
+    __tracebackhide__ = True  # a failure here must not print the .env (showlocals)
     from dotenv import dotenv_values
     from supabase import create_client
 
     env_file = Path(__file__).resolve().parents[2] / ".env"
-    env = dotenv_values(env_file)
-    url, key = env.get("SUPABASE_URL"), env.get("SUPABASE_SERVICE_ROLE_KEY")
+    values = dotenv_values(env_file)
+    url, key = values.get("SUPABASE_URL") or "", values.get("SUPABASE_SERVICE_ROLE_KEY") or ""
+    del values
     assert url and key, f"{env_file} must hold SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
-    assert PROD_PROJECT_REF not in url, "refusing to run the analytics checks against PROD"
+    assert DEV_PROJECT_REF in url.lower(), "the analytics checks run against the DEV project only"
     return create_client(url, key)
 
 
@@ -50,20 +64,41 @@ def ucsc(db) -> dict:
     return rows[0]
 
 
-def _args(ucsc: dict, class_id: str | None = None) -> dict:
-    today = dt.date.today()
+def _today(ucsc: dict) -> dt.date:
+    """Today in the school's zone, so 'yesterday' is a closed school day."""
+    return dt.datetime.now(ZoneInfo(ucsc["timezone"])).date()
+
+
+def _args(ucsc: dict, class_id: str | None = None, *, days: int = 30) -> dict:
+    """A closed range of ``days`` days ending yesterday, with the previous range of equal length."""
+    end = _today(ucsc) - dt.timedelta(days=1)
+    start = end - dt.timedelta(days=days - 1)
+    prev_end = start - dt.timedelta(days=1)
+    prev_start = prev_end - dt.timedelta(days=days - 1)
     return dict(
         zip(
             PARAMS,
             (
                 ucsc["id"],
                 class_id,
-                (today - dt.timedelta(days=29)).isoformat(),
-                today.isoformat(),
-                (today - dt.timedelta(days=59)).isoformat(),
-                (today - dt.timedelta(days=30)).isoformat(),
+                start.isoformat(),
+                end.isoformat(),
+                prev_start.isoformat(),
+                prev_end.isoformat(),
                 ucsc["timezone"],
             ),
+            strict=True,
+        )
+    )
+
+
+def _all_time_args(ucsc: dict, class_id: str | None = None) -> dict:
+    """Everything up to yesterday, no previous range: exercises real rows even on a quiet month."""
+    end = _today(ucsc) - dt.timedelta(days=1)
+    return dict(
+        zip(
+            PARAMS,
+            (ucsc["id"], class_id, "2000-01-01", end.isoformat(), None, None, ucsc["timezone"]),
             strict=True,
         )
     )
@@ -73,6 +108,18 @@ def _call(db, fn: str, params: dict) -> dict:
     data = db.rpc(fn, params).execute().data
     assert isinstance(data, dict), f"{fn} must return a JSON object, got {type(data).__name__}"
     return data
+
+
+def _day_values(db, ucsc: dict, day: dt.date) -> dict[tuple[str | None, str], float]:
+    rows = (
+        db.table("analytics_daily")
+        .select("class_id, metric, value")
+        .eq("institution_id", ucsc["id"])
+        .eq("day", day.isoformat())
+        .execute()
+        .data
+    )
+    return {(r["class_id"], r["metric"]): float(r["value"]) for r in rows}
 
 
 def test_scope_counts_are_consistent(db, ucsc):
@@ -85,27 +132,30 @@ def test_scope_counts_are_consistent(db, ucsc):
 
 
 def test_conversations_sum_per_class(db, ucsc):
-    j = _call(db, "analytics_conversations", _args(ucsc))
+    j = _call(db, "analytics_conversations", _all_time_args(ucsc))
     assert j["total"] == j["team_members"] + j["dm"]
     assert j["team_members"] == sum(c["team_messages"] for c in j["by_class"])
     assert j["team_members"] == sum(w["team_members"] for w in j["weekly"])
     assert j["dm"] == sum(w["dm"] for w in j["weekly"])
+    assert j["prev_team_members"] is None and j["prev_dm"] is None
     for w in j["weekly"]:
         assert dt.date.fromisoformat(w["week_start"]).isoweekday() == 1
 
 
 def test_class_filter_leaves_dm_alone(db, ucsc):
-    whole = _call(db, "analytics_conversations", _args(ucsc))
+    whole = _call(db, "analytics_conversations", _all_time_args(ucsc))
     if not whole["by_class"]:
-        pytest.skip("no team messages in the range on DEV")
+        pytest.skip("no team messages on DEV")
     one = whole["by_class"][0]["class_id"]
-    part = _call(db, "analytics_conversations", _args(ucsc, one))
-    assert part["dm"] == whole["dm"], "direct messages are school-wide and ignore the class filter"
+    part = _call(db, "analytics_conversations", _all_time_args(ucsc, one))
     assert part["team_members"] == whole["by_class"][0]["team_messages"]
+    if whole["dm"] == 0:
+        pytest.skip("no counted direct messages on DEV: the school-wide rule is untested here")
+    assert part["dm"] == whole["dm"], "direct messages are school-wide and ignore the class filter"
 
 
 def test_scrum_snapshot_and_medians(db, ucsc):
-    j = _call(db, "analytics_scrum", _args(ucsc))
+    j = _call(db, "analytics_scrum", _all_time_args(ucsc))
     for row in j["by_sprint"]:
         assert row["todo"] >= 0 and row["in_progress"] >= 0 and row["done"] >= 0
         assert row["label"] == ("Backlog" if row["ordinal"] == 0 else f"Sprint {row['ordinal']}")
@@ -118,30 +168,27 @@ def test_scrum_snapshot_and_medians(db, ucsc):
 
 
 def test_rollup_is_idempotent_and_complete(db, ucsc):
-    day = dt.date.today() - dt.timedelta(days=1)
+    day = _today(ucsc) - dt.timedelta(days=1)
     first = (
         db.rpc("analytics_rollup_day", {"p_day": day.isoformat(), "p_snapshot": True})
         .execute()
         .data
     )
+    before = _day_values(db, ucsc, day)
     second = (
         db.rpc("analytics_rollup_day", {"p_day": day.isoformat(), "p_snapshot": True})
         .execute()
         .data
     )
+    after = _day_values(db, ucsc, day)
     assert first == second and first > 0
-    rows = (
-        db.table("analytics_daily")
-        .select("class_id, metric, value")
-        .eq("institution_id", ucsc["id"])
-        .eq("day", day.isoformat())
-        .execute()
-        .data
-    )
-    keys = [(r["class_id"], r["metric"]) for r in rows]
-    assert len(keys) == len(set(keys)), "one row per (class, metric)"
-    assert all(float(r["value"]) >= 0 for r in rows)
-    # every class that existed by the end of that school-zone day has rows (quiet ones too); rows of
+    # a second run must not change any activity or institution value (snapshots follow the live board)
+    stable_before = {k: v for k, v in before.items() if k[1] not in SNAPSHOT_METRICS}
+    stable_after = {k: v for k, v in after.items() if k[1] not in SNAPSHOT_METRICS}
+    assert stable_before == stable_after, "a second rollup run changed activity values"
+    negative = {k: v for k, v in after.items() if v < 0}
+    assert negative == {}, f"negative values: {negative}"
+    # every class that existed by the end of that school-zone day has its rows (quiet ones too); rows of
     # classes deleted since are kept on purpose, so this is a superset check
     day_end = dt.datetime.combine(
         day + dt.timedelta(days=1), dt.time.min, tzinfo=ZoneInfo(ucsc["timezone"])
@@ -150,25 +197,40 @@ def test_rollup_is_idempotent_and_complete(db, ucsc):
         db.table("classes").select("id, created_at").eq("institution_id", ucsc["id"]).execute().data
     )
     expected = {c["id"] for c in classes if dt.datetime.fromisoformat(c["created_at"]) < day_end}
-    per_class = {r["class_id"] for r in rows if r["class_id"] is not None}
-    assert expected <= per_class, "every class that existed by the day's end has rows"
+    per_class = {cid for (cid, _metric) in after if cid is not None}
+    missing = expected - per_class
+    assert not missing, f"classes without rows for {day}: {sorted(missing)}"
     per_metric: dict[str, set[str]] = {}
-    for r in rows:
-        if r["class_id"] in expected:
-            per_metric.setdefault(r["class_id"], set()).add(r["metric"])
-    assert all(len(m) == 14 for m in per_metric.values()), "8 activity + 6 snapshot rows per class"
-    assert {"dm_messages", "active_users"} <= {r["metric"] for r in rows if r["class_id"] is None}
-    before = (day - dt.timedelta(days=1)).isoformat()
-    ranged = db.rpc("analytics_rollup_range", {"p_from": before, "p_to": before}).execute().data
-    assert (
-        ranged
-        == db.rpc("analytics_rollup_day", {"p_day": before, "p_snapshot": False}).execute().data
+    for cid, metric in after:
+        if cid in expected:
+            per_metric.setdefault(cid, set()).add(metric)
+    short = {cid: sorted(m) for cid, m in per_metric.items() if len(m) != METRICS_PER_CLASS}
+    assert short == {}, f"classes without {METRICS_PER_CLASS} metric rows: {short}"
+    assert {"dm_messages", "active_users"} <= {metric for (cid, metric) in after if cid is None}
+    before_day = day - dt.timedelta(days=1)
+    ranged = (
+        db.rpc(
+            "analytics_rollup_range",
+            {"p_from": before_day.isoformat(), "p_to": before_day.isoformat()},
+        )
+        .execute()
+        .data
     )
+    single = (
+        db.rpc("analytics_rollup_day", {"p_day": before_day.isoformat(), "p_snapshot": False})
+        .execute()
+        .data
+    )
+    assert ranged == single
+    assert not any(
+        metric in SNAPSHOT_METRICS for (_cid, metric) in _day_values(db, ucsc, before_day)
+    ), "a backfill day carries no snapshot rows"
 
 
 def test_trends_rows_are_weekly(db, ucsc):
     j = _call(db, "analytics_trends", _args(ucsc))
-    assert j["as_of"] is None or dt.date.fromisoformat(j["as_of"])
+    if j["as_of"] is not None:
+        dt.date.fromisoformat(j["as_of"])
     for w in j["weekly"]:
         assert dt.date.fromisoformat(w["week_start"]).isoweekday() == 1
         assert w["team_messages"] >= 0 and w["tasks_created"] >= 0 and w["dm_messages"] >= 0
