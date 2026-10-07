@@ -136,7 +136,7 @@ def test_board_round_trips_do_not_grow_with_sprints(monkeypatch, client):
 
 
 def test_board_is_403_for_an_outsider_and_404_for_no_project(monkeypatch, client):
-    _seed(monkeypatch)
+    db = _seed(monkeypatch)
     res = client.get(URL, headers=header_for("x@ucsc.edu", sub=OUTSIDER))
     assert res.status_code == 403
     res = client.get(
@@ -144,12 +144,14 @@ def test_board_is_403_for_an_outsider_and_404_for_no_project(monkeypatch, client
         headers=header_for("x@ucsc.edu", sub=OUTSIDER),
     )
     assert res.status_code == 404
+    assert db.store["events"] == []  # a refused load records no view
 
 
 def test_an_unknown_sprint_is_404(monkeypatch, client):
-    _seed(monkeypatch)
+    db = _seed(monkeypatch)
     res = client.get(f"{URL}?sprint_id=nope", headers=header_for("tony@ucsc.edu", sub=UID))
     assert res.status_code == 404
+    assert db.store["events"] == []  # a refused load records no view
 
 
 def test_loading_the_board_records_a_board_viewed_event(monkeypatch, client):

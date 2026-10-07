@@ -673,7 +673,8 @@ SELECT coalesce(bool_and(extract(isodow FROM (w->>'week_start')::date) = 1), tru
 --   first_run_rows_ok = t (yesterday's run writes 14 rows per class that existed and 2 per school),
 --   second_run_same = t (a re-run writes the same number), backfill_rows_ok = t (a backfill day writes
 --   the 8 activity rows per class, no snapshot); team_day_match = t and dm_day_match = t (yesterday's
---   summed team_messages and the school's dm_messages equal direct counts over the school-zone day);
+--   summed team_messages and the school's dm_messages equal direct counts over the school-zone day); views_day_match = t
+--   (yesterday's summed board_views equals the distinct person-board pairs among the day's board_viewed events);
 --   quiet_class_rows ≥ 0 (classes with no team messages yesterday still have a row with value 0);
 --   weeks > 0 after one rollup and weeks_start_on_monday = t (vacuously true on no data);
 --   prev_bound_match = t (with a previous range set, the previous team and DM totals equal direct counts
@@ -707,7 +708,15 @@ SELECT (SELECT coalesce(sum(value), 0) FROM analytics_daily ad, args a
          WHERE ad.institution_id = a.inst AND ad.day = current_date - 1 AND ad.class_id IS NULL AND ad.metric = 'dm_messages')
          = (SELECT count(*) FROM messages m
               JOIN analytics_counted_dm((SELECT inst FROM args)) cd ON cd.conversation_id = m.conversation_id, args a
-             WHERE m.created_at >= a.d0 AND m.created_at < a.d1) AS dm_day_match;
+             WHERE m.created_at >= a.d0 AND m.created_at < a.d1) AS dm_day_match,
+       (SELECT coalesce(sum(value), 0) FROM analytics_daily ad, args a
+         WHERE ad.institution_id = a.inst AND ad.day = current_date - 1 AND ad.metric = 'board_views')
+         = (SELECT count(*) FROM (
+              SELECT DISTINCT e.actor_id, e.project_id
+                FROM events e JOIN projects p ON p.id = e.project_id JOIN classes c ON c.id = p.class_id, args a
+               WHERE e.kind = 'board_viewed' AND c.institution_id = a.inst
+                 AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL)
+                 AND e.occurred_at >= a.d0 AND e.occurred_at < a.d1) v) AS views_day_match;
 SELECT count(*) AS quiet_class_rows FROM analytics_daily
  WHERE day = current_date - 1 AND metric = 'team_messages' AND value = 0;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),

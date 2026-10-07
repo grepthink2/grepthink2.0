@@ -768,6 +768,7 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         cumulative_input.append({"id": s["id"], "name": s["name"], "final": final})
     cumulative = build_cumulative_series(cumulative_input)
 
+    # after every raise and outside fan_out: a refused or failed load is not a view
     events.record(
         "board_viewed",
         actor_id=str(user_id),
