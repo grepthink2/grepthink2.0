@@ -91,6 +91,23 @@ def test_years_after_keeps_the_calendar_date_and_clamps_feb_29():
     assert windows.years_after(dt.date(2024, 2, 29), 4) == dt.date(2028, 2, 29)
 
 
+def test_dates_outside_2000_to_2100_are_refused_or_clamped_instead_of_overflowing():
+    # year 1 and year 9999 would push the previous-range or two-year arithmetic past Python's date limits
+    with pytest.raises(WindowError, match=windows.DATE_OUT_OF_RANGE):
+        range_bounds("custom", TODAY, custom_from=dt.date(1, 1, 1), custom_to=dt.date(1, 1, 2))
+    with pytest.raises(WindowError, match=windows.DATE_OUT_OF_RANGE):
+        range_bounds(
+            "custom", TODAY, custom_from=dt.date(9998, 1, 1), custom_to=dt.date(9999, 12, 31)
+        )
+    assert (
+        range_bounds("custom", TODAY, custom_from=windows.MIN_DATE, custom_to=windows.MIN_DATE).days
+        == 1
+    )
+    # a class or school whose recorded start predates 2000 starts its window at MIN_DATE
+    assert range_bounds("class", TODAY, class_start=dt.date(1, 1, 1)).start == windows.MIN_DATE
+    assert range_bounds("all", TODAY, all_from=dt.date(1, 1, 1)).start == windows.MIN_DATE
+
+
 def test_custom_is_calendar_dates_never_shifted_for_dst():
     # Review Focus 2: the bounds are dates; the SQL turns them into school-zone midnights.
     b = range_bounds(

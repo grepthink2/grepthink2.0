@@ -15,11 +15,15 @@ from zoneinfo import ZoneInfo
 Window = Literal["7d", "30d", "90d", "class", "all", "custom"]
 PRESET_DAYS: dict[str, int] = {"7d": 7, "30d": 30, "90d": 90}
 MAX_CUSTOM_SPAN_YEARS = 2  # "a range may span at most 2 years" (spec D8, Q-B5): calendar years
+# Outside these, the previous-range and two-year arithmetic overflows Python's date limits.
+MIN_DATE = dt.date(2000, 1, 1)
+MAX_DATE = dt.date(2100, 12, 31)
 
 CUSTOM_NEEDS_DATES = "from and to are required for a custom range"
 TO_BEFORE_FROM = "to must be on or after from"
 RANGE_TOO_LONG = "a range may span at most 2 years"
 CLASS_NEEDS_CLASS_ID = "window=class needs class_id"
+DATE_OUT_OF_RANGE = "dates must fall between 2000-01-01 and 2100-12-31"
 
 
 class WindowError(ValueError):
@@ -62,13 +66,15 @@ def range_bounds(
     elif window == "class":
         if class_start is None:
             raise WindowError(CLASS_NEEDS_CLASS_ID)
-        start, end = min(class_start, today), today
+        start, end = min(max(class_start, MIN_DATE), today), today
     elif window == "all":
-        start = min(all_from, today) if all_from is not None else today
+        start = min(max(all_from, MIN_DATE), today) if all_from is not None else today
         return RangeBounds(window, start, today, None, None)
     elif window == "custom":
         if custom_from is None or custom_to is None:
             raise WindowError(CUSTOM_NEEDS_DATES)
+        if not (MIN_DATE <= custom_from <= MAX_DATE and MIN_DATE <= custom_to <= MAX_DATE):
+            raise WindowError(DATE_OUT_OF_RANGE)
         if custom_to < custom_from:
             raise WindowError(TO_BEFORE_FROM)
         if custom_to > years_after(custom_from, MAX_CUSTOM_SPAN_YEARS):
