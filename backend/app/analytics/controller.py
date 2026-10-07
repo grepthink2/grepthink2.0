@@ -9,14 +9,13 @@ from __future__ import annotations
 
 import copy
 import datetime as dt
-import threading
-import time
 import unicodedata
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 
 from app.analytics import privacy, windows
+from app.analytics.cache import PayloadCache
 from app.analytics.trends import build_panels, build_sparklines, delta, dense_weeks
 from app.config import settings
 from app.core.db import fan_out, get_client
@@ -123,11 +122,13 @@ SECTION_RPCS: dict[str, str] = {
     "scrum": "analytics_scrum",
     "trends": "analytics_trends",
 }
-# Which cards a failed RPC blanks (brief §5 `failures`).
+# Which cards lose data when a section's RPC fails (brief §5 `failures`). The overview tiles and the
+# breakdown columns draw on conversations and scrum too, so those cards are named as well; the
+# affected figures arrive as null, never as a fabricated 0.
 SECTION_FAILURES: dict[str, tuple[str, ...]] = {
     "scope_counts": ("overview", "breakdown"),
-    "conversations": ("conversations",),
-    "scrum": ("scrum",),
+    "conversations": ("conversations", "overview", "breakdown"),
+    "scrum": ("scrum", "overview", "breakdown"),
     "trends": ("trends",),
 }
 EXCLUDED_CONVERSATIONS = [
@@ -144,35 +145,13 @@ EMPTY_TIMELINESS = {  # sub-project C fills this in; the page renders no timelin
     "bucket_order": ["early", "on_time", "late", "missing", "not_due"],
     "rows": [],
 }
-_CACHE_TTL_SECONDS = 60.0
-_CACHE_MAX_ENTRIES = 128
-_cache: dict[tuple, tuple[float, dict]] = {}
-_cache_lock = threading.Lock()
+INSTITUTION_NOT_FOUND = "institution does not exist"
+
+_cache = PayloadCache(ttl_seconds=60.0, max_entries=128)
 
 
 def clear_dashboard_cache() -> None:
-    with _cache_lock:
-        _cache.clear()
-
-
-def _cache_get(key: tuple) -> dict | None:
-    with _cache_lock:
-        hit = _cache.get(key)
-        if hit is None:
-            return None
-        expires_at, payload = hit
-        if expires_at < time.monotonic():
-            _cache.pop(key, None)
-            return None
-        return copy.deepcopy(payload)  # a caller's own copy: nothing it does can reach the cache
-
-
-def _cache_put(key: tuple, payload: dict) -> None:
-    with _cache_lock:
-        if len(_cache) >= _CACHE_MAX_ENTRIES:
-            oldest = min(_cache, key=lambda k: _cache[k][0])
-            _cache.pop(oldest, None)
-        _cache[key] = (time.monotonic() + _CACHE_TTL_SECONDS, copy.deepcopy(payload))
+    _cache.clear()
 
 
 def get_dashboard(
@@ -188,27 +167,31 @@ def get_dashboard(
 ) -> dict:
     """``GET /api/analytics/dashboard``: one composed payload for an institution, class and range.
 
-    403 outside the caller's scope, 400 for a class of another institution, ``WindowError`` for a bad
-    range (the view answers 422). A failing section RPC never fails the request: its card is listed in
-    ``failures`` and rendered empty.
+    403 outside the caller's scope (404 when a maintainer names an institution that does not exist),
+    400 for a class of another institution, ``WindowError`` for a bad range (the view answers 422). A
+    failing section RPC never fails the request: its cards are listed in ``failures``, their figures
+    are null, and the payload is not cached, so the next call retries.
     """
     scope = scope_for_user(user_id, email)
     institution = next((i for i in scope if i["id"] == institution_id), None)
     if institution is None:
+        # a maintainer's scope is every institution, so for them a miss means the id does not exist
+        if is_maintainer(email):
+            raise HTTPException(status_code=404, detail=INSTITUTION_NOT_FOUND)
         raise HTTPException(status_code=403, detail=ANALYTICS_FORBIDDEN)
     # spec D12: keyed by the request and looked up right after the access check, so a hit costs the
     # one read that re-checks access; an entry exists only for a class and range that once passed
     key = (institution_id, class_id, window, custom_from, custom_to)
     if not fresh:
-        cached = _cache_get(key)
+        cached = _cache.get(key)
         if cached is not None:
-            return {**cached, "meta": {**cached["meta"], "cached": True}}
+            cached["meta"]["cached"] = True
+            return cached
     client = get_client()
     classes = (
         client.table("classes")
         .select(CLASS_COLUMNS)
         .eq("institution_id", institution_id)
-        .order("name")
         .execute()
         .data
         or []
@@ -259,8 +242,14 @@ def get_dashboard(
 
     results = fan_out({name: section(name) for name in SECTION_RPCS})
     payload = _compose(institution, selected, bounds, results, failed)
-    _cache_put(key, payload)
+    if not failed:  # a degraded payload is never served from the cache
+        _cache.put(key, payload)
     return payload
+
+
+def _count(source: dict | None, key: str) -> int | None:
+    """A count from a section's JSON; None when that section's RPC failed, never a fabricated 0."""
+    return None if source is None else source.get(key, 0)
 
 
 def _compose(
@@ -270,61 +259,71 @@ def _compose(
     results: dict,
     failed: set[str],
 ) -> dict:
-    counts = results.get("scope_counts") or {}
-    conv = results.get("conversations") or {}
-    scrum = results.get("scrum") or {}
+    counts, conv, scrum = (
+        results.get("scope_counts"),
+        results.get("conversations"),
+        results.get("scrum"),
+    )
+    counts_d, conv_d, scrum_d = (
+        counts or {},
+        conv or {},
+        scrum or {},
+    )  # for optional keys; counts go through _count
     trend_rows = results.get("trends") or {}
     generated_at = now_utc().isoformat()
     as_of = windows.parse_date(trend_rows.get("as_of"))
-    # the sparklines end at the range's end: a custom range in the past shows the twelve weeks up to it
+    # the sparklines end at the range's end: a custom range in the past shows the weeks up to it (as many
+    # as the rollup holds, up to twelve)
     sparklines = build_sparklines(
         trend_rows.get("weekly") or [], min(as_of, bounds.end) if as_of else None
     )
     prev_messages = None
-    if conv.get("prev_team_members") is not None and conv.get("prev_dm") is not None:
-        prev_messages = conv["prev_team_members"] + conv["prev_dm"]
+    if conv_d.get("prev_team_members") is not None and conv_d.get("prev_dm") is not None:
+        prev_messages = conv_d["prev_team_members"] + conv_d["prev_dm"]
     overview = {
-        "active_classes": counts.get("classes", 0),
-        "teams": counts.get("teams", 0),
-        "students": counts.get("students", 0),
-        "active_users_7d": counts.get("active_users_7d"),
-        "messages": conv.get("total", 0),
-        "stories_created": scrum.get("stories_created", 0),
-        "tasks_created": scrum.get("tasks_created", 0),
-        "story_points_created": scrum.get("story_points_created", 0),
-        "task_points_created": scrum.get("task_points_created", 0),
+        "active_classes": _count(counts, "classes"),
+        "teams": _count(counts, "teams"),
+        "students": _count(counts, "students"),
+        "active_users_7d": counts_d.get("active_users_7d"),
+        "messages": _count(conv, "total"),
+        "stories_created": _count(scrum, "stories_created"),
+        "tasks_created": _count(scrum, "tasks_created"),
+        "story_points_created": _count(scrum, "story_points_created"),
+        "task_points_created": _count(scrum, "task_points_created"),
         "on_time_rate": None,
         "deltas": {
-            "messages": delta(conv.get("total"), prev_messages),
+            "messages": delta(conv_d.get("total"), prev_messages),
             "stories_created": delta(
-                scrum.get("stories_created"), scrum.get("prev_stories_created")
+                scrum_d.get("stories_created"), scrum_d.get("prev_stories_created")
             ),
-            "tasks_created": delta(scrum.get("tasks_created"), scrum.get("prev_tasks_created")),
+            "tasks_created": delta(scrum_d.get("tasks_created"), scrum_d.get("prev_tasks_created")),
             "active_users_7d": delta(
-                counts.get("active_users_7d"), counts.get("active_users_prev_7d")
+                counts_d.get("active_users_7d"), counts_d.get("active_users_prev_7d")
             ),
             "on_time_rate": None,
         },
         "trends": sparklines,
     }
     conversations = {
-        "total": conv.get("total", 0),
-        "team_members": conv.get("team_members", 0),
-        "dm": conv.get("dm", 0),
+        "total": _count(conv, "total"),
+        "team_members": _count(conv, "team_members"),
+        "dm": _count(conv, "dm"),
         # the SQL returns only weeks with messages; the chart needs every Monday of the range
         "weekly": dense_weeks(
-            conv.get("weekly") or [], bounds.start, bounds.end, keys=("team_members", "dm")
-        ),
+            conv_d.get("weekly") or [], bounds.start, bounds.end, keys=("team_members", "dm")
+        )
+        if conv is not None
+        else [],
         "excluded": list(EXCLUDED_CONVERSATIONS),
     }
     scrum_section = {
         "live_as_of": generated_at,
-        "stories_created": scrum.get("stories_created", 0),
-        "tasks_created": scrum.get("tasks_created", 0),
-        "story_points_created": scrum.get("story_points_created", 0),
-        "task_points_created": scrum.get("task_points_created", 0),
-        "by_sprint": scrum.get("by_sprint", []),
-        "chars": scrum.get("chars", []),
+        "stories_created": _count(scrum, "stories_created"),
+        "tasks_created": _count(scrum, "tasks_created"),
+        "story_points_created": _count(scrum, "story_points_created"),
+        "task_points_created": _count(scrum, "task_points_created"),
+        "by_sprint": scrum_d.get("by_sprint", []),
+        "chars": scrum_d.get("chars", []),
     }
     trends = {
         "as_of": as_of.isoformat() if as_of else None,
@@ -354,18 +353,28 @@ def _compose(
         "scrum": scrum_section,
         "timeliness": copy.deepcopy(EMPTY_TIMELINESS),
         "trends": trends,
-        "breakdown": _breakdown(institution["id"], selected, counts, conv, scrum),
+        "breakdown": _breakdown(institution["id"], selected, counts_d, conv, scrum),
         "failures": failures,
     }
 
 
+def _scrum_columns(row: dict | None) -> dict:
+    row = row or {}
+    return {k: row.get(k, 0) for k in ("stories", "tasks", "points_done", "points_total")}
+
+
 def _breakdown(
-    institution_id: str, selected: dict | None, counts: dict, conv: dict, scrum: dict
+    institution_id: str, selected: dict | None, counts: dict, conv: dict | None, scrum: dict | None
 ) -> dict:
-    """Per class (no class filter) or per team (class selected), folded at k = 3, with live point rates."""
+    """Per class (no class filter) or per team (class selected), folded at k = 3, with live point rates.
+
+    Rows are ordered here (name, then id), never by the database's collation. A column whose source RPC
+    failed is None on every row, the folded one included.
+    """
+    conv_d, scrum_d = conv or {}, scrum or {}
     if selected is None:
-        conv_by = {r["class_id"]: r["team_messages"] for r in conv.get("by_class", [])}
-        scrum_by = {r["class_id"]: r for r in scrum.get("by_class", [])}
+        conv_by = {r["class_id"]: r["team_messages"] for r in conv_d.get("by_class", [])}
+        scrum_by = {r["class_id"]: r for r in scrum_d.get("by_class", [])}
         rows = [
             {
                 "id": c["class_id"],
@@ -373,45 +382,44 @@ def _breakdown(
                 "teams": c["teams"],
                 "students": c["students"],
                 "team_messages": conv_by.get(c["class_id"], 0),
-                "stories": scrum_by.get(c["class_id"], {}).get("stories", 0),
-                "tasks": scrum_by.get(c["class_id"], {}).get("tasks", 0),
-                "points_done": scrum_by.get(c["class_id"], {}).get("points_done", 0),
-                "points_total": scrum_by.get(c["class_id"], {}).get("points_total", 0),
+                **_scrum_columns(scrum_by.get(c["class_id"])),
                 "href": f"/app/analytics?institution={institution_id}&class={c['class_id']}",
             }
             for c in counts.get("by_class", [])
         ]
-        folded = privacy.fold_small_groups(
-            rows,
-            size_key="students",
-            sum_keys=("teams", "team_messages", "stories", "tasks", "points_done", "points_total"),
-        )
-        kind = "class"
+        kind, size_key = "class", "students"
+        sum_keys = ("teams", "team_messages", "stories", "tasks", "points_done", "points_total")
     else:
-        conv_by = {r["project_id"]: r["team_messages"] for r in conv.get("by_team", [])}
-        scrum_by = {r["project_id"]: r for r in scrum.get("by_team", [])}
+        conv_by = {r["project_id"]: r["team_messages"] for r in conv_d.get("by_team", [])}
+        scrum_by = {r["project_id"]: r for r in scrum_d.get("by_team", [])}
         rows = [
             {
                 "id": t["project_id"],
                 "name": t["name"],
                 "members": t["members"],
                 "team_messages": conv_by.get(t["project_id"], 0),
-                "stories": scrum_by.get(t["project_id"], {}).get("stories", 0),
-                "tasks": scrum_by.get(t["project_id"], {}).get("tasks", 0),
-                "points_done": scrum_by.get(t["project_id"], {}).get("points_done", 0),
-                "points_total": scrum_by.get(t["project_id"], {}).get("points_total", 0),
+                **_scrum_columns(scrum_by.get(t["project_id"])),
                 "href": f"/app/projects/{t['project_id']}/board",
             }
             for t in counts.get("by_team", [])
             if t["class_id"] == str(selected["id"])
         ]
-        folded = privacy.fold_small_groups(
-            rows,
-            size_key="members",
-            sum_keys=("team_messages", "stories", "tasks", "points_done", "points_total"),
-        )
-        kind = "team"
-    return {"kind": kind, "rows": [_finish_row(r) for r in folded]}
+        kind, size_key = "team", "members"
+        sum_keys = ("team_messages", "stories", "tasks", "points_done", "points_total")
+    rows.sort(key=lambda r: (_name_key(r["name"]), r["id"]))
+    folded = privacy.fold_small_groups(rows, size_key=size_key, sum_keys=sum_keys)
+    blank: set[str] = set()
+    if conv is None:
+        blank.add("team_messages")
+    if scrum is None:
+        blank.update({"stories", "tasks", "points_done_rate"})
+    finished = []
+    for row in folded:
+        row = _finish_row(row)
+        for column in blank:
+            row[column] = None
+        finished.append(row)
+    return {"kind": kind, "rows": finished}
 
 
 def _finish_row(row: dict) -> dict:

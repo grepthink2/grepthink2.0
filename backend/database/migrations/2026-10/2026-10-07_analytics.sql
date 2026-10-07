@@ -37,7 +37,7 @@ CREATE OR REPLACE FUNCTION public.analytics_scope_classes(p_institution uuid, p_
 RETURNS TABLE (class_id uuid, label text, start_date date, created_at timestamptz)
 LANGUAGE sql STABLE SET search_path = public AS $$
   SELECT c.id,
-         c.name || CASE WHEN c.term IS NOT NULL AND c.term <> '' THEN ' · ' || c.term ELSE '' END,
+         c.name || CASE WHEN nullif(btrim(c.term), '') IS NOT NULL THEN ' · ' || btrim(c.term) ELSE '' END,
          c.start_date,
          c.created_at
     FROM classes c
@@ -506,7 +506,7 @@ $$;
 -- the class rows in scope (every class the school ever had, deleted ones included, or the selected
 -- class); dm_messages from the institution rows, on days with or without class rows. Weeks start on
 -- Monday (days are already calendar days in the school's zone). Covers whole weeks from the Monday of
--- least(p_prev_from, as_of - 84 days) to p_to, so the previous range and a 12-week sparkline both fit
+-- least(p_prev_from, as_of - 84 days, p_to - 84 days) to p_to, so the previous range and a 12-week sparkline both fit
 -- and the first bucket is never a partial week.
 CREATE OR REPLACE FUNCTION public.analytics_trends(
   p_institution uuid, p_class uuid, p_from date, p_to date,
@@ -514,7 +514,8 @@ CREATE OR REPLACE FUNCTION public.analytics_trends(
 RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
   WITH as_of AS (SELECT max(day) AS d FROM analytics_daily WHERE institution_id = p_institution),
   lo AS (SELECT date_trunc('week', least(coalesce(p_prev_from, p_from),
-                                        coalesce((SELECT d FROM as_of), p_from) - 84)::timestamp)::date AS d),
+                                        coalesce((SELECT d FROM as_of), p_from) - 84,
+                                        p_to - 84)::timestamp)::date AS d),
   -- class rows of every class the school ever had (a deleted class keeps its rows: that is the point
   -- of the rollup), or of the one selected class
   class_rows AS (
