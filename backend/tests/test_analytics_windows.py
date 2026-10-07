@@ -1,11 +1,11 @@
-"""Date windows, folding (spec D8, 4.1 #16, §9 'windows.py bounds and previous ranges')."""
+"""Date windows (spec D8, §9 'windows.py bounds and previous ranges')."""
 
 import datetime as dt
 
 import pytest
 
 from app.analytics import windows
-from app.analytics.windows import RangeBounds, WindowError, fold_small_groups, range_bounds
+from app.analytics.windows import RangeBounds, WindowError, range_bounds
 
 TODAY = dt.date(2026, 10, 7)
 
@@ -60,14 +60,35 @@ def test_custom_range_rules():
         range_bounds(
             "custom", TODAY, custom_from=dt.date(2026, 1, 2), custom_to=dt.date(2026, 1, 1)
         )
+
+
+def test_custom_cap_is_two_calendar_years_not_a_day_count():
+    # an exact two-year pick across Feb 29 2028 is 731 days apart and still allowed
+    ok = range_bounds(
+        "custom", TODAY, custom_from=dt.date(2027, 3, 1), custom_to=dt.date(2029, 3, 1)
+    )
+    assert ok.days == 732
     with pytest.raises(WindowError, match=windows.RANGE_TOO_LONG):
         range_bounds(
-            "custom", TODAY, custom_from=dt.date(2024, 10, 6), custom_to=dt.date(2026, 10, 7)
-        )  # 731 days
-    ok = range_bounds(
-        "custom", TODAY, custom_from=dt.date(2024, 10, 7), custom_to=dt.date(2026, 10, 7)
-    )  # 730 days
-    assert ok.days == 731
+            "custom", TODAY, custom_from=dt.date(2027, 3, 1), custom_to=dt.date(2029, 3, 2)
+        )
+    # a range starting on Feb 29 may end on Feb 28 two years on, and no later
+    assert (
+        range_bounds(
+            "custom", TODAY, custom_from=dt.date(2024, 2, 29), custom_to=dt.date(2026, 2, 28)
+        ).days
+        == 731
+    )
+    with pytest.raises(WindowError, match=windows.RANGE_TOO_LONG):
+        range_bounds(
+            "custom", TODAY, custom_from=dt.date(2024, 2, 29), custom_to=dt.date(2026, 3, 1)
+        )
+
+
+def test_years_after_keeps_the_calendar_date_and_clamps_feb_29():
+    assert windows.years_after(dt.date(2026, 10, 7), 2) == dt.date(2028, 10, 7)
+    assert windows.years_after(dt.date(2024, 2, 29), 2) == dt.date(2026, 2, 28)
+    assert windows.years_after(dt.date(2024, 2, 29), 4) == dt.date(2028, 2, 29)
 
 
 def test_custom_is_calendar_dates_never_shifted_for_dst():
@@ -78,11 +99,12 @@ def test_custom_is_calendar_dates_never_shifted_for_dst():
     assert (b.start, b.end) == (dt.date(2026, 10, 25), dt.date(2026, 11, 1))
 
 
-def test_parse_date_accepts_dates_and_timestamps():
+def test_parse_date_reads_a_date_column_and_refuses_timestamps():
     assert windows.parse_date("2026-09-21") == dt.date(2026, 9, 21)
-    assert windows.parse_date("2026-09-21T07:00:00+00:00") == dt.date(2026, 9, 21)
     assert windows.parse_date(None) is None
     assert windows.parse_date("") is None
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        windows.parse_date("2026-09-21T07:00:00+00:00")  # its date part would be the UTC date
 
 
 def test_local_date_takes_the_calendar_date_in_the_school_zone():
@@ -99,43 +121,13 @@ def test_local_date_takes_the_calendar_date_in_the_school_zone():
     assert windows.local_date(None, "America/Los_Angeles") is None
 
 
-ROWS = [
-    {"id": "a", "name": "CSE 115A", "students": 41, "teams": 8, "team_messages": 228, "href": "/x"},
-    {"id": "b", "name": "CSE 115B", "students": 3, "teams": 1, "team_messages": 10, "href": "/y"},
-    {"id": "c", "name": "Pilot", "students": 2, "teams": 1, "team_messages": 5, "href": "/z"},
-    {"id": "d", "name": "Seminar", "students": 1, "teams": 1, "team_messages": 7, "href": "/w"},
-]
-
-
-def test_fold_keeps_groups_of_exactly_k_and_sums_the_rest():
-    out = fold_small_groups(ROWS, size_key="students", sum_keys=("teams", "team_messages"))
-    assert [r["id"] for r in out] == ["a", "b", "folded"]
-    assert all(r["kind"] == "row" for r in out[:2])
-    folded = out[2]
-    assert folded == {
-        "id": "folded",
-        "name": "Smaller groups (2)",
-        "kind": "folded",
-        "teams": 2,
-        "team_messages": 12,
-        "students": 3,
-    }
-    assert "href" not in folded
-
-
-def test_fold_is_a_no_op_without_small_groups_and_folds_everything_when_all_are_small():
-    big = [dict(r, students=10) for r in ROWS]
-    assert [
-        r["kind"] for r in fold_small_groups(big, size_key="students", sum_keys=("teams",))
-    ] == ["row"] * 4
-    tiny = [dict(r, students=1) for r in ROWS]
-    out = fold_small_groups(tiny, size_key="students", sum_keys=("teams",))
-    assert len(out) == 1 and out[0]["name"] == "Smaller groups (4)"
-    assert (
-        out[0]["teams"] == 11 and out[0]["students"] == 4
-    )  # sums: 8+1+1+1 teams, four students of one
-
-
-def test_fold_treats_a_missing_size_as_zero():
-    out = fold_small_groups([{"id": "n", "name": "No size"}], size_key="members", sum_keys=())
-    assert out[0]["kind"] == "folded" and out[0]["members"] == 0
+def test_local_date_follows_daylight_saving_and_reads_a_naive_timestamp_as_utc():
+    # Los Angeles leaves daylight time on 2026-11-01 at 09:00Z: 07:30Z on the 2nd is 23:30 on the 1st (PST),
+    # while 06:30Z on the 1st is still 23:30 on Oct 31 (PDT)
+    assert windows.local_date("2026-11-02T07:30:00Z", "America/Los_Angeles") == dt.date(2026, 11, 1)
+    assert windows.local_date("2026-11-01T06:30:00+00:00", "America/Los_Angeles") == dt.date(
+        2026, 10, 31
+    )
+    assert windows.local_date("2026-09-22T03:30:00", "America/Los_Angeles") == dt.date(
+        2026, 9, 21
+    )  # no offset → UTC

@@ -72,6 +72,32 @@ def test_panels_divide_by_the_week_s_team_count_and_split_current_from_previous(
     assert panels[2]["unit"] == "per team" and panels[2]["current"][2]["value"] == 20.0
 
 
+def test_a_range_ending_on_sunday_leaves_the_next_week_out_and_one_ending_on_monday_takes_it():
+    rows = WEEKLY + [dict(WEEKLY[4], week_start="2026-10-05")]
+    sunday = RangeBounds(
+        "custom",
+        dt.date(2026, 9, 8),
+        dt.date(2026, 10, 4),
+        dt.date(2026, 8, 12),
+        dt.date(2026, 9, 7),
+    )
+    monday = RangeBounds(
+        "custom",
+        dt.date(2026, 9, 8),
+        dt.date(2026, 10, 5),
+        dt.date(2026, 8, 11),
+        dt.date(2026, 9, 7),
+    )
+    assert [c["week_start"] for c in trends.build_panels(rows, sunday)[0]["current"]] == [
+        "2026-09-14",
+        "2026-09-21",
+        "2026-09-28",
+    ]
+    assert [c["week_start"] for c in trends.build_panels(rows, monday)[0]["current"]][
+        -1
+    ] == "2026-10-05"
+
+
 def test_panels_have_no_previous_series_for_the_all_preset():
     panels = trends.build_panels(
         WEEKLY, RangeBounds("all", dt.date(2026, 8, 1), dt.date(2026, 10, 7), None, None)
@@ -125,3 +151,13 @@ def test_dense_weeks_fills_quiet_weeks_with_zeros_from_the_week_of_start_to_the_
     assert trends.dense_weeks([], dt.date(2026, 10, 5), dt.date(2026, 10, 5), keys=("dm",)) == [
         {"week_start": "2026-10-05", "dm": 0}
     ]
+
+
+def test_dense_weeks_drops_rows_outside_the_range():
+    rows = [
+        {"week_start": "2026-08-31", "dm": 9},  # before the range
+        {"week_start": "2026-09-14", "dm": 4},
+        {"week_start": "2026-10-12", "dm": 2},  # after it
+    ]
+    out = trends.dense_weeks(rows, dt.date(2026, 9, 8), dt.date(2026, 9, 20), keys=("dm",))
+    assert out == [{"week_start": "2026-09-07", "dm": 0}, {"week_start": "2026-09-14", "dm": 4}]

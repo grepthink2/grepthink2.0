@@ -37,22 +37,29 @@ def _weeks_between(weekly: list[dict], start: dt.date, end: dt.date) -> list[dic
     return [r for r in weekly if start <= dt.date.fromisoformat(r["week_start"]) <= end]
 
 
+def _series(weekly: list[dict], metric: str, start: dt.date, end: dt.date) -> list[dict]:
+    """The per-team points of one metric over the weeks whose Monday falls in ``start..end``."""
+    return [
+        {"week_start": r["week_start"], "value": _per_team(r, metric)}
+        for r in _weeks_between(weekly, start, end)
+    ]
+
+
 def build_panels(weekly: list[dict], bounds: RangeBounds) -> list[dict]:
     """One panel per PANELS entry: ``current`` over the range, ``previous`` over the previous range or None."""
     panels = []
     for key, title, unit, metric in PANELS:
-        current = [
-            {"week_start": r["week_start"], "value": _per_team(r, metric)}
-            for r in _weeks_between(weekly, bounds.start, bounds.end)
-        ]
         previous = None
         if bounds.prev_start is not None and bounds.prev_end is not None:
-            previous = [
-                {"week_start": r["week_start"], "value": _per_team(r, metric)}
-                for r in _weeks_between(weekly, bounds.prev_start, bounds.prev_end)
-            ]
+            previous = _series(weekly, metric, bounds.prev_start, bounds.prev_end)
         panels.append(
-            {"key": key, "title": title, "unit": unit, "current": current, "previous": previous}
+            {
+                "key": key,
+                "title": title,
+                "unit": unit,
+                "current": _series(weekly, metric, bounds.start, bounds.end),
+                "previous": previous,
+            }
         )
     return panels
 
@@ -85,6 +92,7 @@ def dense_weeks(
     """One row per Monday from the week of ``start`` to the week of ``end``; missing weeks get zeros.
 
     The SQL returns only weeks with activity, so a quiet week would otherwise vanish from a chart's axis.
+    Rows outside those weeks are dropped.
     """
     by_week = {r["week_start"]: r for r in rows}
     out = []

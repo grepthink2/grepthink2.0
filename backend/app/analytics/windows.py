@@ -1,4 +1,4 @@
-"""Pure date-window and folding helpers for analytics (spec D8 and decision 16).
+"""Pure date-window helpers for analytics (spec D8).
 
 No database and no clock: callers pass ``today`` in the school's zone. A range is a pair of inclusive
 calendar dates; the SQL turns them into school-zone midnights. ``WindowError`` carries the fixed
@@ -13,11 +13,8 @@ from typing import Literal
 from zoneinfo import ZoneInfo
 
 Window = Literal["7d", "30d", "90d", "class", "all", "custom"]
-WINDOWS: tuple[str, ...] = ("7d", "30d", "90d", "class", "all", "custom")
 PRESET_DAYS: dict[str, int] = {"7d": 7, "30d": 30, "90d": 90}
-MAX_CUSTOM_SPAN_DAYS = 730  # "a range may span at most 2 years" (spec Q-B5)
-K_ANONYMITY = 3  # decision 16
-FOLDED_LABEL = "Smaller groups"
+MAX_CUSTOM_SPAN_YEARS = 2  # "a range may span at most 2 years" (spec D8, Q-B5): calendar years
 
 CUSTOM_NEEDS_DATES = "from and to are required for a custom range"
 TO_BEFORE_FROM = "to must be on or after from"
@@ -31,7 +28,7 @@ class WindowError(ValueError):
 
 @dataclass(frozen=True)
 class RangeBounds:
-    window: str
+    window: Window
     start: dt.date
     end: dt.date
     prev_start: dt.date | None
@@ -42,8 +39,16 @@ class RangeBounds:
         return (self.end - self.start).days + 1
 
 
+def years_after(day: dt.date, years: int) -> dt.date:
+    """The same calendar date ``years`` later; Feb 29 lands on Feb 28 when that year has none."""
+    try:
+        return day.replace(year=day.year + years)
+    except ValueError:
+        return day.replace(year=day.year + years, day=28)
+
+
 def range_bounds(
-    window: str,
+    window: Window,
     today: dt.date,
     *,
     class_start: dt.date | None = None,
@@ -66,7 +71,7 @@ def range_bounds(
             raise WindowError(CUSTOM_NEEDS_DATES)
         if custom_to < custom_from:
             raise WindowError(TO_BEFORE_FROM)
-        if (custom_to - custom_from).days > MAX_CUSTOM_SPAN_DAYS:
+        if custom_to > years_after(custom_from, MAX_CUSTOM_SPAN_YEARS):
             raise WindowError(RANGE_TOO_LONG)
         start, end = custom_from, custom_to
     else:
@@ -78,47 +83,30 @@ def range_bounds(
 
 
 def parse_date(value: str | None) -> dt.date | None:
-    """``YYYY-MM-DD`` or an ISO timestamp (its date part, as written) → date; blank → None."""
+    """A date column's value (``YYYY-MM-DD``) → date; blank → None.
+
+    A timestamp is refused rather than cut down: its date part would be the UTC date, which is the
+    mistake ``local_date`` exists to avoid.
+    """
     if not value:
         return None
-    return dt.date.fromisoformat(value[:10])
+    if len(value) != 10:
+        raise ValueError(f"expected a YYYY-MM-DD date, got {value!r}")
+    return dt.date.fromisoformat(value)
 
 
 def local_date(value: str | None, tz: str) -> dt.date | None:
     """The calendar date of an ISO timestamp in the school's zone; a bare date is returned as is.
 
     ``classes.created_at`` is a UTC instant: a class created on a Pacific evening is already "tomorrow" in
-    UTC, so the class and all-time windows take their start from the school's calendar, not UTC's.
+    UTC, so the class and all-time windows take their start from the school's calendar, not UTC's. A
+    timestamp without an offset is read as UTC, never as the server's local time.
     """
     if not value:
         return None
     if len(value) <= 10:
         return dt.date.fromisoformat(value)
-    return dt.datetime.fromisoformat(value).astimezone(ZoneInfo(tz)).date()
-
-
-def fold_small_groups(
-    rows: list[dict],
-    *,
-    size_key: str,
-    sum_keys: tuple[str, ...],
-    k: int = K_ANONYMITY,
-    label: str = FOLDED_LABEL,
-) -> list[dict]:
-    """Decision 16: rows whose ``size_key`` is below ``k`` become one trailing ``kind: 'folded'`` row.
-
-    Kept rows get ``kind: 'row'``. The folded row carries ``id``, ``name`` ("Smaller groups (n)"),
-    the summed ``sum_keys`` and the summed ``size_key``; nothing else (so never an ``href``).
-    """
-    kept: list[dict] = []
-    small: list[dict] = []
-    for row in rows:
-        target = small if (row.get(size_key) or 0) < k else kept
-        target.append({**row, "kind": "row"})
-    if not small:
-        return kept
-    folded: dict = {"id": "folded", "name": f"{label} ({len(small)})", "kind": "folded"}
-    for key in sum_keys:
-        folded[key] = sum((r.get(key) or 0) for r in small)
-    folded[size_key] = sum((r.get(size_key) or 0) for r in small)
-    return kept + [folded]
+    instant = dt.datetime.fromisoformat(value)
+    if instant.tzinfo is None:
+        instant = instant.replace(tzinfo=dt.UTC)
+    return instant.astimezone(ZoneInfo(tz)).date()
