@@ -112,6 +112,7 @@ def scrum_db(monkeypatch, **tables) -> ScrumFake:
             profile(MEETING_TA, "Mo"),
             profile(STUDENT, "Sam"),
         ],
+        "events": [],  # a board load records board_viewed here
     }
     seed.update(tables)
     fake = ScrumFake(relations=RELATIONS, **seed)
