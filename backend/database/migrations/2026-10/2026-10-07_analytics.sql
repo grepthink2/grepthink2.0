@@ -340,9 +340,11 @@ GRANT EXECUTE ON FUNCTION public.analytics_scrum(uuid, uuid, date, date, date, d
 
 -- ------------------------------------------------------------------ nightly rollup ----
 -- One row per (institution, class or NULL, calendar day in the school's zone, metric). Written by
--- analytics_rollup_day for yesterday (pg_cron, 09:00 UTC) and by analytics_rollup_range for a backfill
--- (activity metrics only: a board snapshot cannot be reconstructed for a past day). Upserts, so a
--- re-run changes nothing. class_id has no foreign key on purpose (header).
+-- analytics_rollup_day(day, true) for yesterday (pg_cron, 09:00 UTC) and by analytics_rollup_range for
+-- a backfill (activity metrics only: a board snapshot cannot be reconstructed for a past day). Upserts:
+-- re-running the same morning changes nothing; re-running a PAST day with p_snapshot = true would
+-- overwrite that day's board snapshot with today's board, so the default is false and only the cron
+-- passes true. class_id has no foreign key on purpose (header).
 CREATE TABLE IF NOT EXISTS public.analytics_daily (
   institution_id uuid        NOT NULL REFERENCES public.institutions (id) ON DELETE CASCADE,
   class_id       uuid,
@@ -355,8 +357,9 @@ CREATE TABLE IF NOT EXISTS public.analytics_daily (
 CREATE INDEX IF NOT EXISTS analytics_daily_inst_day_idx ON public.analytics_daily (institution_id, day);
 ALTER TABLE public.analytics_daily ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.analytics_daily FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.analytics_daily TO service_role;   -- explicit: analytics_trends is SECURITY INVOKER
 
-CREATE OR REPLACE FUNCTION public.analytics_rollup_day(p_day date, p_snapshot boolean DEFAULT true)
+CREATE OR REPLACE FUNCTION public.analytics_rollup_day(p_day date, p_snapshot boolean DEFAULT false)
 RETURNS integer LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
   inst      record;
@@ -366,12 +369,17 @@ DECLARE
   k         integer;
 BEGIN
   FOR inst IN SELECT id, timezone FROM institutions ORDER BY id LOOP
+    -- one school's bad zone name must not stop the others (AT TIME ZONE raises on an unknown name)
+    IF NOT EXISTS (SELECT 1 FROM pg_timezone_names WHERE name = inst.timezone) THEN
+      RAISE WARNING 'analytics_rollup_day: institution % has unknown timezone %; skipped', inst.id, inst.timezone;
+      CONTINUE;
+    END IF;
     day_start := p_day::timestamp AT TIME ZONE inst.timezone;
     day_end   := (p_day + 1)::timestamp AT TIME ZONE inst.timezone;
 
-    -- per class: one row per metric for EVERY class of the school, zeros included, so weekly
-    -- averages over the rollup never skip a quiet class
-    WITH scope AS (SELECT class_id FROM analytics_scope_classes(inst.id, NULL)),
+    -- per class: one row per metric for EVERY class of the school that existed by the end of the day,
+    -- zeros included, so weekly averages over the rollup never skip a quiet class
+    WITH scope AS (SELECT class_id FROM analytics_scope_classes(inst.id, NULL) WHERE created_at < day_end),
     teams AS (SELECT * FROM analytics_scope_teams(inst.id, NULL)),
     channels AS (
       SELECT cv.id, t.class_id, t.project_id
@@ -393,9 +401,9 @@ BEGIN
       SELECT t.class_id, t.project_id
         FROM task_moves mv JOIN tasks tk ON tk.id = mv.task_id JOIN teams t ON t.project_id = tk.project_id
        WHERE mv.moved_at >= day_start AND mv.moved_at < day_end),
-    day_views AS (
-      SELECT e.class_id
-        FROM events e JOIN scope s ON s.class_id = e.class_id
+    day_views AS (                                 -- by project, so the team rule applies like every other metric
+      SELECT t.class_id
+        FROM events e JOIN teams t ON t.project_id = e.project_id
        WHERE e.kind = 'board_viewed' AND e.occurred_at >= day_start AND e.occurred_at < day_end),
     active_teams AS (
       SELECT DISTINCT class_id, project_id FROM (
@@ -419,8 +427,13 @@ BEGIN
              (SELECT count(*) FROM active_teams a WHERE a.class_id = s.class_id) FROM scope s
       UNION ALL SELECT s.class_id, 'board_views',
              (SELECT count(*) FROM day_views v WHERE v.class_id = s.class_id) FROM scope s
-      UNION ALL SELECT s.class_id, 'teams',
-             (SELECT count(*) FROM teams t WHERE t.class_id = s.class_id AND t.members >= 1) FROM scope s
+      UNION ALL SELECT s.class_id, 'teams',          -- as of the day: projects that existed by then with a
+             (SELECT count(*) FROM projects p         -- current member who had joined by then (membership
+               WHERE p.class_id = s.class_id          -- history is not kept, decision 12, so this is the
+                 AND p.created_at < day_end           -- closest honest figure for a backfilled day)
+                 AND EXISTS (SELECT 1 FROM project_members pm
+                              WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL
+                                AND pm.created_at < day_end)) FROM scope s
       UNION ALL
       SELECT s.class_id, m.metric, m.value
         FROM scope s
@@ -477,8 +490,8 @@ DECLARE
   d date;
   n integer := 0;
 BEGIN
-  IF p_to < p_from THEN
-    RAISE EXCEPTION 'analytics_rollup_range: p_to % is before p_from %', p_to, p_from;
+  IF p_from IS NULL OR p_to IS NULL OR p_to < p_from THEN
+    RAISE EXCEPTION 'analytics_rollup_range: bad range % .. %', p_from, p_to;
   END IF;
   FOR d IN SELECT generate_series(p_from, p_to, interval '1 day')::date LOOP
     n := n + analytics_rollup_day(d, false);
@@ -491,15 +504,17 @@ $$;
 -- Weekly rows the backend turns into the Trends panels and the tile sparklines: team messages,
 -- tasks created, the week's last points_done snapshot and the week's average team count, summed over
 -- the class rows in scope (every class the school ever had, deleted ones included, or the selected
--- class); dm_messages from the institution rows, on days with or without class rows. Weeks start on Monday (days are
--- already calendar days in the school's zone). Covers from least(p_prev_from, as_of - 84 days) to
--- p_to, so the previous range and a 12-week sparkline both fit.
+-- class); dm_messages from the institution rows, on days with or without class rows. Weeks start on
+-- Monday (days are already calendar days in the school's zone). Covers whole weeks from the Monday of
+-- least(p_prev_from, as_of - 84 days) to p_to, so the previous range and a 12-week sparkline both fit
+-- and the first bucket is never a partial week.
 CREATE OR REPLACE FUNCTION public.analytics_trends(
   p_institution uuid, p_class uuid, p_from date, p_to date,
   p_prev_from date, p_prev_to date, p_tz text)
 RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
   WITH as_of AS (SELECT max(day) AS d FROM analytics_daily WHERE institution_id = p_institution),
-  lo AS (SELECT least(coalesce(p_prev_from, p_from), coalesce((SELECT d FROM as_of), p_from) - 84) AS d),
+  lo AS (SELECT date_trunc('week', least(coalesce(p_prev_from, p_from),
+                                        coalesce((SELECT d FROM as_of), p_from) - 84)::timestamp)::date AS d),
   -- class rows of every class the school ever had (a deleted class keeps its rows: that is the point
   -- of the rollup), or of the one selected class
   class_rows AS (
@@ -653,25 +668,46 @@ SELECT coalesce(bool_and(extract(isodow FROM (w->>'week_start')::date) = 1), tru
   FROM conv, jsonb_array_elements(j->'weekly') w;
 
 -- ======================================================================= CHECK (part 2) ====
--- Expected: fn_count above is now 11; daily_rls = t; no client grants on analytics_daily;
---   first_run_rows > 0 and second_run_rows = first_run_rows; even_rows = t (every class of the day has
---   the same number of metric rows: 14 with the snapshot) and inst_rows_ok = t (two institution rows per
---   school); a class with no activity still has a team_messages row with value 0 (zero_rows ≥ 1);
+-- Expected: fn_count above is now 11; daily_rls = t; anon_select = f, auth_select = f, service_select = t;
+--   first_run_rows_ok = t (yesterday's run writes 14 rows per class that existed and 2 per school),
+--   second_run_same = t (a re-run writes the same number), backfill_rows_ok = t (a backfill day writes
+--   the 8 activity rows per class, no snapshot); team_day_match = t and dm_day_match = t (yesterday's
+--   summed team_messages and the school's dm_messages equal direct counts over the school-zone day);
+--   quiet_class_rows ≥ 0 (classes with no team messages yesterday still have a row with value 0);
 --   weeks > 0 after one rollup and weeks_start_on_monday = t (vacuously true on no data);
 --   prev_bound_match = t (with a previous range set, the previous team and DM totals equal direct counts
 --   over the previous bounds — pins the message CTEs' lower bound); prev_active_rule = t
 --   (active_users_prev_7d is NULL exactly when no login event is older than 14 days).
 SELECT relrowsecurity AS daily_rls FROM pg_class WHERE oid = 'public.analytics_daily'::regclass;
-SELECT grantee, privilege_type FROM information_schema.role_table_grants
- WHERE table_schema = 'public' AND table_name = 'analytics_daily' AND grantee IN ('anon', 'authenticated');
-SELECT analytics_rollup_day(current_date - 1) AS first_run_rows;
-SELECT analytics_rollup_day(current_date - 1) AS second_run_rows;
-SELECT count(DISTINCT c) = 1 AS even_rows
-  FROM (SELECT count(*) AS c FROM analytics_daily
-         WHERE day = current_date - 1 AND class_id IS NOT NULL GROUP BY class_id) x;
-SELECT count(*) = 2 * (SELECT count(*) FROM institutions) AS inst_rows_ok
-  FROM analytics_daily WHERE day = current_date - 1 AND class_id IS NULL;
-SELECT count(*) AS zero_rows FROM analytics_daily
+SELECT has_table_privilege('anon', 'public.analytics_daily', 'SELECT')          AS anon_select,
+       has_table_privilege('authenticated', 'public.analytics_daily', 'SELECT') AS auth_select,
+       has_table_privilege('service_role', 'public.analytics_daily', 'SELECT')  AS service_select;
+WITH k AS (
+  SELECT (SELECT count(*) FROM classes c JOIN institutions i ON i.id = c.institution_id
+           WHERE c.created_at < (current_date::timestamp AT TIME ZONE i.timezone))        AS cls_yesterday,
+         (SELECT count(*) FROM classes c JOIN institutions i ON i.id = c.institution_id
+           WHERE c.created_at < ((current_date - 1)::timestamp AT TIME ZONE i.timezone))  AS cls_day_before,
+         (SELECT count(*) FROM institutions WHERE timezone IN (SELECT name FROM pg_timezone_names)) AS sch)
+SELECT analytics_rollup_day(current_date - 1, true)  = 14 * cls_yesterday  + 2 * sch AS first_run_rows_ok,
+       analytics_rollup_day(current_date - 1, true)  = 14 * cls_yesterday  + 2 * sch AS second_run_same,
+       analytics_rollup_day(current_date - 2, false) =  8 * cls_day_before + 2 * sch AS backfill_rows_ok
+  FROM k;
+WITH args AS (SELECT i.id AS inst, ((current_date - 1)::timestamp AT TIME ZONE i.timezone) AS d0,
+                     (current_date::timestamp AT TIME ZONE i.timezone) AS d1
+                FROM institutions i WHERE i.slug = 'ucsc')
+SELECT (SELECT coalesce(sum(value), 0) FROM analytics_daily ad, args a
+         WHERE ad.institution_id = a.inst AND ad.day = current_date - 1 AND ad.metric = 'team_messages')
+         = (SELECT count(*) FROM messages m JOIN conversations cv ON cv.id = m.conversation_id
+              JOIN projects p ON p.id = cv.project_id JOIN classes c ON c.id = p.class_id, args a
+             WHERE cv.type = 'team_members' AND c.institution_id = a.inst
+               AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = p.id AND pm.user_id IS NOT NULL)
+               AND m.created_at >= a.d0 AND m.created_at < a.d1) AS team_day_match,
+       (SELECT coalesce(sum(value), 0) FROM analytics_daily ad, args a
+         WHERE ad.institution_id = a.inst AND ad.day = current_date - 1 AND ad.class_id IS NULL AND ad.metric = 'dm_messages')
+         = (SELECT count(*) FROM messages m
+              JOIN analytics_counted_dm((SELECT inst FROM args)) cd ON cd.conversation_id = m.conversation_id, args a
+             WHERE m.created_at >= a.d0 AND m.created_at < a.d1) AS dm_day_match;
+SELECT count(*) AS quiet_class_rows FROM analytics_daily
  WHERE day = current_date - 1 AND metric = 'team_messages' AND value = 0;
 WITH args AS (SELECT (SELECT id FROM institutions WHERE slug = 'ucsc') AS inst),
      tr AS (SELECT analytics_trends(inst, NULL, current_date - 29, current_date, current_date - 59, current_date - 30,
@@ -707,7 +743,9 @@ SELECT (j->'active_users_prev_7d' = 'null'::jsonb)
          = NOT EXISTS (SELECT 1 FROM events WHERE kind = 'login' AND occurred_at < now() - interval '14 days') AS prev_active_rule
   FROM sc;
 
--- Undo (the backend answers 200 with every section in failures[] while the functions are missing):
+-- Undo. Run the cron file's Undo FIRST (or the nightly job fails on a missing function). The backend
+-- answers 200 with every section in failures[] while the functions are missing. DROP TABLE destroys the
+-- board-snapshot history, which cannot be rebuilt — export analytics_daily before dropping it.
 --   DROP FUNCTION IF EXISTS public.analytics_trends(uuid, uuid, date, date, date, date, text);
 --   DROP FUNCTION IF EXISTS public.analytics_rollup_range(date, date);
 --   DROP FUNCTION IF EXISTS public.analytics_rollup_day(date, boolean);
