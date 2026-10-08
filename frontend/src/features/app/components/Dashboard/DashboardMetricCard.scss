@@ -58,8 +58,8 @@
 
   // Optional slots (analytics StatTile): a delta and a sparkline. The class
   // Dashboard passes neither, so none of these render there.
-  // The comparison drops below the figure as a whole when the tile is too narrow for both (the analytics page keeps
-  // each date in it whole with no-break spaces, so a label longer than the tile breaks only between dates).
+  // The comparison drops below the figure as a whole when the tile is too narrow for both. The analytics page makes the
+  // spaces inside each date no-break, so a label longer than the tile breaks at its other spaces, never inside a date.
   &__delta {
     font-size: $font-size-sm;
     display: flex;

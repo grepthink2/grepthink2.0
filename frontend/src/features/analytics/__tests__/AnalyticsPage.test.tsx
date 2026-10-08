@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -55,7 +55,7 @@ describe('AnalyticsPage', () => {
     expect(screen.queryByText(/On time/)).toBeNull();
     expect(screen.getByText(/Aggregates only\. No individual student is identified/)).toBeInTheDocument();
   });
-  it('keeps each date of the Messages comparison whole, so a narrow tile breaks it only between dates', async () => {
+  it('keeps each date of the Messages comparison whole, so a narrow tile never breaks it inside a date', async () => {
     renderPage();
     await waitFor(() => expect(within(tile('Messages')).getByText('1,284')).toBeInTheDocument());
     // textContent: Testing Library's text matcher would read a no-break space as a space
@@ -200,17 +200,24 @@ describe('AnalyticsPage', () => {
     const alerts = screen.getAllByRole('alert');
     await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(getAnalyticsDashboard).toHaveBeenCalledTimes(2); // the retry is in flight
-    expect(screen.getAllByRole('alert')).toEqual(alerts); // the same nodes, never unmounted
+    const during = screen.getAllByRole('alert');
+    expect(during).toHaveLength(alerts.length);
+    during.forEach((node, i) => expect(node).toBe(alerts[i])); // the same nodes, never unmounted
     expect(screen.getAllByText('Could not load')).toHaveLength(5); // the tiles keep their hint, not skeletons
   });
   it('shows a failed scope request as a failed load and recovers on Refresh', async () => {
-    getAnalyticsScope.mockRejectedValueOnce(unavailable());
-    renderPage('/app/analytics');
+    let answerScope!: (s: ApiAnalyticsScope) => void;
+    getAnalyticsScope
+      .mockRejectedValueOnce(unavailable())
+      .mockImplementationOnce(() => new Promise((res) => { answerScope = res; }));
+    const { container } = renderPage('/app/analytics');
     await waitFor(() => expect(screen.getByText('The latest request failed (HTTP 503).')).toHaveAttribute('role', 'alert'));
     expect(screen.getAllByText('This card could not load.')).toHaveLength(4);
     expect(screen.getAllByText('Could not load')).toHaveLength(5);
     expect(getAnalyticsDashboard).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    expect(container.querySelector('.gt-analytics')).toHaveAttribute('aria-busy', 'true'); // the scope is asked again
+    await act(async () => answerScope(SCOPE));
     expect(await screen.findByText(/1,284 messages/)).toBeInTheDocument();
     expect(screen.queryByRole('alert')).toBeNull();
   });

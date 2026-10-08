@@ -115,7 +115,7 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="gt-analytics" aria-busy={pending || refetching}>
+    <div className="gt-analytics" aria-busy={pending || refetching || scopeLoading}>
       <header className="gt-analytics__header">
         <h1 className="gt-analytics__title"><BarChart3 size={20} aria-hidden="true" /> Analytics</h1>
         {institution ? <span className="gt-analytics__badge">{institution.name}</span> : null}
