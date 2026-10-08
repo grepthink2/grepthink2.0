@@ -91,6 +91,8 @@ def build_sparklines(weekly: list[dict], as_of: dt.date | None) -> dict[str, lis
     rows = [r for r in complete if _monday(r) >= first]
     return {
         "messages": [float(r["team_messages"]) + float(r["dm_messages"]) for r in rows],
+        # team channels only: the Messages tile of the class view, which leaves the school's DMs out
+        "team_messages": [float(r["team_messages"]) for r in rows],
         "tasks_created": [float(r["tasks_created"]) for r in rows],
     }
 

@@ -293,6 +293,8 @@ def _compose(
         "on_time_rate": None,
         "deltas": {
             "messages": delta(conv_d.get("total"), prev_messages),
+            # team channels only, for the class view, whose tile leaves out the school-wide DMs (spec Q-B4)
+            "team_messages": delta(conv_d.get("team_members"), conv_d.get("prev_team_members")),
             "stories_created": delta(
                 scrum_d.get("stories_created"), scrum_d.get("prev_stories_created")
             ),

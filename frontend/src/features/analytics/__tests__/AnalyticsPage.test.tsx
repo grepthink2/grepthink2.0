@@ -30,6 +30,13 @@ const renderPage = (path = `/app/analytics?institution=${DASHBOARD.meta.institut
 const tile = (label: string) => screen.getByText(label).closest('.metric-card') as HTMLElement;
 const card = (title: RegExp) => screen.getByRole('heading', { name: title }).closest('.gt-chart-card') as HTMLElement;
 const unavailable = () => new ApiError(503, 'Service unavailable', 'Request failed with status 503', 'database_unavailable');
+/** The payload for CSE 115A: its team channels, and the school's direct messages beside them. */
+const CLASS_VIEW: ApiAnalyticsDashboard = {
+  ...DASHBOARD,
+  meta: { ...DASHBOARD.meta, class: { id: 'c1', label: 'CSE 115A · Fall 2026' } },
+  overview: { ...DASHBOARD.overview, trends: { ...DASHBOARD.overview.trends, team_messages: [40, 55] } },
+};
+const sparkVertices = (el: HTMLElement) => el.querySelector('.metric-card__spark polyline')!.getAttribute('points')!.split(' ').length;
 
 beforeEach(() => {
   auth.canCreateClasses = false;
@@ -60,6 +67,25 @@ describe('AnalyticsPage', () => {
     await waitFor(() => expect(within(tile('Messages')).getByText('1,284')).toBeInTheDocument());
     // textContent: Testing Library's text matcher would read a no-break space as a space
     expect(within(tile('Messages')).getByText(/^vs previous/).textContent).toBe('vs previous Aug 7 – Sep 5');
+  });
+  it('shows the school-wide Messages tile, its delta and its sparkline without a class', async () => {
+    renderPage();
+    await waitFor(() => expect(within(tile('Messages')).getByText('1,284')).toBeInTheDocument());
+    expect(within(tile('Messages')).getByText('+18%')).toBeInTheDocument();
+    expect(sparkVertices(tile('Messages'))).toBe(DASHBOARD.overview.trends.messages!.length);
+    expect(screen.queryByText(/Direct messages are school-wide/)).toBeNull();
+    expect(screen.getByText('1,284 messages · Sep 6 – Oct 5 · direct messages are school-wide')).toBeInTheDocument();
+  });
+  it('shows the class\'s team messages in that tile when a class is selected, with the school\'s direct messages as a hint', async () => {
+    getAnalyticsDashboard.mockResolvedValue(CLASS_VIEW);
+    renderPage(`/app/analytics?institution=${DASHBOARD.meta.institution.id}&class=c1`);
+    await waitFor(() => expect(within(tile('Team messages')).getByText('572')).toBeInTheDocument());
+    const messages = tile('Team messages');
+    expect(within(messages).getByText('Direct messages are school-wide: 712')).toBeInTheDocument();
+    expect(within(messages).getByText('+14%')).toBeInTheDocument(); // deltas.team_messages, not deltas.messages
+    expect(sparkVertices(messages)).toBe(2); // trends.team_messages
+    expect(screen.queryByText('Messages')).toBeNull();
+    expect(screen.getByText('572 team messages · Sep 6 – Oct 5 · direct messages are school-wide')).toBeInTheDocument();
   });
   it('switches the scrum unit without a request and keeps the other cards', async () => {
     renderPage();

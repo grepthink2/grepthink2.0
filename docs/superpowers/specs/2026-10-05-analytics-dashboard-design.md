@@ -344,6 +344,11 @@ GET /api/analytics/dashboard?institution_id=…&class_id=…&window=30d[&from=20
   200 with failures[] when a section's function fails
 ```
 
+The overview's `deltas` and `trends` carry `team_messages` (team channels only) beside `messages` (team
+channels plus the school-wide direct messages), so with a class selected the page's Messages tile shows that
+class's team messages (`conversations.team_members`) with their own delta and sparkline and names the
+school-wide direct messages in its hint (Q-B4).
+
 Both routes join `frontend/public/.well-known/grepthink-actions.json` (`view_analytics_scope`,
 `view_analytics_dashboard`, role `instructor`) and AGENTS.md's API-surface line.
 

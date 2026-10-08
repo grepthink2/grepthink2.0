@@ -79,9 +79,15 @@ export default function AnalyticsPage() {
   const vs = !range ? ''
     : range.previous_from && range.previous_to ? `vs previous ${wholeDates(range.previous_from, range.previous_to)}`
     : 'no previous range';
+  // With a class selected, the Messages tile and the Conversations footnote lead with that class's team-channel messages:
+  // direct messages are counted for the whole school, so they appear beside it, never in it (spec Q-B4).
+  const classView = Boolean(d?.meta.class);
   // A card whose section failed shows no footnote: its counts are null.
   const conversationsFootnote = d && range && !d.failures.includes('conversations')
-    ? `${compactNumber(d.conversations.total)} messages · ${rangeLabel(range.from, range.to)} · direct messages are school-wide`
+    ? (classView
+      ? `${compactNumber(d.conversations.team_members)} team messages`
+      : `${compactNumber(d.conversations.total)} messages`)
+      + ` · ${rangeLabel(range.from, range.to)} · direct messages are school-wide`
     : undefined;
   const scrumFootnote = d && !d.failures.includes('scrum')
     ? `${compactNumber(d.scrum.stories_created)} stories (${compactNumber(d.scrum.story_points_created)} pts) · `
@@ -148,15 +154,27 @@ export default function AnalyticsPage() {
             : undefined}
           loading={pending}
         />
-        <StatTile
-          label="Messages"
-          value={o?.messages ?? null}
-          icon={MessageSquare}
-          delta={o ? { value: o.deltas.messages ?? null, vsLabel: vs, goodWhenUp: true } : undefined}
-          trend={o?.trends.messages}
-          hint={hintFor(o?.messages)}
-          loading={pending}
-        />
+        {classView ? (
+          <StatTile
+            label="Team messages"
+            value={d?.conversations.team_members ?? null}
+            icon={MessageSquare}
+            delta={o ? { value: o.deltas.team_messages ?? null, vsLabel: vs, goodWhenUp: true } : undefined}
+            trend={o?.trends.team_messages}
+            hint={hintFor(d?.conversations.team_members) ?? `Direct messages are school-wide: ${compactNumber(d?.conversations.dm)}`}
+            loading={pending}
+          />
+        ) : (
+          <StatTile
+            label="Messages"
+            value={o?.messages ?? null}
+            icon={MessageSquare}
+            delta={o ? { value: o.deltas.messages ?? null, vsLabel: vs, goodWhenUp: true } : undefined}
+            trend={o?.trends.messages}
+            hint={hintFor(o?.messages)}
+            loading={pending}
+          />
+        )}
       </section>
       <div className="gt-analytics__grid">
         {/* Wide until sub-project C adds the Timeliness card beside it. */}

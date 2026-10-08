@@ -297,12 +297,17 @@ def test_payload_shape_meta_and_overview(fake):
     assert o["on_time_rate"] is None
     assert o["deltas"] == {
         "messages": 0.1801,
+        "team_messages": 0.144,  # team channels only: the class view's tile (572 vs 500)
         "stories_created": 0.22,
         "tasks_created": 0.0786,
         "active_users_7d": 0.2,
         "on_time_rate": None,
     }
-    assert o["trends"] == {"messages": [263.0, 281.0], "tasks_created": [46.0, 69.0]}
+    assert o["trends"] == {
+        "messages": [263.0, 281.0],
+        "team_messages": [230.0, 253.0],
+        "tasks_created": [46.0, 69.0],
+    }
     assert p["failures"] == []
     assert (
         db.executes == 6
@@ -491,6 +496,7 @@ def test_a_failing_conversations_call_blanks_the_message_figures(fake):
         "excluded": controller.EXCLUDED_CONVERSATIONS,
     }
     assert p["overview"]["messages"] is None and p["overview"]["deltas"]["messages"] is None
+    assert p["overview"]["deltas"]["team_messages"] is None
     assert p["overview"]["stories_created"] == 61
     assert (
         p["breakdown"]["rows"][0]["team_messages"] is None
@@ -608,6 +614,7 @@ def test_all_window_starts_at_the_oldest_class_and_has_no_previous_range_or_delt
     assert all(x["previous"] is None for x in p["trends"]["panels"])
     assert p["overview"]["deltas"] == {
         "messages": None,
+        "team_messages": None,
         "stories_created": None,
         "tasks_created": None,
         "active_users_7d": 0.2,

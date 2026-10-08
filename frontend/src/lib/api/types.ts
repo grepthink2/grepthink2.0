@@ -933,9 +933,10 @@ export interface ApiAnalyticsOverview {
   story_points_created: number | null;
   task_points_created: number | null;
   on_time_rate: number | null;
-  deltas: Partial<Record<'messages' | 'stories_created' | 'tasks_created' | 'on_time_rate' | 'active_users_7d', number | null>>;
-  /** Weekly totals from the nightly rollup, oldest first, up to 12 points; absent before the first rollup. */
-  trends: Partial<Record<'messages' | 'tasks_created', number[]>>;
+  /** `team_messages` (team channels only) is the class view's Messages tile; `messages` adds the school-wide DMs. */
+  deltas: Partial<Record<'messages' | 'team_messages' | 'stories_created' | 'tasks_created' | 'on_time_rate' | 'active_users_7d', number | null>>;
+  /** Weekly totals of complete weeks from the nightly rollup, oldest first, up to 12 points; absent before the first rollup. */
+  trends: Partial<Record<'messages' | 'team_messages' | 'tasks_created', number[]>>;
 }
 export interface ApiAnalyticsConversations {
   total: number | null;

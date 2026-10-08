@@ -19,7 +19,7 @@
     "story_points_created": 0,
     "task_points_created": 0,
     "on_time_rate": null,
-    "deltas": {},
+    "deltas": { "team_messages": null },
     "trends": {}
   },
   "conversations": { "total": 0, "team_members": 0, "dm": 0, "weekly": [], "excluded": ["team_ta", "team_instructor", "dm between staff and a student of their class"] },

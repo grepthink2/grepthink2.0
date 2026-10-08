@@ -19,9 +19,10 @@
     "story_points_created": 188,
     "task_points_created": 611,
     "on_time_rate": 0.82,
-    "deltas": { "messages": 0.18, "stories_created": -0.05, "tasks_created": 0.22, "on_time_rate": 0.03, "active_users_7d": 0.09 },
+    "deltas": { "messages": 0.18, "team_messages": 0.14, "stories_created": -0.05, "tasks_created": 0.22, "on_time_rate": 0.03, "active_users_7d": 0.09 },
     "trends": {
       "messages": [12, 18, 25, 31, 44, 52, 61, 58, 73, 88, 95, 102],
+      "team_messages": [5, 8, 11, 14, 20, 23, 27, 26, 32, 39, 42, 45],
       "tasks_created": [3, 6, 4, 9, 14, 12, 18, 21, 17, 26, 24, 29]
     }
   },

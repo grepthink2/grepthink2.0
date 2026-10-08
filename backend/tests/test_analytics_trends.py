@@ -114,6 +114,7 @@ def test_panels_have_no_previous_series_for_the_all_preset():
 def test_sparklines_take_the_last_twelve_weeks_ending_at_as_of_and_add_direct_messages():
     out = trends.build_sparklines(WEEKLY, dt.date(2026, 10, 2))
     assert out["messages"] == [135.0, 170.0, 0.0, 263.0, 281.0]
+    assert out["team_messages"] == [120.0, 150.0, 0.0, 230.0, 253.0]  # the class view's line
     assert out["tasks_created"] == [40.0, 50.0, 0.0, 46.0, 69.0]
     many = [
         dict(WEEKLY[0], week_start=(dt.date(2026, 1, 5) + dt.timedelta(weeks=i)).isoformat())

@@ -65,7 +65,10 @@ Design against these; they override the brief where they differ.
 - **Tiles in the first release:** Classes, Teams, Students, Active users (7d), Messages. Messages carries the delta
   ("+18% vs previous Sep 8 – Oct 7" style: the previous range's dates, not a generic label; no delta at all for the
   All preset, which has no previous range) and the sparkline. Active users reads "—" with the hint "Appears once
-  sign-ins are recorded" until sign-in events exist, and its delta compares with the 7 days before.
+  sign-ins are recorded" until sign-in events exist, and its delta compares with the 7 days before. With a class
+  selected, the Messages tile reads "Team messages": that class's team-channel messages with their own delta and
+  sparkline, and the hint "Direct messages are school-wide: 712" (the Conversations footnote then leads with "572
+  team messages").
 - **Sparklines may be short.** The nightly rollup has as many weeks as it has run; design 2–3-point and 12-point
   sparklines, and a tile with no sparkline at all (before the first rollup).
 - **Header.** "Analytics" title with the `bar-chart-3` icon, the institution name as a badge (a select only when
