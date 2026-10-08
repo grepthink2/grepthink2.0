@@ -180,6 +180,27 @@ describe('AnalyticsFilterRow', () => {
     expect(screen.queryByLabelText('From')).toBeNull();
     expect(custom).not.toHaveFocus();
   });
+  it('leaves Escape alone while the panel is closed', async () => {
+    render(<AnalyticsFilterRow {...base} onChange={() => {}} />);
+    const custom = screen.getByRole('radio', { name: 'Custom' });
+    await userEvent.click(custom);
+    await userEvent.click(custom); // open, then closed again: no Escape listener may outlive the panel
+    const select = screen.getByLabelText('Class');
+    act(() => select.focus());
+    await userEvent.keyboard('{Escape}');
+    expect(select).toHaveFocus();
+    expect(custom).not.toHaveFocus();
+  });
+  it('leaves the range alone when arrow keys are pressed inside the Custom panel', async () => {
+    const onChange = vi.fn();
+    render(<AnalyticsFilterRow {...base} onChange={onChange} />);
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    act(() => screen.getByLabelText('From').focus());
+    await userEvent.keyboard('{ArrowRight}{ArrowLeft}{ArrowDown}{ArrowUp}');
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('radio', { name: '30d' })).toBeChecked();
+    expect(screen.getByLabelText('From')).toHaveFocus();
+  });
   it('clears the class when the institution changes, and "All classes" clears it too', async () => {
     const onChange = vi.fn();
     render(<AnalyticsFilterRow {...base} institutions={TWO_SCHOOLS} classId="c1" onChange={onChange} />);
