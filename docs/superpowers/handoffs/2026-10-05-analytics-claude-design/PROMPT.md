@@ -62,9 +62,13 @@ Design against these; they override the brief where they differ.
   renders none of them: the payload's `timeliness` arrives empty (`on_time_rate: null`, `rows: []`) and the Trends
   card shows three panels (messages per team per week, tasks created per team per week, points done per team as of
   the week's end). Show in the screen file how the page looks with and without the timeliness pieces.
-- **Tiles in the first release:** Classes, Teams, Students, Active users (7d), Messages. Messages carries the delta
-  ("+18% vs previous Sep 8 – Oct 7" style: the previous range's dates, not a generic label; no delta at all for the
-  All preset, which has no previous range) and the sparkline. Active users reads "—" with the hint "Appears once
+- **Tiles in the first release:** Classes, Teams, Students, Signed in (7d), Messages. Classes, Teams and Students
+  count everything on record, active or not, and say so in their hints ("All classes on record", "All teams on
+  record", "All students on record"; with a class selected "The selected class", "All teams on record in this
+  class", "All students on record in this class"). Messages carries the delta ("+18% vs previous Sep 8 – Oct 7"
+  style: the previous range's dates, not a generic label; no delta at all for the All preset, which has no previous
+  range) and the sparkline. Signed in (7d) counts explicit sign-ins, with the hint "People of the school who signed
+  in explicitly in the last 7 days (staying signed in does not count)."; it reads "—" with the hint "Appears once
   sign-ins are recorded" until sign-in events exist, and its delta compares with the 7 days before. With a class
   selected, the Messages tile reads "Team messages": that class's team-channel messages with their own delta and
   sparkline, and the hint "Direct messages are school-wide: 712" (the Conversations footnote then leads with "572
@@ -101,8 +105,11 @@ Design against these; they override the brief where they differ.
   narrower. Where the panel would run off the screen it moves left just enough to keep 8 px from the viewport's
   edge, and it is centred when the screen is less than 16 px wider than the panel.
 - **Copy to use verbatim.** Forbidden page: "Analytics is available to instructors and maintainers." Card error
-  strip: "This card could not load." Page failure strip: "The latest request failed (HTTP n)." or "The server could
-  not be reached.", followed by " Showing the previous figures." while an earlier payload stays on screen. Empty
+  strip: "This card could not load." Page failure strip: "The latest request failed (HTTP n).", for a refused request
+  (4xx) "The latest request failed: " and the backend's reason (e.g. "a range may span at most 2 years."), or "The
+  server could not be reached.", followed by " Showing the previous figures." while an earlier payload stays on
+  screen. Custom panel, beside Apply while it is disabled: "Dates must fall between 2000 and 2100", "A range may
+  span at most 2 years" or "To must be on or after From". Empty
   states: "No messages yet" / "Team channels fill in as teams start talking."; "No sprints yet" / "Boards fill in
   once teams create their first sprint."; "Nothing to list" / "Rows appear once the school has classes and teams."
   Trends definition (ⓘ): "Weekly figures per team from the nightly rollup over the selected range, with the range
@@ -120,7 +127,8 @@ Design against these; they override the brief where they differ.
   `__swatch`, `__swatch--rect`, `__swatch--line`, `__label`, `__value`), `.gt-chart-tip` (`__title`, `__row`,
   `__key`, `__label`, `__value`), `.gt-empty` (`__icon`, `__title`, `__hint`), `.gt-live-pill` (`__dot`),
   `.gt-unit-toggle` (`__option`, `__option--active`), `.gt-definition` (`__trigger`, `__title`, `__body`),
-  `.gt-filter` (`__field`, `__label`, `__select`, `__chips`, `__chip`, `__chip--active`, `__custom`, `__apply`),
+  `.gt-filter` (`__field`, `__label`, `__select`, `__chips`, `__chip`, `__chip--active`, `__custom`, `__foot`,
+  `__reason`, `__apply`),
   `.gt-line` (`__svg`, `__grid`, `__axis`, `__tick`, `__path`, `__area`, `__marker`, `__marker--hot`,
   `__end-label`, `__crosshair`), `.gt-split` (`__bar`, `__segment`, `--empty`), `.gt-stack` (`__row`, `__meta`,
   `__label`, `__teams`, `__bar`, `__segment`, `__value`, `__button`), `.gt-cols` (`__panel`, `__head`, `__title`,
@@ -133,7 +141,8 @@ Design against these; they override the brief where they differ.
   `.gt-cols--stacked` is the one-column layout used when a side-by-side panel cannot hold every median cap;
   `.gt-table__sort-icon` is the chevron on the sorted column and `__caption` the table's visually hidden caption;
   `.gt-analytics__toggle` is a card's Table toggle, `__check` the Trends card's compare checkbox, `__scrum` the
-  Scrum card's two-part body and `__error` the page's failure strip.
+  Scrum card's two-part body and `__error` the page's failure strip (the page's one alert; a card's error strip is a
+  status); `.gt-filter__foot` is the Custom panel's last row, `__reason` (why Apply is disabled) beside Apply.
   Series identity is a class that sets a custom property the marks read: `.gt-series--1 … --4`, `.gt-series--gray`,
   `.gt-status--todo`, `.gt-status--in_progress`, `.gt-status--done`, each `{ --series: var(--gt-…) }`, with marks
   using `fill: var(--series)` / `stroke: var(--series)`. The metric tile extends the existing `.metric-card` with

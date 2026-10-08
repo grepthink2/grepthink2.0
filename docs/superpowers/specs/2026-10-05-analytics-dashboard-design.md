@@ -348,7 +348,8 @@ GET /api/analytics/dashboard?institution_id=…&class_id=…&window=30d[&from=20
 The overview's `deltas` and `trends` carry `team_messages` (team channels only) beside `messages` (team
 channels plus the school-wide direct messages), so with a class selected the page's Messages tile shows that
 class's team messages (`conversations.team_members`) with their own delta and sparkline and names the
-school-wide direct messages in its hint (Q-B4).
+school-wide direct messages in its hint (Q-B4). `active_users_7d` is shown as "Signed in (7d)": a `login` event is
+recorded only on an explicit sign-in, so a session that stays signed in is not counted.
 
 Both routes join `frontend/public/.well-known/grepthink-actions.json` (`view_analytics_scope`,
 `view_analytics_dashboard`, role `instructor`) and AGENTS.md's API-surface line.
@@ -377,7 +378,7 @@ Both routes join `frontend/public/.well-known/grepthink-actions.json` (`view_ana
 | Stories / tasks created | `user_stories` / `tasks` created in the range on boards of teams in scope; counts and points. Archived stories count. | — |
 | Live board snapshot | Current `tasks.status` by the story's sprint ordinal within its project; Backlog for stories without a sprint; counts and points; across all teams in scope. Not ranged. | Tasks of archived stories. |
 | Characters per task / story | Median of `char_length(title) + char_length(description_md)` as typed; per sprint ordinal and overall; all time. | Comments. |
-| Active users | Distinct people of the school with a `login` event in the last 7 days. | Before the events table exists: not shown. |
+| Active users ("Signed in (7d)") | Distinct people of the school with a `login` event, recorded on an explicit sign-in, in the last 7 days. | Sessions that stay signed in; before the events table exists: not shown. |
 | Trends | From the nightly rollup: weekly per-team-per-week rates over the teams of classes in session (from a class's first to its last day with activity) and the on-time rate over the selected range, with the previous range of equal length for comparison; survives deletions. | Days not rolled up yet (each night's rollup adds yesterday) and weeks not complete, such as the week in progress. |
 | Timeliness (C) | Per assignment, each expected submitter's submission time (TSR: latest row) bucketed against `due_at`: early (> 24 h before), on time, late (before `accept_until`), missing, not due. On-time rate over passed deadlines. "Edited late" counted separately. | Draft assignments, assignments without a deadline, teams of one (TSR). |
 | Folding | Any class, team or assignment row with fewer than 3 people becomes part of "Smaller groups". | Institution totals. |

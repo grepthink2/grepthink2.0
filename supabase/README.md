@@ -183,6 +183,8 @@ before giving up and notifying whoever sent the invite. In this order:
    without the `events` table. It creates the `analytics_*` functions (service_role only),
    `analytics_daily` (RLS on, no client privileges) and the rollup functions; its Check block runs the
    rollup for yesterday (twice, to prove idempotence) and a snapshot-free backfill of the day before.
+   Run those rollup statements once, at apply time: a later re-run overwrites yesterday's real nightly
+   board snapshot with the board as it is then (the Check's other queries only read).
 2. `backend/database/migrations/prod/2026-10/2026-10-07_analytics_cron.sql`, DEV then PROD (DEV: applied
    2026-10-08), after step 1. Its first statement is `CREATE EXTENSION IF NOT EXISTS pg_cron;`; it then
    schedules `analytics-rollup` (09:00 UTC: yesterday's rollup with the board snapshot),
@@ -194,7 +196,9 @@ before giving up and notifying whoever sent the invite. In this order:
    from the first class's `start_date` to `current_date - 1`, a month at a time to stay under the SQL
    editor's statement timeout: `SELECT analytics_rollup_range('<month start>', '<month end>');` per month.
    Board snapshots cannot be backfilled; they start at go-live. Safe to re-run; a re-run recomputes those
-   days from the current tables.
+   days from the current tables. The event-derived metrics (`active_users`, `board_views`) read 0 for
+   backfilled days before the first event of their kind was recorded: there, 0 means "not recorded
+   yet", not "nobody".
 4. Vercel, backend project: set `ANALYTICS_ADMIN_EMAILS` if maintainers should see every institution, and
    redeploy (a changed variable reaches only the next deployment).
 5. Verify after the release: `/app/analytics` as an instructor; the morning after,
