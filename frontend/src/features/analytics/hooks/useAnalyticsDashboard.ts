@@ -79,31 +79,49 @@ export function useAnalyticsDashboard() {
     if (isComplete(filters)) setRefetching(true);
   }
 
-  useEffect(() => {
-    let cancelled = false;
+  // The scope loads on mount and again from `refresh` while it is missing (a failed request is retried by the Refresh
+  // button and the poll). A newer request makes an older one's answer moot; its error stays until a request succeeds.
+  const scopeSeq = useRef(0);
+  const loadScope = useCallback(() => {
+    const mine = ++scopeSeq.current;
     api
       .getAnalyticsScope()
       .then((s) => {
-        if (cancelled) return;
+        if (mine !== scopeSeq.current) return;
         setScope(s);
+        setScopeError(null);
         setScopeLoading(false);
       })
       .catch((e: unknown) => {
-        if (cancelled) return;
+        if (mine !== scopeSeq.current) return;
         setScopeError(e instanceof ApiError ? e.status : 0);
         setScopeLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  // No institution in the URL yet: take the first one in scope (and record it in the URL).
   useEffect(() => {
-    if (filters.institutionId || !scope || scope.institutions.length === 0) return;
-    // a class in the URL picks its own institution; a class of no institution in scope is dropped
-    const owner = filters.classId ? scope.institutions.find((i) => i.classes.some((c) => c.id === filters.classId)) : undefined;
-    const next: AnalyticsFilters = { ...filters, institutionId: (owner ?? scope.institutions[0]).id, classId: owner ? filters.classId : null };
+    loadScope();
+    return () => {
+      scopeSeq.current += 1; // an answer after unmount is moot
+    };
+  }, [loadScope]);
+
+  // The URL's institution must be one in scope. With none named, take the first (a class in the URL picks its own
+  // institution; a class of no institution in scope is dropped). One outside the scope, which the server refuses, is
+  // replaced by the first in scope without its class, or dropped when the scope is empty, so the poll never repeats a 403.
+  useEffect(() => {
+    if (!scope) return;
+    const named = filters.institutionId;
+    if (named && scope.institutions.some((i) => i.id === named)) return;
+    if (!named && scope.institutions.length === 0) return;
+    const owner = !named && filters.classId
+      ? scope.institutions.find((i) => i.classes.some((c) => c.id === filters.classId))
+      : undefined;
+    const next: AnalyticsFilters = {
+      ...filters,
+      institutionId: (owner ?? scope.institutions[0])?.id ?? null,
+      classId: owner ? filters.classId : null,
+    };
     if (!next.classId && next.window === 'class') next.window = '30d';
     setSearchParams(writeFilters(next), { replace: true });
   }, [filters, scope, setSearchParams]);
@@ -149,8 +167,12 @@ export function useAnalyticsDashboard() {
   }, [filters, load]);
 
   const refresh = useCallback(() => {
+    if (!scope) {
+      setScopeLoading(true);
+      loadScope();
+    }
     if (load(filters, true)) setRefetching(true);
-  }, [filters, load]);
+  }, [filters, load, loadScope, scope]);
 
   useEffect(() => {
     const id = window.setInterval(() => {

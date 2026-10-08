@@ -111,6 +111,33 @@ describe('useAnalyticsDashboard', () => {
     expect(search()).toBe('?institution=i1'); // a class no institution in scope owns is dropped, and its class window with it
   });
 
+  it('replaces an institution outside the scope with the first one in scope, without its class', async () => {
+    const { result } = renderHook(() => useAnalyticsDashboard(), { wrapper: wrapper('/app/analytics?institution=zz&class=c9&window=class') });
+    await waitFor(() => expect(search()).toBe('?institution=i1')); // a class window needs a class, so it goes too
+    await waitFor(() => expect(getAnalyticsDashboard).toHaveBeenLastCalledWith({ institution_id: 'i1', class_id: null, window: '30d', from: null, to: null, fresh: false }));
+    expect(result.current.filters).toEqual({ institutionId: 'i1', classId: null, window: '30d', from: null, to: null });
+  });
+
+  it('drops an institution outside an empty scope, so a refused request is not repeated', async () => {
+    getAnalyticsScope.mockResolvedValue({ institutions: [] });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderHook(() => useAnalyticsDashboard(), { wrapper: wrapper('/app/analytics?institution=zz') });
+    await waitFor(() => expect(search()).toBe(''));
+    act(() => { vi.advanceTimersByTime(60_000); }); // the poll has nothing to ask for
+    expect(getAnalyticsDashboard).toHaveBeenCalledTimes(1); // only the request made before the scope arrived
+  });
+
+  it('reloads a scope that failed when refreshed, then picks its first institution', async () => {
+    getAnalyticsScope.mockRejectedValueOnce(new ApiError(503, 'Service unavailable', 'Request failed with status 503', 'database_unavailable'));
+    const { result } = renderHook(() => useAnalyticsDashboard(), { wrapper: wrapper('/app/analytics') });
+    await waitFor(() => expect(result.current.scopeError).toBe(503));
+    expect(getAnalyticsDashboard).not.toHaveBeenCalled();
+    act(() => result.current.refresh());
+    await waitFor(() => expect(result.current.data?.overview.messages).toBe(10));
+    expect(result.current.scopeError).toBeNull();
+    expect(search()).toBe('?institution=i1');
+  });
+
   it('keeps the previous payload while refetching and ignores a stale response', async () => {
     let resolveFirst!: (p: ApiAnalyticsDashboard) => void;
     getAnalyticsDashboard
