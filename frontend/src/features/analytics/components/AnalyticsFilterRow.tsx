@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Popover } from '@/components/Popover/Popover';
 import DatePickerField from '@features/app/components/Fields/DatePickerField';
 import type { AnalyticsRangePreset } from '@/lib/api/types';
@@ -19,12 +19,16 @@ const CHIPS: { preset: AnalyticsRangePreset; label: string }[] = [
   { preset: '7d', label: '7d' }, { preset: '30d', label: '30d' }, { preset: '90d', label: '90d' },
   { preset: 'class', label: 'Class to date' }, { preset: 'all', label: 'All' },
 ];
+/** The radio group in DOM order: the preset chips, then Custom. */
+const ORDER: AnalyticsRangePreset[] = [...CHIPS.map((c) => c.preset), 'custom'];
+const STEP: Record<string, 1 | -1> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
 
 /** The one filter row (brief §3.2): institution (when several), class, range chips, a Custom popover. State lives in the URL via onChange. */
 export function AnalyticsFilterRow({ institutions, institutionId, classes, classId, range, onChange, disabled = false }: AnalyticsFilterRowProps) {
   const [customOpen, setCustomOpen] = useState(false);
   const [from, setFrom] = useState(range.from ?? '');
   const [to, setTo] = useState(range.to ?? '');
+  const chipRefs = useRef<Partial<Record<AnalyticsRangePreset, HTMLButtonElement | null>>>({});
   // The date fields portal their calendars to <body>, so the Popover's outside-press check (DOM containment) takes a
   // press on a day for an outside press and would close the panel under it. React still bubbles that press through the
   // panel, which marks it; the close it triggers is skipped.
@@ -33,13 +37,65 @@ export function AnalyticsFilterRow({ institutions, institutionId, classes, class
     if (calendarPress.current) calendarPress.current = false;
     else setCustomOpen(false);
   };
+  // Escape sends focus back to the Custom chip; an outside press does not. The Popover takes Escape at document capture
+  // and closes through onClose, which an outside press calls too, so Escape is caught first, on window, while the panel is open.
+  useEffect(() => {
+    if (!customOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setCustomOpen(false);
+      chipRefs.current.custom?.focus();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [customOpen]);
   const customLabel = range.preset === 'custom' && range.from && range.to ? `Custom: ${rangeLabel(range.from, range.to)}` : 'Custom';
   const canApply = from !== '' && to !== '' && from <= to; // ISO dates compare as strings; the backend refuses a range that ends before it starts
   const apply = () => {
     if (!canApply) return;
     onChange({ window: 'custom', from, to });
     setCustomOpen(false);
+    chipRefs.current.custom?.focus();
   };
+  const toggleCustom = () => {
+    if (!customOpen) {
+      // each opening starts from the applied range, not from an earlier draft that was never applied
+      setFrom(range.from ?? '');
+      setTo(range.to ?? '');
+    }
+    setCustomOpen(!customOpen);
+  };
+  const pickFrom = (value: string) => {
+    setFrom(value);
+    if (to !== '' && value > to) setTo(''); // that To is no longer a choice: clear it rather than leave Apply disabled without a reason
+  };
+
+  // The WAI-ARIA radio group: one tab stop (the checked chip, else the first enabled one; Custom while its panel is open),
+  // and the arrow keys, Home and End move between the enabled chips, checking each preset they land on. A custom window
+  // needs dates, so landing on Custom only focuses it; Space or Enter opens its panel, as a click does.
+  const isDisabled = (preset: AnalyticsRangePreset) => disabled || (preset === 'class' && !classId);
+  const enabled = ORDER.filter((preset) => !isDisabled(preset));
+  const tabStop = customOpen && !disabled ? 'custom' : enabled.includes(range.preset) ? range.preset : enabled[0];
+  const onChipKeyDown = (e: ReactKeyboardEvent<HTMLButtonElement>, preset: AnalyticsRangePreset) => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return; // modified keys stay the browser's (Alt+Left is Back)
+    const at = enabled.indexOf(preset);
+    const step = STEP[e.key];
+    const next = step ? enabled[(at + step + enabled.length) % enabled.length] : e.key === 'Home' ? enabled[0] : e.key === 'End' ? enabled[enabled.length - 1] : undefined;
+    if (next === undefined) return;
+    e.preventDefault();
+    if (next === preset) return;
+    setCustomOpen(false); // as a press on another chip would
+    chipRefs.current[next]?.focus();
+    if (next !== 'custom') onChange({ window: next });
+  };
+  const chipProps = (preset: AnalyticsRangePreset) => ({
+    type: 'button' as const,
+    role: 'radio',
+    'aria-checked': range.preset === preset,
+    className: `gt-filter__chip${range.preset === preset ? ' gt-filter__chip--active' : ''}`,
+    disabled: isDisabled(preset),
+    tabIndex: preset === tabStop ? 0 : -1,
+  });
   return (
     <div className="gt-filter">
       {institutions.length > 1 ? (
@@ -59,7 +115,7 @@ export function AnalyticsFilterRow({ institutions, institutionId, classes, class
       </label>
       <div className="gt-filter__chips" role="radiogroup" aria-label="Range">
         {CHIPS.map((c) => (
-          <button key={c.preset} type="button" role="radio" aria-checked={range.preset === c.preset} className={`gt-filter__chip${range.preset === c.preset ? ' gt-filter__chip--active' : ''}`} disabled={disabled || (c.preset === 'class' && !classId)} onClick={() => onChange({ window: c.preset })}>
+          <button key={c.preset} {...chipProps(c.preset)} ref={(el) => { chipRefs.current[c.preset] = el; }} onKeyDown={(e) => onChipKeyDown(e, c.preset)} onClick={() => onChange({ window: c.preset })}>
             {c.label}
           </button>
         ))}
@@ -68,13 +124,13 @@ export function AnalyticsFilterRow({ institutions, institutionId, classes, class
           onClose={closeCustom}
           align="end"
           anchor={
-            <button type="button" role="radio" aria-checked={range.preset === 'custom'} className={`gt-filter__chip${range.preset === 'custom' ? ' gt-filter__chip--active' : ''}`} disabled={disabled} onClick={() => setCustomOpen((o) => !o)}>
+            <button {...chipProps('custom')} ref={(el) => { chipRefs.current.custom = el; }} onKeyDown={(e) => onChipKeyDown(e, 'custom')} onClick={toggleCustom}>
               {customLabel}
             </button>
           }
         >
           <div className="gt-filter__custom" onMouseDown={(e) => { calendarPress.current = !e.currentTarget.contains(e.target as Node); }}>
-            <DatePickerField label="From" value={from} onChange={setFrom} />
+            <DatePickerField label="From" value={from} onChange={pickFrom} />
             <DatePickerField label="To" value={to} onChange={setTo} disabledBefore={from ? new Date(`${from}T00:00:00`) : undefined} />
             <button type="button" className="gt-filter__apply" onClick={apply} disabled={!canApply}>Apply</button>
           </div>
