@@ -27,7 +27,7 @@ const SCOPE: ApiAnalyticsScope = {
 };
 const renderPage = (path = `/app/analytics?institution=${DASHBOARD.meta.institution.id}`) =>
   render(<MemoryRouter initialEntries={[path]}><Routes><Route path="/app/analytics" element={<AnalyticsPage />} /></Routes></MemoryRouter>);
-const tile = (label: string) => screen.getByText(label).closest('.metric-card') as HTMLElement;
+const tile = (label: string) => screen.getByText(label, { selector: '.metric-card__label' }).closest('.metric-card') as HTMLElement;
 const card = (title: RegExp) => screen.getByRole('heading', { name: title }).closest('.gt-chart-card') as HTMLElement;
 const unavailable = () => new ApiError(503, 'Service unavailable', 'Request failed with status 503', 'database_unavailable');
 /** The payload for CSE 115A: its team channels, and the school's direct messages beside them. */
@@ -37,6 +37,7 @@ const CLASS_VIEW: ApiAnalyticsDashboard = {
   overview: { ...DASHBOARD.overview, trends: { ...DASHBOARD.overview.trends, team_messages: [40, 55] } },
 };
 const sparkVertices = (el: HTMLElement) => el.querySelector('.metric-card__spark polyline')!.getAttribute('points')!.split(' ').length;
+const SIGNED_IN_HINT = 'People of the school who signed in explicitly in the last 7 days (staying signed in does not count).';
 
 beforeEach(() => {
   auth.canCreateClasses = false;
@@ -68,6 +69,20 @@ describe('AnalyticsPage', () => {
     // textContent: Testing Library's text matcher would read a no-break space as a space
     expect(within(tile('Messages')).getByText(/^vs previous/).textContent).toBe('vs previous Aug 7 – Sep 5');
   });
+  it('says what the tiles count: everything on record, and explicit sign-ins', async () => {
+    renderPage();
+    await waitFor(() => expect(within(tile('Classes')).getByText('4')).toBeInTheDocument());
+    expect(within(tile('Classes')).getByText('All classes on record')).toBeInTheDocument();
+    expect(within(tile('Teams')).getByText('All teams on record')).toBeInTheDocument();
+    expect(within(tile('Students')).getByText('All students on record')).toBeInTheDocument();
+    expect(within(tile('Signed in (7d)')).getByText(SIGNED_IN_HINT)).toBeInTheDocument();
+    expect(screen.queryByText(/Active users/)).toBeNull();
+  });
+  it('explains the board\'s medians in the Scrum definition', async () => {
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'How Scrum board is counted' }));
+    expect(screen.getByText(/each column shows the median/)).toBeInTheDocument();
+  });
   it('shows the school-wide Messages tile, its delta and its sparkline without a class', async () => {
     renderPage();
     await waitFor(() => expect(within(tile('Messages')).getByText('1,284')).toBeInTheDocument());
@@ -86,6 +101,16 @@ describe('AnalyticsPage', () => {
     expect(sparkVertices(messages)).toBe(2); // trends.team_messages
     expect(screen.queryByText('Messages')).toBeNull();
     expect(screen.getByText('572 team messages · Sep 6 – Oct 5 · direct messages are school-wide')).toBeInTheDocument();
+    // the class's own counts, still everything on record
+    expect(within(tile('Classes')).getByText('The selected class')).toBeInTheDocument();
+    expect(within(tile('Teams')).getByText('All teams on record in this class')).toBeInTheDocument();
+    expect(within(tile('Students')).getByText('All students on record in this class')).toBeInTheDocument();
+  });
+  it('names a class\'s CSV export after the class too, so two classes\' exports of one range differ', async () => {
+    getAnalyticsDashboard.mockResolvedValue(CLASS_VIEW);
+    renderPage(`/app/analytics?institution=${DASHBOARD.meta.institution.id}&class=c1`);
+    await userEvent.click(await screen.findByRole('button', { name: /Export CSV/ }));
+    expect(vi.mocked(downloadCsv).mock.calls[0][0]).toBe('analytics-ucsc-cse-115a-fall-2026-2026-09-06-2026-10-05.csv');
   });
   it('switches the scrum unit without a request and keeps the other cards', async () => {
     renderPage();
@@ -138,11 +163,11 @@ describe('AnalyticsPage', () => {
   it('puts a failed section into its card as an inline error and leaves the others alone', async () => {
     getAnalyticsDashboard.mockResolvedValue({ ...DASHBOARD, failures: ['scrum'] });
     renderPage();
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
-    const scrum = screen.getByRole('heading', { name: /Scrum board/ }).closest('.gt-chart-card') as HTMLElement;
-    expect(within(scrum).getByRole('alert')).toBeInTheDocument();
-    const conv = screen.getByRole('heading', { name: /Conversations/ }).closest('.gt-chart-card') as HTMLElement;
-    expect(within(conv).queryByRole('alert')).toBeNull();
+    await waitFor(() => expect(within(card(/Scrum board/)).getByText('This card could not load.')).toBeInTheDocument());
+    // a status, not an alert: the page's failure strip is the one alert, and this request did not fail
+    expect(within(card(/Scrum board/)).getByText('This card could not load.')).toHaveAttribute('role', 'status');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(within(card(/Conversations/)).queryByText('This card could not load.')).toBeNull();
   });
   it('puts "Could not load" only under a tile whose own figure is missing', async () => {
     // the backend's list for a failed board, with one figure of the overview null
@@ -152,7 +177,7 @@ describe('AnalyticsPage', () => {
     expect(screen.getAllByText('Could not load')).toHaveLength(1);
     expect(within(tile('Teams')).getByText('Could not load')).toBeInTheDocument();
     expect(within(tile('Teams')).getByText('—')).toBeInTheDocument();
-    expect(within(tile('Active users (7d)')).getByText('People of the school who signed in at least once in the last seven days.')).toBeInTheDocument();
+    expect(within(tile('Signed in (7d)')).getByText(SIGNED_IN_HINT)).toBeInTheDocument();
   });
   it('leaves the footnote off a card whose section failed', async () => {
     // the backend's list for failed conversations, whose counts arrive as null
@@ -163,7 +188,7 @@ describe('AnalyticsPage', () => {
       failures: ['conversations', 'overview', 'breakdown'],
     });
     renderPage();
-    await waitFor(() => expect(within(card(/Conversations/)).getByRole('alert')).toBeInTheDocument());
+    await waitFor(() => expect(within(card(/Conversations/)).getByText('This card could not load.')).toBeInTheDocument());
     expect(within(card(/Conversations/)).queryByText(/messages ·/)).toBeNull();
     expect(within(card(/Scrum board/)).getByText(/61 stories \(188 pts\)/)).toBeInTheDocument();
   });
@@ -177,8 +202,8 @@ describe('AnalyticsPage', () => {
     expect(within(tile('Classes')).getByText('1')).toBeInTheDocument();
     expect(within(tile('Teams')).getByText('0')).toBeInTheDocument();
     expect(within(tile('Students')).getByText('0')).toBeInTheDocument();
-    expect(within(tile('Active users (7d)')).getByText('—')).toBeInTheDocument();
-    expect(within(tile('Active users (7d)')).getByText('Appears once sign-ins are recorded')).toBeInTheDocument();
+    expect(within(tile('Signed in (7d)')).getByText('—')).toBeInTheDocument();
+    expect(within(tile('Signed in (7d)')).getByText('Appears once sign-ins are recorded')).toBeInTheDocument();
     expect(within(tile('Messages')).getByText('0')).toBeInTheDocument();
     expect(screen.queryByText('Could not load')).toBeNull();
   });
@@ -199,15 +224,21 @@ describe('AnalyticsPage', () => {
     await userEvent.click(refresh);
     expect(getAnalyticsDashboard).toHaveBeenLastCalledWith(expect.objectContaining({ fresh: true }));
   });
-  it('says so when a request fails, keeping the previous figures when it has them', async () => {
+  it('says so when a request fails, with the backend\'s reason for a refused one, keeping the previous figures when it has them', async () => {
     getAnalyticsDashboard
       .mockResolvedValueOnce(DASHBOARD)
-      .mockRejectedValueOnce(new ApiError(422, 'to must be on or after from', 'Request failed with status 422'));
+      .mockRejectedValueOnce(new ApiError(422, 'a range may span at most 2 years', 'Request failed with status 422'))
+      .mockRejectedValueOnce(new ApiError(500, 'Internal server error', 'Request failed with status 500', 'internal_error'))
+      .mockRejectedValueOnce(new ApiError(422, [{ loc: ['query', 'from'], msg: 'Input should be a valid date' }], 'Request failed with status 422'));
     renderPage();
     await waitFor(() => expect(screen.getByRole('heading', { name: /Conversations/ })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('radio', { name: '7d' }));
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('The latest request failed (HTTP 422). Showing the previous figures.'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('The latest request failed: a range may span at most 2 years. Showing the previous figures.'));
     expect(screen.getByRole('heading', { name: /Conversations/ })).toBeInTheDocument(); // the previous frame stays
+    fireEvent.click(screen.getByRole('radio', { name: '90d' })); // a server error keeps its status: its detail is not for the reader
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('The latest request failed (HTTP 500). Showing the previous figures.'));
+    fireEvent.click(screen.getByRole('radio', { name: 'All' })); // a validation list is no sentence either
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('The latest request failed (HTTP 422). Showing the previous figures.'));
   });
   it('keeps the failure strip while a retry is in flight', async () => {
     getAnalyticsDashboard
@@ -217,10 +248,10 @@ describe('AnalyticsPage', () => {
     renderPage();
     await waitFor(() => expect(screen.getByText(/1,284 messages/)).toBeInTheDocument());
     fireEvent.click(screen.getByRole('radio', { name: '7d' }));
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('The latest request failed (HTTP 422).'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('The latest request failed: to must be on or after from.'));
     await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(getAnalyticsDashboard).toHaveBeenCalledTimes(3); // the retry is in flight
-    expect(screen.getByRole('alert')).toHaveTextContent('The latest request failed (HTTP 422). Showing the previous figures.');
+    expect(screen.getByRole('alert')).toHaveTextContent('The latest request failed: to must be on or after from. Showing the previous figures.');
   });
 
   it('shows every card as failed when the very first load fails', async () => {
@@ -230,20 +261,24 @@ describe('AnalyticsPage', () => {
     expect(screen.getAllByText('This card could not load.')).toHaveLength(4); // every chart card
     expect(screen.getAllByText('Could not load')).toHaveLength(5); // every tile ("—" with the hint)
     // An alert's name never comes from its text, so the page's strip is found by its words: no previous figures to keep.
-    expect(screen.getByText('The latest request failed (HTTP 404).')).toHaveAttribute('role', 'alert');
+    expect(screen.getByText('The latest request failed: institution does not exist.')).toHaveAttribute('role', 'alert');
+    expect(screen.getAllByRole('alert')).toHaveLength(1); // the cards' errors are statuses: one alert, not five
+    screen.getAllByText('This card could not load.').forEach((node) => expect(node).toHaveAttribute('role', 'status'));
   });
   it('keeps every failed card and tile while a retry is in flight, so the alerts are not announced again', async () => {
     getAnalyticsDashboard
-      .mockRejectedValueOnce(new ApiError(404, 'institution does not exist', 'Request failed with status 404'))
+      .mockRejectedValueOnce(unavailable())
       .mockImplementationOnce(() => new Promise(() => {}));
     renderPage();
-    await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(5));
-    const alerts = screen.getAllByRole('alert');
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('The latest request failed (HTTP 503).'));
+    const regions = () => [screen.getByRole('alert'), ...screen.getAllByText('This card could not load.')];
+    const before = regions();
+    expect(before).toHaveLength(5); // the strip and the four cards
     await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(getAnalyticsDashboard).toHaveBeenCalledTimes(2); // the retry is in flight
-    const during = screen.getAllByRole('alert');
-    expect(during).toHaveLength(alerts.length);
-    during.forEach((node, i) => expect(node).toBe(alerts[i])); // the same nodes, never unmounted
+    const during = regions();
+    expect(during).toHaveLength(before.length);
+    during.forEach((node, i) => expect(node).toBe(before[i])); // the same nodes, never unmounted
     expect(screen.getAllByText('Could not load')).toHaveLength(5); // the tiles keep their hint, not skeletons
   });
   it('shows a failed scope request as a failed load and recovers on Refresh', async () => {
@@ -295,6 +330,16 @@ describe('AnalyticsPage', () => {
     renderPage('/app/analytics');
     await waitFor(() => expect(screen.getByText('Analytics is available to instructors and maintainers.')).toBeInTheDocument());
     expect(getAnalyticsDashboard).not.toHaveBeenCalled();
+  });
+  it('tells an instructor with no class yet when analytics appears, also on a link that names an institution', async () => {
+    auth.canCreateClasses = true;
+    getAnalyticsScope.mockResolvedValue({ institutions: [] });
+    getAnalyticsDashboard.mockRejectedValue(new ApiError(403, 'Analytics is available to instructors and maintainers', 'Request failed with status 403'));
+    renderPage(); // ?institution=… asks before the empty scope arrives, and that request is refused
+    expect(await screen.findByText('Analytics appears once you teach a class.')).toBeInTheDocument();
+    await waitFor(() => expect(getAnalyticsDashboard).toHaveBeenCalled());
+    expect(screen.getByText('Analytics appears once you teach a class.')).toBeInTheDocument(); // the empty scope decides
+    expect(screen.queryByText('Analytics is available to instructors and maintainers.')).toBeNull();
   });
   it('tells an instructor with no class yet when analytics appears', async () => {
     auth.canCreateClasses = true;

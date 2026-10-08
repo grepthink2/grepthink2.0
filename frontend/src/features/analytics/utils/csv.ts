@@ -20,5 +20,19 @@ export function toCsv(columns: CsvColumn[], rows: Record<string, unknown>[]): st
   return `${lines.join('\r\n')}\r\n`;
 }
 
+/**
+ * A label as part of a file name: accents dropped, lower case, every other run of characters one hyphen
+ * ("CSE 115A · Fall 2026" → "cse-115a-fall-2026", "Yazılım Mühendisliği" → "yazilim-muhendisligi"); "" when nothing is left.
+ */
+export function fileSlug(label: string): string {
+  return label
+    .replace(/ı/g, 'i') // the Turkish dotless i has no decomposition
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 /** `downloadCsv(filename, csv)`: the roster export's Blob-and-link download, shared rather than copied. */
 export { downloadCsv } from '@features/app/utils/exportClassCsv';

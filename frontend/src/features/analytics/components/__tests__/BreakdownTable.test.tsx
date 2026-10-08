@@ -11,18 +11,19 @@ const ROWS: ApiAnalyticsBreakdownRow[] = [
   { id: 'folded', name: 'Smaller groups (1)', kind: 'folded', teams: 1, students: 2, team_messages: 5, stories: 2, tasks: 4, points_done_rate: 0.25, on_time_rate: null, missing: 0 },
 ];
 const renderTable = (onExport = vi.fn()) => render(<MemoryRouter><BreakdownTable kind="class" rows={ROWS} onExport={onExport} /></MemoryRouter>);
-const firstCells = () => screen.getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell')[0].textContent);
+/** Each body row's name: the row's own header cell. */
+const firstCells = () => screen.getAllByRole('row').slice(1).map((r) => within(r).getByRole('rowheader').textContent);
 
 describe('BreakdownTable', () => {
   it('sorts by a column on header click and keeps the folded row last', async () => {
     renderTable();
     const header = screen.getByRole('columnheader', { name: /Team msgs/ });
     await userEvent.click(within(header).getByRole('button'));
-    let names = screen.getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell')[0].textContent);
+    let names = firstCells();
     expect(names).toEqual(['CSE 115B', 'CSE 115A · Fall 2026', 'Smaller groups (1)']);
     expect(header).toHaveAttribute('aria-sort', 'descending');
     await userEvent.click(within(header).getByRole('button'));
-    names = screen.getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell')[0].textContent);
+    names = firstCells();
     expect(names).toEqual(['CSE 115A · Fall 2026', 'CSE 115B', 'Smaller groups (1)']);
   });
   it('renders percentages with a meter, — for null, a View link, and an italic folded row with its explanation', () => {
@@ -47,13 +48,15 @@ describe('BreakdownTable', () => {
     rerender(<MemoryRouter><BreakdownTable kind="team" rows={TEAMS} onExport={vi.fn()} /></MemoryRouter>);
     const header = screen.getByRole('columnheader', { name: 'Team' });
     expect(header).toHaveAttribute('aria-sort', 'ascending');
-    expect(screen.getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell')[0].textContent)).toEqual(['Alpha', 'Zeta']);
+    expect(firstCells()).toEqual(['Alpha', 'Zeta']);
     await userEvent.click(within(header).getByRole('button'));
     expect(header).toHaveAttribute('aria-sort', 'descending');
   });
-  it('names the table and each View link', () => {
+  it('names the table, each row (its header cell) and each View link', () => {
     renderTable();
     expect(screen.getByRole('table', { name: 'Breakdown by class' })).toBeInTheDocument();
+    expect(screen.getByRole('rowheader', { name: 'CSE 115A · Fall 2026' })).toHaveAttribute('scope', 'row');
+    expect(screen.getByRole('rowheader', { name: /Smaller groups \(1\)/ })).toHaveAttribute('scope', 'row');
     expect(screen.getByRole('link', { name: 'View CSE 115B' })).toHaveAttribute('href', '/app/analytics?institution=i1&class=c2');
   });
   it('marks only the sorted column with an arrow', async () => {

@@ -2,7 +2,7 @@ import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import StatTooltip from '@features/app/components/Project/Assign/StatTooltip';
-import { deltaPoints, signedPercent } from '@features/analytics/utils/analyticsFormat';
+import { deltaPoints, signedPercent } from '@/lib/deltaFormat';
 import './DashboardMetricCard.scss';
 
 export type MetricAccent = 'primary' | 'blue' | 'purple' | 'amber';

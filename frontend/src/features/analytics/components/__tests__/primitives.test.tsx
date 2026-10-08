@@ -18,14 +18,15 @@ describe('ChartCard', () => {
     expect(screen.getByText('body')).toBeInTheDocument();
     expect(container.querySelector('.gt-chart-card')).toHaveAttribute('data-state', 'refetching');
     rerender(<ChartCard title="Messages" state="error" errorMessage="This card could not load."><p>body</p></ChartCard>);
-    expect(screen.getByRole('alert')).toHaveTextContent('This card could not load.');
+    expect(screen.getByRole('status')).toHaveTextContent('This card could not load.'); // the page's strip is the alert
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.queryByText('body')).not.toBeInTheDocument();
     rerender(<ChartCard title="Messages" state="empty" emptyMessage={{ icon: Inbox, title: 'No sprints yet', hint: 'Boards fill in once teams create their first sprint.' }}><p>body</p></ChartCard>);
     expect(screen.getByText('No sprints yet')).toBeInTheDocument();
   });
   it('falls back to the default error copy, and an empty card never draws its children', () => {
     const { rerender } = render(<ChartCard title="Messages" state="error"><p>body</p></ChartCard>);
-    expect(screen.getByRole('alert')).toHaveTextContent('This card could not load.');
+    expect(screen.getByRole('status')).toHaveTextContent('This card could not load.');
     rerender(<ChartCard title="Messages" state="empty" emptyMessage={{ icon: Inbox, title: 'No messages yet', hint: 'Team channels fill in as teams start talking.' }}><p>body</p></ChartCard>);
     expect(screen.getByText('No messages yet')).toBeInTheDocument();
     expect(screen.queryByText('body')).not.toBeInTheDocument();
@@ -76,7 +77,7 @@ describe('ChartLegend and LivePill', () => {
     expect(container.querySelectorAll('[style*="#"]')).toHaveLength(0); // no inline hex anywhere
     render(<LivePill />);
     expect(screen.getByText('LIVE')).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: 'Live data' })).toHaveTextContent('LIVE');
+    expect(screen.queryByRole('status')).toBeNull(); // static text: nothing about it changes, so it is no live region
   });
   it('draws a static legend (no onToggle) as one swatch per item and no buttons', () => {
     const { container } = render(

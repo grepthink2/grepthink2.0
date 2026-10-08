@@ -75,7 +75,8 @@ export function BreakdownTable({ kind, rows, onExport }: BreakdownTableProps) {
               <tr key={r.id} className={r.kind === 'folded' ? 'gt-table__row--folded' : undefined}>
                 {cols.map((c) => {
                   const v = r[c.key];
-                  if (c.kind === 'text') return <td key={c.key}>{String(v ?? '')}{r.kind === 'folded' ? <Info size={12} role="img" aria-label="Fewer than 3 people" className="gt-table__info" /> : null}</td>;
+                  // the name is the row's header, as in the cards' twin tables
+                  if (c.kind === 'text') return <th key={c.key} scope="row">{String(v ?? '')}{r.kind === 'folded' ? <Info size={12} role="img" aria-label="Fewer than 3 people" className="gt-table__info" /> : null}</th>;
                   if (c.kind === 'percent') return (
                     <td key={c.key} className="gt-table__num">
                       {percent(v as number | null)}

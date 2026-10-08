@@ -118,6 +118,18 @@ describe('useAnalyticsDashboard', () => {
     expect(result.current.filters).toEqual({ institutionId: 'i1', classId: null, window: '30d', from: null, to: null });
   });
 
+  it('drops a class the named institution does not hold, another school\'s or a deleted one, so its 400 is not repeated', async () => {
+    getAnalyticsDashboard.mockRejectedValueOnce(new ApiError(400, 'class does not belong to this institution', 'Request failed with status 400'));
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { result } = renderHook(() => useAnalyticsDashboard(), { wrapper: wrapper('/app/analytics?institution=i1&class=gone&window=class') });
+    await waitFor(() => expect(search()).toBe('?institution=i1')); // a class window needs a class, so it goes too
+    await waitFor(() => expect(getAnalyticsDashboard).toHaveBeenLastCalledWith({ institution_id: 'i1', class_id: null, window: '30d', from: null, to: null, fresh: false }));
+    expect(result.current.filters).toEqual({ institutionId: 'i1', classId: null, window: '30d', from: null, to: null });
+    act(() => { vi.advanceTimersByTime(60_000); }); // the poll asks for the school, not the class
+    const forClass = getAnalyticsDashboard.mock.calls.filter(([q]) => (q as { class_id: string | null }).class_id === 'gone');
+    expect(forClass).toHaveLength(1); // only the request made before the scope arrived
+  });
+
   it('drops an institution outside an empty scope, so a refused request is not repeated', async () => {
     let answerScope!: (s: ApiAnalyticsScope) => void;
     getAnalyticsScope.mockReturnValue(new Promise((res) => { answerScope = res; }));
@@ -198,9 +210,11 @@ describe('useAnalyticsDashboard', () => {
     );
     const { result } = renderHook(() => useAnalyticsDashboard(), { wrapper: wrapper('/app/analytics?institution=i1') });
     await waitFor(() => expect(result.current.error).toBe(403));
+    expect(result.current.errorDetail).toBe('Analytics is available to instructors and maintainers'); // the backend's fixed text
     expect(result.current.data).toBeNull();
     act(() => result.current.setFilters({ window: '7d' }));
     await waitFor(() => expect(result.current.error).toBeNull());
+    expect(result.current.errorDetail).toBeNull();
   });
 
   it('refreshes with fresh=1 on demand and every 60 s while visible', async () => {

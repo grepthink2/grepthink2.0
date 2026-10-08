@@ -15,11 +15,15 @@ export interface ChartCardProps {
 
 const GENERIC_EMPTY = { icon: Inbox, title: 'Nothing to show', hint: 'There is no data for this view yet.' };
 
-/** Every chart's container (brief §4 #3). Refetching keeps the previous content at 60% opacity; an error is an inline strip; an empty card never draws its chart. */
+/**
+ * Every chart's container (brief §4 #3). Refetching keeps the previous content at 60% opacity; an error is an inline strip
+ * (a status: the page's failure strip is its one alert, so a total failure does not raise five); an empty card never draws
+ * its chart.
+ */
 export function ChartCard({ title, subtitle, definition, live, actions, state, emptyMessage, errorMessage, footnote, className, children }: ChartCardProps) {
   let body: ReactNode = children;
   if (state === 'loading') body = <Skeleton width="100%" height={220} />;
-  else if (state === 'error') body = <div className="gt-chart-card__error" role="alert">{errorMessage ?? 'This card could not load.'}</div>;
+  else if (state === 'error') body = <div className="gt-chart-card__error" role="status">{errorMessage ?? 'This card could not load.'}</div>;
   else if (state === 'empty') body = <EmptyState {...(emptyMessage ?? GENERIC_EMPTY)} />;
   return (
     <section className={`gt-chart-card${className ? ` ${className}` : ''}`} data-state={state} aria-busy={state === 'loading' || state === 'refetching'}>

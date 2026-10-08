@@ -75,8 +75,30 @@ describe('AnalyticsFilterRow', () => {
     await userEvent.click(screen.getByRole('radio', { name: /^Custom/ }));
     const apply = screen.getByRole('button', { name: 'Apply' });
     expect(apply).toBeDisabled();
+    expect(screen.getByText('To must be on or after From')).toBeInTheDocument();
     await userEvent.click(apply);
     expect(onChange).not.toHaveBeenCalled();
+  });
+  it('keeps Apply disabled and says why for a range the backend would refuse', async () => {
+    const onChange = vi.fn();
+    const open = async (from: string, to: string) => {
+      const view = render(<AnalyticsFilterRow {...base} range={{ preset: 'custom', from, to }} onChange={onChange} />);
+      await userEvent.click(screen.getByRole('radio', { name: /^Custom/ }));
+      return view;
+    };
+    const first = await open('2023-01-01', '2025-01-02'); // a day over two calendar years
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
+    expect(screen.getByText('A range may span at most 2 years')).toBeInTheDocument();
+    first.unmount();
+    const second = await open('1999-12-20', '2000-01-10');
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
+    expect(screen.getByText('Dates must fall between 2000 and 2100')).toBeInTheDocument();
+    second.unmount();
+    await open('2024-02-29', '2026-02-28'); // Feb 29 + 2 years is Feb 28, as the backend counts it
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeEnabled();
+    expect(screen.queryByText(/must|at most/)).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(onChange).toHaveBeenCalledTimes(1);
   });
   it('reseeds the dates from the applied range each time the panel opens', async () => {
     vi.useFakeTimers({ now: new Date('2026-09-15T12:00:00Z'), shouldAdvanceTime: true });

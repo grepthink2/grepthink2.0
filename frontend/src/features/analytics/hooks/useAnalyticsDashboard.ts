@@ -65,6 +65,8 @@ export function useAnalyticsDashboard() {
   const [scopeError, setScopeError] = useState<number | null>(null);
   const [data, setData] = useState<ApiAnalyticsDashboard | null>(null);
   const [error, setError] = useState<number | null>(null);
+  // The failed request's `detail` when the backend sent text: its fixed strings ("a range may span at most 2 years").
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const seq = useRef(0);
 
   // `refetching` is true while the newest request is in flight; its settle lowers it. It is raised where
@@ -109,10 +111,18 @@ export function useAnalyticsDashboard() {
   // The URL's institution must be one in scope. With none named, take the first (a class in the URL picks its own
   // institution; a class of no institution in scope is dropped). One outside the scope, which the server refuses, is
   // replaced by the first in scope without its class, or dropped when the scope is empty, so the poll never repeats a 403.
+  // A class the named institution does not hold (another school's, or one deleted since the link was made) is dropped
+  // with its class window, so the poll never repeats that 400 either.
   useEffect(() => {
     if (!scope) return;
     const named = filters.institutionId;
-    if (named && scope.institutions.some((i) => i.id === named)) return;
+    const institution = named ? scope.institutions.find((i) => i.id === named) : undefined;
+    if (institution) {
+      if (!filters.classId || institution.classes.some((c) => c.id === filters.classId)) return;
+      const next: AnalyticsFilters = { ...filters, classId: null, window: filters.window === 'class' ? '30d' : filters.window };
+      setSearchParams(writeFilters(next), { replace: true });
+      return;
+    }
     if (!named && scope.institutions.length === 0) return;
     const owner = !named && filters.classId
       ? scope.institutions.find((i) => i.classes.some((c) => c.id === filters.classId))
@@ -150,11 +160,13 @@ export function useAnalyticsDashboard() {
           if (mine !== seq.current) return; // a newer request owns the frame
           setData(d);
           setError(null);
+          setErrorDetail(null);
           setRefetching(false);
         })
         .catch((e: unknown) => {
           if (mine !== seq.current) return;
           setError(e instanceof ApiError ? e.status : 0);
+          setErrorDetail(e instanceof ApiError && typeof e.detail === 'string' && e.detail ? e.detail : null);
           setRefetching(false);
         });
       return true;
@@ -192,6 +204,7 @@ export function useAnalyticsDashboard() {
     loading: data === null && error === null && (scopeLoading || isComplete(filters)),
     refetching,
     error,
+    errorDetail,
     refresh,
   };
 }

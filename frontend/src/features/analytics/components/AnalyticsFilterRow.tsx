@@ -4,6 +4,7 @@ import DatePickerField from '@features/app/components/Fields/DatePickerField';
 import type { AnalyticsRangePreset } from '@/lib/api/types';
 import type { AnalyticsFilters } from '../hooks/useAnalyticsDashboard';
 import { rangeLabel } from '../utils/analyticsFormat';
+import { customRangeProblem } from '../utils/customRange';
 
 export interface AnalyticsFilterRowProps {
   institutions: { id: string; name: string }[];
@@ -50,7 +51,10 @@ export function AnalyticsFilterRow({ institutions, institutionId, classes, class
     return () => window.removeEventListener('keydown', onKey, true);
   }, [customOpen]);
   const customLabel = range.preset === 'custom' && range.from && range.to ? `Custom: ${rangeLabel(range.from, range.to)}` : 'Custom';
-  const canApply = from !== '' && to !== '' && from <= to; // ISO dates compare as strings; the backend refuses a range that ends before it starts
+  // The backend's range rules, with the one a draft breaks named under the fields: a refused range would otherwise reach
+  // the URL and answer 422 on every poll.
+  const problem = customRangeProblem(from, to);
+  const canApply = from !== '' && to !== '' && problem === null;
   const apply = () => {
     if (!canApply) return;
     onChange({ window: 'custom', from, to });
@@ -132,7 +136,11 @@ export function AnalyticsFilterRow({ institutions, institutionId, classes, class
           <div className="gt-filter__custom" onMouseDown={(e) => { calendarPress.current = !e.currentTarget.contains(e.target as Node); }}>
             <DatePickerField label="From" value={from} onChange={pickFrom} />
             <DatePickerField label="To" value={to} onChange={setTo} disabledBefore={from ? new Date(`${from}T00:00:00`) : undefined} />
-            <button type="button" className="gt-filter__apply" onClick={apply} disabled={!canApply}>Apply</button>
+            <div className="gt-filter__foot">
+              {/* Always present, so a reason that appears is announced. */}
+              <p className="gt-filter__reason" role="status">{problem}</p>
+              <button type="button" className="gt-filter__apply" onClick={apply} disabled={!canApply}>Apply</button>
+            </div>
           </div>
         </Popover>
       </div>

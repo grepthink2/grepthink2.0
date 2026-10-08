@@ -141,7 +141,10 @@
     &--active { background: var(--gt-primary); border-color: var(--gt-primary); color: var(--gt-text-inverse); }
     &:disabled { opacity: 0.5; cursor: not-allowed; } }
   &__custom { display: grid; gap: 10px; min-width: 260px; }
-  &__apply { justify-self: end; height: 32px; padding: 0 14px; border-radius: var(--gt-radius-sm); border: 0; background: var(--gt-primary); color: var(--gt-text-inverse); font: inherit; cursor: pointer;
+  // The reason a draft cannot be applied sits left of Apply; empty, it takes no room and Apply keeps the right edge.
+  &__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  &__reason { flex: 1; min-width: 0; margin: 0; font-size: 12px; color: var(--gt-error-text); }
+  &__apply { flex: none; height: 32px; padding: 0 14px; border-radius: var(--gt-radius-sm); border: 0; background: var(--gt-primary); color: var(--gt-text-inverse); font: inherit; cursor: pointer;
     &:hover:not(:disabled) { background: var(--gt-primary-hover); }
     &:disabled { opacity: 0.5; cursor: not-allowed; } } }
 
@@ -165,7 +168,8 @@
   // `all: unset` also drops index.css's focus ring (as on .gt-stack__button), so the ring comes back here.
   &__sort { all: unset; cursor: pointer; font: inherit; &:focus-visible { box-shadow: var(--gt-focus-ring); } }
   &__sort-icon { margin-left: 4px; vertical-align: -2px; }
-  &__row--folded td { font-style: italic; color: var(--gt-text-secondary); }
+  // Under the table's own cell rules (`tbody th` outranks a bare class), so the folded row's name is italic and muted too.
+  &__table &__row--folded td, &__table &__row--folded th { font-style: italic; color: var(--gt-text-secondary); }
   &__info { vertical-align: middle; margin-left: 6px; color: var(--gt-text-tertiary); }
   &__meter { display: block; height: 3px; margin-top: 3px; background: var(--gt-gray-200); border-radius: 2px; }
   &__meter-fill { display: block; height: 3px; background: var(--gt-primary); border-radius: 2px; } }

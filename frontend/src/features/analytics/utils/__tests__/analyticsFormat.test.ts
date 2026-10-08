@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as deltaFormat from '@/lib/deltaFormat';
 import { compactNumber, dateLabel, deltaPoints, percent, rangeLabel, signedPercent, weekLabel } from '../analyticsFormat';
 
 describe('analyticsFormat', () => {
@@ -18,21 +19,14 @@ describe('analyticsFormat', () => {
     expect(compactNumber(-1284)).toBe('−1,284');
     expect(compactNumber(-0)).toBe('0');
   });
-  it('formats rates and deltas', () => {
+  it('formats rates', () => {
     expect(percent(0.82)).toBe('82%');
     expect(percent(0.8249, 1)).toBe('82.5%');
     expect(percent(null)).toBe('—');
-    expect(signedPercent(0.18)).toBe('+18%');
-    expect(signedPercent(-0.1)).toBe('−10%');
-    expect(signedPercent(0)).toBe('0%');
-    expect(signedPercent(null)).toBe('—');
   });
-  it('rounds a delta to whole points once, for the figure and its tone; no baseline is null', () => {
-    expect(deltaPoints(0.184)).toBe(18);
-    expect(deltaPoints(-0.104)).toBe(-10);
-    expect(deltaPoints(null)).toBeNull();
-    expect(deltaPoints(NaN)).toBeNull();
-    expect(signedPercent(NaN)).toBe('—');
+  it('re-exports the delta helpers the metric card shares (lib/deltaFormat, tested there)', () => {
+    expect(signedPercent).toBe(deltaFormat.signedPercent);
+    expect(deltaPoints).toBe(deltaFormat.deltaPoints);
   });
   it('labels weeks and ranges without a time zone shift', () => {
     expect(weekLabel('2026-09-07')).toBe('Sep 7');

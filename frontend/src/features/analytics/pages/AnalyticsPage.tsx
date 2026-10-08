@@ -16,7 +16,7 @@ import { UnitToggle } from '../components/UnitToggle';
 import { WeeklyLine } from '../components/WeeklyLine';
 import { useAnalyticsDashboard } from '../hooks/useAnalyticsDashboard';
 import { compactNumber, dateLabel, rangeLabel } from '../utils/analyticsFormat';
-import { downloadCsv, toCsv } from '../utils/csv';
+import { downloadCsv, fileSlug, toCsv } from '../utils/csv';
 
 const FORBIDDEN = 'Analytics is available to instructors and maintainers.';
 const NO_CLASSES = 'Analytics appears once you teach a class.';
@@ -24,15 +24,19 @@ const NO_CLASSES = 'Analytics appears once you teach a class.';
 const wholeDates = (from: string, to: string) => rangeLabel(from, to).split(' – ').map((date) => date.replace(/ /g, '\u00a0')).join(' – ');
 const DEFINITIONS = {
   conversations: { title: 'How this is counted', body: 'Messages sent in team-member channels of the teams in view, plus direct messages between two people of the school, in the selected range. Conversations between staff and a student of their class are left out: the team ↔ TA and team ↔ instructor channels, and direct messages between an instructor or TA and a student of the same class. Direct messages are counted for the whole school and do not change with the class filter. Weeks start on Monday in the school\'s time zone.' },
-  scrum: { title: 'How this is counted', body: 'Every task in view, by its current column and by the sprint of its story. Sprints are aligned by order within each team (Sprint 1 is each team\'s first sprint), not by date. Tasks whose story is in the backlog are "Backlog". Tasks of archived stories are not shown. Switch between the number of tasks and their story points. Stories and tasks created in the range count archived stories too.' },
-  chars: { title: 'How this is counted', body: 'The number of characters in a task\'s (or story\'s) title and description, as typed, including markdown. The median is shown; half of the items are shorter.' },
+  scrum: { title: 'How this is counted', body: 'Every task in view, by its current column and by the sprint of its story. Sprints are aligned by order within each team (Sprint 1 is each team\'s first sprint), not by date. Tasks whose story is in the backlog are "Backlog". Tasks of archived stories are not shown. Switch between the number of tasks and their story points. Stories and tasks created in the range count archived stories too. Characters per task or story count the title and description as typed, markdown included; each column shows the median, so half of the items are shorter.' },
   trends: { title: 'How this is counted', body: 'Weekly figures per team from the nightly rollup over the selected range, with the range of the same length just before it drawn in grey for comparison. Each night\'s rollup adds yesterday, at about 02:00 Pacific time and about 12:00 in Istanbul, so an Istanbul board snapshot (Points done) is taken at midday. Per-team figures count the teams of classes in session, from each class\'s first to its last day with activity. Only complete weeks are drawn: the week in progress appears once it ends. Deleted classes and teams stay in the history.' },
-  active: 'People of the school who signed in at least once in the last seven days.',
+  active: 'People of the school who signed in explicitly in the last 7 days (staying signed in does not count).',
+};
+/** The scope counts are every class, team and student on record, active or not (counting by activity in the range is a follow-up). */
+const ON_RECORD = {
+  school: { classes: 'All classes on record', teams: 'All teams on record', students: 'All students on record' },
+  class: { classes: 'The selected class', teams: 'All teams on record in this class', students: 'All students on record in this class' },
 };
 
 export default function AnalyticsPage() {
   const { canCreateClasses } = useAuth();
-  const { scope, scopeLoading, scopeError, filters, setFilters, data, loading, refetching, error, refresh } = useAnalyticsDashboard();
+  const { scope, scopeLoading, scopeError, filters, setFilters, data, loading, refetching, error, errorDetail, refresh } = useAnalyticsDashboard();
   const [unit, setUnit] = useState<AnalyticsUnit>('count');
   const [compare, setCompare] = useState(true);
   const [conversationsTable, setConversationsTable] = useState(false);
@@ -45,9 +49,10 @@ export default function AnalyticsPage() {
   );
   const classes = useMemo(() => institution?.classes.map((c) => ({ id: c.id, label: c.label })) ?? [], [institution]);
 
-  // An account with no class to report on: an instructor is told when the page fills in, anyone else whom it is for.
+  // An account with no class to report on: an instructor is told when the page fills in, anyone else whom it is for. The
+  // empty scope decides before a refusal does: an `?institution` link asks before the scope arrives, and that 403 stays.
   const noScope = scope !== null && scope.institutions.length === 0;
-  const refusal = error === 403 || scopeError === 403 ? FORBIDDEN : noScope ? (canCreateClasses ? NO_CLASSES : FORBIDDEN) : null;
+  const refusal = noScope ? (canCreateClasses ? NO_CLASSES : FORBIDDEN) : error === 403 || scopeError === 403 ? FORBIDDEN : null;
   if (refusal) {
     return <div className="gt-analytics"><p className="gt-analytics__forbidden" role="status">{refusal}</p></div>;
   }
@@ -71,8 +76,13 @@ export default function AnalyticsPage() {
   // "Could not load" goes under a tile when the whole first load failed, or when its own figure is missing because its source failed.
   const hintFor = (value: number | null | undefined) =>
     (failed && !d) || (value == null && d?.failures.includes('overview')) ? 'Could not load' : undefined;
+  // A refused request (4xx) says why in the backend's own fixed words ("a range may span at most 2 years"); anything
+  // else keeps its status.
+  const reason = error !== null && error >= 400 && error < 500 && errorDetail ? errorDetail.replace(/\.$/, '') : null;
   const failureNote = failed
-    ? (failure === 0 ? 'The server could not be reached.' : `The latest request failed (HTTP ${failure}).`)
+    ? (failure === 0 ? 'The server could not be reached.'
+      : reason ? `The latest request failed: ${reason}.`
+      : `The latest request failed (HTTP ${failure}).`)
       + (d ? ' Showing the previous figures.' : '')
     : null;
   const range = d?.meta.range;
@@ -118,8 +128,11 @@ export default function AnalyticsPage() {
     if (!d) return;
     const columns = breakdownColumns(d.breakdown.kind).map((c) => ({ key: c.key, label: c.label }));
     const csv = toCsv(columns, breakdownCsvRows(d.breakdown.kind, d.breakdown.rows));
-    downloadCsv(`analytics-${d.meta.institution.slug}-${d.meta.range.from}-${d.meta.range.to}.csv`, csv);
+    // a class's export names the class too (its id when the label has nothing to spell a file name with)
+    const cls = d.meta.class ? `-${fileSlug(d.meta.class.label) || d.meta.class.id.slice(0, 8)}` : '';
+    downloadCsv(`analytics-${d.meta.institution.slug}${cls}-${d.meta.range.from}-${d.meta.range.to}.csv`, csv);
   };
+  const onRecord = classView ? ON_RECORD.class : ON_RECORD.school;
 
   return (
     <div className="gt-analytics" aria-busy={pending || refetching || scopeLoading}>
@@ -139,11 +152,11 @@ export default function AnalyticsPage() {
       />
       {failureNote && <p className="gt-analytics__error" role="alert">{failureNote}</p>}
       <section className="gt-analytics__tiles" aria-label="Overview">
-        <StatTile label="Classes" value={o?.active_classes ?? null} icon={School} hint={hintFor(o?.active_classes)} loading={pending} />
-        <StatTile label="Teams" value={o?.teams ?? null} icon={Layers} accent="blue" hint={hintFor(o?.teams)} loading={pending} />
-        <StatTile label="Students" value={o?.students ?? null} icon={Users} accent="purple" hint={hintFor(o?.students)} loading={pending} />
+        <StatTile label="Classes" value={o?.active_classes ?? null} icon={School} hint={hintFor(o?.active_classes) ?? (o ? onRecord.classes : undefined)} loading={pending} />
+        <StatTile label="Teams" value={o?.teams ?? null} icon={Layers} accent="blue" hint={hintFor(o?.teams) ?? (o ? onRecord.teams : undefined)} loading={pending} />
+        <StatTile label="Students" value={o?.students ?? null} icon={Users} accent="purple" hint={hintFor(o?.students) ?? (o ? onRecord.students : undefined)} loading={pending} />
         <StatTile
-          label="Active users (7d)"
+          label="Signed in (7d)"
           value={o?.active_users_7d ?? null}
           icon={Clock}
           accent="amber"
