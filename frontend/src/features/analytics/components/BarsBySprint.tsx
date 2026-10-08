@@ -24,6 +24,8 @@ const BAR_SHARE = 0.6;
 const FLOOR = 240;
 /** The least space between two neighbouring labels. */
 const LABEL_AIR = 4;
+/** Float slack for placeLabels' comparisons: a slot that holds its cap with exactly LABEL_AIR to spare must still count as holding it. */
+const EPSILON = 1e-6;
 
 /** The room every median cap needs at once: n slots of the widest cap plus LABEL_AIR. */
 function capRoom(caps: string[]): number {
@@ -37,9 +39,9 @@ function placeLabels(widths: number[], slot: number, w: number): Map<number, num
     const half = width / 2;
     const x = Math.min(Math.max((i + 0.5) * slot, half), w - half);
     const box = { i, x, left: x - half, right: x + half };
-    if (i === widths.length - 1) while (kept.length > 0 && kept[kept.length - 1].right + LABEL_AIR > box.left) kept.pop();
+    if (i === widths.length - 1) while (kept.length > 0 && kept[kept.length - 1].right + LABEL_AIR > box.left + EPSILON) kept.pop();
     const last = kept[kept.length - 1];
-    if (!last || box.left >= last.right + LABEL_AIR) kept.push(box);
+    if (!last || box.left + EPSILON >= last.right + LABEL_AIR) kept.push(box);
   });
   return new Map(kept.map((b) => [b.i, b.x]));
 }

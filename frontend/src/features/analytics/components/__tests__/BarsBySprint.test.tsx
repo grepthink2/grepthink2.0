@@ -64,6 +64,13 @@ describe('BarsBySprint', () => {
       expect(capsOf(svg)).toHaveLength(4);
     });
   });
+  it('keeps every cap when the stacked panel holds them exactly (Backlog + 9 three-digit caps at 256px: 10 × 25.6)', () => {
+    const { report } = stubResizeObserver();
+    const { container } = render(<BarsBySprint panels={pair(columns(9, 100, 11), columns(9, 120, 9))} />);
+    report(256); // slot 25.6 minus a 21.6px cap leaves exactly the 4px of air, give or take a float rounding
+    expect(container.querySelector('.gt-cols')).toHaveClass('gt-cols--stacked');
+    container.querySelectorAll('svg').forEach((svg) => expect(capsOf(svg)).toHaveLength(10));
+  });
   it('thins labels only when even a stacked panel cannot hold them, keeping them apart and inside (4-digit medians at 311px)', () => {
     const { report } = stubResizeObserver();
     const { container } = render(<BarsBySprint panels={pair(columns(8, 1050, 37), columns(8, 1100, 41))} />);

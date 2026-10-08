@@ -68,6 +68,12 @@ describe('TrendLines', () => {
     expect(Number(label.getAttribute('x')) + 34.4).toBeLessThanOrEqual(260); // "123.45" is about 34.4px in 11px semibold
     expect(container.querySelector('.gt-trend__axis')).toHaveAttribute('x2', '204.8'); // 260 − (6 × 7.2 + 12)
   });
+  it('gives every panel the same right margin, sized for the widest end label, so the weeks line up across panels', () => {
+    const long = { ...PANEL, key: 'points_done_per_team' as const, title: 'Points done per team', current: [week('2026-09-07', 98.5), week('2026-09-14', null), week('2026-09-21', 123.45)], previous: null };
+    const { container } = render(<TrendLines panels={[PANEL, long]} compare asOf={null} />);
+    const ends = Array.from(container.querySelectorAll('.gt-trend__axis')).map((a) => a.getAttribute('x2'));
+    expect(ends).toEqual(['204.8', '204.8']); // 260 − (6 × 7.2 + 12), from "123.45" in the second panel
+  });
   it('adds the previous range\'s value at the same week to the summary when compare is on', () => {
     const { rerender } = render(<TrendLines panels={[PANEL]} compare asOf={null} />);
     expect(screen.getByRole('img', { name: 'Messages per team, 3 weeks; week of Sep 21: 10; previous range: 6.5' })).toBeInTheDocument();

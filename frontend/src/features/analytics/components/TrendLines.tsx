@@ -15,7 +15,7 @@ type Point = [number, number] | null;
 const W = 260;
 const H = 120;
 const PAD = { top: 10, bottom: 10, left: 10 };
-/** The right margin holds the end label: 40px, or the label's estimated width plus its 8px offset and 4px of air when that is more. */
+/** Every panel's right margin holds the widest end label among them, so the weeks line up across panels: 40px, or that label's estimated width plus its 8px offset and 4px of air when that is more. */
 const MIN_RIGHT = 40;
 /** `.gt-trend__panels` never makes a column narrower than 200px. */
 const FLOOR = 200;
@@ -46,10 +46,14 @@ export function TrendLines({ panels, compare, asOf }: TrendLinesProps) {
     return <p className="gt-trend__empty">Trends appear after the first nightly rollup.</p>;
   }
   const showsPrevious = compare && panels.some((p) => p.previous?.some((c) => c.value !== null));
+  const right = Math.max(MIN_RIGHT, ...panels.map((p) => {
+    const latest = latestWeek(p.current);
+    return latest ? textWidth(valueLabel(p, latest.value), 'semibold') + 12 : 0;
+  }));
   return (
     <div className="gt-trend">
       <div className="gt-trend__panels">
-        {panels.map((p) => <TrendPanel key={p.key} panel={p} compare={compare} />)}
+        {panels.map((p) => <TrendPanel key={p.key} panel={p} compare={compare} right={right} />)}
       </div>
       <div className="gt-trend__foot">
         <ChartLegend items={[{ key: 'cur', label: 'This range', swatch: 'line', colorClass: 'gt-series--1' }, ...(showsPrevious ? [{ key: 'prev', label: 'Previous range', swatch: 'line' as const, colorClass: 'gt-series--gray' }] : [])]} />
@@ -59,7 +63,7 @@ export function TrendLines({ panels, compare, asOf }: TrendLinesProps) {
   );
 }
 
-function TrendPanel({ panel, compare }: { panel: ApiAnalyticsTrendPanel; compare: boolean }) {
+function TrendPanel({ panel, compare, right }: { panel: ApiAnalyticsTrendPanel; compare: boolean; right: number }) {
   const ref = useRef<HTMLElement>(null);
   const w = useMeasuredWidth(ref, W, FLOOR);
   const prev = compare && panel.previous ? panel.previous : null;
@@ -67,7 +71,6 @@ function TrendPanel({ panel, compare }: { panel: ApiAnalyticsTrendPanel; compare
   const max = niceMax(Math.max(0, ...values));
   const latest = latestWeek(panel.current);
   const latestText = latest ? valueLabel(panel, latest.value) : '';
-  const right = Math.max(MIN_RIGHT, textWidth(latestText, 'semibold') + 12);
   const n = Math.max(panel.current.length, prev?.length ?? 0, 2);
   const x = linearScale(0, n - 1, PAD.left, w - right);
   const y = linearScale(0, max, H - PAD.bottom, PAD.top);
