@@ -8,7 +8,7 @@
 -- - 1 in UTC) is a complete calendar day in both zones. The Istanbul board snapshot is therefore taken
 -- at midday; the Trends card's definition says so.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-10-08 (by Claude, via the Supabase connector)   PROD ____-__-__
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 

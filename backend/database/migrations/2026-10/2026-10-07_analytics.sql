@@ -4,7 +4,7 @@
 -- 2026-10-06_assignment_deadlines_and_events.sql, which it reads (events, classes.institution_id,
 -- institutions.timezone). Spec: docs/superpowers/specs/2026-10-05-analytics-dashboard-design.md §6.2, §7.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-10-08 (by Claude, via the Supabase connector)   PROD ____-__-__
 --
 -- ⚠️  ORDER: after 2026-09/2026-09-25_institutions.sql, 2026-09/2026-09-30_institution_timezones.sql and
 --     2026-10/2026-10-06_assignment_deadlines_and_events.sql. The pg_cron schedule lives in
@@ -16,7 +16,7 @@
 --     the "all" preset) and the school's IANA zone, in which dates become instants and weeks start
 --     on Monday. The backend fans them out over RPC and composes one payload (app/analytics).
 --   * analytics_daily: one row per (institution, class or NULL, day, metric), written by
---     analytics_rollup_day(p_day) — pg_cron, 09:00 UTC, for yesterday — and backfilled by
+--     analytics_rollup_day(p_day, true) — pg_cron, 09:00 UTC, for yesterday — and backfilled by
 --     analytics_rollup_range(p_from, p_to). class_id is a plain uuid, not a foreign key: a deleted
 --     class keeps its own history rows (two deleted classes would otherwise collide on the unique
 --     key once both were SET NULL), which is what makes long-range trends honest. UNIQUE NULLS NOT
@@ -45,8 +45,8 @@ LANGUAGE sql STABLE SET search_path = public AS $$
      AND (p_class IS NULL OR c.id = p_class);
 $$;
 
--- A team is a project with at least one current member (decision 12). Every section function and the
--- rollup take teams from here, so a class total always equals the sum of its team rows.
+-- A team is a project with at least one current member (decision 12). Every section function takes
+-- teams from here; the rollup's `teams` metric restates the rule as of each day.
 CREATE OR REPLACE FUNCTION public.analytics_scope_teams(p_institution uuid, p_class uuid)
 RETURNS TABLE (project_id uuid, class_id uuid, name text, members integer)
 LANGUAGE sql STABLE SET search_path = public AS $$
@@ -343,8 +343,8 @@ GRANT EXECUTE ON FUNCTION public.analytics_scrum(uuid, uuid, date, date, date, d
 -- analytics_rollup_day(day, true) for yesterday (pg_cron, 09:00 UTC) and by analytics_rollup_range for
 -- a backfill (activity metrics only: a board snapshot cannot be reconstructed for a past day). Upserts:
 -- re-running the same morning changes nothing; re-running a PAST day with p_snapshot = true would
--- overwrite that day's board snapshot with today's board, so the default is false and only the cron
--- passes true. class_id has no foreign key on purpose (header).
+-- overwrite that day's board snapshot with today's board, so the default is false and the nightly job
+-- and the Check pass true for yesterday only. class_id has no foreign key on purpose (header).
 CREATE TABLE IF NOT EXISTS public.analytics_daily (
   institution_id uuid        NOT NULL REFERENCES public.institutions (id) ON DELETE CASCADE,
   class_id       uuid,
