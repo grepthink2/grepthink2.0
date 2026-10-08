@@ -182,7 +182,7 @@ after the deadline; dates rendered in the viewer's local time (the registry foll
 Supabase Postgres                            FastAPI on Vercel                       React on Vercel
 analytics_* SQL functions (live)   ── RPC ──▶ app/analytics/controller.py ── JSON ──▶ features/analytics/AnalyticsPage
 analytics_daily (nightly, pg_cron)             scope_for_user (4.1 #1)                  URL state ?institution&class&window&from&to
-events (written by the backend)                fan_out(5 rpcs) → compose payload        one payload → cards; CSV in the browser
+events (written by the backend)                fan_out(4 rpcs) → compose payload        one payload → cards; CSV in the browser
   STABLE, search_path = public                 k = 3 folding, failures[]                refetch holds the previous render
   EXECUTE: service_role only                   60 s cache, 30/min limiter
 ```
@@ -194,26 +194,35 @@ Follows url / views / controller / models.
 - `url.py` — `router = APIRouter(prefix="/api/analytics", tags=["analytics"])`; `GET /scope`, `GET /dashboard`;
   both `@limiter.limit("30/minute")` with `request: Request`, behind `require_user_payload` (the email claim
   feeds the maintainer allowlist). `GET /dashboard` records an `analytics_viewed` event.
-- `models.py` — `DashboardQuery` (`institution_id: UUID`, `class_id: UUID | None`, `window:
-  Literal['7d','30d','90d','class','all','custom'] = '30d'`, `from_: date | None` and `to: date | None`
-  (required and only allowed with `custom`; `class` requires `class_id`), `fresh: bool = False`) and response
-  models mirroring the brief's TypeScript contract. The tasks/points unit is a client-side toggle, not a query
-  parameter.
-- `windows.py` — pure functions: `range_bounds(window, today, *, class_start, custom_from, custom_to) ->
-  (from, to, prev_from, prev_to)` (422 `"from and to are required for a custom range"`, `"to must be on or
-  after from"`, `"a range may span at most 2 years"`, `"window=class needs class_id"` surfaced by the view),
-  `fold_small_groups(rows, key, k=3)`.
+- `views.py` — the query parameters sit on the view (there is no query model): `institution_id: UUID`,
+  `class_id: UUID | None`, `window: Literal['7d','30d','90d','class','all','custom'] = '30d'`, `from` and `to`
+  (`date | None`; required with `custom`, ignored otherwise; `class` requires `class_id`), `fresh: bool = False`.
+  FastAPI answers 422 for a bad window, uuid or date; a `WindowError` from `range_bounds` is a 422 as well.
+- `models.py` — response models mirroring the brief's TypeScript contract. The tasks/points unit is a
+  client-side toggle, not a query parameter.
+- `windows.py` — pure functions: `range_bounds(window, today, *, class_start, custom_from, custom_to,
+  all_from) -> (from, to, prev_from, prev_to)` (`all_from`, the day the school's first class was created,
+  starts `all`, which has no previous range; 422 `"from and to are required for a custom range"`, `"dates must
+  fall between 2000-01-01 and 2100-12-31"`, `"to must be on or after from"`, `"a range may span at most 2
+  years"`, `"window=class needs class_id"` surfaced by the view).
+- `privacy.py` — `fold_small_groups(rows, *, size_key, sum_keys, k=3)` (`K_ANONYMITY = 3`): rows below k
+  become one trailing "Smaller groups (n)" row. `trends.py` turns `analytics_trends`' weekly rows into the
+  Trends panels and the tile sparklines and holds the `delta` helper; `cache.py` is the 60 s per-process
+  payload cache.
 - `controller.py`
-  - `scope_for_user(user_id, email)`: maintainer (`email.lower()` ∈ `settings.ANALYTICS_ADMIN_EMAILS`) → all
-    institutions; else the institutions of `classes.created_by = user_id`. Empty → `[]` for `/scope`, 403 for
-    `/dashboard`.
-  - `get_scope(...)`: institutions in scope with their classes (`id`, `name`, `course_code`, `term`,
-    `start_date`; the term is display text only).
-  - `get_dashboard(...)`: validate scope (403) and class ∈ institution (400); bounds; cache; `fan_out` five
-    RPCs (`analytics_scope_counts`, `analytics_conversations`, `analytics_scrum`, `analytics_trends`,
-    `analytics_timeliness` once C lands), each wrapped so a `DatabaseError` adds the section to `failures`;
-    compose `overview` and `breakdown`; fold groups smaller than 3; cache; return.
-- `config.py` — `ANALYTICS_ADMIN_EMAILS` (comma-separated, blank = none).
+  - `scope_for_user(user_id, email)`: maintainer (an ASCII `email` whose `.lower()` ∈
+    `settings.ANALYTICS_ADMIN_EMAILS`) → all institutions; else the institutions of
+    `classes.created_by = user_id`. Empty → `[]` for `/scope`, 403 for `/dashboard`.
+  - `get_scope(...)`: institutions in scope with their classes (`id`, `name`, `label` ("name · term", or the
+    name alone), `term`, `start_date`; the term is display text only, and `course_code`, the join code, never
+    leaves).
+  - `get_dashboard(...)`: validate scope (403; 404 `"institution does not exist"` when a maintainer names an
+    unknown id); look up the cache right after that check, so a hit costs one read; then class ∈ institution
+    (400); bounds; `fan_out` four RPCs (`analytics_scope_counts`, `analytics_conversations`, `analytics_scrum`,
+    `analytics_trends`; C adds `analytics_timeliness`), each wrapped so a `DatabaseError` adds the cards that
+    lose data to `failures` (their counts null); compose `overview` and `breakdown`; fold groups smaller than
+    3; cache a payload without failures; return.
+- `config.py` — `ANALYTICS_ADMIN_EMAILS` (comma-separated, lower-cased, blank = none).
 
 ### 6.2 SQL — migration `2026-10/<YYYY-MM-DD>_analytics.sql`
 
@@ -222,7 +231,7 @@ function):
 
 ```sql
 WITH scope AS (
-  SELECT c.id AS class_id, c.name, c.course_code
+  SELECT c.id AS class_id, c.name
     FROM classes c
    WHERE c.institution_id = p_institution
      AND (p_class IS NULL OR c.id = p_class)),
@@ -307,25 +316,29 @@ p_prev_to date, p_tz text)` and `RETURNS jsonb`; timestamps are bucketed in `p_t
   pg_cron`): `analytics-rollup` at `0 9 * * *` UTC → `SELECT analytics_rollup_day(current_date - 1, true)` (01:00
   or 02:00 in Santa Cruz, 12:00 in Istanbul — the snapshot skew is documented in the Trends card's definition),
   `events-retention` daily (`DELETE FROM events WHERE occurred_at < now() - interval '365 days'`), and
-  `cron-run-details-retention` if the email cron has not created it. Everything the rollup needs is in the
-  database, so unlike the email dispatcher there is no HTTP call, no secret and no Vault entry.
+  `cron-run-details-retention`, scheduled unconditionally with the same name and schedule as the email cron's
+  (whichever file runs later replaces it). Everything the rollup needs is in the database, so unlike the email
+  dispatcher there is no HTTP call, no secret and no Vault entry.
 - **Folding (k = 3)** happens in Python after the RPCs: a class row with fewer than 3 students, a team row with
   fewer than 3 members, or a timeliness row with fewer than 3 expected submitters is summed into one row
   `kind: 'folded'`, label "Smaller groups (n)". Institution totals are unaffected.
 
-Indexes: none needed at current volume. When `messages` passes ~100k rows add `messages (created_at)` and
-`tasks (created_at)`; noted in the migration header.
+Indexes: the only new one is `analytics_daily_inst_day_idx` on `analytics_daily (institution_id, day)`. The
+message CTEs read from the earlier lower bound of the two ranges, which the existing
+`messages_conv_created_id_idx (conversation_id, created_at DESC, id DESC)` serves; stories and tasks are read
+all time for the medians (hundreds of rows today). Revisit at ~100k messages.
 
 ### 6.3 API
 
 ```
 GET /api/analytics/scope
   → { institutions: [{ id, name, slug, timezone, access: 'maintainer' | 'instructor',
-                       classes: [{ id, name, course_code, term, start_date }] }] }
+                       classes: [{ id, name, label: 'name · term', term, start_date }] }] }
 GET /api/analytics/dashboard?institution_id=…&class_id=…&window=30d[&from=2026-09-01&to=2026-10-05][&fresh=1]
   → AnalyticsDashboard (brief §5)
-  400 bad or mismatched parameters · 403 outside the caller's scope · 422 validation (range rules) ·
-  429 rate limit · 503 database unavailable · 200 with failures[] when a section's function fails
+  400 class not of that institution · 403 outside the caller's scope · 404 unknown institution (maintainer) ·
+  422 validation (bad window, uuid or date; range rules) · 429 rate limit · 503 database unavailable ·
+  200 with failures[] when a section's function fails
 ```
 
 Both routes join `frontend/public/.well-known/grepthink-actions.json` (`view_analytics_scope`,

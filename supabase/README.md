@@ -177,20 +177,32 @@ before giving up and notifying whoever sent the invite. In this order:
 ## Analytics core (maintainer steps)
 
 1. `backend/database/migrations/2026-10/2026-10-07_analytics.sql`, DEV then PROD (DEV: applied
-   2026-10-08), after the deadlines migration above — and this release ships only once that deadlines
+   2026-10-08), **before** the release (until it runs, every analytics card reads "This card could not
+   load") and after the deadlines migration above — and this release ships only once that deadlines
    migration is live: every board load now records an event and would log a warning on each request
    without the `events` table. It creates the `analytics_*` functions (service_role only),
    `analytics_daily` (RLS on, no client privileges) and the rollup functions; its Check block runs the
    rollup for yesterday (twice, to prove idempotence) and a snapshot-free backfill of the day before.
-2. `CREATE EXTENSION IF NOT EXISTS pg_cron;` then
-   `backend/database/migrations/prod/2026-10/2026-10-07_analytics_cron.sql` (DEV then PROD; DEV: done
-   2026-10-08): the 09:00 UTC rollup and the 365-day events retention. Confirm
-   `SELECT jobname, active FROM cron.job;`.
+2. `backend/database/migrations/prod/2026-10/2026-10-07_analytics_cron.sql`, DEV then PROD (DEV: applied
+   2026-10-08), after step 1. Its first statement is `CREATE EXTENSION IF NOT EXISTS pg_cron;`; it then
+   schedules `analytics-rollup` (09:00 UTC: yesterday's rollup with the board snapshot),
+   `events-retention` (deletes events older than 365 days) and `cron-run-details-retention` (keeps a
+   week of pg_cron's own run log; the email cron file schedules the same job). Its Check, `SELECT jobname,
+   schedule, active FROM cron.job ORDER BY jobname;`, lists those three jobs as active; on PROD
+   `email-dispatch` and `email-outbox-retention` appear too once the email cron file has run.
 3. PROD only, once: `SELECT analytics_rollup_range('<first class start_date>', current_date - 1);` to
-   backfill activity metrics (board snapshots start at go-live). Safe to re-run.
-4. Vercel, backend project: set `ANALYTICS_ADMIN_EMAILS` if maintainers should see every institution.
+   backfill activity metrics (board snapshots start at go-live). Safe to re-run; a re-run recomputes those
+   days from the current tables.
+4. Vercel, backend project: set `ANALYTICS_ADMIN_EMAILS` if maintainers should see every institution, and
+   redeploy (a changed variable reaches only the next deployment).
 5. Verify after the release: `/app/analytics` as an instructor; the morning after,
    `SELECT max(day) FROM analytics_daily;` is yesterday.
 6. A missed night (`max(day)` older than yesterday, or a week missing from Trends) is repaired with
    `SELECT analytics_rollup_range('<first missed day>', current_date - 1);` — activity metrics are
    rebuilt; the board snapshots of those days cannot be reconstructed and stay missing.
+
+- **Rolling back:** reverting the release needs no database change (everything here is additive). To
+  remove the database side, run the cron file's Undo first (it unschedules `analytics-rollup` and
+  `events-retention`; leave `cron-run-details-retention` while the email schedule is live), then the
+  migration's Undo. Without the functions the API answers 200 with every card in `failures[]`; dropping
+  `analytics_daily` loses the board snapshots for good, so export it first.

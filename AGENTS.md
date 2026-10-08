@@ -98,9 +98,10 @@ design/               # Claude Design export (design system); replace it wholesa
   (`POST /api/classes` through `require_instructor`; `useAuth().canCreateClasses` in the web
   client), and it is never used for a class decision, in the backend or the UI. Its other readers
   are account-level: joining a class checks that a role has been chosen, `/api/login-check`
-  returns it, the roster-email reminder (`needs_roster_email`) asks student accounts only, and the
-  web client falls back on it when no class is selected (Home's dashboard, the sidebar while the
-  classes load).
+  returns it, the roster-email reminder (`needs_roster_email`) asks student accounts only, the
+  sidebar shows the Analytics link only when `canCreateClasses` (the backend decides access, so a
+  maintainer on a student account opens `/app/analytics` directly), and the web client falls back
+  on it when no class is selected (Home's dashboard, the sidebar while the classes load).
 - **Class-scoped** (every other decision): instructor = `classes.created_by`; **TA** =
   `class_enrollments.enrollment_role = 'ta'` (single source of truth — see TA gotcha); student =
   any other enrollment. One account can hold a different role in each class. `GET /api/classes`

@@ -77,10 +77,11 @@ Design against these; they override the brief where they differ.
   is disabled during the very first load.
 - **Conversations card** has a "Table" toggle in its header that swaps the chart for a three-column week table
   (Week · Team channels · Direct). Its footnote reads "1,284 messages · Sep 8 – Oct 7 · direct messages are
-  school-wide".
-- **Scrum card** footnote reads "61 stories (188 pts) · 302 tasks (611 pts) created in range"; the LIVE pill and the
-  Tasks | Points toggle sit in its header; the characters-per-task and per-story small multiples share one y scale
-  and show the median on each column cap; sprint columns are labelled "Backlog", "S1", "S2" … in the small
+  school-wide". It spans the full width of the grid until sub-project C adds the Timeliness card beside it.
+- **Scrum card** footnote reads "61 stories (188 pts) · 302 tasks (611 pts) created in range"; the LIVE pill, the
+  Tasks | Points toggle and a "Table" toggle sit in its header (the table: one row per sprint, Sprint · Teams · To
+  do · In progress · Done, in the active unit); the characters-per-task and per-story small multiples share one y
+  scale and show the median on each column cap; sprint columns are labelled "Backlog", "S1", "S2" … in the small
   multiples and "Backlog", "Sprint 1" … in the stacked bars, with "8 teams" meta under each row label.
 - **Trends card** has a "Compare with previous range" checkbox in its header and a footer "This range · Previous
   range" legend plus "as of Oct 6, 2026". Its empty state copy: "Trends appear after the first nightly rollup."
@@ -88,11 +89,16 @@ Design against these; they override the brief where they differ.
   Pts done % · View) and per team with one (Team · Members · Team msgs · Stories · Tasks · Pts done % · View). The
   folded row is last, italic, labelled "Smaller groups (n)" with a ⓘ "Fewer than 3 people", and has no View link.
   "View" on a class row drills into analytics for that class; on a team row it opens the team's scrum board.
+- **Definition panel.** The ⓘ beside a card title opens its definition (at most 320 px wide) below it, aligned to
+  the ⓘ; where that would run off the screen, the panel moves left just enough to keep 8 px from the viewport's edge
+  (centred when the screen has less to spare).
 - **Copy to use verbatim.** Forbidden page: "Analytics is available to instructors and maintainers." Card error
-  strip: "This card could not load." Empty states: "No messages yet" / "Team channels fill in as teams start
-  talking."; "No sprints yet" / "Boards fill in once teams create their first sprint."; "Nothing to list" / "Rows
-  appear once the school has classes and teams." Date labels: "Sep 7" for a week, "Sep 8 – Oct 7" for a range in
-  one year, "Dec 25, 2025 – Jan 5, 2026" across years; compact figures "1,284", "12.9K", "1.3M".
+  strip: "This card could not load." Page failure strip: "The latest request failed (HTTP n)." or "The server could
+  not be reached.", followed by " Showing the previous figures." while an earlier payload stays on screen. Empty
+  states: "No messages yet" / "Team channels fill in as teams start talking."; "No sprints yet" / "Boards fill in
+  once teams create their first sprint."; "Nothing to list" / "Rows appear once the school has classes and teams."
+  Date labels: "Sep 7" for a week, "Sep 8 – Oct 7" for a range in one year, "Dec 25, 2025 – Jan 5, 2026" across
+  years; compact figures "1,284", "12.9K", "1.3M".
 - **Class names the port expects** (use these so the CSS drops in): `.gt-analytics` (page grid, `__header`,
   `__title`, `__badge`, `__refresh`, `__toggle`, `__check`, `__tiles`, `__grid`, `__scrum`, `__footnote`, `__error`,
   `__forbidden`), `.gt-chart-card` (`__head`, `__titles`, `__title-row`, `__title`, `__subtitle`, `__actions`,
@@ -121,7 +127,8 @@ Design against these; they override the brief where they differ.
 - **Density.** The dev database has 134 TSR assignments across 36 classes; design the ≥ 20-row table (compact
   20 px rows, sticky header, or a "Show all" expander) and a stacked-bar card with 8+ sprint rows.
 - **Null counts.** Any count can arrive `null` when its source could not load; the card is then listed in
-  `failures`. A tile or table cell with a null count reads "—", and the tile's hint says "Could not load".
+  `failures`. A table cell with a null count reads "—", and a tile whose source failed reads "—" with the hint
+  "Could not load".
 
 Answer the brief's §9 questions in `NOTES.md` even where you keep the wireframe's choice, so the port knows the
 decision was made.
