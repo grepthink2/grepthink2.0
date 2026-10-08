@@ -2145,18 +2145,20 @@ END;
 $$;
 
 -- ------------------------------------------------------------------ trends (from the rollup) ----
--- Weekly rows the backend turns into the Trends panels and the tile sparklines: team messages, tasks
--- created and the week's last points_done snapshot, summed over the class rows in scope (every class the
--- school ever had, deleted ones included, or the selected class); the week's average count of teams in
--- session; dm_messages from the institution rows, on days with or without class rows; and the week's
--- number of rolled-up days, so the backend can leave out a week the rollup has not covered (the week in
--- progress, the end of a range that stops mid-week). A class is in session from its first to its last
--- day with activity (team messages, tasks or stories created, active teams) inside the rows read here:
--- a finished class stops adding its teams, a class with no activity adds none, and a week in which no
--- class is in session has teams NULL. Weeks start on Monday (days are already calendar days in the
--- school's zone). Covers whole weeks from the Monday of least(p_prev_from, as_of - 84 days, p_to - 84
--- days) to p_to, so the previous range and a 12-week sparkline both fit and the first bucket is never a
--- partial week.
+-- Weekly rows the backend turns into the Trends panels and the tile sparklines: team messages and tasks
+-- created, summed over the class rows in scope (every class the school ever had, deleted ones included,
+-- or the selected class); the week's last points_done snapshot and the week's average team count, both
+-- over the classes in session that week; dm_messages from the institution rows, on days with or without
+-- class rows; and the week's number of rolled-up days, so the backend can leave out a week the rollup has
+-- not covered (the week in progress, the end of a range that stops mid-week). A class is in session from
+-- the week of its first day with activity (team messages, tasks or stories created, active teams) to the
+-- week of its last one, inside the rows read here: a finished class stops adding its teams and its board,
+-- a class with no activity adds neither, and a week in which no class is in session has teams NULL.
+-- Whole weeks, so a class quiet on the last days of its latest week still counts all seven (a day-level
+-- edge would shrink that week's team average and inflate its per-team figures). Weeks start on Monday
+-- (days are already calendar days in the school's zone). Covers whole weeks from the Monday of
+-- least(p_prev_from, as_of - 84 days, p_to - 84 days) to p_to, so the previous range and a 12-week
+-- sparkline both fit and the first bucket is never a partial week.
 CREATE OR REPLACE FUNCTION public.analytics_trends(
   p_institution uuid, p_class uuid, p_from date, p_to date,
   p_prev_from date, p_prev_to date, p_tz text)
@@ -2186,16 +2188,20 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
            sum(value) FILTER (WHERE metric = 'teams')         AS teams,
            sum(value) FILTER (WHERE metric IN ('team_messages', 'tasks_created', 'stories_created', 'active_teams')) AS activity
       FROM class_rows GROUP BY class_id, day),
-  in_session AS (                                 -- a class's first and last day with activity
-    SELECT class_id, min(day) AS first_day, max(day) AS last_day
+  in_session AS (                                 -- whole weeks: the week of a class's first day with activity
+    SELECT class_id,                              -- to the week of its last one
+           date_trunc('week', min(day)::timestamp)::date AS first_week,
+           date_trunc('week', max(day)::timestamp)::date AS last_week
       FROM class_day WHERE activity > 0 GROUP BY class_id),
-  daily_class AS (                                -- teams only from the classes in session that day
+  daily_class AS (                                -- teams and board points only from the classes in session
     SELECT cd.day,
            sum(cd.team_messages) AS team_messages,
            sum(cd.tasks_created) AS tasks_created,
-           sum(cd.points_done)   AS points_done,
-           sum(cd.teams) FILTER (WHERE cd.day BETWEEN s.first_day AND s.last_day) AS teams
-      FROM class_day cd LEFT JOIN in_session s ON s.class_id = cd.class_id
+           sum(cd.points_done) FILTER (WHERE s.class_id IS NOT NULL) AS points_done,
+           sum(cd.teams)       FILTER (WHERE s.class_id IS NOT NULL) AS teams
+      FROM class_day cd
+      LEFT JOIN in_session s ON s.class_id = cd.class_id
+                            AND date_trunc('week', cd.day::timestamp)::date BETWEEN s.first_week AND s.last_week
      GROUP BY cd.day),
   daily_inst AS (
     SELECT day, sum(value) FILTER (WHERE metric = 'dm_messages') AS dm_messages

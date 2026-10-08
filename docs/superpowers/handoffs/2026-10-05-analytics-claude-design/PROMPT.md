@@ -115,9 +115,9 @@ Design against these; they override the brief where they differ.
   Trends definition (ⓘ): "Weekly figures per team from the nightly rollup over the selected range, with the range
   of the same length just before it drawn in grey for comparison. Each night's rollup adds yesterday, at about
   02:00 Pacific time and about 12:00 in Istanbul, so an Istanbul board snapshot (Points done) is taken at midday.
-  Per-team figures count the teams of classes in session, from each class's first to its last day with activity.
-  Only complete weeks are drawn: the week in progress appears once it ends. Deleted classes and teams stay in the
-  history."
+  Per-team figures count only the classes in session, from the week of each class's first activity to the week of
+  its last. Only complete weeks are drawn: the week in progress appears once it ends. Deleted classes and teams stay
+  in the history."
   Date labels: "Sep 7" for a week, "Sep 8 – Oct 7" for a range in one year, "Dec 25, 2025 – Jan 5, 2026" across
   years; compact figures "1,284", "12.9K", "1.3M".
 - **Class names the port expects** (use these so the CSS drops in): `.gt-analytics` (page grid, `__header`,

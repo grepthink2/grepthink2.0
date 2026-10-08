@@ -1,10 +1,10 @@
 """Shape the weekly rows of ``analytics_trends`` into the Trends panels, the tile sparklines and deltas.
 
-The SQL sums the rollup per Monday week (team messages, tasks created, the week's last points_done
-snapshot, the average count of teams in session, direct messages) and counts the week's rolled-up days.
-Only complete weeks are drawn: the week in progress, or the last week of a range that ends mid-week, holds
-fewer days, and its partial sum would read as a drop. Per-team figures are divided here, in Python, so a
-week with no teams becomes ``null`` instead of a division error (spec Q-B3).
+The SQL sums the rollup per Monday week (team messages, tasks created, direct messages; the week's last
+points_done snapshot and its average team count, both over the classes in session) and counts the week's
+rolled-up days. Only complete weeks are drawn: the week in progress, or the last week of a range that ends
+mid-week, holds fewer days, and its partial sum would read as a drop. Per-team figures are divided here, in
+Python, so a week with no teams becomes ``null`` instead of a division error (spec Q-B3).
 """
 
 from __future__ import annotations

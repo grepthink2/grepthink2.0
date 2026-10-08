@@ -247,7 +247,7 @@ def test_trends_rows_are_weekly(db, ucsc):
 
 
 def test_trends_count_no_teams_for_a_class_without_activity(db, ucsc):
-    """A class with no activity in the rows read is never in session: none of its weeks has a team count."""
+    """A class with no activity in the rows read is never in session: no week has its teams or its points."""
     args = _args(ucsc, days=90)
     as_of = _call(db, "analytics_trends", args)["as_of"]
     # the function's own lower bound, a week early: a wider window than it reads, so "quiet" is safe
@@ -285,3 +285,4 @@ def test_trends_count_no_teams_for_a_class_without_activity(db, ucsc):
         pytest.skip("every DEV class has activity in the window")
     j = _call(db, "analytics_trends", {**args, "p_class": quiet})
     assert all(w["teams"] is None for w in j["weekly"]), "a class without activity adds no teams"
+    assert all(w["points_done"] is None for w in j["weekly"]), "nor its board's points"
