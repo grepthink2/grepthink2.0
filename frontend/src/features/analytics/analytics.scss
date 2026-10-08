@@ -10,13 +10,24 @@
 .gt-status--in_progress { --series: var(--gt-accent); }
 .gt-status--done { --series: var(--gt-primary); }
 
-.gt-analytics { max-width: 1400px; display: grid; gap: 20px; }
+.gt-analytics { max-width: 1400px; display: grid; gap: 20px; padding: 20px 24px; } // the shell's content padding (handoff §2); .app-main has none
 .gt-analytics__grid { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .gt-analytics__grid > .gt-chart-card--wide { grid-column: 1 / -1; }
 @media (max-width: 999px) { .gt-analytics__grid { grid-template-columns: minmax(0, 1fr); } }
 .gt-analytics__tiles { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .gt-analytics__footnote { font-size: 12px; color: var(--gt-text-tertiary); }
+.gt-chart-card__body > * + * { margin-top: 12px; } // a body's parts stand apart (the line's legend and the split bar below it)
 .gt-analytics__error { margin: 0; padding: 8px 12px; border-radius: var(--gt-radius-md); background: var(--gt-error-soft); color: var(--gt-error-text); font-size: 13px; }
+.gt-analytics__header { display: flex; align-items: center; gap: 12px; }
+.gt-analytics__title { margin: 0; font-size: 20px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; color: var(--gt-text-primary); }
+.gt-analytics__badge { font-size: 12px; padding: 2px 10px; border-radius: 10px; background: var(--gt-surface-muted); color: var(--gt-text-secondary); }
+.gt-analytics__refresh, .gt-analytics__toggle { margin-left: auto; height: 32px; padding: 0 12px; border-radius: 7px; border: 1px solid var(--gt-border); background: var(--gt-surface); font: inherit; font-size: 12.5px; color: var(--gt-text-secondary); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.gt-analytics__toggle { margin-left: 0;
+  &[aria-pressed='true'] { background: var(--gt-primary-soft); color: var(--gt-success-text); } }
+.gt-analytics__check { font-size: 12.5px; color: var(--gt-text-secondary); display: inline-flex; gap: 6px; align-items: center; }
+.gt-analytics__scrum { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 999px) { .gt-analytics__scrum { grid-template-columns: minmax(0, 1fr); } }
+.gt-analytics__forbidden { font-size: 14px; color: var(--gt-text-secondary); }
 
 .gt-chart-card {
   background: var(--gt-surface);
