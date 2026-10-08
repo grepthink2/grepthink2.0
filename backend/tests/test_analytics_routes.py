@@ -99,9 +99,10 @@ def test_a_verified_token_without_a_subject_is_401_not_500(client):
 
 def test_scope_lists_the_callers_institutions_and_is_empty_for_students(client):
     r = client.get(f"{BASE}/scope", headers=PROF)
+    # no-cache: an instructor who creates a first class and comes back within the minute gets the new scope
     assert (
         r.status_code == 200
-        and r.headers["cache-control"] == "private, max-age=60"
+        and r.headers["cache-control"] == "no-cache"
         and r.headers["vary"] == "Authorization"
     )
     body = r.json()
@@ -153,6 +154,19 @@ def test_dashboard_happy_path_sets_the_headers_and_records_the_view(client, _set
         "project_id": None,
         "meta": {"institution_id": UCSC["id"], "window": "class"},
     }
+
+
+def test_a_view_is_recorded_for_a_first_load_and_a_filter_change_but_not_for_a_fresh_poll(
+    client, _setup
+):
+    params = {"institution_id": UCSC["id"]}
+    assert client.get(f"{BASE}/dashboard", params=params, headers=PROF).status_code == 200
+    # the page's 60 s poll and its Refresh button send fresh=1: a tab left open is not a view a minute
+    fresh = client.get(f"{BASE}/dashboard", params={**params, "fresh": "1"}, headers=PROF)
+    assert fresh.status_code == 200
+    changed = client.get(f"{BASE}/dashboard", params={**params, "window": "7d"}, headers=PROF)
+    assert changed.status_code == 200
+    assert [e["meta"]["window"] for e in _setup.store["events"]] == ["30d", "7d"]
 
 
 def test_fresh_bypasses_the_cache_and_is_never_stored_by_the_browser(client):

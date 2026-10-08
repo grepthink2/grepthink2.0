@@ -99,7 +99,7 @@ new vendor, no new project, and student data never leaves the stack.
 | D9 | Route and navigation | `/app/analytics`, lazy, not class-scoped; sidebar item "Analytics" in Main for accounts that can create classes; filters in the query string | The institution is the frame; the class filter is its own control. |
 | D10 | Chart technology | Token-driven SVG components in the `BurnupChart` idiom, delivered by Claude Design; recharts primitives allowed underneath; no new dependency | Passes `lint:design` by construction. |
 | D11 | Payload | One `GET /api/analytics/dashboard` answers the page; `failures[]` names any section whose function failed while the rest renders | One request per filter change; one broken section cannot blank the page. |
-| D12 | Caching and limits | `@limiter.limit("30/minute")`; in-process cache 60 s keyed by the full filter tuple, 128 entries; `Cache-Control: private, max-age=60`; `?fresh=1` bypasses | The `get_user_count` pattern; Vercel instances are independent, so this only smooths bursts. |
+| D12 | Caching and limits | `@limiter.limit("30/minute")`; in-process cache 60 s keyed by the full filter tuple, 128 entries; `Cache-Control: private, max-age=60` on the dashboard (`no-store` for a fresh or degraded answer) and `no-cache` on `/scope`; `?fresh=1` bypasses | The `get_user_count` pattern; Vercel instances are independent, so this only smooths bursts. |
 | D14 | Export | CSV of the breakdown table, built in the browser | No new endpoint. |
 | D15 | Web analytics | Out of scope; enable Vercel Web Analytics separately | Free on Hobby; a different question. |
 | D17 | SQL function hygiene | `LANGUAGE sql STABLE SET search_path = public`; `REVOKE EXECUTE … FROM PUBLIC, anon, authenticated; GRANT EXECUTE … TO service_role`; idempotent; a `-- Check` block | States the lockdown policy explicitly. |
@@ -193,7 +193,8 @@ Follows url / views / controller / models.
 
 - `url.py` — `router = APIRouter(prefix="/api/analytics", tags=["analytics"])`; `GET /scope`, `GET /dashboard`;
   both `@limiter.limit("30/minute")` with `request: Request`, behind `require_user` and `require_user_payload`
-  (the email claim feeds the maintainer allowlist). `GET /dashboard` records an `analytics_viewed` event.
+  (the email claim feeds the maintainer allowlist). `GET /dashboard` records an `analytics_viewed` event for a
+  request without `fresh` (a first load or a filter change; the page's 60 s poll and Refresh send `fresh=1`).
 - `views.py` — the query parameters sit on the view (there is no query model): `institution_id: UUID`,
   `class_id: UUID | None`, `window: Literal['7d','30d','90d','class','all','custom'] = '30d'`, `from` and `to`
   (`date | None`; required with `custom`, ignored otherwise; `class` requires `class_id`), `fresh: bool = False`.
