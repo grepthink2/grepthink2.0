@@ -1,8 +1,8 @@
 -- 2026-10-07 — nightly analytics rollup and events retention (pg_cron)
 --
--- STAGED, NOT APPLIED. Nothing runs the files in this directory. Target: DEV first, then PROD, by hand,
--- AFTER ../../2026-10/2026-10-07_analytics.sql. Everything the jobs need is inside the database: no
--- HTTP call, no secret, no Vault entry (unlike ../2026-09/2026-09-30_email_dispatch_cron.sql).
+-- Applied by hand, DEV first, then PROD (nothing runs the files in this directory; the Applied line below
+-- records each run), AFTER ../../2026-10/2026-10-07_analytics.sql. Everything the jobs need is inside the
+-- database: no HTTP call, no secret, no Vault entry (unlike ../2026-09/2026-09-30_email_dispatch_cron.sql).
 --
 -- 09:00 UTC is 01:00/02:00 in Santa Cruz and 12:00 in Istanbul (spec Q-B1): "yesterday" (current_date
 -- - 1 in UTC) is a complete calendar day in both zones. The Istanbul board snapshot is therefore taken

@@ -320,7 +320,7 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
                  'points_done', points_done, 'points_total', points_total) ORDER BY project_id) FROM by_team), '[]'::jsonb));
 $$;
 
--- Lockdown for the functions written so far (Task 2 adds the rest).
+-- Lockdown for the section functions and helpers; the rollup and trends functions are locked down below.
 REVOKE ALL ON FUNCTION public.analytics_scope_classes(uuid, uuid)                                       FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.analytics_scope_teams(uuid, uuid)                                         FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.analytics_user_roles()                                                    FROM PUBLIC, anon, authenticated;
@@ -569,9 +569,9 @@ GRANT EXECUTE ON FUNCTION public.analytics_trends(uuid, uuid, date, date, date, 
 COMMIT;
 
 -- ======================================================================= CHECK (part 1) ====
--- Run on DEV after applying (Task 2 adds the COMMIT and part 2). `ucsc` is the seeded slug, looked up
+-- Run on DEV and PROD after applying. `ucsc` is the seeded slug, looked up
 -- inline. Every query names its expectation:
---   fn_count = 8 (three section functions, five helpers)   [Task 2 adds analytics_trends and the two rollup functions: 11]
+--   fn_count = 11 (four section functions, five helpers, two rollup functions)
 --   client_execute = 0 rows (no anon/authenticated EXECUTE on any analytics_% function)
 --   service_role_execute = fn_count (service_role may execute every analytics_% function)
 --   classes_match = t, teams_match = t, active_rule = t (scope counts agree with their own rows; the
@@ -669,7 +669,7 @@ SELECT coalesce(bool_and(extract(isodow FROM (w->>'week_start')::date) = 1), tru
   FROM conv, jsonb_array_elements(j->'weekly') w;
 
 -- ======================================================================= CHECK (part 2) ====
--- Expected: fn_count above is now 11; daily_rls = t; anon_select = f, auth_select = f, service_select = t;
+-- Expected: fn_count above = 11; daily_rls = t; anon_select = f, auth_select = f, service_select = t;
 --   first_run_rows_ok = t (yesterday's run writes 14 rows per class that existed and 2 per school),
 --   second_run_same = t (a re-run writes the same number), backfill_rows_ok = t (a backfill day writes
 --   the 8 activity rows per class, no snapshot); team_day_match = t and dm_day_match = t (yesterday's

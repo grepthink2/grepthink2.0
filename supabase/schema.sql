@@ -1964,7 +1964,7 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
                  'points_done', points_done, 'points_total', points_total) ORDER BY project_id) FROM by_team), '[]'::jsonb));
 $$;
 
--- Lockdown for the functions written so far (Task 2 adds the rest).
+-- Lockdown for the section functions and helpers; the rollup and trends functions are locked down below.
 REVOKE ALL ON FUNCTION public.analytics_scope_classes(uuid, uuid)                                       FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.analytics_scope_teams(uuid, uuid)                                         FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.analytics_user_roles()                                                    FROM PUBLIC, anon, authenticated;
