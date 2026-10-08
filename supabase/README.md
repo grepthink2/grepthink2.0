@@ -190,8 +190,10 @@ before giving up and notifying whoever sent the invite. In this order:
    week of pg_cron's own run log; the email cron file schedules the same job). Its Check, `SELECT jobname,
    schedule, active FROM cron.job ORDER BY jobname;`, lists those three jobs as active; on PROD
    `email-dispatch` and `email-outbox-retention` appear too once the email cron file has run.
-3. PROD only, once: `SELECT analytics_rollup_range('<first class start_date>', current_date - 1);` to
-   backfill activity metrics (board snapshots start at go-live). Safe to re-run; a re-run recomputes those
+3. Backfill activity metrics once, DEV then PROD (DEV: done 2026-10-08, 91 days, 2026-07-09 … 2026-10-07),
+   from the first class's `start_date` to `current_date - 1`, a month at a time to stay under the SQL
+   editor's statement timeout: `SELECT analytics_rollup_range('<month start>', '<month end>');` per month.
+   Board snapshots cannot be backfilled; they start at go-live. Safe to re-run; a re-run recomputes those
    days from the current tables.
 4. Vercel, backend project: set `ANALYTICS_ADMIN_EMAILS` if maintainers should see every institution, and
    redeploy (a changed variable reaches only the next deployment).

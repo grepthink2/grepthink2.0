@@ -89,9 +89,10 @@ Design against these; they override the brief where they differ.
   Pts done % · View) and per team with one (Team · Members · Team msgs · Stories · Tasks · Pts done % · View). The
   folded row is last, italic, labelled "Smaller groups (n)" with a ⓘ "Fewer than 3 people", and has no View link.
   "View" on a class row drills into analytics for that class; on a team row it opens the team's scrum board.
-- **Definition panel.** The ⓘ beside a card title opens its definition (at most 320 px wide) below it, aligned to
-  the ⓘ; where that would run off the screen, the panel moves left just enough to keep 8 px from the viewport's edge
-  (centred when the screen has less to spare).
+- **Definition panel.** The ⓘ beside a card title opens its definition below it, aligned to the ⓘ: the shared
+  popover (16 px padding) around a text column at most 320 px wide, or the screen's width less 48 px when that is
+  narrower. Where the panel would run off the screen it moves left just enough to keep 8 px from the viewport's
+  edge, and it is centred when the screen is less than 16 px wider than the panel.
 - **Copy to use verbatim.** Forbidden page: "Analytics is available to instructors and maintainers." Card error
   strip: "This card could not load." Page failure strip: "The latest request failed (HTTP n)." or "The server could
   not be reached.", followed by " Showing the previous figures." while an earlier payload stays on screen. Empty

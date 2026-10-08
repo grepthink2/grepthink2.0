@@ -192,8 +192,8 @@ events (written by the backend)                fan_out(4 rpcs) → compose paylo
 Follows url / views / controller / models.
 
 - `url.py` — `router = APIRouter(prefix="/api/analytics", tags=["analytics"])`; `GET /scope`, `GET /dashboard`;
-  both `@limiter.limit("30/minute")` with `request: Request`, behind `require_user_payload` (the email claim
-  feeds the maintainer allowlist). `GET /dashboard` records an `analytics_viewed` event.
+  both `@limiter.limit("30/minute")` with `request: Request`, behind `require_user` and `require_user_payload`
+  (the email claim feeds the maintainer allowlist). `GET /dashboard` records an `analytics_viewed` event.
 - `views.py` — the query parameters sit on the view (there is no query model): `institution_id: UUID`,
   `class_id: UUID | None`, `window: Literal['7d','30d','90d','class','all','custom'] = '30d'`, `from` and `to`
   (`date | None`; required with `custom`, ignored otherwise; `class` requires `class_id`), `fresh: bool = False`.
@@ -201,14 +201,14 @@ Follows url / views / controller / models.
 - `models.py` — response models mirroring the brief's TypeScript contract. The tasks/points unit is a
   client-side toggle, not a query parameter.
 - `windows.py` — pure functions: `range_bounds(window, today, *, class_start, custom_from, custom_to,
-  all_from) -> (from, to, prev_from, prev_to)` (`all_from`, the day the school's first class was created,
-  starts `all`, which has no previous range; 422 `"from and to are required for a custom range"`, `"dates must
-  fall between 2000-01-01 and 2100-12-31"`, `"to must be on or after from"`, `"a range may span at most 2
-  years"`, `"window=class needs class_id"` surfaced by the view).
-- `privacy.py` — `fold_small_groups(rows, *, size_key, sum_keys, k=3)` (`K_ANONYMITY = 3`): rows below k
-  become one trailing "Smaller groups (n)" row. `trends.py` turns `analytics_trends`' weekly rows into the
-  Trends panels and the tile sparklines and holds the `delta` helper; `cache.py` is the 60 s per-process
-  payload cache.
+  all_from) -> RangeBounds`, a frozen dataclass `(window, start, end, prev_start, prev_end)` (`all_from`, the
+  day the school's first class was created, starts `all`, which has no previous range; 422 `"from and to are
+  required for a custom range"`, `"dates must fall between 2000-01-01 and 2100-12-31"`, `"to must be on or
+  after from"`, `"a range may span at most 2 years"`, `"window=class needs class_id"` surfaced by the view).
+- `privacy.py` — `fold_small_groups(rows, *, size_key, sum_keys, k=K_ANONYMITY, label=FOLDED_LABEL)`
+  (`K_ANONYMITY = 3`, `FOLDED_LABEL = "Smaller groups"`): rows whose `size_key` is below k become one trailing
+  "Smaller groups (n)" row. `trends.py` turns `analytics_trends`' weekly rows into the Trends panels and the
+  tile sparklines and holds the `delta` helper; `cache.py` is the 60 s per-process payload cache.
 - `controller.py`
   - `scope_for_user(user_id, email)`: maintainer (an ASCII `email` whose `.lower()` ∈
     `settings.ANALYTICS_ADMIN_EMAILS`) → all institutions; else the institutions of
@@ -323,10 +323,10 @@ p_prev_to date, p_tz text)` and `RETURNS jsonb`; timestamps are bucketed in `p_t
   fewer than 3 members, or a timeliness row with fewer than 3 expected submitters is summed into one row
   `kind: 'folded'`, label "Smaller groups (n)". Institution totals are unaffected.
 
-Indexes: the only new one is `analytics_daily_inst_day_idx` on `analytics_daily (institution_id, day)`. The
-message CTEs read from the earlier lower bound of the two ranges, which the existing
-`messages_conv_created_id_idx (conversation_id, created_at DESC, id DESC)` serves; stories and tasks are read
-all time for the medians (hundreds of rows today). Revisit at ~100k messages.
+Indexes: the only new indexes are on `analytics_daily` (its unique key `analytics_daily_uq` and
+`analytics_daily_inst_day_idx`). The message CTEs read from the earlier lower bound of the two ranges, which
+the existing `messages_conv_created_id_idx (conversation_id, created_at DESC, id DESC)` serves; stories and
+tasks are read all time for the medians (hundreds of rows today). Revisit at ~100k messages.
 
 ### 6.3 API
 

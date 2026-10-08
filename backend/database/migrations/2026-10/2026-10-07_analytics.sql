@@ -23,7 +23,8 @@
 --     DISTINCT needs Postgres 15+: DEV and PROD both run 17 (checked 2026-10-07).
 --   * Lockdown (spec D17): EXECUTE on every function for service_role only; analytics_daily has RLS
 --     on, no policies and no client privileges. pg_cron runs as postgres.
---   * Indexes: none added. Message reads start at the earliest bound of the two ranges, which the
+--   * Indexes: none on existing tables; analytics_daily gets its unique key (analytics_daily_uq) and
+--     analytics_daily_inst_day_idx. Message reads start at the earliest bound of the two ranges, which the
 --     existing messages_conv_created_id_idx (conversation_id, created_at DESC, id DESC) serves; stories
 --     and tasks are read all-time for the medians (hundreds of rows today). Revisit at ~100k messages.
 
