@@ -3,12 +3,14 @@ import type { ApiAnalyticsTrendPanel } from '@/lib/api/types';
 import { dateLabel, percent, weekLabel } from '../utils/analyticsFormat';
 import { linePath, linearScale, niceMax, textWidth, tickLabel } from '../utils/chartGeometry';
 import { useMeasuredWidth } from '../utils/useMeasuredWidth';
+import { CardTable } from './CardTable';
 import { ChartLegend } from './ChartLegend';
 
 // Each panel draws 1:1 at its own width (useMeasuredWidth), so its 2px lines, 8px markers and 11px end label keep their
 // sizes in a 200px column and in a 345px one alike. W is a panel's width before the first measurement (and in jsdom).
 
 export interface TrendLinesProps { panels: ApiAnalyticsTrendPanel[]; compare: boolean; asOf: string | null }
+export interface TrendTableProps { panels: ApiAnalyticsTrendPanel[]; asOf: string | null }
 
 type Point = [number, number] | null;
 
@@ -34,6 +36,22 @@ function latestWeek(weeks: ApiAnalyticsTrendPanel['current']): { index: number; 
   return null;
 }
 
+/**
+ * What the card says in place of its weeks, or null when a week has a value: before the first nightly rollup; once it
+ * has run, while the range holds no complete week (the backend leaves out the week in progress); or when no class was in
+ * session in any of its weeks.
+ */
+function emptyNote(panels: ApiAnalyticsTrendPanel[], asOf: string | null): string | null {
+  if (panels.some((p) => p.current.some((c) => c.value !== null))) return null;
+  if (!asOf) return 'Trends appear after the first nightly rollup.';
+  if (panels.every((p) => p.current.length === 0)) return 'No complete week in this range yet.';
+  return 'No team activity in this range.';
+}
+
+function AsOf({ asOf }: { asOf: string | null }) {
+  return asOf ? <span className="gt-trend__asof">{`as of ${dateLabel(asOf)}`}</span> : null;
+}
+
 /** The points that get a marker: each one no neighbour connects to (its bare moveto would paint nothing), and the one at `also`. */
 function markedPoints(pts: Point[], also = -1): [number, number][] {
   return pts.filter((p, i): p is [number, number] => p !== null && (i === also || (!pts[i - 1] && !pts[i + 1])));
@@ -41,10 +59,8 @@ function markedPoints(pts: Point[], also = -1): [number, number][] {
 
 /** Small multiples over the range; the previous range is a gray context line aligned by week index (brief §4 #11). Null weeks leave gaps; a week no line reaches gets a marker; this range's latest week is marked and labelled. */
 export function TrendLines({ panels, compare, asOf }: TrendLinesProps) {
-  const hasData = panels.some((p) => p.current.some((c) => c.value !== null));
-  if (!hasData) {
-    return <p className="gt-trend__empty">Trends appear after the first nightly rollup.</p>;
-  }
+  const note = emptyNote(panels, asOf);
+  if (note) return <p className="gt-trend__empty">{note}</p>;
   const showsPrevious = compare && panels.some((p) => p.previous?.some((c) => c.value !== null));
   const right = Math.max(MIN_RIGHT, ...panels.map((p) => {
     const latest = latestWeek(p.current);
@@ -57,8 +73,31 @@ export function TrendLines({ panels, compare, asOf }: TrendLinesProps) {
       </div>
       <div className="gt-trend__foot">
         <ChartLegend items={[{ key: 'cur', label: 'This range', swatch: 'line', colorClass: 'gt-series--1' }, ...(showsPrevious ? [{ key: 'prev', label: 'Previous range', swatch: 'line' as const, colorClass: 'gt-series--gray' }] : [])]} />
-        {asOf ? <span className="gt-trend__asof">{`as of ${dateLabel(asOf)}`}</span> : null}
+        <AsOf asOf={asOf} />
       </div>
+    </div>
+  );
+}
+
+/** The Trends card's Table twin: one row per complete week of this range, one column per panel with its unit in the header. */
+export function TrendTable({ panels, asOf }: TrendTableProps) {
+  const note = emptyNote(panels, asOf);
+  if (note) return <p className="gt-trend__empty">{note}</p>;
+  const weeks = [...new Set(panels.flatMap((p) => p.current.map((c) => c.week_start)))].sort();
+  return (
+    <div className="gt-trend">
+      <CardTable
+        caption="Trends by week"
+        columns={[{ key: 'week', label: 'Week' }, ...panels.map((p) => ({ key: p.key, label: `${p.title} (${p.unit})`, numeric: true }))]}
+        rows={weeks.map((weekStart) => ({
+          key: weekStart,
+          cells: [dateLabel(weekStart), ...panels.map((p) => {
+            const value = p.current.find((c) => c.week_start === weekStart)?.value ?? null;
+            return value === null ? '—' : valueLabel(p, value);
+          })],
+        }))}
+      />
+      <div className="gt-trend__foot"><AsOf asOf={asOf} /></div>
     </div>
   );
 }

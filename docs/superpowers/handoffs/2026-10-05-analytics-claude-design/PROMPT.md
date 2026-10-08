@@ -83,8 +83,12 @@ Design against these; they override the brief where they differ.
   do · In progress · Done, in the active unit); the characters-per-task and per-story small multiples share one y
   scale and show the median on each column cap; sprint columns are labelled "Backlog", "S1", "S2" … in the small
   multiples and "Backlog", "Sprint 1" … in the stacked bars, with "8 teams" meta under each row label.
-- **Trends card** has a "Compare with previous range" checkbox in its header and a footer "This range · Previous
-  range" legend plus "as of Oct 6, 2026". Its empty state copy: "Trends appear after the first nightly rollup."
+- **Trends card** has a "Compare with previous range" checkbox and a "Table" toggle in its header (the table: one
+  row per complete week, one column per panel with its unit, "—" for a week without a value) and a footer "This
+  range · Previous range" legend plus "as of Oct 6, 2026". Only complete weeks are drawn, here and in the tile
+  sparklines. Its empty states: "Trends appear after the first nightly rollup." before the first rollup, "No
+  complete week in this range yet." while the range holds only the week in progress, and "No team activity in
+  this range." when no class was in session.
 - **Breakdown table** is per class without a class filter (Class · Teams · Students · Team msgs · Stories · Tasks ·
   Pts done % · View) and per team with one (Team · Members · Team msgs · Stories · Tasks · Pts done % · View). The
   folded row is last, italic, labelled "Smaller groups (n)" with a ⓘ "Fewer than 3 people", and has no View link.
@@ -98,6 +102,12 @@ Design against these; they override the brief where they differ.
   not be reached.", followed by " Showing the previous figures." while an earlier payload stays on screen. Empty
   states: "No messages yet" / "Team channels fill in as teams start talking."; "No sprints yet" / "Boards fill in
   once teams create their first sprint."; "Nothing to list" / "Rows appear once the school has classes and teams."
+  Trends definition (ⓘ): "Weekly figures per team from the nightly rollup over the selected range, with the range
+  of the same length just before it drawn in grey for comparison. Each night's rollup adds yesterday, at about
+  02:00 Pacific time and about 12:00 in Istanbul, so an Istanbul board snapshot (Points done) is taken at midday.
+  Per-team figures count the teams of classes in session, from each class's first to its last day with activity.
+  Only complete weeks are drawn: the week in progress appears once it ends. Deleted classes and teams stay in the
+  history."
   Date labels: "Sep 7" for a week, "Sep 8 – Oct 7" for a range in one year, "Dec 25, 2025 – Jan 5, 2026" across
   years; compact figures "1,284", "12.9K", "1.3M".
 - **Class names the port expects** (use these so the CSS drops in): `.gt-analytics` (page grid, `__header`,

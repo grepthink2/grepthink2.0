@@ -11,7 +11,7 @@ import { ChartCard, type ChartCardState } from '../components/ChartCard';
 import { SplitBar } from '../components/SplitBar';
 import { StackedBars, type StackedRow } from '../components/StackedBars';
 import { StatTile } from '../components/StatTile';
-import { TrendLines } from '../components/TrendLines';
+import { TrendLines, TrendTable } from '../components/TrendLines';
 import { UnitToggle } from '../components/UnitToggle';
 import { WeeklyLine } from '../components/WeeklyLine';
 import { useAnalyticsDashboard } from '../hooks/useAnalyticsDashboard';
@@ -26,7 +26,7 @@ const DEFINITIONS = {
   conversations: { title: 'How this is counted', body: 'Messages sent in team-member channels of the teams in view, plus direct messages between two people of the school, in the selected range. Conversations between staff and a student of their class are left out: the team ↔ TA and team ↔ instructor channels, and direct messages between an instructor or TA and a student of the same class. Direct messages are counted for the whole school and do not change with the class filter. Weeks start on Monday in the school\'s time zone.' },
   scrum: { title: 'How this is counted', body: 'Every task in view, by its current column and by the sprint of its story. Sprints are aligned by order within each team (Sprint 1 is each team\'s first sprint), not by date. Tasks whose story is in the backlog are "Backlog". Tasks of archived stories are not shown. Switch between the number of tasks and their story points. Stories and tasks created in the range count archived stories too.' },
   chars: { title: 'How this is counted', body: 'The number of characters in a task\'s (or story\'s) title and description, as typed, including markdown. The median is shown; half of the items are shorter.' },
-  trends: { title: 'How this is counted', body: 'Weekly figures per team from the nightly snapshot over the selected range, with the range of the same length just before it drawn in grey for comparison. Deleted classes and teams stay in the history. Yesterday is the latest day; today is added tonight.' },
+  trends: { title: 'How this is counted', body: 'Weekly figures per team from the nightly rollup over the selected range, with the range of the same length just before it drawn in grey for comparison. Each night\'s rollup adds yesterday, at about 02:00 Pacific time and about 12:00 in Istanbul, so an Istanbul board snapshot (Points done) is taken at midday. Per-team figures count the teams of classes in session, from each class\'s first to its last day with activity. Only complete weeks are drawn: the week in progress appears once it ends. Deleted classes and teams stay in the history.' },
   active: 'People of the school who signed in at least once in the last seven days.',
 };
 
@@ -37,6 +37,7 @@ export default function AnalyticsPage() {
   const [compare, setCompare] = useState(true);
   const [conversationsTable, setConversationsTable] = useState(false);
   const [scrumTable, setScrumTable] = useState(false);
+  const [trendsTable, setTrendsTable] = useState(false);
 
   const institution = useMemo(
     () => scope?.institutions.find((i) => i.id === filters.institutionId) ?? null,
@@ -272,12 +273,26 @@ export default function AnalyticsPage() {
           definition={DEFINITIONS.trends}
           state={state('trends')}
           actions={(
-            <label className="gt-analytics__check">
-              <input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Compare with previous range
-            </label>
+            <>
+              {/* The table lists this range only, so the comparison does not apply to it. */}
+              <label className="gt-analytics__check">
+                <input type="checkbox" checked={compare} disabled={trendsTable} onChange={(e) => setCompare(e.target.checked)} /> Compare with previous range
+              </label>
+              <button
+                type="button"
+                className="gt-analytics__toggle"
+                aria-label="Trends as a table"
+                aria-pressed={trendsTable}
+                onClick={() => setTrendsTable((v) => !v)}
+              >
+                <TableIcon size={14} aria-hidden="true" /> Table
+              </button>
+            </>
           )}
         >
-          {d ? <TrendLines panels={d.trends.panels} compare={compare} asOf={d.trends.as_of} /> : null}
+          {d ? (trendsTable
+            ? <TrendTable panels={d.trends.panels} asOf={d.trends.as_of} />
+            : <TrendLines panels={d.trends.panels} compare={compare} asOf={d.trends.as_of} />) : null}
         </ChartCard>
         <ChartCard
           className="gt-chart-card--wide"

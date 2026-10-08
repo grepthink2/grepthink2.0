@@ -282,7 +282,10 @@ p_prev_to date, p_tz text)` and `RETURNS jsonb`; timestamps are bucketed in `p_t
   (Monday, `p_tz`) of team messages per team, direct messages, tasks created per team, points done per team,
   active users, and the on-time rate of assignments finalized that week (from C's outcomes). Normalized per
   team because class sizes differ; `as_of` = the last rolled-up day. The current day is not in the rollup yet
-  and is marked as such.
+  and is marked as such. The per-team denominator counts only the teams of classes in session (a class
+  counts from its first to its last day with activity inside the rows read, so a finished class drops out),
+  each weekly row carries its number of rolled-up `days`, and the backend draws only complete weeks in the
+  panels and the tile sparklines, so the week in progress never reads as a drop.
 - **Rollup.**
 
   ```sql
@@ -369,7 +372,7 @@ Both routes join `frontend/public/.well-known/grepthink-actions.json` (`view_ana
 | Live board snapshot | Current `tasks.status` by the story's sprint ordinal within its project; Backlog for stories without a sprint; counts and points; across all teams in scope. Not ranged. | Tasks of archived stories. |
 | Characters per task / story | Median of `char_length(title) + char_length(description_md)` as typed; per sprint ordinal and overall; all time. | Comments. |
 | Active users | Distinct people of the school with a `login` event in the last 7 days. | Before the events table exists: not shown. |
-| Trends | From the nightly rollup: weekly per-team-per-week rates and the on-time rate over the selected range, with the previous range of equal length for comparison; survives deletions. | The current day (rolled up tonight). |
+| Trends | From the nightly rollup: weekly per-team-per-week rates over the teams of classes in session (from a class's first to its last day with activity) and the on-time rate over the selected range, with the previous range of equal length for comparison; survives deletions. | Days not rolled up yet (each night's rollup adds yesterday) and weeks not complete, such as the week in progress. |
 | Timeliness (C) | Per assignment, each expected submitter's submission time (TSR: latest row) bucketed against `due_at`: early (> 24 h before), on time, late (before `accept_until`), missing, not due. On-time rate over passed deadlines. "Edited late" counted separately. | Draft assignments, assignments without a deadline, teams of one (TSR). |
 | Folding | Any class, team or assignment row with fewer than 3 people becomes part of "Smaller groups". | Institution totals. |
 

@@ -94,6 +94,21 @@ describe('AnalyticsPage', () => {
     const first = within(table).getByRole('rowheader', { name: 'Sep 7, 2026' }).closest('tr') as HTMLElement;
     expect(within(first).getAllByRole('cell').map((c) => c.textContent)).toEqual(['21', '40']);
   });
+  it('lists the trends week by week as a table, one column per panel', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText(/1,284 messages/)).toBeInTheDocument());
+    const trends = card(/Trends/);
+    const compare = within(trends).getByRole('checkbox', { name: 'Compare with previous range' });
+    await userEvent.click(within(trends).getByRole('button', { name: 'Trends as a table' }));
+    const table = within(trends).getByRole('table', { name: 'Trends by week' });
+    const panels = DASHBOARD.trends.panels;
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Week', ...panels.map((p) => `${p.title} (${p.unit})`)]);
+    expect(within(table).getAllByRole('rowheader').map((h) => h.textContent)).toEqual(panels[0].current.map((c) => dateLabel(c.week_start)));
+    const first = within(table).getByRole('rowheader', { name: 'Sep 14, 2026' }).closest('tr') as HTMLElement;
+    expect(within(first).getAllByRole('cell').map((c) => c.textContent)).toEqual(['2.5', '2.9', '2.1', '91%']);
+    expect(compare).toBeDisabled(); // the table lists this range only
+    expect(getAnalyticsDashboard).toHaveBeenCalledTimes(1);
+  });
   it('puts a failed section into its card as an inline error and leaves the others alone', async () => {
     getAnalyticsDashboard.mockResolvedValue({ ...DASHBOARD, failures: ['scrum'] });
     renderPage();

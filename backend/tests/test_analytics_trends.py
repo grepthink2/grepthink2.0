@@ -5,9 +5,10 @@ import datetime as dt
 from app.analytics import trends
 from app.analytics.windows import RangeBounds
 
-WEEKLY = [  # Monday weeks; teams averaged over the week
+WEEKLY = [  # Monday weeks, each rolled up on all seven days; teams averaged over the week
     {
         "week_start": "2026-08-31",
+        "days": 7,
         "team_messages": 120,
         "tasks_created": 40,
         "points_done": 300,
@@ -16,6 +17,7 @@ WEEKLY = [  # Monday weeks; teams averaged over the week
     },
     {
         "week_start": "2026-09-07",
+        "days": 7,
         "team_messages": 150,
         "tasks_created": 50,
         "points_done": 330,
@@ -24,6 +26,7 @@ WEEKLY = [  # Monday weeks; teams averaged over the week
     },
     {
         "week_start": "2026-09-14",
+        "days": 7,
         "team_messages": 0,
         "tasks_created": 0,
         "points_done": None,
@@ -32,6 +35,7 @@ WEEKLY = [  # Monday weeks; teams averaged over the week
     },
     {
         "week_start": "2026-09-21",
+        "days": 7,
         "team_messages": 230,
         "tasks_created": 46,
         "points_done": 400,
@@ -40,6 +44,7 @@ WEEKLY = [  # Monday weeks; teams averaged over the week
     },
     {
         "week_start": "2026-09-28",
+        "days": 7,
         "team_messages": 253,
         "tasks_created": 69,
         "points_done": 460,
@@ -117,6 +122,61 @@ def test_sparklines_take_the_last_twelve_weeks_ending_at_as_of_and_add_direct_me
     assert len(trends.build_sparklines(many, dt.date(2026, 10, 7))["messages"]) == 12
     assert trends.build_sparklines(WEEKLY, None) == {}
     assert trends.build_sparklines([], dt.date(2026, 10, 7)) == {}
+
+
+# Wednesday 2026-10-07 is the last rolled-up day: its week holds three days so far
+PARTIAL = dict(
+    WEEKLY[4], week_start="2026-10-05", days=3, team_messages=90, tasks_created=12, dm_messages=9
+)
+
+
+def test_a_week_with_fewer_than_seven_rolled_up_days_is_left_out_of_panels_and_sparklines():
+    rows = WEEKLY + [PARTIAL]
+    panels = trends.build_panels(rows, BOUNDS)
+    # its Monday is in the range, but three days' sum would read as a drop
+    assert [c["week_start"] for c in panels[0]["current"]] == [
+        "2026-09-14",
+        "2026-09-21",
+        "2026-09-28",
+    ]
+    assert all(
+        [c["week_start"] for c in p["current"]] == ["2026-09-14", "2026-09-21", "2026-09-28"]
+        for p in panels
+    )  # points_done is a snapshot and follows the same rule
+    out = trends.build_sparklines(rows, dt.date(2026, 10, 7))
+    assert out["messages"] == [135.0, 170.0, 0.0, 263.0, 281.0]  # ends at the last complete week
+    assert out["tasks_created"] == [40.0, 50.0, 0.0, 46.0, 69.0]
+
+
+def test_a_week_rolled_up_on_all_seven_days_is_kept():
+    rows = WEEKLY + [dict(PARTIAL, days=7)]
+    panels = trends.build_panels(rows, BOUNDS)
+    assert [c["week_start"] for c in panels[0]["current"]][-1] == "2026-10-05"
+    assert panels[0]["current"][-1]["value"] == round(90 / 23, 2)
+    out = trends.build_sparklines(rows, dt.date(2026, 10, 11))
+    assert out["messages"][-1] == 99.0 and len(out["messages"]) == 6
+
+
+def test_a_range_whose_only_week_is_partial_yields_empty_panels():
+    # the 7d preset holds exactly one Monday; on Thursday 2026-10-08 that week has three rolled-up days
+    seven = RangeBounds(
+        "7d", dt.date(2026, 10, 2), dt.date(2026, 10, 8), dt.date(2026, 9, 25), dt.date(2026, 10, 1)
+    )
+    panels = trends.build_panels(WEEKLY + [PARTIAL], seven)
+    assert [p["current"] for p in panels] == [[], [], []]
+    assert [c["week_start"] for c in panels[0]["previous"]] == ["2026-09-28"]
+
+
+def test_the_sparklines_keep_twelve_complete_weeks_when_the_week_in_progress_is_left_out():
+    many = [
+        dict(WEEKLY[0], week_start=(dt.date(2026, 7, 6) + dt.timedelta(weeks=i)).isoformat())
+        for i in range(13)
+    ]  # 2026-07-06 … 2026-09-28, all complete
+    many.append(dict(PARTIAL))
+    out = trends.build_sparklines(many, dt.date(2026, 10, 7))
+    # 2026-07-13 … 2026-09-28: the window ends at the last complete week, so it still holds twelve
+    assert out["messages"] == [135.0] * 12
+    assert trends.build_sparklines([PARTIAL], dt.date(2026, 10, 7)) == {}
 
 
 def test_delta_is_a_fraction_and_null_without_a_baseline():

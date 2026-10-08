@@ -148,6 +148,7 @@ TRENDS = {
     "weekly": [
         {
             "week_start": "2026-09-21",
+            "days": 7,
             "team_messages": 230,
             "tasks_created": 46,
             "points_done": 400,
@@ -156,11 +157,21 @@ TRENDS = {
         },
         {
             "week_start": "2026-09-28",
+            "days": 7,
             "team_messages": 253,
             "tasks_created": 69,
             "points_done": 460,
             "teams": 23.0,
             "dm_messages": 28,
+        },
+        {  # the week in progress: Monday and Tuesday are rolled up, so it is drawn nowhere
+            "week_start": "2026-10-05",
+            "days": 2,
+            "team_messages": 70,
+            "tasks_created": 15,
+            "points_done": 470,
+            "teams": 23.0,
+            "dm_messages": 9,
         },
     ],
 }

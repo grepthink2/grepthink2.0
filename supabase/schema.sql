@@ -2145,13 +2145,18 @@ END;
 $$;
 
 -- ------------------------------------------------------------------ trends (from the rollup) ----
--- Weekly rows the backend turns into the Trends panels and the tile sparklines: team messages,
--- tasks created, the week's last points_done snapshot and the week's average team count, summed over
--- the class rows in scope (every class the school ever had, deleted ones included, or the selected
--- class); dm_messages from the institution rows, on days with or without class rows. Weeks start on
--- Monday (days are already calendar days in the school's zone). Covers whole weeks from the Monday of
--- least(p_prev_from, as_of - 84 days, p_to - 84 days) to p_to, so the previous range and a 12-week sparkline both fit
--- and the first bucket is never a partial week.
+-- Weekly rows the backend turns into the Trends panels and the tile sparklines: team messages, tasks
+-- created and the week's last points_done snapshot, summed over the class rows in scope (every class the
+-- school ever had, deleted ones included, or the selected class); the week's average count of teams in
+-- session; dm_messages from the institution rows, on days with or without class rows; and the week's
+-- number of rolled-up days, so the backend can leave out a week the rollup has not covered (the week in
+-- progress, the end of a range that stops mid-week). A class is in session from its first to its last
+-- day with activity (team messages, tasks or stories created, active teams) inside the rows read here:
+-- a finished class stops adding its teams, a class with no activity adds none, and a week in which no
+-- class is in session has teams NULL. Weeks start on Monday (days are already calendar days in the
+-- school's zone). Covers whole weeks from the Monday of least(p_prev_from, as_of - 84 days, p_to - 84
+-- days) to p_to, so the previous range and a 12-week sparkline both fit and the first bucket is never a
+-- partial week.
 CREATE OR REPLACE FUNCTION public.analytics_trends(
   p_institution uuid, p_class uuid, p_from date, p_to date,
   p_prev_from date, p_prev_to date, p_tz text)
@@ -2163,7 +2168,7 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
   -- class rows of every class the school ever had (a deleted class keeps its rows: that is the point
   -- of the rollup), or of the one selected class
   class_rows AS (
-    SELECT ad.day, ad.metric, ad.value
+    SELECT ad.class_id, ad.day, ad.metric, ad.value
       FROM analytics_daily ad
      WHERE ad.institution_id = p_institution AND ad.class_id IS NOT NULL
        AND (p_class IS NULL OR ad.class_id = p_class)
@@ -2173,13 +2178,25 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
       FROM analytics_daily ad
      WHERE ad.institution_id = p_institution AND ad.class_id IS NULL
        AND ad.day >= (SELECT d FROM lo) AND ad.day <= p_to),
-  daily_class AS (
-    SELECT day,
+  class_day AS (                                  -- one row per class and rolled-up day
+    SELECT class_id, day,
            sum(value) FILTER (WHERE metric = 'team_messages') AS team_messages,
            sum(value) FILTER (WHERE metric = 'tasks_created') AS tasks_created,
            sum(value) FILTER (WHERE metric = 'points_done')   AS points_done,
-           sum(value) FILTER (WHERE metric = 'teams')         AS teams
-      FROM class_rows GROUP BY day),
+           sum(value) FILTER (WHERE metric = 'teams')         AS teams,
+           sum(value) FILTER (WHERE metric IN ('team_messages', 'tasks_created', 'stories_created', 'active_teams')) AS activity
+      FROM class_rows GROUP BY class_id, day),
+  in_session AS (                                 -- a class's first and last day with activity
+    SELECT class_id, min(day) AS first_day, max(day) AS last_day
+      FROM class_day WHERE activity > 0 GROUP BY class_id),
+  daily_class AS (                                -- teams only from the classes in session that day
+    SELECT cd.day,
+           sum(cd.team_messages) AS team_messages,
+           sum(cd.tasks_created) AS tasks_created,
+           sum(cd.points_done)   AS points_done,
+           sum(cd.teams) FILTER (WHERE cd.day BETWEEN s.first_day AND s.last_day) AS teams
+      FROM class_day cd LEFT JOIN in_session s ON s.class_id = cd.class_id
+     GROUP BY cd.day),
   daily_inst AS (
     SELECT day, sum(value) FILTER (WHERE metric = 'dm_messages') AS dm_messages
       FROM inst_rows GROUP BY day),
@@ -2188,18 +2205,20 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path = public AS $$
       FROM daily_class c FULL OUTER JOIN daily_inst i ON i.day = c.day),
   weekly AS (
     SELECT date_trunc('week', d.day::timestamp)::date AS week_start,
+           count(DISTINCT d.day) AS days,
            coalesce(sum(d.team_messages), 0) AS team_messages,
            coalesce(sum(d.tasks_created), 0) AS tasks_created,
            (array_agg(d.points_done ORDER BY d.day DESC) FILTER (WHERE d.points_done IS NOT NULL))[1] AS points_done,
-           avg(d.teams) AS teams,
+           avg(d.teams) AS teams,                 -- over the days with a class in session; NULL without one
            coalesce(sum(d.dm_messages), 0) AS dm_messages
       FROM daily d
      GROUP BY 1)
   SELECT jsonb_build_object(
     'as_of', (SELECT d FROM as_of),
     'weekly', coalesce((SELECT jsonb_agg(jsonb_build_object(
-                'week_start', week_start, 'team_messages', team_messages, 'tasks_created', tasks_created,
-                'points_done', points_done, 'teams', teams, 'dm_messages', dm_messages)
+                'week_start', week_start, 'days', days, 'team_messages', team_messages,
+                'tasks_created', tasks_created, 'points_done', points_done, 'teams', teams,
+                'dm_messages', dm_messages)
                 ORDER BY week_start) FROM weekly), '[]'::jsonb));
 $$;
 

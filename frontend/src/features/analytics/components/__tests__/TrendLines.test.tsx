@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stubResizeObserver } from '../../test/resizeObserver';
-import { TrendLines } from '../TrendLines';
+import { TrendLines, TrendTable } from '../TrendLines';
 
 const PANEL = {
   key: 'team_messages_per_team' as const, title: 'Messages per team', unit: 'per team per week',
@@ -29,6 +29,12 @@ describe('TrendLines', () => {
   it('shows an empty note when no panel has data', () => {
     render(<TrendLines panels={[{ ...PANEL, current: [], previous: null }]} compare asOf={null} />);
     expect(screen.getByText(/after the first nightly rollup/)).toBeInTheDocument();
+  });
+  it('says the range has no complete week yet once the rollup has run, not that it never ran', () => {
+    // the 7d preset on a weekday: its one Monday starts the week in progress, which the backend leaves out
+    render(<TrendLines panels={[{ ...PANEL, current: [], previous: [week('2026-09-28', 6)] }]} compare asOf="2026-10-07" />);
+    expect(screen.getByText('No complete week in this range yet.')).toBeInTheDocument();
+    expect(screen.queryByText(/after the first nightly rollup/)).toBeNull();
   });
   it('draws each panel 1:1 at its measured width', () => {
     const { report } = stubResizeObserver();
@@ -95,10 +101,34 @@ describe('TrendLines', () => {
   it('treats weeks whose values are all null as no data: the empty note when every panel is so, a bare panel beside data', () => {
     const blank = { ...PANEL, key: 'tasks_per_team' as const, title: 'Tasks created per team', current: [week('2026-09-14', null), week('2026-09-21', null)], previous: [week('2026-08-17', null)] };
     const { rerender } = render(<TrendLines panels={[blank]} compare asOf="2026-10-06" />);
-    expect(screen.getByText('Trends appear after the first nightly rollup.')).toBeInTheDocument();
+    expect(screen.getByText('No team activity in this range.')).toBeInTheDocument(); // complete weeks, no class in session
     rerender(<TrendLines panels={[PANEL, blank]} compare asOf="2026-10-06" />);
     const bare = screen.getByRole('img', { name: 'Tasks created per team, 2 weeks' });
     expect(bare.querySelectorAll('.gt-trend__marker, .gt-trend__end-label')).toHaveLength(0);
     expect(bare.innerHTML).not.toMatch(/NaN/);
+  });
+});
+
+describe('TrendTable', () => {
+  const TASKS = { ...PANEL, key: 'tasks_per_team' as const, title: 'Tasks created per team', current: [week('2026-09-07', 1.1), week('2026-09-14', 2.25), week('2026-09-21', 4)], previous: null };
+  const RATE = { key: 'on_time_rate' as const, title: 'On-time rate', unit: 'rate', current: [week('2026-09-07', null), week('2026-09-14', 0.91), week('2026-09-21', 0.79)], previous: null };
+  it('lists one row per week of this range and one column per panel, its unit in the header', () => {
+    render(<TrendTable panels={[PANEL, TASKS, RATE]} asOf="2026-10-06" />);
+    const table = screen.getByRole('table', { name: 'Trends by week' });
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
+      'Week', 'Messages per team (per team per week)', 'Tasks created per team (per team per week)', 'On-time rate (rate)',
+    ]);
+    expect(within(table).getAllByRole('rowheader').map((h) => h.textContent)).toEqual(['Sep 7, 2026', 'Sep 14, 2026', 'Sep 21, 2026']);
+    const row = (name: string) => within(within(table).getByRole('rowheader', { name }).closest('tr') as HTMLElement).getAllByRole('cell').map((c) => c.textContent);
+    expect(row('Sep 7, 2026')).toEqual(['7.5', '1.1', '—']);
+    expect(row('Sep 14, 2026')).toEqual(['—', '2.25', '91%']); // a week without a value reads "—"
+    expect(screen.getByText('as of Oct 6, 2026')).toBeInTheDocument();
+  });
+  it('says what the chart would say when there is nothing to list', () => {
+    const { rerender } = render(<TrendTable panels={[{ ...PANEL, current: [], previous: null }]} asOf={null} />);
+    expect(screen.getByText('Trends appear after the first nightly rollup.')).toBeInTheDocument();
+    rerender(<TrendTable panels={[{ ...PANEL, current: [], previous: null }]} asOf="2026-10-07" />);
+    expect(screen.getByText('No complete week in this range yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).toBeNull();
   });
 });

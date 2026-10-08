@@ -240,3 +240,48 @@ def test_trends_rows_are_weekly(db, ucsc):
     for w in j["weekly"]:
         assert dt.date.fromisoformat(w["week_start"]).isoweekday() == 1
         assert w["team_messages"] >= 0 and w["tasks_created"] >= 0 and w["dm_messages"] >= 0
+        assert 1 <= w["days"] <= 7, "each week counts its rolled-up days"
+        if w["team_messages"] + w["tasks_created"] > 0:
+            # the classes active that week are in session on those days, so the week has a team count
+            assert w["teams"] is not None, f"week {w['week_start']} has activity but no teams"
+
+
+def test_trends_count_no_teams_for_a_class_without_activity(db, ucsc):
+    """A class with no activity in the rows read is never in session: none of its weeks has a team count."""
+    args = _args(ucsc, days=90)
+    as_of = _call(db, "analytics_trends", args)["as_of"]
+    # the function's own lower bound, a week early: a wider window than it reads, so "quiet" is safe
+    p_from, p_to = dt.date.fromisoformat(args["p_from"]), dt.date.fromisoformat(args["p_to"])
+    anchor = dt.date.fromisoformat(as_of) if as_of else p_from
+    lo = min(
+        dt.date.fromisoformat(args["p_prev_from"]),
+        anchor - dt.timedelta(days=84),
+        p_to - dt.timedelta(days=84),
+    ) - dt.timedelta(days=7)
+    classes = (
+        db.table("classes").select("id").eq("institution_id", ucsc["id"]).order("id").execute().data
+    )
+    quiet = None
+    for c in (
+        classes
+    ):  # one small read per class: a single read of every active row could hit the row cap
+        hit = (
+            db.table("analytics_daily")
+            .select("day")
+            .eq("institution_id", ucsc["id"])
+            .eq("class_id", c["id"])
+            .in_("metric", ["team_messages", "tasks_created", "stories_created", "active_teams"])
+            .gt("value", 0)
+            .gte("day", lo.isoformat())
+            .lte("day", args["p_to"])
+            .limit(1)
+            .execute()
+            .data
+        )
+        if not hit:
+            quiet = c["id"]
+            break
+    if quiet is None:
+        pytest.skip("every DEV class has activity in the window")
+    j = _call(db, "analytics_trends", {**args, "p_class": quiet})
+    assert all(w["teams"] is None for w in j["weekly"]), "a class without activity adds no teams"
