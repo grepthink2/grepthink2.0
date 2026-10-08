@@ -119,10 +119,14 @@ describe('useAnalyticsDashboard', () => {
   });
 
   it('drops an institution outside an empty scope, so a refused request is not repeated', async () => {
-    getAnalyticsScope.mockResolvedValue({ institutions: [] });
+    let answerScope!: (s: ApiAnalyticsScope) => void;
+    getAnalyticsScope.mockReturnValue(new Promise((res) => { answerScope = res; }));
     vi.useFakeTimers({ shouldAdvanceTime: true });
     renderHook(() => useAnalyticsDashboard(), { wrapper: wrapper('/app/analytics?institution=zz') });
-    await waitFor(() => expect(search()).toBe(''));
+    // Answered inside act, so the effects it sets off (the URL rewrite, the poll's new closure) have all run before the
+    // clock moves: settled outside act, a stale poll could fire first and ask again for the refused institution.
+    await act(async () => answerScope({ institutions: [] }));
+    expect(search()).toBe('');
     act(() => { vi.advanceTimersByTime(60_000); }); // the poll has nothing to ask for
     expect(getAnalyticsDashboard).toHaveBeenCalledTimes(1); // only the request made before the scope arrived
   });
