@@ -173,3 +173,24 @@ before giving up and notifying whoever sent the invite. In this order:
 3. DEV too: re-run the file once after this change reaches beta. DEV ran the old backend against the
    applied migration from 2026-10-06 until that deploy, so assignments created or rescheduled in between
    hold a NULL or stale `due_at` until the backfill runs again.
+
+## Analytics core (maintainer steps)
+
+1. `backend/database/migrations/2026-10/2026-10-07_analytics.sql`, DEV then PROD (DEV: applied
+   2026-10-08), after the deadlines migration above — and this release ships only once that deadlines
+   migration is live: every board load now records an event and would log a warning on each request
+   without the `events` table. It creates the `analytics_*` functions (service_role only),
+   `analytics_daily` (RLS on, no client privileges) and the rollup functions; its Check block runs the
+   rollup for yesterday (twice, to prove idempotence) and a snapshot-free backfill of the day before.
+2. `CREATE EXTENSION IF NOT EXISTS pg_cron;` then
+   `backend/database/migrations/prod/2026-10/2026-10-07_analytics_cron.sql` (DEV then PROD; DEV: done
+   2026-10-08): the 09:00 UTC rollup and the 365-day events retention. Confirm
+   `SELECT jobname, active FROM cron.job;`.
+3. PROD only, once: `SELECT analytics_rollup_range('<first class start_date>', current_date - 1);` to
+   backfill activity metrics (board snapshots start at go-live). Safe to re-run.
+4. Vercel, backend project: set `ANALYTICS_ADMIN_EMAILS` if maintainers should see every institution.
+5. Verify after the release: `/app/analytics` as an instructor; the morning after,
+   `SELECT max(day) FROM analytics_daily;` is yesterday.
+6. A missed night (`max(day)` older than yesterday, or a week missing from Trends) is repaired with
+   `SELECT analytics_rollup_range('<first missed day>', current_date - 1);` — activity metrics are
+   rebuilt; the board snapshots of those days cannot be reconstructed and stay missing.

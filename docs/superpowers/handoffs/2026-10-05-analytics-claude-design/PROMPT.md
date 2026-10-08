@@ -94,24 +94,34 @@ Design against these; they override the brief where they differ.
   appear once the school has classes and teams." Date labels: "Sep 7" for a week, "Sep 8 – Oct 7" for a range in
   one year, "Dec 25, 2025 – Jan 5, 2026" across years; compact figures "1,284", "12.9K", "1.3M".
 - **Class names the port expects** (use these so the CSS drops in): `.gt-analytics` (page grid, `__header`,
-  `__title`, `__badge`, `__refresh`, `__tiles`, `__grid`, `__footnote`, `__forbidden`), `.gt-chart-card`
-  (`__head`, `__title`, `__subtitle`, `__actions`, `__body`, `__foot`, `__error`, `--wide`, `data-state`),
-  `.gt-legend` (`__item`, `__item--off`, `__button`, `__swatch--rect`, `__swatch--line`, `__label`, `__value`),
-  `.gt-chart-tip` (`__title`, `__row`, `__key`, `__label`, `__value`), `.gt-empty`, `.gt-live-pill` (`__dot`),
+  `__title`, `__badge`, `__refresh`, `__toggle`, `__check`, `__tiles`, `__grid`, `__scrum`, `__footnote`, `__error`,
+  `__forbidden`), `.gt-chart-card` (`__head`, `__titles`, `__title-row`, `__title`, `__subtitle`, `__actions`,
+  `__body`, `__foot`, `__error`, `--wide`, `data-state`), `.gt-legend` (`__item`, `__item--off`, `__button`,
+  `__swatch`, `__swatch--rect`, `__swatch--line`, `__label`, `__value`), `.gt-chart-tip` (`__title`, `__row`,
+  `__key`, `__label`, `__value`), `.gt-empty` (`__icon`, `__title`, `__hint`), `.gt-live-pill` (`__dot`),
   `.gt-unit-toggle` (`__option`, `__option--active`), `.gt-definition` (`__trigger`, `__title`, `__body`),
   `.gt-filter` (`__field`, `__label`, `__select`, `__chips`, `__chip`, `__chip--active`, `__custom`, `__apply`),
   `.gt-line` (`__svg`, `__grid`, `__axis`, `__tick`, `__path`, `__area`, `__marker`, `__marker--hot`,
   `__end-label`, `__crosshair`), `.gt-split` (`__bar`, `__segment`, `--empty`), `.gt-stack` (`__row`, `__meta`,
   `__label`, `__teams`, `__bar`, `__segment`, `__value`, `__button`), `.gt-cols` (`__panel`, `__head`, `__title`,
-  `__meta`, `__svg`, `__axis`, `__bar`, `__cap`, `__tick`), `.gt-trend` (`__panels`, `__panel`, `__title`,
-  `__unit`, `__svg`, `__axis`, `__current`, `__previous`, `__foot`, `__asof`, `__empty`), `.gt-table` (`__bar`,
-  `__export`, `__scroll`, `__table`, `__num`, `__sort`, `__row--folded`, `__info`, `__meter`, `__meter-fill`).
+  `__meta`, `__svg`, `__axis`, `__bar`, `__cap`, `__tick`, `--stacked`), `.gt-trend` (`__panels`, `__panel`,
+  `__title`, `__unit`, `__svg`, `__axis`, `__current`, `__previous`, `__marker`, `__end-label`, `__foot`, `__asof`,
+  `__empty`), `.gt-table` (`__bar`, `__export`, `__scroll`, `__table`, `__caption`, `__num`, `__sort`,
+  `__sort-icon`, `__row--folded`, `__info`, `__meter`, `__meter-fill`). The card head's `__titles` holds
+  `__title-row` (the `<h2>`, the LIVE pill and the ⓘ; the heading itself holds only the title) and the subtitle.
+  `.gt-trend__marker` dots each week no line reaches and this range's latest week, which `__end-label` labels;
+  `.gt-cols--stacked` is the one-column layout used when a side-by-side panel cannot hold every median cap;
+  `.gt-table__sort-icon` is the chevron on the sorted column and `__caption` the table's visually hidden caption;
+  `.gt-analytics__toggle` is a card's Table toggle, `__check` the Trends card's compare checkbox, `__scrum` the
+  Scrum card's two-part body and `__error` the page's failure strip.
   Series identity is a class that sets a custom property the marks read: `.gt-series--1 … --4`, `.gt-series--gray`,
   `.gt-status--todo`, `.gt-status--in_progress`, `.gt-status--done`, each `{ --series: var(--gt-…) }`, with marks
   using `fill: var(--series)` / `stroke: var(--series)`. The metric tile extends the existing `.metric-card` with
   `__delta` (`--good`, `--bad`, `--flat`), `__delta-value`, `__delta-vs`, `__spark`, `__spark-line`, `__spark-dot`.
 - **Density.** The dev database has 134 TSR assignments across 36 classes; design the ≥ 20-row table (compact
   20 px rows, sticky header, or a "Show all" expander) and a stacked-bar card with 8+ sprint rows.
+- **Null counts.** Any count can arrive `null` when its source could not load; the card is then listed in
+  `failures`. A tile or table cell with a null count reads "—", and the tile's hint says "Could not load".
 
 Answer the brief's §9 questions in `NOTES.md` even where you keep the wireframe's choice, so the port knows the
 decision was made.

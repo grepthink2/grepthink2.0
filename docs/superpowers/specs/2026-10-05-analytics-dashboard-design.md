@@ -279,7 +279,7 @@ p_prev_to date, p_tz text)` and `RETURNS jsonb`; timestamps are bucketed in `p_t
   ```sql
   CREATE TABLE IF NOT EXISTS analytics_daily (
     institution_id uuid NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
-    class_id       uuid REFERENCES classes(id) ON DELETE SET NULL,   -- NULL = school-wide metric
+    class_id       uuid,                                             -- NULL = school-wide metric; no foreign key
     day            date NOT NULL,
     metric         text NOT NULL,
     value          numeric NOT NULL,
@@ -289,18 +289,23 @@ p_prev_to date, p_tz text)` and `RETURNS jsonb`; timestamps are bucketed in `p_t
   ALTER TABLE analytics_daily ENABLE ROW LEVEL SECURITY;              -- no policies, no client grants
   ```
 
-  `analytics_rollup_day(p_day date)` upserts, for every institution in its own zone: per class and day —
-  `team_messages`, `stories_created`, `tasks_created`, `story_points_created`, `task_points_created`,
-  `active_teams` (teams with a message, task, story or move that day), `board_views` (events), and the board
-  snapshot as of the run (`tasks_todo`, `tasks_in_progress`, `tasks_done`, `points_todo`, `points_in_progress`,
-  `points_done`); per institution and day (`class_id NULL`) — `dm_messages`, `active_users` (distinct `login`
-  actors). `analytics_rollup_range(p_from, p_to)` backfills activity metrics (snapshots cannot be backfilled;
-  they start at go-live). Idempotent upserts, so a re-run is safe. Rows survive class and project deletion
-  (`SET NULL`), which is what makes long-range trends honest.
+  `analytics_rollup_day(p_day date, p_snapshot boolean DEFAULT false)` upserts, for every institution in its own
+  zone: per class and day — `team_messages`, `stories_created`, `tasks_created`, `story_points_created`,
+  `task_points_created`, `active_teams` (teams with a message, task, story or move that day), `board_views`
+  (distinct person–board pairs among that day's `board_viewed` events), `teams` (as of the day: projects created
+  by then with a current member who had joined by then; membership history is not kept), and, when `p_snapshot`
+  is true, the board snapshot as of the run (`tasks_todo`, `tasks_in_progress`, `tasks_done`, `points_todo`,
+  `points_in_progress`, `points_done`); per institution and day (`class_id NULL`) — `dm_messages`,
+  `active_users` (distinct `login` actors). Snapshots are taken only when the nightly job asks, so re-running a
+  past day never overwrites its board snapshot. `analytics_rollup_range(p_from, p_to)` backfills activity metrics
+  (snapshots cannot be backfilled; they start at go-live). Idempotent upserts, so a re-run is safe. Rows survive
+  class and project deletion, which is what makes long-range trends honest: `analytics_daily.class_id` has no
+  foreign key, so deleted classes keep their history (under `ON DELETE SET NULL` the rows of two deleted classes
+  would collide on the unique key).
 
   pg_cron (`prod/2026-10/…_analytics_cron.sql`, applied by hand on DEV then PROD after `CREATE EXTENSION
-  pg_cron`): `analytics-rollup` at `0 9 * * *` UTC → `SELECT analytics_rollup_day(current_date - 1)` (01:00 or
-  02:00 in Santa Cruz, 12:00 in Istanbul — the snapshot skew is documented in the Trends card's definition),
+  pg_cron`): `analytics-rollup` at `0 9 * * *` UTC → `SELECT analytics_rollup_day(current_date - 1, true)` (01:00
+  or 02:00 in Santa Cruz, 12:00 in Istanbul — the snapshot skew is documented in the Trends card's definition),
   `events-retention` daily (`DELETE FROM events WHERE occurred_at < now() - interval '365 days'`), and
   `cron-run-details-retention` if the email cron has not created it. Everything the rollup needs is in the
   database, so unlike the email dispatcher there is no HTTP call, no secret and no Vault entry.
@@ -402,9 +407,9 @@ pinned); `windows.py` bounds and previous ranges across month and year boundarie
 boundary, mixed kinds, totals preserved); `ANALYTICS_ADMIN_EMAILS` parsing; `events.record` never raises.
 **SQL.** Each migration ends with a `-- Check` block with hand-computed expected values on DEV (for example the
 UCSC team-message total equals a direct count; the staff ↔ student exclusion removes a known DM). An optional
-`-m integration` pytest runs the functions and `analytics_rollup_day` against DEV when
-`ANALYTICS_IT_DATABASE=1`, asserting shape, non-negativity and cross-consistency (per-class sums equal totals;
-buckets sum to `expected`; a second rollup run changes nothing).
+pytest module (`tests/test_analytics_integration.py`, skipped unless `ANALYTICS_IT_DATABASE=1`) runs the functions
+and `analytics_rollup_day` against DEV, asserting shape, non-negativity and cross-consistency (per-class sums
+equal totals; buckets sum to `expected`; a second rollup run changes nothing).
 **Frontend (vitest).** `analyticsFormat`; `useAnalyticsDashboard` (URL round trip incl. custom from/to, stale
 response ignored, payload held while refetching); components (legend + table twin; `StackedBars` unit toggle
 swaps the series without recoloring; folded row rendering; `TimelinessBars` not-due row; `TrendLines`

@@ -173,6 +173,21 @@
     },
 
     {
+      "id": "view_analytics_scope", "title": "List the institutions and classes whose analytics I may see", "role": "instructor",
+      "method": "GET", "endpoint": "/api/analytics/scope", "rateLimit": "30/min",
+      "params": {},
+      "uiRoute": "/app/analytics",
+      "note": "Instructors see the institutions of the classes they created; maintainers (ANALYTICS_ADMIN_EMAILS) see every institution; students and TAs get an empty list. 30 requests per minute."
+    },
+    {
+      "id": "view_analytics_dashboard", "title": "Read an institution's analytics dashboard (one payload)", "role": "instructor",
+      "method": "GET", "endpoint": "/api/analytics/dashboard", "rateLimit": "30/min",
+      "params": {"institution_id": "uuid!", "class_id": "uuid", "window": "enum(7d|30d|90d|class|all|custom)", "from": "date (custom only)", "to": "date (custom only)", "fresh": "bool (bypass the 60 s cache)"},
+      "uiRoute": "/app/analytics",
+      "note": "403 outside the caller's scope (404 when a maintainer names an institution that does not exist); 400 when class_id is not of that institution; 422 for a bad range ('from and to are required for a custom range', 'dates must fall between 2000-01-01 and 2100-12-31', 'to must be on or after from', 'a range may span at most 2 years', 'window=class needs class_id'); 200 with failures[] naming every card that lost data (its counts arrive null, never 0). Groups smaller than 3 are folded into 'Smaller groups'. 30 requests per minute."
+    },
+
+    {
       "id": "submit_interest_form", "title": "Submit ranked project preferences", "role": "student",
       "method": "POST", "endpoint": "/api/staffing/{class_id}/submission",
       "params": {"taking_115c": "bool", "previous_project_name": "string", "ranked_projects": "array of {project_id, interest_value, interest_reason}!", "work_with": "uuid[]", "dont_work_with": "uuid[]", "submitted": "bool!"},
