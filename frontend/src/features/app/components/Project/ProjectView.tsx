@@ -1,7 +1,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore, ChevronDown, LogOut/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
+import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore, ChevronDown, LogOut, Trash2/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
 import { useClickOutside } from '@features/app/components/Interest/useClickOutside';
 import EmailIcon from '@assets/ic_outline-email.svg';
 import GithubIcon from '@assets/line-md_github.svg';
@@ -14,6 +14,7 @@ import { MessageButton } from '@features/messages/components/MessageButton';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
 import EditProjectModal from '../EditProject/EditProjectModal';
+import ConfirmModal from '../Overlays/ConfirmModal';
 import { api } from '@/lib/api';
 import type { ApiProject, ApiProjectMember, ApiProjectTA } from '@/lib/api';
 import { getMemberCopyEmail } from '@/features/app/utils/memberUtils';
@@ -168,6 +169,16 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const canManageProject =
     isInstructor ||
     (userRoleOnProject != null && MANAGER_ROLES.includes(userRoleOnProject as (typeof MANAGER_ROLES)[number]));
+  // The creator of a project nobody is left in may delete it (they left the team or moved to
+  // another one); the backend also requires that they are still enrolled in the class.
+  const canDeleteEmptyProject =
+    !canManageProject &&
+    Boolean(projectId && project && user?.id) &&
+    project?.created_by === user?.id &&
+    projectMembers.length === 0;
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deletingProject, setDeletingProject] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestedHovered, setRequestedHovered] = useState(false);
   const [cancellingRequest, setCancellingRequest] = useState(false);
@@ -194,6 +205,20 @@ const ProjectView: React.FC<ProjectViewProps> = ({
       setRequestedHovered(false);
     }
   }, [pendingRequestId, cancellingRequest, onRequestCancelled]);
+
+  const handleDeleteEmptyProject = async () => {
+    if (!projectId || deletingProject) return;
+    setDeletingProject(true);
+    setDeleteError(null);
+    try {
+      await api.deleteProject(projectId);
+      onDelete?.();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete project');
+    } finally {
+      setDeletingProject(false);
+    }
+  };
 
   const handleCopyAllEmails = async () => {
     const emails = projectMembers
@@ -399,6 +424,30 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                   </>
                 )}
               </button>
+            ) : canDeleteEmptyProject ? (
+              <div className="project-view__instructor-actions">
+                <button
+                  type="button"
+                  className="project-view__request-button"
+                  onClick={() => setRequestModalOpen(true)}
+                >
+                  Request to Join
+                </button>
+                <button
+                  type="button"
+                  className="project-view__request-button project-view__request-button--danger"
+                  onClick={() => setConfirmDeleteOpen(true)}
+                  disabled={deletingProject}
+                >
+                  <Trash2 size={18} />
+                  {deletingProject ? 'Deleting…' : 'Delete Project'}
+                </button>
+                {deleteError && (
+                  <p className="project-view__action-error" role="alert">
+                    {deleteError}
+                  </p>
+                )}
+              </div>
             ) : (
               <button
                 type="button"
@@ -694,6 +743,17 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           canEditProjectDetails={canManageProject}
           onProjectChange={onMembersChange}
           onDelete={onDelete}
+        />
+      )}
+      {canDeleteEmptyProject && (
+        <ConfirmModal
+          isOpen={confirmDeleteOpen}
+          onClose={() => setConfirmDeleteOpen(false)}
+          onConfirm={() => void handleDeleteEmptyProject()}
+          title="Delete project?"
+          message={`Nobody is left in "${project?.name ?? projectTitle}". Deleting it removes the project for good; this cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
         />
       )}
     </div>

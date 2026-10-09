@@ -517,6 +517,29 @@ def test_request_to_join_creates_a_pending_request_and_notifies_the_owner(db):
     ]
 
 
+@pytest.mark.parametrize("team", ["nobody left", "nobody with a reviewing role"])
+def test_a_request_nobody_on_the_team_can_review_goes_to_the_class_instructor(db, team):
+    if team == "nobody left":
+        db.store["project_members"] = [
+            m for m in db.rows("project_members") if m["project_id"] != P2
+        ]
+    else:
+        next(m for m in db.rows("project_members") if m["user_id"] == S3)["role"] = "scrum master"
+    projects.request_to_join_project(P2, S6, "hi")
+    assert [_without_id(n) for n in db.rows("notifications")] == [
+        {
+            "user_id": INSTR,  # CLASS's instructor
+            "type": "join_request_unreviewed",
+            "title": "Join request needs your review",
+            "body": 'S6 X requested to join Beta, which has no product owner or admin to review it. "hi"',
+            "entity_type": "project",
+            "entity_id": P2,
+        }
+    ]
+    # the usual path plus one read of the project's class for its instructor
+    assert db.executes <= 8, _trace(db)
+
+
 def test_request_to_join_budget(db, waves):
     projects.request_to_join_project(P2, S6)
     # one wave (project, memberships, pending row) + the insert, then
@@ -525,21 +548,43 @@ def test_request_to_join_budget(db, waves):
     assert db.executes <= 7, _trace(db)
 
 
-def test_request_to_join_leaves_the_old_team_and_notifies_its_product_owner(db):
+def _team_of(db, uid, class_projects=(P1, P2)) -> set[str]:
+    return {m["project_id"] for m in db.rows("project_members") if m["user_id"] == uid} & set(
+        class_projects
+    )
+
+
+def test_request_to_join_keeps_the_student_on_their_team_until_it_is_accepted(db):
     out = projects.request_to_join_project(P2, S2, "   ")  # S2 is on P1 (product owner S1)
     assert (out["request"]["project_id"], out["request"]["message"]) == (P2, None)
-    assert {m["user_id"] for m in db.rows("project_members") if m["project_id"] == P1} == {S1}
+    assert _team_of(db, S2) == {P1}
+    assert next(p for p in db.rows("projects") if p["id"] == P1)["num_members"] == 2
+    assert [(n["user_id"], n["title"]) for n in db.rows("notifications")] == [
+        (S3, "New join request")  # P2's owner; nobody hears that S2 left, because S2 has not
+    ]
+    assert not any(q["op"] == "delete" for q in db.queries), _trace(db)
+
+
+def test_accepting_the_request_moves_the_student_and_tells_the_old_product_owner(db):
+    out = projects.request_to_join_project(P2, S2)
+    projects.accept_join_request(out["request"]["id"], S3)  # P2's owner accepts
+    assert _team_of(db, S2) == {P2}
     assert next(p for p in db.rows("projects") if p["id"] == P1)["num_members"] == 1
-    notes = {n["user_id"]: n for n in db.rows("notifications")}
-    assert set(notes) == {S1, S3}
-    assert (notes[S1]["title"], notes[S1]["body"]) == (
-        "Member left your project",
-        'S2 X has left "Alpha" and submitted a join request for "Beta".',
-    )
-    assert notes[S3]["title"] == "New join request"
-    # one read wave, delete, num_members, leaver profile, departure notice, insert,
-    # then notify_join_request (owners, requester profile, one insert)
-    assert db.executes <= 11, _trace(db)
+    left = [n for n in db.rows("notifications") if n["title"] == "Member left your project"]
+    assert [(n["user_id"], n["body"], n["entity_id"]) for n in left] == [
+        (S1, 'S2 X has left "Alpha" to join "Beta".', P1)
+    ]
+
+
+@pytest.mark.parametrize("outcome", ["rejected by the owner", "cancelled by the student"])
+def test_a_request_that_is_not_accepted_leaves_the_student_on_their_team(db, outcome):
+    out = projects.request_to_join_project(P2, S2)
+    if outcome == "rejected by the owner":
+        projects.reject_join_request(out["request"]["id"], S3)
+    else:
+        projects.cancel_my_join_request(out["request"]["id"], S2)
+    assert _team_of(db, S2) == {P1}
+    assert next(p for p in db.rows("projects") if p["id"] == P1)["num_members"] == 2
 
 
 def test_request_to_join_keeps_teams_in_other_classes(db):

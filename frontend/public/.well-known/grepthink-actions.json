@@ -96,12 +96,14 @@
     },
     {
       "id": "delete_project", "title": "Delete a project", "role": "product owner|admin|instructor",
-      "method": "DELETE", "endpoint": "/api/projects/{project_id}"
+      "method": "DELETE", "endpoint": "/api/projects/{project_id}",
+      "note": "Also the project's creator once nobody is left in it (every member left or moved to another team), while they are still enrolled in the class."
     },
     {
       "id": "request_join_project", "title": "Request to join a project", "role": "student",
       "method": "POST", "endpoint": "/api/projects/request-join",
-      "params": {"project_id": "uuid!", "message": "string"}
+      "params": {"project_id": "uuid!", "message": "string"},
+      "note": "The student stays on their current team while the request is pending; acceptance moves them out of any other team in the class and tells its product owner."
     },
     {
       "id": "accept_join_request", "title": "Accept a join request", "role": "owner|product owner|admin|instructor",
