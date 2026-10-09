@@ -10,7 +10,8 @@ const sidebar = (canCreateClasses: boolean, classRole: ClassRole | null | undefi
   buildSidebarConfig({ canCreateClasses, classRole }).map((s) => [s.title, s.items.map(pin)]);
 
 // The sidebars from before the class role decided them: the instructor and student configs, and
-// the "TA Review" group Sidebar.tsx appended to the student one for a TA.
+// the "TA Review" group Sidebar.tsx appended to the student one for a TA. The instructor Main has
+// since gained Analytics.
 const INSTRUCTOR_MAIN = [
   'Main',
   [
@@ -18,6 +19,7 @@ const INSTRUCTOR_MAIN = [
     ['Messages', '/app/messages'],
     ['My Classes', '/app/my-classes'],
     ['Create Class', '/app/create-class'],
+    ['Analytics', '/app/analytics'],
   ],
 ];
 const STUDENT_MAIN = [
@@ -94,6 +96,13 @@ describe('buildSidebarConfig', () => {
   it('hides the class section with no class selected', () => {
     expect(sidebar(false, null)).toEqual([STUDENT_MAIN, SETTINGS]);
     expect(sidebar(true, null)).toEqual([INSTRUCTOR_MAIN, SETTINGS]);
+  });
+
+  it('offers Analytics in Main to accounts that can create classes only', () => {
+    const instructor = buildSidebarConfig({ canCreateClasses: true, classRole: 'instructor' });
+    expect(instructor[0].items.map((i) => i.label)).toEqual(['Home', 'Messages', 'My Classes', 'Create Class', 'Analytics']);
+    const student = buildSidebarConfig({ canCreateClasses: false, classRole: 'student' });
+    expect(student[0].items.map((i) => i.label)).not.toContain('Analytics');
   });
 
   it('gives every top-level item an icon', () => {

@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   CircleQuestionMark,
   ClipboardCheck,
   ClipboardList,
@@ -43,6 +44,7 @@ const MESSAGES: SidebarItem = { label: 'Messages', path: '/app/messages', iconSv
 const MY_CLASSES: SidebarItem = { label: 'My Classes', path: '/app/my-classes', iconSvg: MyClassesIcon };
 const CREATE_CLASS: SidebarItem = { label: 'Create Class', path: '/app/create-class', icon: SquarePen };
 const JOIN_CLASS: SidebarItem = { label: 'Join Class', path: '/app/join-class', icon: GraduationCap };
+const ANALYTICS: SidebarItem = { label: 'Analytics', path: '/app/analytics', icon: BarChart3 };
 
 export const instructorClassItems: SidebarItem[] = [
   { label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard },
@@ -95,7 +97,7 @@ export function buildSidebarConfig({
   classRole: ClassRole | null | undefined;
 }): SidebarSection[] {
   const main = canCreateClasses
-    ? [HOME, MESSAGES, MY_CLASSES, CREATE_CLASS]
+    ? [HOME, MESSAGES, MY_CLASSES, CREATE_CLASS, ANALYTICS]
     : [HOME, MESSAGES, JOIN_CLASS, MY_CLASSES];
   const sections: SidebarSection[] = [{ title: 'Main', items: main }];
   const role = classRole === undefined ? (canCreateClasses ? 'instructor' : 'student') : classRole;

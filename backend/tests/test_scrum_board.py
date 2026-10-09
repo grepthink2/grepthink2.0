@@ -9,7 +9,7 @@ from datetime import date
 
 from app.scrum import controller
 from tests.conftest import header_for
-from tests.scrum_support import OUTSIDER, PID, UID, scrum_db
+from tests.scrum_support import CLASS, OUTSIDER, PID, UID, scrum_db
 
 TODAY = date(2026, 9, 10)
 URL = f"/api/projects/{PID}/scrum/board"
@@ -131,11 +131,12 @@ def test_board_round_trips_do_not_grow_with_sprints(monkeypatch, client):
     db.reset_counter()
     client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID))
     # access 1 + three concurrent rounds (4 + 2 + 2) + snapshot upsert 1 + audit read 1
-    assert db.executes <= 11
+    # + the board_viewed event insert 1
+    assert db.executes <= 12
 
 
 def test_board_is_403_for_an_outsider_and_404_for_no_project(monkeypatch, client):
-    _seed(monkeypatch)
+    db = _seed(monkeypatch)
     res = client.get(URL, headers=header_for("x@ucsc.edu", sub=OUTSIDER))
     assert res.status_code == 403
     res = client.get(
@@ -143,9 +144,27 @@ def test_board_is_403_for_an_outsider_and_404_for_no_project(monkeypatch, client
         headers=header_for("x@ucsc.edu", sub=OUTSIDER),
     )
     assert res.status_code == 404
+    assert db.store["events"] == []  # a refused load records no view
 
 
 def test_an_unknown_sprint_is_404(monkeypatch, client):
-    _seed(monkeypatch)
+    db = _seed(monkeypatch)
     res = client.get(f"{URL}?sprint_id=nope", headers=header_for("tony@ucsc.edu", sub=UID))
     assert res.status_code == 404
+    assert db.store["events"] == []  # a refused load records no view
+
+
+def test_loading_the_board_records_a_board_viewed_event(monkeypatch, client):
+    db = _seed(monkeypatch)
+    res = client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID))
+    assert res.status_code == 200
+    assert "class_id" not in res.json()["project"]  # loaded for the event, never sent
+    rows = [e for e in db.store["events"] if e["kind"] == "board_viewed"]
+    assert len(rows) == 1
+    assert {k: v for k, v in rows[0].items() if k != "id"} == {
+        "kind": "board_viewed",
+        "actor_id": UID,
+        "class_id": CLASS,
+        "project_id": PID,
+        "meta": {},
+    }

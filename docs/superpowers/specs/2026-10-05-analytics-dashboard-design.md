@@ -99,7 +99,7 @@ new vendor, no new project, and student data never leaves the stack.
 | D9 | Route and navigation | `/app/analytics`, lazy, not class-scoped; sidebar item "Analytics" in Main for accounts that can create classes; filters in the query string | The institution is the frame; the class filter is its own control. |
 | D10 | Chart technology | Token-driven SVG components in the `BurnupChart` idiom, delivered by Claude Design; recharts primitives allowed underneath; no new dependency | Passes `lint:design` by construction. |
 | D11 | Payload | One `GET /api/analytics/dashboard` answers the page; `failures[]` names any section whose function failed while the rest renders | One request per filter change; one broken section cannot blank the page. |
-| D12 | Caching and limits | `@limiter.limit("30/minute")`; in-process cache 60 s keyed by the full filter tuple, 128 entries; `Cache-Control: private, max-age=60`; `?fresh=1` bypasses | The `get_user_count` pattern; Vercel instances are independent, so this only smooths bursts. |
+| D12 | Caching and limits | `@limiter.limit("30/minute")`; in-process cache 60 s keyed by the full filter tuple, 128 entries; `Cache-Control: private, max-age=60` on the dashboard (`no-store` for a fresh or degraded answer) and `no-cache` on `/scope`; `?fresh=1` bypasses | The `get_user_count` pattern; Vercel instances are independent, so this only smooths bursts. |
 | D14 | Export | CSV of the breakdown table, built in the browser | No new endpoint. |
 | D15 | Web analytics | Out of scope; enable Vercel Web Analytics separately | Free on Hobby; a different question. |
 | D17 | SQL function hygiene | `LANGUAGE sql STABLE SET search_path = public`; `REVOKE EXECUTE … FROM PUBLIC, anon, authenticated; GRANT EXECUTE … TO service_role`; idempotent; a `-- Check` block | States the lockdown policy explicitly. |
@@ -182,7 +182,7 @@ after the deadline; dates rendered in the viewer's local time (the registry foll
 Supabase Postgres                            FastAPI on Vercel                       React on Vercel
 analytics_* SQL functions (live)   ── RPC ──▶ app/analytics/controller.py ── JSON ──▶ features/analytics/AnalyticsPage
 analytics_daily (nightly, pg_cron)             scope_for_user (4.1 #1)                  URL state ?institution&class&window&from&to
-events (written by the backend)                fan_out(5 rpcs) → compose payload        one payload → cards; CSV in the browser
+events (written by the backend)                fan_out(4 rpcs) → compose payload        one payload → cards; CSV in the browser
   STABLE, search_path = public                 k = 3 folding, failures[]                refetch holds the previous render
   EXECUTE: service_role only                   60 s cache, 30/min limiter
 ```
@@ -192,28 +192,38 @@ events (written by the backend)                fan_out(5 rpcs) → compose paylo
 Follows url / views / controller / models.
 
 - `url.py` — `router = APIRouter(prefix="/api/analytics", tags=["analytics"])`; `GET /scope`, `GET /dashboard`;
-  both `@limiter.limit("30/minute")` with `request: Request`, behind `require_user_payload` (the email claim
-  feeds the maintainer allowlist). `GET /dashboard` records an `analytics_viewed` event.
-- `models.py` — `DashboardQuery` (`institution_id: UUID`, `class_id: UUID | None`, `window:
-  Literal['7d','30d','90d','class','all','custom'] = '30d'`, `from_: date | None` and `to: date | None`
-  (required and only allowed with `custom`; `class` requires `class_id`), `fresh: bool = False`) and response
-  models mirroring the brief's TypeScript contract. The tasks/points unit is a client-side toggle, not a query
-  parameter.
-- `windows.py` — pure functions: `range_bounds(window, today, *, class_start, custom_from, custom_to) ->
-  (from, to, prev_from, prev_to)` (422 `"from and to are required for a custom range"`, `"to must be on or
-  after from"`, `"a range may span at most 2 years"`, `"window=class needs class_id"` surfaced by the view),
-  `fold_small_groups(rows, key, k=3)`.
+  both `@limiter.limit("30/minute")` with `request: Request`, behind `require_user` and `require_user_payload`
+  (the email claim feeds the maintainer allowlist). `GET /dashboard` records an `analytics_viewed` event for a
+  request without `fresh` (a first load or a filter change; the page's 60 s poll and Refresh send `fresh=1`).
+- `views.py` — the query parameters sit on the view (there is no query model): `institution_id: UUID`,
+  `class_id: UUID | None`, `window: Literal['7d','30d','90d','class','all','custom'] = '30d'`, `from` and `to`
+  (`date | None`; required with `custom`, ignored otherwise; `class` requires `class_id`), `fresh: bool = False`.
+  FastAPI answers 422 for a bad window, uuid or date; a `WindowError` from `range_bounds` is a 422 as well.
+- `models.py` — response models mirroring the brief's TypeScript contract. The tasks/points unit is a
+  client-side toggle, not a query parameter.
+- `windows.py` — pure functions: `range_bounds(window, today, *, class_start, custom_from, custom_to,
+  all_from) -> RangeBounds`, a frozen dataclass `(window, start, end, prev_start, prev_end)` (`all_from`, the
+  day the school's first class was created, starts `all`, which has no previous range; 422 `"from and to are
+  required for a custom range"`, `"dates must fall between 2000-01-01 and 2100-12-31"`, `"to must be on or
+  after from"`, `"a range may span at most 2 years"`, `"window=class needs class_id"` surfaced by the view).
+- `privacy.py` — `fold_small_groups(rows, *, size_key, sum_keys, k=K_ANONYMITY, label=FOLDED_LABEL)`
+  (`K_ANONYMITY = 3`, `FOLDED_LABEL = "Smaller groups"`): rows whose `size_key` is below k become one trailing
+  "Smaller groups (n)" row. `trends.py` turns `analytics_trends`' weekly rows into the Trends panels and the
+  tile sparklines and holds the `delta` helper; `cache.py` is the 60 s per-process payload cache.
 - `controller.py`
-  - `scope_for_user(user_id, email)`: maintainer (`email.lower()` ∈ `settings.ANALYTICS_ADMIN_EMAILS`) → all
-    institutions; else the institutions of `classes.created_by = user_id`. Empty → `[]` for `/scope`, 403 for
-    `/dashboard`.
-  - `get_scope(...)`: institutions in scope with their classes (`id`, `name`, `course_code`, `term`,
-    `start_date`; the term is display text only).
-  - `get_dashboard(...)`: validate scope (403) and class ∈ institution (400); bounds; cache; `fan_out` five
-    RPCs (`analytics_scope_counts`, `analytics_conversations`, `analytics_scrum`, `analytics_trends`,
-    `analytics_timeliness` once C lands), each wrapped so a `DatabaseError` adds the section to `failures`;
-    compose `overview` and `breakdown`; fold groups smaller than 3; cache; return.
-- `config.py` — `ANALYTICS_ADMIN_EMAILS` (comma-separated, blank = none).
+  - `scope_for_user(user_id, email)`: maintainer (an ASCII `email` whose `.lower()` ∈
+    `settings.ANALYTICS_ADMIN_EMAILS`) → all institutions; else the institutions of
+    `classes.created_by = user_id`. Empty → `[]` for `/scope`, 403 for `/dashboard`.
+  - `get_scope(...)`: institutions in scope with their classes (`id`, `name`, `label` ("name · term", or the
+    name alone), `term`, `start_date`; the term is display text only, and `course_code`, the join code, never
+    leaves).
+  - `get_dashboard(...)`: validate scope (403; 404 `"institution does not exist"` when a maintainer names an
+    unknown id); look up the cache right after that check, so a hit costs one read; then class ∈ institution
+    (400); bounds; `fan_out` four RPCs (`analytics_scope_counts`, `analytics_conversations`, `analytics_scrum`,
+    `analytics_trends`; C adds `analytics_timeliness`), each wrapped so a `DatabaseError` adds the cards that
+    lose data to `failures` (their counts null); compose `overview` and `breakdown`; fold groups smaller than
+    3; cache a payload without failures; return.
+- `config.py` — `ANALYTICS_ADMIN_EMAILS` (comma-separated, lower-cased, blank = none).
 
 ### 6.2 SQL — migration `2026-10/<YYYY-MM-DD>_analytics.sql`
 
@@ -222,7 +232,7 @@ function):
 
 ```sql
 WITH scope AS (
-  SELECT c.id AS class_id, c.name, c.course_code
+  SELECT c.id AS class_id, c.name
     FROM classes c
    WHERE c.institution_id = p_institution
      AND (p_class IS NULL OR c.id = p_class)),
@@ -273,13 +283,17 @@ p_prev_to date, p_tz text)` and `RETURNS jsonb`; timestamps are bucketed in `p_t
   (Monday, `p_tz`) of team messages per team, direct messages, tasks created per team, points done per team,
   active users, and the on-time rate of assignments finalized that week (from C's outcomes). Normalized per
   team because class sizes differ; `as_of` = the last rolled-up day. The current day is not in the rollup yet
-  and is marked as such.
+  and is marked as such. Per-team figures count only the classes in session (whole weeks, from the week of
+  a class's first day with activity inside the rows read to the week of its last, so a finished class drops
+  out of both the team count and the points done), each weekly row carries its number of rolled-up `days`,
+  and the backend draws only complete weeks in the panels and the tile sparklines, so the week in progress
+  never reads as a drop.
 - **Rollup.**
 
   ```sql
   CREATE TABLE IF NOT EXISTS analytics_daily (
     institution_id uuid NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
-    class_id       uuid REFERENCES classes(id) ON DELETE SET NULL,   -- NULL = school-wide metric
+    class_id       uuid,                                             -- NULL = school-wide metric; no foreign key
     day            date NOT NULL,
     metric         text NOT NULL,
     value          numeric NOT NULL,
@@ -289,39 +303,54 @@ p_prev_to date, p_tz text)` and `RETURNS jsonb`; timestamps are bucketed in `p_t
   ALTER TABLE analytics_daily ENABLE ROW LEVEL SECURITY;              -- no policies, no client grants
   ```
 
-  `analytics_rollup_day(p_day date)` upserts, for every institution in its own zone: per class and day —
-  `team_messages`, `stories_created`, `tasks_created`, `story_points_created`, `task_points_created`,
-  `active_teams` (teams with a message, task, story or move that day), `board_views` (events), and the board
-  snapshot as of the run (`tasks_todo`, `tasks_in_progress`, `tasks_done`, `points_todo`, `points_in_progress`,
-  `points_done`); per institution and day (`class_id NULL`) — `dm_messages`, `active_users` (distinct `login`
-  actors). `analytics_rollup_range(p_from, p_to)` backfills activity metrics (snapshots cannot be backfilled;
-  they start at go-live). Idempotent upserts, so a re-run is safe. Rows survive class and project deletion
-  (`SET NULL`), which is what makes long-range trends honest.
+  `analytics_rollup_day(p_day date, p_snapshot boolean DEFAULT false)` upserts, for every institution in its own
+  zone: per class and day — `team_messages`, `stories_created`, `tasks_created`, `story_points_created`,
+  `task_points_created`, `active_teams` (teams with a message, task, story or move that day), `board_views`
+  (distinct person–board pairs among that day's `board_viewed` events), `teams` (as of the day: projects created
+  by then with a current member who had joined by then; membership history is not kept), and, when `p_snapshot`
+  is true, the board snapshot as of the run (`tasks_todo`, `tasks_in_progress`, `tasks_done`, `points_todo`,
+  `points_in_progress`, `points_done`); per institution and day (`class_id NULL`) — `dm_messages`,
+  `active_users` (distinct `login` actors). Snapshots are taken only when the nightly job asks, so re-running a
+  past day never overwrites its board snapshot. `analytics_rollup_range(p_from, p_to)` backfills activity metrics
+  (snapshots cannot be backfilled; they start at go-live). Idempotent upserts, so a re-run is safe. Rows survive
+  class and project deletion, which is what makes long-range trends honest: `analytics_daily.class_id` has no
+  foreign key, so deleted classes keep their history (under `ON DELETE SET NULL` the rows of two deleted classes
+  would collide on the unique key).
 
   pg_cron (`prod/2026-10/…_analytics_cron.sql`, applied by hand on DEV then PROD after `CREATE EXTENSION
-  pg_cron`): `analytics-rollup` at `0 9 * * *` UTC → `SELECT analytics_rollup_day(current_date - 1)` (01:00 or
-  02:00 in Santa Cruz, 12:00 in Istanbul — the snapshot skew is documented in the Trends card's definition),
+  pg_cron`): `analytics-rollup` at `0 9 * * *` UTC → `SELECT analytics_rollup_day(current_date - 1, true)` (01:00
+  or 02:00 in Santa Cruz, 12:00 in Istanbul — the snapshot skew is documented in the Trends card's definition),
   `events-retention` daily (`DELETE FROM events WHERE occurred_at < now() - interval '365 days'`), and
-  `cron-run-details-retention` if the email cron has not created it. Everything the rollup needs is in the
-  database, so unlike the email dispatcher there is no HTTP call, no secret and no Vault entry.
+  `cron-run-details-retention`, scheduled unconditionally with the same name and schedule as the email cron's
+  (whichever file runs later replaces it). Everything the rollup needs is in the database, so unlike the email
+  dispatcher there is no HTTP call, no secret and no Vault entry.
 - **Folding (k = 3)** happens in Python after the RPCs: a class row with fewer than 3 students, a team row with
   fewer than 3 members, or a timeliness row with fewer than 3 expected submitters is summed into one row
   `kind: 'folded'`, label "Smaller groups (n)". Institution totals are unaffected.
 
-Indexes: none needed at current volume. When `messages` passes ~100k rows add `messages (created_at)` and
-`tasks (created_at)`; noted in the migration header.
+Indexes: the only new indexes are on `analytics_daily` (its unique key `analytics_daily_uq` and
+`analytics_daily_inst_day_idx`). The message CTEs read from the earlier lower bound of the two ranges, which
+the existing `messages_conv_created_id_idx (conversation_id, created_at DESC, id DESC)` serves; stories and
+tasks are read all time for the medians (hundreds of rows today). Revisit at ~100k messages.
 
 ### 6.3 API
 
 ```
 GET /api/analytics/scope
   → { institutions: [{ id, name, slug, timezone, access: 'maintainer' | 'instructor',
-                       classes: [{ id, name, course_code, term, start_date }] }] }
+                       classes: [{ id, name, label: 'name · term', term, start_date }] }] }
 GET /api/analytics/dashboard?institution_id=…&class_id=…&window=30d[&from=2026-09-01&to=2026-10-05][&fresh=1]
   → AnalyticsDashboard (brief §5)
-  400 bad or mismatched parameters · 403 outside the caller's scope · 422 validation (range rules) ·
-  429 rate limit · 503 database unavailable · 200 with failures[] when a section's function fails
+  400 class not of that institution · 403 outside the caller's scope · 404 unknown institution (maintainer) ·
+  422 validation (bad window, uuid or date; range rules) · 429 rate limit · 503 database unavailable ·
+  200 with failures[] when a section's function fails
 ```
+
+The overview's `deltas` and `trends` carry `team_messages` (team channels only) beside `messages` (team
+channels plus the school-wide direct messages), so with a class selected the page's Messages tile shows that
+class's team messages (`conversations.team_members`) with their own delta and sparkline and names the
+school-wide direct messages in its hint (Q-B4). `active_users_7d` is shown as "Signed in (7d)": a `login` event is
+recorded only on an explicit sign-in, so a session that stays signed in is not counted.
 
 Both routes join `frontend/public/.well-known/grepthink-actions.json` (`view_analytics_scope`,
 `view_analytics_dashboard`, role `instructor`) and AGENTS.md's API-surface line.
@@ -350,8 +379,8 @@ Both routes join `frontend/public/.well-known/grepthink-actions.json` (`view_ana
 | Stories / tasks created | `user_stories` / `tasks` created in the range on boards of teams in scope; counts and points. Archived stories count. | — |
 | Live board snapshot | Current `tasks.status` by the story's sprint ordinal within its project; Backlog for stories without a sprint; counts and points; across all teams in scope. Not ranged. | Tasks of archived stories. |
 | Characters per task / story | Median of `char_length(title) + char_length(description_md)` as typed; per sprint ordinal and overall; all time. | Comments. |
-| Active users | Distinct people of the school with a `login` event in the last 7 days. | Before the events table exists: not shown. |
-| Trends | From the nightly rollup: weekly per-team-per-week rates and the on-time rate over the selected range, with the previous range of equal length for comparison; survives deletions. | The current day (rolled up tonight). |
+| Active users ("Signed in (7d)") | Distinct people of the school with a `login` event, recorded on an explicit sign-in, in the last 7 days. | Sessions that stay signed in; before the events table exists: not shown. |
+| Trends | From the nightly rollup: weekly per-team-per-week rates over the classes in session (from the week of a class's first activity to the week of its last) and the on-time rate over the selected range, with the previous range of equal length for comparison; survives deletions. | Days not rolled up yet (each night's rollup adds yesterday) and weeks not complete, such as the week in progress. |
 | Timeliness (C) | Per assignment, each expected submitter's submission time (TSR: latest row) bucketed against `due_at`: early (> 24 h before), on time, late (before `accept_until`), missing, not due. On-time rate over passed deadlines. "Edited late" counted separately. | Draft assignments, assignments without a deadline, teams of one (TSR). |
 | Folding | Any class, team or assignment row with fewer than 3 people becomes part of "Smaller groups". | Institution totals. |
 
@@ -402,9 +431,9 @@ pinned); `windows.py` bounds and previous ranges across month and year boundarie
 boundary, mixed kinds, totals preserved); `ANALYTICS_ADMIN_EMAILS` parsing; `events.record` never raises.
 **SQL.** Each migration ends with a `-- Check` block with hand-computed expected values on DEV (for example the
 UCSC team-message total equals a direct count; the staff ↔ student exclusion removes a known DM). An optional
-`-m integration` pytest runs the functions and `analytics_rollup_day` against DEV when
-`ANALYTICS_IT_DATABASE=1`, asserting shape, non-negativity and cross-consistency (per-class sums equal totals;
-buckets sum to `expected`; a second rollup run changes nothing).
+pytest module (`tests/test_analytics_integration.py`, skipped unless `ANALYTICS_IT_DATABASE=1`) runs the functions
+and `analytics_rollup_day` against DEV, asserting shape, non-negativity and cross-consistency (per-class sums
+equal totals; buckets sum to `expected`; a second rollup run changes nothing).
 **Frontend (vitest).** `analyticsFormat`; `useAnalyticsDashboard` (URL round trip incl. custom from/to, stale
 response ignored, payload held while refetching); components (legend + table twin; `StackedBars` unit toggle
 swaps the series without recoloring; folded row rendering; `TimelinessBars` not-due row; `TrendLines`
