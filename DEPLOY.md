@@ -42,6 +42,7 @@ development reads (only the repo-root `.env` is read — see `README.md`).
 | `EMAIL_UNSUBSCRIBE_SECRET` | signs unsubscribe links (default: a key derived from `SUPABASE_JWT_SECRET`). Set it on PROD before the first reminder or digest email goes out: changing the key later — or rotating the JWT secret while relying on the default — breaks every link already sent |
 | `PUBLIC_API_URL` | optional; this API's public URL (`https://api.grepthink2.com`), for the one-click `List-Unsubscribe` header |
 | `SENTRY_DSN` | optional; turns on error reporting to Sentry (see **Error tracking**). Unset means off |
+| `ANALYTICS_ADMIN_EMAILS` | optional; comma-separated emails that may view every institution's analytics (`/app/analytics`), matched case-insensitively against the login email in the user's token (not a verified school email). Instructors see the institutions of the classes they created regardless. Blank by default. The allowlist relies on Supabase email confirmation staying ON: with it off, a signup or an email change can claim a listed address that has no account yet (see `AUTH.md`). List only addresses that already have accounts |
 
 **Frontend project**
 

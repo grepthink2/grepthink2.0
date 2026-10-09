@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import datetime
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi import HTTPException
 
+from app.assignments import deadlines
 from app.classes import controller as classes
 from tests.conftest import ISTINYE_INSTITUTION, UCSC_INSTITUTION, make_token
 from tests.fake_supabase import FakeSupabase
@@ -123,6 +125,43 @@ def test_create_class_without_an_institution_leaves_it_unset(create_db, monkeypa
     _codes(monkeypatch, ["FREE0001"] * 5)
     created = classes.create_class("SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR)
     assert "institution_id" not in created
+
+
+def test_auto_created_tsrs_carry_their_deadline_in_the_schools_zone(
+    create_db, monkeypatch, with_istinye
+):
+    _codes(monkeypatch, ["FREE0001"] * 5)
+    istanbul = classes.create_class(
+        "SE 301", None, "Fall", datetime.date(2026, 9, 21), INSTR, institution_id=IST_ID
+    )
+    _codes(monkeypatch, ["FREE0002"] * 5)
+    santa_cruz = classes.create_class("CSE 115A", None, "Fall", datetime.date(2026, 9, 24), INSTR)
+    for created, zone in ((istanbul, "Europe/Istanbul"), (santa_cruz, "America/Los_Angeles")):
+        tsrs = [a for a in create_db.rows("assignments") if a["class_id"] == created["id"]]
+        assert tsrs
+        for a in tsrs:
+            expected = deadlines.due_at_for(
+                datetime.date.fromisoformat(a["close_date"]), ZoneInfo(zone)
+            )
+            assert a["due_at"] == expected.isoformat()
+
+
+def test_auto_created_tsrs_whose_deadline_has_passed_start_as_drafts(create_db, monkeypatch):
+    # A start back-dated to Sep 1 puts TSR 1-5 due Sep 16, 23, 30, Oct 7 and 14 (Pacific). The
+    # clock reads TSR 3's deadline exactly: a deadline at now has passed, as the window closes then.
+    monkeypatch.setattr(
+        deadlines, "now_utc", lambda: datetime.datetime(2026, 10, 1, 7, 0, tzinfo=datetime.UTC)
+    )
+    _codes(monkeypatch, ["FREE0001"] * 5)
+    created = classes.create_class("CSE 115C", None, "Fall", datetime.date(2026, 9, 1), INSTR)
+    tsrs = [a for a in create_db.rows("assignments") if a["class_id"] == created["id"]]
+    assert [(a["Title"], a["due_at"], a["status"]) for a in tsrs] == [
+        ("TSR 1", "2026-09-17T07:00:00+00:00", "draft"),
+        ("TSR 2", "2026-09-24T07:00:00+00:00", "draft"),
+        ("TSR 3", "2026-10-01T07:00:00+00:00", "draft"),
+        ("TSR 4", "2026-10-08T07:00:00+00:00", "publish"),
+        ("TSR 5", "2026-10-15T07:00:00+00:00", "publish"),
+    ]
 
 
 # --------------------------------------------------- the create route (view)

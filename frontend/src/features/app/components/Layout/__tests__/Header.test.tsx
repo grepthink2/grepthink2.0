@@ -169,4 +169,10 @@ describe('Header', () => {
     expect(screen.getByText('My Project')).toBeInTheDocument();
     expect(screen.queryByText('Access Code:')).not.toBeInTheDocument();
   });
+
+  it('names the Analytics page, which belongs to no class', () => {
+    renderAt('/app/analytics');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Analytics');
+    expect(screen.queryByText('Access Code:')).not.toBeInTheDocument();
+  });
 });

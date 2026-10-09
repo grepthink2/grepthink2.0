@@ -1,0 +1,177 @@
+@use '@styles/index.scss' as *;
+
+// Series slots (brief §6): fixed identity, never cycled. Marks read var(--series).
+.gt-series--1 { --series: var(--gt-primary); }
+.gt-series--2 { --series: var(--gt-accent); }
+.gt-series--3 { --series: var(--gt-purple); }
+.gt-series--4 { --series: var(--gt-warning); }
+.gt-series--gray { --series: var(--gt-gray-400); }
+.gt-status--todo { --series: var(--gt-gray-400); }
+.gt-status--in_progress { --series: var(--gt-accent); }
+.gt-status--done { --series: var(--gt-primary); }
+
+.gt-analytics { max-width: 1400px; margin: 0 auto; display: grid; gap: 20px; padding: 20px 24px; } // the shell's content padding (handoff §2); .app-main has none
+.gt-analytics__grid { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.gt-analytics__grid > .gt-chart-card--wide { grid-column: 1 / -1; }
+@media (max-width: 999px) { .gt-analytics__grid { grid-template-columns: minmax(0, 1fr); } }
+.gt-analytics__tiles { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.gt-analytics__footnote { font-size: 12px; color: var(--gt-text-tertiary); }
+.gt-chart-card__body > * + * { margin-top: 12px; } // a body's parts stand apart (the line's legend and the split bar below it)
+.gt-analytics__error { margin: 0; padding: 8px 12px; border-radius: var(--gt-radius-md); background: var(--gt-error-soft); color: var(--gt-error-text); font-size: 13px; }
+.gt-analytics__header { display: flex; align-items: center; gap: 12px; }
+.gt-analytics__title { margin: 0; font-size: 20px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; color: var(--gt-text-primary); }
+.gt-analytics__badge { font-size: 12px; padding: 2px 10px; border-radius: var(--gt-radius-md); background: var(--gt-surface-muted); color: var(--gt-text-secondary); }
+.gt-analytics__refresh, .gt-analytics__toggle { margin-left: auto; height: 32px; padding: 0 12px; border-radius: var(--gt-radius-sm); border: 1px solid var(--gt-border); background: var(--gt-surface); font: inherit; font-size: 12.5px; color: var(--gt-text-secondary); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.gt-analytics__toggle { margin-left: 0;
+  &[aria-pressed='true'] { background: var(--gt-primary-soft); color: var(--gt-success-text); } }
+.gt-analytics__check { font-size: 12.5px; color: var(--gt-text-secondary); display: inline-flex; gap: 6px; align-items: center; }
+.gt-analytics__scrum { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 999px) { .gt-analytics__scrum { grid-template-columns: minmax(0, 1fr); } }
+.gt-analytics__forbidden { font-size: 14px; color: var(--gt-text-secondary); }
+
+.gt-chart-card {
+  background: var(--gt-surface);
+  border: 1px solid var(--gt-border); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-hairline); padding: 16px;
+  display: flex; flex-direction: column; gap: 12px; min-width: 0;
+  &__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--gt-border); }
+  &__title-row { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  &__title { margin: 0; font-size: 14px; font-weight: 600; color: var(--gt-text-primary); }
+  &__subtitle { margin: 4px 0 0; font-size: 12px; color: var(--gt-text-tertiary); }
+  &__actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  &__body { position: relative; min-width: 0; transition: opacity 0.2s ease; }
+  &[data-state='refetching'] &__body { opacity: 0.6; }
+  &__error { background: var(--gt-error-soft); color: var(--gt-error-text); border-radius: var(--gt-radius-sm); padding: 10px 12px; font-size: 13px; }
+  &__foot { font-size: 12px; color: var(--gt-text-tertiary); border-top: 1px solid var(--gt-border); padding-top: 10px; }
+}
+
+.gt-live-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--gt-success-text); background: var(--gt-success-soft); border-radius: var(--gt-radius-md); padding: 2px 8px;
+  &__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gt-primary); } }
+
+.gt-unit-toggle { display: inline-flex; height: 28px; border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); overflow: hidden;
+  &__option { border: 0; background: transparent; padding: 0 12px; font: inherit; font-size: 12px; color: var(--gt-text-secondary); cursor: pointer;
+    &:focus-visible { box-shadow: inset var(--gt-focus-ring-tight); }
+    &--active { background: var(--gt-primary); color: var(--gt-text-inverse); } } }
+
+.gt-legend { display: flex; flex-wrap: wrap; gap: 12px 16px; list-style: none; margin: 8px 0 0; padding: 0; font-size: 11.5px; color: var(--gt-text-secondary);
+  &__item { display: inline-flex; align-items: center; gap: 6px; }
+  &__item--off &__swatch { opacity: 0.35; }
+  &__item--off &__label { color: var(--gt-text-secondary); }
+  &__button { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; padding: 4px 0; font: inherit; color: inherit; cursor: pointer; min-height: 24px; }
+  &__swatch { flex: none; }
+  &__swatch--rect { width: 10px; height: 10px; border-radius: 2px; background: var(--series); }
+  &__swatch--line { width: 14px; height: 3px; border-radius: 2px; background: var(--series); }
+  &__value { color: var(--gt-text-primary); font-weight: 600; } }
+
+// A chart may set --tip-shift on its wrapper (the anchor's share of the width, negated) so the box stays inside the chart; centred by default.
+.gt-chart-tip { position: absolute; z-index: 2; pointer-events: none; transform: translate(var(--tip-shift, -50%), calc(-100% - 10px)); background: var(--gt-surface); border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); box-shadow: var(--gt-shadow-hover); padding: 8px 10px; font-size: 12px; width: max-content; min-width: 140px;
+  &__title { font-weight: 600; color: var(--gt-text-primary); margin-bottom: 4px; }
+  &__row { display: flex; align-items: center; gap: 6px; }
+  &__key { width: 10px; height: 3px; border-radius: 2px; background: var(--series); }
+  &__label { color: var(--gt-text-tertiary); flex: 1; }
+  &__value { color: var(--gt-text-primary); font-weight: 600; font-variant-numeric: tabular-nums; } }
+
+.gt-empty { display: grid; place-items: center; gap: 4px; padding: 32px 16px; text-align: center; color: var(--gt-text-tertiary);
+  &__icon { color: var(--gt-gray-400); } &__title { margin: 0; font-size: 13px; font-weight: 600; color: var(--gt-text-secondary); } &__hint { margin: 0; font-size: 12px; } }
+
+.gt-definition { width: min(320px, calc(100vw - 48px)); font-size: 12.5px; color: var(--gt-text-secondary);
+  &__trigger { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 0; background: transparent; color: var(--gt-text-tertiary); padding: 0; cursor: pointer; border-radius: 4px; }
+  &__title { margin: 0 0 6px; font-weight: 600; color: var(--gt-text-primary); } &__body { margin: 0; line-height: 1.45; } }
+
+.gt-line { position: relative; width: 100%;
+  &__svg { width: 100%; height: auto; display: block; } // focus: the house ring (index.css `[tabindex]:focus-visible`, 2px accent)
+  &__grid { stroke: var(--gt-gray-200); stroke-width: 1; }
+  &__axis { stroke: var(--gt-gray-400); stroke-width: 1; }
+  &__tick { font-size: 11px; fill: var(--gt-text-tertiary); }
+  &__path { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  &__area { fill: var(--series); opacity: 0.1; }
+  &__marker { fill: var(--series); stroke: var(--gt-surface); stroke-width: 2; &--hot { r: 5; } }
+  &__end-label { font-size: 11px; font-weight: 600; fill: var(--gt-text-primary); }
+  &__crosshair { stroke: var(--gt-gray-400); stroke-width: 1; stroke-dasharray: none; } }
+
+.gt-split { &__bar { display: flex; gap: 2px; height: 12px; border-radius: 0 4px 4px 0; overflow: hidden; } &__segment { background: var(--series); min-width: 0; flex-basis: 0; } &--empty .gt-split__segment { background: var(--gt-gray-200); } }
+
+.gt-stack { display: grid; gap: 10px;
+  // `all: unset` also drops index.css's focus ring (a box-shadow; its outline is forced transparent), so the ring comes back here.
+  &__button { all: unset; display: block; width: 100%; cursor: pointer; border-radius: 6px; &:focus-visible { box-shadow: var(--gt-focus-ring); } }
+  &__row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; align-items: center; }
+  &__meta { display: flex; flex-direction: column; font-size: 12.5px; }
+  &__label { color: var(--gt-text-primary); font-weight: 600; }
+  &__teams { color: var(--gt-text-tertiary); font-size: 11.5px; }
+  &__bar { display: flex; gap: 2px; height: 24px; min-width: 2px; }
+  &__segment { background: var(--series); flex-basis: 0; display: flex; align-items: center; justify-content: center; color: var(--gt-text-inverse); font-size: 11px; font-weight: 600; min-width: 0;
+    &:last-child { border-radius: 0 4px 4px 0; }
+    &.gt-status--todo .gt-stack__value { color: var(--gt-text-primary); } } }
+
+.gt-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; // BarsBySprint mirrors the 16px gap and stacks the panels when one is too narrow for its caps
+  &--stacked { grid-template-columns: 1fr; }
+  &__panel { margin: 0; min-width: 0; }
+  &__head { display: flex; flex-direction: column; font-size: 12px; margin-bottom: 6px; }
+  &__title { font-weight: 600; color: var(--gt-text-primary); }
+  &__meta { color: var(--gt-text-tertiary); }
+  &__svg { width: 100%; height: auto; display: block; }
+  &__axis { stroke: var(--gt-gray-400); }
+  &__bar { fill: var(--series); }
+  &__cap { font-size: 11px; font-weight: 600; fill: var(--gt-text-primary); }
+  &__tick { font-size: 11px; fill: var(--gt-text-tertiary); } }
+
+.gt-trend {
+  &__panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  &__panel { margin: 0; }
+  &__title { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 8px; font-size: 12px; font-weight: 600; color: var(--gt-text-primary); }
+  &__unit { font-weight: 400; color: var(--gt-text-tertiary); }
+  &__svg { width: 100%; height: auto; display: block; }
+  &__axis { stroke: var(--gt-gray-400); }
+  &__current, &__previous { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  &__marker { fill: var(--series); stroke: var(--gt-surface); stroke-width: 2; }
+  &__end-label { font-size: 11px; font-weight: 600; fill: var(--gt-text-primary); }
+  // The foot spaces itself from the panels, so the legend (when there is one) sits level with the date, which stays on the right.
+  &__foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; font-size: 11.5px; color: var(--gt-text-tertiary); .gt-legend { margin: 0; } }
+  &__asof { margin-left: auto; }
+  &__empty { color: var(--gt-text-tertiary); font-size: 13px; margin: 24px 0; text-align: center; } }
+
+.gt-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px;
+  &__field { display: grid; gap: 4px; min-width: 0; max-width: 100%; font-size: 12px; color: var(--gt-text-tertiary); }
+  // A select is as wide as its longest option: with min-width 0 its max-width caps it, so a long class label cannot widen the page.
+  &__select { min-height: 32px; min-width: 0; max-width: 100%; border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); padding: 0 10px; font: inherit; font-size: 13px; color: var(--gt-text-primary); background: var(--gt-surface); }
+  // The Custom panel hangs from the chip group, not from its chip (the shared Popover's anchor goes static): right-aligned
+  // to the group, it stays on screen when Custom wraps to the left edge of a phone. On one line the two edges coincide.
+  &__chips { display: flex; flex-wrap: wrap; gap: 8px; position: relative; > .gt-popover-anchor { position: static; } }
+  &__chip { height: 32px; min-width: 44px; padding: 0 14px; border-radius: var(--gt-radius-lg); border: 1px solid var(--gt-border); background: var(--gt-surface); font: inherit; font-size: 12.5px; color: var(--gt-text-secondary); cursor: pointer;
+    &:hover:not(:disabled):not(.gt-filter__chip--active) { background: var(--gt-primary-soft); }
+    &--active { background: var(--gt-primary); border-color: var(--gt-primary); color: var(--gt-text-inverse); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; } }
+  &__custom { display: grid; gap: 10px; min-width: 260px; }
+  // The reason a draft cannot be applied sits left of Apply; empty, it takes no room and Apply keeps the right edge.
+  &__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  &__reason { flex: 1; min-width: 0; margin: 0; font-size: 12px; color: var(--gt-error-text); }
+  &__apply { flex: none; height: 32px; padding: 0 14px; border-radius: var(--gt-radius-sm); border: 0; background: var(--gt-primary); color: var(--gt-text-inverse); font: inherit; cursor: pointer;
+    &:hover:not(:disabled) { background: var(--gt-primary-hover); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; } } }
+
+.gt-table {
+  &__bar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+  &__export { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: var(--gt-radius-sm); border: 1px solid var(--gt-border); background: var(--gt-surface); font: inherit; font-size: 12.5px; color: var(--gt-text-secondary); cursor: pointer;
+    &:hover { background: var(--gt-primary-soft); } }
+  // A bounded scroll region: the sticky header has a box to stick in (horizontal overflow makes this the sticky container).
+  &__scroll { overflow-x: auto; max-height: min(70vh, 640px); }
+  &__table { width: 100%; border-collapse: collapse; font-size: 12.5px;
+    // One line per cell: on a phone the table scrolls inside the card instead of squeezing names onto several lines.
+    // The header's rule is an inset shadow: a collapsed border belongs to the table grid and scrolls away from a stuck header.
+    thead th { position: sticky; top: 0; background: var(--gt-surface-sunken); text-align: left; padding: 8px 10px; font-weight: 600; color: var(--gt-text-secondary); box-shadow: inset 0 -1px 0 var(--gt-border); white-space: nowrap;
+      &.gt-table__num { text-align: right; } }
+    // A row's own header (a twin table's first cell) reads as a body cell: only the column headers stick.
+    td, tbody th { padding: 8px 10px; border-bottom: 1px solid var(--gt-border); color: var(--gt-text-primary); white-space: nowrap; }
+    tbody th { text-align: left; font-weight: 400;
+      &.gt-table__num { text-align: right; } } }
+  &__caption { @include gt-visually-hidden; }
+  &__num { text-align: right; font-variant-numeric: tabular-nums; }
+  // `all: unset` also drops index.css's focus ring (as on .gt-stack__button), so the ring comes back here.
+  &__sort { all: unset; cursor: pointer; font: inherit; &:focus-visible { box-shadow: var(--gt-focus-ring); } }
+  &__sort-icon { margin-left: 4px; vertical-align: -2px; }
+  // Under the table's own cell rules (`tbody th` outranks a bare class), so the folded row's name is italic and muted too.
+  &__table &__row--folded td, &__table &__row--folded th { font-style: italic; color: var(--gt-text-secondary); }
+  &__info { vertical-align: middle; margin-left: 6px; color: var(--gt-text-tertiary); }
+  &__meter { display: block; height: 3px; margin-top: 3px; background: var(--gt-gray-200); border-radius: 2px; }
+  &__meter-fill { display: block; height: 3px; background: var(--gt-primary); border-radius: 2px; } }
+
+@media (prefers-reduced-motion: reduce) { .gt-analytics *, .gt-chart-card * { transition: none !important; } }

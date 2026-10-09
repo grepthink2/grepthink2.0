@@ -102,6 +102,15 @@
   white-space: nowrap;
 }
 
+// Under the due date while the late window is open. Wraps: the cell is nowrap, and the label
+// would clip on phones.
+.student-assignments__late {
+  display: block;
+  white-space: normal;
+  color: var(--gt-warning-text);
+  font-size: var(--gt-text-caption);
+}
+
 .student-assignments__td-project {
   color: $text-primary;
 }

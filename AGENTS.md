@@ -32,11 +32,13 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes institutions projects assignments tsr staffing
-  messages profiles contact notifications tas attendance stats outbox scrum
+  messages profiles contact notifications tas attendance stats outbox scrum analytics
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
   core/sentry.py     # optional Sentry reporting (SENTRY_DSN): event scrubbing, delivery before the response
+  core/events.py     # record(kind, ...) → events table; DB failures never raise; ids and enums only in meta
+  analytics/         # per-institution dashboard: SQL functions (RPC) + nightly analytics_daily rollup
   outbox/             # email outbox: enqueue, dispatcher, kinds, preferences, Maileroo webhook
   jobs/email_dispatch.py  # in-process dispatch loop, only while EMAIL_DISPATCH_SECRET is unset
   utils/email_transport.py  # Maileroo HTTP API or SMTP; transient vs permanent errors
@@ -96,9 +98,10 @@ design/               # Claude Design export (design system); replace it wholesa
   (`POST /api/classes` through `require_instructor`; `useAuth().canCreateClasses` in the web
   client), and it is never used for a class decision, in the backend or the UI. Its other readers
   are account-level: joining a class checks that a role has been chosen, `/api/login-check`
-  returns it, the roster-email reminder (`needs_roster_email`) asks student accounts only, and the
-  web client falls back on it when no class is selected (Home's dashboard, the sidebar while the
-  classes load).
+  returns it, the roster-email reminder (`needs_roster_email`) asks student accounts only, the
+  sidebar shows the Analytics link only when `canCreateClasses` (the backend decides access, so a
+  maintainer on a student account opens `/app/analytics` directly), and the web client falls back
+  on it when no class is selected (Home's dashboard, the sidebar while the classes load).
 - **Class-scoped** (every other decision): instructor = `classes.created_by`; **TA** =
   `class_enrollments.enrollment_role = 'ta'` (single source of truth — see TA gotcha); student =
   any other enrollment. One account can hold a different role in each class. `GET /api/classes`
@@ -129,9 +132,9 @@ npx vitest run                              # unit + component tests
 Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `login-check`,
 `create-user`, `check-email`), `/api/classes`, `/api/institutions`, `/api/projects`, `/api/assignments`,
 `/api/tsrs`, `/api/staffing`, `/api/messages`, `/api/profiles`, `/api/contact`,
-`/api/notifications`, `/api/tas`, `/api/stats`, `/api/email` (outbox dispatch, Maileroo webhook,
-unsubscribe, email preferences), `/api/scrum` + `/api/projects/{id}/scrum` (scrum board), plus
-attendance routes under `/api`.
+`/api/notifications`, `/api/tas`, `/api/stats`, `/api/analytics` (scope, dashboard), `/api/email`
+(outbox dispatch, Maileroo webhook, unsubscribe, email preferences), `/api/scrum` +
+`/api/projects/{id}/scrum` (scrum board), plus attendance routes under `/api`.
 The full agent-facing action catalog (method, params, role) lives at
 `frontend/public/.well-known/grepthink-actions.json`.
 
@@ -183,8 +186,8 @@ The full agent-facing action catalog (method, params, role) lives at
   messages: nothing can recognise those.
 - **Rate limiting** (slowapi) is per route: `@limiter.limit(...)` (+ a `request: Request` param)
   sits on the auth routes, contact, `GET /api/institutions`, message sending, the `/api/email`
-  dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts, and stats.
-  Add one to any new public or abuse-prone endpoint.
+  dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts, stats and
+  analytics. Add one to any new public or abuse-prone endpoint.
 - **Email goes through the outbox.** Queue an email with `app.outbox.controller.enqueue`
   (one row per recipient, a `kind` registered in `app/outbox/kinds.py`, a `dedupe_key` when the
   producer may run twice) instead of sending from a request or a background task: Vercel pauses
@@ -194,6 +197,24 @@ The full agent-facing action catalog (method, params, role) lives at
 - **Preview / "View class as student"** (offered only in a class you teach) is a frontend-only
   read-only simulation of that class as its students see it (`previewContext` + `previewGuard`) —
   no backend act-as, so it does not show a specific student's real data.
+- **Deadlines are instants.** `assignments.due_at` (first moment after `close_date` in the school's
+  zone, derived by the backend) is the deadline; `accept_until` is a late window. After a published
+  assignment's `due_at` passes, moving `close_date` or unpublishing is refused (400): set
+  `accept_until`. A draft can always be rescheduled. `create_tsr`, `update_tsr_entry` (students) and
+  `submit_feedback` enforce the window (403 `"This assignment is not open yet"` / `"This assignment
+  is closed"`). `app.assignments.deadlines` holds the arithmetic and the clock (`now_utc`, patched in
+  tests).
+- **Product events** go through `app.core.events.record(kind, ...)` (one insert; a database failure
+  is logged at WARNING and never raised, an unregistered kind raises `ValueError`; kinds live in
+  `KINDS`; `meta` holds ids and short enums only — never names, emails, grades or text). Pass ids
+  and timestamps as strings: a `UUID` or `datetime` raises `TypeError` before anything is written
+  (tests catch it; the fake client does not serialize).
+- **Analytics counts in Postgres, authorizes in Python.** `app/analytics` fans out `analytics_*` SQL
+  functions over `.rpc()` and composes one payload; who may see an institution is decided by
+  `scope_for_user` (maintainers from `ANALYTICS_ADMIN_EMAILS`, instructors through the classes they
+  created). A missing or failing function is a card in `failures[]`, never a 500. The nightly
+  `analytics_daily` rollup runs under pg_cron (`prod/2026-10/2026-10-07_analytics_cron.sql`); its
+  `class_id` has no foreign key on purpose, so deleted classes keep their history.
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,

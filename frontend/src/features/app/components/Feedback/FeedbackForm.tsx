@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import type { SubmitFeedbackPayload } from '@/lib/api';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
+import { submissionWindowNotice } from '@/features/app/utils/assignmentState';
 import './FeedbackForm.scss';
 
 export interface FeedbackFormAssignment {
@@ -10,6 +11,12 @@ export interface FeedbackFormAssignment {
   name: string;
   dueDate: string;
   classId: string;
+  /** The deadline instant from the backend; null or missing when not known. */
+  dueAt?: string | null;
+  /** The open date (YYYY-MM-DD); null or missing when not known. */
+  openDate?: string | null;
+  /** The late window's end from the backend; null or missing when there is none or it is not known. */
+  acceptUntil?: string | null;
 }
 
 const QUESTIONS: { key: keyof SubmitFeedbackPayload; label: string; placeholder: string }[] = [
@@ -51,9 +58,11 @@ const EMPTY_FORM: SubmitFeedbackPayload = {
 interface FeedbackFormProps {
   assignment: FeedbackFormAssignment;
   isSubmitted?: boolean;
+  /** The school's IANA zone, where the open date starts; Pacific when not given. */
+  zone?: string;
 }
 
-const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = false }) => {
+const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = false, zone }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState<SubmitFeedbackPayload>(EMPTY_FORM);
   const [loading, setLoading] = useState(!isSubmitted);
@@ -61,6 +70,8 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [isEditMode, setIsEditMode] = useState(isSubmitted);
   const [error, setError] = useState<string | null>(null);
+  /** When the loaded submission was first made (its created_at). */
+  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
 
   // An Effect Event reads the latest isSubmitted without making a change to it
   // a reason to fetch the submission again.
@@ -84,6 +95,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
           q4_bugs: submission.q4_bugs,
           q5_suggestions: submission.q5_suggestions,
         });
+        setSubmittedAt(submission.created_at ?? null);
         setIsEditMode(true);
       })
       .catch((err) => onLoadError(err))
@@ -97,6 +109,13 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
   };
 
   const isValid = Object.values(form).every((v) => v.trim().length > 0);
+
+  // Late = first submitted at or after the deadline, as on the TSR form: the server closes
+  // on-time submissions at due_at exactly.
+  const dueAt = assignment.dueAt ? new Date(assignment.dueAt) : null;
+  const submittedLate = Boolean(submittedAt && dueAt && new Date(submittedAt) >= dueAt);
+  // Outside the window the server refuses the submission (403): say so before anything is typed.
+  const windowNotice = submissionWindowNotice(assignment, new Date(), zone);
 
   const handleSubmit = async () => {
     setError(null);
@@ -175,6 +194,10 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
           </div>
         )}
 
+        {submittedLate && <p className="feedback-form__late-note">Submitted after the deadline</p>}
+
+        {windowNotice && <p className="feedback-form__window-notice">{windowNotice}</p>}
+
         <div className="feedback-form__questions">
           {QUESTIONS.map(({ key, label, placeholder }, idx) => (
             <div className="feedback-form__question" key={key}>
@@ -200,7 +223,7 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ assignment, isSubmitted = f
             type="button"
             className="feedback-form__submit"
             onClick={handleSubmit}
-            disabled={submitting || !isValid}
+            disabled={submitting || !isValid || windowNotice !== null}
           >
             {submitting ? 'Submitting…' : isEditMode ? 'Update Feedback' : 'Submit Feedback'}
           </button>

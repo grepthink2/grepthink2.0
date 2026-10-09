@@ -56,6 +56,46 @@
     min-height: 1.1em;
   }
 
+  // Optional slots (analytics StatTile): a delta and a sparkline. The class
+  // Dashboard passes neither, so none of these render there.
+  // The comparison drops below the figure as a whole when the tile is too narrow for both. The analytics page makes the
+  // spaces inside each date no-break, so a label longer than the tile breaks at its other spaces, never inside a date.
+  &__delta {
+    font-size: $font-size-sm;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__delta--good &__delta-value {
+    color: var(--gt-success-text);
+  }
+
+  &__delta--bad &__delta-value {
+    color: var(--gt-error-text);
+  }
+
+  &__delta--flat &__delta-value {
+    color: var(--gt-text-tertiary);
+  }
+
+  &__delta-vs {
+    color: var(--gt-text-tertiary);
+  }
+
+  &__spark-line {
+    stroke: var(--gt-gray-400);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  &__spark-dot {
+    fill: var(--gt-primary);
+    stroke: var(--gt-surface);
+    stroke-width: 2;
+  }
+
   &--clickable {
     cursor: pointer;
     transition: box-shadow $transition-fast, border-color $transition-fast;

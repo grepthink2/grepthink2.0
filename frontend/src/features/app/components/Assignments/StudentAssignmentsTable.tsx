@@ -20,8 +20,15 @@ export interface StudentAssignment {
   name: string;
   /** Display string for the table, e.g. "Jan 12, 2026" */
   dueDate: string;
-  /** Raw ISO close date (yyyy-MM-dd) used for chronological sorting. */
+  /** The deadline instant (the close date, yyyy-MM-dd, from older backends), for sorting. */
   dueDateIso: string;
+  /** The deadline instant from the backend; null from older backends. */
+  dueAt?: string | null;
+  /** The open date (YYYY-MM-DD) and the late window's end, for the form's window check. */
+  openDate?: string;
+  acceptUntil?: string | null;
+  /** End of the late window for display, while submissions are accepted past the deadline. */
+  lateUntil?: string;
   projectName: string;
   status: StudentAssignmentStatus;
   action: StudentAssignmentAction;
@@ -125,7 +132,14 @@ const StudentAssignmentsTable: React.FC<StudentAssignmentsTableProps> = ({
                   onClick={() => !isActionDisabled(assignment.action) && handleActionClick(assignment)}
                 >
                   <td className="student-assignments__td-name">{assignment.name}</td>
-                  <td className="student-assignments__td-date">{assignment.dueDate}</td>
+                  <td className="student-assignments__td-date">
+                    {assignment.dueDate}
+                    {assignment.lateUntil && (
+                      <span className="student-assignments__late">
+                        Late submissions until {assignment.lateUntil}
+                      </span>
+                    )}
+                  </td>
                   <td className="student-assignments__td-project">{assignment.projectName || '—'}</td>
                   <td className="student-assignments__td-status">
                     <span

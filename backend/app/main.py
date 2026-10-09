@@ -17,6 +17,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from app.analytics.url import router as analytics_router
 from app.assignments.url import router as assignments_router
 from app.attendance.url import router as attendance_router
 from app.auth.url import router as auth_router
@@ -120,6 +121,7 @@ for router in (
     notifications_router,
     tas_router,
     stats_router,
+    analytics_router,
     attendance_router,
     email_router,
     scrum_router,

@@ -39,6 +39,8 @@ const METHODS = [
   'deleteScrumTask',
   'demoteTA',
   'dismissJoinRequest',
+  'getAnalyticsDashboard',
+  'getAnalyticsScope',
   'getAssignmentTsrOverview',
   'getAssignments',
   'getClassProjects',

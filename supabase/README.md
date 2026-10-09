@@ -156,3 +156,59 @@ before giving up and notifying whoever sent the invite. In this order:
   Maileroo retries a webhook 8 times over about 14 hours; events refused for longer are lost.
 - **Allowing a suppressed address again:** `DELETE FROM email_suppressions WHERE email = '<address>';`
   (addresses are stored lower-cased).
+
+## Assignment deadlines and events (maintainer steps)
+
+1. `backend/database/migrations/2026-10/2026-10-06_assignment_deadlines_and_events.sql`, DEV then PROD
+   (DEV: applied 2026-10-06), **before** the release that ships deadlines-as-instants (the code reads
+   `due_at` and writes `events` without checking for them), and **after** `2026-09-25_institutions.sql`
+   and `2026-09-30_institution_timezones.sql` (its backfill reads `institutions.timezone`; PROD had
+   neither as of 2026-10-06). It backfills `due_at` from each class's school time zone, adds the TSR
+   `updated_at` trigger and creates `events` (RLS on, no client privileges).
+2. Release beta → main in the same sitting, then re-run the file once and confirm the Check's
+   `stale_due_at` reads 0 (it repairs any assignment created or rescheduled between the two). On that
+   re-run `edited_rows` is legitimately above 0 — do not run the file's repair block. Then sign in to the
+   released app and submit a TSR; on PROD, `SELECT kind, actor_id FROM events ORDER BY id DESC LIMIT 5;`
+   must show the `login` and `tsr_submitted` rows.
+3. DEV too: re-run the file once after this change reaches beta. DEV ran the old backend against the
+   applied migration from 2026-10-06 until that deploy, so assignments created or rescheduled in between
+   hold a NULL or stale `due_at` until the backfill runs again.
+
+## Analytics core (maintainer steps)
+
+1. `backend/database/migrations/2026-10/2026-10-07_analytics.sql`, DEV then PROD (DEV: applied
+   2026-10-08), **before** the release (until it runs, every analytics card reads "This card could not
+   load") and after the deadlines migration above — and this release ships only once that deadlines
+   migration is live: every board load now records an event and would log a warning on each request
+   without the `events` table. It creates the `analytics_*` functions (service_role only),
+   `analytics_daily` (RLS on, no client privileges) and the rollup functions; its Check block runs the
+   rollup for yesterday (twice, to prove idempotence) and a snapshot-free backfill of the day before.
+   Run those rollup statements once, at apply time: a later re-run overwrites yesterday's real nightly
+   board snapshot with the board as it is then (the Check's other queries only read).
+2. `backend/database/migrations/prod/2026-10/2026-10-07_analytics_cron.sql`, DEV then PROD (DEV: applied
+   2026-10-08), after step 1. Its first statement is `CREATE EXTENSION IF NOT EXISTS pg_cron;`; it then
+   schedules `analytics-rollup` (09:00 UTC: yesterday's rollup with the board snapshot),
+   `events-retention` (deletes events older than 365 days) and `cron-run-details-retention` (keeps a
+   week of pg_cron's own run log; the email cron file schedules the same job). Its Check, `SELECT jobname,
+   schedule, active FROM cron.job ORDER BY jobname;`, lists those three jobs as active; on PROD
+   `email-dispatch` and `email-outbox-retention` appear too once the email cron file has run.
+3. Backfill activity metrics once, DEV then PROD (DEV: done 2026-10-08, 91 days, 2026-07-09 … 2026-10-07),
+   from the first class's `start_date` to `current_date - 1`, a month at a time to stay under the SQL
+   editor's statement timeout: `SELECT analytics_rollup_range('<month start>', '<month end>');` per month.
+   Board snapshots cannot be backfilled; they start at go-live. Safe to re-run; a re-run recomputes those
+   days from the current tables. The event-derived metrics (`active_users`, `board_views`) read 0 for
+   backfilled days before the first event of their kind was recorded: there, 0 means "not recorded
+   yet", not "nobody".
+4. Vercel, backend project: set `ANALYTICS_ADMIN_EMAILS` if maintainers should see every institution, and
+   redeploy (a changed variable reaches only the next deployment).
+5. Verify after the release: `/app/analytics` as an instructor; the morning after,
+   `SELECT max(day) FROM analytics_daily;` is yesterday.
+6. A missed night (`max(day)` older than yesterday, or a week missing from Trends) is repaired with
+   `SELECT analytics_rollup_range('<first missed day>', current_date - 1);` — activity metrics are
+   rebuilt; the board snapshots of those days cannot be reconstructed and stay missing.
+
+- **Rolling back:** reverting the release needs no database change (everything here is additive). To
+  remove the database side, run the cron file's Undo first (it unschedules `analytics-rollup` and
+  `events-retention`; leave `cron-run-details-retention` while the email schedule is live), then the
+  migration's Undo. Without the functions the API answers 200 with every card in `failures[]`; dropping
+  `analytics_daily` loses the board snapshots for good, so export it first.

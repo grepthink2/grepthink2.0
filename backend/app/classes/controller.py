@@ -12,11 +12,13 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 
+from app.assignments import deadlines
 from app.config import settings
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
 from app.institutions.controller import (
     institution_summaries,
+    institution_timezone,
     is_known_institution,
     load_institutions,
 )
@@ -470,12 +472,16 @@ def _generate_tsr_assignments(
     term: str,
     start_date: datetime.date,
     tsr_count: int | None = None,
+    institution_id: UUID | str | None = None,
 ) -> None:
     """
     Auto-create TSR assignments for a new class.
 
     Assignments open after the first 2 weeks of class (start_date + 14 days)
     and are each one week long, one per sprint week.
+    Each assignment also gets `due_at`, the first instant after its close_date in the school's zone.
+    One whose `due_at` has already passed (a back-dated start) is created as a draft: published,
+    it would be frozen the moment it exists. The instructor publishes it if wanted.
 
     Default counts (overridable via tsr_count):
       Fall / Winter / Spring  →  5 TSR assignments
@@ -487,6 +493,8 @@ def _generate_tsr_assignments(
     count = max(1, min(count, 20))  # safety clamp
 
     first_open = start_date + datetime.timedelta(days=14)
+    tz = institution_timezone(institution_id)
+    now = deadlines.now_utc()
 
     assignments = []
     for week in range(1, count + 1):
@@ -495,12 +503,14 @@ def _generate_tsr_assignments(
         days_since_sunday = (anchor.weekday() + 1) % 7
         open_date = anchor - datetime.timedelta(days=days_since_sunday)
         close_date = open_date + datetime.timedelta(days=3)  # Wednesday
+        due_at = deadlines.due_at_for(close_date, tz)
         assignments.append(
             {
                 "Title": f"TSR {week}",
                 "open_date": open_date.isoformat(),
                 "close_date": close_date.isoformat(),
-                "status": "publish",
+                "due_at": due_at.isoformat() if due_at else None,
+                "status": "draft" if due_at is not None and due_at <= now else "publish",
                 "class_id": class_id,
                 "assignment_type": "tsr",
             }
@@ -614,7 +624,7 @@ def create_class(
         )
 
         # Auto-generate TSR assignments for this class
-        _generate_tsr_assignments(client, class_id, term, start_date, tsr_count)
+        _generate_tsr_assignments(client, class_id, term, start_date, tsr_count, institution_id)
 
         return new_class
     except HTTPException:

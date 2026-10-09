@@ -24,7 +24,7 @@ from zoneinfo import ZoneInfo
 from fastapi import HTTPException
 
 from app.config import settings
-from app.core import authz
+from app.core import authz, events
 from app.core.db import fan_out, get_client
 from app.scrum.burnup import build_cumulative_series, build_sprint_series
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
@@ -581,7 +581,9 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
 
     first = fan_out(
         {
-            "project": lambda: authz.load_project(client, pid, columns="id, name, estimate_scale"),
+            "project": lambda: authz.load_project(
+                client, pid, columns="id, name, estimate_scale, class_id"
+            ),
             "sprints": lambda: rows(
                 client.table("sprints")
                 .select("id, name, starts_at, ends_at, status")
@@ -766,6 +768,13 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         cumulative_input.append({"id": s["id"], "name": s["name"], "final": final})
     cumulative = build_cumulative_series(cumulative_input)
 
+    # after every raise and outside fan_out: a refused or failed load is not a view
+    events.record(
+        "board_viewed",
+        actor_id=str(user_id),
+        class_id=str(project["class_id"]) if project.get("class_id") else None,
+        project_id=pid,
+    )
     return {
         "project": project,
         "ai_enabled": bool(settings.AI_API_KEY and settings.AI_BASE_URL),

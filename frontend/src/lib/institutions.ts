@@ -3,7 +3,7 @@
  * states: `undefined` while it loads (the hook only), `null` when it could not be read, and the
  * list, which is empty when GrepThink has no schools.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, type ApiInstitution } from './api';
 
 let pending: Promise<ApiInstitution[] | null> | null = null;
@@ -55,4 +55,22 @@ export function useInstitutionsWithRetry(): {
 /** The schools list: `undefined` while it loads, `null` when it could not be read, else the list. */
 export function useInstitutions(): ApiInstitution[] | null | undefined {
   return useInstitutionsWithRetry().institutions;
+}
+
+/**
+ * The IANA zone the selected class's school keeps its dates in; Pacific until the list is known,
+ * and for a zone this browser does not know (`startOfDayIn` would throw a RangeError on it).
+ */
+export function useSchoolTimezone(institutionId: string | null | undefined): string {
+  const institutions = useInstitutions();
+  const zone = institutions?.find((i) => i.id === institutionId)?.timezone;
+  return useMemo(() => {
+    if (!zone) return 'America/Los_Angeles';
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: zone });
+    } catch {
+      return 'America/Los_Angeles';
+    }
+    return zone;
+  }, [zone]);
 }
