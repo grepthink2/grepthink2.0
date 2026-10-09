@@ -585,9 +585,14 @@ export interface ApiContact {
 
 export interface ApiNotification {
   id: string;
-  /** `email_undeliverable`: an invite email failed for good; `entity_id` is the class it was for. */
+  /**
+   * `email_undeliverable`: an invite email failed for good; `entity_id` is the class it was for.
+   * `join_request_unreviewed`: a join request nobody on the team can review (no member left, or
+   * none with a reviewing role) went to the class instructor; `entity_id` is the project.
+   */
   type:
     | 'join_request'
+    | 'join_request_unreviewed'
     | 'join_rejected'
     | 'message'
     | 'project_created'

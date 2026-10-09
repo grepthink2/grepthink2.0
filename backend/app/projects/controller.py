@@ -1726,9 +1726,9 @@ def get_incoming_join_requests(user_id: str, class_id: UUID) -> list:
 
     A project is reviewable when the caller is a member whose role, trimmed and
     lowercased, is ``owner``, ``product owner`` or ``admin`` (the web client's
-    ``canReviewJoinRequests``). A class instructor therefore sees only the projects
-    they are a member of, as the per-project view did. No reviewable project gives
-    an empty list.
+    ``canReviewJoinRequests``). The class instructor also reviews every project
+    nobody on the team can review (no member is left, or none holds one of those
+    roles): they are its only reviewer. No reviewable project gives an empty list.
 
     Each row carries the seven keys :func:`get_pending_join_requests` emits plus
     ``project_id``, ``project_name`` and ``member_count`` (the live member-row count,
@@ -1743,16 +1743,20 @@ def get_incoming_join_requests(user_id: str, class_id: UUID) -> list:
         client = get_client()
         class_projects = (
             client.table("projects")
-            .select("id, name, project_members(user_id, role)")
+            .select("id, name, project_members(user_id, role), classes(created_by)")
             .eq("class_id", str(class_id))
             .execute()
         ).data or []
 
+        def _reviews(role) -> bool:
+            return (role or "").strip().lower() in JOIN_REVIEW_ROLES
+
         reviewable: dict[str, dict] = {}
         for p in class_projects:
             members = p.get("project_members") or []
-            role = (_member_role(members, user_id) or "").strip().lower()
-            if role in JOIN_REVIEW_ROLES:
+            is_instructor = str((p.get("classes") or {}).get("created_by")) == str(user_id)
+            nobody_reviews = not any(_reviews(m.get("role")) for m in members)
+            if _reviews(_member_role(members, user_id)) or (is_instructor and nobody_reviews):
                 reviewable[str(p["id"])] = {"name": p.get("name"), "member_count": len(members)}
         if not reviewable:
             return []

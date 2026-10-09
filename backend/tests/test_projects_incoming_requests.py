@@ -210,6 +210,26 @@ def test_sorted_oldest_first_with_missing_timestamps_first(db):
     ]
 
 
+def _add_project_without_reviewer(db, pid, name, members, rid, requester):
+    db.rows("projects").append(_project(pid, CLASS, name, "2026-01-01T00:00:00+00:00"))
+    db.rows("project_members").extend(_member(pid, uid, role) for uid, role in members)
+    db.rows("project_join_requests").append(
+        _request(rid, pid, requester, created_at="2026-03-06T00:00:00+00:00")
+    )
+
+
+def test_the_instructor_also_gets_requests_nobody_on_the_team_can_review(db):
+    _add_project_without_reviewer(db, "proj-f", "Zeta", [], "rf1", S8)  # nobody left
+    _add_project_without_reviewer(db, "proj-g", "Eta", [(S1, "scrum master")], "rg1", S7)
+    rows = projects.get_incoming_join_requests(INSTR, CLASS)
+    assert set(_ids(rows)) == {"ra1", "ra2", "rb1", "rf1", "rg1"}  # still not rc1 or rd1
+    zeta = next(r for r in rows if r["request_id"] == "rf1")
+    assert (zeta["project_id"], zeta["project_name"], zeta["member_count"]) == ("proj-f", "Zeta", 0)
+    # a student reviews only the teams they hold a reviewing role on
+    assert set(_ids(projects.get_incoming_join_requests(S1, CLASS))) == {"ra1", "ra2"}
+    assert db.executes <= 6, _trace(db)  # two queries per call, as before
+
+
 def test_query_budget_does_not_grow_with_the_number_of_projects(db):
     projects.get_incoming_join_requests(INSTR, CLASS)
     assert db.executes <= 3, _trace(db)

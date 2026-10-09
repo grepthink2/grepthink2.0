@@ -517,6 +517,29 @@ def test_request_to_join_creates_a_pending_request_and_notifies_the_owner(db):
     ]
 
 
+@pytest.mark.parametrize("team", ["nobody left", "nobody with a reviewing role"])
+def test_a_request_nobody_on_the_team_can_review_goes_to_the_class_instructor(db, team):
+    if team == "nobody left":
+        db.store["project_members"] = [
+            m for m in db.rows("project_members") if m["project_id"] != P2
+        ]
+    else:
+        next(m for m in db.rows("project_members") if m["user_id"] == S3)["role"] = "scrum master"
+    projects.request_to_join_project(P2, S6, "hi")
+    assert [_without_id(n) for n in db.rows("notifications")] == [
+        {
+            "user_id": INSTR,  # CLASS's instructor
+            "type": "join_request_unreviewed",
+            "title": "Join request needs your review",
+            "body": 'S6 X requested to join Beta, which has no product owner or admin to review it. "hi"',
+            "entity_type": "project",
+            "entity_id": P2,
+        }
+    ]
+    # the usual path plus one read of the project's class for its instructor
+    assert db.executes <= 8, _trace(db)
+
+
 def test_request_to_join_budget(db, waves):
     projects.request_to_join_project(P2, S6)
     # one wave (project, memberships, pending row) + the insert, then
