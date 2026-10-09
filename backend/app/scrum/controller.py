@@ -26,9 +26,11 @@ from fastapi import HTTPException
 from app.config import settings
 from app.core import authz, events
 from app.core.db import fan_out, get_client
+from app.notifications.controller import notify_mention
 from app.scrum.burnup import build_cumulative_series, build_sprint_series
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
 from app.scrum.pr_links import fetch_pr_state, parse_pr_url, parse_repo_url, pr_repo_prefix
+from app.utils.mentions import extract_mention_ids
 from app.utils.profiles import profile_display_name
 
 logger = logging.getLogger(__name__)
@@ -73,13 +75,35 @@ def _board_access(client, *, project_id: str, user_id: str) -> str:
     if member.data:
         return "member"  # a membership row means the project exists
     project = authz.load_project(client, project_id, class_columns="created_by")
-    if str(project.get("assigned_ta_id") or "") == str(user_id):
-        return "staff"
-    if str((project.get("classes") or {}).get("created_by") or "") == str(user_id):
-        return "staff"
-    if authz.get_enrollment_role(client, project["class_id"], user_id) == authz.ROLE_TA:
+    if _staff_among(client, project, {str(user_id)}):
         return "staff"
     raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
+
+
+def _staff_among(client, project: dict, user_ids: set[str]) -> set[str]:
+    """The ids in ``user_ids`` that are staff for ``project`` (loaded with
+    ``class_columns="created_by"``): its meeting TA, its class's instructor, or a TA
+    of its class. Ids compare lowercased. The TA lookup is one round trip, skipped
+    when every id is already settled by the project row.
+    """
+    wanted = {str(u).lower() for u in user_ids}
+    direct = {
+        str(project.get("assigned_ta_id") or "").lower(),
+        str((project.get("classes") or {}).get("created_by") or "").lower(),
+    }
+    staff = wanted & direct
+    rest = wanted - staff
+    if rest:
+        tas = (
+            client.table("class_enrollments")
+            .select("user_id")
+            .eq("class_id", str(project["class_id"]))
+            .eq("enrollment_role", authz.ROLE_TA)
+            .in_("user_id", sorted(rest))
+            .execute()
+        ).data or []
+        staff |= {str(r["user_id"]).lower() for r in tas} & rest
+    return staff
 
 
 def _require_writer(client, *, project_id: str, user_id: str) -> None:
@@ -866,9 +890,49 @@ def _fanout_mentions(
     author_id: str,
     body_md: str,
 ) -> None:
-    """No-op seam. Activated by mentions task M3 (issue #191): extract mention
-    UUIDs, intersect with team ∪ staff, notify via the generic `mention` type."""
-    return None
+    """Notify the people a comment @-mentions (issue #191): the mentioned ids on the
+    team or among the project's staff (as in :func:`_board_access`), minus the author.
+
+    Best-effort: the comment is already stored, so a failure here is logged and never
+    raised. A body without mention tokens returns before any query.
+    """
+    mentioned = extract_mention_ids(body_md) - {str(author_id).lower()}
+    if not mentioned:
+        return
+    pid = str(project_id)
+    try:
+        reads = fan_out(
+            {
+                "project": lambda: authz.load_project(client, pid, class_columns="created_by"),
+                "members": lambda: (
+                    (
+                        client.table("project_members")
+                        .select("user_id")
+                        .eq("project_id", pid)
+                        .in_("user_id", sorted(mentioned))
+                        .execute()
+                    ).data
+                    or []
+                ),
+            }
+        )
+        team = {str(r["user_id"]).lower() for r in reads["members"]} & mentioned
+        recipients = team | _staff_among(client, reads["project"], mentioned - team)
+        if not recipients:
+            return
+        notify_mention(
+            recipient_ids=sorted(recipients),
+            author_name=_name_for(client, author_id) or "Someone",
+            label=parent_key,
+            project_name=reads["project"].get("name") or "",
+            body_md=body_md,
+            entity_type=f"scrum_{parent_kind}",
+            entity_id=f"{pid}:{parent_id}",
+        )
+    except Exception:
+        logger.exception(
+            "Mention fan-out failed | project_id=%s %s_id=%s", pid, parent_kind, parent_id
+        )
 
 
 def _get_comment_parent(client, parent_kind: str, parent_id: str) -> dict:
