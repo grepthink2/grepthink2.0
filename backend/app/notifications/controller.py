@@ -114,11 +114,12 @@ def notify_member_departure(
     old_project_name: str,
     new_project_name: str,
 ) -> None:
-    """Tell each product owner of ``old_project`` that a member left for another team."""
-    body = (
-        f'{leaver_name} has left "{old_project_name}" and submitted a join request '
-        f'for "{new_project_name}".'
-    )
+    """Tell each product owner of ``old_project`` that a member left for another team.
+
+    Sent when the move happens: a reviewer accepted the member's join request, or the
+    member accepted another team's invitation.
+    """
+    body = f'{leaver_name} has left "{old_project_name}" to join "{new_project_name}".'
     _insert_notifications(
         [
             {

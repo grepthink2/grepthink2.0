@@ -748,9 +748,10 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
     """
     Create a request to join a project.
 
-    If the user is already a member of another project in the **same class**,
-    they are removed from it once the request is known to be valid, and that
-    project's product owner(s) receive a notification.
+    The student stays on their current team while the request is pending: a
+    request can still be rejected, cancelled or left unanswered, and none of those
+    gives the old team back. :func:`accept_join_request` moves them (and tells the
+    old team's product owner) when a reviewer accepts.
 
     Args:
         project_id: Project unique identifier
@@ -764,9 +765,8 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
         HTTPException: If project not found, already a member, or pending request exists
 
     Every check reads in one concurrent wave: the project, the caller's
-    memberships (each with its project's class and members embedded) and any
-    pending row for this project. A rejected request therefore writes nothing,
-    and leaving the old team needs no further reads.
+    memberships and any pending row for this project. A rejected request
+    therefore writes nothing.
     """
     try:
         client = get_client()
@@ -787,10 +787,7 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
                 "memberships": lambda: (
                     (
                         client.table("project_members")
-                        .select(
-                            "project_id, "
-                            "projects(id, name, class_id, project_members(user_id, role))"
-                        )
+                        .select("project_id")
                         .eq("user_id", user_id)
                         .execute()
                     ).data
@@ -813,7 +810,6 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
         if not reads["project"]:
             raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
         project = reads["project"][0]
-        class_id = project.get("class_id")
         new_project_name = project.get("name", "the new project")
 
         memberships = reads["memberships"]
@@ -828,28 +824,6 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
                     detail="You have a pending invitation to this project. Accept or decline it first.",
                 )
             raise HTTPException(status_code=400, detail="Join request already pending")
-
-        # The request is valid: leave any other project the user is in within the
-        # same class and notify that project's product owner(s).
-        if class_id:
-            teams = {
-                str(m["projects"]["id"]): m["projects"]
-                for m in memberships
-                if m.get("projects") and str(m["projects"].get("class_id")) == str(class_id)
-            }
-            _leave_current_project_in_class(
-                client,
-                user_id=user_id,
-                target_project_id=pid,
-                class_id=str(class_id),
-                new_project_name=new_project_name,
-                class_projects=[{"id": tid, "name": t.get("name")} for tid, t in teams.items()],
-                class_members=[
-                    {"project_id": tid, "user_id": m.get("user_id"), "role": m.get("role")}
-                    for tid, t in teams.items()
-                    for m in t.get("project_members") or []
-                ],
-            )
 
         # Normalize the optional requester message (trim, drop if empty)
         clean_message = message.strip() if isinstance(message, str) else None
@@ -968,9 +942,9 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
                 .in_("project_id", [str(p["id"]) for p in class_projects] or [pid])
                 .execute()
             ).data or []
-            # Safety net: if the joining user is still in another project in the
-            # same class (e.g. they were added directly after submitting this
-            # request), auto-remove them and notify that project's product owner.
+            # The joining user leaves any other project they are in within the same
+            # class now, on acceptance (a pending request never moves anyone), and
+            # that project's product owner is told.
             _leave_current_project_in_class(
                 client,
                 user_id=new_user,
