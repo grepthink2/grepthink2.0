@@ -1,11 +1,13 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ApiNotification } from '@/lib/api';
 import type { Class, ClassRole, School } from '@/lib/classContext';
 
 const state = vi.hoisted(() => ({
   role: 'instructor' as ClassRole | null | undefined,
   preview: { isPreviewing: false, enterPreview: vi.fn(), exitPreview: vi.fn() },
+  notifications: [] as ApiNotification[],
   ctx: {
     selectedClass: null as Class | null,
     classes: [] as Class[],
@@ -24,8 +26,8 @@ vi.mock('@/lib/classContext', () => ({
 }));
 vi.mock('@features/notifications/hooks/useNotifications', () => ({
   useNotifications: () => ({
-    notifications: [],
-    unreadCount: 0,
+    notifications: state.notifications,
+    unreadCount: state.notifications.length,
     loading: false,
     markRead: vi.fn(),
     markAllRead: vi.fn(),
@@ -80,6 +82,7 @@ function openProfileMenu(): string[] {
 
 beforeEach(() => {
   state.role = 'instructor';
+  state.notifications = [];
   state.preview.isPreviewing = false;
   state.preview.enterPreview.mockReset();
   state.preview.exitPreview.mockReset();
@@ -174,5 +177,33 @@ describe('Header', () => {
     renderAt('/app/analytics');
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Analytics');
     expect(screen.queryByText('Access Code:')).not.toBeInTheDocument();
+  });
+});
+
+describe('Header — opening a join-request notification', () => {
+  function notice(type: ApiNotification['type'], title: string): ApiNotification {
+    return {
+      id: `n-${type}`,
+      type,
+      title,
+      body: 'S6 X requested to join Beta.',
+      entity_type: 'project',
+      entity_id: 'p2',
+      read_at: null,
+      created_at: '2026-10-09T10:00:00Z',
+    };
+  }
+
+  it.each([
+    // A team's own reviewers answer from the requests list on Home.
+    ['join_request', 'New join request', '/app/home'],
+    // The instructor is the only reviewer of a team with nobody to review: open that team.
+    ['join_request_unreviewed', 'Join request needs your review', '/app/projects/p2'],
+  ] as const)('%s opens %s', async (type, title, path) => {
+    state.notifications = [notice(type, title)];
+    renderAt('/app/dashboard');
+    fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
+    fireEvent.click(screen.getByText(title));
+    await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
   });
 });

@@ -4,7 +4,7 @@
 -- 2026-10-06_assignment_deadlines_and_events.sql, which it reads (events, classes.institution_id,
 -- institutions.timezone). Spec: docs/superpowers/specs/2026-10-05-analytics-dashboard-design.md §6.2, §7.
 --
--- Applied: DEV 2026-10-08 (by Claude, via the Supabase connector)   PROD ____-__-__
+-- Applied: DEV 2026-10-08 (by Claude, via the Supabase connector)   PROD 2026-10-09 (by the maintainer)
 --   DEV: analytics_trends re-applied 2026-10-08 (in-session teams, days per week)
 --
 -- ⚠️  ORDER: after 2026-09/2026-09-25_institutions.sql, 2026-09/2026-09-30_institution_timezones.sql and

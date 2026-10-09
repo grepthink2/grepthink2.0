@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 NOTIFICATION_TYPES = frozenset(
     {
         "join_request",
+        "join_request_unreviewed",
         "join_rejected",
         "message",
         "project_created",
@@ -114,11 +115,12 @@ def notify_member_departure(
     old_project_name: str,
     new_project_name: str,
 ) -> None:
-    """Tell each product owner of ``old_project`` that a member left for another team."""
-    body = (
-        f'{leaver_name} has left "{old_project_name}" and submitted a join request '
-        f'for "{new_project_name}".'
-    )
+    """Tell each product owner of ``old_project`` that a member left for another team.
+
+    Sent when the move happens: a reviewer accepted the member's join request, or the
+    member accepted another team's invitation.
+    """
+    body = f'{leaver_name} has left "{old_project_name}" to join "{new_project_name}".'
     _insert_notifications(
         [
             {
@@ -431,7 +433,12 @@ def notify_join_request(
     requester_id: str,
     message: str | None = None,
 ) -> None:
-    """Notify project owners/admins when someone requests to join."""
+    """Notify project owners/admins when someone requests to join.
+
+    When nobody on the team can review it (no member is left, or none holds a
+    reviewing role), the class instructor is the only reviewer, so they get a
+    ``join_request_unreviewed`` notice that opens the project instead.
+    """
     try:
         client = _client()
         owners_res = (
@@ -446,16 +453,40 @@ def notify_join_request(
             for row in (owners_res.data or [])
             if row.get("user_id") and row["user_id"] != requester_id
         }
+        instructor_id = None
         if not owner_ids:
-            return
+            project_res = (
+                client.table("projects")
+                .select("class_id, classes(created_by)")
+                .eq("id", project_id)
+                .limit(1)
+                .execute()
+            )
+            project_row = (project_res.data or [{}])[0]
+            instructor_id = (project_row.get("classes") or {}).get("created_by")
+            if not instructor_id or instructor_id == requester_id:
+                return
 
         requester_name = profile_display_name(_get_profile(requester_id)) or "A student"
-        title = "New join request"
-        body = f"{requester_name} requested to join {project_name}."
         clean_message = message.strip() if isinstance(message, str) else ""
-        if clean_message:
-            body = f'{body} "{clean_message}"'
+        quote = f' "{clean_message}"' if clean_message else ""
 
+        if instructor_id:
+            _insert_notification(
+                user_id=instructor_id,
+                type="join_request_unreviewed",
+                title="Join request needs your review",
+                body=(
+                    f"{requester_name} requested to join {project_name}, which has no "
+                    f"product owner or admin to review it.{quote}"
+                ),
+                entity_type="project",
+                entity_id=project_id,
+            )
+            return
+
+        title = "New join request"
+        body = f"{requester_name} requested to join {project_name}.{quote}"
         for owner_id in owner_ids:
             _insert_notification(
                 user_id=owner_id,

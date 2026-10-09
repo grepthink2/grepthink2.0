@@ -388,41 +388,55 @@ def delete_project(project_id: UUID, user_id: str) -> dict:
     Who can delete:
     - Product owner or admin (project members with elevated roles)
     - The class instructor
+    - The project's creator once nobody is left in it (every member removed
+      themselves or moved to another team), while they are still enrolled in the
+      class. Without this, a project its last member left could only be removed by
+      the instructor.
+
+    The project (with its class's instructor) and its members are read in one wave.
 
     Raises:
         HTTPException: 404 if project not found, 403 if user lacks permission.
     """
     try:
         client = get_client()
-
-        project_result = (
-            client.table("projects").select("id, class_id").eq("id", str(project_id)).execute()
+        pid = str(project_id)
+        reads = fan_out(
+            {
+                "project": lambda: authz.load_project(
+                    client, pid, columns="id, class_id, created_by", class_columns="created_by"
+                ),
+                "members": lambda: _project_member_rows(client, pid),
+            }
         )
-        if not project_result.data:
-            raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
+        project, members = reads["project"], reads["members"]
+        class_id = project["class_id"]
+        is_instructor = str(_class_owner(project)) == str(user_id)
 
-        class_id = project_result.data[0]["class_id"]
+        if not is_instructor:
+            role = _member_role(members, user_id)
+            if role is None and not members and str(project.get("created_by")) == str(user_id):
+                if authz.get_enrollment_role(client, class_id, user_id) is None:
+                    raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
+            elif role is None:
+                raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
+            elif role not in (ROLE_PRODUCT_OWNER, ROLE_ADMIN):
+                # Note: 'owner' is intentionally excluded from delete authority.
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only product owners, admins, or the class instructor can delete this project",
+                )
 
-        if not _is_instructor(user_id, class_id):
-            # Note: 'owner' is intentionally excluded from delete authority.
-            _require_member_role(
-                client,
-                str(project_id),
-                user_id,
-                (ROLE_PRODUCT_OWNER, ROLE_ADMIN),
-                forbidden_detail="Only product owners, admins, or the class instructor can delete this project",
-            )
-
-        _delete_project_dependencies(client, str(project_id))
-        client.table("projects").delete().eq("id", str(project_id)).execute()
+        _delete_project_dependencies(client, pid)
+        client.table("projects").delete().eq("id", pid).execute()
 
         logger.info(
             "Project deleted | project_id=%s deleted_by=%s is_instructor=%s",
             project_id,
             user_id,
-            _is_instructor(user_id, class_id),
+            is_instructor,
         )
-        return {"message": "Project deleted successfully", "project_id": str(project_id)}
+        return {"message": "Project deleted successfully", "project_id": pid}
     except HTTPException:
         raise
     except Exception:
@@ -734,9 +748,10 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
     """
     Create a request to join a project.
 
-    If the user is already a member of another project in the **same class**,
-    they are removed from it once the request is known to be valid, and that
-    project's product owner(s) receive a notification.
+    The student stays on their current team while the request is pending: a
+    request can still be rejected, cancelled or left unanswered, and none of those
+    gives the old team back. :func:`accept_join_request` moves them (and tells the
+    old team's product owner) when a reviewer accepts.
 
     Args:
         project_id: Project unique identifier
@@ -750,9 +765,8 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
         HTTPException: If project not found, already a member, or pending request exists
 
     Every check reads in one concurrent wave: the project, the caller's
-    memberships (each with its project's class and members embedded) and any
-    pending row for this project. A rejected request therefore writes nothing,
-    and leaving the old team needs no further reads.
+    memberships and any pending row for this project. A rejected request
+    therefore writes nothing.
     """
     try:
         client = get_client()
@@ -773,10 +787,7 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
                 "memberships": lambda: (
                     (
                         client.table("project_members")
-                        .select(
-                            "project_id, "
-                            "projects(id, name, class_id, project_members(user_id, role))"
-                        )
+                        .select("project_id")
                         .eq("user_id", user_id)
                         .execute()
                     ).data
@@ -799,7 +810,6 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
         if not reads["project"]:
             raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
         project = reads["project"][0]
-        class_id = project.get("class_id")
         new_project_name = project.get("name", "the new project")
 
         memberships = reads["memberships"]
@@ -814,28 +824,6 @@ def request_to_join_project(project_id: UUID, user_id: str, message: str | None 
                     detail="You have a pending invitation to this project. Accept or decline it first.",
                 )
             raise HTTPException(status_code=400, detail="Join request already pending")
-
-        # The request is valid: leave any other project the user is in within the
-        # same class and notify that project's product owner(s).
-        if class_id:
-            teams = {
-                str(m["projects"]["id"]): m["projects"]
-                for m in memberships
-                if m.get("projects") and str(m["projects"].get("class_id")) == str(class_id)
-            }
-            _leave_current_project_in_class(
-                client,
-                user_id=user_id,
-                target_project_id=pid,
-                class_id=str(class_id),
-                new_project_name=new_project_name,
-                class_projects=[{"id": tid, "name": t.get("name")} for tid, t in teams.items()],
-                class_members=[
-                    {"project_id": tid, "user_id": m.get("user_id"), "role": m.get("role")}
-                    for tid, t in teams.items()
-                    for m in t.get("project_members") or []
-                ],
-            )
 
         # Normalize the optional requester message (trim, drop if empty)
         clean_message = message.strip() if isinstance(message, str) else None
@@ -954,9 +942,9 @@ def accept_join_request(request_id: UUID, reviewer_id: str) -> dict:
                 .in_("project_id", [str(p["id"]) for p in class_projects] or [pid])
                 .execute()
             ).data or []
-            # Safety net: if the joining user is still in another project in the
-            # same class (e.g. they were added directly after submitting this
-            # request), auto-remove them and notify that project's product owner.
+            # The joining user leaves any other project they are in within the same
+            # class now, on acceptance (a pending request never moves anyone), and
+            # that project's product owner is told.
             _leave_current_project_in_class(
                 client,
                 user_id=new_user,
@@ -1738,9 +1726,9 @@ def get_incoming_join_requests(user_id: str, class_id: UUID) -> list:
 
     A project is reviewable when the caller is a member whose role, trimmed and
     lowercased, is ``owner``, ``product owner`` or ``admin`` (the web client's
-    ``canReviewJoinRequests``). A class instructor therefore sees only the projects
-    they are a member of, as the per-project view did. No reviewable project gives
-    an empty list.
+    ``canReviewJoinRequests``). The class instructor also reviews every project
+    nobody on the team can review (no member is left, or none holds one of those
+    roles): they are its only reviewer. No reviewable project gives an empty list.
 
     Each row carries the seven keys :func:`get_pending_join_requests` emits plus
     ``project_id``, ``project_name`` and ``member_count`` (the live member-row count,
@@ -1755,16 +1743,20 @@ def get_incoming_join_requests(user_id: str, class_id: UUID) -> list:
         client = get_client()
         class_projects = (
             client.table("projects")
-            .select("id, name, project_members(user_id, role)")
+            .select("id, name, project_members(user_id, role), classes(created_by)")
             .eq("class_id", str(class_id))
             .execute()
         ).data or []
 
+        def _reviews(role) -> bool:
+            return (role or "").strip().lower() in JOIN_REVIEW_ROLES
+
         reviewable: dict[str, dict] = {}
         for p in class_projects:
             members = p.get("project_members") or []
-            role = (_member_role(members, user_id) or "").strip().lower()
-            if role in JOIN_REVIEW_ROLES:
+            is_instructor = str((p.get("classes") or {}).get("created_by")) == str(user_id)
+            nobody_reviews = not any(_reviews(m.get("role")) for m in members)
+            if _reviews(_member_role(members, user_id)) or (is_instructor and nobody_reviews):
                 reviewable[str(p["id"])] = {"name": p.get("name"), "member_count": len(members)}
         if not reviewable:
             return []
