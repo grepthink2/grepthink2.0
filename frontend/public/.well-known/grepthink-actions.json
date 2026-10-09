@@ -96,7 +96,8 @@
     },
     {
       "id": "delete_project", "title": "Delete a project", "role": "product owner|admin|instructor",
-      "method": "DELETE", "endpoint": "/api/projects/{project_id}"
+      "method": "DELETE", "endpoint": "/api/projects/{project_id}",
+      "note": "Also the project's creator once nobody is left in it (every member left or moved to another team), while they are still enrolled in the class."
     },
     {
       "id": "request_join_project", "title": "Request to join a project", "role": "student",

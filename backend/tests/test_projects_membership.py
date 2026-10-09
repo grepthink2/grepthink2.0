@@ -508,3 +508,63 @@ def test_accept_team_invite_only_by_invitee(db):
     assert exc.value.status_code == 403
     projects.accept_join_request("r2", S4)
     assert S4 in _members(db, P1)
+
+
+# ------------------------------------------------------------------- delete_project
+# A student leaves a team by removing themselves or by moving to another team, and
+# the project stays behind. The creator of a project nobody is left in may delete it.
+
+DELETE_DENIED = "Only product owners, admins, or the class instructor can delete this project"
+
+
+def _project_row(db, pid):
+    return next((p for p in db.rows("projects") if p["id"] == pid), None)
+
+
+def _empty_p1_created_by(db, uid):
+    """P1 was created by ``uid`` and every member has since left it."""
+    _project_row(db, P1).update(created_by=uid, num_members=0)
+    db.store["project_members"] = [m for m in db.rows("project_members") if m["project_id"] != P1]
+
+
+def test_the_creator_deletes_their_project_once_nobody_is_left(db):
+    _empty_p1_created_by(db, S1)
+    out = projects.delete_project(P1, S1)
+    assert out == {"message": "Project deleted successfully", "project_id": P1}
+    assert _project_row(db, P1) is None
+
+
+def test_the_creator_cannot_delete_while_members_remain(db):
+    _project_row(db, P1)["created_by"] = S2  # S2 created P1 and is now a plain member
+    with pytest.raises(HTTPException) as exc:
+        projects.delete_project(P1, S2)
+    assert (exc.value.status_code, exc.value.detail) == (403, DELETE_DENIED)
+    _project_row(db, P1)["created_by"] = S3  # S3 created P1 and left; S1 and S2 remain
+    with pytest.raises(HTTPException) as exc:
+        projects.delete_project(P1, S3)
+    assert (exc.value.status_code, exc.value.detail) == (403, "Not a member of this project")
+    assert _project_row(db, P1) is not None
+
+
+def test_someone_else_cannot_delete_an_empty_project(db):
+    _empty_p1_created_by(db, S1)
+    with pytest.raises(HTTPException) as exc:
+        projects.delete_project(P1, S2)
+    assert (exc.value.status_code, exc.value.detail) == (403, "Not a member of this project")
+    assert _project_row(db, P1) is not None
+
+
+def test_a_creator_who_left_the_class_cannot_delete(db):
+    _empty_p1_created_by(db, S1)
+    db.store["class_enrollments"] = [e for e in db.rows("class_enrollments") if e["user_id"] != S1]
+    with pytest.raises(HTTPException) as exc:
+        projects.delete_project(P1, S1)
+    assert (exc.value.status_code, exc.value.detail) == (403, "You are not enrolled in this class")
+    assert _project_row(db, P1) is not None
+
+
+def test_product_owners_and_the_instructor_still_delete(db):
+    projects.delete_project(P1, S1)  # S1 is P1's product owner
+    assert _project_row(db, P1) is None
+    projects.delete_project(P2, INSTR)
+    assert _project_row(db, P2) is None

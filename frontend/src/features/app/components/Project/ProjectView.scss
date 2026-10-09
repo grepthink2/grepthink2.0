@@ -139,9 +139,32 @@
       color: var(--gt-error);
     }
 
+    // Deleting a project nobody is left in (its creator only).
+    &--danger {
+      background: var(--gt-error-soft);
+      color: var(--gt-error-text);
+
+      &:hover {
+        background: var(--gt-error);
+        color: var(--gt-text-inverse);
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+    }
+
     svg {
       flex-shrink: 0;
     }
+  }
+
+  &__action-error {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--gt-error-text);
+    font-size: 0.8125rem;
   }
 
   &__joined-dropdown {

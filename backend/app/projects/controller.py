@@ -388,41 +388,55 @@ def delete_project(project_id: UUID, user_id: str) -> dict:
     Who can delete:
     - Product owner or admin (project members with elevated roles)
     - The class instructor
+    - The project's creator once nobody is left in it (every member removed
+      themselves or moved to another team), while they are still enrolled in the
+      class. Without this, a project its last member left could only be removed by
+      the instructor.
+
+    The project (with its class's instructor) and its members are read in one wave.
 
     Raises:
         HTTPException: 404 if project not found, 403 if user lacks permission.
     """
     try:
         client = get_client()
-
-        project_result = (
-            client.table("projects").select("id, class_id").eq("id", str(project_id)).execute()
+        pid = str(project_id)
+        reads = fan_out(
+            {
+                "project": lambda: authz.load_project(
+                    client, pid, columns="id, class_id, created_by", class_columns="created_by"
+                ),
+                "members": lambda: _project_member_rows(client, pid),
+            }
         )
-        if not project_result.data:
-            raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
+        project, members = reads["project"], reads["members"]
+        class_id = project["class_id"]
+        is_instructor = str(_class_owner(project)) == str(user_id)
 
-        class_id = project_result.data[0]["class_id"]
+        if not is_instructor:
+            role = _member_role(members, user_id)
+            if role is None and not members and str(project.get("created_by")) == str(user_id):
+                if authz.get_enrollment_role(client, class_id, user_id) is None:
+                    raise HTTPException(status_code=403, detail=authz.NOT_ENROLLED)
+            elif role is None:
+                raise HTTPException(status_code=403, detail=authz.NOT_PROJECT_MEMBER)
+            elif role not in (ROLE_PRODUCT_OWNER, ROLE_ADMIN):
+                # Note: 'owner' is intentionally excluded from delete authority.
+                raise HTTPException(
+                    status_code=403,
+                    detail="Only product owners, admins, or the class instructor can delete this project",
+                )
 
-        if not _is_instructor(user_id, class_id):
-            # Note: 'owner' is intentionally excluded from delete authority.
-            _require_member_role(
-                client,
-                str(project_id),
-                user_id,
-                (ROLE_PRODUCT_OWNER, ROLE_ADMIN),
-                forbidden_detail="Only product owners, admins, or the class instructor can delete this project",
-            )
-
-        _delete_project_dependencies(client, str(project_id))
-        client.table("projects").delete().eq("id", str(project_id)).execute()
+        _delete_project_dependencies(client, pid)
+        client.table("projects").delete().eq("id", pid).execute()
 
         logger.info(
             "Project deleted | project_id=%s deleted_by=%s is_instructor=%s",
             project_id,
             user_id,
-            _is_instructor(user_id, class_id),
+            is_instructor,
         )
-        return {"message": "Project deleted successfully", "project_id": str(project_id)}
+        return {"message": "Project deleted successfully", "project_id": pid}
     except HTTPException:
         raise
     except Exception:
