@@ -14,6 +14,27 @@ remain as an optional self-host fallback.
 Merging to `main` deploys both projects. Nothing in this repo applies database
 changes — see **Database migrations** below.
 
+## Domains and DNS
+
+Cloudflare is the registrar and DNS host for `grepthink2.com`. Vercel does not hold its DNS,
+so add records in Cloudflare and not on Vercel's side. Each Vercel project gets a DNS-only
+(grey cloud) record that its **Settings → Domains** page names:
+
+| Name | Record | Serves |
+|---|---|---|
+| `grepthink2.com` | CNAME to the frontend project's target (Cloudflare flattens it at the apex) | redirects to www |
+| `www` | CNAME to the frontend project's `….vercel-dns-017.com` | the web app (canonical) |
+| `api` | CNAME to the backend project's `….vercel-dns-017.com` | the API |
+| `_vercel` | TXT `vc-domain-verify=<name>,…`, one per name | Vercel's proof that our team may use it |
+| `grepthink2.com`, `maileroo._domainkey`, `mta._domainkey`, `_dmarc` | TXT: SPF, DKIM, DMARC (`p=reject`) | Maileroo email delivery |
+
+To change records from a terminal, use `scripts/cloudflare.sh` (`token` once, then `verify`,
+`dns ls`, `dns add`, `dns rm`). It needs an account API token with Zone → DNS → Edit and
+Zone → Zone → Read on this zone. It won't touch the apex, www or api records, or the email records. A project in
+another Vercel account can get its own subdomain from a CNAME plus a `_vercel` TXT for that
+name. Never add a TXT verifying the apex, www or api for another account: Vercel can treat
+that as a claim on the domain.
+
 ## Environment variables
 
 Set these in each Vercel project (Settings → Environment Variables). The full list
