@@ -14,6 +14,27 @@ remain as an optional self-host fallback.
 Merging to `main` deploys both projects. Nothing in this repo applies database
 changes — see **Database migrations** below.
 
+## Domains and DNS
+
+Cloudflare is the registrar and DNS host for `grepthink2.com`. Vercel does not hold its DNS,
+so add records in Cloudflare and not on Vercel's side. Each Vercel project gets a DNS-only
+(grey cloud) record that its **Settings → Domains** page names:
+
+| Name | Record | Serves |
+|---|---|---|
+| `grepthink2.com` | CNAME to the frontend project's target (Cloudflare flattens it at the apex) | redirects to www |
+| `www` | CNAME to the frontend project's `….vercel-dns-017.com` | the web app (canonical) |
+| `api` | CNAME to the backend project's `….vercel-dns-017.com` | the API |
+| `_vercel` | TXT `vc-domain-verify=<name>,…`, one per name | Vercel's proof that our team may use it |
+| `grepthink2.com`, `maileroo._domainkey`, `mta._domainkey`, `_dmarc` | TXT: SPF, DKIM, DMARC (`p=reject`) | Maileroo email delivery |
+
+To change records from a terminal, use `scripts/cloudflare.sh` (`token` once, then `verify`,
+`dns ls`, `dns add`, `dns rm`). It needs an account API token with Zone → DNS → Edit and
+Zone → Zone → Read on this zone. It won't touch the apex, www or api records, or the email records. A project in
+another Vercel account can get its own subdomain from a CNAME plus a `_vercel` TXT for that
+name. Never add a TXT verifying the apex, www or api for another account: Vercel can treat
+that as a claim on the domain.
+
 ## Environment variables
 
 Set these in each Vercel project (Settings → Environment Variables). The full list
@@ -55,6 +76,15 @@ development reads (only the repo-root `.env` is read — see `README.md`).
 Only `VITE_`-prefixed variables reach the browser bundle. Never add
 `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_JWT_SECRET` to the **frontend** project.
 
+To check what a project has, without values, or to act on a deployment, use the project's
+Vercel CLI profile (AGENTS.md explains it):
+
+```bash
+scripts/vercel.sh backend env ls production      # variable names per environment
+scripts/vercel.sh backend logs <deployment-url>  # a deployment's runtime logs
+scripts/vercel.sh backend rollback               # instant rollback; `frontend` likewise
+```
+
 ## Supabase dashboard (once per project)
 
 `supabase/auth_glue.sql` §5 lists the dashboard steps a schema dump cannot capture:
@@ -75,31 +105,55 @@ code that depends on a schema change:
    (expand/contract: additive changes first, drops only after the old code is gone).
 3. Verify with a `SELECT` (or the Supabase advisors for index/RLS changes) and
    record the date in the migration's header comment.
-4. Regenerate `supabase/schema.sql` (`npx supabase db dump -f supabase/schema.sql
-   --schema public`) so the schema-as-code stays current.
+4. Regenerate `supabase/schema.sql` from the repo root so the schema-as-code stays current:
+   `scripts/supabase.sh dev db dump --linked --schema public -f supabase/schema.sql`. Always
+   run the CLI through `scripts/supabase.sh` and never `supabase login`; AGENTS.md explains why.
 
-**Pending on PROD as of 2026-09-20:** `backend/database/migrations/prod/2026-09/2026-09-20_align_prod.sql`.
-PROD is three migrations behind dev (group messaging, the `handle_new_user` fix, the perf
-migration) and its realtime publication is empty, so live messages and notifications do not
-arrive there. The bundle applies all of it in one transaction, drops no table and deletes no
-row, is safe under the code `main` runs today, and **must run before `beta` is merged into
-`main`**. Dev has had steps 1–7 since 2026-09-20; steps 8 and 9 (2026-09-21) are applied
-nowhere yet.
+**Through the Supabase connector.** An agent with the Supabase MCP connector can do steps 1–3
+on dev and on PROD. `apply_migration` also records the file in the project's migration
+history, which the SQL editor does not, and `execute_sql` runs the verification. The connector
+works on both projects. In Claude Code's auto mode, a permission check judges each call and may
+refuse PROD reads or writes. That is a setting: approve the call, or add an allow rule for the
+connector's tools. A file that wraps several steps in its own `BEGIN … COMMIT` is safest pasted
+whole into the SQL editor.
+
+**Applied to PROD on 2026-09-23:** `backend/database/migrations/prod/2026-09/2026-09-20_align_prod.sql`
+(group messaging, the realtime publication, the `handle_new_user` fix, the perf migration, the
+cleanup, the `.edu` verification table and the lockdown). It was verified the same day from a
+dump: every check in its step 10 passes. PROD and dev then had the same schema, apart from the
+role migration below. Do not re-run it:
+after the role migration below, its step 3 would put the old `handle_new_user` back. Dev has had
+steps 1–7 since 2026-09-20 and steps 8–9 since 2026-09-23.
 
 **Applied to PROD on 2026-09-21, on its own:**
 `backend/database/migrations/2026-09/2026-09-21_lock_down_direct_table_access.sql`. Until then any
 signed-in user on PROD could set their own `profiles.role` to `instructor` with the public anon
 key. It is still the bundle's last step, because the group messaging step re-grants ALL on a
-table PROD does not have yet; re-running it is harmless. Not applied to dev.
+table PROD does not have yet; re-running it is harmless. Applied to dev on 2026-09-23.
 
-**Only after `beta` is live on `main`:**
-`backend/database/migrations/2026-09/2026-09-21_role_chosen_by_its_owner.sql`. It is not an expand — the
-code `main` runs today cannot finish a Google signup once it is applied — so it is deliberately
-not in the bundle.
+**Due on PROD, not applied yet (checked 2026-10-11):**
+`backend/database/migrations/2026-09/2026-09-21_role_chosen_by_its_owner.sql`. It is not an expand: the
+code that ran before the 2026-09-24 release could not finish a Google signup once it was applied,
+so it stayed out of the bundle until `beta` was live on `main`, which it has been since 2026-09-24.
+Until it runs, PROD's `profiles_role_sanitizer` turns a missing role into `student`: every Google
+signup becomes a student and never sees the role chooser, so an instructor who signs up with Google
+cannot create a class. Applied to dev on 2026-09-23.
 
-PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. See
-[#192](https://github.com/grepthink2/grepthink2.0/issues/192) for that and for the rest of the deployment gaps
-(no CI or branch protection on `main`, no staging).
+PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. Take a
+dump before any PROD schema change. It needs Docker (Colima works), and the folder must stay
+outside the repo because the dump holds student data:
+
+```bash
+D=~/grepthink-backups/prod-$(date +%F); mkdir -p "$D" && chmod 700 "$D"
+scripts/supabase.sh prod db dump --linked --role-only -f "$D/roles.sql"
+scripts/supabase.sh prod db dump --linked -f "$D/schema.sql"
+scripts/supabase.sh prod db dump --linked --data-only --use-copy -f "$D/data.sql"
+```
+
+The data dump covers `public`, `auth` (users, identities) and `storage` metadata, not the stored
+files. To restore, load roles, then schema, then data, as in Supabase's "Backup and restore
+using the CLI" guide. [#192](https://github.com/grepthink2/grepthink2.0/issues/192) covers the
+free plan and the rest of the deployment gaps (no CI or branch protection on `main`, no staging).
 
 ## Email delivery
 
