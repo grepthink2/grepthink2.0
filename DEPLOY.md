@@ -99,7 +99,8 @@ whole into the SQL editor.
 **Applied to PROD on 2026-09-23:** `backend/database/migrations/prod/2026-09/2026-09-20_align_prod.sql`
 (group messaging, the realtime publication, the `handle_new_user` fix, the perf migration, the
 cleanup, the `.edu` verification table and the lockdown). It was verified the same day from a
-dump: every check in its step 10 passes. PROD and dev now have the same schema. Do not re-run it:
+dump: every check in its step 10 passes. PROD and dev then had the same schema, apart from the
+role migration below. Do not re-run it:
 after the role migration below, its step 3 would put the old `handle_new_user` back. Dev has had
 steps 1–7 since 2026-09-20 and steps 8–9 since 2026-09-23.
 
@@ -109,10 +110,13 @@ signed-in user on PROD could set their own `profiles.role` to `instructor` with 
 key. It is still the bundle's last step, because the group messaging step re-grants ALL on a
 table PROD does not have yet; re-running it is harmless. Applied to dev on 2026-09-23.
 
-**Only after `beta` is live on `main`:**
-`backend/database/migrations/2026-09/2026-09-21_role_chosen_by_its_owner.sql`. It is not an expand — the
-code `main` runs today cannot finish a Google signup once it is applied — so it is deliberately
-not in the bundle. Applied to dev on 2026-09-23.
+**Due on PROD, not applied yet (checked 2026-10-11):**
+`backend/database/migrations/2026-09/2026-09-21_role_chosen_by_its_owner.sql`. It is not an expand: the
+code that ran before the 2026-09-24 release could not finish a Google signup once it was applied,
+so it stayed out of the bundle until `beta` was live on `main`, which it has been since 2026-09-24.
+Until it runs, PROD's `profiles_role_sanitizer` turns a missing role into `student`: every Google
+signup becomes a student and never sees the role chooser, so an instructor who signs up with Google
+cannot create a class. Applied to dev on 2026-09-23.
 
 PROD is on Supabase's free plan: there are **no backups** and an idle project pauses. Take a
 dump before any PROD schema change. It needs Docker (Colima works), and the folder must stay
