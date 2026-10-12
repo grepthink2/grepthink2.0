@@ -205,10 +205,18 @@
       margin: 0 0 6px;
     }
 
-    // .gt-md styles only `ul`; the global reset leaves an ordered list's numbers outside the box.
+    // .gt-md styles only `ul`; the global reset leaves an ordered list's numbers outside the box
+    // and a quote looking like any other paragraph.
     ol {
       margin: 0 0 6px;
       padding-left: 22px;
+    }
+
+    blockquote {
+      margin: 0 0 6px;
+      padding-left: 10px;
+      border-left: 3px solid $border-color;
+      color: $text-tertiary;
     }
 
     pre {
