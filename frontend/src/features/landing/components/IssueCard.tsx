@@ -1,9 +1,6 @@
-import React, { Suspense, lazy, useId, useState } from 'react';
+import React, { useId, useState } from 'react';
+import MarkdownText from '@components/Markdown/MarkdownText';
 import { API_BASE_URL } from '../apiBase';
-
-// react-markdown is heavy and the contact page is in the main bundle (App.tsx imports it
-// eagerly), so the renderer loads the first time someone opens Preview.
-const MarkdownText = lazy(() => import('@components/Markdown/MarkdownText'));
 
 type Outcome =
   | { kind: 'idle' }
@@ -172,9 +169,7 @@ const IssueCard: React.FC = () => {
           ) : (
             <div className="contact-page__preview">
               {description.trim() ? (
-                <Suspense fallback={<p className="contact-page__preview-empty">Loading preview…</p>}>
-                  <MarkdownText>{description}</MarkdownText>
-                </Suspense>
+                <MarkdownText>{description}</MarkdownText>
               ) : (
                 <p className="contact-page__preview-empty">Nothing to preview yet.</p>
               )}
