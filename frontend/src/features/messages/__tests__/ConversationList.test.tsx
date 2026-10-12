@@ -39,6 +39,30 @@ function rowsOf(name: string): [HTMLElement, HTMLElement] {
 }
 
 describe('ConversationList rows', () => {
+  it.each([
+    ['team_instructor', 'Instructor'],
+    ['team_ta', 'TA'],
+  ] as const)('a %s row moves its label beside the unread count and drops the preview', (type, label) => {
+    render(
+      <ConversationList
+        loading={false}
+        conversations={[
+          conversation({
+            type,
+            team_name: 'Trailhead',
+            unread_count: 3,
+            last_message: message('u2', 'Standup moved to 3pm'),
+          }),
+        ]}
+      />,
+    );
+    const [nameRow, secondRow] = rowsOf('Trailhead');
+    expect(within(nameRow).queryByText(label)).toBeNull();
+    expect(within(secondRow).getByText(label)).toBeInTheDocument();
+    expect(within(secondRow).getByLabelText('3 unread')).toHaveTextContent('3');
+    expect(screen.queryByText(/Standup moved/)).toBeNull();
+  });
+
   it('a direct message row keeps its preview, as plain text', () => {
     render(
       <ConversationList

@@ -138,6 +138,13 @@ export const ConversationList: React.FC<Props> = ({
           const isChannel = c.type !== 'dm';
           const name = conversationTitle(c);
           const mine = c.last_message?.sender_id === user?.id;
+          const badge = conversationBadge(c.type);
+          const chip = badge && (
+            <span className={`gt-convo__chip gt-convo__chip--${c.type}`}>{badge}</span>
+          );
+          // A team's TA and instructor channels show their label where the preview would
+          // be, so a long label never squeezes the team name on the first row.
+          const chipInPreview = c.type === 'team_ta' || c.type === 'team_instructor';
           const time = formatRelativeTime(c.last_message_at);
           const unread = c.unread_count;
           const unreadLabel = unread > 99 ? '99+' : String(unread);
@@ -164,22 +171,22 @@ export const ConversationList: React.FC<Props> = ({
               <div className="messages-list__body">
                 <div className="messages-list__row">
                   <span className="messages-list__name">{name}</span>
-                  {conversationBadge(c.type) && (
-                    <span className={`gt-convo__chip gt-convo__chip--${c.type}`}>
-                      {conversationBadge(c.type)}
-                    </span>
-                  )}
+                  {!chipInPreview && chip}
                   <span className="messages-list__time">{time}</span>
                 </div>
                 <div className="messages-list__row">
-                  <span className="messages-list__preview">
-                    {c.last_message && (
-                      <>
-                        {mine && 'You: '}
-                        <MessagePlainText body={c.last_message.body} />
-                      </>
-                    )}
-                  </span>
+                  {chipInPreview ? (
+                    chip
+                  ) : (
+                    <span className="messages-list__preview">
+                      {c.last_message && (
+                        <>
+                          {mine && 'You: '}
+                          <MessagePlainText body={c.last_message.body} />
+                        </>
+                      )}
+                    </span>
+                  )}
                   {unread > 0 && (
                     <span className="messages-list__unread" aria-label={`${unread} unread`}>
                       {unreadLabel}
