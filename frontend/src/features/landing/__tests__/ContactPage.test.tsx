@@ -23,11 +23,12 @@ const renderPage = () =>
   );
 
 describe('ContactPage', () => {
-  it('lays the cards out in one grid', () => {
+  it('shows the contact card and the issue card in one grid', () => {
     const { container } = renderPage();
     const grid = container.querySelector('.contact-page__cards');
     expect(grid).not.toBeNull();
     expect(screen.getByRole('heading', { level: 1, name: 'Get in touch' }).closest('.contact-page__cards')).toBe(grid);
+    expect(screen.getByRole('heading', { level: 2, name: 'Submit an issue' }).closest('.contact-page__cards')).toBe(grid);
   });
 
   it('still sends the contact form to /api/contact', async () => {
