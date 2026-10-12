@@ -24,6 +24,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.messages import controller as messages
+from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "instr-1", "instr-2"
@@ -313,6 +314,26 @@ def conv_db(monkeypatch):
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "body"),
+    [
+        ("GET", f"/api/messages/conversations/{CONV_DM}/messages", None),
+        ("DELETE", f"/api/messages/conversations/{CONV_DM}", None),
+        ("POST", "/api/messages", {"conversation_id": CONV_DM, "body": "hi"}),
+    ],
+    ids=["read", "delete", "send"],
+)
+def test_every_route_behind_the_participant_check_refuses_an_outsider(
+    conv_db, client, method, path, body
+):
+    # S3 is in the team channel but not in the DM between S1 and S2.
+    outsider = {"Authorization": f"Bearer {make_token(sub=S3)}"}
+    res = client.request(method, path, headers=outsider, json=body)
+
+    assert (res.status_code, res.json()["detail"]) == (403, "Not a participant")
+    assert not [q for q in conv_db.queries if q["op"] in {"insert", "update", "upsert", "delete"}]
 
 
 def _reads_wait_for_each_other(db, n: int = 2) -> None:

@@ -5,7 +5,7 @@
 three paths: ``verify_edu_email``/``update_profile`` refreshing it after a save, and
 ``ensure_profile_completion_notification`` on every notifications list. None of those are the
 school-email *gate* itself (``_normalize_edu_email``, and the three ``create_user`` call sites),
-which must keep failing closed — those are covered elsewhere (``test_auth_hardening.py``,
+which must keep failing closed — those are covered elsewhere (``test_profiles_email.py``,
 ``test_auth_views.py``).
 """
 

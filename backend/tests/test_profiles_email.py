@@ -1,4 +1,8 @@
-"""The roster .edu address is written only once its owner has proven they hold it.
+"""A profile's two addresses: the login email and the roster school email.
+
+``profiles.email`` mirrors the login email Supabase has confirmed. After signup nothing writes it
+but ``GET /api/profiles/me``, which copies the verified token's ``email`` claim into it whenever
+the two differ (after a Supabase email change); the last section pins that.
 
 ``profiles.edu_email`` wins when a roster is matched to accounts, so whoever holds an address
 there owns that student's roster row. ``PATCH /api/profiles/me`` can clear it but never set it;
@@ -6,9 +10,6 @@ the only writer is ``verify-edu-email``. Codes live in the database (serverless 
 no memory), are stored hashed, expire, can be re-sent at most once a minute, and die after five
 wrong guesses. ``/api/create-user``, the other place an address is written, is pinned in
 ``test_auth_views.py``.
-
-``GET /api/profiles/me`` copies the login email from the verified token into ``profiles.email``
-when they differ (after a Supabase email change); see the last section.
 """
 
 from __future__ import annotations

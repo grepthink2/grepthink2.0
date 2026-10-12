@@ -575,7 +575,7 @@ def test_invite_refuses_the_class_instructor(db, mail):
     _make_the_instructor_a_student_account(db)
     with pytest.raises(HTTPException) as exc:
         classes.invite_student_to_class(CLASS, "ina@ucsc.edu", INSTR)
-    # The same answer as joining one's own class by code (test_authz_status_policy.py).
+    # The same answer as joining one's own class by code (test_classes_join.py).
     assert (exc.value.status_code, exc.value.detail) == (
         409,
         "You are the instructor of this class",

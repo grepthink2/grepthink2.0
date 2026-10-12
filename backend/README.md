@@ -142,8 +142,9 @@ Where a test goes, so the suite stays one assertion per fact:
 - **One test per call.** What a function returns and what it costs share an arrange and an act,
   so they are one test (`assert out == EXPECTED` and `assert fake.executes <= n`), not a
   `_shape` test and a `_budget` test. Inputs that differ only in data are `parametrize` cases.
-- **Who is refused, and how,** lives in `tests/test_authz_status_policy.py` (every module) and
-  `tests/test_classes_authz.py` (every class route): status, message, and that nothing was
+- **Who is refused, and how,** lives in `tests/test_authz_status_policy.py` (every module),
+  `tests/test_classes_authz.py` (every class route) and `tests/test_scrum_authz.py` (the scrum
+  board's member/staff/outsider matrix): status, message, and that nothing was
   written. Do not re-assert a 403 or 404 next to the feature's other tests.
 - **What every route guarantees** lives in `tests/test_api_surface.py`: it walks every
   registered route, so a new route is covered by "needs a signed-in user" without a new test.
@@ -156,7 +157,7 @@ Where a test goes, so the suite stays one assertion per fact:
 Before removing or merging tests, record coverage and check nothing was lost:
 
 ```bash
-python -m pytest --cov=app --cov-branch --cov-report=term-missing   # 69.11% line+branch, 2026-09-21
+python -m pytest --cov=app --cov-branch --cov-report=term-missing   # 82.74% line+branch, 2026-10-11
 ```
 
 ## Style Guide

@@ -273,6 +273,11 @@ def test_create_user_sets_the_role_the_first_time_and_only_then(client, db):
     assert second.json()["detail"] == "Profile already exists for this user"
     assert _profile(db)["role"] == "instructor"
 
+    # Asking again for the role it already has is refused the same way.
+    third = client.post("/api/create-user", headers=ANN, json=_signup("instructor"))
+
+    assert third.status_code == 409
+
 
 def test_create_user_answers_409_when_another_request_picked_first(client, db):
     _profile(db)["role"] = None
