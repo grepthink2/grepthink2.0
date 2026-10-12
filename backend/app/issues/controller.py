@@ -28,14 +28,17 @@ ISSUE_LABELS = ("from-web", "needs-triage")
 GITHUB_LOGIN_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}")
 
 # An "@name" typed in the description would make GitHub notify that account from ours. A
-# zero-width space after the "@" stops the mention and looks the same. An "@" inside a word (an
-# email address) is never a mention, so it is left alone.
-_MENTION_RE = re.compile(r"(?<![\w@])@(?=[A-Za-z0-9])")
+# zero-width space after the "@" stops the mention and looks the same. GitHub treats an "@" as
+# a mention unless an ASCII letter, digit or underscore comes right before it (so "é@x" and
+# "@@x" mention x, while an address like ann@ucsc.edu does not), and it reads the text after
+# decoding character references, so "&#64;x" is a mention too.
+_MENTION_RE = re.compile(r"(?<![A-Za-z0-9_])@(?=[A-Za-z0-9])")
+_AT_REFERENCE_RE = re.compile(r"&(?:#0*64|#[xX]0*40|commat);")
 _ZERO_WIDTH_SPACE = "​"
 
 
 def defuse_mentions(text: str) -> str:
-    return _MENTION_RE.sub("@" + _ZERO_WIDTH_SPACE, text)
+    return _MENTION_RE.sub("@" + _ZERO_WIDTH_SPACE, _AT_REFERENCE_RE.sub("@", text))
 
 
 def _issue_body(description: str, login: str) -> str:

@@ -218,6 +218,14 @@ def test_a_blank_title_or_description_is_refused(client, world, field):
         ("thanks @alice", "thanks @​alice"),
         ("@org/team look", "@​org/team look"),
         ("(@bob)", "(@​bob)"),
+        # GitHub's "not after a word character" is ASCII-only, and it reads text after
+        # character references are decoded.
+        ("@@alice", "@@​alice"),
+        ("é@alice", "é@​alice"),
+        ("日本@alice", "日本@​alice"),
+        ("&#64;alice", "@​alice"),
+        ("&#x40;alice", "@​alice"),
+        ("&commat;alice", "@​alice"),
         ("mail ann@ucsc.edu", "mail ann@ucsc.edu"),  # an address, not a mention
         ("a lone @ sign", "a lone @ sign"),
     ],
