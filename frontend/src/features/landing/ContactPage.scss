@@ -17,9 +17,17 @@
     padding: clamp(140px, 18vh, 200px) $spacing-lg clamp(64px, 10vh, 100px);
   }
 
+  &__cards {
+    width: 100%;
+    max-width: 1160px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+    gap: $spacing-lg;
+    align-items: start;
+  }
+
   &__card {
     width: 100%;
-    max-width: 560px;
     background: $white;
     // Alpha (.05) sits below both the border-solid (.35) and fill (.06)
     // thresholds — left as a bespoke literal.
