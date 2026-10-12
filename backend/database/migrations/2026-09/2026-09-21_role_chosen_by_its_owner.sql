@@ -8,7 +8,8 @@
 --                               shows that as an error.
 -- Idempotent.
 --
--- Applied: DEV ____-__-__   PROD ____-__-__
+-- Applied: DEV 2026-09-23   PROD ____-__-__ (due since the release that carries #179 went live on
+-- 2026-09-24; PROD checked 2026-10-11 and still runs the old handle_new_user and sanitizer)
 -- Rehearsed on dev 2026-09-21 inside a rolled-back transaction, through the real trigger on
 -- auth.users: a signup with no role in its metadata (Google) and one with a made-up role both
 -- got role NULL, a password signup as instructor got 'instructor', the first

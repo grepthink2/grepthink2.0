@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from app.core import db as core_db
 from app.core.db import get_client
 from app.core.errors import DatabaseError, DatabaseUnavailableError
+from app.utils.mentions import render_mentions_plain
 from app.utils.profiles import needs_roster_email, profile_display_name
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ NOTIFICATION_TYPES = frozenset(
         "upload_roster",
         "member_removed",
         "email_undeliverable",
+        "mention",
     }
 )
 
@@ -528,6 +530,40 @@ def notify_new_message(
         entity_type="conversation",
         entity_id=conversation_id,
     )
+
+
+def notify_mention(
+    *,
+    recipient_ids: list[str],
+    author_name: str,
+    label: str,
+    project_name: str,
+    body_md: str,
+    entity_type: str,
+    entity_id: str,
+) -> None:
+    """Tell each of ``recipient_ids`` that ``author_name`` mentioned them on ``label``
+    (a card key such as ``GT-12``).
+
+    One insert per recipient, so one failure does not stop the rest. Never raises.
+    """
+    try:
+        preview = " ".join(render_mentions_plain(body_md).split())
+        if len(preview) > 120:
+            preview = preview[:117] + "..."
+        title = f"{author_name} mentioned you on {label}"
+        body = f"{project_name}: {preview}"
+        for user_id in recipient_ids:
+            _insert_notification(
+                user_id=user_id,
+                type="mention",
+                title=title,
+                body=body,
+                entity_type=entity_type,
+                entity_id=entity_id,
+            )
+    except Exception:
+        logger.exception("notify_mention failed | entity_type=%s", entity_type)
 
 
 def notify_project_created_by_student(
