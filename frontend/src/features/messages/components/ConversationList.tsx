@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { conversationTitle, conversationBadge } from '../conversationTitle';
 import { formatRelativeTime } from '../utils/relativeTime';
 import { InitialsAvatar } from './InitialsAvatar';
+import { MessagePlainText } from './MessageMarkdown';
 import { ConversationMenu } from './ConversationMenu';
 import { NewConversationSearch } from './NewConversationSearch';
 
@@ -137,7 +138,6 @@ export const ConversationList: React.FC<Props> = ({
           const isChannel = c.type !== 'dm';
           const name = conversationTitle(c);
           const mine = c.last_message?.sender_id === user?.id;
-          const preview = c.last_message ? `${mine ? 'You: ' : ''}${c.last_message.body}` : '';
           const time = formatRelativeTime(c.last_message_at);
           const unread = c.unread_count;
           const unreadLabel = unread > 99 ? '99+' : String(unread);
@@ -172,7 +172,14 @@ export const ConversationList: React.FC<Props> = ({
                   <span className="messages-list__time">{time}</span>
                 </div>
                 <div className="messages-list__row">
-                  <span className="messages-list__preview">{preview}</span>
+                  <span className="messages-list__preview">
+                    {c.last_message && (
+                      <>
+                        {mine && 'You: '}
+                        <MessagePlainText body={c.last_message.body} />
+                      </>
+                    )}
+                  </span>
                   {unread > 0 && (
                     <span className="messages-list__unread" aria-label={`${unread} unread`}>
                       {unreadLabel}

@@ -532,8 +532,49 @@
     color: var(--gt-text-tertiary);
     margin-bottom: 2px;
   }
-  &__body { font-size: var(--gt-text-body); line-height: var(--gt-leading-snug); white-space: pre-wrap; word-break: break-word; }
+  &__body { font-size: var(--gt-text-body); line-height: var(--gt-leading-snug); }
   &__time { font-size: 11px; color: var(--gt-text-tertiary); margin-top: 2px; text-align: right; }
+}
+
+/* ---------- Message formatting (MessageMarkdown) ---------- */
+
+.messages-md {
+  overflow-wrap: anywhere;
+
+  p, pre { margin: 0; }
+  :is(p, pre) + :is(p, pre) { margin-top: $spacing-xs; }
+  strong { font-weight: var(--gt-weight-semibold); }
+
+  /* :hover too, or index.css's global `a:hover` (one class + a tag) recolors the link. */
+  &__link,
+  &__link:hover {
+    color: var(--gt-text-link);
+    text-decoration: underline;
+  }
+
+  &__code {
+    font-family: var(--gt-font-mono);
+    font-size: 0.9em;
+    padding: 1px 4px;
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-surface-sunken);
+  }
+
+  &__pre {
+    padding: $spacing-xs $spacing-sm;
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-surface-sunken);
+    white-space: pre-wrap;
+
+    .messages-md__code { padding: 0; background: none; }
+  }
+}
+
+/* The sender's own bubble is primary with inverse text: links take that text color, and
+   code sits in a darker primary well so it stays legible. */
+.messages-bubble--mine .messages-md {
+  &__link, &__link:hover { color: inherit; }
+  &__code, &__pre { background: var(--gt-primary-hover); }
 }
 
 /* ---------- Composer ---------- */

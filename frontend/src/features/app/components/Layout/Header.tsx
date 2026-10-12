@@ -7,6 +7,7 @@ import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { usePreview } from '@/lib/previewContext';
 import { useNotifications } from '@features/notifications/hooks/useNotifications';
 import { formatRelativeTime } from '@features/messages/utils/relativeTime';
+import { MessagePlainText } from '@features/messages/components/MessageMarkdown';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { apiRequest, type ApiProfile } from '@/lib/api';
 import SchoolSwitcher from './SchoolSwitcher';
@@ -353,7 +354,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
                         onClick={() => handleNotificationClick(notification)}
                       >
                         <div className="app-header__notification-title">{notification.title}</div>
-                        <div className="app-header__notification-content">{notification.body}</div>
+                        <div className="app-header__notification-content">
+                          {notification.type === 'message' ? (
+                            <MessagePlainText body={notification.body} />
+                          ) : (
+                            notification.body
+                          )}
+                        </div>
                         <div className="app-header__notification-time">
                           {formatRelativeTime(notification.created_at)}
                         </div>
