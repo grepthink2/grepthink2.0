@@ -30,6 +30,7 @@ PUBLIC = {
     ("post", "/api/check-email"),  # signup form, before an account exists
     ("post", "/api/check-user-exists"),  # forgot-password form
     ("post", "/api/contact"),  # landing page contact form
+    ("post", "/api/issues"),  # landing page issue form (files a GitHub issue)
     ("get", "/api/institutions"),  # the schools list, read at signup before there is a session
     # No session, but a credential of their own (app/outbox/views.py):
     ("post", "/api/email/dispatch"),  # Bearer EMAIL_DISPATCH_SECRET (pg_cron); 404 while unset
