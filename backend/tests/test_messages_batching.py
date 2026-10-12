@@ -24,6 +24,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.messages import controller as messages
+from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "instr-1", "instr-2"
@@ -143,14 +144,18 @@ def test_rows_are_matched_back_to_users_the_way_postgres_compares_uuids():
 # ----------------------------------------------------------------- can_message
 
 
-def test_can_message_student_and_instructor(db):
-    assert messages.can_message(S1, INSTR) is True
-    assert db.executes <= 2, _trace(db)  # owned classes + enrollments; no role read
-
-
-def test_can_message_without_a_shared_class(db):
-    assert messages.can_message(S2, S3) is False
-    assert db.executes <= 2, _trace(db)
+@pytest.mark.parametrize(
+    ("a", "b", "allowed", "reads"),
+    [
+        pytest.param(S1, INSTR, True, 2, id="a-student-and-their-instructor"),
+        pytest.param(S1, S2, True, 2, id="two-students-of-one-class"),
+        pytest.param(S2, S3, False, 2, id="no-shared-class"),
+        pytest.param(S1, S1, False, 0, id="yourself"),
+    ],
+)
+def test_can_message(db, a, b, allowed, reads):
+    assert messages.can_message(a, b) is allowed
+    assert db.executes <= reads, _trace(db)  # owned classes + enrollments; no role read
 
 
 def test_can_message_two_instructor_accounts_who_share_a_class(db):
@@ -227,7 +232,8 @@ def test_list_contacts_for_a_student_in_two_classes(db):
     contacts = messages.list_contacts(caller_id=S1)
     assert [c["id"] for c in contacts] == [S2, INSTR, OTHER_INSTR, TA, S3]
     assert next(c for c in contacts if c["id"] == INSTR)["role"] == "instructor"
-    assert db.executes <= 2, _trace(db)
+    # Peers and their profiles are embedded: no separate enrollment, owner or profile reads.
+    assert _trace(db) == ["class_enrollments:select", "classes:select"]
 
 
 def test_list_contacts_for_an_instructor_who_is_a_ta_elsewhere(db):
@@ -269,12 +275,6 @@ def test_list_contacts_is_empty_without_classes_or_peers(db):
     assert db.executes <= 2, _trace(db)
 
 
-def test_list_contacts_reads_owned_and_enrolled_classes_once_each(db):
-    """Peers and their profiles are embedded: no separate enrollment, owner or profile reads."""
-    messages.list_contacts(caller_id=S1)
-    assert _trace(db) == ["class_enrollments:select", "classes:select"]
-
-
 # -------------------------------------------------------- _require_participant
 
 CONV_DM, CONV_TEAM = "conv-dm", "conv-team"
@@ -314,6 +314,26 @@ def conv_db(monkeypatch):
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "body"),
+    [
+        ("GET", f"/api/messages/conversations/{CONV_DM}/messages", None),
+        ("DELETE", f"/api/messages/conversations/{CONV_DM}", None),
+        ("POST", "/api/messages", {"conversation_id": CONV_DM, "body": "hi"}),
+    ],
+    ids=["read", "delete", "send"],
+)
+def test_every_route_behind_the_participant_check_refuses_an_outsider(
+    conv_db, client, method, path, body
+):
+    # S3 is in the team channel but not in the DM between S1 and S2.
+    outsider = {"Authorization": f"Bearer {make_token(sub=S3)}"}
+    res = client.request(method, path, headers=outsider, json=body)
+
+    assert (res.status_code, res.json()["detail"]) == (403, "Not a participant")
+    assert not [q for q in conv_db.queries if q["op"] in {"insert", "update", "upsert", "delete"}]
 
 
 def _reads_wait_for_each_other(db, n: int = 2) -> None:

@@ -103,7 +103,7 @@ token (AUTH.md, "The email is the token's"). Nothing updates that mirror today: 
 
 ## Tests
 
-- Backend (`tests/test_auth_hardening.py`): `GET /api/profiles/me` with a token whose
+- Backend (`tests/test_profiles_email.py`; `test_auth_hardening.py` when written): `GET /api/profiles/me` with a token whose
   email differs rewrites `profiles.email`; an equal address (any case) writes nothing; a
   token without an email claim writes nothing.
 - Frontend: `Settings.changeEmail.test.tsx` — the button opens the modal; a taken address
