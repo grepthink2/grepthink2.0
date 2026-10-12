@@ -207,3 +207,25 @@ describe('Header — opening a join-request notification', () => {
     await waitFor(() => expect(screen.getByTestId('path')).toHaveTextContent(path));
   });
 });
+
+describe('Header — a message notification', () => {
+  it('quotes the message without its formatting marks', () => {
+    state.notifications = [
+      {
+        id: 'n-message',
+        type: 'message',
+        title: 'New message from Sam Lee',
+        body: '**Standup** moved to `3pm`',
+        entity_type: 'conversation',
+        entity_id: 'c1',
+        read_at: null,
+        created_at: '2026-10-11T10:00:00Z',
+      },
+    ];
+    renderAt('/app/dashboard');
+    fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
+    const item = screen.getByText('New message from Sam Lee').closest('button');
+    expect(item).toHaveTextContent('Standup moved to 3pm');
+    expect(item?.querySelector('strong, code')).toBeNull();
+  });
+});
