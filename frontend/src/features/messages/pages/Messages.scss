@@ -604,6 +604,9 @@
     background: var(--gt-surface);
     resize: none;
     min-height: 48px;
+    /* MessageComposer grows the box with the message up to this, then it scrolls. */
+    max-height: 160px;
+    overflow-y: auto;
     @include gt-transition(border-color, box-shadow);
 
     &::placeholder {
