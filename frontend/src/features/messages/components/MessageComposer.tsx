@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 
 interface Props {
   /** Disabled when conversation is read-only (can_send=false). */
@@ -18,6 +18,16 @@ export const MessageComposer: React.FC<Props> = ({ disabled, disabledReason, onS
   const [body, setBody] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Grow the box with the message (the stylesheet caps it, then it scrolls). Measure from
+  // `auto` so it also shrinks; the offset/client difference adds the border back.
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    input.style.height = 'auto';
+    input.style.height = `${input.scrollHeight + input.offsetHeight - input.clientHeight}px`;
+  }, [body]);
 
   const length = codePointLength(body);
   const canSend =
@@ -51,6 +61,7 @@ export const MessageComposer: React.FC<Props> = ({ disabled, disabledReason, onS
   return (
     <form className="messages-composer" onSubmit={handleSubmit}>
       <textarea
+        ref={inputRef}
         className="messages-composer__input"
         value={body}
         onChange={e => setBody(e.target.value)}

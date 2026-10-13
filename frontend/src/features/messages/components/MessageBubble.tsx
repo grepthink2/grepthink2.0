@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ApiMessage } from '@/lib/api';
+import { MessageMarkdown } from './MessageMarkdown';
 
 interface Props {
   message: ApiMessage;
@@ -24,7 +25,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message, isMine
       ].filter(Boolean).join(' ')}
     >
       {!isMine && author && <div className="messages-bubble__author">{author}</div>}
-      <div className="messages-bubble__body">{message.body}</div>
+      <MessageMarkdown body={message.body} className="messages-bubble__body" />
       <div className="messages-bubble__time">
         {new Date(message.created_at).toLocaleTimeString([], {
           hour: 'numeric',

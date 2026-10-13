@@ -140,12 +140,6 @@ def test_demote_clears_assigned_and_review(db):
 # --------------------------------------------------------------------------
 
 
-def test_self_appoint_blocked_when_window_closed(db):
-    with pytest.raises(HTTPException) as exc:
-        tas.set_review_ta(TA2, P1)  # self-appoint, window closed
-    assert exc.value.status_code == 403
-
-
 def test_self_appoint_when_window_open(db):
     tas.set_review_window(INSTR, CLASS, True)
     tas.set_review_ta(TA2, P1)

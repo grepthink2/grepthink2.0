@@ -321,14 +321,11 @@ def test_bulk_invite_statuses_recipients_and_rows(db, mail):
     ta_row = next(r for r in db.rows("class_enrollments") if r["user_id"] == TA1)
     assert ta_row["enrollment_role"] == "ta"
 
-
-def test_bulk_invite_budget(db, mail):
-    classes.bulk_invite_students(CLASS, BULK, INSTR)
+    # What all ten addresses cost: class + instructor profile, profiles, enrollments and one
+    # enrollment write; then, through the outbox, one insert for every email, one suppression
+    # read and one status write per email sent.
     emails = len(mail.sent)
     assert emails == 10
-    # The plan is unchanged: class + instructor profile, profiles, enrollments, one enrollment
-    # write. The emails now go through the outbox: one insert for all of them, one suppression
-    # read, and one status write per email (the outbox records each one it sent).
     assert db.executes <= 4 + 2 + emails, _trace(db)
     writes = Counter(q["table"] for q in db.queries if q["op"] in WRITE_OPS)
     assert writes == Counter({"class_enrollments": 1, "email_outbox": 1 + emails}), _trace(db)
@@ -578,7 +575,7 @@ def test_invite_refuses_the_class_instructor(db, mail):
     _make_the_instructor_a_student_account(db)
     with pytest.raises(HTTPException) as exc:
         classes.invite_student_to_class(CLASS, "ina@ucsc.edu", INSTR)
-    # The same answer as joining one's own class by code (test_authz_status_policy.py).
+    # The same answer as joining one's own class by code (test_classes_join.py).
     assert (exc.value.status_code, exc.value.detail) == (
         409,
         "You are the instructor of this class",
