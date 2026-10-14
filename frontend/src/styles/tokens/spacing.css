@@ -35,6 +35,7 @@
   --gt-z-dropdown: 10;   /* @kind other */
   --gt-z-modal:    100;  /* @kind other */
   --gt-z-tooltip:  1000; /* @kind other */
+  --gt-z-palette:  2100; /* @kind other */ /* above the legacy 2000 modals until they move to the token */
 
   /* Layout */
   --gt-container:  543px;

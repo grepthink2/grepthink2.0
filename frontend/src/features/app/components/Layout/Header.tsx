@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, startTransition } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
-import { Search, User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu, Eye } from 'lucide-react';
+import { User, ChevronDown, Settings, LogOut, Copy, Check, X, Menu, Eye } from 'lucide-react';
 import BellIcon from '@assets/mingcute_notification-fill.svg';
 import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { usePreview } from '@/lib/previewContext';
@@ -11,6 +11,7 @@ import { MessagePlainText } from '@features/messages/components/MessageMarkdown'
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { apiRequest, type ApiProfile } from '@/lib/api';
 import SchoolSwitcher from './SchoolSwitcher';
+import { SearchTrigger } from '@features/search/components/SearchTrigger';
 import { buildBreadcrumbs } from './breadcrumbs';
 import './Header.scss';
 
@@ -53,9 +54,13 @@ interface HeaderProps {
   onOpenSettings: () => void;
   /** Toggle the off-canvas nav drawer (mobile only). */
   onToggleNav: () => void;
+  /** Open the ⌘K palette (AppView owns it). */
+  onOpenSearch: () => void;
+  /** Warm the search index on hover/focus of the trigger. */
+  onPrefetchSearch: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
+const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSearch, onPrefetchSearch }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -64,7 +69,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
   // Breadcrumbs and the class details follow your role in the selected class.
   const classRole = useSelectedClassRole();
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -195,28 +199,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
       else enterPreview();
       navigate('/app/home');
     });
-  };
-
-  // Lightweight search: "leave class" (and close variants) jumps to My Classes,
-  // where students can leave a class from its card.
-  const matchesLeaveClass = (query: string): boolean => {
-    const q = query.toLowerCase().trim();
-    if (!q) return false;
-    return (
-      (q.includes('leave') && q.includes('class')) ||
-      (q.includes('drop') && q.includes('class')) ||
-      q.includes('unenroll')
-    );
-  };
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    if (matchesLeaveClass(searchQuery)) {
-      e.preventDefault();
-      navigate('/app/my-classes');
-      setSearchQuery('');
-      e.currentTarget.blur();
-    }
   };
 
   return (
@@ -384,18 +366,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav }) => {
           )}
         </div>
 
-        {/* Search Bar */}
-        <div className="app-header__search-bar">
-          <Search size={18} className="app-header__search-icon" />
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            className="app-header__search-input"
-          />
-        </div>
+        {/* Global search (⌘K) — the palette itself is mounted in AppView. */}
+        <SearchTrigger onOpen={onOpenSearch} onPrefetch={onPrefetchSearch} />
 
         {/* Profile Dropdown */}
         <div className="app-header__profile-container" ref={profileRef}>

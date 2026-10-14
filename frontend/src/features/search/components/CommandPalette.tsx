@@ -212,7 +212,7 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
   const showList = !showSkeleton && !showError && !showEmpty && !showIdleHint;
   const activeId = activeIdx >= 0 ? `${baseId}-opt-${activeIdx}` : undefined;
 
-  // Portaled: an inline palette could paint under a modal that shares --gt-z-modal.
+  // Portaled to <body>, so no ancestor's stacking context can cap its --gt-z-palette layer.
   return createPortal(
     <div
       className={`gt-palette-backdrop${closing ? ' gt-palette-backdrop--closing' : ''}`}

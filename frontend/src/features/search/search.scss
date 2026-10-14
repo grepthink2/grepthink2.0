@@ -1,8 +1,9 @@
 /* GrepThink · global search (⌘K). Port of design/components/search/search.css — BEM `.gt-*`
    classes, `--gt-*` tokens only (lint:design). Dropped: the team/action entity tints, the
    SearchField rules (not ported). Added: `.gt-palette__tag`, `.gt-result__name`, the phone
-   trigger, and the backdrop's own fade keyframes (`gt-palette-fade-*`). Fixed: the dialog's
-   entrance animation had two easings. */
+   trigger, the backdrop's own fade keyframes (`gt-palette-fade-*`), and its `--gt-z-palette`
+   layer (above the legacy 2000 modals). Fixed: the dialog's entrance animation had two
+   easings. */
 
 /* ============================================================
    GrepThink · Search layer
@@ -21,7 +22,7 @@
 }
 .gt-kbd--on-dark { background: rgba(255, 255, 255, 0.14); border-color: transparent; color: var(--gt-text-inverse); }
 
-/* ── SearchTrigger (replaces .app-header__search-bar) ──────── */
+/* ── SearchTrigger (replaces the header's search box) ──────── */
 .gt-search-trigger {
   display: inline-flex; align-items: center; gap: 10px;
   width: 250px; height: 37px; padding: 0 10px 0 12px; box-sizing: border-box;
@@ -56,7 +57,7 @@
 
 /* ── CommandPalette ────────────────────────────────────────── */
 .gt-palette-backdrop {
-  position: fixed; inset: 0; z-index: var(--gt-z-modal);
+  position: fixed; inset: 0; z-index: var(--gt-z-palette);
   display: flex; align-items: flex-start; justify-content: center;
   padding: 12vh 16px 16px; box-sizing: border-box;
   background: var(--gt-scrim); backdrop-filter: blur(4px);
