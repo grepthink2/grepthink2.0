@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { PanelLeft } from 'lucide-react';
-import { ChevronDown } from 'lucide-react';
-import { buildSidebarConfig, type SidebarItem } from '../../config/sidebar';
+import { ChevronDown, GraduationCap } from 'lucide-react';
+import { activeItemPath, buildSidebarConfig, SIDEBAR_HOVER } from '../../config/sidebar';
 import { CLASS_ROLE_LABELS, pathAfterClassSwitch } from '../../config/routePermissions';
 import { useAuth } from '@/lib/auth';
 import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { usePreview } from '@/lib/previewContext';
 import { useUnreadTotal } from '@features/messages/hooks/useUnreadTotal';
 import logo from '@assets/grepthink l logo.svg?url';
+import mark from '@assets/grepthink-mark.svg?url';
 import './Sidebar.scss';
 
 interface SidebarProps {
@@ -21,15 +21,27 @@ interface SidebarProps {
   onMobileClose?: () => void;
 }
 
+/** Phones get the off-canvas drawer instead of the rail. */
+const MOBILE_QUERY = '(max-width: 768px)';
+/** A touch screen cannot hover, so the sidebar stays open on it. */
+const NO_HOVER_QUERY = '(hover: none)';
+
+const matches = (query: string) => typeof window !== 'undefined' && window.matchMedia(query).matches;
+
 const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, onOpenSettings, mobileOpen, onMobileClose }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches,
-  );
+  const [isMobile, setIsMobile] = useState(() => matches(MOBILE_QUERY));
+  const [noHover, setNoHover] = useState(() => matches(NO_HOVER_QUERY));
+  const [hovered, setHovered] = useState(false);
+  const [focusHeld, setFocusHeld] = useState(false);
   const [showClassDropdown, setShowClassDropdown] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const openTimer = useRef<number | undefined>(undefined);
+  const closeTimer = useRef<number | undefined>(undefined);
+  // A pointer pressed on the sidebar: the focus it gives is the pointer's doing, not the keyboard's.
+  const pointerPressed = useRef(false);
 
   const { canCreateClasses } = useAuth();
   const { isPreviewing } = usePreview();
@@ -37,45 +49,72 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
   const { sidebarClasses, selectedClass, setSelectedClass, showSchoolSwitcher } = useClass();
   const unreadTotal = useUnreadTotal();
 
-  // The main section follows what the account can do, except that "View class as student" shows
+  // The top sections follow what the account can do, except that "View class as student" shows
   // a student account's; the class section, your role in the selected class (TAs get the student
-  // items plus "TA Review").
+  // groups plus "TA Review").
   const sidebarConfig = React.useMemo(
     () => buildSidebarConfig({ canCreateClasses: canCreateClasses && !isPreviewing, classRole }),
     [canCreateClasses, isPreviewing, classRole],
   );
+  const activePath = activeItemPath(sidebarConfig, location.pathname);
   // Label each class with your role only when the list mixes roles.
   const mixedRoles = new Set(sidebarClasses.map((c) => c.my_role)).size > 1;
 
-  // Expandable items (those with children): open/closed state, keyed by path.
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const toggleGroup = (path: string) =>
-    setOpenGroups((prev) => ({ ...prev, [path]: !(prev[path] ?? false) }));
-
-  // A child link is active on its path and any deeper route under it. The
-  // group's own path (e.g. "TSRs" → /app/ta-review) also owns its nested
-  // routes — minus any claimed by a sibling child (…/final-reviews).
-  const isChildActive = (item: SidebarItem, child: SidebarItem) => {
-    const path = location.pathname;
-    if (path === child.path) return true;
-    if (child.path !== item.path) return path.startsWith(`${child.path}/`);
-    return (
-      path.startsWith(`${item.path}/`) &&
-      !(item.children ?? []).some((c) => c.path !== item.path && path.startsWith(c.path))
-    );
-  };
-
-  // Track the mobile breakpoint so the desktop collapse affordance never
-  // applies to the off-canvas drawer (which would hide its labels/logo).
+  // Follow the breakpoints: the phone drawer and a touch screen's sidebar are always open.
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 768px)');
-    const handler = (event: MediaQueryListEvent) => setIsMobile(event.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    const mobile = window.matchMedia(MOBILE_QUERY);
+    const hoverless = window.matchMedia(NO_HOVER_QUERY);
+    const onMobile = (event: MediaQueryListEvent) => setIsMobile(event.matches);
+    const onHoverless = (event: MediaQueryListEvent) => setNoHover(event.matches);
+    mobile.addEventListener('change', onMobile);
+    hoverless.addEventListener('change', onHoverless);
+    return () => {
+      mobile.removeEventListener('change', onMobile);
+      hoverless.removeEventListener('change', onHoverless);
+    };
   }, []);
 
-  // On mobile the sidebar is a full-width drawer — always render it expanded.
-  const collapsed = isCollapsed && !isMobile;
+  // The rail's timers die with it.
+  useEffect(
+    () => () => {
+      window.clearTimeout(openTimer.current);
+      window.clearTimeout(closeTimer.current);
+    },
+    [],
+  );
+
+  // The desktop rail opens once the pointer has rested on it and closes a moment after the pointer
+  // leaves. Keyboard focus inside it holds it open (the focus a click gives does not: the pointer
+  // decides then), and so does the open class menu.
+  const expanded = isMobile || noHover || hovered || focusHeld || showClassDropdown;
+
+  const handlePointerEnter = (event: React.PointerEvent) => {
+    if (event.pointerType === 'touch') return;
+    window.clearTimeout(closeTimer.current);
+    if (hovered) return;
+    window.clearTimeout(openTimer.current);
+    openTimer.current = window.setTimeout(() => setHovered(true), SIDEBAR_HOVER.openDelayMs);
+  };
+
+  const handlePointerLeave = (event: React.PointerEvent) => {
+    if (event.pointerType === 'touch') return;
+    window.clearTimeout(openTimer.current);
+    window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setHovered(false), SIDEBAR_HOVER.closeDelayMs);
+  };
+
+  const handleFocus = () => {
+    if (pointerPressed.current) return;
+    setFocusHeld(true);
+  };
+
+  const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+    setFocusHeld(false);
+  };
+
+  /** The interaction is over: the pointer decides again, whatever stays focused in the sidebar. */
+  const releaseFocusHold = () => setFocusHeld(false);
 
   // Browser tab title prefix — `(N) GrepThink` when there are unread messages.
   useEffect(() => {
@@ -98,16 +137,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
     } else {
       navigate(path);
     }
+    releaseFocusHold();
     // Close the off-canvas drawer after a selection on mobile.
     onMobileClose?.();
   };
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
-
   const handleClassSelect = (classItem: (typeof sidebarClasses)[number]) => {
     setShowClassDropdown(false);
+    releaseFocusHold();
     // Stay on this page when your role in the new class allows it, else go to that role's page.
     // The class you are already in needs neither (a preview of it goes on, so its own role
     // would not be the one the page follows).
@@ -122,191 +159,122 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
     });
   };
 
-  // Close dropdown when clicking outside
+  // A press outside the menu closes it; one outside the sidebar lets go of the focus hold too.
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    const handlePressOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setShowClassDropdown(false);
+      }
+      if (sidebarRef.current && !sidebarRef.current.contains(target)) {
+        setFocusHeld(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handlePressOutside);
+    return () => document.removeEventListener('mousedown', handlePressOutside);
   }, []);
 
   return (
-    <div className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''} ${classRole === 'instructor' ? 'instructor' : 'student'}`}>
-      {/* Header with Logo */}
+    <div
+      ref={sidebarRef}
+      className={`sidebar${expanded ? ' expanded' : ''}${mobileOpen ? ' mobile-open' : ''}`}
+      data-expanded={expanded}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+      onPointerDownCapture={() => {
+        pointerPressed.current = true;
+      }}
+      onPointerUpCapture={() => {
+        pointerPressed.current = false;
+      }}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+    >
+      {/* Brand: the mark alone in the rail, the wordmark once open */}
       <div className="sidebar-header">
-        {!collapsed && (
-          <div className="sidebar-logo">
-            <img src={logo} alt="GrepThink Logo" />
-          </div>
-        )}
-        <button className="collapse-button" onClick={toggleCollapse}>
-          <PanelLeft size={20} />
-        </button>
+        <div className="sidebar-brand">
+          <img className="sidebar-brand__mark" src={mark} alt="" />
+          <img className="sidebar-brand__logo" src={logo} alt="GrepThink" />
+        </div>
       </div>
 
-      {/* Class Selector */}
-      {!collapsed && (
-        <div className="class-selector" ref={dropdownRef}>
-          <button
-            className="class-selector-header"
-            onClick={() => setShowClassDropdown(!showClassDropdown)}
-          >
-            <span className="class-selector-title">
-              <span className="class-name">{selectedClass ? selectedClass.name : 'No class selected'}</span>
-              {showSchoolSwitcher && selectedClass?.institution && (
-                <span className="class-school">{selectedClass.institution.name}</span>
-              )}
-            </span>
-            <ChevronDown size={16} className={showClassDropdown ? 'rotated' : ''} />
-          </button>
+      {/* Class Selector: an icon tile in the rail, the class's name and its menu once open */}
+      <div className="class-selector" ref={dropdownRef}>
+        <button
+          className="class-selector-header"
+          onClick={() => setShowClassDropdown(!showClassDropdown)}
+          aria-expanded={showClassDropdown}
+        >
+          <GraduationCap size={18} className="class-selector-icon" />
+          <span className="class-selector-title">
+            <span className="class-name">{selectedClass ? selectedClass.name : 'No class selected'}</span>
+            {showSchoolSwitcher && selectedClass?.institution && (
+              <span className="class-school">{selectedClass.institution.name}</span>
+            )}
+          </span>
+          <ChevronDown size={16} className={`class-selector-chevron${showClassDropdown ? ' rotated' : ''}`} />
+        </button>
 
-          {showClassDropdown && (
-            <div className="class-selector-dropdown">
-              {sidebarClasses.length === 0 ? (
-                <div className="class-selector-empty">No active classes</div>
-              ) : (
-                sidebarClasses.map((classItem) => (
-                  <button
-                    key={classItem.id}
-                    className={`class-selector-item ${selectedClass?.id === classItem.id ? 'active' : ''}`}
-                    onClick={() => handleClassSelect(classItem)}
-                  >
-                    <div className="class-item-name">{classItem.name}</div>
-                    <div className="class-item-code">{classItem.course_code}</div>
-                    {mixedRoles && <div className="class-item-role">{CLASS_ROLE_LABELS[classItem.my_role]}</div>}
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-      )}
+        {showClassDropdown && (
+          <div className="class-selector-dropdown">
+            {sidebarClasses.length === 0 ? (
+              <div className="class-selector-empty">No active classes</div>
+            ) : (
+              sidebarClasses.map((classItem) => (
+                <button
+                  key={classItem.id}
+                  className={`class-selector-item ${selectedClass?.id === classItem.id ? 'active' : ''}`}
+                  onClick={() => handleClassSelect(classItem)}
+                >
+                  <div className="class-item-name">{classItem.name}</div>
+                  <div className="class-item-code">{classItem.course_code}</div>
+                  {mixedRoles && <div className="class-item-role">{CLASS_ROLE_LABELS[classItem.my_role]}</div>}
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
 
-      {/* Navigation Sections */}
+      {/* Navigation: sections of category groups; a heading is a divider while the rail is closed */}
       <nav className="sidebar-nav">
         {sidebarConfig.map((section) => (
-          <div key={section.title} className="sidebar-section">
-            {!collapsed && (
+          <div key={section.id} className={`sidebar-section sidebar-section--${section.id}`}>
+            {section.title && (
               <h3 className="section-title">
-                {section.title === 'Class' && selectedClass
-                  ? `Class: ${selectedClass.name}`
-                  : section.title}
+                <span>{section.id === 'class' && selectedClass ? selectedClass.name : section.title}</span>
               </h3>
             )}
-            <ul className="section-items">
-              {section.items.map((item) => {
-                // Expandable item: a chevron toggle revealing nested child links.
-                if (item.children?.length) {
-                  const anyChildActive = item.children.some((c) => isChildActive(item, c));
-                  // Once a child is active, the group is forced open — closing it would
-                  // hide the page you're currently on with no way back short of
-                  // navigating elsewhere and back. Trade-off: a group can no longer be
-                  // manually collapsed while one of its children is active (matches how
-                  // every mainstream sidebar with active-aware groups behaves).
-                  const open = (openGroups[item.path] ?? false) || anyChildActive;
-                  const groupId = `sidebar-group-${item.path}`;
-                  return (
-                    <li key={item.path}>
-                      <button
-                        className={`sidebar-item sidebar-item--group ${collapsed && anyChildActive ? 'active' : ''}`}
-                        // Collapsed rail has nowhere to show children — go to the first one.
-                        onClick={() => {
-                          if (collapsed) return handleNavigation(item.children![0].path);
-                          // Forced open while a child is active — a toggle here can't
-                          // change anything now, but the stored flip would wrongly keep
-                          // the group expanded after navigating away. No-op instead.
-                          if (anyChildActive) return;
-                          toggleGroup(item.path);
-                        }}
-                        title={collapsed ? item.label : undefined}
-                        aria-expanded={collapsed ? undefined : open}
-                        aria-controls={collapsed ? undefined : groupId}
-                      >
-                        {item.icon ? (
-                          React.createElement(item.icon, { size: 18 })
-                        ) : item.iconSvg ? (
-                          <img src={item.iconSvg} alt={item.label} className="icon-svg" />
-                        ) : null}
-                        {!collapsed && <span>{item.label}</span>}
-                        {!collapsed && (
-                          <ChevronDown size={16} className={`sidebar-item__chevron ${open ? 'rotated' : ''}`} />
-                        )}
-                      </button>
-                      {!collapsed && (
-                        // Always mounted (not gated on `open`) so the grid-rows
-                        // transition below has something to animate between — an
-                        // unmount/remount on toggle would jump instantly instead.
-                        // `inert` while closed keeps the (visually clipped but still
-                        // in the DOM) child links out of the tab order.
-                        <div
-                          className={`sidebar-subitems-wrap ${open ? 'open' : ''}`}
-                          id={groupId}
-                          inert={!open}
+            {section.groups.map((group, index) => (
+              <div key={group.title ?? index} className="sidebar-group">
+                {group.title && (
+                  <h4 className="group-title">
+                    <span>{group.title}</span>
+                  </h4>
+                )}
+                <ul className="section-items">
+                  {group.items.map((item) => {
+                    const isActive = item.path === activePath;
+                    return (
+                      <li key={item.path}>
+                        <button
+                          className={`sidebar-item${isActive ? ' active' : ''}`}
+                          onClick={() => handleNavigation(item.path)}
+                          aria-current={isActive ? 'page' : undefined}
                         >
-                          <ul className="sidebar-subitems">
-                            {item.children.map((child) => (
-                              <li key={child.path}>
-                                <button
-                                  className={`sidebar-item sidebar-item--child ${isChildActive(item, child) ? 'active' : ''}`}
-                                  onClick={() => handleNavigation(child.path)}
-                                >
-                                  <span>{child.label}</span>
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </li>
-                  );
-                }
-
-                const isProjectsItem = item.path === '/app/projects';
-                // Flat items own their nested routes too (e.g. the instructor's
-                // "Final Reviews" item stays lit on a team's review page).
-                let isActive =
-                  location.pathname === item.path ||
-                  location.pathname.startsWith(`${item.path}/`);
-
-                // Keep the instructor's "Projects" (only their class section has
-                // it, including while the classes load) highlighted when viewing
-                // project details or create-project flows under the class.
-                if (isProjectsItem) {
-                  const path = location.pathname;
-                  if (
-                    path === '/app/projects' ||
-                    path.startsWith('/app/projects/') ||
-                    path === '/app/create-project'
-                  ) {
-                    isActive = true;
-                  }
-                }
-
-                return (
-                  <li key={item.path}>
-                    <button
-                      className={`sidebar-item ${isActive ? 'active' : ''}`}
-                      onClick={() => handleNavigation(item.path)}
-                      title={collapsed ? item.label : undefined}
-                    >
-                      {item.icon ? (
-                        React.createElement(item.icon, { size: 18 })
-                      ) : item.iconSvg ? (
-                        <img src={item.iconSvg} alt={item.label} className="icon-svg" />
-                      ) : null}
-                      {!collapsed && <span>{item.label}</span>}
-                      {item.path === '/app/messages' && unreadTotal > 0 && (
-                        <span className="sidebar-item__badge">{unreadTotal}</span>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                          {React.createElement(item.icon, { size: 18 })}
+                          <span className="sidebar-item__label">{item.label}</span>
+                          {item.path === '/app/messages' && unreadTotal > 0 && (
+                            <span className="sidebar-item__badge">{unreadTotal}</span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
           </div>
         ))}
       </nav>
