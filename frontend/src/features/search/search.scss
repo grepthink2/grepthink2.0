@@ -1,6 +1,7 @@
 /* GrepThink · global search (⌘K). Port of design/components/search/search.css — BEM `.gt-*`
    classes, `--gt-*` tokens only (lint:design). Dropped: the team/action entity tints, the
-   SearchField rules (not ported). Added: `.gt-palette__tag`, the phone trigger. */
+   SearchField rules (not ported). Added: `.gt-palette__tag`, the phone trigger, and the
+   backdrop's own fade keyframes (`gt-palette-fade-*`). */
 
 /* ============================================================
    GrepThink · Search layer
@@ -58,7 +59,7 @@
   display: flex; align-items: flex-start; justify-content: center;
   padding: 12vh 16px 16px; box-sizing: border-box;
   background: var(--gt-scrim); backdrop-filter: blur(4px);
-  animation: gt-fade-in var(--gt-transition-fast);
+  animation: gt-palette-fade-in var(--gt-transition-fast);
 }
 .gt-palette {
   position: relative; width: 100%; max-width: 640px; max-height: min(560px, 76vh);
@@ -67,10 +68,13 @@
   box-shadow: var(--gt-shadow-modal); font-family: var(--gt-font-sans);
   animation: gt-palette-in var(--gt-transition-fast) ease-out;
 }
-.gt-palette-backdrop--closing { animation: gt-fade-out 0.15s ease-in forwards; }
+.gt-palette-backdrop--closing { animation: gt-palette-fade-out 0.15s ease-in forwards; }
 .gt-palette-backdrop--closing .gt-palette { animation: gt-palette-out 0.15s ease-in forwards; }
 @keyframes gt-palette-in  { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 @keyframes gt-palette-out { to { opacity: 0; transform: translateY(-6px); } }
+/* The backdrop's own fades, so it never depends on Toast.scss (loaded only by the scrum board). */
+@keyframes gt-palette-fade-in  { from { opacity: 0; } }
+@keyframes gt-palette-fade-out { to { opacity: 0; } }
 
 /* input row */
 .gt-palette__input-row { display: flex; align-items: center; gap: 12px; height: 54px; padding: 0 16px; border-bottom: 1px solid var(--gt-border-subtle); flex-shrink: 0; }
