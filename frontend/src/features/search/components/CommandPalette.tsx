@@ -131,10 +131,12 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
   const activeItem = activeIdx >= 0 ? rows.find((r) => r.idx === activeIdx)?.row : undefined;
 
   const changeQuery = (value: string) => { setQuery(value); setPage(1); setActive(0); };
-  const changeScope = (next: SearchScope) => { setScope(next); setPage(1); setActive(0); };
+  // Refocus the input: a clicked "See all" unmounts, which would drop focus (and Esc) to <body>.
+  const changeScope = (next: SearchScope) => { setScope(next); setPage(1); setActive(0); inputRef.current?.focus(); };
   const changePage = (next: number) => { setPage(next); setActive(0); };
 
   const select = (item: SearchItem) => {
+    if (closing) return; // rows stay clickable during the exit animation
     setRecents(pushRecent(userId, item, recents));
     if (item.type === 'class') {
       const cls = classes.find((c) => c.id === item.id);
@@ -145,6 +147,7 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
   };
 
   const onInputKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return;
     const caret = e.currentTarget.selectionStart ?? 0;
     switch (e.key) {
       case 'ArrowDown':
@@ -208,6 +211,7 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
         role="dialog"
         aria-modal="true"
         aria-label="Search"
+        tabIndex={-1}
         onKeyDown={onDialogKeyDown}
       >
         <div className="gt-palette__input-row">
@@ -221,8 +225,8 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
             onKeyDown={onInputKeyDown}
             placeholder="Search people, projects, tasks…"
             role="combobox"
-            aria-expanded="true"
-            aria-controls={`${baseId}-list`}
+            aria-expanded={showList}
+            aria-controls={showList ? `${baseId}-list` : undefined}
             aria-activedescendant={activeId}
             aria-autocomplete="list"
             autoComplete="off"

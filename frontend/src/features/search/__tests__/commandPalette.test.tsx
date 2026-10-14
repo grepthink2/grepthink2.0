@@ -119,6 +119,30 @@ describe('CommandPalette — opening and closing', () => {
     await closed();
     expect(trigger).toHaveFocus();
   });
+
+  it('keeps focus in the dialog after "See all", a chip, or a click on panel text, so Esc still closes', async () => {
+    const user = userEvent.setup();
+    renderPalette();
+    await user.type(input(), 'cse');
+    await user.click(screen.getByRole('button', { name: 'See all 2' }));
+    expect(input()).toHaveFocus();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
+    await closed();
+
+    fireEvent.click(screen.getByRole('button', { name: 'trigger' }));
+    await user.type(input(), 'cse');
+    await user.click(screen.getByRole('button', { name: /^Projects/ }));
+    expect(input()).toHaveFocus();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
+    await closed();
+
+    fireEvent.click(screen.getByRole('button', { name: 'trigger' }));
+    await user.type(input(), 'zzz');
+    await user.click(screen.getByText('Try a name, a task key like GT-12, or a project.'));
+    expect(dialog()).toHaveFocus();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
+    await closed();
+  });
 });
 
 describe('CommandPalette — searching', () => {
@@ -217,6 +241,41 @@ describe('CommandPalette — searching', () => {
     fireEvent.click(screen.getByRole('button', { name: 'trigger' }));
     const list = screen.getByRole('listbox', { name: 'Recent' });
     expect(within(list).getByRole('option')).toHaveTextContent('Roster Radar');
+  });
+
+  it('leaves Enter and the arrows to the IME while it is composing', async () => {
+    const user = userEvent.setup();
+    renderPalette();
+    await user.type(input(), 'ros');
+    fireEvent.keyDown(input(), { key: 'ArrowDown', isComposing: true });
+    expect(screen.getAllByRole('option')[0]).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(input(), { key: 'Enter', isComposing: true });
+    expect(screen.getByTestId('path').textContent).toBe('/app/home');
+    expect(dialog()).toBeInTheDocument();
+  });
+
+  it('opens only the first click while the exit animation plays', async () => {
+    const user = userEvent.setup();
+    renderPalette();
+    await user.type(input(), 'ros');
+    const [first, second] = screen.getAllByRole('option');
+    fireEvent.click(first);
+    fireEvent.click(second);
+    expect(screen.getByTestId('path').textContent).toBe('/app/projects/p1/board?sprint=s1&task=t1');
+    await closed();
+  });
+
+  it('marks the combobox expanded, pointing at the listbox, only while a list is shown', async () => {
+    const user = userEvent.setup();
+    renderPalette();
+    expect(input()).toHaveAttribute('aria-expanded', 'false');
+    expect(input()).not.toHaveAttribute('aria-controls');
+    await user.type(input(), 'ros');
+    expect(input()).toHaveAttribute('aria-expanded', 'true');
+    expect(input()).toHaveAttribute('aria-controls', screen.getByRole('listbox').id);
+    await user.type(input(), 'zzz');
+    expect(input()).toHaveAttribute('aria-expanded', 'false');
+    expect(input()).not.toHaveAttribute('aria-controls');
   });
 });
 
