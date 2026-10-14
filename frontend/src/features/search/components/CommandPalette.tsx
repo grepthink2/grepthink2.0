@@ -147,7 +147,8 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
   };
 
   const onInputKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (e.nativeEvent.isComposing) return;
+    // Safari fires compositionend before the committing Enter's keydown, which arrives with keyCode 229.
+    if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
     const caret = e.currentTarget.selectionStart ?? 0;
     switch (e.key) {
       case 'ArrowDown':
