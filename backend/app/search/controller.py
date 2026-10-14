@@ -157,7 +157,8 @@ def _people(
     uid: str, classes: dict[str, dict], inbox: list[dict], teammates: set[str]
 ) -> list[dict]:
     """Everyone the caller may message (the ``list_contacts`` rule), each once. The role shown is
-    the one in the most recently created shared class; up to two class names follow it."""
+    the one in the most recently created shared class; up to two class names follow it, each
+    once (two quarters of a course can share a name)."""
     seen: dict[str, dict] = {}
     newest_first = sorted(classes.values(), key=lambda c: c.get("created_at") or "", reverse=True)
     for cls in newest_first:
@@ -175,8 +176,9 @@ def _people(
             if person_id == uid or not profile:
                 continue  # self, or an enrollment whose profile row is missing (as list_contacts)
             entry = seen.setdefault(person_id, {"profile": profile, "role": role, "classes": []})
-            if len(entry["classes"]) < 2:
-                entry["classes"].append(cls.get("name"))
+            name = cls.get("name")
+            if len(entry["classes"]) < 2 and name not in entry["classes"]:
+                entry["classes"].append(name)
     dm_for = {
         r["other_user"]["id"]: r["id"] for r in inbox if r["type"] == "dm" and r.get("other_user")
     }
@@ -361,7 +363,9 @@ def _assignment_href(role: str, kind: str | None, assignment_id: str) -> str:
         return "/app/modules"
     if role == "ta":
         return f"/app/ta-review/{assignment_id}" if kind == "tsr" else "/app/ta-review"
-    return f"/app/assignments/{assignment_id}"
+    # The class's list: the detail page (/app/assignments/<id>) reads the type, project and dates
+    # from router state, which a link cannot carry.
+    return "/app/assignments"
 
 
 def _assignments(assignments: list[dict], roles: dict[str, str]) -> list[dict]:

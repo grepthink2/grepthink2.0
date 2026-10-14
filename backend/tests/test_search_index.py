@@ -2,13 +2,14 @@
 
 One world, five callers. ``UID`` is a student in Alpha on project P1 with ``S2``; ``TA1`` (no
 name on the profile) TAs Alpha; ``INSTR`` teaches it. Beta is ``OTHER_INSTR``'s class with
-``S3`` and project P3 — nothing from Beta may reach an Alpha caller. ``NOBODY`` is in no class.
+``S3`` and project P3 — nothing from Beta may reach an Alpha caller. ``NOBODY`` is in no class
+but still has a DM with ``S3``.
 """
 
 from __future__ import annotations
 
 from app.limiter import limiter
-from app.search import controller
+from app.search import controller, views
 from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
 
@@ -117,6 +118,7 @@ PROFILES = {
     INSTR: profile(INSTR, "Richard", "Jullig", "rjullig@ucsc.edu"),
     OTHER_INSTR: profile(OTHER_INSTR, "Other", "Prof", "other@ucsc.edu"),
     TA1: profile(TA1, "", "", "ta1@ucsc.edu"),
+    NOBODY: profile(NOBODY, "Sam", "Okafor", "sokafor@ucsc.edu"),
 }
 
 INBOX = {
@@ -145,6 +147,15 @@ INBOX = {
             project_id=P1,
             team_name="Grepthink 2.0",
         ),
+    ],
+    # A DM outlives the class the two shared: NOBODY is in no class now.
+    NOBODY: [
+        rpc_row(
+            "c-old",
+            "dm",
+            [participant(NOBODY), participant(S3)],
+            last_message_at="2026-06-01T17:00:00Z",
+        )
     ],
 }
 
@@ -465,9 +476,11 @@ EXPECTED_STUDENT = {
     ("conversation", "c-team"): ("Grepthink 2.0", "Team channel", "/app/messages/c-team"),
     ("conversation", "c-instr"): ("Grepthink 2.0", "Instructor channel", "/app/messages/c-instr"),
     ("class", ALPHA): ("CSE 115B", "Fall 2026", "/app/home"),
-    ("assignment", "a1"): ("TSR 3", "TSR · due Oct 12", "/app/assignments/a1"),
-    ("assignment", "a4"): ("Interest form", "Interest form · due Oct 20", "/app/assignments/a4"),
-    ("assignment", "a5"): ("Survey", "Assignment", "/app/assignments/a5"),
+    # The class's list, not /app/assignments/<id>: the detail page reads the assignment's type,
+    # project and dates from router state, which a link cannot carry.
+    ("assignment", "a1"): ("TSR 3", "TSR · due Oct 12", "/app/assignments"),
+    ("assignment", "a4"): ("Interest form", "Interest form · due Oct 20", "/app/assignments"),
+    ("assignment", "a5"): ("Survey", "Assignment", "/app/assignments"),
 }
 
 
@@ -506,7 +519,7 @@ def test_route_returns_the_index(client, monkeypatch):
 
     assert res.status_code == 200
     body = res.json()
-    assert body["items"] == []
+    assert [(i["type"], i["id"]) for i in body["items"]] == [("conversation", "c-old")]
     assert isinstance(body["generated_at"], str) and body["generated_at"]
 
     student = client.get(
@@ -520,9 +533,26 @@ def test_route_returns_the_index(client, monkeypatch):
     assert [(i["id"], key) for i in items for key, value in i.items() if value is None] == []
 
 
-def test_the_index_is_rate_limited():
+def test_the_index_is_rate_limited_per_signed_in_user():
     [rule] = limiter._route_limits["app.search.views.get_search_index"]
     assert str(rule.limit) == "60 per 1 minute"
+    assert rule.key_func is views._search_rate_key
+
+
+def test_one_users_searches_never_use_up_another_users_limit(client, monkeypatch):
+    # On Vercel every caller arrives from the proxy's address, so a limit keyed by address would
+    # be one bucket for everybody: one busy user would lock the rest out of search.
+    monkeypatch.setattr("app.core.db.service_client", world(), raising=False)
+    student = {"Authorization": f"Bearer {make_token(sub=UID)}"}
+    classmate = {"Authorization": f"Bearer {make_token(sub=S2)}"}
+    limiter.reset()
+    try:
+        for _ in range(60):
+            assert client.get("/api/search/index", headers=student).status_code == 200
+        assert client.get("/api/search/index", headers=student).status_code == 429
+        assert client.get("/api/search/index", headers=classmate).status_code == 200
+    finally:
+        limiter.reset()
 
 
 P2_BOARD = f"/app/projects/{P2}/board"
@@ -613,8 +643,41 @@ def test_class_without_term_shows_its_description(monkeypatch):
     assert fake.executes <= 8
 
 
-def test_no_classes_means_an_empty_index_after_one_wave(monkeypatch):
+def test_a_caller_in_no_class_keeps_only_their_conversations_after_one_wave(monkeypatch):
     items, fake = index_for(monkeypatch, NOBODY)
 
-    assert items == []  # NOBODY has no inbox either: old conversations would still be listed
+    # The DM stays (the inbox does not depend on a shared class); nobody else can be reached.
+    assert summary(items) == {
+        ("conversation", "c-old"): ("Priya Raman", "Direct message", "/app/messages/c-old")
+    }
     assert fake.executes <= 5  # wave 2 has nothing to ask for
+
+
+def test_a_class_name_shared_by_two_classes_appears_once_in_a_subtitle():
+    # Two quarters of one course carry the same name.
+    def quarter(class_id: str, created_at: str) -> dict:
+        return {
+            "id": class_id,
+            "name": "CSE 115A",
+            "created_by": INSTR,
+            "created_at": created_at,
+            "owner": PROFILES[INSTR],
+            "class_enrollments": [
+                {"user_id": UID, "enrollment_role": "student", "profile": PROFILES[UID]},
+                {"user_id": S2, "enrollment_role": "student", "profile": PROFILES[S2]},
+            ],
+        }
+
+    classes = {
+        c["id"]: c
+        for c in (
+            quarter("fall", "2026-09-20T00:00:00Z"),
+            quarter("spring", "2026-03-30T00:00:00Z"),
+        )
+    }
+    people = controller._people(UID, classes, [], set())
+
+    assert {p["id"]: p["subtitle"] for p in people} == {
+        INSTR: "Instructor · CSE 115A",
+        S2: "Student · CSE 115A",
+    }
