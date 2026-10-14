@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Class, ClassRole } from '@/lib/classContext';
 
 const state = vi.hoisted(() => ({
@@ -23,6 +23,7 @@ vi.mock('@/lib/classContext', () => ({
 vi.mock('@features/messages/hooks/useUnreadTotal', () => ({ useUnreadTotal: () => 0 }));
 
 import Sidebar from '../Sidebar';
+import { SIDEBAR_HOVER } from '../../../config/sidebar';
 
 const UCSC = { id: 'ucsc', name: 'UC Santa Cruz', slug: 'ucsc' };
 
@@ -91,9 +92,11 @@ describe('Sidebar', () => {
     state.role = 'ta';
     state.ctx.selectedClass = assisted;
     renderAt('/app/home');
-    expect(screen.getByText('Class: Beta')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Beta' })).toBeInTheDocument();
     expect(screen.getByText('Create Class')).toBeInTheDocument();
-    expect(screen.getByText('TA Review')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'TA Review' })).toBeInTheDocument();
+    expect(screen.getByText('TSRs')).toBeInTheDocument();
+    expect(screen.getByText('Final Reviews')).toBeInTheDocument();
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
   });
 
@@ -105,7 +108,7 @@ describe('Sidebar', () => {
     expect(screen.getByText('Join Class')).toBeInTheDocument();
     expect(screen.queryByText('Create Class')).not.toBeInTheDocument();
     expect(screen.getByText('My Project')).toBeInTheDocument();
-    expect(screen.getByText('TA Review')).toBeInTheDocument();
+    expect(screen.getByText('TSRs')).toBeInTheDocument();
   });
 
   it("shows the account's usual class section while the classes load", () => {
@@ -119,7 +122,7 @@ describe('Sidebar', () => {
     state.canCreateClasses = false;
     renderAt('/app/home');
     expect(screen.getByText('My Project')).toBeInTheDocument();
-    expect(screen.queryByText('TA Review')).not.toBeInTheDocument();
+    expect(screen.queryByText('TSRs')).not.toBeInTheDocument();
   });
 
   it('keeps Projects lit on a project page while the classes load', () => {
@@ -198,5 +201,122 @@ describe('Sidebar', () => {
     openClassSwitcher();
     expect(screen.getByText('Gamma')).toBeInTheDocument();
     expect(screen.queryByText('Instructor')).not.toBeInTheDocument();
+  });
+});
+
+describe('the rail', () => {
+  // Only the timers the rail sets; React's own scheduling stays real.
+  beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] }));
+  afterEach(() => vi.useRealTimers());
+
+  const rail = () => document.querySelector('.sidebar') as HTMLElement;
+  const isExpanded = () => rail().getAttribute('data-expanded') === 'true';
+  const settle = (ms: number) => act(() => vi.advanceTimersByTime(ms));
+  const hoverIn = () => {
+    fireEvent.pointerEnter(rail(), { pointerType: 'mouse' });
+    settle(SIDEBAR_HOVER.openDelayMs);
+  };
+  const hoverOut = () => fireEvent.pointerLeave(rail(), { pointerType: 'mouse' });
+
+  it('rests collapsed, with no expand button', () => {
+    renderAt('/app/home');
+    expect(isExpanded()).toBe(false);
+    expect(screen.queryByRole('button', { name: /collapse|expand/i })).not.toBeInTheDocument();
+  });
+
+  it('expands once the pointer has rested on it, and holds while it stays', () => {
+    renderAt('/app/home');
+    fireEvent.pointerEnter(rail(), { pointerType: 'mouse' });
+    expect(isExpanded()).toBe(false);
+    settle(SIDEBAR_HOVER.openDelayMs);
+    expect(isExpanded()).toBe(true);
+    settle(10_000);
+    expect(isExpanded()).toBe(true);
+  });
+
+  it('ignores a pointer that only passes through', () => {
+    renderAt('/app/home');
+    fireEvent.pointerEnter(rail(), { pointerType: 'mouse' });
+    settle(SIDEBAR_HOVER.openDelayMs - 1);
+    hoverOut();
+    settle(10_000);
+    expect(isExpanded()).toBe(false);
+  });
+
+  it('collapses a moment after the pointer leaves', () => {
+    renderAt('/app/home');
+    hoverIn();
+    hoverOut();
+    settle(SIDEBAR_HOVER.closeDelayMs - 1);
+    expect(isExpanded()).toBe(true);
+    settle(1);
+    expect(isExpanded()).toBe(false);
+  });
+
+  it('stays open when the pointer comes back before it has closed', () => {
+    renderAt('/app/home');
+    hoverIn();
+    hoverOut();
+    settle(SIDEBAR_HOVER.closeDelayMs - 1);
+    fireEvent.pointerEnter(rail(), { pointerType: 'mouse' });
+    settle(10_000);
+    expect(isExpanded()).toBe(true);
+  });
+
+  it('does not expand for a touch', () => {
+    renderAt('/app/home');
+    fireEvent.pointerEnter(rail(), { pointerType: 'touch' });
+    settle(10_000);
+    expect(isExpanded()).toBe(false);
+  });
+
+  it('expands for keyboard focus inside it and collapses when focus leaves', () => {
+    renderAt('/app/home');
+    const home = screen.getByRole('button', { name: 'Home' });
+    fireEvent.focus(home);
+    expect(isExpanded()).toBe(true);
+    fireEvent.blur(home, { relatedTarget: null });
+    expect(isExpanded()).toBe(false);
+  });
+
+  it('does not hold for the focus a click leaves behind', () => {
+    renderAt('/app/home');
+    const messages = screen.getByRole('button', { name: 'Messages' });
+    fireEvent.pointerDown(messages);
+    fireEvent.focus(messages);
+    fireEvent.pointerUp(messages);
+    expect(isExpanded()).toBe(false);
+  });
+
+  it('lets go after a keyboard navigation', () => {
+    renderAt('/app/home');
+    const messages = screen.getByRole('button', { name: 'Messages' });
+    fireEvent.focus(messages);
+    expect(isExpanded()).toBe(true);
+    fireEvent.click(messages);
+    expect(screen.getByTestId('path').textContent).toBe('/app/messages');
+    expect(isExpanded()).toBe(false);
+  });
+
+  it('holds while the class menu is open, and lets go once a class is picked', () => {
+    renderAt('/app/home');
+    hoverIn();
+    openClassSwitcher();
+    hoverOut();
+    settle(SIDEBAR_HOVER.closeDelayMs + 1000);
+    expect(isExpanded()).toBe(true);
+    fireEvent.click(screen.getByText('Beta'));
+    expect(isExpanded()).toBe(false);
+  });
+
+  it('is always open as the phone drawer', () => {
+    const desktop = window.matchMedia;
+    window.matchMedia = (query: string) => ({ ...desktop(query), matches: query.includes('max-width') });
+    try {
+      renderAt('/app/home');
+      expect(isExpanded()).toBe(true);
+    } finally {
+      window.matchMedia = desktop;
+    }
   });
 });
