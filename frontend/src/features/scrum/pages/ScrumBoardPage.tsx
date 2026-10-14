@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Settings } from 'lucide-react';
 import Skeleton from '@components/Skeleton/Skeleton';
@@ -76,7 +76,8 @@ export default function ScrumBoardPage() {
 
   const view = parseView(searchParams.get('view'));
   const openTaskId = searchParams.get('task');
-  const [openStoryId, setOpenStoryId] = useState<string | null>(null);
+  const openStoryId = searchParams.get('story');
+  const sprintParam = searchParams.get('sprint');
   const [addTaskStoryId, setAddTaskStoryId] = useState<string | null>(null);
   const [savingTask, setSavingTask] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -134,37 +135,70 @@ export default function ScrumBoardPage() {
     clearNotice();
   }, [notice, push, clearNotice]);
 
-  const setView = (next: BoardView) => {
-    const params = new URLSearchParams(searchParams);
-    if (next === 'board') params.delete('view');
-    else params.set('view', next);
-    setSearchParams(params, { replace: true });
-  };
+  // ?sprint= (search deep links): pick that sprint once the board knows it, then drop the
+  // param so the sprint select is free to move on. An unknown id is ignored — asking the
+  // API for it would 404, which the hook renders as a board error.
+  useEffect(() => {
+    if (!board || !sprintParam) return;
+    if (sprintParam !== board.sprint_id && board.sprints.some((s) => s.id === sprintParam)) {
+      void selectSprint(sprintParam);
+    }
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      params.delete('sprint');
+      return params;
+    }, { replace: true });
+  }, [board, sprintParam, selectSprint, setSearchParams]);
 
-  const setTaskParam = (taskId: string | null) => {
-    const params = new URLSearchParams(searchParams);
-    if (taskId) params.set('task', taskId);
-    else params.delete('task');
-    setSearchParams(params, { replace: true });
+  /**
+   * Patch ?task= / ?story= in one navigation. setSearchParams does not queue like setState
+   * (React Router's docs say so): each call starts from this render's params, so of two calls
+   * in one event only the last lands. A handler that changes both passes both here, once.
+   */
+  const setParams = (patch: Partial<Record<'task' | 'story', string | null>>) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      for (const [key, value] of Object.entries(patch)) {
+        if (value) params.set(key, value);
+        else params.delete(key);
+      }
+      return params;
+    }, { replace: true });
+  };
+  const setTaskParam = (taskId: string | null) => setParams({ task: taskId });
+  /** The story modal is URL state too (?story=, a search deep link), like ?task=. */
+  const setStoryParam = (storyId: string | null) => setParams({ story: storyId });
+
+  const setView = (next: BoardView) => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      if (next === 'board') params.delete('view');
+      else params.set('view', next);
+      return params;
+    }, { replace: true });
   };
 
   const closeStory = () => {
-    setOpenStoryId(null);
-    if (openTaskId) setTaskParam(null);
+    // Any ?task= left here names no task on this board (else its editor would show); it goes too.
+    setParams({ story: null, task: null });
   };
 
   /** Board card or story row → the task's own detail. Closes the story. */
   const openTask = (task: ApiScrumTask) => {
-    setOpenStoryId(null);
+    setParams({ story: null, task: task.id });
     setAddTaskStoryId(null);
-    setTaskParam(task.id);
   };
 
-  /** Back arrow inside the task editor → its parent story, task closed. */
+  /**
+   * Back arrow inside the task editor → its parent story, task closed. One transition for both: the
+   * router navigates in one, so a new-task editor closed on its own would commit a screen with no
+   * modal before the story opens.
+   */
   const backToStory = (storyId: string) => {
-    setTaskParam(null);
-    setAddTaskStoryId(null);
-    setOpenStoryId(storyId);
+    startTransition(() => {
+      setParams({ task: null, story: storyId });
+      setAddTaskStoryId(null);
+    });
   };
 
   /** Everything dismissed, back to the board. */
@@ -174,8 +208,7 @@ export default function ScrumBoardPage() {
   };
 
   const startAddTask = (storyId: string) => {
-    setOpenStoryId(null);
-    setTaskParam(null);
+    setParams({ story: null, task: null });
     setAddTaskStoryId(storyId);
   };
 
@@ -199,10 +232,13 @@ export default function ScrumBoardPage() {
     const created = await createStory(body);
     setSavingStory(false);
     if (!created) return;              // the hook already raised the error toast
-    setCreatingStory(false);
     push('success', `${created.story.key} created`);
-    // Continue the flow: land in the new story so its tasks can be added now.
-    setOpenStoryId(created.story.id);
+    // Continue the flow: land in the new story so its tasks can be added now. One transition closes
+    // the editor and opens the story (the router navigates in one): never a commit with no modal.
+    startTransition(() => {
+      setCreatingStory(false);
+      setStoryParam(created.story.id);
+    });
   };
 
   if (loading) return <ScrumBoardSkeleton />;
@@ -292,7 +328,7 @@ export default function ScrumBoardPage() {
                       members={members}
                       active={storyFilter === s.id}
                       onSelect={() => setStoryFilter(storyFilter === s.id ? null : s.id)}
-                      onOpen={() => setOpenStoryId(s.id)}
+                      onOpen={() => setStoryParam(s.id)}
                     />
                   ))}
                 </div>
@@ -327,7 +363,7 @@ export default function ScrumBoardPage() {
                   key={s.id}
                   story={s}
                   members={members}
-                  onOpen={() => setOpenStoryId(s.id)}
+                  onOpen={() => setStoryParam(s.id)}
                   onRestore={canWrite && board.sprint_id
                     ? () => updateStory(s.id, { sprint_id: board.sprint_id })
                     : undefined}

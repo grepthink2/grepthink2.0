@@ -34,6 +34,8 @@ Deliverables for `docs/superpowers/handoffs/2026-09-24-landing-claude-design/`, 
 
 ## Round 2 (2026-09-24) — fixes after PR #185 (`feat/landing-new-features`)
 
+See also `CHECKER_NOTE.md` — why the design-system check's "92 components named after nothing in the kit" line is a confirmed no-op.
+
 | # | Change | Files |
 |---|---|---|
 | 1 | **Share image:** copy column narrowed 660 → 600px and the headline set at 62px (was 68) so "Scrum boards and" clears the tilted card by ≥ 54px; sub-line uses `text-wrap: balance` (three even lines, no orphan). Still 1200×630, 60px safe margin, all text ≥ 44px. Re-exported 1× and 2×. | `ui_kits/grepthink-landing/og-image.html` · `assets/landing/og-image.png` · `og-image@2x.png` |

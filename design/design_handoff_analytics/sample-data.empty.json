@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "institution": { "id": "6f2c3a2e-0000-4000-8000-000000000002", "name": "İstinye University", "slug": "istinye", "timezone": "Europe/Istanbul" },
+    "class": null,
+    "range": { "preset": "30d", "from": "2026-09-06", "to": "2026-10-05", "previous_from": "2026-08-07", "previous_to": "2026-09-05" },
+    "generated_at": "2026-10-05T17:42:11Z",
+    "cached": false,
+    "k_anonymity": 3,
+    "rollup_as_of": null
+  },
+  "overview": {
+    "active_classes": 1,
+    "teams": 0,
+    "students": 0,
+    "active_users_7d": null,
+    "messages": 0,
+    "stories_created": 0,
+    "tasks_created": 0,
+    "story_points_created": 0,
+    "task_points_created": 0,
+    "on_time_rate": null,
+    "deltas": {},
+    "trends": {}
+  },
+  "conversations": { "total": 0, "team_members": 0, "dm": 0, "weekly": [], "excluded": ["team_ta", "team_instructor", "dm between staff and a student of their class"] },
+  "scrum": { "live_as_of": "2026-10-05T17:42:11Z", "stories_created": 0, "tasks_created": 0, "story_points_created": 0, "task_points_created": 0, "by_sprint": [], "chars": [] },
+  "timeliness": { "on_time_rate": null, "expected": 0, "late": 0, "missing": 0, "edited_late": 0, "bucket_order": ["early", "on_time", "late", "missing", "not_due"], "rows": [] },
+  "trends": { "as_of": null, "panels": [] },
+  "breakdown": { "kind": "class", "rows": [] },
+  "failures": ["scrum"]
+}

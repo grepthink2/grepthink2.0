@@ -62,7 +62,7 @@ function Where() {
 function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <Header onOpenSettings={vi.fn()} onToggleNav={vi.fn()} />
+      <Header onOpenSettings={vi.fn()} onToggleNav={vi.fn()} onOpenSearch={vi.fn()} onPrefetchSearch={vi.fn()} />
       <Routes>
         <Route path="*" element={<Where />} />
       </Routes>
@@ -227,5 +227,23 @@ describe('Header — a message notification', () => {
     const item = screen.getByText('New message from Sam Lee').closest('button');
     expect(item).toHaveTextContent('Standup moved to 3pm');
     expect(item?.querySelector('strong, code')).toBeNull();
+  });
+});
+
+describe('Header — global search', () => {
+  it('shows the ⌘K trigger where the search box was, and opens search on click', () => {
+    const onOpenSearch = vi.fn();
+    const onPrefetchSearch = vi.fn();
+    render(
+      <MemoryRouter initialEntries={['/app/home']}>
+        <Header onOpenSettings={vi.fn()} onToggleNav={vi.fn()} onOpenSearch={onOpenSearch} onPrefetchSearch={onPrefetchSearch} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByPlaceholderText('Search')).toBeNull();
+    const trigger = screen.getByRole('button', { name: /^Search \((⌘|Ctrl) K\)$/ });
+    fireEvent.mouseEnter(trigger);
+    expect(onPrefetchSearch).toHaveBeenCalledTimes(1);
+    fireEvent.click(trigger);
+    expect(onOpenSearch).toHaveBeenCalledTimes(1);
   });
 });

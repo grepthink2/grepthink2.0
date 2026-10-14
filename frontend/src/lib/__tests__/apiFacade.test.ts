@@ -83,6 +83,7 @@ const METHODS = [
   'getScrumBoard',
   'getScrumComments',
   'getScrumRepos',
+  'getSearchIndex',
   'getStaffingAssignments',
   'getStaffingProjectRank',
   'getStaffingStudents',

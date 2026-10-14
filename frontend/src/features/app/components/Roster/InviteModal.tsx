@@ -294,7 +294,7 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         toggleLinkPanel();
       }
@@ -432,7 +432,7 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ htmlContent, resetSignal, onCha
   const handleEditorKeyUp = () => { saveSelection(); refreshActiveFormats(); };
 
   const handleEditorKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       // Save selection before the document-level listener fires toggleLinkPanel
       saveSelection();
     }

@@ -10,19 +10,21 @@ design language; only content and permissions differ. Never design three separat
 
 ## Sources
 - **Codebase (source of truth for all tokens & naming):** github.com/grepthink2/grepthink2.0 —
-  React 19 + TypeScript + SCSS (Vite, Supabase). Token layer: `frontend/src/styles/`
-  (`_colors.scss`, `_fonts.scss`, `_variables.scss`, `_mixins.scss`, `_skeleton.scss`).
-  Feature SCSS under `frontend/src/features/app/components/` (BEM idiom). Explore the repo
-  for deeper reference when building new views — imported copies of key SCSS live in `frontend/`.
+  React 19 + TypeScript + SCSS (Vite, Supabase). Token layer: `frontend/src/styles/tokens/`
+  (`colors.css`, `typography.css`, `spacing.css` — runtime `--gt-*`, imported by `main.tsx`) with the
+  SCSS bridge in `frontend/src/styles/` (`_colors.scss`, `_fonts.scss`, `_variables.scss`, `_mixins.scss`,
+  `_skeleton.scss`, `_motion.scss`). Feature SCSS under `frontend/src/features/**` (BEM idiom).
+  Explore the repo for deeper reference when building new views — reference copies of the token layer and
+  key SCSS live in `frontend/` (last refreshed 2026-10-09; port status in `PORTING.md`).
 - **Figma "Grepthink (Copy).fig"** — visual reference for the Student / TA / Instructor persona
   pages. Where Figma hardcodes hexes that disagree with the token files, **the tokens win**.
 - Written token spec provided by the maintainer (ramps, semantic pairs, type scale).
 
 ### Known conflicts (tokens win)
-- Legacy `$error-color: #ff3b30` in `_colors.scss` vs. spec error `#DC2626` → system uses **#DC2626**
-  (the raw `#ff3b30` survives only in the sidebar unread badge, copied verbatim).
-- Codebase focus styles are inconsistent (green glow / webkit default); spec standardizes on the
-  **2px accent-blue focus ring** — all `gt-*` components use it.
+- Error red converged 2026-10: `_colors.scss` now sets `$error-color: #DC2626` (the spec value). The raw
+  `#ff3b30` survives only in the sidebar unread badge (kept verbatim) — design side: `--gt-error-icon`.
+- Focus: the codebase now paints the **2px accent-blue focus ring** globally (`index.css`
+  `:focus-visible` rule) — all `gt-*` components use the same ring; the old green glow is gone.
 - Figma home dashboards show colorful gradient tiles ("Join a Course", etc.) — treat as exploration;
   production surfaces are flat token colors.
 
@@ -51,7 +53,7 @@ design language; only content and permissions differ. Never design three separat
   everything readable sits on white cards. Gold `#FDC700` only for achievements/stars/"team set".
 - **Type:** Poppins everywhere (400/500/600/700); UI labels default to Medium 500. Scale:
   caption 12 · body 14 · body-lg 16 · h3 20 · h2 24 · h1 32 · display 40; line-heights
-  1.2/1.4/1.5/1.7. System monospace for IDs/codes (codebase $mono-font).
+  1.2/1.4/1.5/1.7. Fira Code (400/500) for IDs/codes/join codes (`--gt-font-mono`, system mono fallback).
 - **Surfaces & cards:** white, radius **10px** (7px for small controls, 20px for pills/large),
   the signature shadow `0 0 2.61px rgba(0,0,0,.25)` or 1px `#DADADA` border + `0 0 4px rgba(0,0,0,.08)`.
   Card headers/footers divide with 1px `#DADADA`.
@@ -120,9 +122,9 @@ The public landing and contact pages are the one place the flat rules bend. Ever
   fill definitions; fills were set to brand green (artwork untouched).
 
 ## Fonts
-Poppins (300–700) loads from the Google Fonts CDN in `tokens/fonts.css` —
-the app itself loads Poppins the same way (index.html). IDs/code use the system monospace
-stack (`ui-monospace, SFMono-Regular, Consolas…`), matching `$mono-font` — no mono webfont.
+Poppins (300–700) and Fira Code (400/500, IDs & code) load from the Google Fonts CDN in `tokens/fonts.css` —
+the app loads both the same way (index.html). `--gt-font-mono` falls back to
+`ui-monospace, 'SF Mono', Menlo, Consolas, monospace`.
 **No font binaries ship with the repo**;
 if you need self-hosted files, drop them in `assets/fonts/` and swap the `@import` for
 `@font-face` rules.
@@ -151,6 +153,17 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   DAvatars63, DAvatars223 (+ fig-tokens.css with the file's 30 library variables, all modes)
 - `ui_kits/grepthink/` — interactive recreation of the app (Student/TA/Instructor lenses)
   plus `scrum-board.html` (sprint board with DnD + audit, burnup, backlog, story modal)
+  and `analytics.html` (one dashboard per institution — filled / empty / loading / refetching / error)
+- `components/analytics/` — analytics layer (2026-10 feature design, see `design_handoff_analytics/`):
+  AnalyticsFilterRow (+RANGE_PRESETS), StatTile, ChartCard (+ChartCardTool, ChartCardCheck), UnitToggle, LivePill,
+  ChartLegend (+AnalyticsIcon), ChartTooltip (+ChartFormat helpers), DefinitionPopover, ChartEmptyState,
+  WeeklyLine, SplitBar, StackedBars (+BOARD_STATUSES), TimelinessBars (+TIMELINESS_BUCKETS), OnTimeMeter,
+  BarsBySprint, TrendLines, BreakdownTable (+BREAKDOWN_COLUMNS, TEAM_BREAKDOWN_COLUMNS, TIMELINESS_COLUMNS)
+- `components/search/` — global ⌘K search layer (2026-10 feature design, see `design_handoff_search/`):
+  CommandPalette (+usePaletteHotkey), SearchTrigger (+SearchField), ResultRow (+ResultGroup),
+  SearchPagination, EntityIcon, MatchText, Kbd (+modKey), SearchModel (+SEARCH_ENTITIES, rankResults,
+  paginate, routeFor, useDebounced)
+- `ui_kits/grepthink/search.html` — the palette open over the app shell (states + phone)
 - `components/scrum/` — scrum-board layer (2026-08 feature design, not in fig/codebase yet):
   ScrumBoard, TaskCard, StoryCard, TagBadge (10 work tags), PointsChip (+EstimateChip,
   PRLinkChip, UserPair), BurnupChart, ScalePicker (+PointPicker, ESTIMATE_SCALES), MentionListbox (async
@@ -168,12 +181,19 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 - `design_handoff_landing/NOTES.md` — return notes for the 2026-09-24 landing handoff
 - `design_handoff_scrum_board/` — implementation handoff for the scrum board (spec, schema,
   PR-linking + free-tier LLM research) for Claude Code / developers
-- `frontend/` — imported reference SCSS/assets from the real codebase (read-only reference)
+- `design_handoff_analytics/` — implementation handoff for the Analytics dashboard (component map,
+  chart rules, §9 answers in `NOTES.md`, sample payloads)
+- `design_handoff_search/` — implementation handoff for the ⌘K global search (ranking, routes, data
+  contract, PR-link research pointer, open gaps in `NOTES.md`)
+- `frontend/` — reference copies from the real codebase (read-only): `src/styles/**` (token CSS + SCSS bridge),
+  `src/index.css`, app-shell SCSS, the ported `features/analytics/analytics.scss` + `features/scrum/scrum.scss`
+  (the `lint:design` script stays in the repo at `frontend/scripts/design-adherence.mjs`)
 - `PORTING.md` — the design-here → codebase workflow + vocabulary map
 - `SKILL.md` — agent skill entry point
 
 ### Intentional additions
-The Figma file's own component sets are generic UI-kit library artifacts (Scrollbar, Monitor,
+Every component outside `components/figma-reference/` (131 of 147 exports) is an intentional addition —
+confirmed, not a naming slip. The Figma file's own component sets are generic UI-kit library artifacts (Scrollbar, Monitor,
 Thumb, Grid…), so the product component inventory comes from the maintainer's written spec and
 the codebase's screens instead. Every `gt-*` component below is an **intentional addition**
 relative to the .fig's vocabulary, named after the codebase feature it mirrors:
@@ -259,9 +279,9 @@ class-for-class plus the 2026-09-24 spotlight-band update; all intentional addit
 Scrum layer (all intentional additions — a new feature designed 2026-08 from the maintainer's
 requirements; no counterpart in the Figma file or codebase yet; see
 `design_handoff_scrum_board/README.md` for the implementation spec):
-- `ScrumBoard` — TODO / In Progress / Done drag & drop board with move auditing
+- `ScrumBoard` (+`BOARD_COLUMNS`, the fixed TODO / In Progress / Done columns) — TODO / In Progress / Done drag & drop board with move auditing
 - `TaskCard` / `StoryCard` — task & User Story units (points, estimates, reporter → assignee)
-- `TagBadge` — the 10 work-type tags (backend … docs), token-derived colors
+- `TagBadge` (+`TASK_TAGS`, the 10 tags in canonical order) — the 10 work-type tags (backend … docs), token-derived colors
 - `PointsChip` / `EstimateChip` / `PRLinkChip` / `UserPair` — scrum metadata chips
 - `BurnupChart` — sprint + cumulative burnup (SVG stand-in for recharts)
 - `ScalePicker` / `PointPicker` — linear / exponential / fibonacci estimate scales
@@ -269,3 +289,33 @@ requirements; no counterpart in the Figma file or codebase yet; see
   production reuses the codebase's markdown + mention semantics)
 - `AIDraftButton` — free-tier LLM drafting affordance (Cloudflare Workers AI via serverless proxy)
 - `BacklogRow` — story archive / backlog row with restore
+
+Analytics layer (`components/analytics/`, 2026-10 — designed from the maintainer's analytics brief;
+all intentional additions; chart colors are the `--gt-chart-*` slots validated in the brief's §6):
+- `AnalyticsFilterRow` — the one filter row (class select, range chips, custom-range popover)
+- `StatTile` — `DashboardMetricCard` + delta + sparkline slots (port by extending the app component)
+- `ChartCard` / `ChartCardTool` / `ChartCardCheck` — chart container owning loading / refetching / empty / error chrome; header tool button and checkbox
+- `UnitToggle` — Tasks | Points segmented measure swap
+- `LivePill` — marks the range-independent scrum snapshot
+- `ChartLegend` / `AnalyticsIcon` — legend with line/rect swatches + status icons; lucide-shaped glyphs
+- `ChartTooltip` / `ChartFormat` — tooltip surface + shared measure/format helpers
+- `DefinitionPopover` — "How this is counted" ⓘ popover (composes the Popover surface)
+- `ChartEmptyState` — per-card empty state (`.gt-empty--card`, a compact modifier of the page-level `EmptyState`)
+- `WeeklyLine` — weekly two-series line (messages)
+- `SplitBar` — team channels vs direct, with a mixed-scope fallback
+- `StackedBars` — live task snapshot by sprint, board colors
+- `TimelinessBars` / `OnTimeMeter` — submission buckets (status palette) + headline rate meter
+- `BarsBySprint` — characters per task / story small multiples
+- `TrendLines` — four small multiples with the previous range as gray context
+- `BreakdownTable` — per class / per team table with meters and the folded privacy row
+
+Search layer (`components/search/`, 2026-10 — designed from the maintainer's ⌘K brief; all intentional
+additions; replaces the header's pseudo search input and standardizes every local filter input):
+- `CommandPalette` / `usePaletteHotkey` — the ⌘K dialog (input, scope chips, ranked paginated results, states, exit animation)
+- `SearchTrigger` / `SearchField` — header button that opens the palette (old `.app-header__search-bar` footprint); the one inline filter input
+- `ResultRow` / `ResultGroup` — entity row with type disc, key, match highlight, context line; uppercase group label with "See all"
+- `SearchPagination` — compact footer pager (1–8 of 37 · ‹ 1 / 5 ›)
+- `EntityIcon` — 28px type disc (initials for people via Avatar's `initialsOf`)
+- `MatchText` — match highlight (semibold + accent underline)
+- `Kbd` / `modKey` (+`ModKey`, the namespace-visible alias) — keycap hint; ⌘ vs Ctrl
+- `SearchModel` (+`SEARCH_ENTITIES`, `rankResults`, `countByType`, `paginate`, `routeFor`, `useDebounced`) — pure ranking / routing / paging model

@@ -60,8 +60,9 @@
   --gt-info-soft:    #EAF1FF;
   --gt-info-text:    #1543A8;
 
-  /* Red ramp + legacy iOS red (codebase $error-color, 108 refs — icons,
-     unread badges; alert SURFACES use the soft pair above) */
+  /* Red ramp + legacy iOS red. The codebase moved $error-color to #DC2626
+     (2026-10, _colors.scss); #FF3B30 now survives only in the sidebar unread
+     badge (Sidebar.scss, kept verbatim) — use --gt-error-icon for that badge alone. */
   --gt-red-50:  #FDECEA;
   --gt-red-100: #F9D2CE;
   --gt-red-200: #F1A9A2;
@@ -76,8 +77,23 @@
   --gt-amber-600: #B26A00;
   --gt-amber-700: #8A5200;
 
+  /* ---- Chart palette (analytics handoff §6 — validated on white and #EEEEEE) ---- */
+  --gt-purple: #7D3C98;                       /* categorical slot 3; also ui/ux tag + merged PR */
+  --gt-chart-1: var(--gt-green-500);          /* default single series · Team channels · Done · current range */
+  --gt-chart-2: var(--gt-blue-500);           /* second series · Direct messages · In progress */
+  --gt-chart-3: var(--gt-purple);             /* third series (per-class comparisons) */
+  --gt-chart-4: var(--gt-warning);            /* fourth series — only with direct labels */
+  --gt-chart-context: var(--gt-gray-400);     /* de-emphasis: To do · Other · previous range · sparkline history */
+  --gt-chart-grid: var(--gt-gray-200);        /* hairline solid gridlines */
+  --gt-chart-axis: var(--gt-gray-400);
+  --gt-chart-early: var(--gt-green-300);      /* timeliness "early" — lighter step of the on-time ramp */
+  --gt-chart-wash: rgba(1, 129, 86, 0.10);    /* 10% area wash under series 1 */
+  --gt-chart-hover: rgba(255, 255, 255, 0.08);/* hovered mark lightens 8% */
+  --gt-opacity-refetch: 0.6; /* @kind other */   /* card content while new data loads */
+
   /* ---- UCSC institutional accents (reserved use) ---- */
   --gt-gold:      #FDC700;   /* achievements, stars, "team set" only */
+  --gt-gold-text: #8A6D00;   /* readable text on the gold-soft tag background (codebase tokens/colors.css) */
   --gt-gold-deep: #E6A817;   /* text on gold / chart bars ($gold-deep) */
   --gt-ucsc-blue: #003C6C;   /* optional institutional blue */
 
@@ -89,7 +105,7 @@
   --gt-canvas:        var(--gt-gray-100);   /* app background */
   --gt-surface:       var(--gt-gray-0);     /* cards, sheets */
   --gt-surface-muted: var(--gt-gray-50);    /* subtle fills, hover rows */
-  --gt-surface-sunken: var(--gt-gray-50);   /* insets, subtle wells ($surface-sunken #FAFAFA) */
+  --gt-surface-sunken: var(--gt-gray-100);  /* inset wells, table heads (codebase tokens/colors.css; synced 2026-10-09 from gray-50) */
 
   /* Text */
   --gt-text-primary:   var(--gt-gray-800);
@@ -123,12 +139,35 @@
   /* Overlay / scrim */
   --gt-scrim: rgba(0, 0, 0, 0.5);
 
-  /* ---- Codebase runtime aliases (theme.scss vocabulary) ----
-     frontend/src/styles/theme.scss exposes these names on :root;
-     declared here too so markup written against either set works. */
+  /* ---- Legacy runtime aliases ----
+     Names from an earlier theme.scss draft; the codebase's runtime layer is now
+     frontend/src/styles/tokens/*.css (imported by main.tsx) and uses the names above
+     directly. Kept so design-side markup written against either set still works. */
   --gt-bg:         var(--gt-canvas);
   --gt-success-bg: var(--gt-success-soft);
   --gt-warning-bg: var(--gt-warning-soft);
   --gt-error-bg:   var(--gt-error-soft);
   --gt-info-bg:    var(--gt-info-soft);
+}
+
+/* ============================================================
+   Analytics series identity — one registered token per slot/status.
+   Marks read fill/stroke: var(--series); the .gt-series--* / .gt-status--*
+   classes (analytics.css) alias --series to one of these.
+   ============================================================ */
+:root {
+  --series: var(--gt-chart-1);                       /* @kind color */
+  --gt-series-1: var(--gt-chart-1);                  /* @kind color */
+  --gt-series-2: var(--gt-chart-2);                  /* @kind color */
+  --gt-series-3: var(--gt-chart-3);                  /* @kind color */
+  --gt-series-4: var(--gt-chart-4);                  /* @kind color */
+  --gt-series-gray: var(--gt-chart-context);         /* @kind color */
+  --gt-status-todo: var(--gt-chart-context);         /* @kind color */
+  --gt-status-in-progress: var(--gt-chart-2);        /* @kind color */
+  --gt-status-done: var(--gt-chart-1);               /* @kind color */
+  --gt-status-early: var(--gt-chart-early);          /* @kind color */
+  --gt-status-on-time: var(--gt-success);            /* @kind color */
+  --gt-status-late: var(--gt-warning);               /* @kind color */
+  --gt-status-missing: var(--gt-error);              /* @kind color */
+  --gt-status-not-due: var(--gt-surface-sunken);     /* @kind color */
 }

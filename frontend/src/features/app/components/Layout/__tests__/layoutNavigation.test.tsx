@@ -77,7 +77,7 @@ function App({ initial }: { initial: string }) {
         <ClassProvider>
           <PreviewBanner />
           <Sidebar />
-          <Header onOpenSettings={() => {}} onToggleNav={() => {}} />
+          <Header onOpenSettings={() => {}} onToggleNav={() => {}} onOpenSearch={() => {}} onPrefetchSearch={() => {}} />
           <ClassRouteGuard>
             <Routes>
               <Route path="*" element={<Page />} />

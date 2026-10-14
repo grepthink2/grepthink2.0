@@ -1,0 +1,103 @@
+<!-- @dsCard group="Components" viewport="700x1180" name="Search — ⌘K palette & filters" subtitle="SearchTrigger, SearchField, CommandPalette (states), ResultRow per entity, scope chips, pager, Kbd, EntityIcon" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="./searchData.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); color: var(--gt-text-primary); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 18px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  /* static (non-fixed) palette frames for the gallery */
+  .frame { position: relative; min-width: 0; }
+  .frame .gt-palette-backdrop { position: relative; inset: auto; z-index: auto; padding: 0; background: transparent; backdrop-filter: none; animation: none; display: block; }
+  .frame .gt-palette { position: relative; max-width: none; width: 100%; max-height: 420px; animation: none; transform: none; }
+  .panel { background: #fff; border: 1px solid var(--gt-border); border-radius: 10px; box-shadow: var(--gt-shadow-hairline); }
+  .list { list-style: none; margin: 0; padding: 4px 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { SearchTrigger, SearchField, CommandPalette, ResultRow, ResultGroup, SearchPagination, Kbd, EntityIcon, ModKey } = NS;
+const modKey = ModKey || (() => '⌘');
+const { items, recent } = window.GT_SEARCH_SAMPLE;
+const byId = (id) => items.find((i) => i.id === id);
+
+function StaticPalette(props) {
+  // open palette rendered in-flow (no fixed overlay) so the card can show several states side by side
+  return <div className="frame"><CommandPalette open hotkey={false} onClose={() => {}} {...props} /></div>;
+}
+
+function Demo() {
+  const [q, setQ] = React.useState('ashton');
+  const [page, setPage] = React.useState(2);
+  const [open, setOpen] = React.useState(false);
+  const slowSearch = React.useCallback(() => new Promise(() => {}), []);          // never resolves → loading
+  const failSearch = React.useCallback(() => Promise.reject(new Error('offline')), []);
+  return (
+    <div>
+      <p className="lbl">SearchTrigger (header) · icon-only (phone) · SearchField (local filter, md / sm / disabled)</p>
+      <div className="row">
+        <SearchTrigger onOpen={() => setOpen(true)} />
+        <SearchTrigger iconOnly onOpen={() => setOpen(true)} />
+        <SearchField value={q} onChange={setQ} placeholder="Search by name or email…" />
+        <SearchField size="sm" value="" onChange={() => {}} placeholder="Search classmates…" />
+        <SearchField value="" onChange={() => {}} placeholder="Search…" disabled />
+      </div>
+      <CommandPalette open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)} items={items} recent={recent} onSelect={(it, route) => console.log('open', route)} />
+
+      <p className="lbl">CommandPalette — results for “roster” (All scope, page 1 of ranked list, group labels at type boundaries)</p>
+      <StaticPalette items={items} initialQuery="roster" />
+
+      <p className="lbl">Idle (Recent) · Empty</p>
+      <div className="cols">
+        <StaticPalette items={items} recent={recent} />
+        <StaticPalette items={items} initialQuery="zzq" />
+      </div>
+
+      <p className="lbl">Loading (first query) · Error (quiet retry)</p>
+      <div className="cols">
+        <StaticPalette onSearch={slowSearch} initialQuery="ros" />
+        <StaticPalette onSearch={failSearch} initialQuery="ros" />
+      </div>
+
+      <p className="lbl">ResultRow — one per entity type, context lines</p>
+      <ul className="panel list" role="listbox" aria-label="Entity examples">
+        <ResultRow item={byId('t1')} query="roster" active />
+        <ResultRow item={byId('s1')} query="roster" />
+        <ResultRow item={byId('u1')} query="ash" />
+        <ResultRow item={byId('c1')} />
+        <ResultRow item={byId('p1')} query="grep" />
+        <ResultRow item={byId('tm1')} />
+        <ResultRow item={byId('k1')} query="115" />
+        <ResultRow item={byId('a1')} />
+        <ResultRow item={byId('x1')} query="leave" />
+      </ul>
+
+      <p className="lbl">ResultGroup · SearchPagination · Kbd · EntityIcon</p>
+      <div className="panel" style={{ padding: '4px 0 12px' }}>
+        <ul className="list"><ResultGroup label="Tasks" count={7} onSeeAll={() => {}} /></ul>
+        <div className="row" style={{ padding: '6px 16px 0' }}>
+          <SearchPagination page={page} pages={5} from={(page - 1) * 8 + 1} to={page * 8} total={37} onChange={setPage} />
+          <span style={{ display: 'inline-flex', gap: 4 }}><Kbd keys={[modKey(), 'K']} /><Kbd>↵</Kbd><Kbd>esc</Kbd></span>
+          <span style={{ display: 'inline-flex', gap: 6 }}>
+            {['person', 'team', 'project', 'task', 'story', 'conversation', 'class', 'assignment', 'action'].map((t) => <EntityIcon key={t} type={t} name="Ashton Liu" />)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

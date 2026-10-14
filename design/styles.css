@@ -17,6 +17,8 @@
 @import url('./components/domain/domain.css');
 @import url('./components/scrum/scrum.css');
 @import url('./components/assistant/assistant.css');
+@import url('./components/analytics/analytics.css');
+@import url('./components/search/search.css');
 @import url('./components/marketing/marketing.css');
 
 /* Figma-file reference layer (library variables + baked image assets) */
