@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useEffect } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ApiSearchIndex } from '@/lib/api/types';
 import type { SearchItem } from '../searchModel';
@@ -133,6 +134,29 @@ describe('useSearchIndex', () => {
     act(() => result.current.refresh());
     unmount();
     expect(vi.mocked(api.getSearchIndex).mock.calls[0][0]?.aborted).toBe(true);
+  });
+
+  it('starts a new request after an unmount aborted the one in flight', async () => {
+    let settle: (value: ApiSearchIndex) => void = () => {};
+    vi.mocked(api.getSearchIndex)
+      .mockImplementationOnce((signal) => new Promise<ApiSearchIndex>((_, reject) => {
+        signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+      }))
+      .mockImplementationOnce(() => new Promise<ApiSearchIndex>((resolve) => { settle = resolve; }));
+    // StrictMode mounts, unmounts and remounts the same instance, refs and state kept: the mount
+    // effect's request is aborted, and the remount's refresh() must not wait on it.
+    const { result } = renderHook(() => {
+      const state = useSearchIndex('me');
+      const { refresh } = state;
+      useEffect(() => { refresh(); }, [refresh]);
+      return state;
+    }, { reactStrictMode: true });
+    expect(api.getSearchIndex).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(api.getSearchIndex).mock.calls[0][0]?.aborted).toBe(true);
+    expect(result.current.status).toBe('loading');
+    settle(index(['a']));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.items.map((i) => i.id)).toEqual(['a']);
   });
 });
 

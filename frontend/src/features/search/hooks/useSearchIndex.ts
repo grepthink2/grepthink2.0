@@ -50,7 +50,8 @@ export function useSearchIndex(userId: string | null): SearchIndexState {
       if (!userId) return;
       const current = cache.get(userId);
       if (!force && current && Date.now() - current.fetchedAt < FRESH_MS) return;
-      if (inflight.current) return;
+      // Aborted means not in flight: StrictMode's simulated unmount aborts but keeps this ref.
+      if (inflight.current && !inflight.current.signal.aborted) return;
       const controller = new AbortController();
       inflight.current = controller;
       setPendingFor(userId);
