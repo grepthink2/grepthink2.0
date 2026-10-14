@@ -32,7 +32,7 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes institutions projects assignments tsr staffing
-  messages profiles contact notifications tas attendance stats outbox scrum analytics
+  messages profiles contact notifications tas attendance stats outbox scrum analytics search
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
@@ -212,7 +212,10 @@ The full agent-facing action catalog (method, params, role) lives at
 - **Rate limiting** (slowapi) is per route: `@limiter.limit(...)` (+ a `request: Request` param)
   sits on the auth routes, contact, `GET /api/institutions`, message sending, the `/api/email`
   dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts, stats,
-  analytics and the search index. Add one to any new public or abuse-prone endpoint.
+  analytics and the search index. The search index's limit is per signed-in user
+  (`key_func=_search_rate_key` in `app/search/views.py`): on Vercel every request arrives from
+  the proxy's address, so a limit keyed by address is one bucket for everybody. Add one to any
+  new public or abuse-prone endpoint.
 - **Email goes through the outbox.** Queue an email with `app.outbox.controller.enqueue`
   (one row per recipient, a `kind` registered in `app/outbox/kinds.py`, a `dedupe_key` when the
   producer may run twice) instead of sending from a request or a background task: Vercel pauses
