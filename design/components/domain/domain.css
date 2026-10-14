@@ -455,8 +455,8 @@
   min-width: 18px;
   padding: 1px 6px;
   border-radius: 10px;
-  background: #ff3b30;
-  color: #ffffff;
+  background: var(--gt-error-icon); /* legacy badge red, kept verbatim in Sidebar.scss */
+  color: var(--gt-gray-0);
   font-family: var(--gt-font-sans);
   font-size: 0.7rem;
   font-weight: var(--gt-weight-bold);

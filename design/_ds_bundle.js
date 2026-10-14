@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"UnreadBadge","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"Arrow","sourcePath":"components/figma-reference/Arrow.jsx"},{"name":"ButtonContentArea","sourcePath":"components/figma-reference/ButtonContentArea.jsx"},{"name":"Calendar","sourcePath":"components/figma-reference/Calendar.jsx"},{"name":"DAvatars223","sourcePath":"components/figma-reference/DAvatars223.jsx"},{"name":"DAvatars63","sourcePath":"components/figma-reference/DAvatars63.jsx"},{"name":"DateActive","sourcePath":"components/figma-reference/DateActive.jsx"},{"name":"DateInactive","sourcePath":"components/figma-reference/DateInactive.jsx"},{"name":"Favorite","sourcePath":"components/figma-reference/Favorite.jsx"},{"name":"Grid","sourcePath":"components/figma-reference/Grid.jsx"},{"name":"Icons","sourcePath":"components/figma-reference/Icons.jsx"},{"name":"Monitor","sourcePath":"components/figma-reference/Monitor.jsx"},{"name":"Month","sourcePath":"components/figma-reference/Month.jsx"},{"name":"Navigation","sourcePath":"components/figma-reference/Navigation.jsx"},{"name":"Scrollbar","sourcePath":"components/figma-reference/Scrollbar.jsx"},{"name":"Thumb","sourcePath":"components/figma-reference/Thumb.jsx"},{"name":"ToggleSwitch","sourcePath":"components/figma-reference/ToggleSwitch.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"}],"sourceHashes":{"components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"e87694c0f32c","components/display/Badge.jsx":"180509dfc2c9","components/display/Card.jsx":"4ba0490439c9","components/display/ProgressBar.jsx":"0b4aaf2c1290","components/display/StatCard.jsx":"57f73bd82bca","components/display/Table.jsx":"ca3970dc13d3","components/display/Tag.jsx":"e3ab4e532516","components/display/Tooltip.jsx":"fdf93185ec4e","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"497141765f63","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"cee7f6e18f47","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMemberCard.jsx":"6df7ada471d5","components/domain/TypingIndicator.jsx":"87abba71cd36","components/feedback/Alert.jsx":"9fd839b8885b","components/feedback/EmptyState.jsx":"ade9686d1d6c","components/feedback/Menu.jsx":"f2803bde1913","components/feedback/Modal.jsx":"b3423627eb3e","components/feedback/Popover.jsx":"5c61a414f282","components/feedback/Toast.jsx":"7cea98a32e2b","components/figma-reference/Arrow.jsx":"b47fae3b397e","components/figma-reference/ButtonContentArea.jsx":"d04e8778b0cd","components/figma-reference/Calendar.jsx":"e9b4e8547380","components/figma-reference/DAvatars223.jsx":"f8a6724e71c1","components/figma-reference/DAvatars63.jsx":"eabe483d1087","components/figma-reference/DateActive.jsx":"98368642fc18","components/figma-reference/DateInactive.jsx":"aa5b005439e4","components/figma-reference/Favorite.jsx":"cf904bbc095e","components/figma-reference/Grid.jsx":"ffce96c170ef","components/figma-reference/Icons.jsx":"8c100167f4e4","components/figma-reference/Monitor.jsx":"fed77441cdb3","components/figma-reference/Month.jsx":"753bdc051edd","components/figma-reference/Navigation.jsx":"4ca43ce20a81","components/figma-reference/Scrollbar.jsx":"2c920accb1b9","components/figma-reference/Thumb.jsx":"fe01d87bb4eb","components/figma-reference/ToggleSwitch.jsx":"4eaaaf74364f","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"18c33813ee4c","components/navigation/SidebarNavItem.jsx":"da5237605ea2","components/navigation/Tabs.jsx":"a1cbfe065547","components/primitives/Button.jsx":"5eacee058949","components/primitives/Checkbox.jsx":"a9a0b92b227a","components/primitives/DatePickerField.jsx":"ad63bc301a8b","components/primitives/IconButton.jsx":"ab72be8fcc12","components/primitives/Input.jsx":"89d3caa5e496","components/primitives/RadioGroup.jsx":"b3bb3e033eb8","components/primitives/Select.jsx":"8dec7dc350d7","components/primitives/Textarea.jsx":"40b57e72e0b1","components/primitives/Toggle.jsx":"cbbe66982d51","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/App.jsx":"b4731ebd95d5","ui_kits/grepthink/Screens.jsx":"ee94282eb492","ui_kits/grepthink/Shell.jsx":"c8070c465885"},"inlinedExternals":[],"unexposedExports":[{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"}]} */
+/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardTool","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardCheck","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartEmptyState","sourcePath":"components/analytics/ChartEmptyState.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"DefinitionPopover","sourcePath":"components/analytics/DefinitionPopover.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StatTile","sourcePath":"components/analytics/StatTile.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"UnreadBadge","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"Arrow","sourcePath":"components/figma-reference/Arrow.jsx"},{"name":"ButtonContentArea","sourcePath":"components/figma-reference/ButtonContentArea.jsx"},{"name":"Calendar","sourcePath":"components/figma-reference/Calendar.jsx"},{"name":"DAvatars223","sourcePath":"components/figma-reference/DAvatars223.jsx"},{"name":"DAvatars63","sourcePath":"components/figma-reference/DAvatars63.jsx"},{"name":"DateActive","sourcePath":"components/figma-reference/DateActive.jsx"},{"name":"DateInactive","sourcePath":"components/figma-reference/DateInactive.jsx"},{"name":"Favorite","sourcePath":"components/figma-reference/Favorite.jsx"},{"name":"Grid","sourcePath":"components/figma-reference/Grid.jsx"},{"name":"Icons","sourcePath":"components/figma-reference/Icons.jsx"},{"name":"Monitor","sourcePath":"components/figma-reference/Monitor.jsx"},{"name":"Month","sourcePath":"components/figma-reference/Month.jsx"},{"name":"Navigation","sourcePath":"components/figma-reference/Navigation.jsx"},{"name":"Scrollbar","sourcePath":"components/figma-reference/Scrollbar.jsx"},{"name":"Thumb","sourcePath":"components/figma-reference/Thumb.jsx"},{"name":"ToggleSwitch","sourcePath":"components/figma-reference/ToggleSwitch.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"},{"name":"SearchField","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"28ffe2b0b65c","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"bab9bbee64ce","components/analytics/ChartEmptyState.jsx":"97c8e5272c77","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/DefinitionPopover.jsx":"f65cc5200c24","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/StatTile.jsx":"86841d27a604","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"cc24daede726","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"e87694c0f32c","components/display/Badge.jsx":"180509dfc2c9","components/display/Card.jsx":"4ba0490439c9","components/display/ProgressBar.jsx":"0b4aaf2c1290","components/display/StatCard.jsx":"57f73bd82bca","components/display/Table.jsx":"ca3970dc13d3","components/display/Tag.jsx":"e3ab4e532516","components/display/Tooltip.jsx":"fdf93185ec4e","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"497141765f63","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"cee7f6e18f47","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMemberCard.jsx":"6df7ada471d5","components/domain/TypingIndicator.jsx":"87abba71cd36","components/feedback/Alert.jsx":"9fd839b8885b","components/feedback/EmptyState.jsx":"ade9686d1d6c","components/feedback/Menu.jsx":"f2803bde1913","components/feedback/Modal.jsx":"b3423627eb3e","components/feedback/Popover.jsx":"5c61a414f282","components/feedback/Toast.jsx":"7cea98a32e2b","components/figma-reference/Arrow.jsx":"b47fae3b397e","components/figma-reference/ButtonContentArea.jsx":"d04e8778b0cd","components/figma-reference/Calendar.jsx":"e9b4e8547380","components/figma-reference/DAvatars223.jsx":"f8a6724e71c1","components/figma-reference/DAvatars63.jsx":"eabe483d1087","components/figma-reference/DateActive.jsx":"98368642fc18","components/figma-reference/DateInactive.jsx":"aa5b005439e4","components/figma-reference/Favorite.jsx":"cf904bbc095e","components/figma-reference/Grid.jsx":"ffce96c170ef","components/figma-reference/Icons.jsx":"8c100167f4e4","components/figma-reference/Monitor.jsx":"fed77441cdb3","components/figma-reference/Month.jsx":"753bdc051edd","components/figma-reference/Navigation.jsx":"4ca43ce20a81","components/figma-reference/Scrollbar.jsx":"2c920accb1b9","components/figma-reference/Thumb.jsx":"fe01d87bb4eb","components/figma-reference/ToggleSwitch.jsx":"4eaaaf74364f","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"18c33813ee4c","components/navigation/SidebarNavItem.jsx":"da5237605ea2","components/navigation/Tabs.jsx":"a1cbfe065547","components/primitives/Button.jsx":"5eacee058949","components/primitives/Checkbox.jsx":"a9a0b92b227a","components/primitives/DatePickerField.jsx":"ad63bc301a8b","components/primitives/IconButton.jsx":"ab72be8fcc12","components/primitives/Input.jsx":"89d3caa5e496","components/primitives/RadioGroup.jsx":"b3bb3e033eb8","components/primitives/Select.jsx":"8dec7dc350d7","components/primitives/Textarea.jsx":"40b57e72e0b1","components/primitives/Toggle.jsx":"cbbe66982d51","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","components/search/CommandPalette.jsx":"91b68465b97d","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"dbdea95a0d31","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"5fa718bd8651","ui_kits/grepthink/App.jsx":"b4731ebd95d5","ui_kits/grepthink/Screens.jsx":"ee94282eb492","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/Shell.jsx":"c8070c465885","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"68373b119804"},"inlinedExternals":[],"unexposedExports":[{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"}]} */
 
 (() => {
 
@@ -7,6 +7,2374 @@ const __ds_ns = (window.GrepThinkDesignSystem_36e7e3 = window.GrepThinkDesignSys
 const __ds_scope = {};
 
 (__ds_ns.__errors = __ds_ns.__errors || []);
+
+// components/analytics/ChartLegend.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/* Lucide-shaped 2px-stroke glyphs used by the analytics family.
+   Production swaps these for lucide-react (same names). */
+const PATHS = {
+  'info': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 16v-4M12 8h.01"
+  })),
+  'check-circle': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M22 11.08V12a10 10 0 1 1-5.93-9.14"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m9 11 3 3L22 4"
+  })),
+  'check-circle-2': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m9 12 2 2 4-4"
+  })),
+  'clock': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 6v6l4 2"
+  })),
+  'x-circle': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m15 9-6 6M9 9l6 6"
+  })),
+  'table': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M12 3v18M3 9h18M3 15h18"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "3",
+    y: "3",
+    width: "18",
+    height: "18",
+    rx: "2"
+  })),
+  'download': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"
+  })),
+  'bar-chart-3': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M3 3v18h18"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M18 17V9M13 17V5M8 17v-3"
+  })),
+  'message-square': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+  })),
+  'users': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "9",
+    cy: "7",
+    r: "4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+  })),
+  'calendar': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("rect", {
+    x: "3",
+    y: "4",
+    width: "18",
+    height: "18",
+    rx: "2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M16 2v4M8 2v4M3 10h18"
+  })),
+  'graduation-cap': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M22 10v6M2 10l10-5 10 5-10 5z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M6 12v5c3 3 9 3 12 0v-5"
+  })),
+  'layout-grid': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("rect", {
+    x: "3",
+    y: "3",
+    width: "7",
+    height: "7",
+    rx: "1"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "14",
+    y: "3",
+    width: "7",
+    height: "7",
+    rx: "1"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "14",
+    y: "14",
+    width: "7",
+    height: "7",
+    rx: "1"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "3",
+    y: "14",
+    width: "7",
+    height: "7",
+    rx: "1"
+  })),
+  'activity': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M22 12h-4l-3 9L9 3l-3 9H2"
+  })),
+  'kanban': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M6 5v11M12 5v6M18 5v14"
+  })),
+  'trending-up': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M22 7 13.5 15.5 8.5 10.5 2 17"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M16 7h6v6"
+  })),
+  'trending-down': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M22 17l-8.5-8.5-5 5L2 7"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M16 17h6v-6"
+  })),
+  'minus': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M5 12h14"
+  })),
+  'refresh-cw': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 16H3v5"
+  })),
+  'alert-circle': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "10"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 8v4M12 16h.01"
+  })),
+  'chevron-down': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "m6 9 6 6 6-6"
+  })),
+  'arrow-up-down': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16"
+  })),
+  'arrow-up': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "m5 12 7-7 7 7M12 19V5"
+  })),
+  'arrow-down': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M12 5v14M19 12l-7 7-7-7"
+  })),
+  'x': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M18 6 6 18M6 6l12 12"
+  })),
+  'shield-off': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M19.7 14a7 7 0 0 0 .3-2V5l-8-3-3.2 1.2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m2 2 20 20"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M4.7 4.7 4 5v7c0 6 8 10 8 10a20 20 0 0 0 5.6-4.4"
+  })),
+  'inbox': /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M22 12h-6l-2 3h-4l-2-3H2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+  }))
+};
+function AnalyticsIcon({
+  name,
+  size = 16,
+  className = '',
+  ...rest
+}) {
+  return /*#__PURE__*/React.createElement("svg", _extends({
+    className: className,
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": "true"
+  }, rest), PATHS[name] || null);
+}
+
+/**
+ * Chart legend (.gt-legend). Swatches: 14×3 lines (BurnupChart idiom) or 10×10 radius-2
+ * rects, colored through the item's `seriesClass` ("gt-series--1", "gt-status--done").
+ * With `onToggle` each item holds a `.gt-legend__button` (aria-pressed) that isolates its series.
+ */
+function ChartLegend({
+  items = [],
+  hidden = [],
+  onToggle,
+  className = ''
+}) {
+  const off = new Set(hidden);
+  return /*#__PURE__*/React.createElement("ul", {
+    className: ['gt-legend', className].filter(Boolean).join(' '),
+    "aria-label": "Legend"
+  }, items.map(it => {
+    const isOff = off.has(it.key);
+    const inner = /*#__PURE__*/React.createElement(React.Fragment, null, it.icon ? /*#__PURE__*/React.createElement("span", {
+      className: `gt-legend__icon ${it.seriesClass || ''}`
+    }, /*#__PURE__*/React.createElement(AnalyticsIcon, {
+      name: it.icon,
+      size: 13
+    })) : /*#__PURE__*/React.createElement("span", {
+      className: `gt-legend__swatch--${it.swatch || 'rect'} ${it.seriesClass || ''}`,
+      "aria-hidden": "true"
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "gt-legend__label"
+    }, it.label), it.value !== undefined && /*#__PURE__*/React.createElement("span", {
+      className: "gt-legend__value"
+    }, it.value));
+    return /*#__PURE__*/React.createElement("li", {
+      key: it.key,
+      className: ['gt-legend__item', isOff ? 'gt-legend__item--off' : ''].filter(Boolean).join(' ')
+    }, onToggle ? /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-legend__button",
+      "aria-pressed": !isOff,
+      onClick: () => onToggle(it.key)
+    }, inner) : /*#__PURE__*/React.createElement("span", {
+      className: "gt-legend__static"
+    }, inner));
+  }));
+}
+Object.assign(__ds_scope, { AnalyticsIcon, ChartLegend });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartLegend.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/ChartEmptyState.jsx
+try { (() => {
+/** Per-card empty state — the system `.gt-empty` compacted with `--card`: icon, title, hint. No illustration. */
+function ChartEmptyState({
+  icon = 'inbox',
+  title,
+  hint,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-empty', 'gt-empty--card', className].filter(Boolean).join(' '),
+    role: "status"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-empty__icon"
+  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+    name: icon,
+    size: 18
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "gt-empty__title"
+  }, title), hint && /*#__PURE__*/React.createElement("p", {
+    className: "gt-empty__hint"
+  }, hint));
+}
+Object.assign(__ds_scope, { ChartEmptyState });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartEmptyState.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/ChartTooltip.jsx
+try { (() => {
+/* ── Shared chart helpers (imported by every analytics chart) ── */
+
+/** Measures the rendered width of a container (ResizeObserver). */
+function useMeasure(initial = 600) {
+  const ref = React.useRef(null);
+  const [width, setWidth] = React.useState(initial);
+  React.useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const update = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w) setWidth(w);
+    };
+    update();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, width];
+}
+
+/** 1284 → "1,284" · 12900 → "12.9K" · 1300000 → "1.3M". */
+function fmtCompact(n) {
+  if (n === null || n === undefined || Number.isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1e6) return `${(n / 1e6).toFixed(1).replace(/\.0$/, '')}M`;
+  if (abs >= 1e4) return `${(n / 1e3).toFixed(1).replace(/\.0$/, '')}K`;
+  return n.toLocaleString('en-US');
+}
+
+/** 0.82 → "82%". */
+function fmtPct(r, digits = 0) {
+  if (r === null || r === undefined || Number.isNaN(r)) return '—';
+  return `${(r * 100).toFixed(digits)}%`;
+}
+
+/** Signed delta: 0.18 → "+18%". */
+function fmtDelta(r) {
+  if (r === null || r === undefined) return null;
+  const pct = Math.round(r * 100);
+  return `${pct > 0 ? '+' : ''}${pct}%`;
+}
+const parseIso = iso => {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+};
+
+/** "2026-09-07" → "Sep 7" (adds the year when `withYear`). */
+function fmtWeek(iso, withYear = false) {
+  if (!iso) return '';
+  return parseIso(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(withYear ? {
+      year: 'numeric'
+    } : {}),
+    timeZone: 'UTC'
+  });
+}
+
+/** "Sep 8 – Oct 7" within a year · "Dec 25, 2025 – Jan 5, 2026" across years. */
+function fmtRange(from, to) {
+  if (!from || !to) return '';
+  const cross = from.slice(0, 4) !== to.slice(0, 4);
+  return `${fmtWeek(from, cross)} – ${fmtWeek(to, cross)}`;
+}
+
+/** Rounds a max up to a "nice" tick ceiling and returns [max, ticks[]]. */
+function niceScale(max, count = 4) {
+  if (!max || max <= 0) return [1, [0, 0.25, 0.5, 0.75, 1]];
+  const rough = max / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
+  const top = Math.ceil(max / step) * step;
+  const ticks = [];
+  for (let v = 0; v <= top + 1e-9; v += step) ticks.push(+v.toFixed(6));
+  return [top, ticks];
+}
+
+/** Hover/focus tooltip state for one chart. */
+function useChartTip() {
+  const [tip, setTip] = React.useState(null);
+  const show = React.useCallback((x, y, title, rows, extra = {}) => setTip({
+    x,
+    y,
+    title,
+    rows,
+    ...extra
+  }), []);
+  const hide = React.useCallback(() => setTip(null), []);
+  return {
+    tip,
+    show,
+    hide
+  };
+}
+
+/** Formatters exposed on the bundle namespace (lower-case exports stay internal). */
+const ChartFormat = {
+  compact: fmtCompact,
+  pct: fmtPct,
+  delta: fmtDelta,
+  week: fmtWeek,
+  range: fmtRange,
+  niceScale
+};
+
+/**
+ * Tooltip surface (.gt-chart-tip) positioned absolutely inside a `.gt-plot`
+ * container. Series are keyed by a short colored line (`seriesClass`, e.g.
+ * "gt-series--1"); text only — every value is also in the table twin.
+ */
+function ChartTooltip({
+  x = 0,
+  y = 0,
+  title,
+  rows = [],
+  note,
+  placement = 'above',
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-chart-tip', placement === 'below' ? 'gt-chart-tip--below' : '', placement === 'right' ? 'gt-chart-tip--right' : '', className].filter(Boolean).join(' '),
+    style: {
+      left: x,
+      top: y
+    },
+    role: "status"
+  }, title && /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-tip__title"
+  }, title), rows.map((r, i) => /*#__PURE__*/React.createElement("div", {
+    key: r.key || i,
+    className: "gt-chart-tip__row"
+  }, r.seriesClass && /*#__PURE__*/React.createElement("span", {
+    className: `gt-chart-tip__key ${r.seriesClass}`,
+    "aria-hidden": "true"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "gt-chart-tip__label"
+  }, r.label), /*#__PURE__*/React.createElement("span", {
+    className: "gt-chart-tip__value"
+  }, r.value))), note && /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-tip__note"
+  }, note));
+}
+Object.assign(__ds_scope, { useMeasure, fmtCompact, fmtPct, fmtDelta, fmtWeek, fmtRange, niceScale, useChartTip, ChartFormat, ChartTooltip });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartTooltip.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/AnalyticsFilterRow.jsx
+try { (() => {
+const RANGE_PRESETS = [{
+  value: '7d',
+  label: '7d'
+}, {
+  value: '30d',
+  label: '30d'
+}, {
+  value: '90d',
+  label: '90d'
+}, {
+  value: 'class',
+  label: 'Class to date'
+}, {
+  value: 'all',
+  label: 'All'
+}];
+function isoDaysAgo(days, from = new Date()) {
+  const d = new Date(from);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * The one filter row (.gt-filter) above everything it scopes. Institution Select
+ * only when the viewer may see several; class Select ("All classes" first); range
+ * chips 7d · 30d · 90d · Class to date · All · Custom (32px, radius 20, active =
+ * solid green). "Class to date" is enabled only with a class selected. "Custom"
+ * opens a popover (From, To, Apply); once applied the chip reads
+ * "Custom: Sep 1 – Sep 30". While Apply is disabled the panel's last row says why
+ * ("Dates must fall between 2000 and 2100" · "A range may span at most 2 years" ·
+ * "To must be on or after From"). Every control is disabled during the very first load.
+ * State belongs in the URL.
+ */
+function AnalyticsFilterRow({
+  institutions = [],
+  institutionId,
+  classes = [],
+  classId = '',
+  range = {
+    preset: '30d'
+  },
+  onChange,
+  disabled = false,
+  today,
+  className = ''
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [from, setFrom] = React.useState(range.from || isoDaysAgo(30, today));
+  const [to, setTo] = React.useState(range.to || isoDaysAgo(0, today));
+  const popRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const key = e => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    const down = e => {
+      if (popRef.current && !popRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('keydown', key);
+    document.addEventListener('mousedown', down);
+    return () => {
+      document.removeEventListener('keydown', key);
+      document.removeEventListener('mousedown', down);
+    };
+  }, [open]);
+  const emit = patch => onChange && onChange({
+    institutionId,
+    classId,
+    range,
+    ...patch
+  });
+  const pick = preset => emit({
+    range: {
+      preset
+    }
+  });
+  const applyCustom = () => {
+    emit({
+      range: {
+        preset: 'custom',
+        from,
+        to
+      }
+    });
+    setOpen(false);
+  };
+  const customLabel = range.preset === 'custom' && range.from && range.to ? `Custom: ${__ds_scope.fmtRange(range.from, range.to)}` : 'Custom';
+  // Why Apply is disabled — shown beside it in the panel's last row (copy verbatim from the revision block).
+  const reason = (() => {
+    if (!from || !to) return null;
+    const y1 = Number(from.slice(0, 4)),
+      y2 = Number(to.slice(0, 4));
+    if (y1 < 2000 || y1 > 2100 || y2 < 2000 || y2 > 2100) return 'Dates must fall between 2000 and 2100';
+    if (to < from) return 'To must be on or after From';
+    if ((new Date(`${to}T00:00:00Z`) - new Date(`${from}T00:00:00Z`)) / 86400000 + 1 > 731) return 'A range may span at most 2 years';
+    return null;
+  })();
+  const select = (label, value, onSelect, children) => /*#__PURE__*/React.createElement("div", {
+    className: "gt-filter__field"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__label"
+  }, label), /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__select gt-select"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "gt-select__control",
+    value: value,
+    onChange: onSelect,
+    disabled: disabled,
+    "aria-label": label
+  }, children), /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+    name: "chevron-down",
+    size: 14,
+    className: "gt-select__chevron"
+  })));
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-filter', disabled ? 'gt-filter--disabled' : '', className].filter(Boolean).join(' '),
+    role: "group",
+    "aria-label": "Filters",
+    "aria-disabled": disabled || undefined
+  }, institutions.length > 1 && select('Institution', institutionId || '', e => emit({
+    institutionId: e.target.value
+  }), institutions.map(i => /*#__PURE__*/React.createElement("option", {
+    key: i.id,
+    value: i.id
+  }, i.name))), select('Class', classId || '', e => emit({
+    classId: e.target.value,
+    range: range.preset === 'class' && !e.target.value ? {
+      preset: '30d'
+    } : range
+  }), [/*#__PURE__*/React.createElement("option", {
+    key: "",
+    value: ""
+  }, "All classes"), ...classes.map(c => /*#__PURE__*/React.createElement("option", {
+    key: c.id,
+    value: c.id
+  }, c.label))]), /*#__PURE__*/React.createElement("div", {
+    className: "gt-filter__field"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__label"
+  }, "Range"), /*#__PURE__*/React.createElement("div", {
+    className: "gt-filter__chips",
+    role: "group",
+    "aria-label": "Date range"
+  }, RANGE_PRESETS.map(p => {
+    const needsClass = p.value === 'class' && !classId;
+    const active = range.preset === p.value;
+    return /*#__PURE__*/React.createElement("button", {
+      key: p.value,
+      type: "button",
+      className: ['gt-filter__chip', active ? 'gt-filter__chip--active' : ''].filter(Boolean).join(' '),
+      "aria-pressed": active,
+      disabled: disabled || needsClass,
+      title: needsClass ? 'Select a class first' : undefined,
+      onClick: () => pick(p.value)
+    }, p.label);
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__custom",
+    ref: popRef
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: ['gt-filter__chip', range.preset === 'custom' ? 'gt-filter__chip--active' : ''].filter(Boolean).join(' '),
+    "aria-pressed": range.preset === 'custom',
+    "aria-haspopup": "dialog",
+    "aria-expanded": open,
+    disabled: disabled,
+    onClick: () => setOpen(o => !o)
+  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+    name: "calendar",
+    size: 13
+  }), customLabel), open && /*#__PURE__*/React.createElement("div", {
+    className: "gt-popover gt-popover--bottom gt-popover--start gt-filter__pop",
+    role: "dialog",
+    "aria-label": "Custom range"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__pop-title"
+  }, "Custom range"), /*#__PURE__*/React.createElement("div", {
+    className: "gt-filter__dates"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "gt-filter__date"
+  }, "From", /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: from,
+    onChange: e => setFrom(e.target.value)
+  })), /*#__PURE__*/React.createElement("label", {
+    className: "gt-filter__date"
+  }, "To", /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: to,
+    onChange: e => setTo(e.target.value)
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-filter__foot"
+  }, reason && /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter__reason",
+    role: "status"
+  }, reason), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-button gt-button--ghost gt-button--sm",
+    onClick: () => setOpen(false)
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__label"
+  }, "Cancel")), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-button gt-button--primary gt-button--sm gt-filter__apply",
+    onClick: applyCustom,
+    disabled: !from || !to || !!reason
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__label"
+  }, "Apply"))))))));
+}
+Object.assign(__ds_scope, { RANGE_PRESETS, AnalyticsFilterRow });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/AnalyticsFilterRow.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/BarsBySprint.jsx
+try { (() => {
+const M = {
+    top: 18,
+    right: 6,
+    bottom: 20,
+    left: 6
+  },
+  COL = 22;
+const shortLabel = c => c.ordinal === 0 || /^backlog$/i.test(c.label) ? 'Backlog' : c.label.replace(/^Sprint\s+/i, 'S');
+function Panel({
+  panel,
+  top,
+  ticks,
+  height,
+  unitLabel
+}) {
+  const [ref, width] = __ds_scope.useMeasure(240);
+  const {
+    tip,
+    show,
+    hide
+  } = __ds_scope.useChartTip();
+  const cols = panel.columns || [];
+  const iw = Math.max(10, width - M.left - M.right);
+  const ih = Math.max(10, height - M.top - M.bottom);
+  const slot = cols.length ? iw / cols.length : iw;
+  const y = v => M.top + ih - v / top * ih;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "gt-cols__panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-cols__head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-cols__title"
+  }, panel.title), /*#__PURE__*/React.createElement("span", {
+    className: "gt-cols__meta"
+  }, "median ", /*#__PURE__*/React.createElement("strong", null, panel.overall?.median ?? '—', " ", unitLabel), panel.overall?.n !== undefined && /*#__PURE__*/React.createElement(React.Fragment, null, " \xB7 ", panel.overall.n.toLocaleString('en-US'), " ", panel.noun || panel.title.toLowerCase()))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-plot",
+    ref: ref,
+    style: {
+      height
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    className: "gt-cols__svg",
+    width: width,
+    height: height,
+    role: "img",
+    "aria-label": `${panel.title}: ${cols.map(c => `${c.label} median ${c.median}`).join(', ')}`,
+    onMouseLeave: hide
+  }, ticks.map(t => /*#__PURE__*/React.createElement("line", {
+    key: t,
+    className: "gt-cols__grid",
+    x1: M.left,
+    x2: M.left + iw,
+    y1: y(t),
+    y2: y(t)
+  })), /*#__PURE__*/React.createElement("line", {
+    className: "gt-cols__axis",
+    x1: M.left,
+    x2: M.left + iw,
+    y1: M.top + ih,
+    y2: M.top + ih
+  }), cols.map((c, i) => {
+    const cx = M.left + slot * i + slot / 2;
+    const hgt = Math.max(2, c.median / top * ih);
+    const yTop = M.top + ih - hgt;
+    const r = Math.min(4, COL / 2, hgt);
+    const rows = [{
+      label: 'Median',
+      value: `${c.median} ${unitLabel}`
+    }, {
+      label: 'Items',
+      value: c.n
+    }];
+    return /*#__PURE__*/React.createElement("g", {
+      key: c.label
+    }, /*#__PURE__*/React.createElement("path", {
+      className: "gt-cols__bar gt-series--1",
+      tabIndex: 0,
+      "aria-label": `${c.label}: median ${c.median} ${unitLabel}, ${c.n} items`,
+      d: `M${cx - COL / 2},${M.top + ih} v${-(hgt - r)} a${r},${r} 0 0 1 ${r},${-r} h${COL - 2 * r} a${r},${r} 0 0 1 ${r},${r} v${hgt - r} Z`,
+      onMouseEnter: () => show(cx, yTop, c.label, rows),
+      onFocus: () => show(cx, yTop, c.label, rows),
+      onBlur: hide
+    }), /*#__PURE__*/React.createElement("text", {
+      className: "gt-cols__cap",
+      x: cx,
+      y: yTop - 5
+    }, c.median), /*#__PURE__*/React.createElement("text", {
+      className: "gt-cols__tick",
+      x: cx,
+      y: height - 5
+    }, shortLabel(c)));
+  })), tip && /*#__PURE__*/React.createElement(__ds_scope.ChartTooltip, tip)));
+}
+
+/**
+ * Characters per task / per story (.gt-cols) — two small multiples side by side,
+ * one green series each, columns ≤ 24px with the median on each cap, a shared
+ * y-scale so the panels compare. Columns are labelled "Backlog", "S1", "S2"….
+ * `--stacked` (prop `stacked`, or automatic) is the one-column layout used when a
+ * side-by-side panel cannot hold every median cap (< 36px per column).
+ */
+function BarsBySprint({
+  panels = [],
+  height = 130,
+  unitLabel = 'chars',
+  view = 'chart',
+  stacked,
+  className = ''
+}) {
+  const [ref, width] = __ds_scope.useMeasure(480);
+  const maxV = Math.max(0, ...panels.flatMap(p => (p.columns || []).map(c => c.median)));
+  const [top, ticks] = __ds_scope.niceScale(maxV * 1.12, 3);
+  const maxCols = Math.max(1, ...panels.map(p => (p.columns || []).length));
+  const perCol = panels.length ? ((width - 20 * (panels.length - 1)) / panels.length - M.left - M.right) / maxCols : width;
+  const isStacked = stacked ?? perCol < 36;
+  if (view === 'table') {
+    const labels = panels[0]?.columns?.map(c => c.label) || [];
+    return /*#__PURE__*/React.createElement("div", {
+      className: "gt-chart-table__wrap"
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "gt-chart-table"
+    }, /*#__PURE__*/React.createElement("caption", {
+      className: "gt-table__caption"
+    }, "Median characters per item, by sprint"), /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Sprint"), panels.map(p => /*#__PURE__*/React.createElement("th", {
+      key: p.key,
+      className: "gt-table__num"
+    }, p.title, " \xB7 median ", unitLabel, " (n)")))), /*#__PURE__*/React.createElement("tbody", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", null, "All sprints"), panels.map(p => /*#__PURE__*/React.createElement("td", {
+      key: p.key,
+      className: "gt-table__num"
+    }, p.overall?.median ?? '—', " (", p.overall?.n ?? '—', ")"))), labels.map((l, i) => /*#__PURE__*/React.createElement("tr", {
+      key: l
+    }, /*#__PURE__*/React.createElement("td", null, l), panels.map(p => /*#__PURE__*/React.createElement("td", {
+      key: p.key,
+      className: "gt-table__num"
+    }, p.columns[i]?.median ?? '—', " (", p.columns[i]?.n ?? '—', ")")))))));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    ref: ref,
+    className: ['gt-cols', isStacked ? 'gt-cols--stacked' : '', className].filter(Boolean).join(' ')
+  }, panels.map(p => /*#__PURE__*/React.createElement(Panel, {
+    key: p.key,
+    panel: p,
+    top: top,
+    ticks: ticks,
+    height: height,
+    unitLabel: unitLabel
+  })));
+}
+Object.assign(__ds_scope, { BarsBySprint });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/BarsBySprint.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/BreakdownTable.jsx
+try { (() => {
+/** Per-class columns (first release). Append TIMELINESS_COLUMNS once timeliness ships. */
+const BREAKDOWN_COLUMNS = [{
+  key: 'name',
+  label: 'Class',
+  format: 'text',
+  sortable: true
+}, {
+  key: 'teams',
+  label: 'Teams',
+  format: 'int',
+  sortable: true
+}, {
+  key: 'students',
+  label: 'Students',
+  format: 'int',
+  sortable: true
+}, {
+  key: 'team_messages',
+  label: 'Team msgs',
+  format: 'int',
+  sortable: true
+}, {
+  key: 'stories',
+  label: 'Stories',
+  format: 'int',
+  sortable: true
+}, {
+  key: 'tasks',
+  label: 'Tasks',
+  format: 'int',
+  sortable: true
+}, {
+  key: 'points_done_rate',
+  label: 'Pts done %',
+  format: 'pct',
+  sortable: true
+}];
+
+/** Per-team columns (a class is selected). */
+const TEAM_BREAKDOWN_COLUMNS = [{
+  key: 'name',
+  label: 'Team',
+  format: 'text',
+  sortable: true
+}, {
+  key: 'members',
+  label: 'Members',
+  format: 'int',
+  sortable: true
+}, {
+  key: 'team_messages',
+  label: 'Team msgs',
+  format: 'int',
+  sortable: true
+}, {
+  key: 'stories',
+  label: 'Stories',
+  format: 'int',
+  sortable: true
+}, {
+  key: 'tasks',
+  label: 'Tasks',
+  format: 'int',
+  sortable: true
+}, {
+  key: 'points_done_rate',
+  label: 'Pts done %',
+  format: 'pct',
+  sortable: true
+}];
+
+/** Columns that arrive with timeliness (sub-project C). */
+const TIMELINESS_COLUMNS = [{
+  key: 'on_time_rate',
+  label: 'On time %',
+  format: 'pct',
+  sortable: true
+}, {
+  key: 'missing',
+  label: 'Missing',
+  format: 'int',
+  sortable: true
+}];
+function Cell({
+  col,
+  row
+}) {
+  const v = row[col.key];
+  if (v === null || v === undefined) return /*#__PURE__*/React.createElement("span", {
+    className: "gt-table__null"
+  }, "\u2014");
+  if (col.format === 'pct') {
+    return /*#__PURE__*/React.createElement("span", {
+      className: "gt-table__pct"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-table__meter",
+      "aria-hidden": "true"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-table__meter-fill",
+      style: {
+        width: `${Math.round(v * 100)}%`
+      }
+    })), __ds_scope.fmtPct(v));
+  }
+  if (col.format === 'int') return __ds_scope.fmtCompact(v);
+  return v;
+}
+
+/**
+ * Per-class / per-team breakdown (.gt-table--breakdown). Sticky header, right-aligned
+ * tabular figures, 3px inline meters on percentage cells, a "View" link per real row,
+ * the folded row last in italics with a ⓘ "Fewer than 3 people". Rows beyond
+ * `maxRows` sit behind "Show all (n)"; > 12 rows ⇒ 20px dense rows.
+ */
+function BreakdownTable({
+  columns = BREAKDOWN_COLUMNS,
+  rows = [],
+  sort,
+  onSort,
+  getRowHref,
+  onRowView,
+  dense,
+  maxRows = 12,
+  className = ''
+}) {
+  const [all, setAll] = React.useState(false);
+  const isDense = dense ?? rows.length > 12;
+  const ordered = React.useMemo(() => {
+    const real = rows.filter(r => r.kind !== 'folded');
+    const folded = rows.filter(r => r.kind === 'folded');
+    if (sort && sort.key) {
+      const dir = sort.dir === 'asc' ? 1 : -1;
+      real.sort((a, b) => {
+        const av = a[sort.key],
+          bv = b[sort.key];
+        if (av === null || av === undefined) return 1;
+        if (bv === null || bv === undefined) return -1;
+        return (typeof av === 'string' ? av.localeCompare(bv) : av - bv) * dir;
+      });
+    }
+    return [...real, ...folded];
+  }, [rows, sort]);
+  const visible = all || ordered.length <= maxRows ? ordered : ordered.slice(0, maxRows);
+  const hasView = !!(getRowHref || onRowView);
+  const clickSort = key => {
+    if (!onSort) return;
+    onSort({
+      key,
+      dir: sort && sort.key === key && sort.dir === 'desc' ? 'asc' : 'desc'
+    });
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-table', 'gt-table--breakdown', isDense ? 'gt-table--dense' : '', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-table__scroll"
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "gt-table__table"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, columns.map(c => {
+    const num = c.format !== 'text';
+    const active = sort && sort.key === c.key;
+    return /*#__PURE__*/React.createElement("th", {
+      key: c.key,
+      className: num ? 'gt-table__num' : '',
+      "aria-sort": active ? sort.dir === 'asc' ? 'ascending' : 'descending' : undefined,
+      scope: "col"
+    }, c.sortable && onSort ? /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: ['gt-table__sort', active ? 'gt-table__sort--active' : ''].filter(Boolean).join(' '),
+      onClick: () => clickSort(c.key)
+    }, c.label, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+      className: "gt-table__sort-icon",
+      name: active ? sort.dir === 'asc' ? 'arrow-up' : 'arrow-down' : 'arrow-up-down',
+      size: 12
+    })) : c.label);
+  }), hasView && /*#__PURE__*/React.createElement("th", {
+    "aria-label": "Open"
+  }))), /*#__PURE__*/React.createElement("tbody", null, visible.map(r => {
+    const folded = r.kind === 'folded';
+    const href = !folded && getRowHref ? getRowHref(r) : null;
+    return /*#__PURE__*/React.createElement("tr", {
+      key: r.id,
+      className: folded ? 'gt-table__row--folded' : ''
+    }, columns.map(c => /*#__PURE__*/React.createElement("td", {
+      key: c.key,
+      className: c.format !== 'text' ? 'gt-table__num' : ''
+    }, c.key === 'name' ? /*#__PURE__*/React.createElement("span", {
+      className: "gt-table__name"
+    }, r.name, folded && /*#__PURE__*/React.createElement("span", {
+      className: "gt-table__info",
+      title: "Fewer than 3 people"
+    }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+      name: "info",
+      size: 12
+    }))) : /*#__PURE__*/React.createElement(Cell, {
+      col: c,
+      row: r
+    }))), hasView && /*#__PURE__*/React.createElement("td", {
+      className: "gt-table__num"
+    }, folded ? null : onRowView ? /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-table__link",
+      onClick: () => onRowView(r)
+    }, "View") : href ? /*#__PURE__*/React.createElement("a", {
+      className: "gt-table__link",
+      href: href
+    }, "View") : null));
+  }), !rows.length && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+    colSpan: columns.length + (hasView ? 1 : 0),
+    style: {
+      textAlign: 'center',
+      color: 'var(--gt-text-tertiary)',
+      height: 64
+    }
+  }, "Nothing to list"))))), ordered.length > maxRows && /*#__PURE__*/React.createElement("div", {
+    className: "gt-table__bar"
+  }, /*#__PURE__*/React.createElement("span", null, "Showing ", visible.length, " of ", ordered.length), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-table__more",
+    onClick: () => setAll(a => !a)
+  }, all ? 'Show fewer' : `Show all (${ordered.length})`)));
+}
+Object.assign(__ds_scope, { BREAKDOWN_COLUMNS, TEAM_BREAKDOWN_COLUMNS, TIMELINESS_COLUMNS, BreakdownTable });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/BreakdownTable.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/DefinitionPopover.jsx
+try { (() => {
+/**
+ * "How this is counted" (.gt-definition) — an ⓘ trigger opening the shared popover
+ * below it, aligned to the ⓘ: 16px padding around a text column ≤ 320px (or the
+ * viewport less 48px when narrower). Where the panel would run off the screen it
+ * moves left just enough to keep 8px from the viewport edge; it is centred when the
+ * viewport is less than 16px wider than the panel. Closes on Esc / outside click;
+ * never traps focus.
+ */
+function DefinitionPopover({
+  title = 'How this is counted',
+  body,
+  learnMoreHref,
+  placement = 'bottom',
+  align = 'start',
+  className = ''
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [shift, setShift] = React.useState(0);
+  const ref = React.useRef(null);
+  const panelRef = React.useRef(null);
+  const id = React.useId();
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const key = e => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    const down = e => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('keydown', key);
+    document.addEventListener('mousedown', down);
+    return () => {
+      document.removeEventListener('keydown', key);
+      document.removeEventListener('mousedown', down);
+    };
+  }, [open]);
+  React.useLayoutEffect(() => {
+    if (!open) return undefined;
+    const place = () => {
+      if (!ref.current || !panelRef.current) return;
+      const vw = document.documentElement.clientWidth;
+      const trig = ref.current.getBoundingClientRect();
+      const pw = panelRef.current.offsetWidth;
+      if (vw < pw + 16) {
+        setShift((vw - pw) / 2 - trig.left);
+        return;
+      } // centred
+      const right = trig.left + pw;
+      setShift(right > vw - 8 ? vw - 8 - right : 0); // keep 8px from the edge
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [open]);
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-definition', className].filter(Boolean).join(' '),
+    ref: ref
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-definition__trigger",
+    "aria-label": title,
+    "aria-haspopup": "dialog",
+    "aria-expanded": open,
+    "aria-controls": open ? id : undefined,
+    onClick: () => setOpen(o => !o)
+  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+    name: "info",
+    size: 15
+  })), open && /*#__PURE__*/React.createElement("div", {
+    id: id,
+    ref: panelRef,
+    role: "dialog",
+    "aria-label": title,
+    className: `gt-popover gt-popover--${placement} gt-popover--${align} gt-definition__panel`,
+    style: {
+      left: shift
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-definition__title"
+  }, title), /*#__PURE__*/React.createElement("p", {
+    className: "gt-definition__body"
+  }, body), learnMoreHref && /*#__PURE__*/React.createElement("a", {
+    className: "gt-definition__more",
+    href: learnMoreHref
+  }, "Learn more")));
+}
+Object.assign(__ds_scope, { DefinitionPopover });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/DefinitionPopover.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/LivePill.jsx
+try { (() => {
+/** Marks a card that ignores the date range — the board as it is right now. No pulsing. */
+function LivePill({
+  label = 'Live',
+  title = 'Shows the board as it is right now; the date range does not apply',
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-live-pill', className].filter(Boolean).join(' '),
+    title: title
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-live-pill__dot",
+    "aria-hidden": "true"
+  }), label);
+}
+Object.assign(__ds_scope, { LivePill });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/LivePill.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/ChartCard.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/**
+ * Container for every analytics chart (.gt-chart-card). White, 1px border,
+ * radius 10, hairline shadow, padding 16; header divided by a 1px rule.
+ * `data-state`: loading (skeleton, first load only) · refetching (body at 60%
+ * opacity, frame held) · ready · empty (ChartEmptyState) · error (inline
+ * error-soft strip "This card could not load." + Retry; the page is unaffected).
+ */
+function ChartCard({
+  title,
+  subtitle,
+  definition,
+  live = false,
+  actions = null,
+  state = 'ready',
+  emptyMessage,
+  errorMessage = 'This card could not load.',
+  onRetry,
+  footnote,
+  hero,
+  heroMeta,
+  wide = false,
+  skeletonRows = 4,
+  className = '',
+  children,
+  ...rest
+}) {
+  const def = typeof definition === 'string' ? {
+    body: definition
+  } : definition;
+  const empty = emptyMessage || {
+    title: 'Nothing to list'
+  };
+  return /*#__PURE__*/React.createElement("section", _extends({
+    className: ['gt-chart-card', wide ? 'gt-chart-card--wide' : '', className].filter(Boolean).join(' '),
+    "data-state": state,
+    "aria-busy": state === 'loading' || state === 'refetching' || undefined
+  }, rest), /*#__PURE__*/React.createElement("header", {
+    className: "gt-chart-card__head"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__titles"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__title-row"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "gt-chart-card__title"
+  }, title), live && /*#__PURE__*/React.createElement(__ds_scope.LivePill, null), def && /*#__PURE__*/React.createElement(__ds_scope.DefinitionPopover, {
+    title: def.title,
+    body: def.body,
+    learnMoreHref: def.learnMoreHref
+  })), subtitle && /*#__PURE__*/React.createElement("span", {
+    className: "gt-chart-card__subtitle"
+  }, subtitle)), actions && /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__actions"
+  }, actions)), /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__body"
+  }, state === 'loading' ? /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__skeleton",
+    "aria-label": "Loading"
+  }, Array.from({
+    length: skeletonRows
+  }).map((_, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "gt-skeleton",
+    style: {
+      width: `${92 - i * 14}%`
+    }
+  }))) : state === 'error' ? /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__error",
+    role: "alert"
+  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+    name: "alert-circle",
+    size: 15
+  }), /*#__PURE__*/React.createElement("span", null, errorMessage), onRetry && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-chart-card__retry",
+    onClick: onRetry
+  }, "Retry")) : state === 'empty' ? /*#__PURE__*/React.createElement(__ds_scope.ChartEmptyState, {
+    icon: empty.icon,
+    title: empty.title,
+    hint: empty.hint
+  }) : /*#__PURE__*/React.createElement(React.Fragment, null, hero !== undefined && /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__hero"
+  }, hero, heroMeta && /*#__PURE__*/React.createElement("span", {
+    className: "gt-chart-card__hero-meta"
+  }, heroMeta)), children)), footnote && /*#__PURE__*/React.createElement("footer", {
+    className: "gt-chart-card__foot"
+  }, footnote));
+}
+
+/** Header tool button (Table / Export) — `pressed` renders the toggled state. */
+function ChartCardTool({
+  icon,
+  label,
+  pressed,
+  onClick,
+  disabled = false,
+  className = '',
+  ...rest
+}) {
+  return /*#__PURE__*/React.createElement("button", _extends({
+    type: "button",
+    className: ['gt-chart-card__tool', className].filter(Boolean).join(' '),
+    "aria-pressed": pressed === undefined ? undefined : pressed,
+    onClick: onClick,
+    disabled: disabled
+  }, rest), icon && /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+    name: icon,
+    size: 13
+  }), label);
+}
+
+/** Header checkbox (e.g. "Compare with previous range"). */
+function ChartCardCheck({
+  label,
+  checked,
+  onChange,
+  disabled = false,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("label", {
+    className: ['gt-chart-card__check', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: checked,
+    onChange: e => onChange && onChange(e.target.checked),
+    disabled: disabled
+  }), label);
+}
+Object.assign(__ds_scope, { ChartCard, ChartCardTool, ChartCardCheck });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartCard.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/OnTimeMeter.jsx
+try { (() => {
+/**
+ * Headline timeliness rate (.gt-ontime) — 8px meter, green fill on the green-50
+ * track (same ramp), with the counts spelled out. null ⇒ "No deadlines in this range".
+ * Ships with Timeliness (sub-project C).
+ */
+function OnTimeMeter({
+  rate,
+  late = 0,
+  missing = 0,
+  expected = 0,
+  editedLate,
+  className = ''
+}) {
+  if (rate === null || rate === undefined) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: ['gt-ontime', className].filter(Boolean).join(' ')
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-ontime__none"
+    }, "No deadlines in this range"));
+  }
+  const pct = Math.max(0, Math.min(100, rate * 100));
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-ontime', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-ontime__label"
+  }, /*#__PURE__*/React.createElement("strong", null, __ds_scope.fmtPct(rate), " on time"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-ontime__sep"
+  }, "\xB7"), /*#__PURE__*/React.createElement("span", null, late, " late"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-ontime__sep"
+  }, "\xB7"), /*#__PURE__*/React.createElement("span", null, missing, " missing"), editedLate !== undefined && editedLate !== null && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "gt-ontime__sep"
+  }, "\xB7"), /*#__PURE__*/React.createElement("span", null, editedLate, " edited late")), expected > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "gt-ontime__sep"
+  }, "\xB7"), /*#__PURE__*/React.createElement("span", null, expected, " expected"))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-ontime__track",
+    role: "meter",
+    "aria-valuemin": 0,
+    "aria-valuemax": 100,
+    "aria-valuenow": Math.round(pct),
+    "aria-label": "On-time rate"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-ontime__fill",
+    style: {
+      width: `${pct}%`
+    }
+  })));
+}
+Object.assign(__ds_scope, { OnTimeMeter });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/OnTimeMeter.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/SplitBar.jsx
+try { (() => {
+/**
+ * Team channels vs direct messages (.gt-split) — one horizontal bar (slots 1–2,
+ * 2px gaps), legend with counts; the direct segment carries its "school-wide"
+ * note. `mixedScope` (a class is selected, so the two counts no longer share a
+ * denominator) renders two stat lines instead — NOTES.md Q3. Zero total ⇒ `--empty`.
+ */
+function SplitBar({
+  segments = [],
+  mixedScope = false,
+  className = ''
+}) {
+  const [focus, setFocus] = React.useState(null);
+  const total = segments.reduce((s, d) => s + (d.value || 0), 0);
+  if (mixedScope) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: ['gt-split', className].filter(Boolean).join(' ')
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-split__lines"
+    }, segments.map(s => /*#__PURE__*/React.createElement("div", {
+      key: s.key,
+      className: "gt-split__line"
+    }, /*#__PURE__*/React.createElement("span", null, s.label, s.note && /*#__PURE__*/React.createElement("span", {
+      className: "gt-split__note"
+    }, " \xB7 ", s.note)), /*#__PURE__*/React.createElement("strong", null, __ds_scope.fmtCompact(s.value))))));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-split', total ? '' : 'gt-split--empty', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-split__bar",
+    role: "img",
+    "aria-label": segments.map(s => `${s.label} ${__ds_scope.fmtCompact(s.value)}`).join(', ')
+  }, segments.map((s, i) => {
+    const pct = total ? s.value / total * 100 : 0;
+    return /*#__PURE__*/React.createElement("div", {
+      key: s.key,
+      className: `gt-split__segment gt-series--${i + 1}`,
+      style: {
+        width: `${pct}%`
+      },
+      tabIndex: 0,
+      title: `${s.label}: ${__ds_scope.fmtCompact(s.value)} (${Math.round(pct)}%)`,
+      onFocus: () => setFocus(s.key),
+      onBlur: () => setFocus(null),
+      "aria-label": `${s.label}: ${__ds_scope.fmtCompact(s.value)}, ${Math.round(pct)} percent`
+    });
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-split__legend"
+  }, segments.map((s, i) => {
+    const pct = total ? Math.round(s.value / total * 100) : 0;
+    return /*#__PURE__*/React.createElement("span", {
+      key: s.key,
+      className: "gt-split__item",
+      style: {
+        fontWeight: focus === s.key ? 600 : undefined
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: `gt-legend__swatch--rect gt-series--${i + 1}`,
+      "aria-hidden": "true"
+    }), s.label, " ", /*#__PURE__*/React.createElement("strong", null, __ds_scope.fmtCompact(s.value)), " ", /*#__PURE__*/React.createElement("span", {
+      className: "gt-split__note"
+    }, pct, "%", s.note ? ` · ${s.note}` : ''));
+  })));
+}
+Object.assign(__ds_scope, { SplitBar });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/SplitBar.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/StackedBars.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const BOARD_STATUSES = [{
+  status: 'todo',
+  label: 'To do'
+}, {
+  status: 'in_progress',
+  label: 'In progress'
+}, {
+  status: 'done',
+  label: 'Done'
+}];
+const GAP = 2,
+  R = 4;
+
+/** Horizontal segment path: square left edge, 4px rounded right edge when `roundEnd`. */
+function segPath(x, w, h, roundEnd) {
+  if (w <= 0) return '';
+  if (!roundEnd || w < R) return `M${x},0 h${w} v${h} h${-w} Z`;
+  return `M${x},0 h${w - R} a${R},${R} 0 0 1 ${R},${R} v${h - 2 * R} a${R},${R} 0 0 1 ${-R},${R} h${-(w - R)} Z`;
+}
+
+/**
+ * Live task snapshot by sprint (.gt-stack) — horizontal stacked bars, Backlog
+ * first, labels "Backlog", "Sprint 1"… with "8 teams" meta under each. Colors
+ * follow the board (.gt-status--todo gray · --in_progress blue · --done green)
+ * and never change with the unit. Direct labels sit in the row's `__value`
+ * column in text tokens (white on the blue segment is 4.29:1 — too low for
+ * in-bar text); the table twin always exists. ≥ 8 rows ⇒ `--dense` + "Show all".
+ */
+function StackedBars({
+  rows = [],
+  unit = 'count',
+  onRowClick,
+  view = 'chart',
+  dense,
+  maxRows = 8,
+  className = ''
+}) {
+  const [ref, width] = __ds_scope.useMeasure(480);
+  const {
+    tip,
+    show,
+    hide
+  } = __ds_scope.useChartTip();
+  const [hidden, setHidden] = React.useState([]);
+  const [all, setAll] = React.useState(false);
+  const val = seg => (unit === 'points' ? seg.points : seg.count) || 0;
+  const unitWord = unit === 'points' ? 'pts' : 'tasks';
+  const isDense = dense ?? rows.length > 8;
+  const shown = all || rows.length <= maxRows ? rows : rows.slice(0, maxRows);
+  const rowTotal = r => r.segments.filter(s => !hidden.includes(s.status)).reduce((a, s) => a + val(s), 0);
+  const max = Math.max(0, ...rows.map(rowTotal));
+  const [top, ticks] = __ds_scope.niceScale(max, 4);
+  const toggle = k => setHidden(h => h.includes(k) ? h.filter(x => x !== k) : [...h, k]);
+  const legend = BOARD_STATUSES.map(s => ({
+    key: s.status,
+    label: s.label,
+    swatch: 'rect',
+    seriesClass: `gt-status--${s.status}`
+  }));
+  const segOf = (r, status) => r.segments.find(x => x.status === status);
+  if (view === 'table') {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "gt-chart-table__wrap"
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "gt-chart-table"
+    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Sprint"), /*#__PURE__*/React.createElement("th", {
+      className: "gt-table__num"
+    }, "Teams"), BOARD_STATUSES.map(s => /*#__PURE__*/React.createElement("th", {
+      key: s.status,
+      className: "gt-table__num"
+    }, s.label, " (", unitWord, ")")), /*#__PURE__*/React.createElement("th", {
+      className: "gt-table__num"
+    }, "Total"))), /*#__PURE__*/React.createElement("tbody", null, rows.map(r => /*#__PURE__*/React.createElement("tr", {
+      key: r.key
+    }, /*#__PURE__*/React.createElement("td", null, r.label), /*#__PURE__*/React.createElement("td", {
+      className: "gt-table__num"
+    }, r.teams ?? '—'), BOARD_STATUSES.map(s => {
+      const seg = segOf(r, s.status);
+      return /*#__PURE__*/React.createElement("td", {
+        key: s.status,
+        className: "gt-table__num"
+      }, seg ? __ds_scope.fmtCompact(val(seg)) : '—');
+    }), /*#__PURE__*/React.createElement("td", {
+      className: "gt-table__num"
+    }, __ds_scope.fmtCompact(r.segments.reduce((a, s) => a + val(s), 0))))))));
+  }
+  const rowsFor = r => BOARD_STATUSES.map(s => {
+    const seg = segOf(r, s.status);
+    return {
+      key: s.status,
+      label: s.label,
+      value: `${__ds_scope.fmtCompact(seg ? val(seg) : 0)} ${unitWord}`,
+      seriesClass: `gt-status--${s.status}`
+    };
+  });
+  const plotLeft = () => ref.current ? ref.current.offsetLeft : 148;
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-stack', 'gt-plot', isDense ? 'gt-stack--dense' : '', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-stack__rows",
+    role: "list"
+  }, shown.map(r => {
+    const visibleSegs = BOARD_STATUSES.map(s => segOf(r, s.status)).filter(s => s && !hidden.includes(s.status) && val(s) > 0);
+    let cursor = 0;
+    const content = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+      className: "gt-stack__meta"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-stack__label"
+    }, r.label), r.teams !== undefined && /*#__PURE__*/React.createElement("span", {
+      className: "gt-stack__teams"
+    }, r.teams, " teams")), /*#__PURE__*/React.createElement("span", {
+      ref: ref,
+      style: {
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("svg", {
+      className: "gt-stack__bar",
+      width: width,
+      role: "img",
+      "aria-label": `${r.label}: ${rowsFor(r).map(x => `${x.label} ${x.value}`).join(', ')}`,
+      onMouseLeave: hide
+    }, visibleSegs.map((seg, i) => {
+      const w = top ? val(seg) / top * width - (i < visibleSegs.length - 1 ? GAP : 0) : 0;
+      const x = cursor;
+      cursor += w + GAP;
+      const h = isDense ? 14 : 20;
+      return /*#__PURE__*/React.createElement("path", {
+        key: seg.status,
+        className: `gt-stack__segment gt-status--${seg.status}`,
+        d: segPath(x, Math.max(w, 2), h, i === visibleSegs.length - 1),
+        tabIndex: 0,
+        "aria-label": `${BOARD_STATUSES.find(b => b.status === seg.status).label}: ${__ds_scope.fmtCompact(val(seg))} ${unitWord}`,
+        onMouseEnter: () => show(plotLeft() + x + w / 2, 0, r.label, rowsFor(r)),
+        onFocus: () => show(plotLeft() + x + w / 2, 0, r.label, rowsFor(r)),
+        onBlur: hide
+      });
+    }))), /*#__PURE__*/React.createElement("span", {
+      className: "gt-stack__value",
+      "aria-hidden": "true"
+    }, BOARD_STATUSES.map(s => {
+      const seg = segOf(r, s.status);
+      return /*#__PURE__*/React.createElement("span", {
+        key: s.status,
+        className: `gt-status--${s.status}`
+      }, /*#__PURE__*/React.createElement("i", null), /*#__PURE__*/React.createElement("b", {
+        style: {
+          fontWeight: 500
+        }
+      }, __ds_scope.fmtCompact(seg ? val(seg) : 0)));
+    })));
+    return onRowClick ? /*#__PURE__*/React.createElement("button", {
+      key: r.key,
+      type: "button",
+      role: "listitem",
+      className: "gt-stack__row gt-stack__button",
+      onClick: () => onRowClick(r)
+    }, content) : /*#__PURE__*/React.createElement("div", {
+      key: r.key,
+      role: "listitem",
+      className: "gt-stack__row"
+    }, content);
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-stack__axis",
+    "aria-hidden": "true"
+  }, ticks.map(t => /*#__PURE__*/React.createElement("span", {
+    key: t
+  }, __ds_scope.fmtCompact(t)))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-stack__legend"
+  }, /*#__PURE__*/React.createElement(__ds_scope.ChartLegend, {
+    items: legend,
+    hidden: hidden,
+    onToggle: toggle
+  }), rows.length > maxRows && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-stack__more",
+    onClick: () => setAll(a => !a)
+  }, all ? 'Show fewer' : `Show all (${rows.length})`)), tip && /*#__PURE__*/React.createElement(__ds_scope.ChartTooltip, _extends({}, tip, {
+    placement: "below",
+    x: tip.x,
+    y: 8
+  })));
+}
+Object.assign(__ds_scope, { BOARD_STATUSES, StackedBars });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/StackedBars.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/StatTile.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/**
+ * KPI tile — the app's DashboardMetricCard (.metric-card ≙ .gt-stat-card) with two
+ * optional slots: `delta` (__delta --good/--bad/--flat, __delta-value, __delta-vs)
+ * and `trend` (__spark: gray history line, green last point with a white ring).
+ * Sparklines may hold 2–12 points; fewer than 2 renders no sparkline.
+ * Proportional figures; a null value renders "—" with the hint explaining why;
+ * `failed` (the tile's source is listed in `failures`) renders "—" + "Could not load".
+ */
+function StatTile({
+  label,
+  value,
+  format = 'compact',
+  icon = null,
+  accent = 'primary',
+  delta,
+  trend,
+  hint,
+  failed = false,
+  loading = false,
+  onClick,
+  className = '',
+  ...rest
+}) {
+  const El = onClick ? 'button' : 'div';
+  const isNull = failed || value === null || value === undefined;
+  const shownHint = failed ? hint || 'Could not load' : hint;
+  const shown = isNull ? '—' : format === 'percent' ? __ds_scope.fmtPct(value) : format === 'raw' ? value : __ds_scope.fmtCompact(value);
+  let deltaNode = null;
+  if (!failed && delta && delta.value !== null && delta.value !== undefined) {
+    const up = delta.value > 0,
+      flat = delta.value === 0;
+    const good = flat ? null : delta.goodWhenUp !== false ? up : !up;
+    const tone = flat ? 'flat' : good ? 'good' : 'bad';
+    deltaNode = /*#__PURE__*/React.createElement("span", {
+      className: `gt-stat-card__delta gt-stat-card__delta--${tone}`
+    }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+      name: flat ? 'minus' : up ? 'trending-up' : 'trending-down',
+      size: 12
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "gt-stat-card__delta-value"
+    }, __ds_scope.fmtDelta(delta.value)), delta.vsLabel && /*#__PURE__*/React.createElement("span", {
+      className: "gt-stat-card__delta-vs"
+    }, delta.vsLabel));
+  }
+  let trendNode = null;
+  if (!failed && Array.isArray(trend) && trend.length > 1) {
+    const W = 84,
+      H = 24,
+      pad = 3;
+    const max = Math.max(...trend, 1),
+      min = Math.min(...trend, 0);
+    const x = i => pad + i / (trend.length - 1) * (W - pad * 2);
+    const y = v => H - pad - (v - min) / (max - min || 1) * (H - pad * 2);
+    const d = trend.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    const last = trend.length - 1;
+    trendNode = /*#__PURE__*/React.createElement("svg", {
+      className: "gt-stat-card__spark",
+      viewBox: `0 0 ${W} ${H}`,
+      role: "img",
+      "aria-label": `${trend.length}-week trend, latest ${__ds_scope.fmtCompact(trend[last])}`
+    }, /*#__PURE__*/React.createElement("path", {
+      d: d,
+      className: "gt-stat-card__spark-line"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: x(last),
+      cy: y(trend[last]),
+      r: "3.5",
+      className: "gt-stat-card__spark-dot"
+    }));
+  }
+  return /*#__PURE__*/React.createElement(El, _extends({
+    className: ['gt-stat-card', 'gt-stat-card--tile', `gt-stat-card--${accent}`, onClick ? 'gt-stat-card--clickable' : '', className].filter(Boolean).join(' '),
+    onClick: onClick,
+    type: onClick ? 'button' : undefined,
+    "aria-busy": loading || undefined
+  }, rest), /*#__PURE__*/React.createElement("div", {
+    className: "gt-stat-card__top"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-stat-card__label"
+  }, label), icon && /*#__PURE__*/React.createElement("span", {
+    className: "gt-stat-card__icon"
+  }, icon)), /*#__PURE__*/React.createElement("span", {
+    className: ['gt-stat-card__value', isNull ? 'gt-stat-card__null' : ''].filter(Boolean).join(' ')
+  }, loading ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-skeleton"
+  }) : shown), (deltaNode || trendNode || shownHint) && /*#__PURE__*/React.createElement("div", {
+    className: "gt-stat-card__bottom"
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 2,
+      minWidth: 0
+    }
+  }, !loading && deltaNode, shownHint && /*#__PURE__*/React.createElement("span", {
+    className: "gt-stat-card__hint"
+  }, shownHint)), !loading && trendNode));
+}
+Object.assign(__ds_scope, { StatTile });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/StatTile.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/TimelinessBars.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const TIMELINESS_BUCKETS = {
+  early: {
+    label: 'Early',
+    icon: 'check-circle'
+  },
+  on_time: {
+    label: 'On time',
+    icon: 'check-circle-2'
+  },
+  late: {
+    label: 'Late',
+    icon: 'clock'
+  },
+  missing: {
+    label: 'Missing',
+    icon: 'x-circle'
+  },
+  not_due: {
+    label: 'Not due yet',
+    icon: 'calendar'
+  }
+};
+const GAP = 2,
+  R = 4;
+function segPath(x, w, h, roundEnd) {
+  if (w <= 0) return '';
+  if (!roundEnd || w < R) return `M${x},0 h${w} v${h} h${-w} Z`;
+  return `M${x},0 h${w - R} a${R},${R} 0 0 1 ${R},${R} v${h - 2 * R} a${R},${R} 0 0 1 ${-R},${R} h${-(w - R)} Z`;
+}
+
+/**
+ * Submission buckets (.gt-timeliness) as 100%-stacked horizontal bars, one row
+ * per class (default) or per assignment (when a class is selected). Status
+ * palette (.gt-status--early/on_time/late/missing) with icons in the legend;
+ * not-due-yet rows show a gray track and an italic due date; the folded
+ * "Smaller groups (n)" row is italic, unlinked, with a ⓘ. Ships in sub-project C.
+ */
+function TimelinessBars({
+  rows = [],
+  bucketOrder = ['early', 'on_time', 'late', 'missing', 'not_due'],
+  view = 'chart',
+  maxRows = 12,
+  dense,
+  onRowClick,
+  className = ''
+}) {
+  const [ref, width] = __ds_scope.useMeasure(480);
+  const {
+    tip,
+    show,
+    hide
+  } = __ds_scope.useChartTip();
+  const [all, setAll] = React.useState(false);
+  const isDense = dense ?? rows.length > 12;
+  const shown = all || rows.length <= maxRows ? rows : rows.slice(0, maxRows);
+  const h = isDense ? 14 : 20;
+  const buckets = bucketOrder.filter(b => b !== 'not_due');
+  const get = (r, k) => r.buckets.find(b => b.key === k)?.value || 0;
+  const hasNotDue = rows.some(r => r.notDueYet || get(r, 'not_due') > 0);
+  const legend = bucketOrder.filter(b => b !== 'not_due' || hasNotDue).map(b => ({
+    key: b,
+    label: TIMELINESS_BUCKETS[b].label,
+    swatch: 'rect',
+    seriesClass: b === 'not_due' ? 'gt-series--gray' : `gt-status--${b}`,
+    icon: TIMELINESS_BUCKETS[b].icon
+  }));
+  const tipRows = r => bucketOrder.filter(k => get(r, k) > 0 || k === 'missing').map(k => ({
+    key: k,
+    label: TIMELINESS_BUCKETS[k].label,
+    value: `${get(r, k)} · ${r.expected ? Math.round(get(r, k) / r.expected * 100) : 0}%`,
+    seriesClass: k === 'not_due' ? 'gt-series--gray' : `gt-status--${k}`
+  }));
+  const tipNote = r => [r.expected ? `${r.expected} expected` : null, r.dueAt ? `Due ${__ds_scope.fmtWeek(r.dueAt)}` : null, r.editedLate ? `${r.editedLate} edited late` : null].filter(Boolean).join(' · ');
+  const plotLeft = () => ref.current ? ref.current.offsetLeft : 148;
+  if (view === 'table') {
+    const byAssignment = rows.some(r => r.dueAt);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "gt-chart-table__wrap"
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "gt-chart-table"
+    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, byAssignment ? 'Assignment' : 'Class'), byAssignment && /*#__PURE__*/React.createElement("th", null, "Due"), /*#__PURE__*/React.createElement("th", {
+      className: "gt-table__num"
+    }, "Expected"), bucketOrder.map(b => /*#__PURE__*/React.createElement("th", {
+      key: b,
+      className: "gt-table__num"
+    }, TIMELINESS_BUCKETS[b].label)), /*#__PURE__*/React.createElement("th", {
+      className: "gt-table__num"
+    }, "Edited late"))), /*#__PURE__*/React.createElement("tbody", null, rows.map(r => /*#__PURE__*/React.createElement("tr", {
+      key: r.key,
+      style: r.folded ? {
+        fontStyle: 'italic',
+        color: 'var(--gt-text-tertiary)'
+      } : undefined
+    }, /*#__PURE__*/React.createElement("td", null, r.label), byAssignment && /*#__PURE__*/React.createElement("td", null, r.dueAt ? __ds_scope.fmtWeek(r.dueAt) : '—'), /*#__PURE__*/React.createElement("td", {
+      className: "gt-table__num"
+    }, r.expected), bucketOrder.map(b => /*#__PURE__*/React.createElement("td", {
+      key: b,
+      className: "gt-table__num"
+    }, get(r, b))), /*#__PURE__*/React.createElement("td", {
+      className: "gt-table__num"
+    }, r.editedLate ?? 0))))));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-timeliness', 'gt-plot', isDense ? 'gt-timeliness--dense' : '', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-timeliness__rows",
+    role: "list"
+  }, shown.map(r => {
+    const linked = !r.folded && !r.notDueYet && (r.href || onRowClick);
+    const El = linked ? r.href ? 'a' : 'button' : 'div';
+    const cls = ['gt-timeliness__row', r.folded ? 'gt-timeliness__row--folded' : '', r.notDueYet ? 'gt-timeliness__row--notdue' : '', linked ? 'gt-timeliness__row--link' : ''].filter(Boolean).join(' ');
+    let cursor = 0;
+    const segs = r.notDueYet ? [] : buckets.map(k => ({
+      k,
+      v: get(r, k)
+    })).filter(s => s.v > 0);
+    const notDue = get(r, 'not_due');
+    const denom = r.expected || segs.reduce((a, s) => a + s.v, 0) || 1;
+    const plotW = r.notDueYet ? Math.max(0, width - 72) : width;
+    return /*#__PURE__*/React.createElement(El, {
+      key: r.key,
+      role: "listitem",
+      className: cls,
+      href: El === 'a' ? r.href : undefined,
+      onClick: El === 'button' ? () => onRowClick(r) : undefined,
+      type: El === 'button' ? 'button' : undefined
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-timeliness__meta"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-timeliness__label"
+    }, r.label, r.folded && /*#__PURE__*/React.createElement("span", {
+      className: "gt-timeliness__info",
+      title: "Fewer than 3 people"
+    }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+      name: "info",
+      size: 12
+    }))), !r.notDueYet && r.dueAt && /*#__PURE__*/React.createElement("span", {
+      className: "gt-timeliness__due"
+    }, "Due ", __ds_scope.fmtWeek(r.dueAt))), /*#__PURE__*/React.createElement("span", {
+      className: "gt-timeliness__plot",
+      ref: ref
+    }, /*#__PURE__*/React.createElement("svg", {
+      className: "gt-timeliness__bar",
+      width: plotW,
+      height: h,
+      role: "img",
+      "aria-label": r.notDueYet ? `${r.label}: not due yet` : `${r.label}: ${tipRows(r).map(x => `${x.label} ${x.value}`).join(', ')}`,
+      onMouseLeave: hide
+    }, /*#__PURE__*/React.createElement("rect", {
+      className: "gt-timeliness__track",
+      x: "0",
+      y: "0",
+      width: plotW,
+      height: h,
+      rx: R
+    }), segs.map((s, i) => {
+      const w = s.v / denom * plotW - (i < segs.length - 1 || notDue ? GAP : 0);
+      const x = cursor;
+      cursor += w + GAP;
+      return /*#__PURE__*/React.createElement("path", {
+        key: s.k,
+        className: `gt-timeliness__segment gt-status--${s.k}`,
+        d: segPath(x, Math.max(w, 2), h, i === segs.length - 1 && !notDue),
+        tabIndex: 0,
+        "aria-label": `${TIMELINESS_BUCKETS[s.k].label}: ${s.v}`,
+        onMouseEnter: () => show(plotLeft() + x + w / 2, 0, r.label, tipRows(r), {
+          note: tipNote(r)
+        }),
+        onFocus: () => show(plotLeft() + x + w / 2, 0, r.label, tipRows(r), {
+          note: tipNote(r)
+        }),
+        onBlur: hide
+      });
+    })), r.notDueYet && /*#__PURE__*/React.createElement("span", {
+      className: "gt-timeliness__notdue"
+    }, "Due ", r.dueAt ? __ds_scope.fmtWeek(r.dueAt) : '—')));
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-timeliness__axis",
+    "aria-hidden": "true"
+  }, ['0%', '25%', '50%', '75%', '100%'].map(t => /*#__PURE__*/React.createElement("span", {
+    key: t
+  }, t))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-timeliness__legend"
+  }, /*#__PURE__*/React.createElement(__ds_scope.ChartLegend, {
+    items: legend
+  }), rows.length > maxRows && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-timeliness__more",
+    onClick: () => setAll(a => !a)
+  }, all ? 'Show fewer' : `Show all (${rows.length})`)), tip && /*#__PURE__*/React.createElement(__ds_scope.ChartTooltip, _extends({}, tip, {
+    placement: "below",
+    x: tip.x,
+    y: 8
+  })));
+}
+Object.assign(__ds_scope, { TIMELINESS_BUCKETS, TimelinessBars });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/TimelinessBars.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/TrendLines.jsx
+try { (() => {
+const M = {
+  top: 12,
+  right: 10,
+  bottom: 20,
+  left: 6
+};
+const UNIT_SHORT = {
+  'per team per week': '/team/wk',
+  'per team': '/team',
+  rate: 'rate'
+};
+const EMPTY_COPY = {
+  no_rollup: 'Trends appear after the first nightly rollup.',
+  no_complete_week: 'No complete week in this range yet.',
+  no_activity: 'No team activity in this range.'
+};
+function fmtUnit(v, unit) {
+  if (v === null || v === undefined) return '—';
+  if (unit === 'rate') return __ds_scope.fmtPct(v);
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+const isNum = v => v !== null && v !== undefined;
+
+/** A Monday-start week is complete once its Sunday is on or before the rollup's `asOf` day. */
+function completeWeeks(points = [], asOf) {
+  if (!asOf) return [];
+  const end = iso => {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 6);
+    return d.toISOString().slice(0, 10);
+  };
+  return points.filter(p => p && p.weekStart && end(p.weekStart) <= asOf);
+}
+function Panel({
+  panel,
+  compare,
+  height
+}) {
+  const [ref, width] = __ds_scope.useMeasure(220);
+  const {
+    tip,
+    show,
+    hide
+  } = __ds_scope.useChartTip();
+  const [hoverI, setHoverI] = React.useState(null);
+  const cur = panel.current || [];
+  const prev = compare && panel.previous ? panel.previous : null;
+  const n = Math.max(cur.length, prev ? prev.length : 0);
+  const maxV = Math.max(0, ...cur.map(p => p.value ?? 0), ...(prev ? prev.map(p => p.value ?? 0) : []));
+  const [top, ticks] = __ds_scope.niceScale(panel.unit === 'rate' ? Math.max(maxV, 1) : maxV, 3);
+  const iw = Math.max(10, width - M.left - M.right);
+  const ih = Math.max(10, height - M.top - M.bottom);
+  const x = i => M.left + (n > 1 ? i / (n - 1) * iw : iw / 2);
+  const y = v => M.top + ih - v / top * ih;
+  const path = pts => pts.reduce((acc, p, i) => {
+    if (!isNum(p.value)) return acc;
+    const prevOk = i > 0 && isNum(pts[i - 1]?.value);
+    return `${acc}${prevOk ? ' L' : ' M'}${x(i)},${y(p.value)}`;
+  }, '').trim();
+  let latestI = -1;
+  cur.forEach((p, i) => {
+    if (isNum(p.value)) latestI = i;
+  });
+  // A week no line reaches: a value whose neighbours are both missing.
+  const isolated = i => isNum(cur[i]?.value) && !isNum(cur[i - 1]?.value) && !isNum(cur[i + 1]?.value);
+  const rowsAt = i => {
+    const rows = [{
+      key: 'cur',
+      label: 'This range',
+      value: fmtUnit(cur[i]?.value, panel.unit),
+      seriesClass: 'gt-series--1'
+    }];
+    if (prev) rows.push({
+      key: 'prev',
+      label: 'Previous range',
+      value: fmtUnit(prev[i]?.value, panel.unit),
+      seriesClass: 'gt-series--gray'
+    });
+    return rows;
+  };
+  const showAt = i => {
+    setHoverI(i);
+    show(x(i), M.top, `Week ${i + 1} · ${__ds_scope.fmtWeek((cur[i] || prev?.[i])?.weekStart)}`, rowsAt(i));
+  };
+  const clear = () => {
+    setHoverI(null);
+    hide();
+  };
+  const onMove = e => {
+    if (!n) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const i = Math.max(0, Math.min(n - 1, Math.round((e.clientX - rect.left - M.left) / iw * (n - 1))));
+    if (i !== hoverI) showAt(i);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "gt-trend__panel"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-trend__title"
+  }, panel.title, /*#__PURE__*/React.createElement("span", {
+    className: "gt-trend__unit"
+  }, UNIT_SHORT[panel.unit] || panel.unit)), /*#__PURE__*/React.createElement("div", {
+    className: "gt-plot",
+    ref: ref,
+    style: {
+      height
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    className: "gt-trend__svg",
+    width: width,
+    height: height,
+    role: "img",
+    "aria-label": `${panel.title}, ${n} complete weeks${latestI >= 0 ? `, latest ${fmtUnit(cur[latestI].value, panel.unit)}` : ''}${prev ? ', with the previous range in gray' : ''}`,
+    onMouseMove: onMove,
+    onMouseLeave: clear
+  }, ticks.map(t => /*#__PURE__*/React.createElement("line", {
+    key: t,
+    className: "gt-trend__grid",
+    x1: M.left,
+    x2: M.left + iw,
+    y1: y(t),
+    y2: y(t)
+  })), /*#__PURE__*/React.createElement("line", {
+    className: "gt-trend__axis",
+    x1: M.left,
+    x2: M.left + iw,
+    y1: M.top + ih,
+    y2: M.top + ih
+  }), Array.from({
+    length: n
+  }).map((_, i) => i === 0 || i === n - 1 ? /*#__PURE__*/React.createElement("text", {
+    key: i,
+    className: "gt-trend__tick",
+    x: x(i),
+    y: height - 5,
+    style: {
+      textAnchor: i === 0 ? 'start' : 'end'
+    }
+  }, __ds_scope.fmtWeek((cur[i] || prev?.[i])?.weekStart)) : null), hoverI !== null && /*#__PURE__*/React.createElement("line", {
+    className: "gt-trend__crosshair",
+    x1: x(hoverI),
+    x2: x(hoverI),
+    y1: M.top,
+    y2: M.top + ih
+  }), prev && /*#__PURE__*/React.createElement("path", {
+    className: "gt-trend__previous",
+    d: path(prev)
+  }), /*#__PURE__*/React.createElement("path", {
+    className: "gt-trend__current",
+    d: path(cur)
+  }), cur.map((p, i) => (i === latestI || isolated(i) || hoverI === i) && isNum(p.value) ? /*#__PURE__*/React.createElement("circle", {
+    key: i,
+    className: "gt-trend__marker",
+    cx: x(i),
+    cy: y(p.value),
+    r: hoverI === i ? 5 : 4
+  }) : null), latestI >= 0 && /*#__PURE__*/React.createElement("text", {
+    className: "gt-trend__end-label",
+    x: x(latestI) + (latestI >= n / 2 ? 2 : -2),
+    y: y(cur[latestI].value) - 8,
+    style: {
+      textAnchor: latestI >= n / 2 ? 'end' : 'start'
+    }
+  }, fmtUnit(cur[latestI].value, panel.unit)), Array.from({
+    length: n
+  }).map((_, i) => /*#__PURE__*/React.createElement("rect", {
+    key: i,
+    className: "gt-plot__hit",
+    x: x(i) - (n > 1 ? iw / (n - 1) / 2 : iw / 2),
+    y: M.top,
+    width: n > 1 ? iw / (n - 1) : iw,
+    height: ih,
+    tabIndex: 0,
+    role: "button",
+    "aria-label": `Week ${i + 1}: ${rowsAt(i).map(r => `${r.label} ${r.value}`).join(', ')}`,
+    onFocus: () => showAt(i),
+    onBlur: clear
+  }))), tip && /*#__PURE__*/React.createElement(__ds_scope.ChartTooltip, tip)));
+}
+
+/**
+ * Small multiples (.gt-trend) — this range (green) with the previous range (gray)
+ * as context, aligned by week index; null points leave gaps. Only COMPLETE weeks
+ * are drawn (`completeWeeks(points, asOf)`); the week in progress appears once it
+ * ends. `__marker` dots each week no line reaches and this range's latest week,
+ * which `__end-label` labels. Three empty states: before the first rollup, no
+ * complete week in range, no team activity. Footer: legend + "as of Oct 6, 2026".
+ * `view="table"`: one row per complete week, one column per panel with its unit, "—" for a missing value.
+ */
+function TrendLines({
+  panels = [],
+  compare = true,
+  asOf,
+  height = 96,
+  view = 'chart',
+  emptyReason,
+  className = ''
+}) {
+  const complete = panels.map(p => ({
+    ...p,
+    current: completeWeeks(p.current || [], asOf),
+    previous: p.previous ? completeWeeks(p.previous, asOf) : null
+  }));
+  let empty = emptyReason || null;
+  if (!empty) {
+    if (!asOf || !panels.length) empty = 'no_rollup';else if (complete.every(p => p.current.length === 0)) empty = 'no_complete_week';else if (complete.every(p => p.current.every(pt => !isNum(pt.value) || pt.value === 0))) empty = 'no_activity';
+  }
+  if (empty) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "gt-trend__empty"
+    }, /*#__PURE__*/React.createElement(__ds_scope.ChartEmptyState, {
+      icon: "trending-up",
+      title: EMPTY_COPY[empty] || empty
+    }));
+  }
+  const anyPrev = compare && complete.some(p => p.previous && p.previous.length);
+  if (view === 'table') {
+    const weeks = [...new Set(complete.flatMap(p => p.current.map(pt => pt.weekStart)))].sort();
+    return /*#__PURE__*/React.createElement("div", {
+      className: "gt-chart-table__wrap"
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "gt-chart-table"
+    }, /*#__PURE__*/React.createElement("caption", {
+      className: "gt-table__caption"
+    }, "Trends, week by week", anyPrev ? ', this range and the previous range' : ''), /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+      scope: "col"
+    }, "Week"), complete.map(p => /*#__PURE__*/React.createElement("th", {
+      key: p.key,
+      scope: "col",
+      className: "gt-table__num"
+    }, p.title, " (", UNIT_SHORT[p.unit] || p.unit, ")", anyPrev && p.previous ? ' · this / previous' : '')))), /*#__PURE__*/React.createElement("tbody", null, weeks.map((w, i) => /*#__PURE__*/React.createElement("tr", {
+      key: w
+    }, /*#__PURE__*/React.createElement("td", null, __ds_scope.fmtWeek(w)), complete.map(p => {
+      const c = p.current.find(pt => pt.weekStart === w);
+      const pv = anyPrev && p.previous ? p.previous[i] : null;
+      return /*#__PURE__*/React.createElement("td", {
+        key: p.key,
+        className: "gt-table__num"
+      }, fmtUnit(c?.value, p.unit), anyPrev && p.previous ? ` / ${fmtUnit(pv?.value, p.unit)}` : '');
+    }))))));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-trend', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-trend__panels",
+    style: {
+      '--trend-cols': Math.min(complete.length, 4)
+    }
+  }, complete.map(p => /*#__PURE__*/React.createElement(Panel, {
+    key: p.key,
+    panel: p,
+    compare: compare,
+    height: height
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-trend__foot"
+  }, /*#__PURE__*/React.createElement(__ds_scope.ChartLegend, {
+    items: [{
+      key: 'cur',
+      label: 'This range',
+      swatch: 'line',
+      seriesClass: 'gt-series--1'
+    }, ...(anyPrev ? [{
+      key: 'prev',
+      label: 'Previous range',
+      swatch: 'line',
+      seriesClass: 'gt-series--gray'
+    }] : [])]
+  }), asOf && /*#__PURE__*/React.createElement("span", {
+    className: "gt-trend__asof"
+  }, "as of ", __ds_scope.fmtWeek(asOf, true))));
+}
+Object.assign(__ds_scope, { completeWeeks, TrendLines });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/TrendLines.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/UnitToggle.jsx
+try { (() => {
+/**
+ * Segmented control for a measure swap (Tasks | Points). 28px tall, radius 7;
+ * active = solid green. Arrow keys move the selection; each option carries aria-pressed.
+ */
+function UnitToggle({
+  value = 'count',
+  onChange,
+  options = [{
+    value: 'count',
+    label: 'Tasks'
+  }, {
+    value: 'points',
+    label: 'Points'
+  }],
+  ariaLabel = 'Measure',
+  className = ''
+}) {
+  const refs = React.useRef([]);
+  const onKey = (e, i) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const n = options.length;
+    const j = (i + (e.key === 'ArrowRight' ? 1 : n - 1)) % n;
+    onChange && onChange(options[j].value);
+    refs.current[j] && refs.current[j].focus();
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-unit-toggle', className].filter(Boolean).join(' '),
+    role: "group",
+    "aria-label": ariaLabel
+  }, options.map((o, i) => /*#__PURE__*/React.createElement("button", {
+    key: o.value,
+    ref: el => {
+      refs.current[i] = el;
+    },
+    type: "button",
+    className: ['gt-unit-toggle__option', o.value === value ? 'gt-unit-toggle__option--active' : ''].filter(Boolean).join(' '),
+    "aria-pressed": o.value === value,
+    onClick: () => onChange && onChange(o.value),
+    onKeyDown: e => onKey(e, i)
+  }, o.label)));
+}
+Object.assign(__ds_scope, { UnitToggle });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/UnitToggle.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/WeeklyLine.jsx
+try { (() => {
+const M = {
+  top: 14,
+  right: 52,
+  bottom: 26,
+  left: 40
+};
+
+/**
+ * Weekly line chart (.gt-line), one or two series. Series 1 = green with a 10%
+ * wash, series 2 = blue without. Hairline solid gridlines; markers r4 (8px) with
+ * a 2px white ring; end-labelled last points; crosshair snapping to the nearest
+ * week with one tooltip listing every series; per-week focusable hit columns.
+ * `view="table"` renders the three-column week table (Week · series…).
+ */
+function WeeklyLine({
+  series = [],
+  height = 200,
+  ariaLabel,
+  view = 'chart',
+  valueFormat = __ds_scope.fmtCompact,
+  className = ''
+}) {
+  const [ref, width] = __ds_scope.useMeasure();
+  const {
+    tip,
+    show,
+    hide
+  } = __ds_scope.useChartTip();
+  const [hidden, setHidden] = React.useState([]);
+  const [hoverI, setHoverI] = React.useState(null);
+  const visible = series.filter(s => !hidden.includes(s.key));
+  const weeks = (series[0]?.points || []).map(p => p.weekStart);
+  const n = weeks.length;
+  const maxV = Math.max(0, ...visible.flatMap(s => s.points.map(p => p.value ?? 0)));
+  const [top, ticks] = __ds_scope.niceScale(maxV, 5);
+  const iw = Math.max(10, width - M.left - M.right);
+  const ih = Math.max(10, height - M.top - M.bottom);
+  const x = i => M.left + (n > 1 ? i / (n - 1) * iw : iw / 2);
+  const y = v => M.top + ih - v / top * ih;
+  const cls = si => `gt-series--${si + 1}`;
+  const legend = series.map((s, i) => ({
+    key: s.key,
+    label: s.label,
+    swatch: 'line',
+    seriesClass: cls(i)
+  }));
+  const toggle = k => setHidden(h => h.includes(k) ? h.filter(x => x !== k) : [...h, k]);
+  if (view === 'table') {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "gt-chart-table__wrap"
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "gt-chart-table"
+    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Week"), series.map(s => /*#__PURE__*/React.createElement("th", {
+      key: s.key,
+      className: "gt-table__num"
+    }, s.label)))), /*#__PURE__*/React.createElement("tbody", null, weeks.map((w, i) => /*#__PURE__*/React.createElement("tr", {
+      key: w
+    }, /*#__PURE__*/React.createElement("td", null, __ds_scope.fmtWeek(w)), series.map(s => /*#__PURE__*/React.createElement("td", {
+      key: s.key,
+      className: "gt-table__num"
+    }, valueFormat(s.points[i]?.value))))))));
+  }
+  const rowsAt = i => visible.map(s => ({
+    key: s.key,
+    label: s.label,
+    value: valueFormat(s.points[i]?.value),
+    seriesClass: cls(series.indexOf(s))
+  }));
+  const showAt = i => {
+    setHoverI(i);
+    show(x(i), M.top, `Week of ${__ds_scope.fmtWeek(weeks[i])}`, rowsAt(i));
+  };
+  const clear = () => {
+    setHoverI(null);
+    hide();
+  };
+  const onMove = e => {
+    if (!n) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const i = Math.max(0, Math.min(n - 1, Math.round((e.clientX - rect.left - M.left) / iw * (n - 1))));
+    if (i !== hoverI) showAt(i);
+  };
+  const path = s => s.points.reduce((acc, p, i, arr) => {
+    if (p.value === null || p.value === undefined) return acc;
+    const prevOk = i > 0 && arr[i - 1].value !== null && arr[i - 1].value !== undefined;
+    return `${acc}${prevOk ? ' L' : ' M'}${x(i)},${y(p.value)}`;
+  }, '').trim();
+  const lastIdx = s => s.points.map((p, i) => p.value === null || p.value === undefined ? -1 : i).filter(i => i >= 0).pop();
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-line', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-plot",
+    ref: ref,
+    style: {
+      height
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    className: "gt-line__svg",
+    width: width,
+    height: height,
+    role: "img",
+    "aria-label": ariaLabel || `${series.map(s => s.label).join(' and ')} per week`,
+    onMouseMove: onMove,
+    onMouseLeave: clear
+  }, ticks.map(t => /*#__PURE__*/React.createElement("g", {
+    key: t
+  }, /*#__PURE__*/React.createElement("line", {
+    className: "gt-line__grid",
+    x1: M.left,
+    x2: M.left + iw,
+    y1: y(t),
+    y2: y(t)
+  }), /*#__PURE__*/React.createElement("text", {
+    className: "gt-line__tick gt-plot__tick--y",
+    x: M.left - 8,
+    y: y(t) + 4
+  }, valueFormat(t)))), /*#__PURE__*/React.createElement("line", {
+    className: "gt-line__axis",
+    x1: M.left,
+    x2: M.left + iw,
+    y1: M.top + ih,
+    y2: M.top + ih
+  }), weeks.map((w, i) => /*#__PURE__*/React.createElement("text", {
+    key: w,
+    className: "gt-line__tick gt-plot__tick--x",
+    x: x(i),
+    y: height - 8
+  }, __ds_scope.fmtWeek(w))), hoverI !== null && /*#__PURE__*/React.createElement("line", {
+    className: "gt-line__crosshair",
+    x1: x(hoverI),
+    x2: x(hoverI),
+    y1: M.top,
+    y2: M.top + ih
+  }), series.map((s, si) => {
+    if (hidden.includes(s.key)) return null;
+    const d = path(s),
+      li = lastIdx(s);
+    return /*#__PURE__*/React.createElement("g", {
+      key: s.key,
+      className: cls(si)
+    }, si === 0 && d && li !== undefined && /*#__PURE__*/React.createElement("path", {
+      className: "gt-line__area",
+      d: `${d} L${x(li)},${y(0)} L${x(0)},${y(0)} Z`
+    }), /*#__PURE__*/React.createElement("path", {
+      className: "gt-line__path",
+      d: d
+    }), s.points.map((p, i) => p.value === null || p.value === undefined ? null : /*#__PURE__*/React.createElement("circle", {
+      key: i,
+      className: ['gt-line__marker', hoverI === i ? 'gt-line__marker--hot' : ''].filter(Boolean).join(' '),
+      cx: x(i),
+      cy: y(p.value),
+      r: hoverI === i ? 5 : 4
+    })), li !== undefined && /*#__PURE__*/React.createElement("text", {
+      className: "gt-line__end-label",
+      x: x(li) + 9,
+      y: y(s.points[li].value) + 4
+    }, valueFormat(s.points[li].value)));
+  }), weeks.map((w, i) => /*#__PURE__*/React.createElement("g", {
+    key: `hit-${w}`
+  }, /*#__PURE__*/React.createElement("rect", {
+    className: "gt-plot__hit",
+    x: x(i) - (n > 1 ? iw / (n - 1) / 2 : iw / 2),
+    y: M.top,
+    width: n > 1 ? iw / (n - 1) : iw,
+    height: ih,
+    tabIndex: 0,
+    role: "button",
+    "aria-label": `Week of ${__ds_scope.fmtWeek(w)}: ${rowsAt(i).map(r => `${r.label} ${r.value}`).join(', ')}`,
+    onFocus: () => showAt(i),
+    onBlur: clear
+  }), hoverI === i && /*#__PURE__*/React.createElement("circle", {
+    className: "gt-plot__focus",
+    cx: x(i),
+    cy: M.top + ih,
+    r: 5
+  })))), tip && /*#__PURE__*/React.createElement(__ds_scope.ChartTooltip, tip)), series.length > 1 && /*#__PURE__*/React.createElement(__ds_scope.ChartLegend, {
+    items: legend,
+    hidden: hidden,
+    onToggle: toggle
+  }));
+}
+Object.assign(__ds_scope, { WeeklyLine });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/WeeklyLine.jsx", error: String((e && e.message) || e) }); }
 
 // components/assistant/AssistantIcon.jsx
 try { (() => {
@@ -11756,6 +14124,1442 @@ function ScrumBoard({
 Object.assign(__ds_scope, { BOARD_COLUMNS, ScrumBoard });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/scrum/ScrumBoard.jsx", error: String((e && e.message) || e) }); }
 
+// components/search/EntityIcon.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const ICONS = {
+  team: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "9",
+    cy: "7",
+    r: "4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M22 21v-2a4 4 0 0 0-3-3.87"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M16 3.13a4 4 0 0 1 0 7.75"
+  })),
+  project: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 10v4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 10v2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M16 10v6"
+  })),
+  task: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "m9 11 3 3L22 4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
+  })),
+  story: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"
+  })),
+  conversation: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+  })),
+  class: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M22 10v6M2 10l10-5 10 5-10 5z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M6 12v5c3 3 9 3 12 0v-5"
+  })),
+  assignment: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("rect", {
+    width: "8",
+    height: "4",
+    x: "8",
+    y: "2",
+    rx: "1",
+    ry: "1"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 11h4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 16h4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 11h.01"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 16h.01"
+  })),
+  action: /*#__PURE__*/React.createElement("svg", {
+    width: "15",
+    height: "15",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M5 12h14"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m12 5 7 7-7 7"
+  }))
+};
+
+/**
+ * 28px type disc that tells the reader what kind of entity a result is.
+ * People show initials (Avatar's initialsOf); everything else a lucide glyph on its type tint.
+ */
+function EntityIcon({
+  type = 'task',
+  name,
+  size = 'md',
+  className = '',
+  ...rest
+}) {
+  const cls = ['gt-entity', `gt-entity--${type}`, size === 'sm' ? 'gt-entity--sm' : '', className].filter(Boolean).join(' ');
+  return /*#__PURE__*/React.createElement("span", _extends({
+    className: cls,
+    "aria-hidden": "true"
+  }, rest), type === 'person' ? __ds_scope.initialsOf(name) : ICONS[type] || ICONS.task);
+}
+Object.assign(__ds_scope, { EntityIcon });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/EntityIcon.jsx", error: String((e && e.message) || e) }); }
+
+// components/search/Kbd.jsx
+try { (() => {
+/** Keycap hint (⌘K, ↑, ↵, esc). Pass `keys` as an array to render a chord. */
+function Kbd({
+  keys,
+  children,
+  onDark = false,
+  className = ''
+}) {
+  const list = keys || [children];
+  const cls = ['gt-kbd', onDark ? 'gt-kbd--on-dark' : '', className].filter(Boolean).join(' ');
+  return /*#__PURE__*/React.createElement(React.Fragment, null, list.map((k, i) => /*#__PURE__*/React.createElement("kbd", {
+    key: i,
+    className: cls
+  }, k)));
+}
+
+/** Platform-aware modifier label: ⌘ on Apple devices, Ctrl elsewhere. */
+function modKey() {
+  if (typeof navigator === 'undefined') return '⌘';
+  return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘' : 'Ctrl';
+}
+/** Bundle-visible alias of modKey (only capitalized exports reach the namespace). */
+const ModKey = modKey;
+Object.assign(__ds_scope, { Kbd, modKey, ModKey });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/Kbd.jsx", error: String((e && e.message) || e) }); }
+
+// components/search/MatchText.jsx
+try { (() => {
+/** Renders `text` with every case-insensitive occurrence of `query` wrapped in <mark>. */
+function MatchText({
+  text = '',
+  query = '',
+  className = ''
+}) {
+  const q = String(query).trim();
+  if (!q) return /*#__PURE__*/React.createElement("span", {
+    className: className
+  }, text);
+  const parts = [];
+  const lower = String(text).toLowerCase();
+  const ql = q.toLowerCase();
+  let i = 0;
+  let idx = lower.indexOf(ql, i);
+  while (idx !== -1) {
+    if (idx > i) parts.push(text.slice(i, idx));
+    parts.push(/*#__PURE__*/React.createElement("mark", {
+      key: idx
+    }, text.slice(idx, idx + q.length)));
+    i = idx + q.length;
+    idx = lower.indexOf(ql, i);
+  }
+  if (i < text.length) parts.push(text.slice(i));
+  return /*#__PURE__*/React.createElement("span", {
+    className: className
+  }, parts);
+}
+Object.assign(__ds_scope, { MatchText });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/MatchText.jsx", error: String((e && e.message) || e) }); }
+
+// components/search/ResultRow.jsx
+try { (() => {
+const TYPE_LABEL = {
+  person: 'Person',
+  team: 'Team',
+  project: 'Project',
+  task: 'Task',
+  story: 'Story',
+  conversation: 'Chat',
+  class: 'Class',
+  assignment: 'Assignment',
+  action: 'Action'
+};
+const STATUS_LABEL = {
+  todo: 'To do',
+  in_progress: 'In progress',
+  done: 'Done'
+};
+function fmtDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+function tagClass(t) {
+  return `gt-tagbadge gt-tagbadge--${String(t).toLowerCase().replace(/[^a-z]/g, '')}`;
+}
+
+/** Entity-specific context line. Each piece is a <span>; dots separate them. */
+function Context({
+  item
+}) {
+  const bits = [];
+  const push = (node, k) => {
+    if (node) bits.push(/*#__PURE__*/React.createElement("span", {
+      key: k
+    }, node));
+  };
+  switch (item.type) {
+    case 'task':
+      push(item.status && /*#__PURE__*/React.createElement("span", {
+        className: "gt-result__status"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: `gt-result__status-dot gt-result__status-dot--${item.status}`
+      }), STATUS_LABEL[item.status]), 's');
+      push(item.dueAt && `Due ${fmtDate(item.dueAt)}`, 'd');
+      push(Number.isFinite(item.points) && `${item.points} pts`, 'p');
+      push(Number.isFinite(item.estimateHours) && `${item.estimateHours}h`, 'e');
+      (item.tags || []).slice(0, 2).forEach((t, i) => push(/*#__PURE__*/React.createElement("span", {
+        className: tagClass(t)
+      }, t), `t${i}`));
+      break;
+    case 'story':
+      push(item.sprint, 'sp');
+      push(Number.isFinite(item.points) && `${item.points} pts`, 'p');
+      push(Number.isFinite(item.tasksTotal) && `${item.tasksDone ?? 0}/${item.tasksTotal} tasks done`, 't');
+      break;
+    case 'conversation':
+      push(item.subtitle || 'Direct message', 's');
+      push(item.lastMessageAt && fmtDate(item.lastMessageAt), 'd');
+      break;
+    default:
+      push(item.subtitle, 's');
+      push(Number.isFinite(item.memberCount) && `${item.memberCount} members`, 'm');
+      push(item.term, 'tm');
+  }
+  if (!bits.length) return null;
+  return /*#__PURE__*/React.createElement("span", {
+    className: "gt-result__context"
+  }, bits.map((b, i) => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: i
+  }, i > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "gt-result__dot",
+    "aria-hidden": "true"
+  }), b)));
+}
+
+/**
+ * One palette row. Mouse-hover sets the active index (one highlight for mouse
+ * and keyboard); click selects. `role="option"` + `aria-selected`.
+ */
+function ResultRow({
+  item,
+  query = '',
+  active = false,
+  id,
+  onSelect,
+  onHover,
+  className = ''
+}) {
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (active && ref.current) {
+      const el = ref.current,
+        parent = el.closest('.gt-palette__body');
+      if (parent) {
+        const top = el.offsetTop - parent.offsetTop,
+          bottom = top + el.offsetHeight;
+        if (top < parent.scrollTop) parent.scrollTop = top - 4;else if (bottom > parent.scrollTop + parent.clientHeight) parent.scrollTop = bottom - parent.clientHeight + 4;
+      }
+    }
+  }, [active]);
+  return /*#__PURE__*/React.createElement("li", {
+    ref: ref,
+    id: id,
+    role: "option",
+    "aria-selected": active,
+    className: ['gt-result', className].filter(Boolean).join(' '),
+    onMouseMove: onHover,
+    onClick: () => onSelect && onSelect(item)
+  }, /*#__PURE__*/React.createElement(__ds_scope.EntityIcon, {
+    type: item.type,
+    name: item.title
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "gt-result__main"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-result__title"
+  }, item.key && /*#__PURE__*/React.createElement("span", {
+    className: "gt-result__key"
+  }, item.key), /*#__PURE__*/React.createElement(__ds_scope.MatchText, {
+    text: item.title,
+    query: query
+  })), /*#__PURE__*/React.createElement(Context, {
+    item: item
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "gt-result__meta"
+  }, item.type === 'conversation' && item.unread > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "gt-result__badge",
+    "aria-label": `${item.unread} unread`
+  }, item.unread), /*#__PURE__*/React.createElement("span", {
+    className: "gt-result__type"
+  }, TYPE_LABEL[item.type] || item.type), /*#__PURE__*/React.createElement("span", {
+    className: "gt-result__enter",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Kbd, null, "\u21B5"))));
+}
+
+/** Uppercase group label with count; optional "See all" that narrows the scope. */
+function ResultGroup({
+  label,
+  count,
+  onSeeAll
+}) {
+  return /*#__PURE__*/React.createElement("li", {
+    className: "gt-result-group",
+    role: "presentation",
+    "aria-hidden": "true"
+  }, label, Number.isFinite(count) && /*#__PURE__*/React.createElement("span", {
+    className: "gt-result-group__count"
+  }, count), onSeeAll && count > 0 && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-result-group__action",
+    onClick: onSeeAll,
+    tabIndex: -1
+  }, "See all ", count));
+}
+Object.assign(__ds_scope, { ResultRow, ResultGroup });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/ResultRow.jsx", error: String((e && e.message) || e) }); }
+
+// components/search/SearchModel.jsx
+try { (() => {
+/**
+ * Pure search model: entity metadata, ranking, routing and pagination.
+ * No UI. The codebase ports this to `features/search/searchModel.ts`.
+ */
+
+/** Group order = importance when match quality ties (brief: tasks → people → chats → projects → teams). */
+const SEARCH_ENTITIES = [{
+  type: 'task',
+  label: 'Tasks',
+  plural: 'tasks',
+  weight: 8
+}, {
+  type: 'story',
+  label: 'Stories',
+  plural: 'stories',
+  weight: 7
+}, {
+  type: 'person',
+  label: 'People',
+  plural: 'people',
+  weight: 6
+}, {
+  type: 'conversation',
+  label: 'Chats',
+  plural: 'chats',
+  weight: 5
+}, {
+  type: 'project',
+  label: 'Projects',
+  plural: 'projects',
+  weight: 4
+}, {
+  type: 'team',
+  label: 'Teams',
+  plural: 'teams',
+  weight: 3
+}, {
+  type: 'class',
+  label: 'Classes',
+  plural: 'classes',
+  weight: 2
+}, {
+  type: 'assignment',
+  label: 'Assignments',
+  plural: 'assignments',
+  weight: 1
+}, {
+  type: 'action',
+  label: 'Actions',
+  plural: 'actions',
+  weight: 0
+}];
+const ENTITY_BY_TYPE = Object.fromEntries(SEARCH_ENTITIES.map(e => [e.type, e]));
+
+/** 0–100 match quality: exact key > exact title > prefix > word start > substring > none. */
+function matchQuality(item, q) {
+  if (!q) return 50;
+  const ql = q.toLowerCase();
+  const key = (item.key || '').toLowerCase();
+  const title = (item.title || '').toLowerCase();
+  const hay = [item.subtitle, item.email, ...(item.keywords || [])].filter(Boolean).join(' ').toLowerCase();
+  if (key && key === ql) return 100;
+  if (title === ql) return 95;
+  if (key && key.startsWith(ql)) return 90;
+  if (title.startsWith(ql)) return 85;
+  if (title.split(/\s+/).some(w => w.startsWith(ql))) return 75;
+  if (title.includes(ql)) return 60;
+  if (hay.includes(ql)) return 40;
+  return 0;
+}
+
+/** Entity-specific tie-breaks, lower = earlier. */
+function tieBreak(item) {
+  switch (item.type) {
+    case 'task':
+    case 'story':
+      {
+        const done = item.status === 'done' ? 1 : 0; // open work first
+        const due = item.dueAt ? new Date(item.dueAt).getTime() : Infinity; // soonest due first
+        const est = Number.isFinite(item.estimateHours) ? item.estimateHours : 999; // then smaller estimates
+        return [done, due, est];
+      }
+    case 'conversation':
+      return [item.unread ? 0 : 1, -(item.lastMessageAt ? new Date(item.lastMessageAt).getTime() : 0)];
+    case 'person':
+      return [item.sameTeam ? 0 : 1, item.sameClass ? 0 : 1];
+    default:
+      return [item.archived ? 1 : 0, -(item.updatedAt ? new Date(item.updatedAt).getTime() : 0)];
+  }
+}
+function cmpArrays(a, b) {
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const d = (a[i] ?? 0) - (b[i] ?? 0);
+    if (d) return d;
+  }
+  return 0;
+}
+
+/**
+ * Rank: score = matchQuality + entityWeight (small) + recency boost (small).
+ * Match quality dominates; entity order only decides among equal matches.
+ */
+function rankResults(items, query, {
+  scope = 'all',
+  recentIds = []
+} = {}) {
+  const q = String(query || '').trim();
+  const recent = new Set(recentIds);
+  return items.filter(it => scope === 'all' || it.type === scope).map(it => {
+    const mq = matchQuality(it, q);
+    const w = (ENTITY_BY_TYPE[it.type] || {
+      weight: 0
+    }).weight;
+    const mine = it.assignedToMe ? 3 : 0;
+    const rec = recent.has(it.id) ? 2 : 0;
+    return {
+      item: it,
+      mq,
+      score: mq + w * 0.5 + mine + rec
+    };
+  }).filter(r => r.mq > 0).sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (a.item.type !== b.item.type) return (ENTITY_BY_TYPE[b.item.type]?.weight ?? 0) - (ENTITY_BY_TYPE[a.item.type]?.weight ?? 0);
+    return cmpArrays(tieBreak(a.item), tieBreak(b.item));
+  }).map(r => r.item);
+}
+
+/** Counts per entity type for the scope chips. */
+function countByType(items) {
+  return items.reduce((acc, it) => {
+    acc[it.type] = (acc[it.type] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+/** Slice a ranked list into a page; returns rows with group labels inserted at type boundaries. */
+function paginate(ranked, page = 1, pageSize = 8) {
+  const total = ranked.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const p = Math.min(Math.max(1, page), pages);
+  const start = (p - 1) * pageSize;
+  const slice = ranked.slice(start, start + pageSize);
+  const rows = [];
+  let prev = null;
+  slice.forEach(it => {
+    if (it.type !== prev) {
+      rows.push({
+        kind: 'group',
+        type: it.type,
+        label: (ENTITY_BY_TYPE[it.type] || {}).label || it.type,
+        count: ranked.filter(r => r.type === it.type).length
+      });
+      prev = it.type;
+    }
+    rows.push({
+      kind: 'item',
+      item: it
+    });
+  });
+  return {
+    rows,
+    page: p,
+    pages,
+    total,
+    from: total ? start + 1 : 0,
+    to: Math.min(start + pageSize, total)
+  };
+}
+
+/**
+ * Route for an entity — mirrors App.tsx. `role` picks the instructor/student
+ * assignment route. Returns null where the codebase has no route yet (see NOTES).
+ */
+function routeFor(item, {
+  role = 'student'
+} = {}) {
+  switch (item.type) {
+    case 'project':
+      return `/app/projects/${item.projectId || item.id}`;
+    case 'team':
+      return item.projectId ? `/app/projects/${item.projectId}` : null;
+    // no team route — gap
+    case 'task':
+      return `/app/projects/${item.projectId}/board?task=${item.id}`;
+    case 'story':
+      return `/app/projects/${item.projectId}/board?view=backlog&story=${item.id}`;
+    // ?story= is new — gap
+    case 'conversation':
+      return `/app/messages/${item.id}`;
+    case 'person':
+      return item.conversationId ? `/app/messages/${item.conversationId}` : `/app/messages/compose?to=${item.id}`;
+    case 'class':
+      return role === 'student' ? '/app/my-classes' : `/app/dashboard?class=${item.id}`;
+    // class select is sidebar state — gap
+    case 'assignment':
+      return role === 'student' ? `/app/assignments/${item.id}` : `/app/modules/${item.kind || 'tsr'}/${item.id}`;
+    case 'action':
+      return item.href || null;
+    default:
+      return null;
+  }
+}
+const SearchModel = {
+  rankResults,
+  countByType,
+  paginate,
+  routeFor,
+  entities: SEARCH_ENTITIES
+};
+
+/** Tiny hook: debounced value (250ms default) for async sources. */
+function useDebounced(value, ms = 250) {
+  const [v, setV] = React.useState(value);
+  React.useEffect(() => {
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return v;
+}
+Object.assign(__ds_scope, { SEARCH_ENTITIES, rankResults, countByType, paginate, routeFor, SearchModel, useDebounced });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/SearchModel.jsx", error: String((e && e.message) || e) }); }
+
+// components/search/SearchPagination.jsx
+try { (() => {
+const Chevron = ({
+  dir
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: "13",
+  height: "13",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, dir === 'prev' ? /*#__PURE__*/React.createElement("path", {
+  d: "m15 18-6-6 6-6"
+}) : /*#__PURE__*/React.createElement("path", {
+  d: "m9 18 6-6-6-6"
+}));
+
+/** Compact prev/next pager for the palette footer: "1–8 of 37 · ‹ 1 / 5 ›". */
+function SearchPagination({
+  page = 1,
+  pages = 1,
+  from = 0,
+  to = 0,
+  total = 0,
+  onChange,
+  className = ''
+}) {
+  if (!total) return null;
+  return /*#__PURE__*/React.createElement("nav", {
+    className: ['gt-pagination-compact', className].filter(Boolean).join(' '),
+    "aria-label": "Result pages"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-pagination-compact__range"
+  }, from, "\u2013", to, " of ", total), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-pagination-compact__btn",
+    "aria-label": "Previous page",
+    disabled: page <= 1,
+    onClick: () => onChange && onChange(page - 1)
+  }, /*#__PURE__*/React.createElement(Chevron, {
+    dir: "prev"
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "gt-pagination-compact__page",
+    "aria-live": "polite"
+  }, page, " / ", pages), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-pagination-compact__btn",
+    "aria-label": "Next page",
+    disabled: page >= pages,
+    onClick: () => onChange && onChange(page + 1)
+  }, /*#__PURE__*/React.createElement(Chevron, {
+    dir: "next"
+  })));
+}
+Object.assign(__ds_scope, { SearchPagination });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/SearchPagination.jsx", error: String((e && e.message) || e) }); }
+
+// components/search/CommandPalette.jsx
+try { (() => {
+const SearchGlyph = () => /*#__PURE__*/React.createElement("svg", {
+  width: "18",
+  height: "18",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("circle", {
+  cx: "11",
+  cy: "11",
+  r: "8"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "m21 21-4.3-4.3"
+}));
+
+/** Global ⌘K / Ctrl+K listener. Ignores the shortcut while typing in another field only when `ignoreInputs` is true. */
+function usePaletteHotkey(onToggle, {
+  enabled = true
+} = {}) {
+  React.useEffect(() => {
+    if (!enabled) return undefined;
+    const h = e => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        onToggle();
+      }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onToggle, enabled]);
+}
+
+/**
+ * Global search dialog. Controlled: `open` + `onClose`. Results come from
+ * `items` (ranked client-side) or `onSearch(query, scope)` (async, debounced
+ * 250ms; previous results stay visible while a new query loads).
+ */
+function CommandPalette({
+  open = false,
+  onClose,
+  onOpen,
+  hotkey = true,
+  items = [],
+  onSearch,
+  recent = [],
+  onSelect,
+  role = 'student',
+  pageSize = 8,
+  placeholder = 'Search people, teams, projects, tasks…',
+  scopes,
+  initialQuery = '',
+  className = ''
+}) {
+  const baseId = React.useId();
+  const inputRef = React.useRef(null);
+  const panelRef = React.useRef(null);
+  const restoreRef = React.useRef(null);
+  const [closing, setClosing] = React.useState(false);
+  const [query, setQuery] = React.useState(initialQuery);
+  const [scope, setScope] = React.useState('all');
+  const [page, setPage] = React.useState(1);
+  const [active, setActive] = React.useState(0);
+  const [remote, setRemote] = React.useState({
+    status: 'idle',
+    items: []
+  });
+  const debounced = __ds_scope.useDebounced(query, onSearch ? 250 : 0);
+  const requestClose = React.useCallback(() => {
+    if (closing) return;
+    setClosing(true);
+    setTimeout(() => {
+      setClosing(false);
+      onClose && onClose();
+    }, 150);
+  }, [closing, onClose]);
+  usePaletteHotkey(React.useCallback(() => open ? requestClose() : onOpen && onOpen(), [open, requestClose, onOpen]), {
+    enabled: hotkey
+  });
+
+  // open: focus input, lock scroll, remember what to restore
+  React.useEffect(() => {
+    if (!open) return undefined;
+    restoreRef.current = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => inputRef.current && inputRef.current.focus());
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      restoreRef.current && restoreRef.current.focus && restoreRef.current.focus();
+    };
+  }, [open]);
+
+  // reset per open
+  React.useEffect(() => {
+    if (open) {
+      setQuery(initialQuery);
+      setScope('all');
+      setPage(1);
+      setActive(0);
+    }
+  }, [open, initialQuery]);
+
+  // async source
+  React.useEffect(() => {
+    if (!onSearch || !open) return undefined;
+    if (!debounced.trim()) {
+      setRemote({
+        status: 'idle',
+        items: []
+      });
+      return undefined;
+    }
+    let alive = true;
+    setRemote(r => ({
+      status: r.items.length ? 'refetching' : 'loading',
+      items: r.items
+    }));
+    onSearch(debounced, scope).then(res => alive && setRemote({
+      status: 'ready',
+      items: res || []
+    }), () => alive && setRemote({
+      status: 'error',
+      items: []
+    }));
+    return () => {
+      alive = false;
+    };
+  }, [debounced, scope, onSearch, open, remote.retryTick]);
+  const q = query.trim();
+  const source = onSearch ? remote.items : items;
+  const unscoped = React.useMemo(() => q ? __ds_scope.rankResults(source, q, {
+    scope: 'all',
+    recentIds: recent.map(r => r.id)
+  }) : [], [source, q, recent]);
+  const counts = React.useMemo(() => __ds_scope.countByType(unscoped), [unscoped]);
+  const ranked = React.useMemo(() => scope === 'all' ? unscoped : unscoped.filter(i => i.type === scope), [unscoped, scope]);
+  const idle = !q;
+  const list = idle ? recent : ranked;
+  const pageData = React.useMemo(() => __ds_scope.paginate(list, page, pageSize), [list, page, pageSize]);
+  const optionRows = pageData.rows.filter(r => r.kind === 'item');
+  React.useEffect(() => {
+    setPage(1);
+    setActive(0);
+  }, [q, scope]);
+  React.useEffect(() => {
+    setActive(0);
+  }, [page]);
+  const status = onSearch ? idle ? 'idle' : remote.status : idle ? 'idle' : 'ready';
+  const showSkeleton = status === 'loading';
+  const showError = status === 'error';
+  const showEmpty = !idle && status !== 'loading' && status !== 'error' && ranked.length === 0;
+  const select = item => {
+    const route = __ds_scope.routeFor(item, {
+      role
+    });
+    onSelect && onSelect(item, route);
+    requestClose();
+  };
+  const onKeyDown = e => {
+    const n = optionRows.length;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      requestClose();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (n) setActive(i => (i + 1) % n);
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (n) setActive(i => (i - 1 + n) % n);
+      return;
+    }
+    if (e.key === 'Home' && n) {
+      e.preventDefault();
+      setActive(0);
+      return;
+    }
+    if (e.key === 'End' && n) {
+      e.preventDefault();
+      setActive(n - 1);
+      return;
+    }
+    if (e.key === 'PageDown' && pageData.page < pageData.pages) {
+      e.preventDefault();
+      setPage(p => p + 1);
+      return;
+    }
+    if (e.key === 'PageUp' && pageData.page > 1) {
+      e.preventDefault();
+      setPage(p => p - 1);
+      return;
+    }
+    if (e.key === 'ArrowRight' && e.target.selectionStart === query.length && pageData.page < pageData.pages) {
+      e.preventDefault();
+      setPage(p => p + 1);
+      return;
+    }
+    if (e.key === 'ArrowLeft' && e.target.selectionStart === 0 && pageData.page > 1) {
+      e.preventDefault();
+      setPage(p => p - 1);
+      return;
+    }
+    if (e.key === 'Enter' && optionRows[active]) {
+      e.preventDefault();
+      select(optionRows[active].item);
+    }
+  };
+  if (!open && !closing) return null;
+  const scopeList = (scopes || __ds_scope.SEARCH_ENTITIES.map(e => e.type)).filter(t => t !== 'action');
+  const activeId = optionRows[active] ? `${baseId}-opt-${active}` : undefined;
+  let optIndex = -1;
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-palette-backdrop', closing ? 'gt-palette-backdrop--closing' : ''].filter(Boolean).join(' '),
+    onMouseDown: e => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) requestClose();
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    ref: panelRef,
+    className: ['gt-palette', className].filter(Boolean).join(' '),
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": "Search"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-palette__input-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-palette__search-icon"
+  }, /*#__PURE__*/React.createElement(SearchGlyph, null)), /*#__PURE__*/React.createElement("input", {
+    ref: inputRef,
+    className: "gt-palette__input",
+    type: "text",
+    value: query,
+    onChange: e => setQuery(e.target.value),
+    onKeyDown: onKeyDown,
+    placeholder: placeholder,
+    role: "combobox",
+    "aria-expanded": "true",
+    "aria-controls": `${baseId}-list`,
+    "aria-activedescendant": activeId,
+    "aria-autocomplete": "list",
+    autoComplete: "off",
+    spellCheck: "false"
+  }), (status === 'loading' || status === 'refetching') && /*#__PURE__*/React.createElement("span", {
+    className: "gt-palette__spinner",
+    role: "status",
+    "aria-label": "Searching"
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-palette__esc gt-kbd",
+    onClick: requestClose,
+    "aria-label": "Close search"
+  }, "esc")), !idle && /*#__PURE__*/React.createElement("div", {
+    className: "gt-palette__scopes",
+    role: "group",
+    "aria-label": "Filter by type"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: ['gt-scope', scope === 'all' ? 'gt-scope--active' : ''].join(' '),
+    "aria-pressed": scope === 'all',
+    onClick: () => setScope('all')
+  }, "All ", /*#__PURE__*/React.createElement("span", {
+    className: "gt-scope__count"
+  }, unscoped.length)), scopeList.map(t => {
+    const meta = __ds_scope.SEARCH_ENTITIES.find(e => e.type === t);
+    const c = counts[t] || 0;
+    return /*#__PURE__*/React.createElement("button", {
+      key: t,
+      type: "button",
+      className: ['gt-scope', scope === t ? 'gt-scope--active' : ''].join(' '),
+      "aria-pressed": scope === t,
+      disabled: !c && scope !== t,
+      onClick: () => setScope(t)
+    }, meta ? meta.label : t, " ", c > 0 && /*#__PURE__*/React.createElement("span", {
+      className: "gt-scope__count"
+    }, c));
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-palette__body"
+  }, showSkeleton && /*#__PURE__*/React.createElement("div", {
+    "aria-busy": "true",
+    "aria-label": "Loading results"
+  }, [0, 1, 2].map(i => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "gt-palette__skeleton"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-palette__skeleton-icon"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "gt-palette__skeleton-line",
+    style: {
+      width: `${46 - i * 8}%`
+    }
+  })))), showError && /*#__PURE__*/React.createElement("div", {
+    className: "gt-palette__state gt-palette__state--error",
+    role: "alert"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "gt-palette__state-title"
+  }, "Search isn't available right now"), /*#__PURE__*/React.createElement("p", {
+    className: "gt-palette__state-hint"
+  }, "Your connection may be offline. ", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-palette__retry",
+    onClick: () => setRemote(r => ({
+      ...r,
+      retryTick: (r.retryTick || 0) + 1
+    }))
+  }, "Try again"))), showEmpty && /*#__PURE__*/React.createElement("div", {
+    className: "gt-palette__state"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "gt-palette__state-title"
+  }, "No results for \u201C", q, "\u201D"), /*#__PURE__*/React.createElement("p", {
+    className: "gt-palette__state-hint"
+  }, "Try a name, a task key like GT-12, or a project.")), idle && recent.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "gt-palette__state"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "gt-palette__state-title"
+  }, "Search GrepThink"), /*#__PURE__*/React.createElement("p", {
+    className: "gt-palette__state-hint"
+  }, "People, teams, projects, chats, and your tasks and stories. Press ", /*#__PURE__*/React.createElement(__ds_scope.Kbd, null, "\u21B5"), " to open the highlighted result.")), !showSkeleton && !showError && !showEmpty && (idle ? recent.length > 0 : true) && /*#__PURE__*/React.createElement("ul", {
+    id: `${baseId}-list`,
+    className: "gt-palette__list",
+    role: "listbox",
+    "aria-label": idle ? 'Recent' : 'Results'
+  }, idle && /*#__PURE__*/React.createElement(__ds_scope.ResultGroup, {
+    label: "Recent",
+    count: recent.length
+  }), pageData.rows.map((row, i) => {
+    if (row.kind === 'group') {
+      if (idle || scope !== 'all') return null;
+      return /*#__PURE__*/React.createElement(__ds_scope.ResultGroup, {
+        key: `g${i}`,
+        label: row.label,
+        count: row.count,
+        onSeeAll: row.count > 1 ? () => setScope(row.type) : undefined
+      });
+    }
+    optIndex += 1;
+    const idx = optIndex;
+    return /*#__PURE__*/React.createElement(__ds_scope.ResultRow, {
+      key: row.item.id,
+      id: `${baseId}-opt-${idx}`,
+      item: row.item,
+      query: q,
+      active: idx === active,
+      onHover: () => setActive(idx),
+      onSelect: select
+    });
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-palette__footer"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-palette__hints"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-palette__hint"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Kbd, {
+    keys: ['↑', '↓']
+  }), " navigate"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-palette__hint"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Kbd, null, "\u21B5"), " open"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-palette__hint"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Kbd, null, "esc"), " close"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-palette__hint"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Kbd, {
+    keys: [__ds_scope.modKey(), 'K']
+  }), " toggle")), !idle && /*#__PURE__*/React.createElement(__ds_scope.SearchPagination, {
+    page: pageData.page,
+    pages: pageData.pages,
+    from: pageData.from,
+    to: pageData.to,
+    total: pageData.total,
+    onChange: setPage
+  }))));
+}
+Object.assign(__ds_scope, { usePaletteHotkey, CommandPalette });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/CommandPalette.jsx", error: String((e && e.message) || e) }); }
+
+// components/search/SearchTrigger.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const SearchGlyph = ({
+  size = 18
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("circle", {
+  cx: "11",
+  cy: "11",
+  r: "8"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "m21 21-4.3-4.3"
+}));
+
+/**
+ * Header affordance that opens the ⌘K palette. Same footprint as the old
+ * `.app-header__search-bar` (250px, white, 2.61px shadow) but it is a button.
+ */
+function SearchTrigger({
+  label = 'Search',
+  onOpen,
+  iconOnly = false,
+  className = '',
+  ...rest
+}) {
+  const cls = ['gt-search-trigger', iconOnly ? 'gt-search-trigger--icon' : '', className].filter(Boolean).join(' ');
+  return /*#__PURE__*/React.createElement("button", _extends({
+    type: "button",
+    className: cls,
+    onClick: onOpen,
+    "aria-label": `${label} (${__ds_scope.modKey()} K)`,
+    "aria-haspopup": "dialog"
+  }, rest), /*#__PURE__*/React.createElement("span", {
+    className: "gt-search-trigger__icon"
+  }, /*#__PURE__*/React.createElement(SearchGlyph, null)), /*#__PURE__*/React.createElement("span", {
+    className: "gt-search-trigger__label"
+  }, label), /*#__PURE__*/React.createElement("span", {
+    className: "gt-search-trigger__keys"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Kbd, {
+    keys: [__ds_scope.modKey(), 'K']
+  })));
+}
+
+/**
+ * The one local filter input (roster, member manager, project assign,
+ * conversation list…). Debounce in the caller; this is presentational.
+ */
+function SearchField({
+  value = '',
+  onChange,
+  placeholder = 'Search…',
+  ariaLabel,
+  size = 'md',
+  fullWidth = false,
+  disabled = false,
+  onClear,
+  className = '',
+  ...rest
+}) {
+  const cls = ['gt-search-field', size === 'sm' ? 'gt-search-field--sm' : '', fullWidth ? 'gt-search-field--full' : '', className].filter(Boolean).join(' ');
+  return /*#__PURE__*/React.createElement("div", {
+    className: cls
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-search-field__icon"
+  }, /*#__PURE__*/React.createElement(SearchGlyph, {
+    size: 15
+  })), /*#__PURE__*/React.createElement("input", _extends({
+    type: "search",
+    className: "gt-search-field__input",
+    value: value,
+    onChange: e => onChange && onChange(e.target.value),
+    placeholder: placeholder,
+    "aria-label": ariaLabel || placeholder,
+    disabled: disabled
+  }, rest)), value && !disabled && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-search-field__clear",
+    "aria-label": "Clear search",
+    onClick: () => {
+      onChange && onChange('');
+      onClear && onClear();
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "13",
+    height: "13",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.2",
+    strokeLinecap: "round",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M18 6 6 18M6 6l12 12"
+  }))));
+}
+Object.assign(__ds_scope, { SearchTrigger, SearchField });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/SearchTrigger.jsx", error: String((e && e.message) || e) }); }
+
+// components/search/searchData.js
+try { (() => {
+/* Sample search corpus for the gallery + UI kit (demo only). window.GT_SEARCH_SAMPLE */
+(function () {
+  const d = s => `2026-10-${String(s).padStart(2, '0')}T17:00:00Z`;
+  const items = [
+  // tasks (user-scoped: assignedToMe)
+  {
+    id: 't1',
+    type: 'task',
+    key: 'GT-12',
+    title: 'Roster CSV importer rejects UTF-8 BOM',
+    projectId: 'p1',
+    status: 'in_progress',
+    dueAt: d(9),
+    points: 3,
+    estimateHours: 4,
+    tags: ['backend', 'bug'],
+    assignedToMe: true
+  }, {
+    id: 't2',
+    type: 'task',
+    key: 'GT-18',
+    title: 'Roster table — sticky header on scroll',
+    projectId: 'p1',
+    status: 'todo',
+    dueAt: d(12),
+    points: 2,
+    estimateHours: 2,
+    tags: ['frontend'],
+    assignedToMe: true
+  }, {
+    id: 't3',
+    type: 'task',
+    key: 'GT-7',
+    title: 'Roster export: include team column',
+    projectId: 'p1',
+    status: 'done',
+    dueAt: d(2),
+    points: 1,
+    estimateHours: 1,
+    tags: ['backend'],
+    assignedToMe: true
+  }, {
+    id: 't4',
+    type: 'task',
+    key: 'GT-21',
+    title: 'Design empty state for roster',
+    projectId: 'p1',
+    status: 'todo',
+    dueAt: d(14),
+    points: 2,
+    estimateHours: 3,
+    tags: ['UI/UX', 'design'],
+    assignedToMe: true
+  }, {
+    id: 't5',
+    type: 'task',
+    key: 'GT-23',
+    title: 'Write roster API docs',
+    projectId: 'p1',
+    status: 'todo',
+    dueAt: d(20),
+    points: 1,
+    estimateHours: 2,
+    tags: ['docs'],
+    assignedToMe: true
+  }, {
+    id: 't6',
+    type: 'task',
+    key: 'GT-9',
+    title: 'Supabase RLS policy for roster reads',
+    projectId: 'p1',
+    status: 'in_progress',
+    dueAt: d(10),
+    points: 5,
+    estimateHours: 6,
+    tags: ['infra', 'backend'],
+    assignedToMe: true
+  }, {
+    id: 't7',
+    type: 'task',
+    key: 'GT-30',
+    title: 'Burnup chart tooltip overlaps legend',
+    projectId: 'p1',
+    status: 'todo',
+    dueAt: d(16),
+    points: 2,
+    estimateHours: 2,
+    tags: ['frontend', 'bug'],
+    assignedToMe: true
+  },
+  // stories
+  {
+    id: 's1',
+    type: 'story',
+    key: 'US-4',
+    title: 'Instructor imports a roster from Canvas',
+    projectId: 'p1',
+    status: 'in_progress',
+    sprint: 'Sprint 3',
+    points: 8,
+    tasksDone: 2,
+    tasksTotal: 5,
+    dueAt: d(17),
+    assignedToMe: true
+  }, {
+    id: 's2',
+    type: 'story',
+    key: 'US-9',
+    title: 'Student searches the roster for teammates',
+    projectId: 'p1',
+    status: 'todo',
+    sprint: 'Sprint 4',
+    points: 5,
+    tasksDone: 0,
+    tasksTotal: 3,
+    dueAt: d(31),
+    assignedToMe: true
+  },
+  // people
+  {
+    id: 'u1',
+    type: 'person',
+    title: 'Ashton Liu',
+    email: 'aliu@ucsc.edu',
+    subtitle: 'Student · CSE 115B · Team 1',
+    role: 'student',
+    sameTeam: true,
+    sameClass: true,
+    conversationId: 'c3'
+  }, {
+    id: 'u2',
+    type: 'person',
+    title: 'Rosa Trinh',
+    email: 'rtrinh@ucsc.edu',
+    subtitle: 'TA · CSE 115B',
+    role: 'ta',
+    sameClass: true
+  }, {
+    id: 'u3',
+    type: 'person',
+    title: 'Tony Wu',
+    email: 'twu@ucsc.edu',
+    subtitle: 'Student · CSE 115B · Team 1',
+    role: 'student',
+    sameTeam: true,
+    sameClass: true
+  }, {
+    id: 'u4',
+    type: 'person',
+    title: 'Priya Raman',
+    email: 'praman@ucsc.edu',
+    subtitle: 'Student · CSE 115B · Team 4',
+    role: 'student',
+    sameClass: true
+  }, {
+    id: 'u5',
+    type: 'person',
+    title: 'Richard Jullig',
+    email: 'rjullig@ucsc.edu',
+    subtitle: 'Instructor · CSE 115B',
+    role: 'instructor',
+    sameClass: true
+  },
+  // chats
+  {
+    id: 'c1',
+    type: 'conversation',
+    title: 'Team 1 · Grepthink 2.0',
+    subtitle: 'Team channel',
+    unread: 3,
+    lastMessageAt: d(7)
+  }, {
+    id: 'c2',
+    type: 'conversation',
+    title: 'Roster sync thread',
+    subtitle: 'Team channel',
+    unread: 0,
+    lastMessageAt: d(5)
+  }, {
+    id: 'c3',
+    type: 'conversation',
+    title: 'Ashton Liu',
+    subtitle: 'Direct message',
+    unread: 1,
+    lastMessageAt: d(7)
+  }, {
+    id: 'c4',
+    type: 'conversation',
+    title: 'Rosa Trinh (TA)',
+    subtitle: 'Direct message',
+    unread: 0,
+    lastMessageAt: d(1)
+  },
+  // projects
+  {
+    id: 'p1',
+    type: 'project',
+    projectId: 'p1',
+    title: 'Grepthink 2.0',
+    subtitle: 'Team 1 · Active',
+    memberCount: 4,
+    updatedAt: d(7),
+    keywords: ['roster', 'scrum']
+  }, {
+    id: 'p2',
+    type: 'project',
+    projectId: 'p2',
+    title: 'Roster Radar',
+    subtitle: 'Team 4 · Active',
+    memberCount: 5,
+    updatedAt: d(6)
+  }, {
+    id: 'p3',
+    type: 'project',
+    projectId: 'p3',
+    title: 'Slug Dining',
+    subtitle: 'Team 2 · Archived',
+    memberCount: 4,
+    archived: true,
+    updatedAt: d(1)
+  },
+  // teams
+  {
+    id: 'tm1',
+    type: 'team',
+    projectId: 'p1',
+    title: 'Team 1',
+    subtitle: 'Grepthink 2.0 · CSE 115B',
+    memberCount: 4,
+    updatedAt: d(7)
+  }, {
+    id: 'tm2',
+    type: 'team',
+    projectId: 'p2',
+    title: 'Team 4',
+    subtitle: 'Roster Radar · CSE 115B',
+    memberCount: 5,
+    updatedAt: d(6)
+  },
+  // classes & assignments
+  {
+    id: 'k1',
+    type: 'class',
+    title: 'CSE 115B',
+    subtitle: 'Software Design Project II',
+    term: 'Fall 2026',
+    keywords: ['roster']
+  }, {
+    id: 'k2',
+    type: 'class',
+    title: 'CSE 115A',
+    subtitle: 'Introduction to Software Engineering',
+    term: 'Spring 2026'
+  }, {
+    id: 'a1',
+    type: 'assignment',
+    kind: 'tsr',
+    title: 'TSR 3',
+    subtitle: 'Team Status Report · Due Oct 12',
+    dueAt: d(12)
+  }, {
+    id: 'a2',
+    type: 'assignment',
+    kind: 'interest_form',
+    title: 'Interest Form — roster preferences',
+    subtitle: 'Interest form · Due Oct 20',
+    dueAt: d(20)
+  },
+  // actions
+  {
+    id: 'x1',
+    type: 'action',
+    title: 'Leave class',
+    subtitle: 'Opens My Classes',
+    href: '/app/my-classes',
+    keywords: ['leave class', 'drop class', 'unenroll']
+  }];
+  const recent = [items.find(i => i.id === 't1'), items.find(i => i.id === 'c1'), items.find(i => i.id === 'p1'), items.find(i => i.id === 'u1')];
+  window.GT_SEARCH_SAMPLE = {
+    items,
+    recent
+  };
+})();
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/searchData.js", error: String((e && e.message) || e) }); }
+
 // ui_kits/grepthink-landing/Landing.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
@@ -12668,6 +16472,754 @@ Object.assign(window, {
 });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink-landing/Stages.jsx", error: String((e && e.message) || e) }); }
 
+// ui_kits/grepthink/AnalyticsScreen.jsx
+try { (() => {
+/* GrepThink Analytics — page composition for the UI kit.
+   Composes components/analytics/*; reads window.ANALYTICS_SAMPLE / _EMPTY. */
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const {
+  SidebarNavItem,
+  SidebarSectionTitle,
+  Badge,
+  Button,
+  AnalyticsFilterRow,
+  StatTile,
+  ChartCard,
+  ChartCardTool,
+  ChartCardCheck,
+  UnitToggle,
+  AnalyticsIcon,
+  WeeklyLine,
+  SplitBar,
+  StackedBars,
+  TimelinessBars,
+  OnTimeMeter,
+  BarsBySprint,
+  TrendLines,
+  BreakdownTable,
+  BREAKDOWN_COLUMNS,
+  TEAM_BREAKDOWN_COLUMNS,
+  TIMELINESS_COLUMNS
+} = NS;
+
+// Local copies of the ChartFormat helpers (keeps the kit independent of bundle compile timing).
+const fmtCompact = n => n === null || n === undefined ? '—' : Math.abs(n) >= 1e6 ? `${(n / 1e6).toFixed(1).replace(/\.0$/, '')}M` : Math.abs(n) >= 1e4 ? `${(n / 1e3).toFixed(1).replace(/\.0$/, '')}K` : n.toLocaleString('en-US');
+const fmtWeek = (iso, y) => {
+  const [Y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(Y, m - 1, d)).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(y ? {
+      year: 'numeric'
+    } : {}),
+    timeZone: 'UTC'
+  });
+};
+const fmtRange = (a, b) => {
+  const cross = a.slice(0, 4) !== b.slice(0, 4);
+  return `${fmtWeek(a, cross)} – ${fmtWeek(b, cross)}`;
+};
+const CLASSES = [{
+  id: 'c1',
+  label: 'CSE 115A · Fall 2026'
+}, {
+  id: 'c2',
+  label: 'CSE 115B'
+}, {
+  id: 'c3',
+  label: 'CSE 115C · Fall 2026'
+}, {
+  id: 'c4',
+  label: 'CSE 115D (pilot) · Fall 2026'
+}];
+const DEFS = {
+  messages: 'Messages sent in team-member channels of the teams in view, plus direct messages between two people of the school, in the selected range. Conversations between staff and a student of their class are left out: the team ↔ TA and team ↔ instructor channels, and direct messages between an instructor or TA and a student of the same class. Direct messages are counted for the whole school and do not change with the class filter. Weeks start on Monday in the school\u2019s time zone.',
+  timeliness: 'For each assignment due in the range, every expected submitter (team members for a TSR; enrolled students for feedback and interest forms) is placed in one bucket by the time they finished submitting: early (more than 24 h before the deadline), on time (within the last 24 h), late (after the deadline, inside the late-submission window), or missing (nothing by the end). The deadline is the end of the due date in the school\u2019s time zone, as it was set \u2014 reopening an assignment adds a late window and does not move it. Submissions edited after the deadline are counted separately. \u201cNot due yet\u201d rows are shown but excluded from the on-time rate.',
+  scrum: 'Every task in view, by its current column and by the sprint of its story. Sprints are aligned by order within each team (Sprint 1 is each team\u2019s first sprint), not by date. Tasks whose story is in the backlog are \u201cBacklog\u201d. Tasks of archived stories are not shown. Switch between the number of tasks and their story points.',
+  chars: 'The number of characters in a task\u2019s (or story\u2019s) title and description, as typed, including markdown. The median is shown; half of the items are shorter.',
+  active: 'People of the school who signed in explicitly in the last 7 days (staying signed in does not count).',
+  trends: 'Weekly figures per team from the nightly rollup over the selected range, with the range of the same length just before it drawn in grey for comparison. Each night\u2019s rollup adds yesterday, at about 02:00 Pacific time and about 12:00 in Istanbul, so an Istanbul board snapshot (Points done) is taken at midday. Per-team figures count only the classes in session, from the week of each class\u2019s first activity to the week of its last. Only complete weeks are drawn: the week in progress appears once it ends. Deleted classes and teams stay in the history.'
+};
+
+// Tile hints (revision 2026-10-08): counts are everything on record, active or not.
+const HINTS = {
+  classes: cls => cls ? 'The selected class' : 'All classes on record',
+  teams: cls => cls ? 'All teams on record in this class' : 'All teams on record',
+  students: cls => cls ? 'All students on record in this class' : 'All students on record',
+  signedIn: DEFS.active
+};
+
+// Page failure strip copy (the page's one alert). `kind`: http | refused | unreachable.
+function failureText(f, hasPrevious) {
+  const base = f.kind === 'http' ? `The latest request failed (HTTP ${f.status}).` : f.kind === 'refused' ? `The latest request failed: ${f.reason}` : 'The server could not be reached.';
+  return hasPrevious ? `${base} Showing the previous figures.` : base;
+}
+const PRESET_DAYS = {
+  '7d': 7,
+  '30d': 30,
+  '90d': 90,
+  'class': 14,
+  'all': 120
+};
+const TODAY = '2026-10-07';
+function shiftIso(iso, days) {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function rangeFor(range) {
+  if (range.preset === 'custom' && range.from && range.to) return {
+    from: range.from,
+    to: range.to
+  };
+  const days = PRESET_DAYS[range.preset] || 30;
+  return {
+    from: shiftIso(TODAY, -(days - 1)),
+    to: TODAY
+  };
+}
+function previousOf({
+  from,
+  to
+}) {
+  const len = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
+  return {
+    from: shiftIso(from, -len),
+    to: shiftIso(from, -1)
+  };
+}
+function toCsv(rows, columns) {
+  const esc = v => v === null || v === undefined ? '' : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
+  return [columns.map(c => esc(c.label)).join(','), ...rows.map(r => columns.map(c => esc(r[c.key])).join(','))].join('\n');
+}
+const Icons = {
+  home: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+    name: "layout-grid"
+  }),
+  msg: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+    name: "message-square"
+  }),
+  classes: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+    name: "graduation-cap"
+  }),
+  plus: /*#__PURE__*/React.createElement("svg", {
+    width: "16",
+    height: "16",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M12 5v14M5 12h14"
+  })),
+  chart: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+    name: "bar-chart-3"
+  }),
+  gear: /*#__PURE__*/React.createElement("svg", {
+    width: "16",
+    height: "16",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "3"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+  }))
+};
+const FOOTNOTE = 'Aggregates only. No individual student is identified on this page. Groups of fewer than 3 are combined.';
+function Shell({
+  active = 'Analytics',
+  children,
+  hideSidebar
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "an-app"
+  }, !hideSidebar && /*#__PURE__*/React.createElement("aside", {
+    className: "an-side"
+  }, /*#__PURE__*/React.createElement("img", {
+    className: "an-side__logo",
+    src: "../../assets/grepthink-logo.svg",
+    alt: "GrepThink"
+  }), /*#__PURE__*/React.createElement(SidebarSectionTitle, null, "Main"), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: Icons.home,
+    label: "Home"
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: Icons.msg,
+    label: "Messages",
+    badge: 2
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: Icons.classes,
+    label: "My Classes"
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: Icons.plus,
+    label: "Create Class"
+  }), active === 'Analytics' && /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: Icons.chart,
+    label: "Analytics",
+    active: true
+  }), /*#__PURE__*/React.createElement(SidebarSectionTitle, null, "Settings"), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: Icons.gear,
+    label: "Settings"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "an-main"
+  }, children));
+}
+function AnalyticsScreen({
+  data,
+  demoState,
+  withTimeliness,
+  failure
+}) {
+  const [filter, setFilter] = React.useState({
+    classId: '',
+    range: {
+      preset: '30d'
+    }
+  });
+  const [unit, setUnit] = React.useState('count');
+  const [compare, setCompare] = React.useState(true);
+  const [tables, setTables] = React.useState({});
+  const [sort, setSort] = React.useState({
+    key: 'team_messages',
+    dir: 'desc'
+  });
+  const [refetching, setRefetching] = React.useState(false);
+  const [retried, setRetried] = React.useState(false);
+  const timer = React.useRef(null);
+  const simulateRefetch = () => {
+    if (demoState === 'loading' || demoState === 'empty') return;
+    setRefetching(true);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setRefetching(false), 800);
+  };
+  const onFilter = v => {
+    setFilter(v);
+    simulateRefetch();
+  };
+  const toggleTable = k => setTables(t => ({
+    ...t,
+    [k]: !t[k]
+  }));
+  const view = k => tables[k] ? 'table' : 'chart';
+  const loading = demoState === 'loading';
+  const isRefetch = demoState === 'refetching' || refetching;
+  const cardState = (key, hasData) => loading ? 'loading' : data.failures.includes(key) && !retried ? 'error' : !hasData ? 'empty' : isRefetch ? 'refetching' : 'ready';
+  const cur = filter.range.preset === '30d' && !filter.classId ? {
+    from: data.meta.range.from,
+    to: data.meta.range.to
+  } : rangeFor(filter.range);
+  const prev = filter.range.preset === 'all' ? null : filter.range.preset === '30d' && !filter.classId && data.meta.range.previous_from ? {
+    from: data.meta.range.previous_from,
+    to: data.meta.range.previous_to
+  } : previousOf(cur);
+  const rangeLabel = fmtRange(cur.from, cur.to);
+  const prevLabel = prev ? `vs previous ${fmtRange(prev.from, prev.to)}` : null;
+  const classView = filter.classId ? window.ANALYTICS_CLASS_VIEW(filter.classId) : null;
+  const classLabel = CLASSES.find(c => c.id === filter.classId)?.label;
+  const o = data.overview,
+    conv = data.conversations,
+    sc = data.scrum;
+  const tl = withTimeliness ? data.timeliness : {
+    ...data.timeliness,
+    on_time_rate: null,
+    rows: [],
+    expected: 0,
+    late: 0,
+    missing: 0,
+    edited_late: 0
+  };
+  const timeRows = (classView ? classView.rows : tl.rows).map(r => ({
+    key: r.key,
+    label: r.label,
+    dueAt: r.due_at,
+    expected: r.expected,
+    editedLate: r.edited_late,
+    href: r.kind === 'folded' ? undefined : r.href,
+    folded: r.kind === 'folded',
+    notDueYet: !!r.notDueYet,
+    buckets: Object.entries(r.buckets).map(([key, value]) => ({
+      key,
+      value
+    }))
+  }));
+  const stackedRows = sc.by_sprint.map(s => ({
+    key: String(s.ordinal),
+    label: s.label,
+    teams: s.teams,
+    segments: [{
+      status: 'todo',
+      count: s.todo,
+      points: s.points_todo
+    }, {
+      status: 'in_progress',
+      count: s.in_progress,
+      points: s.points_in_progress
+    }, {
+      status: 'done',
+      count: s.done,
+      points: s.points_done
+    }]
+  }));
+  const charPanels = ['task', 'story'].map(e => ({
+    key: e,
+    title: e === 'task' ? 'Tasks' : 'Stories',
+    overall: sc.chars.find(c => c.entity === e && c.ordinal === null) || {
+      median: 0,
+      n: 0
+    },
+    columns: sc.chars.filter(c => c.entity === e && c.ordinal !== null)
+  }));
+  const trendPanels = data.trends.panels.filter(p => withTimeliness || p.key !== 'on_time_rate').map(p => ({
+    ...p,
+    // Demo: the 7d preset holds only the week in progress (→ "No complete week in this range yet.");
+    // the pilot class (c4) had no class in session (→ "No team activity in this range.").
+    current: p.current.filter(x => filter.range.preset !== '7d' || x.week_start >= cur.from).map(x => ({
+      weekStart: x.week_start,
+      value: filter.classId === 'c4' ? null : x.value
+    })),
+    previous: p.previous && filter.range.preset !== '7d' ? p.previous.map(x => ({
+      weekStart: x.week_start,
+      value: filter.classId === 'c4' ? null : x.value
+    })) : null
+  }));
+  const bdRows = classView ? classView.teams : data.breakdown.rows;
+  const columns = [...(classView ? TEAM_BREAKDOWN_COLUMNS : BREAKDOWN_COLUMNS), ...(withTimeliness ? TIMELINESS_COLUMNS : [])];
+  const exportCsv = () => {
+    const blob = new Blob([toCsv(bdRows, columns)], {
+      type: 'text/csv'
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `grepthink-analytics-${data.meta.institution.slug}-${cur.from}_${cur.to}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  const onRowView = r => {
+    if (classView) {
+      window.alert(`Opens ${r.name}\u2019s scrum board`);
+    } else {
+      onFilter({
+        ...filter,
+        classId: r.id
+      });
+    }
+  };
+  const sub = s => filter.classId ? `${s} · ${classLabel}` : s;
+  const hasAny = o.teams > 0 || o.messages > 0;
+  const failed = key => data.failures.includes(key) && !retried;
+  const tableCard = (key, pressed) => /*#__PURE__*/React.createElement("span", {
+    className: "gt-analytics__toggle"
+  }, /*#__PURE__*/React.createElement(ChartCardTool, {
+    icon: "table",
+    label: "Table",
+    pressed: pressed,
+    onClick: () => toggleTable(key)
+  }));
+  // With a class selected the Messages tile becomes that class's team-channel messages; direct messages stay school-wide.
+  const teamMsgs = classView ? classView.teams.reduce((s, t) => s + (t.team_messages || 0), 0) : null;
+  const convFoot = classView ? `${fmtCompact(teamMsgs)} team messages · ${rangeLabel} · direct messages are school-wide: ${fmtCompact(conv.dm)}` : `${fmtCompact(conv.total)} messages · ${rangeLabel} · direct messages are school-wide`;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "gt-analytics"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-analytics__header"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "gt-analytics__title"
+  }, /*#__PURE__*/React.createElement(AnalyticsIcon, {
+    name: "bar-chart-3",
+    size: 20
+  }), "Analytics"), /*#__PURE__*/React.createElement("span", {
+    className: "gt-analytics__badge"
+  }, /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, data.meta.institution.name)), /*#__PURE__*/React.createElement("span", {
+    className: "gt-analytics__refresh"
+  }, /*#__PURE__*/React.createElement(Button, {
+    variant: "secondary",
+    size: "sm",
+    iconLeft: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+      name: "refresh-cw",
+      size: 14
+    }),
+    onClick: simulateRefetch,
+    disabled: loading
+  }, "Refresh"))), /*#__PURE__*/React.createElement(AnalyticsFilterRow, {
+    classes: CLASSES,
+    classId: filter.classId,
+    range: filter.range,
+    onChange: onFilter,
+    disabled: loading,
+    today: new Date(`${TODAY}T12:00:00Z`)
+  }), failure && /*#__PURE__*/React.createElement("div", {
+    className: "gt-analytics__error",
+    role: "alert"
+  }, /*#__PURE__*/React.createElement(AnalyticsIcon, {
+    name: "alert-circle",
+    size: 15
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "gt-analytics__error-text"
+  }, failureText(failure, true))), /*#__PURE__*/React.createElement("div", {
+    className: ['gt-analytics__tiles', withTimeliness ? 'gt-analytics__tiles--6' : ''].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement(StatTile, {
+    label: "Classes",
+    value: classView ? 1 : o.active_classes,
+    icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+      name: "graduation-cap"
+    }),
+    loading: loading,
+    failed: failed('overview') && o.active_classes === null,
+    hint: HINTS.classes(filter.classId)
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    label: "Teams",
+    value: classView ? classView.teams.length : o.teams,
+    icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+      name: "users"
+    }),
+    accent: "blue",
+    loading: loading,
+    failed: failed('overview') && o.teams === null,
+    hint: HINTS.teams(filter.classId)
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    label: "Students",
+    value: classView ? classView.teams.reduce((s, t) => s + (t.members || 0), 0) : o.students,
+    icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+      name: "users"
+    }),
+    accent: "purple",
+    loading: loading,
+    failed: failed('overview') && o.students === null,
+    hint: HINTS.students(filter.classId)
+  }), /*#__PURE__*/React.createElement(StatTile, {
+    label: "Signed in (7d)",
+    value: o.active_users_7d,
+    icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+      name: "activity"
+    }),
+    accent: "amber",
+    loading: loading,
+    delta: {
+      value: o.active_users_7d === null ? null : o.deltas.active_users_7d ?? null,
+      vsLabel: 'vs the 7 days before'
+    },
+    hint: o.active_users_7d === null ? 'Appears once sign-ins are recorded' : HINTS.signedIn
+  }), classView ? /*#__PURE__*/React.createElement(StatTile, {
+    label: "Team messages",
+    value: teamMsgs,
+    icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+      name: "message-square"
+    }),
+    loading: loading,
+    delta: {
+      value: prev ? o.deltas.messages ?? null : null,
+      vsLabel: prevLabel
+    },
+    trend: o.trends.messages ? o.trends.messages.map(v => Math.round(v * 0.45)) : undefined,
+    hint: `Direct messages are school-wide: ${fmtCompact(conv.dm)}`
+  }) : /*#__PURE__*/React.createElement(StatTile, {
+    label: "Messages",
+    value: o.messages,
+    icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+      name: "message-square"
+    }),
+    loading: loading,
+    delta: {
+      value: prev ? o.deltas.messages ?? null : null,
+      vsLabel: prevLabel
+    },
+    trend: o.trends.messages
+  }), withTimeliness && /*#__PURE__*/React.createElement(StatTile, {
+    label: "On time",
+    value: tl.on_time_rate,
+    format: "percent",
+    icon: /*#__PURE__*/React.createElement(AnalyticsIcon, {
+      name: "check-circle-2"
+    }),
+    accent: "blue",
+    loading: loading,
+    delta: {
+      value: prev ? o.deltas.on_time_rate ?? null : null,
+      vsLabel: prevLabel
+    },
+    hint: tl.on_time_rate === null ? 'No deadlines in this range' : undefined
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-analytics__grid"
+  }, /*#__PURE__*/React.createElement(ChartCard, {
+    title: "Conversations",
+    subtitle: sub('Team channels and direct messages.'),
+    definition: DEFS.messages,
+    wide: !withTimeliness,
+    state: cardState('conversations', conv.weekly.length > 0),
+    emptyMessage: {
+      icon: 'message-square',
+      title: 'No messages yet',
+      hint: 'Team channels fill in as teams start talking.'
+    },
+    hero: fmtCompact(conv.total),
+    heroMeta: "messages in range",
+    footnote: convFoot,
+    actions: tableCard('conv', !!tables.conv)
+  }, /*#__PURE__*/React.createElement(WeeklyLine, {
+    height: 200,
+    view: view('conv'),
+    series: [{
+      key: 'team',
+      label: 'Team channels',
+      points: conv.weekly.map(w => ({
+        weekStart: w.week_start,
+        value: w.team_members
+      }))
+    }, {
+      key: 'dm',
+      label: 'Direct',
+      points: conv.weekly.map(w => ({
+        weekStart: w.week_start,
+        value: w.dm
+      }))
+    }]
+  }), view('conv') === 'chart' && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14
+    }
+  }, /*#__PURE__*/React.createElement(SplitBar, {
+    mixedScope: !!filter.classId,
+    segments: [{
+      key: 'team',
+      label: 'Team channels',
+      value: conv.team_members
+    }, {
+      key: 'dm',
+      label: 'Direct',
+      value: conv.dm,
+      note: 'school-wide'
+    }]
+  }))), withTimeliness && /*#__PURE__*/React.createElement(ChartCard, {
+    title: "Timeliness",
+    subtitle: sub('Submissions against the deadline.'),
+    definition: DEFS.timeliness,
+    state: cardState('timeliness', timeRows.length > 0),
+    emptyMessage: {
+      icon: 'calendar',
+      title: 'No deadlines in this range',
+      hint: 'Timeliness fills in once an assignment is due.'
+    },
+    footnote: tl.edited_late ? `${tl.edited_late} submissions were edited after the deadline · "Not due yet" rows are excluded from the rate` : undefined,
+    actions: tableCard('time', !!tables.time)
+  }, /*#__PURE__*/React.createElement(OnTimeMeter, {
+    rate: tl.on_time_rate,
+    late: tl.late,
+    missing: tl.missing,
+    editedLate: tl.edited_late
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14
+    }
+  }, /*#__PURE__*/React.createElement(TimelinessBars, {
+    rows: timeRows,
+    view: view('time'),
+    bucketOrder: tl.bucket_order
+  }))), /*#__PURE__*/React.createElement(ChartCard, {
+    wide: true,
+    title: "Scrum board",
+    live: true,
+    subtitle: sub('Tasks on every team\u2019s board right now, by sprint.'),
+    definition: DEFS.scrum,
+    state: cardState('scrum', stackedRows.length > 0),
+    onRetry: () => setRetried(true),
+    emptyMessage: {
+      icon: 'kanban',
+      title: 'No sprints yet',
+      hint: 'Boards fill in once teams create their first sprint.'
+    },
+    footnote: `${sc.stories_created} stories (${sc.story_points_created} pts) · ${sc.tasks_created} tasks (${sc.task_points_created} pts) created in range`,
+    actions: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(UnitToggle, {
+      value: unit,
+      onChange: setUnit
+    }), tableCard('scrum', !!tables.scrum))
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-analytics__scrum"
+  }, /*#__PURE__*/React.createElement(StackedBars, {
+    rows: stackedRows,
+    unit: unit,
+    view: view('scrum')
+  }), /*#__PURE__*/React.createElement(BarsBySprint, {
+    height: 128,
+    panels: charPanels,
+    view: view('scrum')
+  }))), /*#__PURE__*/React.createElement(ChartCard, {
+    wide: true,
+    title: "Trends",
+    subtitle: "Week by week, against the previous range.",
+    definition: DEFS.trends,
+    state: cardState('trends', trendPanels.length > 0),
+    emptyMessage: {
+      icon: 'trending-up',
+      title: 'Trends appear after the first nightly rollup.'
+    },
+    footnote: undefined,
+    actions: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+      className: "gt-analytics__check"
+    }, /*#__PURE__*/React.createElement(ChartCardCheck, {
+      label: "Compare with previous range",
+      checked: compare && !!prev,
+      onChange: setCompare,
+      disabled: !prev
+    })), tableCard('trends', !!tables.trends))
+  }, /*#__PURE__*/React.createElement(TrendLines, {
+    panels: trendPanels,
+    compare: compare && !!prev,
+    asOf: data.trends.as_of,
+    height: 96,
+    view: view('trends')
+  })), /*#__PURE__*/React.createElement(ChartCard, {
+    wide: true,
+    title: classView ? `By team · ${classLabel}` : 'By class',
+    subtitle: `Teams, activity and board progress · ${rangeLabel}`,
+    state: cardState('breakdown', bdRows.length > 0),
+    emptyMessage: {
+      icon: 'table',
+      title: 'Nothing to list',
+      hint: 'Rows appear once the school has classes and teams.'
+    },
+    actions: /*#__PURE__*/React.createElement(ChartCardTool, {
+      icon: "download",
+      label: "Export CSV",
+      className: "gt-table__export",
+      onClick: exportCsv,
+      disabled: !bdRows.length
+    })
+  }, /*#__PURE__*/React.createElement(BreakdownTable, {
+    rows: bdRows,
+    columns: columns,
+    sort: sort,
+    onSort: setSort,
+    onRowView: onRowView
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "gt-analytics__footnote"
+  }, FOOTNOTE));
+}
+function Forbidden() {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "gt-analytics"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-analytics__header"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "gt-analytics__title"
+  }, /*#__PURE__*/React.createElement(AnalyticsIcon, {
+    name: "bar-chart-3",
+    size: 20
+  }), "Analytics")), /*#__PURE__*/React.createElement("div", {
+    className: "gt-analytics__forbidden",
+    role: "status"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-analytics__forbidden-icon"
+  }, /*#__PURE__*/React.createElement(AnalyticsIcon, {
+    name: "shield-off",
+    size: 20
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "gt-analytics__forbidden-title"
+  }, "Analytics is available to instructors and maintainers."), /*#__PURE__*/React.createElement("span", {
+    className: "gt-analytics__forbidden-text"
+  }, "Your class dashboard shows your own team", '\u2019', "s progress. Ask your instructor if you need an institution-wide view.")), /*#__PURE__*/React.createElement("p", {
+    className: "gt-analytics__footnote"
+  }, FOOTNOTE));
+}
+const WIDTHS = {
+  desktop: null,
+  '1000': 1000,
+  phone: 390
+};
+
+// Demo: a refetch that failed — the previous payload stays on screen, one source came back null.
+function failedVariant(base) {
+  const d = JSON.parse(JSON.stringify(base));
+  d.overview.teams = null;
+  d.breakdown.rows.forEach((r, i) => {
+    if (i % 2 === 1) r.team_messages = null;
+  });
+  d.failures = ['overview'];
+  d.meta.cached = true;
+  return d;
+}
+function AnalyticsApp() {
+  const [demoState, setDemoState] = React.useState('filled');
+  const [withTimeliness, setWithTimeliness] = React.useState(false);
+  const [widthKey, setWidthKey] = React.useState('desktop');
+  const failedData = React.useMemo(() => failedVariant(window.ANALYTICS_SAMPLE), []);
+  const data = demoState === 'empty' ? window.ANALYTICS_EMPTY : demoState === 'failed' ? failedData : window.ANALYTICS_SAMPLE;
+  const failure = demoState === 'failed' ? {
+    kind: 'http',
+    status: 502
+  } : null;
+  const w = WIDTHS[widthKey];
+  const phone = widthKey === 'phone';
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "an-stage",
+    style: w ? {
+      maxWidth: w + (phone ? 0 : 256),
+      margin: '0 auto',
+      borderLeft: '1px solid var(--gt-border)',
+      borderRight: '1px solid var(--gt-border)'
+    } : undefined
+  }, /*#__PURE__*/React.createElement(Shell, {
+    hideSidebar: phone,
+    active: demoState === 'forbidden' ? 'Home' : 'Analytics'
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "an-content"
+  }, demoState === 'forbidden' ? /*#__PURE__*/React.createElement(Forbidden, null) : /*#__PURE__*/React.createElement(AnalyticsScreen, {
+    key: `${demoState}-${withTimeliness}`,
+    data: data,
+    demoState: demoState,
+    withTimeliness: withTimeliness,
+    failure: failure
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "an-demo",
+    role: "group",
+    "aria-label": "Demo controls"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "an-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "an-demo__lbl"
+  }, "State"), ['filled', 'empty', 'loading', 'refetching', 'failed', 'forbidden'].map(s => /*#__PURE__*/React.createElement("button", {
+    key: s,
+    type: "button",
+    className: "an-demo__opt",
+    "aria-pressed": demoState === s,
+    onClick: () => setDemoState(s)
+  }, s))), /*#__PURE__*/React.createElement("span", {
+    className: "an-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "an-demo__lbl"
+  }, "Release"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "an-demo__opt",
+    "aria-pressed": !withTimeliness,
+    onClick: () => setWithTimeliness(false)
+  }, "first"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "an-demo__opt",
+    "aria-pressed": withTimeliness,
+    onClick: () => setWithTimeliness(true)
+  }, "+ timeliness")), /*#__PURE__*/React.createElement("span", {
+    className: "an-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "an-demo__lbl"
+  }, "Width"), Object.keys(WIDTHS).map(k => /*#__PURE__*/React.createElement("button", {
+    key: k,
+    type: "button",
+    className: "an-demo__opt",
+    "aria-pressed": widthKey === k,
+    onClick: () => setWidthKey(k)
+  }, k)))));
+}
+window.AnalyticsApp = AnalyticsApp;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/AnalyticsScreen.jsx", error: String((e && e.message) || e) }); }
+
 // ui_kits/grepthink/App.jsx
 try { (() => {
 const {
@@ -13389,6 +17941,294 @@ window.GTKScreens = {
 };
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/Screens.jsx", error: String((e && e.message) || e) }); }
 
+// ui_kits/grepthink/SearchScreen.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/* GrepThink ⌘K search — UI-kit screen composition.
+   Composes components/search/*; reads window.GT_SEARCH_SAMPLE. */
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const {
+  SidebarNavItem,
+  SidebarSectionTitle,
+  Avatar,
+  SearchTrigger,
+  CommandPalette,
+  SearchField,
+  Kbd,
+  ModKey
+} = NS;
+const modKey = ModKey || (() => '⌘');
+const {
+  items,
+  recent
+} = window.GT_SEARCH_SAMPLE;
+const I = {
+  home: /*#__PURE__*/React.createElement("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("rect", {
+    x: "3",
+    y: "3",
+    width: "7",
+    height: "7",
+    rx: "1"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "14",
+    y: "3",
+    width: "7",
+    height: "7",
+    rx: "1"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "3",
+    y: "14",
+    width: "7",
+    height: "7",
+    rx: "1"
+  }), /*#__PURE__*/React.createElement("rect", {
+    x: "14",
+    y: "14",
+    width: "7",
+    height: "7",
+    rx: "1"
+  })),
+  msg: /*#__PURE__*/React.createElement("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+  })),
+  classes: /*#__PURE__*/React.createElement("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M22 10v6M2 10l10-5 10 5-10 5z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M6 12v5c3 3 9 3 12 0v-5"
+  })),
+  project: /*#__PURE__*/React.createElement("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"
+  })),
+  gear: /*#__PURE__*/React.createElement("svg", {
+    width: "18",
+    height: "18",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "3"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+  })),
+  bell: /*#__PURE__*/React.createElement("svg", {
+    width: "20",
+    height: "20",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M13.73 21a2 2 0 0 1-3.46 0"
+  })),
+  menu: /*#__PURE__*/React.createElement("svg", {
+    width: "22",
+    height: "22",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M4 6h16M4 12h16M4 18h16"
+  }))
+};
+function Shell({
+  phone,
+  children,
+  onOpenSearch
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "sk-app"
+  }, !phone && /*#__PURE__*/React.createElement("aside", {
+    className: "sk-side"
+  }, /*#__PURE__*/React.createElement("img", {
+    className: "sk-side__logo",
+    src: "../../assets/grepthink-logo.svg",
+    alt: "GrepThink"
+  }), /*#__PURE__*/React.createElement(SidebarSectionTitle, null, "Main"), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.home,
+    label: "Home",
+    active: true
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.msg,
+    label: "Messages",
+    badge: 4
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.classes,
+    label: "My Classes"
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.project,
+    label: "My Project"
+  }), /*#__PURE__*/React.createElement(SidebarSectionTitle, null, "Settings"), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.gear,
+    label: "Settings"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "sk-side__tip"
+  }, "Press ", /*#__PURE__*/React.createElement(Kbd, {
+    onDark: true,
+    keys: [modKey(), 'K']
+  }), " to search")), /*#__PURE__*/React.createElement("div", {
+    className: "sk-main"
+  }, /*#__PURE__*/React.createElement("header", {
+    className: "sk-header"
+  }, phone && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sk-header__menu",
+    "aria-label": "Open menu"
+  }, I.menu), /*#__PURE__*/React.createElement("h1", {
+    className: "sk-header__title"
+  }, "Home"), /*#__PURE__*/React.createElement("div", {
+    className: "sk-header__right"
+  }, /*#__PURE__*/React.createElement(SearchTrigger, {
+    onOpen: onOpenSearch,
+    iconOnly: phone
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sk-header__icon",
+    "aria-label": "Notifications"
+  }, I.bell), !phone && /*#__PURE__*/React.createElement(Avatar, {
+    name: "Joshua Cruz",
+    size: "sm"
+  }))), /*#__PURE__*/React.createElement("main", {
+    className: "sk-content"
+  }, children)));
+}
+
+/* Minimal Home stand-in so the scrim has something to blur. */
+function HomeStub() {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "sk-home"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "sk-home__welcome"
+  }, "Welcome Back, Josh"), /*#__PURE__*/React.createElement("div", {
+    className: "sk-home__grid"
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "sk-card"
+  }, /*#__PURE__*/React.createElement("h3", null, "Upcoming Deadlines"), /*#__PURE__*/React.createElement("p", null, "TSR 3 \xB7 Due Oct 12"), /*#__PURE__*/React.createElement("p", null, "Interest Form \xB7 Due Oct 20")), /*#__PURE__*/React.createElement("section", {
+    className: "sk-card"
+  }, /*#__PURE__*/React.createElement("h3", null, "Current Group"), /*#__PURE__*/React.createElement("p", null, "Grepthink 2.0 \xB7 Team 1 \xB7 4 members")), /*#__PURE__*/React.createElement("section", {
+    className: "sk-card"
+  }, /*#__PURE__*/React.createElement("h3", null, "My Tasks"), /*#__PURE__*/React.createElement("p", null, "GT-12 Roster CSV importer rejects UTF-8 BOM"), /*#__PURE__*/React.createElement("p", null, "GT-9 Supabase RLS policy for roster reads"))));
+}
+function SearchApp() {
+  const [open, setOpen] = React.useState(true);
+  const [mode, setMode] = React.useState('local'); // local | async | error
+  const [phone, setPhone] = React.useState(false);
+  const [lastRoute, setLastRoute] = React.useState(null);
+  const onOpen = React.useCallback(() => setOpen(true), []);
+  const onClose = React.useCallback(() => setOpen(false), []);
+  const asyncSearch = React.useCallback((q, scope) => new Promise((res, rej) => {
+    setTimeout(() => {
+      if (mode === 'error') return rej(new Error('offline'));
+      const ql = q.toLowerCase();
+      res(items.filter(i => scope === 'all' || i.type === scope).filter(i => [i.title, i.key, i.subtitle, i.email, ...(i.keywords || [])].filter(Boolean).join(' ').toLowerCase().includes(ql)));
+    }, 900);
+  }), [mode]);
+  const paletteProps = mode === 'local' ? {
+    items
+  } : {
+    onSearch: asyncSearch
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['sk-stage', phone ? 'sk-stage--phone' : ''].join(' ')
+  }, /*#__PURE__*/React.createElement(Shell, {
+    phone: phone,
+    onOpenSearch: onOpen
+  }, /*#__PURE__*/React.createElement(HomeStub, null)), /*#__PURE__*/React.createElement(CommandPalette, _extends({
+    open: open,
+    onOpen: onOpen,
+    onClose: onClose,
+    recent: recent,
+    role: "student",
+    initialQuery: mode === 'local' ? 'roster' : '',
+    onSelect: (item, route) => setLastRoute(route || `(no route yet for ${item.type})`)
+  }, paletteProps)), /*#__PURE__*/React.createElement("div", {
+    className: "sk-demo",
+    role: "toolbar",
+    "aria-label": "Demo controls"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "sk-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "sk-demo__lbl"
+  }, "source"), ['local', 'async', 'error'].map(m => /*#__PURE__*/React.createElement("button", {
+    key: m,
+    type: "button",
+    className: "sk-demo__opt",
+    "aria-pressed": mode === m,
+    onClick: () => {
+      setMode(m);
+      setOpen(true);
+    }
+  }, m))), /*#__PURE__*/React.createElement("span", {
+    className: "sk-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "sk-demo__lbl"
+  }, "width"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sk-demo__opt",
+    "aria-pressed": !phone,
+    onClick: () => setPhone(false)
+  }, "desktop"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sk-demo__opt",
+    "aria-pressed": phone,
+    onClick: () => setPhone(true)
+  }, "phone")), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sk-demo__opt",
+    onClick: () => setOpen(true)
+  }, "open \u2318K"), lastRoute && /*#__PURE__*/React.createElement("span", {
+    className: "sk-demo__route"
+  }, "\u2192 ", lastRoute)));
+}
+window.SearchApp = SearchApp;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/SearchScreen.jsx", error: String((e && e.message) || e) }); }
+
 // ui_kits/grepthink/Shell.jsx
 try { (() => {
 const NS = window.GrepThinkDesignSystem_36e7e3;
@@ -13781,6 +18621,678 @@ window.GTKShell = {
 };
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/Shell.jsx", error: String((e && e.message) || e) }); }
 
+// ui_kits/grepthink/analyticsData.js
+try { (() => {
+/* Sample payloads for the Analytics UI kit — copies of
+   docs/superpowers/handoffs/2026-10-05-analytics-claude-design/sample-data{,.empty}.json
+   (AnalyticsDashboard contract, handoff §5). Loaded as a plain script. */
+window.ANALYTICS_SAMPLE = {
+  meta: {
+    institution: {
+      id: '6f2c3a2e-0000-4000-8000-000000000001',
+      name: 'UC Santa Cruz',
+      slug: 'ucsc',
+      timezone: 'America/Los_Angeles'
+    },
+    class: null,
+    range: {
+      preset: '30d',
+      from: '2026-09-06',
+      to: '2026-10-05',
+      previous_from: '2026-08-07',
+      previous_to: '2026-09-05'
+    },
+    generated_at: '2026-10-05T17:42:11Z',
+    cached: false,
+    k_anonymity: 3,
+    rollup_as_of: '2026-10-04'
+  },
+  overview: {
+    active_classes: 4,
+    teams: 23,
+    students: 118,
+    active_users_7d: 96,
+    messages: 1284,
+    stories_created: 61,
+    tasks_created: 302,
+    story_points_created: 188,
+    task_points_created: 611,
+    on_time_rate: 0.82,
+    deltas: {
+      messages: 0.18,
+      stories_created: -0.05,
+      tasks_created: 0.22,
+      on_time_rate: 0.03,
+      active_users_7d: 0.09
+    },
+    trends: {
+      messages: [12, 18, 25, 31, 44, 52, 61, 58, 73, 88, 95, 102],
+      tasks_created: [3, 6, 4, 9, 14, 12, 18, 21, 17, 26, 24, 29]
+    }
+  },
+  conversations: {
+    total: 1284,
+    team_members: 572,
+    dm: 712,
+    weekly: [{
+      week_start: '2026-09-07',
+      team_members: 21,
+      dm: 40
+    }, {
+      week_start: '2026-09-14',
+      team_members: 58,
+      dm: 90
+    }, {
+      week_start: '2026-09-21',
+      team_members: 131,
+      dm: 156
+    }, {
+      week_start: '2026-09-28',
+      team_members: 188,
+      dm: 214
+    }, {
+      week_start: '2026-10-05',
+      team_members: 174,
+      dm: 212
+    }],
+    excluded: ['team_ta', 'team_instructor', 'dm between staff and a student of their class']
+  },
+  scrum: {
+    live_as_of: '2026-10-05T17:42:11Z',
+    stories_created: 61,
+    tasks_created: 302,
+    story_points_created: 188,
+    task_points_created: 611,
+    by_sprint: [{
+      ordinal: 0,
+      label: 'Backlog',
+      teams: 23,
+      todo: 94,
+      in_progress: 0,
+      done: 0,
+      points_todo: 171,
+      points_in_progress: 0,
+      points_done: 0
+    }, {
+      ordinal: 1,
+      label: 'Sprint 1',
+      teams: 23,
+      todo: 11,
+      in_progress: 6,
+      done: 118,
+      points_todo: 19,
+      points_in_progress: 13,
+      points_done: 226
+    }, {
+      ordinal: 2,
+      label: 'Sprint 2',
+      teams: 21,
+      todo: 38,
+      in_progress: 27,
+      done: 64,
+      points_todo: 71,
+      points_in_progress: 58,
+      points_done: 139
+    }, {
+      ordinal: 3,
+      label: 'Sprint 3',
+      teams: 9,
+      todo: 41,
+      in_progress: 12,
+      done: 7,
+      points_todo: 83,
+      points_in_progress: 27,
+      points_done: 16
+    }],
+    chars: [{
+      entity: 'task',
+      ordinal: null,
+      label: 'All sprints',
+      n: 418,
+      median: 29
+    }, {
+      entity: 'task',
+      ordinal: 1,
+      label: 'Sprint 1',
+      n: 135,
+      median: 24
+    }, {
+      entity: 'task',
+      ordinal: 2,
+      label: 'Sprint 2',
+      n: 129,
+      median: 31
+    }, {
+      entity: 'task',
+      ordinal: 3,
+      label: 'Sprint 3',
+      n: 60,
+      median: 36
+    }, {
+      entity: 'story',
+      ordinal: null,
+      label: 'All sprints',
+      n: 112,
+      median: 96
+    }, {
+      entity: 'story',
+      ordinal: 1,
+      label: 'Sprint 1',
+      n: 41,
+      median: 78
+    }, {
+      entity: 'story',
+      ordinal: 2,
+      label: 'Sprint 2',
+      n: 44,
+      median: 102
+    }, {
+      entity: 'story',
+      ordinal: 3,
+      label: 'Sprint 3',
+      n: 27,
+      median: 131
+    }]
+  },
+  timeliness: {
+    on_time_rate: 0.82,
+    expected: 354,
+    late: 38,
+    missing: 26,
+    edited_late: 9,
+    bucket_order: ['early', 'on_time', 'late', 'missing', 'not_due'],
+    rows: [{
+      key: 'c1',
+      label: 'CSE 115A',
+      kind: 'class',
+      class_id: 'c1',
+      class_name: 'CSE 115A',
+      expected: 123,
+      buckets: {
+        early: 71,
+        on_time: 37,
+        late: 9,
+        missing: 6,
+        not_due: 0
+      },
+      edited_late: 4,
+      href: '/app/modules'
+    }, {
+      key: 'c2',
+      label: 'CSE 115B',
+      kind: 'class',
+      class_id: 'c2',
+      class_name: 'CSE 115B',
+      expected: 96,
+      buckets: {
+        early: 58,
+        on_time: 24,
+        late: 10,
+        missing: 4,
+        not_due: 0
+      },
+      edited_late: 2,
+      href: '/app/modules'
+    }, {
+      key: 'c3',
+      label: 'CSE 115C',
+      kind: 'class',
+      class_id: 'c3',
+      class_name: 'CSE 115C',
+      expected: 87,
+      buckets: {
+        early: 40,
+        on_time: 22,
+        late: 13,
+        missing: 12,
+        not_due: 0
+      },
+      edited_late: 3,
+      href: '/app/modules'
+    }, {
+      key: 'c4',
+      label: 'CSE 115D (pilot)',
+      kind: 'class',
+      class_id: 'c4',
+      class_name: 'CSE 115D (pilot)',
+      expected: 48,
+      buckets: {
+        early: 22,
+        on_time: 14,
+        late: 6,
+        missing: 4,
+        not_due: 2
+      },
+      edited_late: 0,
+      href: '/app/modules'
+    }, {
+      key: 'folded',
+      label: 'Smaller groups (1)',
+      kind: 'folded',
+      expected: 2,
+      buckets: {
+        early: 1,
+        on_time: 1,
+        late: 0,
+        missing: 0,
+        not_due: 0
+      },
+      edited_late: 0
+    }]
+  },
+  trends: {
+    as_of: '2026-10-04',
+    panels: [{
+      key: 'team_messages_per_team',
+      title: 'Messages per team',
+      unit: 'per team per week',
+      current: [{
+        week_start: '2026-09-07',
+        value: 0.9
+      }, {
+        week_start: '2026-09-14',
+        value: 2.5
+      }, {
+        week_start: '2026-09-21',
+        value: 5.7
+      }, {
+        week_start: '2026-09-28',
+        value: 8.2
+      }, {
+        week_start: '2026-10-05',
+        value: null
+      }],
+      previous: [{
+        week_start: '2026-08-10',
+        value: 0.0
+      }, {
+        week_start: '2026-08-17',
+        value: 0.0
+      }, {
+        week_start: '2026-08-24',
+        value: 0.3
+      }, {
+        week_start: '2026-08-31',
+        value: 0.8
+      }, {
+        week_start: '2026-09-07',
+        value: 0.9
+      }]
+    }, {
+      key: 'tasks_per_team',
+      title: 'Tasks created per team',
+      unit: 'per team per week',
+      current: [{
+        week_start: '2026-09-07',
+        value: 1.1
+      }, {
+        week_start: '2026-09-14',
+        value: 2.9
+      }, {
+        week_start: '2026-09-21',
+        value: 4.6
+      }, {
+        week_start: '2026-09-28',
+        value: 4.5
+      }, {
+        week_start: '2026-10-05',
+        value: null
+      }],
+      previous: [{
+        week_start: '2026-08-10',
+        value: 0.0
+      }, {
+        week_start: '2026-08-17',
+        value: 0.0
+      }, {
+        week_start: '2026-08-24',
+        value: 0.2
+      }, {
+        week_start: '2026-08-31',
+        value: 0.6
+      }, {
+        week_start: '2026-09-07',
+        value: 1.1
+      }]
+    }, {
+      key: 'points_done_per_team',
+      title: 'Points done per team',
+      unit: 'per team',
+      current: [{
+        week_start: '2026-09-07',
+        value: 0.4
+      }, {
+        week_start: '2026-09-14',
+        value: 2.1
+      }, {
+        week_start: '2026-09-21',
+        value: 5.3
+      }, {
+        week_start: '2026-09-28',
+        value: 9.8
+      }, {
+        week_start: '2026-10-05',
+        value: null
+      }],
+      previous: null
+    }, {
+      key: 'on_time_rate',
+      title: 'On-time rate',
+      unit: 'rate',
+      current: [{
+        week_start: '2026-09-07',
+        value: null
+      }, {
+        week_start: '2026-09-14',
+        value: 0.91
+      }, {
+        week_start: '2026-09-21',
+        value: 0.84
+      }, {
+        week_start: '2026-09-28',
+        value: 0.79
+      }, {
+        week_start: '2026-10-05',
+        value: null
+      }],
+      previous: null
+    }]
+  },
+  breakdown: {
+    kind: 'class',
+    rows: [{
+      id: 'c1',
+      name: 'CSE 115A',
+      kind: 'row',
+      teams: 8,
+      students: 41,
+      team_messages: 228,
+      stories: 24,
+      tasks: 118,
+      points_done_rate: 0.61,
+      on_time_rate: 0.88,
+      missing: 6,
+      href: '/app/dashboard'
+    }, {
+      id: 'c2',
+      name: 'CSE 115B',
+      kind: 'row',
+      teams: 6,
+      students: 31,
+      team_messages: 151,
+      stories: 17,
+      tasks: 92,
+      points_done_rate: 0.58,
+      on_time_rate: 0.85,
+      missing: 4,
+      href: '/app/dashboard'
+    }, {
+      id: 'c3',
+      name: 'CSE 115C',
+      kind: 'row',
+      teams: 6,
+      students: 29,
+      team_messages: 133,
+      stories: 14,
+      tasks: 71,
+      points_done_rate: 0.44,
+      on_time_rate: 0.71,
+      missing: 12,
+      href: '/app/dashboard'
+    }, {
+      id: 'c4',
+      name: 'CSE 115D (pilot)',
+      kind: 'row',
+      teams: 3,
+      students: 17,
+      team_messages: 60,
+      stories: 6,
+      tasks: 21,
+      points_done_rate: 0.33,
+      on_time_rate: 0.75,
+      missing: 4,
+      href: '/app/dashboard'
+    }, {
+      id: 'folded',
+      name: 'Smaller groups (1)',
+      kind: 'folded',
+      teams: 1,
+      students: 2,
+      team_messages: 0,
+      stories: 0,
+      tasks: 0,
+      points_done_rate: null,
+      on_time_rate: 1.0,
+      missing: 0
+    }]
+  },
+  failures: []
+};
+window.ANALYTICS_EMPTY = {
+  meta: {
+    institution: {
+      id: '6f2c3a2e-0000-4000-8000-000000000002',
+      name: 'İstinye University',
+      slug: 'istinye',
+      timezone: 'Europe/Istanbul'
+    },
+    class: null,
+    range: {
+      preset: '30d',
+      from: '2026-09-06',
+      to: '2026-10-05',
+      previous_from: '2026-08-07',
+      previous_to: '2026-09-05'
+    },
+    generated_at: '2026-10-05T17:42:11Z',
+    cached: false,
+    k_anonymity: 3,
+    rollup_as_of: null
+  },
+  overview: {
+    active_classes: 1,
+    teams: 0,
+    students: 0,
+    active_users_7d: null,
+    messages: 0,
+    stories_created: 0,
+    tasks_created: 0,
+    story_points_created: 0,
+    task_points_created: 0,
+    on_time_rate: null,
+    deltas: {},
+    trends: {}
+  },
+  conversations: {
+    total: 0,
+    team_members: 0,
+    dm: 0,
+    weekly: [],
+    excluded: ['team_ta', 'team_instructor', 'dm between staff and a student of their class']
+  },
+  scrum: {
+    live_as_of: '2026-10-05T17:42:11Z',
+    stories_created: 0,
+    tasks_created: 0,
+    story_points_created: 0,
+    task_points_created: 0,
+    by_sprint: [],
+    chars: []
+  },
+  timeliness: {
+    on_time_rate: null,
+    expected: 0,
+    late: 0,
+    missing: 0,
+    edited_late: 0,
+    bucket_order: ['early', 'on_time', 'late', 'missing', 'not_due'],
+    rows: []
+  },
+  trends: {
+    as_of: null,
+    panels: []
+  },
+  breakdown: {
+    kind: 'class',
+    rows: []
+  },
+  failures: ['scrum']
+};
+
+/* Demo-only: the per-assignment timeliness view and per-team breakdown a class
+   selection returns from the API. Deterministic splits of the class totals. */
+window.ANALYTICS_CLASS_VIEW = function (classId) {
+  const base = window.ANALYTICS_SAMPLE;
+  const cls = base.timeliness.rows.find(r => r.key === classId);
+  const bd = base.breakdown.rows.find(r => r.id === classId);
+  if (!cls || !bd) return null;
+  const names = ['Interest Form', 'TSR 1', 'TSR 2', 'Sprint 1 Review', 'TSR 3', 'TSR 4', 'Mid-quarter Feedback', 'TSR 5', 'TSR 6', 'Sprint 2 Review', 'TSR 7', 'TSR 8'];
+  const dues = ['2026-09-08', '2026-09-11', '2026-09-18', '2026-09-19', '2026-09-25', '2026-10-02', '2026-10-02', '2026-10-09', '2026-10-16', '2026-10-17', '2026-10-23', '2026-10-30'];
+  const per = Math.max(1, Math.round(cls.expected / 6));
+  const rows = names.map((n, i) => {
+    const notDue = dues[i] > '2026-10-05';
+    const seed = (i * 7 + classId.charCodeAt(1)) % 5;
+    const early = notDue ? 0 : Math.max(0, per - 3 - seed),
+      onTime = notDue ? 0 : Math.min(per, 2 + seed),
+      late = notDue ? 0 : i % 3,
+      missing = notDue ? 0 : i % 4 === 0 ? 2 : 0;
+    const expected = notDue ? per : early + onTime + late + missing;
+    return {
+      key: `${classId}-a${i}`,
+      label: n,
+      kind: 'assignment',
+      assignment_type: n.startsWith('TSR') ? 'tsr' : n.includes('Interest') ? 'interest_form' : 'feedback',
+      due_at: dues[i],
+      expected,
+      buckets: {
+        early,
+        on_time: onTime,
+        late,
+        missing,
+        not_due: notDue ? per : 0
+      },
+      edited_late: i % 5 === 0 ? 1 : 0,
+      href: '/app/modules',
+      notDueYet: notDue
+    };
+  });
+  const teams = Array.from({
+    length: bd.teams
+  }).map((_, i) => ({
+    id: `${classId}-t${i + 1}`,
+    name: `Team ${i + 1}`,
+    kind: 'row',
+    members: 4 + i % 3,
+    team_messages: Math.round(bd.team_messages / bd.teams * (0.6 + i * 37 % 10 / 12)),
+    stories: Math.round(bd.stories / bd.teams) + i % 2,
+    tasks: Math.round(bd.tasks / bd.teams) + i % 4,
+    points_done_rate: Math.min(0.95, 0.3 + i * 53 % 10 / 15),
+    on_time_rate: Math.min(1, 0.6 + i * 29 % 10 / 25),
+    missing: i % 3,
+    href: '/app/dashboard'
+  }));
+  return {
+    rows,
+    teams
+  };
+};
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/analyticsData.js", error: String((e && e.message) || e) }); }
+
+// ui_kits/grepthink/analyticsSrcLoader.js
+try { (() => {
+/* Dev fallback: when the compiled _ds_bundle.js predates components/analytics/
+   (it regenerates once per turn), transpile the family straight from source into
+   the same namespace. Inert as soon as the bundle carries ChartCard. */
+window.loadAnalyticsSources = async function loadAnalyticsSources(base) {
+  const NS = window.GrepThinkDesignSystem_36e7e3 || (window.GrepThinkDesignSystem_36e7e3 = {});
+  if (NS.ChartCard && NS.ChartCardCheck && NS.TEAM_BREAKDOWN_COLUMNS) return NS;
+  const order = ['ChartTooltip', 'ChartLegend', 'LivePill', 'DefinitionPopover', 'ChartEmptyState', 'ChartCard', 'UnitToggle', 'StatTile', 'AnalyticsFilterRow', 'OnTimeMeter', 'SplitBar', 'WeeklyLine', 'TrendLines', 'StackedBars', 'TimelinessBars', 'BarsBySprint', 'BreakdownTable'];
+  for (const name of order) {
+    let src = await (await fetch(`${base}/components/analytics/${name}.jsx`)).text();
+    const needed = [],
+      found = [];
+    src = src.replace(/^import\s*\{([^}]*)\}\s*from\s*'\.\/[^']+';?[ \t]*$/mg, (m, names) => {
+      needed.push(...names.split(',').map(s => s.trim()).filter(Boolean));
+      return '';
+    });
+    src = src.replace(/^import React[^\n]*$/mg, '');
+    src = src.replace(/^export\s+(function|const)\s+([A-Za-z_$][\w$]*)/mg, (m, kind, id) => {
+      found.push(id);
+      return `${kind} ${id}`;
+    });
+    const prelude = needed.length ? `const {${[...new Set(needed)].join(',')}} = __NS;\n` : '';
+    const code = Babel.transform(prelude + src + `\n;Object.assign(__NS, {${found.join(',')}});`, {
+      presets: ['react']
+    }).code;
+    new Function('React', '__NS', code)(window.React, NS);
+  }
+  return NS;
+};
+
+/* Transpile + run an inline <script type="text/babel-deferred"> after the sources are in. */
+window.runDeferredBabel = function runDeferredBabel() {
+  document.querySelectorAll('script[type="text/babel-deferred"]').forEach(s => {
+    new Function(Babel.transform(s.textContent, {
+      presets: ['react']
+    }).code)();
+  });
+};
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/analyticsSrcLoader.js", error: String((e && e.message) || e) }); }
+
+__ds_ns.RANGE_PRESETS = __ds_scope.RANGE_PRESETS;
+
+__ds_ns.AnalyticsFilterRow = __ds_scope.AnalyticsFilterRow;
+
+__ds_ns.BarsBySprint = __ds_scope.BarsBySprint;
+
+__ds_ns.BREAKDOWN_COLUMNS = __ds_scope.BREAKDOWN_COLUMNS;
+
+__ds_ns.TEAM_BREAKDOWN_COLUMNS = __ds_scope.TEAM_BREAKDOWN_COLUMNS;
+
+__ds_ns.TIMELINESS_COLUMNS = __ds_scope.TIMELINESS_COLUMNS;
+
+__ds_ns.BreakdownTable = __ds_scope.BreakdownTable;
+
+__ds_ns.ChartCard = __ds_scope.ChartCard;
+
+__ds_ns.ChartCardTool = __ds_scope.ChartCardTool;
+
+__ds_ns.ChartCardCheck = __ds_scope.ChartCardCheck;
+
+__ds_ns.ChartEmptyState = __ds_scope.ChartEmptyState;
+
+__ds_ns.AnalyticsIcon = __ds_scope.AnalyticsIcon;
+
+__ds_ns.ChartLegend = __ds_scope.ChartLegend;
+
+__ds_ns.ChartFormat = __ds_scope.ChartFormat;
+
+__ds_ns.ChartTooltip = __ds_scope.ChartTooltip;
+
+__ds_ns.DefinitionPopover = __ds_scope.DefinitionPopover;
+
+__ds_ns.LivePill = __ds_scope.LivePill;
+
+__ds_ns.OnTimeMeter = __ds_scope.OnTimeMeter;
+
+__ds_ns.SplitBar = __ds_scope.SplitBar;
+
+__ds_ns.BOARD_STATUSES = __ds_scope.BOARD_STATUSES;
+
+__ds_ns.StackedBars = __ds_scope.StackedBars;
+
+__ds_ns.StatTile = __ds_scope.StatTile;
+
+__ds_ns.TIMELINESS_BUCKETS = __ds_scope.TIMELINESS_BUCKETS;
+
+__ds_ns.TimelinessBars = __ds_scope.TimelinessBars;
+
+__ds_ns.TrendLines = __ds_scope.TrendLines;
+
+__ds_ns.UnitToggle = __ds_scope.UnitToggle;
+
+__ds_ns.WeeklyLine = __ds_scope.WeeklyLine;
+
 __ds_ns.AssistantIcon = __ds_scope.AssistantIcon;
 
 __ds_ns.AssistantMark = __ds_scope.AssistantMark;
@@ -13996,5 +19508,29 @@ __ds_ns.TASK_TAGS = __ds_scope.TASK_TAGS;
 __ds_ns.TagBadge = __ds_scope.TagBadge;
 
 __ds_ns.TaskCard = __ds_scope.TaskCard;
+
+__ds_ns.CommandPalette = __ds_scope.CommandPalette;
+
+__ds_ns.EntityIcon = __ds_scope.EntityIcon;
+
+__ds_ns.Kbd = __ds_scope.Kbd;
+
+__ds_ns.ModKey = __ds_scope.ModKey;
+
+__ds_ns.MatchText = __ds_scope.MatchText;
+
+__ds_ns.ResultRow = __ds_scope.ResultRow;
+
+__ds_ns.ResultGroup = __ds_scope.ResultGroup;
+
+__ds_ns.SEARCH_ENTITIES = __ds_scope.SEARCH_ENTITIES;
+
+__ds_ns.SearchModel = __ds_scope.SearchModel;
+
+__ds_ns.SearchPagination = __ds_scope.SearchPagination;
+
+__ds_ns.SearchTrigger = __ds_scope.SearchTrigger;
+
+__ds_ns.SearchField = __ds_scope.SearchField;
 
 })();

@@ -1,0 +1,62 @@
+<!-- @dsCard group="GrepThink App" viewport="1280x800" name="Global search (⌘K)" subtitle="Command palette open over the app shell — ranked, paginated results with scope chips; local / async / error sources; desktop · phone" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>GrepThink — Search (⌘K)</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../components/search/searchData.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--gt-font-sans); background: var(--gt-gray-100); color: var(--gt-text-primary); }
+  a { color: var(--gt-blue-500); } a:hover { color: var(--gt-info-text); }
+  .sk-stage { height: 100vh; }
+  .sk-app { display: flex; height: 100%; }
+  .sk-side { width: 256px; flex-shrink: 0; background: var(--gt-green-500); display: flex; flex-direction: column; padding: 0.875rem 1.2rem; box-sizing: border-box; }
+  .sk-side__logo { width: 170px; filter: brightness(0) invert(1); margin-bottom: 1rem; }
+  .sk-side__tip { margin-top: auto; display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: rgba(255,255,255,.75); padding: 8px 4px; }
+  .sk-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .sk-header { display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 24px; background: var(--gt-surface); border-bottom: 1px solid var(--gt-border); box-sizing: border-box; }
+  .sk-header__title { margin: 0; font-size: 20px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sk-header__right { display: flex; align-items: center; gap: 12px; }
+  .sk-header__icon, .sk-header__menu { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: none; border-radius: var(--gt-radius-sm); background: var(--gt-surface); box-shadow: var(--gt-shadow-card); color: var(--gt-text-secondary); cursor: pointer; }
+  .sk-header__menu { box-shadow: none; }
+  .sk-header__icon:hover { background: var(--gt-canvas); }
+  .sk-content { flex: 1; overflow: auto; padding: 20px 24px; }
+  .sk-home__welcome { margin: 0 0 16px; font-size: 32px; font-weight: 600; line-height: 1.2; }
+  .sk-home__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .sk-card { background: var(--gt-surface); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-card); padding: 16px 20px; }
+  .sk-card h3 { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+  .sk-card p { margin: 4px 0; font-size: 13px; color: var(--gt-text-secondary); }
+  /* phone frame */
+  .sk-stage--phone { display: flex; align-items: flex-start; justify-content: center; padding: 24px 0; box-sizing: border-box; }
+  .sk-stage--phone .sk-app { width: 390px; height: calc(100vh - 48px); border: 1px solid var(--gt-border); border-radius: 20px; overflow: hidden; background: var(--gt-gray-100); box-shadow: var(--gt-shadow-pop); position: relative; }
+  .sk-stage--phone .sk-header { padding: 0 12px; gap: 8px; }
+  .sk-stage--phone .sk-content { padding: 16px; }
+  .sk-stage--phone .sk-home__welcome { font-size: 24px; }
+  .sk-stage--phone .gt-palette-backdrop { position: absolute; }
+  .sk-demo { position: fixed; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 10px; background: var(--gt-gray-900); color: #fff; border-radius: 999px; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,.25); z-index: 200; flex-wrap: wrap; max-width: calc(100vw - 32px); }
+  .sk-demo__group { display: inline-flex; align-items: center; gap: 2px; }
+  .sk-demo__lbl { opacity: .6; margin-right: 4px; text-transform: uppercase; letter-spacing: .05em; font-size: 9.5px; }
+  .sk-demo__opt { border: none; background: transparent; color: #fff; font: inherit; padding: 5px 9px; border-radius: 999px; cursor: pointer; opacity: .7; }
+  .sk-demo__opt:hover { opacity: 1; }
+  .sk-demo__opt[aria-pressed="true"] { background: var(--gt-green-500); opacity: 1; }
+  .sk-demo__opt:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--gt-blue-500); }
+  .sk-demo__route { font-family: var(--gt-font-mono); opacity: .85; padding-right: 6px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(async () => {
+  const src = await (await fetch('./SearchScreen.jsx')).text();
+  new Function(Babel.transform(src, { presets: ['react'] }).code)();
+  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.SearchApp));
+})();
+</script>
+</body>
+</html>

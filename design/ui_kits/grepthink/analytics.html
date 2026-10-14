@@ -1,0 +1,44 @@
+<!-- @dsCard group="GrepThink App" viewport="1280x900" name="Analytics" subtitle="One dashboard per institution — KPI tiles, conversations, live scrum snapshot, trends, breakdown (+ timeliness in sub-project C); filled / empty / loading / refetching / error / forbidden; desktop · 1000px · phone" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>GrepThink — Analytics</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="./analyticsData.js"></script>
+<script src="./analyticsSrcLoader.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--gt-font-sans); background: var(--gt-gray-100); }
+  a { color: var(--gt-blue-500); } a:hover { color: var(--gt-info-text); }
+  .an-stage { height: 100vh; background: var(--gt-gray-100); }
+  .an-app { display: flex; height: 100%; }
+  .an-side { width: 256px; flex-shrink: 0; background: var(--gt-green-500); display: flex; flex-direction: column; padding: 0.875rem 1.2rem; box-sizing: border-box; }
+  .an-side__logo { width: 170px; filter: brightness(0) invert(1); margin-bottom: 1rem; }
+  .an-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .an-content { flex: 1; overflow: auto; padding: 20px 24px; }
+  .an-demo { position: fixed; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 10px; background: var(--gt-gray-900); color: #fff; border-radius: 999px; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,.25); z-index: 50; flex-wrap: wrap; max-width: calc(100vw - 32px); }
+  .an-demo__group { display: inline-flex; align-items: center; gap: 2px; }
+  .an-demo__lbl { opacity: .6; margin-right: 4px; text-transform: uppercase; letter-spacing: .05em; font-size: 9.5px; }
+  .an-demo__opt { border: none; background: transparent; color: #fff; font: inherit; padding: 5px 9px; border-radius: 999px; cursor: pointer; opacity: .7; }
+  .an-demo__opt:hover { opacity: 1; }
+  .an-demo__opt[aria-pressed="true"] { background: var(--gt-green-500); opacity: 1; }
+  .an-demo__opt:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--gt-blue-500); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(async () => {
+  await window.loadAnalyticsSources('../..');
+  const src = await (await fetch('./AnalyticsScreen.jsx')).text();
+  new Function(Babel.transform(src, { presets: ['react'] }).code)();
+  ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.AnalyticsApp));
+})();
+</script>
+</body>
+</html>

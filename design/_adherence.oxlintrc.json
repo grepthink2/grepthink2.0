@@ -16,6 +16,7 @@
         "patterns": [
           {
             "group": [
+              "components/analytics/**",
               "components/assistant/**",
               "components/display/**",
               "components/domain/**",
@@ -25,6 +26,7 @@
               "components/navigation/**",
               "components/primitives/**",
               "components/scrum/**",
+              "components/search/**",
               "ui_kits/grepthink-landing/**",
               "ui_kits/grepthink/**"
             ],
@@ -44,8 +46,8 @@
         "message": "Raw px value — use a design-system spacing token via var()."
       },
       {
-        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Poppins))/i]",
-        "message": "Font not provided by the design system. Available: Poppins."
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Poppins|Fira Code))/i]",
+        "message": "Font not provided by the design system. Available: Poppins, Fira Code."
       },
       {
         "selector": "JSXOpeningElement[name.name='AIDraftButton'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|loading|disabled|size|onClick|className|key|ref|className|style|children)$/]",
@@ -62,6 +64,10 @@
       {
         "selector": "JSXOpeningElement[name.name='Alert'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:success|warning|error|info)$/]",
         "message": "<Alert> tone must be one of 'success' | 'warning' | 'error' | 'info'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AnalyticsRange'] > JSXAttribute > JSXIdentifier[name!=/^(?:preset|from|to|key|ref|className|style|children)$/]",
+        "message": "<AnalyticsRange> doesn't accept that prop. Declared props: preset, from, to."
       },
       {
         "selector": "JSXOpeningElement[name.name='AnnouncementPill'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|href|badge|ariaLabel|onClick|className|key|ref|className|style|children)$/]",
@@ -132,6 +138,18 @@
         "message": "<Badge> role must be one of 'owner' | 'product_owner' | 'scrum_master' | 'admin' | 'member'."
       },
       {
+        "selector": "JSXOpeningElement[name.name='SprintColumn'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|ordinal|median|n|key|ref|className|style|children)$/]",
+        "message": "<SprintColumn> doesn't accept that prop. Declared props: label, ordinal, median, n."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='BreakdownColumn'] > JSXAttribute > JSXIdentifier[name!=/^(?:key|label|format|sortable|key|ref|className|style|children)$/]",
+        "message": "<BreakdownColumn> doesn't accept that prop. Declared props: key, label, format, sortable."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='BreakdownColumn'] > JSXAttribute[name.name='format'] > Literal[value!=/^(?:text|int|pct)$/]",
+        "message": "<BreakdownColumn> format must be one of 'text' | 'int' | 'pct'."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='BurnupChart'] > JSXAttribute > JSXIdentifier[name!=/^(?:labels|scope|completed|height|title|subtitle|className|key|ref|className|style|children)$/]",
         "message": "<BurnupChart> doesn't accept that prop. Declared props: labels, scope, completed, height, title, subtitle, className."
       },
@@ -176,12 +194,36 @@
         "message": "<Card> shadow must be one of 'card' | 'hairline' | 'none'."
       },
       {
+        "selector": "JSXOpeningElement[name.name='ChartCardDefinition'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|body|learnMoreHref|key|ref|className|style|children)$/]",
+        "message": "<ChartCardDefinition> doesn't accept that prop. Declared props: title, body, learnMoreHref."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ChartEmptyState'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|title|hint|className|key|ref|className|style|children)$/]",
+        "message": "<ChartEmptyState> doesn't accept that prop. Declared props: icon, title, hint, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AnalyticsIcon'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|size|key|ref|className|style|children)$/]",
+        "message": "<AnalyticsIcon> doesn't accept that prop. Declared props: name, size."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ChartTooltipRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:key|label|value|seriesClass|key|ref|className|style|children)$/]",
+        "message": "<ChartTooltipRow> doesn't accept that prop. Declared props: key, label, value, seriesClass."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='Checkbox'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|checked|onChange|disabled|indeterminate|description|key|ref|className|style|children)$/]",
         "message": "<Checkbox> doesn't accept that prop. Declared props: label, checked, onChange, disabled, indeterminate, description."
       },
       {
         "selector": "JSXOpeningElement[name.name='ClosingBand'] > JSXAttribute > JSXIdentifier[name!=/^(?:heading|text|ctaLabel|ctaHref|secondaryLabel|secondaryHref|className|key|ref|className|style|children)$/]",
         "message": "<ClosingBand> doesn't accept that prop. Declared props: heading, text, ctaLabel, ctaHref, secondaryLabel, secondaryHref, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CommandPalette'] > JSXAttribute > JSXIdentifier[name!=/^(?:open|onClose|onOpen|hotkey|items|onSearch|recent|onSelect|role|pageSize|placeholder|scopes|initialQuery|className|key|ref|className|style|children)$/]",
+        "message": "<CommandPalette> doesn't accept that prop. Declared props: open, onClose, onOpen, hotkey, items, onSearch, recent, onSelect, role, pageSize, placeholder, scopes, initialQuery, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CommandPalette'] > JSXAttribute[name.name='role'] > Literal[value!=/^(?:student|ta|instructor)$/]",
+        "message": "<CommandPalette> role must be one of 'student' | 'ta' | 'instructor'."
       },
       {
         "selector": "JSXOpeningElement[name.name='ScrumComment'] > JSXAttribute > JSXIdentifier[name!=/^(?:author|time|body|key|ref|className|style|children)$/]",
@@ -216,8 +258,28 @@
         "message": "<DAvatars63> doesn't accept that prop. Declared props: className, style."
       },
       {
+        "selector": "JSXOpeningElement[name.name='DefinitionPopover'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|body|learnMoreHref|placement|align|className|key|ref|className|style|children)$/]",
+        "message": "<DefinitionPopover> doesn't accept that prop. Declared props: title, body, learnMoreHref, placement, align, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='DefinitionPopover'] > JSXAttribute[name.name='placement'] > Literal[value!=/^(?:top|bottom)$/]",
+        "message": "<DefinitionPopover> placement must be one of 'top' | 'bottom'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='DefinitionPopover'] > JSXAttribute[name.name='align'] > Literal[value!=/^(?:start|end)$/]",
+        "message": "<DefinitionPopover> align must be one of 'start' | 'end'."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='EmptyState'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|title|description|action|compact|className|key|ref|className|style|children)$/]",
         "message": "<EmptyState> doesn't accept that prop. Declared props: icon, title, description, action, compact, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='EntityIcon'] > JSXAttribute > JSXIdentifier[name!=/^(?:type|name|size|className|key|ref|className|style|children)$/]",
+        "message": "<EntityIcon> doesn't accept that prop. Declared props: type, name, size, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='EntityIcon'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md)$/]",
+        "message": "<EntityIcon> size must be one of 'sm' | 'md'."
       },
       {
         "selector": "JSXOpeningElement[name.name='Eyebrow'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|badge|tone|className|key|ref|className|style|children)$/]",
@@ -288,12 +350,24 @@
         "message": "<JoinRequestCard> kind must be one of 'request' | 'invite'."
       },
       {
+        "selector": "JSXOpeningElement[name.name='Kbd'] > JSXAttribute > JSXIdentifier[name!=/^(?:keys|children|onDark|className|key|ref|className|style|children)$/]",
+        "message": "<Kbd> doesn't accept that prop. Declared props: keys, children, onDark, className."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='FooterColumn'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|links|key|ref|className|style|children)$/]",
         "message": "<FooterColumn> doesn't accept that prop. Declared props: title, links."
       },
       {
         "selector": "JSXOpeningElement[name.name='LandingNavLink'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|href|key|ref|className|style|children)$/]",
         "message": "<LandingNavLink> doesn't accept that prop. Declared props: label, href."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='LivePill'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|title|className|key|ref|className|style|children)$/]",
+        "message": "<LivePill> doesn't accept that prop. Declared props: label, title, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MatchText'] > JSXAttribute > JSXIdentifier[name!=/^(?:text|query|className|key|ref|className|style|children)$/]",
+        "message": "<MatchText> doesn't accept that prop. Declared props: text, query, className."
       },
       {
         "selector": "JSXOpeningElement[name.name='MeetingCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:team|time|zoomUrl|attendees|attendance|status|onMarkAttendance|className|key|ref|className|style|children)$/]",
@@ -334,6 +408,10 @@
       {
         "selector": "JSXOpeningElement[name.name='Navigation'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:20|24|32|40|48|16)$/]",
         "message": "<Navigation> size must be one of '20' | '24' | '32' | '40' | '48' | '16'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='OnTimeMeter'] > JSXAttribute > JSXIdentifier[name!=/^(?:rate|late|missing|expected|editedLate|className|key|ref|className|style|children)$/]",
+        "message": "<OnTimeMeter> doesn't accept that prop. Declared props: rate, late, missing, expected, editedLate, className."
       },
       {
         "selector": "JSXOpeningElement[name.name='Pagination'] > JSXAttribute > JSXIdentifier[name!=/^(?:page|pageCount|onChange|className|key|ref|className|style|children)$/]",
@@ -404,6 +482,10 @@
         "message": "<ReportCheckRow> kind must be one of 'match' | 'review'."
       },
       {
+        "selector": "JSXOpeningElement[name.name='ResultRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:item|query|active|id|onSelect|onHover|className|key|ref|className|style|children)$/]",
+        "message": "<ResultRow> doesn't accept that prop. Declared props: item, query, active, id, onSelect, onHover, className."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='RosterRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|email|role|team|status|statusTone|actions|onClick|className|key|ref|className|style|children)$/]",
         "message": "<RosterRow> doesn't accept that prop. Declared props: name, email, role, team, status, statusTone, actions, onClick, className."
       },
@@ -436,6 +518,26 @@
         "message": "<BoardTask> doesn't accept that prop. Declared props: id, status."
       },
       {
+        "selector": "JSXOpeningElement[name.name='SearchItem'] > JSXAttribute > JSXIdentifier[name!=/^(?:id|type|title|key|subtitle|email|keywords|projectId|status|dueAt|points|estimateHours|tags|assignedToMe|tasksDone|tasksTotal|sprint|unread|lastMessageAt|role|sameTeam|sameClass|conversationId|memberCount|archived|updatedAt|term|kind|href|key|ref|className|style|children)$/]",
+        "message": "<SearchItem> doesn't accept that prop. Declared props: id, type, title, key, subtitle, email, keywords, projectId, status, dueAt, points, estimateHours, tags, assignedToMe, tasksDone, tasksTotal, sprint, unread, lastMessageAt, role, sameTeam, sameClass, conversationId, memberCount, archived, updatedAt, term, kind, href."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SearchItem'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:todo|in_progress|done)$/]",
+        "message": "<SearchItem> status must be one of 'todo' | 'in_progress' | 'done'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SearchItem'] > JSXAttribute[name.name='kind'] > Literal[value!=/^(?:tsr|feedback|interest_form)$/]",
+        "message": "<SearchItem> kind must be one of 'tsr' | 'feedback' | 'interest_form'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SearchPagination'] > JSXAttribute > JSXIdentifier[name!=/^(?:page|pages|from|to|total|onChange|className|key|ref|className|style|children)$/]",
+        "message": "<SearchPagination> doesn't accept that prop. Declared props: page, pages, from, to, total, onChange, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SearchTrigger'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|onOpen|iconOnly|key|ref|className|style|children)$/]",
+        "message": "<SearchTrigger> doesn't accept that prop. Declared props: label, onOpen, iconOnly."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='SegmentedOption'] > JSXAttribute > JSXIdentifier[name!=/^(?:value|label|icon|disabled|key|ref|className|style|children)$/]",
         "message": "<SegmentedOption> doesn't accept that prop. Declared props: value, label, icon, disabled."
       },
@@ -448,8 +550,16 @@
         "message": "<SidebarNavItem> doesn't accept that prop. Declared props: icon, label, active, badge, collapsed, onClick, className."
       },
       {
+        "selector": "JSXOpeningElement[name.name='SplitBarSegment'] > JSXAttribute > JSXIdentifier[name!=/^(?:key|label|value|note|key|ref|className|style|children)$/]",
+        "message": "<SplitBarSegment> doesn't accept that prop. Declared props: key, label, value, note."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='SpotlightBullet'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|text|key|ref|className|style|children)$/]",
         "message": "<SpotlightBullet> doesn't accept that prop. Declared props: icon, text."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StackedBarSegment'] > JSXAttribute > JSXIdentifier[name!=/^(?:status|count|points|key|ref|className|style|children)$/]",
+        "message": "<StackedBarSegment> doesn't accept that prop. Declared props: status, count, points."
       },
       {
         "selector": "JSXOpeningElement[name.name='StageCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:tilt|floatY|floatDur|floatDelay|order|pill|still|inline|mobile|tabletHide|title|meta|children|style|className|key|ref|className|style|children)$/]",
@@ -470,6 +580,10 @@
       {
         "selector": "JSXOpeningElement[name.name='StatCard'] > JSXAttribute[name.name='accent'] > Literal[value!=/^(?:primary|blue|purple|amber)$/]",
         "message": "<StatCard> accent must be one of 'primary' | 'blue' | 'purple' | 'amber'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatTileDelta'] > JSXAttribute > JSXIdentifier[name!=/^(?:value|vsLabel|goodWhenUp|key|ref|className|style|children)$/]",
+        "message": "<StatTileDelta> doesn't accept that prop. Declared props: value, vsLabel, goodWhenUp."
       },
       {
         "selector": "JSXOpeningElement[name.name='StoryCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:storyKey|title|points|estimate|reporter|assignee|tasksDone|tasksTotal|pointsDone|active|onOpen|className|key|ref|className|style|children)$/]",
@@ -520,6 +634,10 @@
         "message": "<Thumb> oS must be one of 'windows' | 'mac'."
       },
       {
+        "selector": "JSXOpeningElement[name.name='TimelinessRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:key|label|dueAt|expected|buckets|editedLate|notDueYet|folded|href|key|ref|className|style|children)$/]",
+        "message": "<TimelinessRow> doesn't accept that prop. Declared props: key, label, dueAt, expected, buckets, editedLate, notDueYet, folded, href."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='Toast'] > JSXAttribute > JSXIdentifier[name!=/^(?:variant|message|actionLabel|onAction|onDismiss|duration|className|key|ref|className|style|children)$/]",
         "message": "<Toast> doesn't accept that prop. Declared props: variant, message, actionLabel, onAction, onDismiss, duration, className."
       },
@@ -544,6 +662,10 @@
         "message": "<Tooltip> side must be one of 'top' | 'bottom' | 'left' | 'right'."
       },
       {
+        "selector": "JSXOpeningElement[name.name='TrendPoint'] > JSXAttribute > JSXIdentifier[name!=/^(?:weekStart|value|key|ref|className|style|children)$/]",
+        "message": "<TrendPoint> doesn't accept that prop. Declared props: weekStart, value."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='TSREntry'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|role|percent|positive|constructive|key|ref|className|style|children)$/]",
         "message": "<TSREntry> doesn't accept that prop. Declared props: name, role, percent, positive, constructive."
       },
@@ -560,12 +682,20 @@
         "message": "<TypingIndicator> tone must be one of 'app' | 'soft'."
       },
       {
+        "selector": "JSXOpeningElement[name.name='UnitToggleOption'] > JSXAttribute > JSXIdentifier[name!=/^(?:value|label|key|ref|className|style|children)$/]",
+        "message": "<UnitToggleOption> doesn't accept that prop. Declared props: value, label."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='UnlinkedPRChip'] > JSXAttribute > JSXIdentifier[name!=/^(?:pr|onAdd|addLabel|surface|className|style|key|ref|className|style|children)$/]",
         "message": "<UnlinkedPRChip> doesn't accept that prop. Declared props: pr, onAdd, addLabel, surface, className, style."
       },
       {
         "selector": "JSXOpeningElement[name.name='UnlinkedPRChip'] > JSXAttribute[name.name='surface'] > Literal[value!=/^(?:app|landing|bare)$/]",
         "message": "<UnlinkedPRChip> surface must be one of 'app' | 'landing' | 'bare'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='WeeklyPoint'] > JSXAttribute > JSXIdentifier[name!=/^(?:weekStart|value|key|ref|className|style|children)$/]",
+        "message": "<WeeklyPoint> doesn't accept that prop. Declared props: weekStart, value."
       }
     ]
   },
@@ -585,6 +715,9 @@
         "replaces": []
       },
       "Alert": {
+        "replaces": []
+      },
+      "AnalyticsRange": {
         "replaces": []
       },
       "AnnouncementPill": {
@@ -611,6 +744,12 @@
       "Badge": {
         "replaces": []
       },
+      "SprintColumn": {
+        "replaces": []
+      },
+      "BreakdownColumn": {
+        "replaces": []
+      },
       "BurnupChart": {
         "replaces": []
       },
@@ -626,10 +765,25 @@
       "Card": {
         "replaces": []
       },
+      "ChartCardDefinition": {
+        "replaces": []
+      },
+      "ChartEmptyState": {
+        "replaces": []
+      },
+      "AnalyticsIcon": {
+        "replaces": []
+      },
+      "ChartTooltipRow": {
+        "replaces": []
+      },
       "Checkbox": {
         "replaces": []
       },
       "ClosingBand": {
+        "replaces": []
+      },
+      "CommandPalette": {
         "replaces": []
       },
       "ScrumComment": {
@@ -656,7 +810,13 @@
       "DAvatars63": {
         "replaces": []
       },
+      "DefinitionPopover": {
+        "replaces": []
+      },
       "EmptyState": {
+        "replaces": []
+      },
+      "EntityIcon": {
         "replaces": []
       },
       "Eyebrow": {
@@ -689,10 +849,19 @@
       "JoinRequestCard": {
         "replaces": []
       },
+      "Kbd": {
+        "replaces": []
+      },
       "FooterColumn": {
         "replaces": []
       },
       "LandingNavLink": {
+        "replaces": []
+      },
+      "LivePill": {
+        "replaces": []
+      },
+      "MatchText": {
         "replaces": []
       },
       "MeetingCard": {
@@ -714,6 +883,9 @@
         "replaces": []
       },
       "Navigation": {
+        "replaces": []
+      },
+      "OnTimeMeter": {
         "replaces": []
       },
       "Pagination": {
@@ -743,6 +915,9 @@
       "ReportCheckRow": {
         "replaces": []
       },
+      "ResultRow": {
+        "replaces": []
+      },
       "RosterRow": {
         "replaces": []
       },
@@ -755,6 +930,15 @@
       "BoardTask": {
         "replaces": []
       },
+      "SearchItem": {
+        "replaces": []
+      },
+      "SearchPagination": {
+        "replaces": []
+      },
+      "SearchTrigger": {
+        "replaces": []
+      },
       "SegmentedOption": {
         "replaces": []
       },
@@ -764,7 +948,13 @@
       "SidebarNavItem": {
         "replaces": []
       },
+      "SplitBarSegment": {
+        "replaces": []
+      },
       "SpotlightBullet": {
+        "replaces": []
+      },
+      "StackedBarSegment": {
         "replaces": []
       },
       "StageCard": {
@@ -774,6 +964,9 @@
         "replaces": []
       },
       "StatCard": {
+        "replaces": []
+      },
+      "StatTileDelta": {
         "replaces": []
       },
       "StoryCard": {
@@ -803,6 +996,9 @@
       "Thumb": {
         "replaces": []
       },
+      "TimelinessRow": {
+        "replaces": []
+      },
       "Toast": {
         "replaces": []
       },
@@ -815,6 +1011,9 @@
       "Tooltip": {
         "replaces": []
       },
+      "TrendPoint": {
+        "replaces": []
+      },
       "TSREntry": {
         "replaces": []
       },
@@ -824,7 +1023,13 @@
       "TypingIndicator": {
         "replaces": []
       },
+      "UnitToggleOption": {
+        "replaces": []
+      },
       "UnlinkedPRChip": {
+        "replaces": []
+      },
+      "WeeklyPoint": {
         "replaces": []
       }
     },
@@ -867,6 +1072,16 @@
       "--gt-button-secondary",
       "--gt-button-secondary-hover",
       "--gt-canvas",
+      "--gt-chart-1",
+      "--gt-chart-2",
+      "--gt-chart-3",
+      "--gt-chart-4",
+      "--gt-chart-axis",
+      "--gt-chart-context",
+      "--gt-chart-early",
+      "--gt-chart-grid",
+      "--gt-chart-hover",
+      "--gt-chart-wash",
       "--gt-container",
       "--gt-disabled-bg",
       "--gt-disabled-text",
@@ -881,6 +1096,7 @@
       "--gt-font-sans",
       "--gt-gold",
       "--gt-gold-deep",
+      "--gt-gold-text",
       "--gt-gray-0",
       "--gt-gray-100",
       "--gt-gray-200",
@@ -1023,9 +1239,11 @@
       "--gt-mkt-tracking-caps",
       "--gt-mkt-tracking-display",
       "--gt-mkt-well",
+      "--gt-opacity-refetch",
       "--gt-primary",
       "--gt-primary-hover",
       "--gt-primary-soft",
+      "--gt-purple",
       "--gt-radius-lg",
       "--gt-radius-md",
       "--gt-radius-pill",
@@ -1037,6 +1255,11 @@
       "--gt-red-600",
       "--gt-red-700",
       "--gt-scrim",
+      "--gt-series-1",
+      "--gt-series-2",
+      "--gt-series-3",
+      "--gt-series-4",
+      "--gt-series-gray",
       "--gt-shadow-card",
       "--gt-shadow-hairline",
       "--gt-shadow-hover",
@@ -1050,6 +1273,14 @@
       "--gt-space-xl",
       "--gt-space-xs",
       "--gt-space-xxl",
+      "--gt-status-done",
+      "--gt-status-early",
+      "--gt-status-in-progress",
+      "--gt-status-late",
+      "--gt-status-missing",
+      "--gt-status-not-due",
+      "--gt-status-on-time",
+      "--gt-status-todo",
       "--gt-success",
       "--gt-success-bg",
       "--gt-success-soft",
@@ -1101,6 +1332,7 @@
       "--miscellaneous-toggle-ax-label-off",
       "--schemes-background",
       "--schemes-on-surface",
+      "--series",
       "--slate-100",
       "--slate-1000",
       "--white-1000"
@@ -1160,7 +1392,20 @@
       "--gt-amber-500": "color",
       "--gt-amber-600": "color",
       "--gt-amber-700": "color",
+      "--gt-purple": "color",
+      "--gt-chart-1": "color",
+      "--gt-chart-2": "color",
+      "--gt-chart-3": "color",
+      "--gt-chart-4": "color",
+      "--gt-chart-context": "color",
+      "--gt-chart-grid": "color",
+      "--gt-chart-axis": "color",
+      "--gt-chart-early": "color",
+      "--gt-chart-wash": "color",
+      "--gt-chart-hover": "color",
+      "--gt-opacity-refetch": "other",
       "--gt-gold": "color",
+      "--gt-gold-text": "font",
       "--gt-gold-deep": "color",
       "--gt-ucsc-blue": "color",
       "--gt-canvas": "color",
@@ -1192,6 +1437,20 @@
       "--gt-warning-bg": "color",
       "--gt-error-bg": "color",
       "--gt-info-bg": "color",
+      "--series": "color",
+      "--gt-series-1": "color",
+      "--gt-series-2": "color",
+      "--gt-series-3": "color",
+      "--gt-series-4": "color",
+      "--gt-series-gray": "color",
+      "--gt-status-todo": "color",
+      "--gt-status-in-progress": "color",
+      "--gt-status-done": "color",
+      "--gt-status-early": "color",
+      "--gt-status-on-time": "color",
+      "--gt-status-late": "color",
+      "--gt-status-missing": "color",
+      "--gt-status-not-due": "color",
       "--gt-font-sans": "font",
       "--gt-font-mono": "font",
       "--gt-weight-regular": "font",
@@ -1383,6 +1642,7 @@
       "--white-1000": "color"
     },
     "fontFamilies": [
+      "Fira Code",
       "Poppins"
     ]
   }

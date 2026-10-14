@@ -1,0 +1,214 @@
+<!-- @dsCard group="Components" viewport="700x2050" name="Analytics — charts, tiles & filters" subtitle="ChartCard (ready · loading · refetching · empty · error), StatTile (delta · 12-pt / 3-pt sparkline · null · failed), filter row + custom-range reasons, page failure strip, WeeklyLine, SplitBar, StackedBars, Timeliness, BarsBySprint (+stacked), TrendLines (3 empties), BreakdownTable, primitives" --> / no sparkline · null · loading), FilterRow, WeeklyLine (two series · one series), SplitBar, StackedBars (4 and 9 sprints), TimelinessBars (folded · not-due), OnTimeMeter, BarsBySprint, TrendLines, BreakdownTable (5 and 24 rows), legend / tooltip / popover / empty primitives" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../ui_kits/grepthink/analyticsSrcLoader.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 18px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .states { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .prim { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: #fff; border: 1px solid var(--gt-border); border-radius: 10px; padding: 12px 14px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>window.loadAnalyticsSources('../..').then(window.runDeferredBabel);</script>
+<script type="text/babel-deferred">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { AnalyticsFilterRow, StatTile, ChartCard, ChartCardTool, ChartCardCheck, UnitToggle, LivePill, ChartLegend, AnalyticsIcon,
+        DefinitionPopover, ChartEmptyState, ChartTooltip, WeeklyLine, SplitBar, StackedBars, TimelinessBars, OnTimeMeter,
+        BarsBySprint, TrendLines, BreakdownTable, BREAKDOWN_COLUMNS, TEAM_BREAKDOWN_COLUMNS, TIMELINESS_COLUMNS } = NS;
+
+const weekly = [
+  { week_start: '2026-09-07', team_members: 21, dm: 40 }, { week_start: '2026-09-14', team_members: 58, dm: 90 },
+  { week_start: '2026-09-21', team_members: 131, dm: 156 }, { week_start: '2026-09-28', team_members: 188, dm: 214 },
+  { week_start: '2026-10-05', team_members: 174, dm: 212 },
+];
+const sprint = (ordinal, label, teams, todo, ip, done) => ({ key: String(ordinal), label, teams, segments: [
+  { status: 'todo', count: todo, points: todo * 2 }, { status: 'in_progress', count: ip, points: ip * 2 }, { status: 'done', count: done, points: done * 2 }] });
+const bySprint4 = [sprint(0, 'Backlog', 23, 94, 0, 0), sprint(1, 'Sprint 1', 23, 11, 6, 118), sprint(2, 'Sprint 2', 21, 38, 27, 64), sprint(3, 'Sprint 3', 9, 41, 12, 7)];
+const bySprint9 = [sprint(0, 'Backlog', 12, 61, 0, 0), ...Array.from({ length: 8 }, (_, i) => sprint(i + 1, `Sprint ${i + 1}`, 12 - Math.floor(i / 3), 6 + (i % 4) * 5, (i % 3) * 4, 70 - i * 8))];
+const timeRows = [
+  { key: 'c1', label: 'CSE 115A', expected: 123, buckets: [{key:'early',value:71},{key:'on_time',value:37},{key:'late',value:9},{key:'missing',value:6}], editedLate: 4, href: '#' },
+  { key: 'c3', label: 'CSE 115C', expected: 87, buckets: [{key:'early',value:40},{key:'on_time',value:22},{key:'late',value:13},{key:'missing',value:12}], editedLate: 3, href: '#' },
+  { key: 'a9', label: 'TSR 4', dueAt: '2026-10-12', expected: 41, buckets: [], notDueYet: true },
+  { key: 'folded', label: 'Smaller groups (1)', expected: 2, buckets: [{key:'early',value:1},{key:'on_time',value:1}], folded: true },
+];
+const trendPanels = [
+  { key: 'm', title: 'Messages per team', unit: 'per team per week', current: [{weekStart:'2026-09-07',value:0.9},{weekStart:'2026-09-14',value:2.5},{weekStart:'2026-09-21',value:5.7},{weekStart:'2026-09-28',value:8.2},{weekStart:'2026-10-05',value:null}], previous: [{weekStart:'2026-08-10',value:0},{weekStart:'2026-08-17',value:0},{weekStart:'2026-08-24',value:0.3},{weekStart:'2026-08-31',value:0.8},{weekStart:'2026-09-07',value:0.9}] },
+  { key: 'p', title: 'Points done per team', unit: 'per team', current: [{weekStart:'2026-09-07',value:0.4},{weekStart:'2026-09-14',value:2.1},{weekStart:'2026-09-21',value:5.3},{weekStart:'2026-09-28',value:9.8},{weekStart:'2026-10-05',value:null}], previous: null },
+];
+const breakdownRows = [
+  { id: 'c1', name: 'CSE 115A', kind: 'row', teams: 8, students: 41, team_messages: 228, stories: 24, tasks: 118, points_done_rate: 0.61, on_time_rate: 0.88, missing: 6, href: '#' },
+  { id: 'c3', name: 'CSE 115C', kind: 'row', teams: 6, students: 29, team_messages: 133, stories: 14, tasks: 71, points_done_rate: 0.44, on_time_rate: 0.71, missing: 12, href: '#' },
+  { id: 'f', name: 'Smaller groups (1)', kind: 'folded', teams: 1, students: 2, team_messages: 0, stories: 0, tasks: 0, points_done_rate: null, on_time_rate: 1, missing: 0 },
+];
+const manyTeams = Array.from({ length: 23 }, (_, i) => ({ id: `t${i + 1}`, name: `Team ${i + 1}`, kind: 'row', members: 4 + (i % 3), team_messages: 120 - i * 4, stories: 5 + (i % 4), tasks: 30 - i, points_done_rate: Math.max(0.1, 0.9 - i * 0.03), href: '#' }))
+  .concat([{ id: 'f', name: 'Smaller groups (2)', kind: 'folded', members: 2, team_messages: 0, stories: 0, tasks: 0, points_done_rate: null }]);
+
+function Demo() {
+  const [filter, setFilter] = React.useState({ classId: '', range: { preset: 'custom', from: '2026-09-01', to: '2026-09-30' } });
+  const [unit, setUnit] = React.useState('count');
+  const [table, setTable] = React.useState(false);
+  const [compare, setCompare] = React.useState(true);
+  const [sort, setSort] = React.useState({ key: 'team_messages', dir: 'desc' });
+  return (
+    <div>
+      <p className="lbl">Filter row — class select · range chips · applied custom range</p>
+      <div className="prim" style={{ display: 'block' }}>
+        <AnalyticsFilterRow classes={[{ id: 'c1', label: 'CSE 115A · Fall 2026' }, { id: 'c2', label: 'CSE 115B' }]} classId={filter.classId} range={filter.range} onChange={setFilter} today={new Date('2026-10-07T12:00:00Z')} />
+      </div>
+      <p className="lbl">Filter row — disabled during the very first load</p>
+      <div className="prim" style={{ display: 'block' }}>
+        <AnalyticsFilterRow classes={[{ id: 'c1', label: 'CSE 115A · Fall 2026' }]} classId="" range={{ preset: '30d' }} onChange={() => {}} disabled />
+      </div>
+
+      <p className="lbl">StatTile — 12-point sparkline · 3-point · no sparkline · null (Signed in) · loading · bad delta · failed source</p>
+      <div className="tiles">
+        <StatTile label="Messages" value={1284} icon={<AnalyticsIcon name="message-square" />} delta={{ value: 0.18, vsLabel: 'vs previous Sep 8 – Oct 7' }} trend={[12,18,25,31,44,52,61,58,73,88,95,102]} />
+        <StatTile label="Messages" value={212} icon={<AnalyticsIcon name="message-square" />} delta={{ value: 0.05, vsLabel: 'vs previous Sep 24 – Oct 7' }} trend={[180, 196, 212]} />
+        <StatTile label="Messages" value={48} icon={<AnalyticsIcon name="message-square" />} hint="Trend appears after the first nightly rollup" />
+        <StatTile label="Signed in (7d)" value={null} accent="amber" icon={<AnalyticsIcon name="activity" />} hint="Appears once sign-ins are recorded" />
+        <StatTile label="Teams" value={23} accent="blue" loading icon={<AnalyticsIcon name="users" />} />
+        <StatTile label="Missing" value={26} accent="purple" icon={<AnalyticsIcon name="x-circle" />} delta={{ value: 0.12, vsLabel: 'vs previous Sep 8 – Oct 7', goodWhenUp: false }} />
+        <StatTile label="Teams" value={null} accent="blue" failed icon={<AnalyticsIcon name="users" />} />
+        <StatTile label="Classes" value={4} icon={<AnalyticsIcon name="graduation-cap" />} hint="All classes on record" />
+        <StatTile label="Team messages" value={228} icon={<AnalyticsIcon name="message-square" />} delta={{ value: 0.11, vsLabel: 'vs previous Sep 8 – Oct 7' }} trend={[8, 14, 21, 30, 41, 52]} hint="Direct messages are school-wide: 712" />
+      </div>
+
+      <p className="lbl">Page failure strip (.gt-analytics__error, the page's one alert) — HTTP n · refused (4xx) · unreachable</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="gt-analytics__error" role="alert"><AnalyticsIcon name="alert-circle" size={15} /><span className="gt-analytics__error-text">The latest request failed (HTTP 502). Showing the previous figures.</span></div>
+        <div className="gt-analytics__error" role="alert"><AnalyticsIcon name="alert-circle" size={15} /><span className="gt-analytics__error-text">The latest request failed: a range may span at most 2 years. Showing the previous figures.</span></div>
+        <div className="gt-analytics__error" role="alert"><AnalyticsIcon name="alert-circle" size={15} /><span className="gt-analytics__error-text">The server could not be reached.</span></div>
+      </div>
+
+      <p className="lbl">Custom range panel — last row (.gt-filter__foot) with the reason Apply is disabled (.gt-filter__reason)</p>
+      <div className="prim" style={{ display: 'block' }}>
+        <div className="gt-popover gt-popover--sm gt-filter__pop" style={{ position: 'static', animation: 'none', maxWidth: 360 }} role="dialog" aria-label="Custom range">
+          <span className="gt-filter__pop-title">Custom range</span>
+          <div className="gt-filter__dates">
+            <label className="gt-filter__date">From<input type="date" defaultValue="2026-10-05" /></label>
+            <label className="gt-filter__date">To<input type="date" defaultValue="2026-09-01" /></label>
+          </div>
+          <div className="gt-filter__foot">
+            <span className="gt-filter__reason" role="status">To must be on or after From</span>
+            <button type="button" className="gt-button gt-button--ghost gt-button--sm"><span className="gt-button__label">Cancel</span></button>
+            <button type="button" className="gt-button gt-button--primary gt-button--sm gt-filter__apply" disabled><span className="gt-button__label">Apply</span></button>
+          </div>
+        </div>
+      </div>
+
+      <p className="lbl">ChartCard states — loading · refetching · empty · error</p>
+      <div className="states">
+        <ChartCard title="Conversations" subtitle="Team channels and direct messages." state="loading" />
+        <ChartCard title="Scrum board" live subtitle="Tasks on every team’s board right now, by sprint." state="refetching" actions={<UnitToggle value={unit} onChange={setUnit} />}><StackedBars rows={bySprint4.slice(0, 2)} unit={unit} /></ChartCard>
+        <ChartCard title="Conversations" subtitle="Team channels and direct messages." state="empty" emptyMessage={{ icon: 'message-square', title: 'No messages yet', hint: 'Team channels fill in as teams start talking.' }} />
+        <ChartCard title="Trends" subtitle="Week by week, against the previous range." state="error" onRetry={() => {}} />
+      </div>
+
+      <p className="lbl">WeeklyLine — two series (legend) · one series (no legend) · table twin</p>
+      <ChartCard title="Conversations" subtitle="Team channels and direct messages." definition="Messages sent in team-member channels of the teams in view, plus direct messages between two people of the school, in the selected range."
+        hero="1,284" heroMeta="messages in range" footnote="1,284 messages · Sep 8 – Oct 7 · direct messages are school-wide" wide
+        actions={<ChartCardTool icon="table" label="Table" pressed={table} onClick={() => setTable(t => !t)} />}>
+        <WeeklyLine height={190} view={table ? 'table' : 'chart'} series={[
+          { key: 'team', label: 'Team channels', points: weekly.map(w => ({ weekStart: w.week_start, value: w.team_members })) },
+          { key: 'dm', label: 'Direct', points: weekly.map(w => ({ weekStart: w.week_start, value: w.dm })) }]} />
+        <div style={{ marginTop: 14 }}><SplitBar segments={[{ key: 'team', label: 'Team channels', value: 572 }, { key: 'dm', label: 'Direct', value: 712, note: 'school-wide' }]} /></div>
+      </ChartCard>
+      <div className="cols" style={{ marginTop: 10 }}>
+        <ChartCard title="Team channels" subtitle="One series — no legend.">
+          <WeeklyLine height={150} series={[{ key: 'team', label: 'Team channels', points: weekly.map(w => ({ weekStart: w.week_start, value: w.team_members })) }]} />
+        </ChartCard>
+        <ChartCard title="Conversations" subtitle="SplitBar with a class selected (mixed scope) · empty">
+          <SplitBar mixedScope segments={[{ key: 'team', label: 'Team channels', value: 228 }, { key: 'dm', label: 'Direct', value: 712, note: 'school-wide' }]} />
+          <div style={{ marginTop: 14 }}><SplitBar segments={[{ key: 'team', label: 'Team channels', value: 0 }, { key: 'dm', label: 'Direct', value: 0, note: 'school-wide' }]} /></div>
+        </ChartCard>
+      </div>
+
+      <p className="lbl">StackedBars — 4 sprints · 9 sprints (dense + Show all) · Tasks | Points</p>
+      <div className="cols">
+        <ChartCard title="Scrum board" live subtitle="Tasks on every team’s board right now, by sprint." actions={<UnitToggle value={unit} onChange={setUnit} />} footnote="61 stories (188 pts) · 302 tasks (611 pts) created in range">
+          <StackedBars rows={bySprint4} unit={unit} />
+        </ChartCard>
+        <ChartCard title="Scrum board" live subtitle="A long-running class: Backlog + 8 sprints.">
+          <StackedBars rows={bySprint9} unit={unit} />
+        </ChartCard>
+      </div>
+
+      <p className="lbl">Timeliness (sub-project C) — OnTimeMeter · folded row · not-due row · null rate</p>
+      <div className="cols">
+        <ChartCard title="Timeliness" subtitle="Submissions against the deadline.">
+          <OnTimeMeter rate={0.82} late={38} missing={26} editedLate={9} />
+          <div style={{ marginTop: 14 }}><TimelinessBars rows={timeRows} /></div>
+        </ChartCard>
+        <ChartCard title="Timeliness" subtitle="No deadline in the range.">
+          <OnTimeMeter rate={null} />
+        </ChartCard>
+      </div>
+
+      <p className="lbl">BarsBySprint (shared y-scale, median on cap) · TrendLines (compare checkbox, footer as-of)</p>
+      <div className="cols">
+        <ChartCard title="Characters per item" subtitle="Median length of title plus description.">
+          <BarsBySprint height={120} panels={[
+            { key: 'task', title: 'Tasks', overall: { median: 29, n: 418 }, columns: [{ label: 'Sprint 1', median: 24, n: 135 }, { label: 'Sprint 2', median: 31, n: 129 }, { label: 'Sprint 3', median: 36, n: 60 }] },
+            { key: 'story', title: 'Stories', overall: { median: 96, n: 112 }, columns: [{ label: 'Sprint 1', median: 78, n: 41 }, { label: 'Sprint 2', median: 102, n: 44 }, { label: 'Sprint 3', median: 131, n: 27 }] }]} />
+        </ChartCard>
+        <ChartCard title="Trends" subtitle="Week by week, against the previous range." actions={<ChartCardCheck label="Compare with previous range" checked={compare} onChange={setCompare} />}>
+          <TrendLines panels={trendPanels} compare={compare} asOf="2026-10-06" height={84} />
+        </ChartCard>
+      </div>
+      <div className="cols" style={{ marginTop: 10 }}>
+        <ChartCard title="Trends" subtitle="Before the first rollup."><TrendLines panels={[]} asOf={null} /></ChartCard>
+        <ChartCard title="Trends" subtitle="Range holds only the week in progress."><TrendLines asOf="2026-10-06" panels={[{ key: 'm', title: 'Messages per team', unit: 'per team per week', current: [{ weekStart: '2026-10-05', value: 3.1 }] }]} /></ChartCard>
+      </div>
+      <div className="cols" style={{ marginTop: 10 }}>
+        <ChartCard title="Trends" subtitle="No class was in session."><TrendLines asOf="2026-10-06" panels={[{ key: 'm', title: 'Messages per team', unit: 'per team per week', current: [{ weekStart: '2026-09-21', value: null }, { weekStart: '2026-09-28', value: 0 }] }]} /></ChartCard>
+        <ChartCard title="Trends — table twin" subtitle="One row per complete week; — for a week without a value."><TrendLines panels={trendPanels} compare asOf="2026-10-06" view="table" /></ChartCard>
+      </div>
+      <p className="lbl">BarsBySprint — `--stacked` (one column when a side-by-side panel cannot hold every median cap)</p>
+      <div style={{ maxWidth: 300 }}>
+        <ChartCard title="Characters per item" subtitle="Median length of title plus description.">
+          <BarsBySprint height={110} stacked panels={[
+            { key: 'task', title: 'Tasks', overall: { median: 29, n: 418 }, columns: [{ label: 'Backlog', median: 18, n: 94 }, { label: 'Sprint 1', median: 24, n: 135 }, { label: 'Sprint 2', median: 31, n: 129 }, { label: 'Sprint 3', median: 36, n: 60 }, { label: 'Sprint 4', median: 33, n: 41 }, { label: 'Sprint 5', median: 29, n: 22 }, { label: 'Sprint 6', median: 27, n: 15 }, { label: 'Sprint 7', median: 30, n: 9 }] },
+            { key: 'story', title: 'Stories', overall: { median: 96, n: 112 }, columns: [{ label: 'Backlog', median: 64, n: 20 }, { label: 'Sprint 1', median: 78, n: 41 }, { label: 'Sprint 2', median: 102, n: 44 }, { label: 'Sprint 3', median: 118, n: 27 }, { label: 'Sprint 4', median: 110, n: 12 }, { label: 'Sprint 5', median: 97, n: 8 }, { label: 'Sprint 6', median: 88, n: 5 }, { label: 'Sprint 7', median: 90, n: 3 }] }]} />
+        </ChartCard>
+      </div>
+
+      <p className="lbl">BreakdownTable — per class (5 rows) · per team with 24 rows (dense, sticky header, Show all)</p>
+      <ChartCard title="By class" actions={<ChartCardTool icon="download" label="Export CSV" className="gt-table__export" />} wide>
+        <BreakdownTable rows={breakdownRows} columns={[...BREAKDOWN_COLUMNS, ...TIMELINESS_COLUMNS]} sort={sort} onSort={setSort} getRowHref={r => r.href} />
+      </ChartCard>
+      <div style={{ marginTop: 10 }}>
+        <ChartCard title="By team · CSE 115A · Fall 2026" actions={<ChartCardTool icon="download" label="Export CSV" className="gt-table__export" />} wide>
+          <BreakdownTable rows={manyTeams} columns={TEAM_BREAKDOWN_COLUMNS} sort={sort} onSort={setSort} getRowHref={r => r.href} />
+        </ChartCard>
+      </div>
+
+      <p className="lbl">Primitives — LivePill · legends · definition popover · tooltip · empty state · tools</p>
+      <div className="prim">
+        <LivePill />
+        <ChartLegend items={[{ key: 'a', label: 'Team channels', swatch: 'line', seriesClass: 'gt-series--1' }, { key: 'b', label: 'Direct', swatch: 'line', seriesClass: 'gt-series--2' }, { key: 'c', label: 'Previous range', swatch: 'line', seriesClass: 'gt-series--gray' }]} />
+        <ChartLegend items={[{ key: 'e', label: 'Early', seriesClass: 'gt-status--early', icon: 'check-circle' }, { key: 'o', label: 'On time', seriesClass: 'gt-status--on_time', icon: 'check-circle-2' }, { key: 'l', label: 'Late', seriesClass: 'gt-status--late', icon: 'clock' }, { key: 'm', label: 'Missing', seriesClass: 'gt-status--missing', icon: 'x-circle' }]} />
+        <DefinitionPopover body="People of the school who signed in explicitly in the last 7 days (staying signed in does not count)." />
+        <ChartCardTool icon="table" label="Table" pressed />
+        <ChartCardTool icon="download" label="Export CSV" />
+        <div className="gt-plot" style={{ width: 200, height: 70 }}><ChartTooltip x={100} y={66} title="Week of Sep 28" rows={[{ label: 'Team channels', value: '188', seriesClass: 'gt-series--1' }, { label: 'Direct', value: '214', seriesClass: 'gt-series--2' }]} /></div>
+        <div style={{ width: 240 }}><ChartEmptyState icon="table" title="Nothing to list" hint="Rows appear once the school has classes and teams." /></div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>
