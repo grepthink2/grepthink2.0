@@ -36,6 +36,7 @@ Success means:
 | 6 | **The backend emits each item's route (`href`).** | It knows the caller's role in each class, which decides the assignment and class routes. Precedent: the analytics attention list already emits `/app/...` links. |
 | 7 | **Stories show sprint · points, not "n/m tasks done".** | Counting every story's tasks costs a third read wave; the index only loads the caller's own tasks. |
 | 8 | Left for later: standardizing per-page filter inputs on the design's `SearchField`; removing `NewConversationSearch`; search analytics events; full-text search over message bodies. | Out of the brief. The handoff lists them as follow-ups. |
+| 9 | **Tokens:** one new token, `--gt-z-palette: 2100`, beside `--gt-z-modal` in `src/styles/tokens/spacing.css`. | Six legacy modals use `z-index: 2000` and the preview banner 1100; the palette must open above them. The design export lacks it; note it on the next design sync. |
 
 ## Section 1 — What the index contains
 
@@ -46,8 +47,8 @@ below are the controller's rules.
 |---|---|---|---|
 | `person` | Everyone the caller may message: owners, TAs and students of the caller's classes, minus self — the `list_contacts` rule (`has_shared_class`). | Full name (email as fallback) · "Instructor" / "TA" / "Student" — their role in the most recently created class you share, when you share several · up to two shared class names | The existing DM `/app/messages/<conversation_id>` when the inbox has one, else `/app/messages/compose?to=<id>&name=<encoded name>` (the `MessageButton` idiom) |
 | `project` | Every project in every class the caller owns or is enrolled in (what Browse Projects shows). | Name · class name · *n* members | `/app/projects/<id>` |
-| `task` | Tasks where the caller is the assignee or the reporter. | `GT-12` + title · status · project name · tags | `/app/projects/<project_id>/board?sprint=<sprint_id>&task=<id>` when the story is in a sprint, else `/app/projects/<project_id>/board?view=backlog&task=<id>` |
-| `story` | Stories where the caller is the assignee or reporter, plus the stories of the caller's tasks; archived stories excluded. | `US-4` + title · sprint name · points · project name | `…/board?sprint=<sprint_id>&story=<id>`, or `…/board?view=backlog&story=<id>` for backlog stories |
+| `task` | Tasks where the caller is the assignee or the reporter and whose board the caller can open (member of the project, or owner/TA of its class) — nothing clears assignee/reporter when someone changes team, and the board answers 403 to non-members. | `GT-12` + title · status · project name · tags | `/app/projects/<project_id>/board?sprint=<sprint_id>&task=<id>` when the story is in a sprint, else `/app/projects/<project_id>/board?view=backlog&task=<id>` |
+| `story` | Stories where the caller is the assignee or reporter, plus the stories of the caller's tasks, and whose board the caller can open (member of the project, or owner/TA of its class) — nothing clears assignee/reporter when someone changes team, and the board answers 403 to non-members. Archived stories excluded. | `US-4` + title · sprint name · points · project name | `…/board?sprint=<sprint_id>&story=<id>`, or `…/board?view=backlog&story=<id>` for backlog stories |
 | `conversation` | The caller's inbox (`messages.controller.list_inbox`): DMs and team channels, same hide rules as the Messages page. | DM: the other person's name · "Direct message". Channel: team name · "Team channel" / "TA channel" / "Instructor channel" (types `team_members` / `team_ta` / `team_instructor`) · unread badge | `/app/messages/<id>` |
 | `class` | Classes the caller owns or is enrolled in (the sidebar's list). | Class name · term + year, else description | Owner: `/app/dashboard`; TA or student: `/app/home`. The client also selects the class in `ClassContext` first (see Section 3). |
 | `assignment` | In classes the caller owns: every assignment, any status. In classes the caller is enrolled in (student or TA): `status = 'publish'` only — the `get_assignments_for_class` rule. | Title · "TSR" / "Feedback" / "Interest form" · "due <close_date>" · "Draft" when unpublished (owners only) | Owner: `/app/modules/tsr/<id>`, `/app/modules/feedback/<id>`, or `/app/modules` for interest forms. TA: `/app/ta-review/<id>` for TSRs, `/app/ta-review` otherwise. Student: `/app/assignments/<id>` |
@@ -95,7 +96,9 @@ Items carry no images: the row's type disc shows initials for people and a glyph
 
 New backend module `app/search/` with the usual four files; `url.py` registers
 `router.get("/index")` under `/api/search`; `views.py` depends on `require_user`; the
-controller holds every scoping rule above. Registered in `app/main.py`'s router loop.
+controller holds every scoping rule above. Registered in `app/main.py`'s router loop. The
+route is registered with `response_model_exclude_none=True`, so unset optional fields are
+omitted rather than sent as `null`.
 
 **Reads: two `fan_out` waves, at most 8 PostgREST calls.**
 
@@ -122,8 +125,8 @@ class's role for routing.
 
 **Cost.** With the backend function now in `sfo1` beside the `us-west-1` database (changed
 2026-10-13), a wave is one round trip of a few milliseconds per call; the whole index takes
-roughly 50–100 ms. No slowapi limit: the client requests it at most once per 30 s, and
-slowapi's in-memory counters do not work on serverless anyway.
+roughly 50–100 ms. The route carries `@limiter.limit("60/minute")`, as the other heavy reads
+do; the client still requests it at most once per 30 s per open.
 
 **Errors.** Any database failure is a 500 through the existing error handling. The client
 keeps the last good index and shows the quiet error row (Section 3).
@@ -140,13 +143,14 @@ frontend/src/features/search/
   components/SearchTrigger.tsx      # header button (250 px; icon-only on phones)
   components/ResultRow.tsx          # row + ResultGroup label
   components/EntityIcon.tsx         # 28 px type disc (initials for people)
-  components/Kbd.tsx                # keycap + modKey()
+  components/Kbd.tsx                # keycap
   components/SearchPagination.tsx   # "1–8 of 37 · ‹ 1 / 5 ›"
   components/MatchText.tsx          # <mark> highlighting
-  hooks/useGlobalSearch.ts          # open/close state, query, scope, page, index cache, recents
+  hooks/useSearchIndex.ts           # per-user index cache: items, status, refresh(force?)
   hooks/usePaletteHotkey.ts         # the ⌘K / Ctrl+K listener
+  recents.ts                        # localStorage recents (read / push)
+  format.ts                         # modKey, initialsOf, shortDate
   searchModel.ts                    # SEARCH_ENTITIES, rankResults, countByType, paginate (pure)
-  searchTypes.ts
   search.scss                       # port of design/components/search/search.css
   __tests__/searchModel.test.ts
   __tests__/commandPalette.test.tsx
@@ -157,10 +161,10 @@ Changed: `Layout/Header.tsx` + `Header.scss`, `app/AppView.tsx`, `scrum/pages/Sc
 `lib/api.ts`, `public/.well-known/grepthink-actions.json`, `Layout/__tests__/Header.test.tsx`.
 
 The port follows the handoff's "About the design files": BEM `.gt-*` classes, `--gt-*` tokens
-only (every token the CSS uses already exists in `src/styles`; `lint:design` stays green),
-`lucide-react` icons in place of the inline SVGs, typed props from the sibling `.d.ts` files
-minus the dropped `team` and `action` types and the `onSearch` async source (the index is
-local, so the design's `items` path is the only one).
+only (`lint:design` stays green), `lucide-react` icons in place of the inline SVGs, typed props
+from the sibling `.d.ts` files minus the dropped `team` and `action` types and the `onSearch`
+async source (the index is local, so the design's `items` path is the only one). One new token,
+`--gt-z-palette` (Decisions, row 9); everything else uses existing `--gt-*` tokens.
 
 ### Header and mount point
 
@@ -170,7 +174,7 @@ the same slot: a 250 × 37 px white button, card shadow, "Search" and a `⌘ K` 
 off Apple platforms, via `modKey()`). Below the phone breakpoint, where the bar is hidden
 today, it renders as the 40 px icon-only form instead. `<CommandPalette />` mounts once in
 `AppView`, next to `<Header>`, so it exists on every `/app` route; `AppView` owns the
-open state through `useGlobalSearch` and passes `onOpen` to the header.
+open state and the index (`useSearchIndex`) and passes `onOpen` to the header.
 
 ### Opening and closing
 
@@ -181,17 +185,21 @@ open state through `useGlobalSearch` and passes `onOpen` to the header.
   first and calls `preventDefault()`, which is why the chord never reaches the palette there;
   its full-screen overlay also covers the header button. The chord works while focus is in a
   text field, as in Slack or Linear.
-- Closing: Esc (handled on the dialog element, so it works from the chips and pager too), the
+- Closing: Esc, handled by a capture-phase `document` listener while the dialog is mounted so
+  it works wherever focus has gone (ignoring an Esc that cancels an IME composition), the
   `esc` keycap, `mousedown` on the backdrop outside the panel, or selecting a result. Closing
   plays the 150 ms `--closing` animation, then unmounts; focus returns to the element that
-  had it (the trigger, normally). Body scroll is locked while open.
+  had it (the trigger, normally). The dialog renders through a portal to `document.body` with
+  `z-index: var(--gt-z-palette)` (2100), above every app layer including the legacy 2000
+  modals. Body scroll is locked while open.
 - Opening resets query, scope and page; recents persist. The design's enter/exit animations
   and `prefers-reduced-motion` fallback are kept as written.
 
 ### Searching
 
-`searchModel.ts` is the design's `SearchModel.jsx` ported verbatim except for the entity list
-and the tie-breaks:
+`searchModel.ts` is the design's `SearchModel.jsx` ported except for the entity list, the
+tie-breaks, a blank query scoring 0 (the design returned 50), recents keyed by `type:id`, and
+no `assignedToMe` boost (every indexed task is the caller's):
 
 - `SEARCH_ENTITIES`, in weight order: task 8, story 7, person 6, conversation 5, project 4,
   class 2, assignment 1 (`team` and `action` removed).
@@ -216,7 +224,7 @@ and the tie-breaks:
   `aria-live="polite"`, the spinner is `role="status"`. No focus trap (Tab reaches the chips,
   pager and `esc`).
 
-### Index cache (`useGlobalSearch`)
+### Index cache (`useSearchIndex`)
 
 - A module-level cache per `userId`: `{ items, fetchedAt }`. Opening the palette renders the
   cached items immediately and refetches when `fetchedAt` is older than 30 s or absent,
@@ -230,18 +238,24 @@ and the tie-breaks:
 - In-flight requests are cancelled with `AbortController` on unmount; a stale response never
   overwrites a newer one.
 
+The dialog's own state (query, scope, page, active row) lives in the palette, which mounts per
+open, so every open starts clean.
+
 ### Selecting
 
 `onSelect(item)`: push the item to recents, then `navigate(item.href)`. For `type ===
-'class'`, first `setSelectedClass(cls)` with the matching entry from `useClass().classes`
-(skip the select, keep the navigate, when it is not in the list — a hidden class). Then
-request close.
+'class'`, first `setSelectedClass(cls)` with the matching entry from
+`useClass().visibleClasses` (skip the select, keep the navigate, when it is not in the visible
+list — a class the user hid). Then request close.
 
 ### Scrum board deep links (`ScrumBoardPage.tsx`)
 
 - New `?story=<id>` search param, handled like `?task=`: once the board has loaded, the story
   from `allStories` (sprint stories + backlog) opens in `StoryModal`; closing the story clears
   the param. `?task=` keeps its current meaning; both set means the task wins, as today.
+- Every handler that changes `task`/`story` makes one navigation through a `setParams(patch)`
+  helper: React Router 7's functional `setSearchParams` updaters each receive the render's
+  params, so two calls in one event would overwrite each other.
 - New `?sprint=<id>`: once the default board has loaded, when the id is in `board.sprints`
   and differs from `board.sprint_id`, call `selectSprint(id)` once. The board already fetches
   by sprint id; this only lets a URL pick it. An id that is not in the list is ignored, so the
@@ -269,8 +283,12 @@ budget together (`fake.executes <= 8`):
   `/app/dashboard`, no tasks (none assigned);
 - isolation: two classes, the caller in one — no person, project, assignment or channel from
   the other appears; a task assigned to someone else never appears; an archived story is
-  absent; a conversation the caller hid (with no newer message) is absent, which the inbox
-  RPC already guarantees and the fake's RPC stub must mirror.
+  absent. A conversation the caller hid (with no newer message) is excluded by the inbox
+  RPC's SQL (`conversation_deletes`), which `list_inbox` passes through unchanged; that is not
+  re-tested against the RPC stub (backend/README.md: do not test a mock).
+- the openable-board rule for staff: a TA's and an instructor's own task on a team they are
+  not on appears; a task in a class they are not in does not; a limiter test (the route's
+  registered slowapi rule is 60 per minute).
 - `tests/test_api_surface.py` already asserts that the new route needs a signed-in user.
 
 **Frontend** (vitest + testing-library):
@@ -284,9 +302,11 @@ budget together (`fake.executes <= 8`):
   navigates to the row's `href`; choosing a class calls `setSelectedClass` then navigates;
   with `isPreviewing`, no assignment or class rows; the cached list renders before the fetch
   resolves and the error row appears when the first fetch rejects; `localStorage` recents
-  survive a close and reopen.
+  survive a close and reopen; focus stays in the dialog after "See all"/"Try again", and Esc
+  closes from `<body>` too; IME composition guard; no navigation during the exit animation;
+  class rows select only a visible class.
 - `Header.test.tsx`: the trigger renders with its `⌘ K` label and no `<input>` remains.
-- `ScrumBoard.test.tsx`: `?story=` opens the story modal; `?sprint=` selects that sprint.
+- `ScrumBoardPage.test.tsx`: `?story=` opens the story modal; `?sprint=` selects that sprint.
 
 **Visual check:** a git-excluded `frontend/search-mock.html` + `search-mock/main.tsx` harness
 renders the palette's states (results, recent, empty, loading, error, phone width) on sample

@@ -159,7 +159,7 @@ Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `log
 `/api/tsrs`, `/api/staffing`, `/api/messages`, `/api/profiles`, `/api/contact`,
 `/api/notifications`, `/api/tas`, `/api/stats`, `/api/analytics` (scope, dashboard), `/api/email`
 (outbox dispatch, Maileroo webhook, unsubscribe, email preferences), `/api/scrum` +
-`/api/projects/{id}/scrum` (scrum board), plus attendance routes under `/api`.
+`/api/projects/{id}/scrum` (scrum board), `/api/search` (`index`), plus attendance routes under `/api`.
 The full agent-facing action catalog (method, params, role) lives at
 `frontend/public/.well-known/grepthink-actions.json`.
 
@@ -211,8 +211,8 @@ The full agent-facing action catalog (method, params, role) lives at
   messages: nothing can recognise those.
 - **Rate limiting** (slowapi) is per route: `@limiter.limit(...)` (+ a `request: Request` param)
   sits on the auth routes, contact, `GET /api/institutions`, message sending, the `/api/email`
-  dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts, stats and
-  analytics. Add one to any new public or abuse-prone endpoint.
+  dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts, stats,
+  analytics and the search index. Add one to any new public or abuse-prone endpoint.
 - **Email goes through the outbox.** Queue an email with `app.outbox.controller.enqueue`
   (one row per recipient, a `kind` registered in `app/outbox/kinds.py`, a `dedupe_key` when the
   producer may run twice) instead of sending from a request or a background task: Vercel pauses
