@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown';
+import './MarkdownText.scss';
 
 interface Props {
   children: string;
@@ -7,7 +8,7 @@ interface Props {
 
 /**
  * Shared markdown renderer for user-authored bodies (story/task descriptions,
- * comments). Styling comes from the `.gt-md` layer.
+ * comments). Styling comes from the `.gt-md` layer in MarkdownText.scss.
  *
  * Mentions (issue #191) add one more `components` override here — an `a` whose
  * href starts with `mention:` renders as a chip instead of a link — so every

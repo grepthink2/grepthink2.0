@@ -32,7 +32,7 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes institutions projects assignments tsr staffing
-  messages profiles contact notifications tas attendance stats outbox scrum analytics search
+  messages profiles contact issues notifications tas attendance stats outbox scrum analytics search
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
@@ -157,7 +157,7 @@ of them for another Vercel account. Reads are fine; ask the maintainer before an
 Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `login-check`,
 `create-user`, `check-email`), `/api/classes`, `/api/institutions`, `/api/projects`, `/api/assignments`,
 `/api/tsrs`, `/api/staffing`, `/api/messages`, `/api/profiles`, `/api/contact`,
-`/api/notifications`, `/api/tas`, `/api/stats`, `/api/analytics` (scope, dashboard), `/api/email`
+`/api/issues` (public issue form → GitHub issue), `/api/notifications`, `/api/tas`, `/api/stats`, `/api/analytics` (scope, dashboard), `/api/email`
 (outbox dispatch, Maileroo webhook, unsubscribe, email preferences), `/api/scrum` +
 `/api/projects/{id}/scrum` (scrum board), `/api/search` (`index`), plus attendance routes under `/api`.
 The full agent-facing action catalog (method, params, role) lives at
@@ -210,9 +210,9 @@ The full agent-facing action catalog (method, params, role) lives at
   new credentials that way, and keep names, grades and review text out of exception and log
   messages: nothing can recognise those.
 - **Rate limiting** (slowapi) is per route: `@limiter.limit(...)` (+ a `request: Request` param)
-  sits on the auth routes, contact, `GET /api/institutions`, message sending, the `/api/email`
-  dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts, stats,
-  analytics and the search index. The search index's limit is per signed-in user
+  sits on the auth routes, contact, the issue form, `GET /api/institutions`, message sending, the
+  `/api/email` dispatch, webhook and unsubscribe routes, the scrum board's PR refresh and AI drafts,
+  stats, analytics and the search index. The search index's limit is per signed-in user
   (`key_func=_search_rate_key` in `app/search/views.py`): on Vercel every request arrives from
   the proxy's address, so a limit keyed by address is one bucket for everybody. Add one to any
   new public or abuse-prone endpoint.
@@ -220,7 +220,7 @@ The full agent-facing action catalog (method, params, role) lives at
   (one row per recipient, a `kind` registered in `app/outbox/kinds.py`, a `dedupe_key` when the
   producer may run twice) instead of sending from a request or a background task: Vercel pauses
   an instance between requests, so a send started inside one can be cut off and lost. Only interactive
-  emails the user is waiting for (verification codes, the contact form) call
+  emails the user is waiting for (verification codes, the contact and issue forms) call
   `app.utils.email.send_email` directly. Reminder/digest kinds need a preference `category`.
 - **Preview / "View class as student"** (offered only in a class you teach) is a frontend-only
   read-only simulation of that class as its students see it (`previewContext` + `previewGuard`) —

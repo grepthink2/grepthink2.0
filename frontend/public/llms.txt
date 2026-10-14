@@ -11,7 +11,7 @@ role-gated (instructor / TA / student).
 
 ## Public pages
 - [Home](/): product overview and sign-in entry points
-- [Contact](/contact): contact form
+- [Contact](/contact): contact form, and an issue form that files bug reports and feature requests on GitHub
 - [Student sign-up](/studentsignup) and [Instructor sign-up](/instructorsignup)
 - [Log in](/login), [Forgot password](/forgot-password)
 
