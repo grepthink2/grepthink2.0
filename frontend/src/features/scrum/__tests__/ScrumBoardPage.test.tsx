@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import type { ApiScrumBoard } from '@/lib/api';
 import ScrumBoardPage, { ScrumBoardSkeleton } from '../pages/ScrumBoardPage';
 import { BOARD_VIEWS } from '../config/boardViews';
 import { makeBoard, makeStory, makeTask } from './fixtures';
@@ -28,7 +29,12 @@ vi.mock('@/lib/api', () => ({
 }));
 const { api } = await import('@/lib/api');
 
-const boardFixture = () => makeBoard({
+const TWO_SPRINTS = [
+  { id: 'sp1', name: 'Sprint 1', starts_at: '2026-08-10', ends_at: '2026-08-23', status: 'active' as const },
+  { id: 'sp2', name: 'Sprint 2', starts_at: '2026-08-24', ends_at: '2026-09-06', status: 'active' as const },
+];
+
+const boardFixture = (over: Partial<ApiScrumBoard> = {}) => makeBoard({
   stories: [
     makeStory({
       id: 's1', key: 'US-1', title: 'Login flow', points: 8,
@@ -42,6 +48,7 @@ const boardFixture = () => makeBoard({
     ] }),
   ],
   backlog: [makeStory({ id: 's9', key: 'US-9', title: 'Old idea', sprint_id: null })],
+  ...over,
 });
 
 const renderAt = (entry = '/app/projects/p1/board') =>
@@ -262,5 +269,85 @@ describe('ScrumBoardPage states', () => {
     renderAt();
     await screen.findByText('Login flow');
     expect(screen.getByRole('button', { name: 'New Story' })).toBeDisabled();
+  });
+});
+
+describe('ScrumBoardPage deep links (global search)', () => {
+  it('opens the story named by ?story= once the board has loaded', async () => {
+    renderAt('/app/projects/p1/board?story=s2');
+    const story = await screen.findByRole('dialog');
+    expect(within(story).getByText('Roster import')).toBeInTheDocument();
+  });
+
+  it('opens a backlog story from ?view=backlog&story=', async () => {
+    renderAt('/app/projects/p1/board?view=backlog&story=s9');
+    const story = await screen.findByRole('dialog');
+    expect(within(story).getByText('Old idea')).toBeInTheDocument();
+  });
+
+  it('switches to the sprint named by ?sprint=, drops the param, and then opens the story', async () => {
+    vi.mocked(api.getScrumBoard).mockImplementation(async (_projectId: string, sprintId?: string) =>
+      sprintId === 'sp2'
+        ? boardFixture({
+            sprint_id: 'sp2',
+            sprints: TWO_SPRINTS,
+            stories: [makeStory({ id: 's3', key: 'US-3', title: 'Sprint two story', tasks: [] })],
+          })
+        : boardFixture({ sprints: TWO_SPRINTS }),
+    );
+    renderAt('/app/projects/p1/board?sprint=sp2&story=s3');
+    const story = await screen.findByRole('dialog');
+    expect(within(story).getByText('Sprint two story')).toBeInTheDocument();
+    expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp2');
+  });
+
+  it('ignores an unknown ?sprint= and keeps the default board', async () => {
+    renderAt('/app/projects/p1/board?sprint=nope');
+    await screen.findByRole('tab', { name: 'Board' });
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Login flow')).toBeInTheDocument();
+  });
+
+  it('closing the story clears ?story= and leaves the view alone', async () => {
+    renderAt('/app/projects/p1/board?view=backlog&story=s9');
+    const story = await screen.findByRole('dialog');
+    await userEvent.click(within(story).getByRole('button', { name: /close story/i }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByRole('tab', { name: 'Backlog' })).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+// setSearchParams does not queue like setState: two calls in one event both start from that
+// render's params and the last one wins. These handlers change two params at once.
+describe('ScrumBoardPage URL params: one navigation per event', () => {
+  it('opening a task from its story, then closing the editor, returns to the board', async () => {
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'Open US-1' }));
+    const story = await screen.findByRole('dialog');
+    await userEvent.click(within(story).getByRole('button', { name: 'Build form' }));
+    const editor = await screen.findByRole('dialog', { name: /edit t-1/i });
+    await userEvent.click(within(editor).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('cancelling a new task returns to the board, not the story', async () => {
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'Open US-1' }));
+    const story = await screen.findByRole('dialog');
+    await userEvent.click(within(story).getByRole('button', { name: /add task/i }));
+    const editor = await screen.findByRole('dialog', { name: /new task in US-1/i });
+    await userEvent.click(within(editor).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('closing a story also drops a ?task= that names no task on this board', async () => {
+    renderAt('/app/projects/p1/board?task=gone');
+    await screen.findByText('Roster import');
+    await userEvent.click(screen.getByRole('button', { name: 'Open US-2' }));
+    const story = await screen.findByRole('dialog');
+    await userEvent.click(within(story).getByRole('button', { name: /close story/i }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 });
