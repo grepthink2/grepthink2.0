@@ -259,6 +259,10 @@
       "method": "GET", "endpoint": "/api/notifications"
     },
     {
+      "id": "search_index", "title": "Load my search index (everything I can open, for the ⌘K palette)", "role": "any",
+      "method": "GET", "endpoint": "/api/search/index", "params": {}
+    },
+    {
       "id": "update_profile", "title": "Update my profile", "role": "any",
       "method": "PATCH", "endpoint": "/api/profiles/me",
       "params": {"first_name": "string", "last_name": "string", "linkedin": "string", "github": "string", "image_url": "string"}, "uiRoute": "/app/settings", "multiStep": true
