@@ -1,12 +1,13 @@
 """The ⌘K search index: what each caller may see, where each item opens, and what it costs.
 
-One world, three callers. ``UID`` is a student in Alpha on project P1 with ``S2``; ``TA1`` (no
-name on the profile) TAs Alpha; ``INSTR`` teaches it. Beta is another instructor's class with
+One world, five callers. ``UID`` is a student in Alpha on project P1 with ``S2``; ``TA1`` (no
+name on the profile) TAs Alpha; ``INSTR`` teaches it. Beta is ``OTHER_INSTR``'s class with
 ``S3`` and project P3 — nothing from Beta may reach an Alpha caller. ``NOBODY`` is in no class.
 """
 
 from __future__ import annotations
 
+from app.limiter import limiter
 from app.search import controller
 from tests.conftest import make_token
 from tests.fake_supabase import FakeSupabase
@@ -245,7 +246,8 @@ def world() -> FakeSupabase:
                 points=1,
                 archived="2026-09-01T00:00:00Z",
             ),
-            # Reached only through UID's tasks t6 and t7, on boards UID cannot open.
+            # Reached only through tasks: UID's t6 and t7 (on boards UID cannot open) and the
+            # staff's t8, t9 and t10.
             story(
                 "st6",
                 "US-6",
@@ -325,6 +327,35 @@ def world() -> FakeSupabase:
                 project_id=P3,
                 assignee=UID,
                 reporter=S3,
+            ),
+            # The staff's own tasks on a team they are not on. Alpha's TA and instructor can
+            # open every Alpha board; P3 is in Beta, which is not TA1's class.
+            task(
+                "t8",
+                "GT-60",
+                "TA's own task",
+                story_id="st6",
+                project_id=P2,
+                assignee=TA1,
+                reporter=S2,
+            ),
+            task(
+                "t9",
+                "GT-70",
+                "TA's task in Beta",
+                story_id="st7",
+                project_id=P3,
+                assignee=TA1,
+                reporter=S3,
+            ),
+            task(
+                "t10",
+                "GT-80",
+                "Instructor's task",
+                story_id="st6",
+                project_id=P2,
+                assignee=INSTR,
+                reporter=S2,
             ),
         ],
         assignments=[
@@ -487,3 +518,103 @@ def test_route_returns_the_index(client, monkeypatch):
     assert any(i["type"] == "task" for i in items)  # so the checks below are not vacuous
     assert all("sprint" not in i for i in items if i["type"] == "task")
     assert [(i["id"], key) for i in items for key, value in i.items() if value is None] == []
+
+
+def test_the_index_is_rate_limited():
+    [rule] = limiter._route_limits["app.search.views.get_search_index"]
+    assert str(rule.limit) == "60 per 1 minute"
+
+
+P2_BOARD = f"/app/projects/{P2}/board"
+
+EXPECTED_TA_ASSIGNMENTS = {
+    ("assignment", "a1"): ("TSR 3", "TSR · due Oct 12", "/app/ta-review/a1"),
+    ("assignment", "a4"): ("Interest form", "Interest form · due Oct 20", "/app/ta-review"),
+    ("assignment", "a5"): ("Survey", "Assignment", "/app/ta-review"),
+}
+
+EXPECTED_INSTRUCTOR_ASSIGNMENTS = {
+    ("assignment", "a1"): ("TSR 3", "TSR · due Oct 12", "/app/modules/tsr/a1"),
+    ("assignment", "a2"): ("Peer feedback", "Feedback · Draft", "/app/modules/feedback/a2"),
+    ("assignment", "a4"): ("Interest form", "Interest form · due Oct 20", "/app/modules"),
+    ("assignment", "a5"): ("Survey", "Assignment", "/app/modules"),
+}
+
+
+def only(items: list[dict], kind: str) -> dict:
+    return {k: v for k, v in summary(items).items() if k[0] == kind}
+
+
+def test_ta_gets_review_routes_and_no_drafts(monkeypatch):
+    items, fake = index_for(monkeypatch, TA1)
+
+    assert only(items, "assignment") == EXPECTED_TA_ASSIGNMENTS
+    assert only(items, "class") == {("class", ALPHA): ("CSE 115B", "Fall 2026", "/app/home")}
+    assert only(items, "person") == {
+        ("person", UID): (
+            "Tony Wu",
+            "Student · CSE 115B",
+            f"/app/messages/compose?to={UID}&name=Tony%20Wu",
+        ),
+        ("person", S2): (
+            "Ashton Liu",
+            "Student · CSE 115B",
+            f"/app/messages/compose?to={S2}&name=Ashton%20Liu",
+        ),
+        ("person", INSTR): (
+            "Richard Jullig",
+            "Instructor · CSE 115B",
+            f"/app/messages/compose?to={INSTR}&name=Richard%20Jullig",
+        ),
+    }
+    assert set(only(items, "project")) == {("project", P1), ("project", P2)}
+    # A TA opens every board in the class, P2's too, though not on that team; not t9 or st7,
+    # whose board is in Beta.
+    assert only(items, "task") == {
+        ("task", "t8"): ("TA's own task", "Roster Radar", f"{P2_BOARD}?view=backlog&task=t8")
+    }
+    assert only(items, "story") == {
+        ("story", "st6"): ("Old team's story", "Roster Radar", f"{P2_BOARD}?view=backlog&story=st6")
+    }
+    assert only(items, "conversation") == {}  # the stub has no inbox for TA1
+    assert fake.executes <= 8
+
+
+def test_instructor_gets_modules_drafts_and_the_dashboard(monkeypatch):
+    items, fake = index_for(monkeypatch, INSTR)
+
+    assert only(items, "assignment") == EXPECTED_INSTRUCTOR_ASSIGNMENTS
+    assert only(items, "class") == {("class", ALPHA): ("CSE 115B", "Fall 2026", "/app/dashboard")}
+    assert set(only(items, "person")) == {("person", UID), ("person", S2), ("person", TA1)}
+    assert by_id(items, TA1)["subtitle"] == "TA · CSE 115B"
+    assert set(only(items, "project")) == {("project", P1), ("project", P2)}
+    # The owner opens every board in the class, P2's too, though not on that team.
+    assert only(items, "task") == {
+        ("task", "t10"): ("Instructor's task", "Roster Radar", f"{P2_BOARD}?view=backlog&task=t10")
+    }
+    assert only(items, "story") == {
+        ("story", "st6"): ("Old team's story", "Roster Radar", f"{P2_BOARD}?view=backlog&story=st6")
+    }
+    assert fake.executes <= 8
+
+
+def test_class_without_term_shows_its_description(monkeypatch):
+    items, fake = index_for(monkeypatch, OTHER_INSTR)
+
+    assert only(items, "class") == {("class", BETA): ("CSE 101", "Algorithms", "/app/dashboard")}
+    assert only(items, "person") == {
+        ("person", S3): (
+            "Priya Raman",
+            "Student · CSE 101",
+            f"/app/messages/compose?to={S3}&name=Priya%20Raman",
+        )
+    }
+    assert set(only(items, "project")) == {("project", P3)}
+    assert fake.executes <= 8
+
+
+def test_no_classes_means_an_empty_index_after_one_wave(monkeypatch):
+    items, fake = index_for(monkeypatch, NOBODY)
+
+    assert items == []  # NOBODY has no inbox either: old conversations would still be listed
+    assert fake.executes <= 5  # wave 2 has nothing to ask for

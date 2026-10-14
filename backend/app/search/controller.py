@@ -46,7 +46,8 @@ _ASSIGNMENT_LABEL = {"tsr": "TSR", "feedback": "Feedback", "interest_form": "Int
 
 
 def build_index(user_id: str) -> dict:
-    """``{"items": [...], "generated_at": iso}`` for ``user_id``; empty for a caller in no class."""
+    """``{"items": [...], "generated_at": iso}`` for ``user_id``. A caller in no class gets only
+    their conversations: a DM stays in the inbox after the two stop sharing a class."""
     try:
         return {"items": _items_for(str(user_id)), "generated_at": datetime.now(UTC).isoformat()}
     except HTTPException:

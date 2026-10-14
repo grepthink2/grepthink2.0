@@ -489,7 +489,8 @@ def list_contacts(*, caller_id: str, query: str | None = None) -> list[dict]:
     case-insensitive name/email filter.
 
     Mirrors can_message() eligibility — keep the two in sync (same
-    convention as the messages_inbox RPC).
+    convention as the messages_inbox RPC). The search index's people
+    (``app.search.controller._people``) mirror the same rule too.
 
     Replaces the frontend's per-class getClassStudents() fan-out.
 
