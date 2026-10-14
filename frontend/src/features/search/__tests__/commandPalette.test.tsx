@@ -9,7 +9,7 @@ import type { SearchItem } from '../searchModel';
 
 const state = vi.hoisted(() => ({
   preview: { isPreviewing: false },
-  // The sidebar's list: k2 is a class the user hid, so it is in the roster but not here.
+  // visibleClasses: k2 is a class the user hid, so it is in the roster but not here.
   ctx: { visibleClasses: [{ id: 'k1', name: 'CSE 115B' }], setSelectedClass: vi.fn() },
 }));
 vi.mock('@/lib/previewContext', () => ({ usePreview: () => state.preview }));
@@ -21,7 +21,7 @@ const ITEMS: SearchItem[] = [
   { id: 'p1', type: 'project', title: 'Roster Radar', href: '/app/projects/p1', subtitle: 'CSE 115B · 4 members' },
   { id: 'k1', type: 'class', title: 'CSE 115B', href: '/app/dashboard', subtitle: 'Fall 2026' },
   { id: 'k2', type: 'class', title: 'CSE 101 (hidden)', href: '/app/my-classes', subtitle: 'Spring 2026' },
-  { id: 'a1', type: 'assignment', title: 'TSR 3', href: '/app/assignments/a1', subtitle: 'TSR · due Oct 12' },
+  { id: 'a1', type: 'assignment', title: 'TSR 3', href: '/app/assignments/a1', subtitle: 'TSR · due Oct 12', class_id: 'k1' },
 ];
 
 function Where() {
@@ -270,6 +270,16 @@ describe('CommandPalette — searching', () => {
     expect(screen.getByTestId('path')).toHaveTextContent('/app/my-classes');
   });
 
+  it('selects an assignment’s class along with the navigation, since its page reads the selected class', async () => {
+    const user = userEvent.setup();
+    renderPalette();
+    await user.type(input(), 'tsr 3');
+    await user.click(screen.getAllByRole('option')[0]);
+    expect(state.ctx.setSelectedClass).toHaveBeenCalledWith(expect.objectContaining({ id: 'k1' }));
+    expect(screen.getByTestId('path')).toHaveTextContent('/app/assignments/a1');
+    await closed();
+  });
+
   it('hides assignments and classes in student preview', async () => {
     state.preview.isPreviewing = true;
     const user = userEvent.setup();
@@ -293,6 +303,28 @@ describe('CommandPalette — searching', () => {
     fireEvent.click(screen.getByRole('button', { name: 'trigger' }));
     const list = screen.getByRole('listbox', { name: 'Recent' });
     expect(within(list).getByRole('option')).toHaveTextContent('Roster Radar');
+  });
+
+  it('shows the index’s copy of a recent item, so a chat read since shows no unread badge', () => {
+    const chat: SearchItem = { id: 'c1', type: 'conversation', title: 'Grepthink 2.0', href: '/app/messages/c1', subtitle: 'Team channel' };
+    localStorage.setItem('gt.search.recent.me', JSON.stringify([{ ...chat, unread: 3 }]));
+    renderPalette(indexOf({ items: [...ITEMS, { ...chat, unread: 0 }] }));
+    const list = screen.getByRole('listbox', { name: 'Recent' });
+    expect(within(list).getByRole('option')).toHaveTextContent('Grepthink 2.0');
+    expect(within(list).queryByLabelText('3 unread')).toBeNull();
+  });
+
+  it('lists the stored recents until the index loads, then only those it still has', () => {
+    localStorage.setItem('gt.search.recent.me', JSON.stringify([
+      { id: 'gone', type: 'project', title: 'Old team', href: '/app/projects/gone' },
+      { id: 'p1', type: 'project', title: 'Roster Radar', href: '/app/projects/p1' },
+    ]));
+    const recentTitles = () => within(screen.getByRole('listbox', { name: 'Recent' })).getAllByRole('option').map((o) => o.textContent);
+    const { rerender } = render(<MemoryRouter><Host index={indexOf({ items: [], status: 'loading' })} initialOpen /></MemoryRouter>);
+    expect(recentTitles()).toEqual([expect.stringContaining('Old team'), expect.stringContaining('Roster Radar')]);
+
+    rerender(<MemoryRouter><Host index={indexOf()} initialOpen /></MemoryRouter>);
+    expect(recentTitles()).toEqual([expect.stringContaining('Roster Radar')]);
   });
 
   it('leaves Enter and the arrows to the IME while it is composing', async () => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Settings } from 'lucide-react';
 import Skeleton from '@components/Skeleton/Skeleton';
@@ -189,10 +189,16 @@ export default function ScrumBoardPage() {
     setAddTaskStoryId(null);
   };
 
-  /** Back arrow inside the task editor → its parent story, task closed. */
+  /**
+   * Back arrow inside the task editor → its parent story, task closed. One transition for both: the
+   * router navigates in one, so a new-task editor closed on its own would commit a screen with no
+   * modal before the story opens.
+   */
   const backToStory = (storyId: string) => {
-    setParams({ task: null, story: storyId });
-    setAddTaskStoryId(null);
+    startTransition(() => {
+      setParams({ task: null, story: storyId });
+      setAddTaskStoryId(null);
+    });
   };
 
   /** Everything dismissed, back to the board. */
@@ -226,10 +232,13 @@ export default function ScrumBoardPage() {
     const created = await createStory(body);
     setSavingStory(false);
     if (!created) return;              // the hook already raised the error toast
-    setCreatingStory(false);
     push('success', `${created.story.key} created`);
-    // Continue the flow: land in the new story so its tasks can be added now.
-    setStoryParam(created.story.id);
+    // Continue the flow: land in the new story so its tasks can be added now. One transition closes
+    // the editor and opens the story (the router navigates in one): never a commit with no modal.
+    startTransition(() => {
+      setCreatingStory(false);
+      setStoryParam(created.story.id);
+    });
   };
 
   if (loading) return <ScrumBoardSkeleton />;

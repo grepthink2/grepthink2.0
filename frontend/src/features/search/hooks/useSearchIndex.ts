@@ -36,6 +36,9 @@ export function primeSearchIndexCache(userId: string, items: SearchItem[], fetch
 export function useSearchIndex(userId: string | null): SearchIndexState {
   const [pendingFor, setPendingFor] = useState<string | null>(null); // user with a request in flight
   const [failedFor, setFailedFor] = useState<string | null>(null); // user whose last fetch failed
+  // Renders a new cache entry. An answer that settles in the same batch as refresh()'s own
+  // setPendingFor(userId) cancels that update out, and React would skip the render that reads it.
+  const [, bump] = useState(0);
   const inflight = useRef<AbortController | null>(null);
 
   const entry = userId ? cache.get(userId) : undefined;
@@ -59,6 +62,7 @@ export function useSearchIndex(userId: string | null): SearchIndexState {
         (res) => {
           if (controller.signal.aborted) return;
           cache.set(userId, { items: res.items, fetchedAt: Date.now() });
+          bump((v) => v + 1);
           inflight.current = null;
           setFailedFor(null);
           setPendingFor(null);

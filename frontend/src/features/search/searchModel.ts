@@ -11,7 +11,7 @@ export type SearchScope = ApiSearchItemType | 'all';
 export interface SearchEntityMeta {
   type: ApiSearchItemType;
   label: string;
-  /** Orders equal matches: higher first. */
+  /** Higher first among near-equal matches: the score adds weight × 0.5 (see rankResults). */
   weight: number;
 }
 
@@ -94,7 +94,11 @@ export interface RankOptions {
   recentKeys?: readonly string[];
 }
 
-/** Score = match quality + entity weight × 0.5 (+2 when recent). Quality dominates. */
+/**
+ * Score = match quality + entity weight × 0.5 (+2 when recent). Quality leads; weight (a 3.5-point
+ * span) and the recents boost only reorder near-equal matches, but together (≤ 5.5) they can pass a
+ * match one quality step (5 points) better.
+ */
 export function rankResults(
   items: readonly SearchItem[],
   query: string,

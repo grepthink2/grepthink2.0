@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Profiler } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
@@ -313,8 +314,18 @@ describe('ScrumBoardPage deep links (global search)', () => {
   it('ignores an unknown ?sprint= and keeps the default board', async () => {
     renderAt('/app/projects/p1/board?sprint=nope');
     await screen.findByRole('tab', { name: 'Board' });
+    await waitFor(() => expect(screen.getByTestId('path').textContent).toBe('/app/projects/p1/board'));
     expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Login flow')).toBeInTheDocument();
+  });
+
+  it('drops a ?sprint= naming the sprint already shown, without fetching the board again', async () => {
+    renderAt('/app/projects/p1/board?sprint=sp1&story=s1');
+    const story = await screen.findByRole('dialog');
+    expect(within(story).getByText('Login flow')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId('path').textContent).toBe('/app/projects/p1/board?story=s1'));
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
   });
 
   it('closing the story clears ?story= and leaves the view alone', async () => {
@@ -378,5 +389,61 @@ describe('ScrumBoardPage URL params: one navigation per event', () => {
     const story = await screen.findByRole('dialog');
     await userEvent.click(within(story).getByRole('button', { name: /close story/i }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByTestId('path').textContent).toBe('/app/projects/p1/board');
+  });
+});
+
+/**
+ * The board at `/app/projects/p1/board`, recording how many dialogs are on screen after each
+ * commit (a Profiler reports a commit once the DOM is updated).
+ */
+function renderCountingDialogs() {
+  const dialogsPerCommit: number[] = [];
+  render(
+    <Profiler id="board" onRender={() => { dialogsPerCommit.push(document.querySelectorAll('[role="dialog"]').length); }}>
+      <MemoryRouter initialEntries={['/app/projects/p1/board']}>
+        <Routes>
+          <Route path="/app/projects/:projectId/board" element={<ScrumBoardPage />} />
+        </Routes>
+      </MemoryRouter>
+    </Profiler>,
+  );
+  return dialogsPerCommit;
+}
+
+// A swap that closes one modal with local state and opens the next through the URL commits in two
+// steps unless both share a transition (the router navigates in one): one commit with no modal.
+describe('ScrumBoardPage modal swaps never commit an empty screen', () => {
+  it('back from a new task closes the editor and opens the story in one commit', async () => {
+    const dialogsPerCommit = renderCountingDialogs();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'Open US-1' }));
+    const story = await screen.findByRole('dialog');
+    await userEvent.click(within(story).getByRole('button', { name: /add task/i }));
+    const editor = await screen.findByRole('dialog', { name: /new task in US-1/i });
+
+    dialogsPerCommit.length = 0;
+    await userEvent.click(within(editor).getByRole('button', { name: 'Back to US-1 Login flow' }));
+    expect(await screen.findByRole('button', { name: /close story/i })).toBeInTheDocument();
+    expect(dialogsPerCommit.length).toBeGreaterThan(0);
+    expect(dialogsPerCommit).not.toContain(0);
+  });
+
+  it('a created story replaces the new-story editor in one commit', async () => {
+    const created = makeStory({ id: 'new1', key: 'US-9', title: 'Weather overlay', tasks: [] });
+    vi.mocked(api.createStory).mockResolvedValue({ message: 'ok', story: created });
+    vi.mocked(api.getScrumBoard).mockResolvedValue({
+      ...boardFixture(), stories: [...boardFixture().stories, created],
+    });
+    const dialogsPerCommit = renderCountingDialogs();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('button', { name: 'New Story' }));
+    await userEvent.type(screen.getByLabelText('Title'), 'Weather overlay');
+
+    dialogsPerCommit.length = 0;
+    await userEvent.click(screen.getByRole('button', { name: 'Create story' }));
+    expect(await screen.findByRole('dialog', { name: /weather overlay/i })).toBeInTheDocument();
+    expect(dialogsPerCommit.length).toBeGreaterThan(0);
+    expect(dialogsPerCommit).not.toContain(0);
   });
 });

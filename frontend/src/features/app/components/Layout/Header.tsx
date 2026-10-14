@@ -274,7 +274,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenSettings, onToggleNav, onOpenSear
         )}
       </div>
 
-      {/* Right: Notifications, Search Bar & Profile */}
+      {/* Right: Notifications, Search trigger & Profile */}
       <div className="app-header__right">
         {/* Notifications */}
         <div className="app-header__notification-container" ref={notificationRef}>

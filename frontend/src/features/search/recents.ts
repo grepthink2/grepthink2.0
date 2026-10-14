@@ -4,16 +4,27 @@ export const RECENTS_LIMIT = 8;
 
 const storageKey = (userId: string) => `gt.search.recent.${userId}`;
 
-/** Last opened items, newest first. Storage that is missing, corrupt or throwing reads as empty. */
+/**
+ * Last opened items, newest first, at most 8. Storage that is missing, corrupt or throwing reads as
+ * empty, and an entry without a string id, type, title or href is dropped (the row renderers would
+ * crash on it).
+ */
 export function readRecents(userId: string | null): SearchItem[] {
   if (!userId) return [];
   try {
     const raw = localStorage.getItem(storageKey(userId));
     const parsed: unknown = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (r): r is SearchItem => Boolean(r) && typeof r.id === 'string' && typeof r.href === 'string',
-    );
+    return parsed
+      .filter(
+        (r): r is SearchItem =>
+          Boolean(r) &&
+          typeof r.id === 'string' &&
+          typeof r.type === 'string' &&
+          typeof r.title === 'string' &&
+          typeof r.href === 'string',
+      )
+      .slice(0, RECENTS_LIMIT);
   } catch {
     return [];
   }
@@ -30,7 +41,7 @@ export function pushRecent(
     try {
       localStorage.setItem(storageKey(userId), JSON.stringify(next));
     } catch {
-      // private mode / quota: the in-memory list still works for this open
+      // private mode / quota: nothing is saved; the list is still returned for callers that want it
     }
   }
   return next;

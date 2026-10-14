@@ -75,6 +75,18 @@ describe('useSearchIndex', () => {
     expect(api.getSearchIndex).toHaveBeenCalledTimes(1);
   });
 
+  // In the browser the loading state from refresh() renders in a later task, so an answer that is
+  // already there settles first, in the same batch: the two pending-state updates cancel out.
+  // refresh() is called inside an async act for that order; act renders an update made by a mount
+  // effect before any promise settles, so a mount effect cannot show this.
+  it('renders an answer that settles in the same batch as its loading state', async () => {
+    vi.mocked(api.getSearchIndex).mockResolvedValue(index(['a', 'b', 'c']));
+    const { result } = renderHook(() => useSearchIndex('me'));
+    await act(async () => { result.current.refresh(); });
+    expect(result.current.items).toHaveLength(3);
+    expect(result.current.status).toBe('ready');
+  });
+
   it('serves a fresh cache without a request, refetches a stale one while keeping the old list', async () => {
     primeSearchIndexCache('me', [item('old')], Date.now());
     const { result } = renderHook(() => useSearchIndex('me'));
@@ -173,6 +185,19 @@ describe('recents', () => {
     expect(readRecents('me').map((i) => i.id)).toEqual(list.map((i) => i.id));
     expect(readRecents('you')).toEqual([]);
     expect(readRecents(null)).toEqual([]);
+  });
+
+  it('drops a stored entry without a type or a title, and reads back at most 8', () => {
+    // A stored row without a title would crash every row renderer on each open.
+    localStorage.setItem('gt.search.recent.me', JSON.stringify([
+      { id: 'untitled', type: 'project', href: '/app/projects/untitled' },
+      { id: 'untyped', title: 'No type', href: '/app/projects/untyped' },
+      item('kept'),
+    ]));
+    expect(readRecents('me').map((i) => i.id)).toEqual(['kept']);
+
+    localStorage.setItem('gt.search.recent.me', JSON.stringify(Array.from({ length: 9 }, (_, i) => item(`p${i}`))));
+    expect(readRecents('me').map((i) => i.id)).toEqual(['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7']);
   });
 
   it('reads corrupt storage as empty and survives storage that throws', () => {

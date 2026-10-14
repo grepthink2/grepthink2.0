@@ -1,5 +1,5 @@
 import {
-  useCallback, useEffect, useId, useMemo, useRef, useState,
+  startTransition, useCallback, useEffect, useId, useMemo, useRef, useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -126,10 +126,14 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
     () => (isPreviewing ? items.filter((i) => !STAFF_ONLY_IN_PREVIEW.has(i.type)) : items),
     [items, isPreviewing],
   );
-  const recentList = useMemo(
-    () => (isPreviewing ? recents.filter((i) => !STAFF_ONLY_IN_PREVIEW.has(i.type)) : recents),
-    [recents, isPreviewing],
-  );
+  // Recent rows show the index's current copy of each stored item: a stored copy keeps an old unread
+  // badge, task status or compose link, and items the user can no longer open. Until the index has
+  // loaded (the first load, or offline), the stored copies stand in.
+  const live = useMemo(() => new Map(visible.map((i) => [itemKey(i), i])), [visible]);
+  const recentList = useMemo(() => {
+    if (live.size > 0) return recents.flatMap((r) => live.get(itemKey(r)) ?? []);
+    return isPreviewing ? recents.filter((i) => !STAFF_ONLY_IN_PREVIEW.has(i.type)) : recents;
+  }, [recents, live, isPreviewing]);
   const q = query.trim();
   const idle = q === '';
   const recentKeys = useMemo(() => recents.map(itemKey), [recents]);
@@ -156,12 +160,18 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
     if (closing) return; // rows stay clickable during the exit animation
     // Persist only: re-ranking with the new recent would reshuffle the list during the fade.
     pushRecent(userId, item, recents);
-    if (item.type === 'class') {
-      // The sidebar's list: a class the user hid is not selected, only navigated to.
-      const cls = visibleClasses.find((c) => c.id === item.id);
+    // A class row selects that class, and an assignment row its class: the assignment pages read
+    // the selected class. Looked up in visibleClasses, every class the user has not hidden (across
+    // schools, completed ones included); a hidden class is only navigated to.
+    const classId = item.type === 'class' ? item.id : item.type === 'assignment' ? item.class_id ?? null : null;
+    const cls = classId ? visibleClasses.find((c) => c.id === classId) : undefined;
+    // One transition for the class and the page, as the sidebar's class switch does. The router
+    // navigates in a transition, so a class committed on its own would first render the current
+    // page in the new class, whose class route guard can redirect away from the palette's target.
+    startTransition(() => {
       if (cls) setSelectedClass(cls);
-    }
-    navigate(item.href);
+      navigate(item.href);
+    });
     requestClose();
   };
 
