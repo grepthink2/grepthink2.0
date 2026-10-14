@@ -186,7 +186,13 @@ class Settings:
     #   AI_BASE_URL=https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/ai/v1
     #   AI_MODEL=@cf/meta/llama-3.1-8b-instruct
     # Empty AI_API_KEY disables drafting (board payload sends ai_enabled=false).
+    # GITHUB_TOKEN also files the website's issue reports (app/issues) into
+    # GITHUB_ISSUES_REPO, so it needs Issues: read and write there. Unset, reports
+    # arrive by email only.
     GITHUB_TOKEN: str = os.environ.get("GITHUB_TOKEN", "")
+    GITHUB_ISSUES_REPO: str = (
+        os.environ.get("GITHUB_ISSUES_REPO") or "grepthink2/grepthink2.0"
+    ).strip()
     GITLAB_UCSC_TOKEN: str = os.environ.get("GITLAB_UCSC_TOKEN", "")
     AI_BASE_URL: str = os.environ.get("AI_BASE_URL", "")
     AI_API_KEY: str = os.environ.get("AI_API_KEY", "")

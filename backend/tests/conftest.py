@@ -20,6 +20,10 @@ os.environ.setdefault("CORS_ORIGINS", "http://localhost:5173")
 # Never report to a real Sentry project, even when the repo-root .env has a DSN
 # (load_dotenv leaves variables that are already set alone).
 os.environ["SENTRY_DSN"] = ""
+# Never call a real model either, even when the .env has AI keys. Tests that need AI
+# configured set it on `settings` themselves (tests/test_scrum_ai_draft.py).
+os.environ["AI_API_KEY"] = ""
+os.environ["AI_BASE_URL"] = ""
 
 import jwt  # noqa: E402
 import pytest  # noqa: E402
