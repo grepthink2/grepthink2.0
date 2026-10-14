@@ -1,0 +1,17 @@
+// The shared markdown renderer's styles. They lived in features/scrum/scrum.scss, which only
+// the scrum board loads; here every page that renders MarkdownText gets them.
+.gt-md { font-family: var(--gt-font-sans); font-size: 12.5px; color: var(--gt-text-primary); line-height: var(--gt-leading-normal); }
+.gt-md p { margin: 0 0 6px; }
+.gt-md p:last-child { margin-bottom: 0; }
+.gt-md ul { margin: 0 0 6px; padding-left: 18px; }
+.gt-md li { margin: 2px 0; }
+.gt-md__code {
+  font-family: var(--gt-font-mono);
+  font-size: 11px;
+  background: var(--gt-gray-100);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--gt-gray-700);
+}
+.gt-md__link { color: var(--gt-text-link); text-decoration: none; }
+.gt-md__link:hover { text-decoration: underline; }

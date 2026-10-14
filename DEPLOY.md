@@ -64,6 +64,8 @@ development reads (only the repo-root `.env` is read — see `README.md`).
 | `PUBLIC_API_URL` | optional; this API's public URL (`https://api.grepthink2.com`), for the one-click `List-Unsubscribe` header |
 | `SENTRY_DSN` | optional; turns on error reporting to Sentry (see **Error tracking**). Unset means off |
 | `ANALYTICS_ADMIN_EMAILS` | optional; comma-separated emails that may view every institution's analytics (`/app/analytics`), matched case-insensitively against the login email in the user's token (not a verified school email). Instructors see the institutions of the classes they created regardless. Blank by default. The allowlist relies on Supabase email confirmation staying ON: with it off, a signup or an email change can claim a listed address that has no account yet (see `AUTH.md`). List only addresses that already have accounts |
+| `GITHUB_TOKEN` | optional; a fine-grained token from the `grepthink2` account, limited to `grepthink2.0`, with Issues read and write, Pull requests read and Metadata read. The issue form (`POST /api/issues`) files reports with it, and the scrum board reads pull-request state with it (such a token also reads every public repository). Unset: issue reports arrive by email only, and PR reads are anonymous (60 an hour, shared across Vercel's egress). The backend reads it at start, so a new value needs a redeploy |
+| `GITHUB_ISSUES_REPO` | optional; the `owner/name` the issue form files into (default `grepthink2/grepthink2.0`). Reports carry the labels `from-web` and `needs-triage`, which must exist there |
 
 **Frontend project**
 

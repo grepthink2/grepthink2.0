@@ -27,6 +27,11 @@
       "params": {"name": "string!", "email": "string!", "message": "string!", "website": "string (honeypot — leave empty)"}
     },
     {
+      "id": "submit_issue", "title": "Report a bug or request a feature (files a public GitHub issue)", "role": "public",
+      "method": "POST", "endpoint": "/api/issues", "rateLimit": "5/min",
+      "params": {"github_user": "string!", "email": "string! (a school email; never published)", "title": "string!", "description": "string! (markdown)", "website": "string (honeypot — leave empty)"}
+    },
+    {
       "id": "list_institutions", "title": "List the schools GrepThink serves", "role": "public",
       "method": "GET", "endpoint": "/api/institutions", "rateLimit": "60/min", "params": {}
     },

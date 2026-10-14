@@ -22,7 +22,7 @@ CONTACT_RECIPIENT = "grepthink2.0@gmail.com"
 
 # Deliberately permissive — we are not an authority on RFC 5322. This rejects
 # the obviously-broken inputs; real validation is "can we reply to it".
-_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def submit_contact(*, name: str, email: str, message: str, website: str = "") -> None:
@@ -53,7 +53,7 @@ def submit_contact(*, name: str, email: str, message: str, website: str = "") ->
         raise HTTPException(status_code=400, detail="Name is required")
     if not message:
         raise HTTPException(status_code=400, detail="Message is required")
-    if not _EMAIL_RE.match(email):
+    if not EMAIL_RE.match(email):
         raise HTTPException(status_code=400, detail="A valid email is required")
 
     subject = f"New contact message from {name}"
