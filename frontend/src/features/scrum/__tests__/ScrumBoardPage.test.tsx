@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import type { ApiScrumBoard } from '@/lib/api';
 import ScrumBoardPage, { ScrumBoardSkeleton } from '../pages/ScrumBoardPage';
 import { BOARD_VIEWS } from '../config/boardViews';
@@ -51,11 +51,20 @@ const boardFixture = (over: Partial<ApiScrumBoard> = {}) => makeBoard({
   ...over,
 });
 
+/** Location probe: the URL the page has navigated to, query included. */
+function Where() {
+  const loc = useLocation();
+  return <output data-testid="path">{loc.pathname + loc.search}</output>;
+}
+
 const renderAt = (entry = '/app/projects/p1/board') =>
   render(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/app/projects/:projectId/board" element={<ScrumBoardPage />} />
+      </Routes>
+      <Routes>
+        <Route path="*" element={<Where />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -314,6 +323,26 @@ describe('ScrumBoardPage deep links (global search)', () => {
     await userEvent.click(within(story).getByRole('button', { name: /close story/i }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.getByRole('tab', { name: 'Backlog' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  // Left in the URL, ?sprint= would pull the board back to that sprint whenever the user
+  // picked another one in the sprint select.
+  it('consumes ?sprint= once: one sprint switch, then the param leaves the URL', async () => {
+    vi.mocked(api.getScrumBoard).mockImplementation(async (_projectId: string, sprintId?: string) =>
+      sprintId === 'sp2'
+        ? boardFixture({
+            sprint_id: 'sp2',
+            sprints: TWO_SPRINTS,
+            stories: [makeStory({ id: 's3', key: 'US-3', title: 'Sprint two story', tasks: [] })],
+          })
+        : boardFixture({ sprints: TWO_SPRINTS }),
+    );
+    renderAt('/app/projects/p1/board?sprint=sp2&story=s3');
+    await screen.findByRole('dialog');
+    await waitFor(() =>
+      expect(screen.getByTestId('path').textContent).toBe('/app/projects/p1/board?story=s3'));
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(2);
+    expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp2');
   });
 });
 
