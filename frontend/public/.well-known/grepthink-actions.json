@@ -260,7 +260,7 @@
     },
     {
       "id": "search_index", "title": "Load my search index (everything I can open, for the ⌘K palette)", "role": "any",
-      "method": "GET", "endpoint": "/api/search/index", "params": {}
+      "method": "GET", "endpoint": "/api/search/index", "rateLimit": "60/min", "params": {}
     },
     {
       "id": "update_profile", "title": "Update my profile", "role": "any",
