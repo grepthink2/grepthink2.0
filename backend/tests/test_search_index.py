@@ -37,14 +37,23 @@ def profile(uid: str, first: str, last: str, email: str) -> dict:
 
 
 def story(
-    sid: str, key: str, title: str, *, sprint_id, reporter, assignee, points=None, archived=None
+    sid: str,
+    key: str,
+    title: str,
+    *,
+    sprint_id,
+    reporter,
+    assignee,
+    points=None,
+    archived=None,
+    project_id=P1,
 ):
     return {
         "id": sid,
         "key": key,
         "title": title,
         "points": points,
-        "project_id": P1,
+        "project_id": project_id,
         "sprint_id": sprint_id,
         "reporter_id": reporter,
         "assignee_id": assignee,
@@ -53,7 +62,18 @@ def story(
     }
 
 
-def task(tid: str, key: str, title: str, *, story_id, assignee, reporter, status="todo", **extra):
+def task(
+    tid: str,
+    key: str,
+    title: str,
+    *,
+    story_id,
+    assignee,
+    reporter,
+    status="todo",
+    project_id=P1,
+    **extra,
+):
     return {
         "id": tid,
         "key": key,
@@ -61,7 +81,7 @@ def task(tid: str, key: str, title: str, *, story_id, assignee, reporter, status
         "status": status,
         "points": extra.get("points"),
         "tags": extra.get("tags", []),
-        "project_id": P1,
+        "project_id": project_id,
         "story_id": story_id,
         "assignee_id": assignee,
         "reporter_id": reporter,
@@ -225,6 +245,25 @@ def world() -> FakeSupabase:
                 points=1,
                 archived="2026-09-01T00:00:00Z",
             ),
+            # Reached only through UID's tasks t6 and t7, on boards UID cannot open.
+            story(
+                "st6",
+                "US-6",
+                "Old team's story",
+                project_id=P2,
+                sprint_id=None,
+                reporter=S2,
+                assignee=S2,
+            ),
+            story(
+                "st7",
+                "US-7",
+                "Beta story",
+                project_id=P3,
+                sprint_id=None,
+                reporter=S3,
+                assignee=S3,
+            ),
         ],
         tasks=[
             task(
@@ -266,6 +305,26 @@ def world() -> FakeSupabase:
                 status="done",
                 points=1,
                 tags=["backend"],
+            ),
+            # UID's own tasks on boards UID cannot open: P2 is a team in Alpha that UID (a
+            # student, not staff) is not on; P3 is in Beta, which UID is not in.
+            task(
+                "t6",
+                "GT-40",
+                "Task on my old team",
+                story_id="st6",
+                project_id=P2,
+                assignee=UID,
+                reporter=S2,
+            ),
+            task(
+                "t7",
+                "GT-50",
+                "Beta task",
+                story_id="st7",
+                project_id=P3,
+                assignee=UID,
+                reporter=S3,
             ),
         ],
         assignments=[
@@ -384,7 +443,9 @@ EXPECTED_STUDENT = {
 def test_student_sees_own_work_and_class_only_in_two_waves(monkeypatch):
     items, fake = index_for(monkeypatch, UID)
 
-    assert summary(items) == EXPECTED_STUDENT  # nothing from Beta, no t3/t4, no st3/st9, no a2/a3
+    # Nothing from Beta; not t3/t4/t6/t7 or st3/st6/st7/st9 (someone else's, archived, or on a
+    # board UID cannot open); not the draft a2.
+    assert summary(items) == EXPECTED_STUDENT
     assert by_id(items, S2)["same_project"] is True
     assert by_id(items, INSTR)["same_project"] is False
     assert by_id(items, S2)["keywords"] == ["aliu@ucsc.edu"]
@@ -416,3 +477,13 @@ def test_route_returns_the_index(client, monkeypatch):
     body = res.json()
     assert body["items"] == []
     assert isinstance(body["generated_at"], str) and body["generated_at"]
+
+    student = client.get(
+        "/api/search/index", headers={"Authorization": f"Bearer {make_token(sub=UID)}"}
+    )
+
+    assert student.status_code == 200
+    items = student.json()["items"]
+    assert any(i["type"] == "task" for i in items)  # so the checks below are not vacuous
+    assert all("sprint" not in i for i in items if i["type"] == "task")
+    assert [(i["id"], key) for i in items for key, value in i.items() if value is None] == []

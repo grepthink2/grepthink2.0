@@ -123,17 +123,23 @@ def _items_for(uid: str) -> list[dict]:
 
     projects = {p["id"]: p for p in second["projects"]}
     teammates: set[str] = set()
+    # Boards the caller can open (the scrum board's rule): a project in one of the caller's
+    # classes that they are on, or any project in a class they own or TA. Being a task's
+    # assignee or reporter is not enough: a team they have left still names them.
+    openable: set[str] = set()
     for p in projects.values():
         member_ids = {str(m["user_id"]) for m in p.get("project_members") or []}
         if uid in member_ids:
             teammates |= member_ids
+        if uid in member_ids or roles.get(p.get("class_id")) in ("owner", "ta"):
+            openable.add(p["id"])
     project_names = {pid: p.get("name") for pid, p in projects.items()}
 
     items: list[dict] = []
     items += _people(uid, classes, first["inbox"], teammates)
     items += _projects(projects, classes)
-    items += _stories(stories, project_names)
-    items += _tasks(first["tasks"], stories, project_names)
+    items += _stories(stories, project_names, openable)
+    items += _tasks(first["tasks"], stories, project_names, openable)
     items += _conversations(first["inbox"])
     items += _classes(classes, roles)
     items += _assignments(second["assignments"], roles)
@@ -235,10 +241,12 @@ def _pts(points) -> str | None:
     return f"{points} pts" if points else None
 
 
-def _stories(stories: dict[str, dict], project_names: dict[str, str | None]) -> list[dict]:
+def _stories(
+    stories: dict[str, dict], project_names: dict[str, str | None], openable: set[str]
+) -> list[dict]:
     out = []
     for s in stories.values():
-        if s.get("archived_at"):
+        if s["project_id"] not in openable or s.get("archived_at"):
             continue
         sprint = (s.get("sprints") or {}).get("name")
         out.append(
@@ -263,10 +271,15 @@ def _stories(stories: dict[str, dict], project_names: dict[str, str | None]) -> 
 
 
 def _tasks(
-    tasks: list[dict], stories: dict[str, dict], project_names: dict[str, str | None]
+    tasks: list[dict],
+    stories: dict[str, dict],
+    project_names: dict[str, str | None],
+    openable: set[str],
 ) -> list[dict]:
     out = []
     for t in tasks:
+        if t["project_id"] not in openable:
+            continue
         story = stories.get(t.get("story_id"))
         if story is not None and story.get("archived_at"):
             continue  # the board shows these only in the archive
