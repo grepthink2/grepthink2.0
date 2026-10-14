@@ -2,6 +2,7 @@ import {
   useCallback, useEffect, useId, useMemo, useRef, useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { useClass } from '@/lib/classContext';
@@ -77,7 +78,7 @@ const STAFF_ONLY_IN_PREVIEW = new Set<SearchItem['type']>(['assignment', 'class'
 
 function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogProps) {
   const navigate = useNavigate();
-  const { classes, setSelectedClass } = useClass();
+  const { visibleClasses, setSelectedClass } = useClass();
   const { isPreviewing } = usePreview();
   const baseId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -88,7 +89,7 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
   const [scope, setScope] = useState<SearchScope>('all');
   const [page, setPage] = useState(1);
   const [active, setActive] = useState(0);
-  const [recents, setRecents] = useState<SearchItem[]>(() => readRecents(userId));
+  const [recents] = useState<SearchItem[]>(() => readRecents(userId));
 
   // Mount: focus the input, lock body scroll, warm the index; restore both on unmount.
   useEffect(() => {
@@ -100,9 +101,25 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
     return () => {
       cancelAnimationFrame(frame);
       document.body.style.overflow = previousOverflow;
-      restoreTo?.focus?.();
+      // Only when focus went nowhere: the page a result opened may have focused its own field.
+      if (document.activeElement === document.body || document.activeElement === null) restoreTo?.focus?.();
     };
   }, [refresh]);
+
+  // Esc closes from anywhere while open, even with focus on <body> under a control that
+  // unmounted or turned disabled. Capture + stopPropagation keeps the page's own document
+  // Escape listeners (the board's modals) from also firing. An Esc that cancels an IME
+  // composition is the IME's (Safari's arrives with keyCode 229).
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.isComposing || e.keyCode === 229) return;
+      e.preventDefault();
+      e.stopPropagation();
+      requestClose();
+    };
+    document.addEventListener('keydown', onEsc, true);
+    return () => document.removeEventListener('keydown', onEsc, true);
+  }, [requestClose]);
 
   // "View class as student": staff-only rows are not for the previewed role (spec §1).
   const visible = useMemo(
@@ -137,9 +154,11 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
 
   const select = (item: SearchItem) => {
     if (closing) return; // rows stay clickable during the exit animation
-    setRecents(pushRecent(userId, item, recents));
+    // Persist only: re-ranking with the new recent would reshuffle the list during the fade.
+    pushRecent(userId, item, recents);
     if (item.type === 'class') {
-      const cls = classes.find((c) => c.id === item.id);
+      // The sidebar's list: a class the user hid is not selected, only navigated to.
+      const cls = visibleClasses.find((c) => c.id === item.id);
       if (cls) setSelectedClass(cls);
     }
     navigate(item.href);
@@ -149,7 +168,9 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
   const onInputKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
     // Safari fires compositionend before the committing Enter's keydown, which arrives with keyCode 229.
     if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
-    const caret = e.currentTarget.selectionStart ?? 0;
+    const { selectionStart, selectionEnd } = e.currentTarget;
+    const caret = selectionStart ?? 0;
+    const collapsed = selectionStart === selectionEnd; // over a selection, ← → collapse it instead
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -172,23 +193,15 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
         if (pageData.page > 1) { e.preventDefault(); changePage(pageData.page - 1); }
         return;
       case 'ArrowRight':
-        if (caret === query.length && pageData.page < pageData.pages) { e.preventDefault(); changePage(pageData.page + 1); }
+        if (collapsed && caret === query.length && pageData.page < pageData.pages) { e.preventDefault(); changePage(pageData.page + 1); }
         return;
       case 'ArrowLeft':
-        if (caret === 0 && pageData.page > 1) { e.preventDefault(); changePage(pageData.page - 1); }
+        if (collapsed && caret === 0 && pageData.page > 1) { e.preventDefault(); changePage(pageData.page - 1); }
         return;
       case 'Enter':
         if (activeItem && activeItem.kind === 'item') { e.preventDefault(); select(activeItem.item); }
         return;
       default:
-    }
-  };
-
-  const onDialogKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      requestClose();
     }
   };
 
@@ -199,7 +212,8 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
   const showList = !showSkeleton && !showError && !showEmpty && !showIdleHint;
   const activeId = activeIdx >= 0 ? `${baseId}-opt-${activeIdx}` : undefined;
 
-  return (
+  // Portaled: an inline palette could paint under a modal that shares --gt-z-modal.
+  return createPortal(
     <div
       className={`gt-palette-backdrop${closing ? ' gt-palette-backdrop--closing' : ''}`}
       onMouseDown={(e) => {
@@ -213,7 +227,6 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
         aria-modal="true"
         aria-label="Search"
         tabIndex={-1}
-        onKeyDown={onDialogKeyDown}
       >
         <div className="gt-palette__input-row">
           <span className="gt-palette__search-icon"><Search size={18} /></span>
@@ -286,7 +299,7 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
               <p className="gt-palette__state-title">Search isn’t available right now</p>
               <p className="gt-palette__state-hint">
                 Your connection may be offline.{' '}
-                <button type="button" className="gt-palette__retry" onClick={() => refresh(true)}>Try again</button>
+                <button type="button" className="gt-palette__retry" onClick={() => { refresh(true); inputRef.current?.focus(); }}>Try again</button>
               </p>
             </div>
           )}
@@ -340,6 +353,7 @@ function PaletteDialog({ closing, requestClose, userId, index }: PaletteDialogPr
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

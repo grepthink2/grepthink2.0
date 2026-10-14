@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { CommandPalette } from '../components/CommandPalette';
 import type { SearchIndexState } from '../hooks/useSearchIndex';
@@ -9,7 +9,8 @@ import type { SearchItem } from '../searchModel';
 
 const state = vi.hoisted(() => ({
   preview: { isPreviewing: false },
-  ctx: { classes: [{ id: 'k1', name: 'CSE 115B' }], setSelectedClass: vi.fn() },
+  // The sidebar's list: k2 is a class the user hid, so it is in the roster but not here.
+  ctx: { visibleClasses: [{ id: 'k1', name: 'CSE 115B' }], setSelectedClass: vi.fn() },
 }));
 vi.mock('@/lib/previewContext', () => ({ usePreview: () => state.preview }));
 vi.mock('@/lib/classContext', () => ({ useClass: () => state.ctx }));
@@ -18,8 +19,8 @@ const ITEMS: SearchItem[] = [
   { id: 't1', type: 'task', key: 'GT-12', title: 'Roster CSV importer', href: '/app/projects/p1/board?sprint=s1&task=t1', status: 'todo', subtitle: 'Grepthink 2.0' },
   { id: 'u1', type: 'person', title: 'Rosa Trinh', href: '/app/messages/compose?to=u1&name=Rosa%20Trinh', subtitle: 'TA · CSE 115B' },
   { id: 'p1', type: 'project', title: 'Roster Radar', href: '/app/projects/p1', subtitle: 'CSE 115B · 4 members' },
-  { id: 'k1', type: 'class', title: 'CSE 115B', href: '/app/home', subtitle: 'Fall 2026' },
-  { id: 'k2', type: 'class', title: 'CSE 101 (hidden)', href: '/app/home', subtitle: 'Spring 2026' },
+  { id: 'k1', type: 'class', title: 'CSE 115B', href: '/app/dashboard', subtitle: 'Fall 2026' },
+  { id: 'k2', type: 'class', title: 'CSE 101 (hidden)', href: '/app/my-classes', subtitle: 'Spring 2026' },
   { id: 'a1', type: 'assignment', title: 'TSR 3', href: '/app/assignments/a1', subtitle: 'TSR · due Oct 12' },
 ];
 
@@ -37,6 +38,15 @@ function Host({ index, initialOpen }: { index: SearchIndexState; initialOpen: bo
       <CommandPalette open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)} userId="me" index={index} />
     </>
   );
+}
+
+const NO_ITEMS: SearchItem[] = [];
+
+/** An index whose "Try again" really starts a load, so the error row unmounts under the click. */
+function RetryHost() {
+  const [status, setStatus] = useState<SearchIndexState['status']>('error');
+  const refresh = useCallback((force?: boolean) => { if (force) setStatus('loading'); }, []);
+  return <Host index={{ items: NO_ITEMS, status, refresh }} initialOpen />;
 }
 
 const indexOf = (over: Partial<SearchIndexState> = {}): SearchIndexState => ({ items: ITEMS, status: 'ready', refresh: vi.fn(), ...over });
@@ -143,6 +153,48 @@ describe('CommandPalette — opening and closing', () => {
     fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
     await closed();
   });
+
+  it('closes on Esc wherever focus is, even after "Try again" swaps the error row out', async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><RetryHost /></MemoryRouter>);
+    await user.type(input(), 'ros');
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(screen.getByLabelText('Loading results')).toBeInTheDocument();
+    expect(input()).toHaveFocus();
+    (document.activeElement as HTMLElement | null)?.blur();
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    await closed();
+  });
+
+  it('leaves an Esc that cancels an IME composition to the IME', () => {
+    renderPalette();
+    fireEvent.keyDown(input(), { key: 'Escape', isComposing: true });
+    fireEvent.keyDown(input(), { key: 'Escape', keyCode: 229 });
+    expect(dialog().parentElement).not.toHaveClass('gt-palette-backdrop--closing');
+  });
+
+  it('renders into <body>, outside the app tree, so it stacks above inline modals', () => {
+    const { container } = renderPalette();
+    expect(container).not.toContainElement(dialog());
+    expect(dialog().parentElement?.parentElement).toBe(document.body);
+  });
+
+  it('leaves focus where the opened page put it', async () => {
+    const editor = document.createElement('input'); // a page that focuses its own field on mount
+    document.body.appendChild(editor);
+    onTestFinished(() => editor.remove());
+    renderPalette(indexOf(), false);
+    const trigger = screen.getByRole('button', { name: 'trigger' });
+    trigger.focus();
+    fireEvent.click(trigger);
+    await waitFor(() => expect(input()).toHaveFocus());
+    fireEvent.change(input(), { target: { value: 'radar' } });
+    fireEvent.keyDown(input(), { key: 'Enter' });
+    editor.focus();
+    await closed();
+    expect(editor).toHaveFocus();
+  });
 });
 
 describe('CommandPalette — searching', () => {
@@ -201,13 +253,13 @@ describe('CommandPalette — searching', () => {
     expect(screen.getAllByRole('option')).toHaveLength(2);
   });
 
-  it('selects a class in ClassContext before navigating, and only navigates for one the sidebar lacks', async () => {
+  it('selects a visible class in ClassContext and navigates; a hidden class only navigates', async () => {
     const user = userEvent.setup();
     renderPalette();
     await user.type(input(), 'cse 115b');
     await user.click(screen.getAllByRole('option')[0]);
     expect(state.ctx.setSelectedClass).toHaveBeenCalledWith(expect.objectContaining({ id: 'k1' }));
-    expect(screen.getByTestId('path')).toHaveTextContent('/app/home');
+    expect(screen.getByTestId('path')).toHaveTextContent('/app/dashboard');
     await closed();
 
     state.ctx.setSelectedClass.mockReset();
@@ -215,7 +267,7 @@ describe('CommandPalette — searching', () => {
     await user.type(input(), 'cse 101');
     await user.click(screen.getAllByRole('option')[0]);
     expect(state.ctx.setSelectedClass).not.toHaveBeenCalled();
-    expect(screen.getByTestId('path')).toHaveTextContent('/app/home');
+    expect(screen.getByTestId('path')).toHaveTextContent('/app/my-classes');
   });
 
   it('hides assignments and classes in student preview', async () => {
@@ -276,6 +328,37 @@ describe('CommandPalette — searching', () => {
     await user.type(input(), 'zzz');
     expect(input()).toHaveAttribute('aria-expanded', 'false');
     expect(input()).not.toHaveAttribute('aria-controls');
+  });
+
+  it('keeps the list still while the exit animation plays', async () => {
+    const user = userEvent.setup();
+    renderPalette();
+    await user.type(input(), 'ros');
+    fireEvent.click(screen.getAllByRole('option')[2]); // a recent ranks +2: Roster Radar would pass Rosa
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      expect.stringContaining('Roster CSV importer'),
+      expect.stringContaining('Rosa Trinh'),
+      expect.stringContaining('Roster Radar'),
+    ]);
+    await closed();
+  });
+
+  it('pages with ← → only from a collapsed caret at the text edge', async () => {
+    const user = userEvent.setup();
+    const more: SearchItem[] = Array.from({ length: 8 }, (_, i) => (
+      { id: `x${i}`, type: 'project' as const, title: `Roster extra ${i}`, href: `/app/projects/x${i}` }
+    ));
+    renderPalette(indexOf({ items: [...ITEMS, ...more] }));
+    await user.type(input(), 'ros');
+    expect(screen.getByText('1–8 of 11')).toBeInTheDocument();
+    fireEvent.keyDown(input(), { key: 'ArrowRight' });
+    expect(screen.getByText('9–11 of 11')).toBeInTheDocument();
+    (input() as HTMLInputElement).setSelectionRange(0, 3); // ⌘A: ← collapses the selection
+    fireEvent.keyDown(input(), { key: 'ArrowLeft' });
+    expect(screen.getByText('9–11 of 11')).toBeInTheDocument();
+    (input() as HTMLInputElement).setSelectionRange(0, 0);
+    fireEvent.keyDown(input(), { key: 'ArrowLeft' });
+    expect(screen.getByText('1–8 of 11')).toBeInTheDocument();
   });
 });
 
