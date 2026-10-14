@@ -19,6 +19,7 @@ import { interestApi } from './api/interest';
 import { staffingApi } from './api/staffing';
 import { scrumApi } from './api/scrum';
 import { analyticsApi } from './api/analytics';
+import { searchApi } from './api/search';
 
 export * from './api/types';
 export { ApiError, apiRequest, apiUpload } from './api/client';
@@ -37,4 +38,5 @@ export const api = {
   ...staffingApi,
   ...scrumApi,
   ...analyticsApi,
+  ...searchApi,
 };

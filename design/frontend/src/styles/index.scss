@@ -1,0 +1,13 @@
+/**
+ * Global Styles Index
+ * 
+ * Use this file in your component SCSS files to access all global variables.
+ * Usage: @use '@styles/index.scss' as *;
+ */
+
+@forward './fonts';
+@forward './colors';
+@forward './variables';
+@forward './mixins';
+@forward './skeleton';
+@forward './motion';

@@ -38,6 +38,7 @@ from app.outbox.url import router as email_router
 from app.profiles.url import router as profiles_router
 from app.projects.url import router as projects_router
 from app.scrum.url import router as scrum_router
+from app.search.url import router as search_router
 from app.staffing.url import router as staffing_router
 from app.stats.url import router as stats_router
 from app.tas.url import router as tas_router
@@ -127,5 +128,6 @@ for router in (
     attendance_router,
     email_router,
     scrum_router,
+    search_router,
 ):
     app.include_router(router)

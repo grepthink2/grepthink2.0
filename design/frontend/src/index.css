@@ -1,0 +1,125 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* :root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #213547;
+  background-color: #ffffff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+} */
+
+/* The rest of this block down through the `prefers-color-scheme: light`
+   media query is create-vite scaffold (edits noted inline), predating both the
+   --gt-* design-token system and this app's own component-scoped styles.
+   The bare a/button tag selectors are low-specificity and normally
+   overridden by real component classes, but recoloring them (or the
+   light/dark color-scheme block) is a global, hard-to-fully-verify
+   behavior change and dark-mode handling is explicitly out of scope for
+   this token sweep — left as-is rather than churned here. */
+:root {
+  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* This app ships a single light theme, so declaring dark support was simply
+     untrue: it told the UA to paint form controls, scrollbars and the default
+     canvas dark for anyone whose OS is in dark mode. Every control that set
+     its own background hid that; the ones that didn't (the scrum comment
+     composer) rendered near-black. The `color` below and the
+     prefers-color-scheme block are left as-is — see the note above. */
+  color-scheme: light;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #ffffff;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+/* The scaffold's `button:hover { border-color: #646cff }` is removed: it
+   outranks a single-class rule, so any button whose border came from its
+   component class (the scrum board's story cards) turned periwinkle on hover. */
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+/* ---- gt design system globals ---- */
+
+/* Standardized always-visible focus ring (accent blue, 2px).
+   outline suppression is !important so legacy component-level
+   `:focus-visible { outline: ... }` rules (higher specificity than this
+   zero-specificity :where()) can't paint a second ring on top of the
+   box-shadow one. Components opt out by setting their own box-shadow
+   (e.g. `inset var(--gt-focus-ring-tight)` in overflow-clipped contexts).
+   The 2px transparent outline renders identically to none normally, but under
+   forced-colors/WHCM (which strips box-shadows) it repaints in a system color,
+   keeping every control's focus indicated there. */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid transparent !important;
+  box-shadow: var(--gt-focus-ring);
+}
+
+/* Route changes: quick cross-fade via the View Transitions API. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.2s;
+  animation-timing-function: ease;
+}
+
+/* Reduced-motion kill switch for CSS animations/transitions. JS-timed UI delays
+   (modal close timers) are per-component concerns — see plan part 2. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}

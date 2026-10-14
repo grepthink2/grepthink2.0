@@ -1,14 +1,14 @@
 /* ============================================================
    GrepThink · Typography tokens
-   Poppins (400/500/600/700) primary; system monospace for IDs & code
-   (codebase $mono-font — no webfont).
+   Poppins (400/500/600/700) primary; Fira Code (400/500) for IDs & code —
+   both loaded from Google Fonts in the app's index.html (synced 2026-10-09).
    Type scale from the codebase spec — px values verbatim.
    ============================================================ */
 
 :root {
   /* Families */
   --gt-font-sans: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --gt-font-mono: ui-monospace, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+  --gt-font-mono: 'Fira Code', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
   /* Weights */
   --gt-weight-regular:  400;

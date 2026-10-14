@@ -13,6 +13,8 @@ import { ClassProvider } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { usePreview } from '@/lib/previewContext';
 import { MessageWidget } from '@features/messages/components/MessageWidget';
+import { CommandPalette } from '@features/search/components/CommandPalette';
+import { useSearchIndex } from '@features/search/hooks/useSearchIndex';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './AppView.scss';
 
@@ -33,6 +35,8 @@ const AppView: React.FC = () => {
   const [isJoinClassModalOpen, setIsJoinClassModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchIndex = useSearchIndex(user?.id ?? null);
   const location = useLocation();
 
   const handleOpenCreateClassModal = () => {
@@ -101,6 +105,8 @@ const AppView: React.FC = () => {
           <Header
             onOpenSettings={() => setIsSettingsOpen(true)}
             onToggleNav={() => setMobileNavOpen((open) => !open)}
+            onOpenSearch={() => setSearchOpen(true)}
+            onPrefetchSearch={() => searchIndex.refresh()}
           />
           {/* Single shared boundary for every lazily-loaded leaf route (see
               App.tsx). Scoped to the Outlet only — Sidebar/Header/modals
@@ -135,6 +141,15 @@ const AppView: React.FC = () => {
 
         {/* Settings Modal */}
         <Settings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+        {/* Global ⌘K search — one instance for every /app route (spec §3). */}
+        <CommandPalette
+          open={searchOpen}
+          onOpen={() => setSearchOpen(true)}
+          onClose={() => setSearchOpen(false)}
+          userId={user?.id ?? null}
+          index={searchIndex}
+        />
 
         {/* Floating chat tab — auto-hides on /app/messages* and screens < 768px. */}
         <MessageWidget />

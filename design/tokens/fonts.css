@@ -1,8 +1,8 @@
 /* ============================================================
    GrepThink · Webfonts
    The GrepThink app loads Poppins from Google Fonts for early paint
-   (index.html, weights 400–700). IDs & code use the system monospace
-   stack (no webfont), matching the codebase's $mono-font.
+   (index.html, weights 400–700) and Fira Code 400/500 for IDs & code
+   (--gt-font-mono) the same way.
    Loaded from the Google Fonts CDN here — see readme.md "Fonts":
    no .ttf binaries shipped with the source, so if you need
    self-hosted/offline fonts, drop the files in assets/fonts/ and
@@ -10,3 +10,4 @@
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');

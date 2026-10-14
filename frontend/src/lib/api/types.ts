@@ -1037,3 +1037,45 @@ export interface AnalyticsDashboardQuery {
   to?: string | null;
   fresh?: boolean;
 }
+
+// ----- Global search (⌘K) -----------------------------------------------------
+
+export type ApiSearchItemType =
+  | 'person'
+  | 'project'
+  | 'task'
+  | 'story'
+  | 'conversation'
+  | 'class'
+  | 'assignment';
+
+/** One thing the palette can open. Only `id`, `type`, `title`, `href` are always set. */
+export interface ApiSearchItem {
+  id: string;
+  type: ApiSearchItemType;
+  title: string;
+  /** The route, computed server-side from the caller's role in the item's class. */
+  href: string;
+  /** 'GT-12' / 'US-4'; an exact key match ranks first. */
+  key?: string | null;
+  /** The context line, already assembled. */
+  subtitle?: string | null;
+  /** Extra match terms: a person's email, a channel's kind. */
+  keywords?: string[] | null;
+  project_id?: string | null;
+  class_id?: string | null;
+  status?: 'todo' | 'in_progress' | 'done' | null;
+  tags?: string[] | null;
+  points?: number | null;
+  sprint?: string | null;
+  due_at?: string | null;
+  unread?: number | null;
+  last_message_at?: string | null;
+  same_project?: boolean | null;
+  updated_at?: string | null;
+}
+
+export interface ApiSearchIndex {
+  items: ApiSearchItem[];
+  generated_at: string;
+}

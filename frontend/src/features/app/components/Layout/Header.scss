@@ -156,53 +156,6 @@ $app-header-text: var(--gt-text-secondary);
   transform: translateY(-1px);
 }
 
-// Search Bar
-.app-header__search-bar {
-  position: relative;
-  width: 250px; // Fixed smaller width
-
-  .app-header__search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: $app-header-text;
-    pointer-events: none;
-  }
-
-  .app-header__search-input {
-    width: 100%;
-    padding: 8px 12px 8px 40px;
-    background-color: var(--gt-surface);
-    box-shadow: var(--gt-shadow-card);
-    border: 1px solid transparent;
-    border-radius: $border-radius-sm;
-    font-size: $font-size-base;
-    font-weight: $font-weight-medium;
-    font-family: $primary-font;
-    color: $app-header-text;
-    @include gt-transition(all);
-
-    &::placeholder {
-      color: var(--gt-text-secondary);
-    }
-
-    // A3-calibrated focus treatment — untouched except the byte-equal
-    // shadow token swap below (var(--gt-shadow-card) serializes to the
-    // exact same `0 0 2.61px rgba(0, 0, 0, 0.25)` this shipped with).
-    &:focus {
-      outline: none;
-      border-color: $accent-color;
-      background-color: $white;
-    }
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: var(--gt-focus-ring), var(--gt-shadow-card);
-    }
-  }
-}
-
 // Icon Button (for notifications)
 .app-header__icon-button {
   position: relative;
@@ -641,7 +594,7 @@ $app-header-text: var(--gt-text-secondary);
   }
 }
 
-/* Mobile: show the hamburger, drop the fixed-width search to free up the row */
+/* Mobile: show the hamburger (the search trigger's icon-only form is in search.scss) */
 @media (max-width: 768px) {
   .app-header {
     padding: $spacing-md;
@@ -651,10 +604,6 @@ $app-header-text: var(--gt-text-secondary);
   .app-header__menu-button {
     display: inline-flex;
     flex-shrink: 0;
-  }
-
-  .app-header__search-bar {
-    display: none;
   }
 
   // Title may be a long breadcrumb — let it shrink/truncate instead of
