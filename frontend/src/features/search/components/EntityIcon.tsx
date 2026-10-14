@@ -4,14 +4,15 @@ import {
 import type { ApiSearchItemType } from '@/lib/api/types';
 import { initialsOf } from '../format';
 
-const ICONS: Record<Exclude<ApiSearchItemType, 'person'>, LucideIcon> = {
+/** Keyed by string so a type this client doesn't know yet looks up as undefined. */
+const ICONS: Partial<Record<string, LucideIcon>> = {
   project: FolderOpen,
   task: ListChecks,
   story: BookOpen,
   conversation: MessageSquare,
   class: GraduationCap,
   assignment: ClipboardList,
-};
+} satisfies Record<Exclude<ApiSearchItemType, 'person'>, LucideIcon>;
 
 interface EntityIconProps {
   type: ApiSearchItemType;
@@ -24,7 +25,8 @@ export function EntityIcon({ type, name }: EntityIconProps) {
   if (type === 'person') {
     return <span className="gt-entity gt-entity--person" aria-hidden="true">{initialsOf(name)}</span>;
   }
-  const Icon = ICONS[type];
+  // An unknown type (a newer server) falls back to the task glyph, as the design does.
+  const Icon = ICONS[type] ?? ListChecks;
   return (
     <span className={`gt-entity gt-entity--${type}`} aria-hidden="true">
       <Icon size={15} />

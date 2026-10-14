@@ -42,6 +42,13 @@ describe('MatchText', () => {
     expect(container.querySelector('mark')).toBeNull();
     expect(container.textContent).toBe('Roster');
   });
+
+  it('renders one inline box, so a flex title never splits a word at the highlight', () => {
+    const { container } = render(<MatchText text="Roster radar roster" query="ros" />);
+    expect(container.children).toHaveLength(1);
+    const { container: plain } = render(<MatchText text="Roster" query="" />);
+    expect(plain.children).toHaveLength(1);
+  });
 });
 
 describe('ResultRow', () => {

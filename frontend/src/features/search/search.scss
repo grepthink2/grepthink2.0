@@ -1,11 +1,12 @@
 /* GrepThink · global search (⌘K). Port of design/components/search/search.css — BEM `.gt-*`
    classes, `--gt-*` tokens only (lint:design). Dropped: the team/action entity tints, the
-   SearchField rules (not ported). Added: `.gt-palette__tag`, the phone trigger, and the
-   backdrop's own fade keyframes (`gt-palette-fade-*`). */
+   SearchField rules (not ported). Added: `.gt-palette__tag`, `.gt-result__name`, the phone
+   trigger, and the backdrop's own fade keyframes (`gt-palette-fade-*`). Fixed: the dialog's
+   entrance animation had two easings. */
 
 /* ============================================================
    GrepThink · Search layer
-   .gt-search-trigger (header affordance) · .gt-search-field (local filters)
+   .gt-search-trigger (header affordance)
    .gt-palette (⌘K global search dialog) · .gt-result · .gt-kbd · .gt-entity
    Token-only; no raw hex (lint:design).
    ============================================================ */
@@ -66,7 +67,7 @@
   display: flex; flex-direction: column; overflow: hidden;
   background: var(--gt-gray-0); border: 1px solid var(--gt-border); border-radius: var(--gt-radius-md);
   box-shadow: var(--gt-shadow-modal); font-family: var(--gt-font-sans);
-  animation: gt-palette-in var(--gt-transition-fast) ease-out;
+  animation: gt-palette-in 0.2s ease-out; /* not var(--gt-transition-fast): it brings its own easing */
 }
 .gt-palette-backdrop--closing { animation: gt-palette-fade-out 0.15s ease-in forwards; }
 .gt-palette-backdrop--closing .gt-palette { animation: gt-palette-out 0.15s ease-in forwards; }
@@ -124,6 +125,7 @@
 .gt-result[aria-selected="true"], .gt-result--active { background: var(--gt-info-soft); }
 .gt-result__main { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
 .gt-result__title { font-size: 13.5px; font-weight: var(--gt-weight-medium); line-height: var(--gt-leading-snug); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 8px; }
+.gt-result__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gt-result__key { font-family: var(--gt-font-mono); font-size: 11px; font-weight: var(--gt-weight-medium); color: var(--gt-text-tertiary); flex-shrink: 0; }
 .gt-result__context { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gt-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gt-palette__tag { display: inline-flex; align-items: center; height: 16px; padding: 0 5px; border-radius: var(--gt-radius-pill); background: var(--gt-surface-sunken); color: var(--gt-text-secondary); font-size: 9.5px; font-weight: 600; line-height: 1; }
@@ -180,7 +182,7 @@
 
 /* Header breakpoint (Header.scss hides the old bar at 768px): icon-only trigger on phones. */
 @media (max-width: 768px) {
-  .gt-search-trigger { width: 40px; min-width: 40px; padding: 0; justify-content: center; }
+  .gt-search-trigger { width: 40px; min-width: 40px; height: 40px; padding: 0; justify-content: center; }
   .gt-search-trigger__label, .gt-search-trigger__keys { display: none; }
 }
 

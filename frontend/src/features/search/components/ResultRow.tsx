@@ -6,7 +6,8 @@ import { EntityIcon } from './EntityIcon';
 import { Kbd } from './Kbd';
 import { MatchText } from './MatchText';
 
-const TYPE_LABEL: Record<ApiSearchItemType, string> = {
+/** Keyed by string so a type this client doesn't know yet looks up as undefined. */
+const TYPE_LABEL: Partial<Record<string, string>> = {
   person: 'Person',
   project: 'Project',
   task: 'Task',
@@ -14,7 +15,7 @@ const TYPE_LABEL: Record<ApiSearchItemType, string> = {
   conversation: 'Chat',
   class: 'Class',
   assignment: 'Assignment',
-};
+} satisfies Record<ApiSearchItemType, string>;
 
 const STATUS_LABEL = { todo: 'To do', in_progress: 'In progress', done: 'Done' } as const;
 
@@ -66,6 +67,7 @@ interface ResultRowProps {
 export function ResultRow({ item, query, active, id, onSelect, onHover }: ResultRowProps) {
   const ref = useRef<HTMLLIElement>(null);
   useEffect(() => {
+    // Optional-called: jsdom (and non-DOM renderers) omit scrollIntoView.
     if (active) ref.current?.scrollIntoView?.({ block: 'nearest' });
   }, [active]);
   return (
@@ -82,7 +84,7 @@ export function ResultRow({ item, query, active, id, onSelect, onHover }: Result
       <span className="gt-result__main">
         <span className="gt-result__title">
           {item.key && <span className="gt-result__key">{item.key}</span>}
-          <MatchText text={item.title} query={query} />
+          <span className="gt-result__name"><MatchText text={item.title} query={query} /></span>
         </span>
         <Context item={item} />
       </span>
@@ -90,7 +92,7 @@ export function ResultRow({ item, query, active, id, onSelect, onHover }: Result
         {item.type === 'conversation' && (item.unread ?? 0) > 0 && (
           <span className="gt-result__badge" aria-label={`${item.unread} unread`}>{item.unread}</span>
         )}
-        <span className="gt-result__type">{TYPE_LABEL[item.type]}</span>
+        <span className="gt-result__type">{TYPE_LABEL[item.type] ?? item.type}</span>
         <span className="gt-result__enter" aria-hidden="true"><Kbd>↵</Kbd></span>
       </span>
     </li>
