@@ -6,9 +6,9 @@ import type { ApiProject, ApiProjectMember } from '@/lib/api';
 import type { ProjectMember } from '../projectMembers';
 
 const deleteProject = vi.hoisted(() => vi.fn());
-// The board never arrives, so the sprint card stays in its skeleton.
-const getScrumBoard = vi.hoisted(() => vi.fn(() => new Promise(() => {})));
-vi.mock('@/lib/api', () => ({ api: { deleteProject, getScrumBoard } }));
+// The sprint summary never arrives, so the sprint card stays in its skeleton.
+const getScrumSummary = vi.hoisted(() => vi.fn(() => new Promise(() => {})));
+vi.mock('@/lib/api', () => ({ api: { deleteProject, getScrumSummary } }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { id: 'creator' } }) }));
 vi.mock('@/lib/classContext', () => ({
   useClass: () => ({ selectedClass: { id: 'c1' }, classes: [] }),
@@ -88,7 +88,7 @@ describe('ProjectView — a project nobody is left in', () => {
 
 describe('ProjectView', () => {
   beforeEach(() => {
-    getScrumBoard.mockClear();
+    getScrumSummary.mockClear();
   });
 
   it('has no view tabs', () => {
@@ -183,7 +183,7 @@ describe('ProjectView', () => {
     expect(screen.getByText('No description yet.')).toBeInTheDocument();
     // No project yet, so no sprint to show.
     expect(screen.queryByRole('region', { name: 'Sprint progress' })).not.toBeInTheDocument();
-    expect(getScrumBoard).not.toHaveBeenCalled();
+    expect(getScrumSummary).not.toHaveBeenCalled();
   });
 
   it('renders the aside only when it has a card to hold', () => {

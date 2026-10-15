@@ -4,9 +4,8 @@ import { ArrowRight } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { api } from '@/lib/api';
-import type { ApiScrumBoard, ApiScrumSprint } from '@/lib/api';
+import type { ApiScrumSprint, ApiScrumSummary } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
-import { sprintProgress } from '@features/scrum/utils/rollups';
 import './SprintProgressCard.scss';
 
 type LoadStatus = 'loading' | 'ready' | 'forbidden' | 'error';
@@ -30,20 +29,20 @@ interface SprintProgressCardProps {
 
 /**
  * The project page's sprint card: task counts and progress for the sprint the board opens on,
- * the backlog size, and a link to the board. It reads the board endpoint, which answers 403 to
- * anyone outside the team and the class staff.
+ * the backlog size, and a link to the board. It reads the board summary, which answers 403 to
+ * anyone outside the team and the class staff, as the board does, but records no board view.
  */
 export default function SprintProgressCard({ projectId, projectName }: SprintProgressCardProps) {
   const headingId = useId();
-  const [board, setBoard] = useState<ApiScrumBoard | null>(null);
+  const [summary, setSummary] = useState<ApiScrumSummary | null>(null);
   const [status, setStatus] = useState<LoadStatus>('loading');
 
   // Another project starts over from the skeleton. Reset during render (react.dev, "adjusting
   // state when a prop changes"), not in the load effect, so that effect never sets state synchronously.
-  const [boardFor, setBoardFor] = useState(projectId);
-  if (boardFor !== projectId) {
-    setBoardFor(projectId);
-    setBoard(null);
+  const [summaryFor, setSummaryFor] = useState(projectId);
+  if (summaryFor !== projectId) {
+    setSummaryFor(projectId);
+    setSummary(null);
     setStatus('loading');
   }
 
@@ -53,10 +52,10 @@ export default function SprintProgressCard({ projectId, projectName }: SprintPro
     const seq = ++requestSeq.current;
     // A promise chain: react-hooks/set-state-in-effect accepts setState in its callbacks.
     api
-      .getScrumBoard(projectId)
+      .getScrumSummary(projectId)
       .then((next) => {
         if (seq !== requestSeq.current) return;
-        setBoard(next);
+        setSummary(next);
         setStatus('ready');
       })
       .catch((err: unknown) => {
@@ -98,8 +97,11 @@ export default function SprintProgressCard({ projectId, projectName }: SprintPro
         {boardLink}
       </>
     );
-  } else if (board) {
-    const { sprint, todo, inProgress, done, percent, backlogStories } = sprintProgress(board);
+  } else if (summary) {
+    const { sprint, counts, backlog_stories: backlogStories } = summary;
+    const total = counts.todo + counts.in_progress + counts.done;
+    // 0-100 share of the sprint's tasks done; 0 while it has none.
+    const percent = total ? Math.round((counts.done / total) * 100) : 0;
     body = sprint ? (
       <>
         <p className="sprint-progress__sprint">
@@ -112,15 +114,15 @@ export default function SprintProgressCard({ projectId, projectName }: SprintPro
         <dl className="sprint-progress__counts">
           <div className="sprint-progress__count">
             <dt>To do</dt>
-            <dd>{todo}</dd>
+            <dd>{counts.todo}</dd>
           </div>
           <div className="sprint-progress__count">
             <dt>In progress</dt>
-            <dd>{inProgress}</dd>
+            <dd>{counts.in_progress}</dd>
           </div>
           <div className="sprint-progress__count">
             <dt>Done</dt>
-            <dd className="sprint-progress__value--done">{done}</dd>
+            <dd className="sprint-progress__value--done">{counts.done}</dd>
           </div>
         </dl>
         <div

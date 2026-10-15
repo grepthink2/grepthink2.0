@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { storyRollup, columnPoints, tasksIn, collectTasks, sprintProgress } from '../utils/rollups';
+import { storyRollup, columnPoints, tasksIn, collectTasks } from '../utils/rollups';
 import { prLabel, prState } from '../utils/prLabel';
 import { relativeTime } from '../utils/relativeTime';
 import { tagSlug, ESTIMATE_SCALES, TASK_TAGS, BOARD_COLUMNS } from '../config/scrumTags';
 import { buildMemberMap, personOf } from '../scrumTypes';
-import { makeBoard, makeStory, makeTask } from './fixtures';
+import { makeStory, makeTask } from './fixtures';
 
 describe('storyRollup', () => {
   it('derives task/point progress from children', () => {
@@ -50,67 +50,6 @@ describe('column helpers', () => {
     ];
     expect(collectTasks(stories).map((t) => t.id)).toEqual(['a', 'b']);
     expect(collectTasks(stories, 's2').map((t) => t.id)).toEqual(['b']);
-  });
-});
-
-describe('sprintProgress', () => {
-  it('counts sprint tasks by status and derives percent done', () => {
-    const board = makeBoard({
-      stories: [
-        makeStory({
-          id: 's1',
-          tasks: [
-            makeTask({ id: 'a', status: 'todo' }),
-            makeTask({ id: 'b', status: 'in_progress' }),
-            makeTask({ id: 'c', status: 'done' }),
-          ],
-        }),
-        makeStory({
-          id: 's2',
-          tasks: [
-            makeTask({ id: 'd', story_id: 's2', status: 'in_progress' }),
-            makeTask({ id: 'e', story_id: 's2', status: 'done' }),
-            makeTask({ id: 'f', story_id: 's2', status: 'done' }),
-          ],
-        }),
-      ],
-    });
-    const progress = sprintProgress(board);
-    expect(progress).toMatchObject({ todo: 1, inProgress: 2, done: 3, total: 6, percent: 50 });
-    expect(progress.sprint?.name).toBe('Sprint 1');
-  });
-
-  it('is all zeros with no sprint for a board that has no sprints yet', () => {
-    expect(sprintProgress(makeBoard({ sprints: [], sprint_id: null, stories: [] }))).toEqual({
-      sprint: null, todo: 0, inProgress: 0, done: 0, total: 0, percent: 0, backlogStories: 0,
-    });
-  });
-
-  it('counts backlog stories without adding their tasks to the sprint', () => {
-    const board = makeBoard({
-      stories: [],
-      backlog: [
-        makeStory({ id: 'b1', sprint_id: null, tasks: [makeTask({ id: 'x', story_id: 'b1', status: 'done' })] }),
-        makeStory({ id: 'b2', sprint_id: 'sp1', archived_at: '2026-08-20T10:00:00Z' }),
-      ],
-    });
-    expect(sprintProgress(board)).toMatchObject({ backlogStories: 2, done: 0, total: 0 });
-  });
-
-  it('reports 0% when the sprint stories have no tasks yet', () => {
-    const board = makeBoard({ stories: [makeStory({ id: 's1' }), makeStory({ id: 's2' })] });
-    expect(sprintProgress(board)).toMatchObject({ total: 0, percent: 0 });
-  });
-
-  it('resolves the sprint that sprint_id names, even when another one is active', () => {
-    const board = makeBoard({
-      sprints: [
-        { id: 'sp1', name: 'Sprint 1', starts_at: '2026-08-10', ends_at: '2026-08-23', status: 'active' },
-        { id: 'sp2', name: 'Sprint 2', starts_at: '2026-08-24', ends_at: '2026-09-06', status: 'planned' },
-      ],
-      sprint_id: 'sp2',
-    });
-    expect(sprintProgress(board).sprint).toMatchObject({ id: 'sp2', name: 'Sprint 2' });
   });
 });
 
