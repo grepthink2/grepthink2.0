@@ -11,6 +11,7 @@ from app.scrum import views
 router = APIRouter(prefix="/api", tags=["scrum"])
 
 router.get("/projects/{project_id}/scrum/board")(views.get_board)
+router.get("/projects/{project_id}/scrum/summary")(views.get_summary)
 router.patch("/projects/{project_id}/scrum/settings")(views.update_settings)
 router.post("/projects/{project_id}/scrum/sprints")(views.create_sprint)
 router.patch("/scrum/sprints/{sprint_id}")(views.update_sprint)

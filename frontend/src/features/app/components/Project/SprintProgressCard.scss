@@ -1,0 +1,138 @@
+// SprintProgressCard: the current sprint at a glance, first card of the project page's right column.
+// The card chrome comes from .project-view__card. Plain token custom properties only, so no @use.
+
+.sprint-progress {
+  &__title {
+    margin: 0 0 var(--gt-space-md);
+    font-size: var(--gt-text-body-lg);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  // Skeleton blocks are inline; stack the loading rows above the board link.
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gt-space-sm);
+    margin: 0 0 var(--gt-space-md);
+  }
+
+  &__sprint {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--gt-space-xs);
+    margin: 0 0 var(--gt-space-md);
+    font-size: var(--gt-text-body);
+    color: var(--gt-text-secondary);
+  }
+
+  &__sprint-name {
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__status {
+    padding: 2px var(--gt-space-sm);
+    border-radius: var(--gt-radius-pill);
+    font-size: var(--gt-text-caption);
+    font-weight: var(--gt-weight-medium);
+
+    &--active {
+      background: var(--gt-success-soft);
+      color: var(--gt-success-text);
+    }
+
+    &--planned {
+      background: var(--gt-info-soft);
+      color: var(--gt-info-text);
+    }
+
+    &--completed {
+      background: var(--gt-surface-sunken);
+      color: var(--gt-text-secondary);
+    }
+  }
+
+  &__counts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gt-space-sm);
+    margin: 0 0 var(--gt-space-md);
+  }
+
+  &__count {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gt-space-xs);
+    padding: var(--gt-space-sm);
+    border: 1px solid var(--gt-border-subtle);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-surface-muted);
+
+    dt {
+      font-size: var(--gt-text-caption);
+      color: var(--gt-text-secondary);
+    }
+
+    dd {
+      margin: 0;
+      font-size: var(--gt-text-h3);
+      font-weight: var(--gt-weight-semibold);
+      line-height: var(--gt-leading-tight);
+      color: var(--gt-text-primary);
+    }
+
+    // Two classes, so it outranks the `dd` rule above (a class and an element).
+    .sprint-progress__value--done {
+      color: var(--gt-success-text);
+    }
+  }
+
+  &__bar {
+    height: 6px;
+    margin: 0 0 var(--gt-space-sm);
+    overflow: hidden;
+    border-radius: var(--gt-radius-pill);
+    background: var(--gt-surface-sunken);
+  }
+
+  &__bar-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--gt-primary);
+    transition: width var(--gt-transition-medium);
+  }
+
+  &__backlog,
+  &__note {
+    margin: 0 0 var(--gt-space-md);
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-tertiary);
+  }
+
+  &__note {
+    font-size: var(--gt-text-body);
+    color: var(--gt-text-secondary);
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gt-space-xs);
+    border-radius: var(--gt-radius-sm);
+    font-size: var(--gt-text-body);
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-link);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring);
+    }
+  }
+}

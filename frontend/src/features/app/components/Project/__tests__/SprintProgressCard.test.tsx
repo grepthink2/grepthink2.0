@@ -1,0 +1,143 @@
+import type { ComponentProps } from 'react';
+import { act, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ApiScrumSprint, ApiScrumSummary } from '@/lib/api';
+import { ApiError } from '@/lib/api/client';
+import { makeSummary } from '@features/scrum/__tests__/fixtures';
+
+const getScrumSummary = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/api', () => ({ api: { getScrumSummary } }));
+
+import SprintProgressCard from '../SprintProgressCard';
+
+type Props = ComponentProps<typeof SprintProgressCard>;
+
+function card(props: Partial<Props> = {}) {
+  return (
+    <MemoryRouter>
+      <SprintProgressCard projectId="p1" {...props} />
+    </MemoryRouter>
+  );
+}
+
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {};
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
+const section = () => screen.getByRole('region', { name: 'Sprint progress' });
+const boardLink = () => screen.queryByRole('link', { name: /open board/i });
+/** The number beside a count's label: the <dd> after its <dt>. */
+const countFor = (label: string) => screen.getByText(label, { selector: 'dt' }).nextElementSibling;
+
+const sprint2: ApiScrumSprint = {
+  id: 'sp2', name: 'Sprint 2', starts_at: '2026-09-07', ends_at: '2026-09-20', status: 'active',
+};
+
+/** Sprint 2 under way: 2 tasks to do, 1 in progress, 3 done, and one story in the backlog. */
+function activeSummary(): ApiScrumSummary {
+  return makeSummary({ sprint: sprint2, counts: { todo: 2, in_progress: 1, done: 3 }, backlog_stories: 1 });
+}
+
+describe('SprintProgressCard', () => {
+  beforeEach(() => {
+    getScrumSummary.mockReset();
+  });
+
+  it('is busy until the summary arrives, and links to the board meanwhile', () => {
+    getScrumSummary.mockReturnValue(new Promise(() => {}));
+    render(card());
+
+    expect(section()).toHaveAttribute('aria-busy', 'true');
+    expect(getScrumSummary).toHaveBeenCalledWith('p1');
+    expect(boardLink()).toHaveAttribute('href', '/app/projects/p1/board');
+  });
+
+  it("shows the sprint's dates and status, its task counts and progress, the backlog, and a link to the board", async () => {
+    getScrumSummary.mockResolvedValue(activeSummary());
+    render(card());
+
+    expect(await screen.findByText('Sprint 2')).toBeInTheDocument();
+    expect(section()).not.toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByText(/Sep 7 – Sep 20/)).toBeInTheDocument();
+    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(countFor('To do')).toHaveTextContent(/^2$/);
+    expect(countFor('In progress')).toHaveTextContent(/^1$/);
+    expect(countFor('Done')).toHaveTextContent(/^3$/);
+    expect(screen.getByRole('progressbar', { name: 'Tasks done' })).toHaveAttribute('aria-valuenow', '50');
+    expect(screen.getByText('1 story in the backlog')).toBeInTheDocument();
+    expect(boardLink()).toHaveAttribute('href', '/app/projects/p1/board');
+  });
+
+  it('shows no progress for a sprint with no tasks yet', async () => {
+    getScrumSummary.mockResolvedValue(makeSummary({ counts: { todo: 0, in_progress: 0, done: 0 } }));
+    render(card());
+
+    expect(await screen.findByText('Sprint 1')).toBeInTheDocument();
+    expect(countFor('Done')).toHaveTextContent(/^0$/);
+    expect(screen.getByRole('progressbar', { name: 'Tasks done' })).toHaveAttribute('aria-valuenow', '0');
+  });
+
+  it('says when the project has no sprints yet, and still links to the board', async () => {
+    getScrumSummary.mockResolvedValue(makeSummary({ sprint: null, counts: { todo: 0, in_progress: 0, done: 0 } }));
+    render(card());
+
+    expect(await screen.findByText('No sprints yet')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(boardLink()).toHaveAttribute('href', '/app/projects/p1/board');
+  });
+
+  it('tells someone outside the team and staff why there is nothing to see, with no link', async () => {
+    getScrumSummary.mockRejectedValue(new ApiError(403, 'Forbidden', 'Forbidden'));
+    render(card());
+
+    expect(await screen.findByText('Only the team and class staff can see the board.')).toBeInTheDocument();
+    expect(boardLink()).not.toBeInTheDocument();
+  });
+
+  it('says when the summary fails to load, and still links to the board', async () => {
+    getScrumSummary.mockRejectedValue(new Error('boom'));
+    render(card());
+
+    expect(await screen.findByText('Couldn’t load the board.')).toBeInTheDocument();
+    expect(boardLink()).toHaveAttribute('href', '/app/projects/p1/board');
+  });
+
+  it('loads the summary again for a new project, with the skeleton up meanwhile', async () => {
+    const next = deferred<ApiScrumSummary>();
+    getScrumSummary.mockResolvedValueOnce(activeSummary()).mockReturnValueOnce(next.promise);
+    const { rerender } = render(card());
+    expect(await screen.findByText('Sprint 2')).toBeInTheDocument();
+
+    rerender(card({ projectId: 'p2' }));
+    expect(getScrumSummary).toHaveBeenCalledTimes(2);
+    expect(getScrumSummary).toHaveBeenLastCalledWith('p2');
+    expect(section()).toHaveAttribute('aria-busy', 'true');
+    expect(screen.queryByText('Sprint 2')).not.toBeInTheDocument();
+
+    next.resolve(makeSummary()); // p2 is on Sprint 1, with nothing in the backlog
+    expect(await screen.findByText('Sprint 1')).toBeInTheDocument();
+    expect(screen.getByText('0 stories in the backlog')).toBeInTheDocument();
+    expect(boardLink()).toHaveAttribute('href', '/app/projects/p2/board');
+  });
+
+  it('drops a late response for the project it showed before', async () => {
+    const late = deferred<ApiScrumSummary>();
+    getScrumSummary.mockReturnValueOnce(late.promise).mockResolvedValueOnce(activeSummary());
+    const { rerender } = render(card());
+    rerender(card({ projectId: 'p2' }));
+    expect(await screen.findByText('Sprint 2')).toBeInTheDocument();
+
+    // p1's summary (Sprint 1) lands after p2's.
+    await act(async () => {
+      late.resolve(makeSummary());
+      await late.promise;
+    });
+    expect(screen.getByText('Sprint 2')).toBeInTheDocument();
+    expect(screen.queryByText('Sprint 1')).not.toBeInTheDocument();
+  });
+});

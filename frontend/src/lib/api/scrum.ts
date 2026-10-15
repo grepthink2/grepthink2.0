@@ -11,6 +11,7 @@ import type {
   ApiScrumRepo,
   ApiScrumSprint,
   ApiScrumStory,
+  ApiScrumSummary,
   ApiScrumTask,
   ApiUpdateSprintBody,
   ApiUpdateStoryBody,
@@ -25,6 +26,10 @@ export const scrumApi = {
     const query = sprintId ? `?sprint_id=${sprintId}` : '';
     return apiRequest<ApiScrumBoard>(`/api/projects/${projectId}/scrum/board${query}`);
   },
+
+  /** The sprint card's counts. Unlike the board, it records no board view. */
+  getScrumSummary: async (projectId: string) =>
+    apiRequest<ApiScrumSummary>(`/api/projects/${projectId}/scrum/summary`),
 
   updateScrumSettings: async (projectId: string, estimateScale: ApiEstimateScale) => {
     return apiRequest<void>(`/api/projects/${projectId}/scrum/settings`, {

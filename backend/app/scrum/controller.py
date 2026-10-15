@@ -589,6 +589,24 @@ def _name_for(client, user_id: str | None) -> str | None:
 # -------------------------------------------------------------------- board ----
 
 
+def _select_sprint(sprints: list[dict], sprint_id: str | None) -> dict | None:
+    """The sprint the board shows, from ``sprints`` ordered by ``starts_at``.
+
+    The sprint named by ``sprint_id`` (404 :data:`SPRINT_NOT_FOUND` when the project has
+    none by that id); without one, the latest active sprint, else the latest sprint, else
+    None (no sprints yet).
+    """
+    if sprint_id:
+        selected = next((s for s in sprints if s["id"] == str(sprint_id)), None)
+        if not selected:
+            raise HTTPException(status_code=404, detail=SPRINT_NOT_FOUND)
+        return selected
+    active = [s for s in sprints if s["status"] == "active"]
+    if active:
+        return sorted(active, key=lambda s: s["starts_at"])[-1]
+    return sprints[-1] if sprints else None
+
+
 def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
     """The whole board in three rounds of concurrent reads, whatever the sprint count.
 
@@ -625,18 +643,7 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
     project, sprints = first["project"], first["sprints"]
     all_stories, member_rows = first["stories"], first["members"]
 
-    selected = None
-    if sprint_id:
-        selected = next((s for s in sprints if s["id"] == str(sprint_id)), None)
-        if not selected:
-            raise HTTPException(status_code=404, detail=SPRINT_NOT_FOUND)
-    else:
-        active = [s for s in sprints if s["status"] == "active"]
-        selected = (
-            sorted(active, key=lambda s: s["starts_at"])[-1]
-            if active
-            else (sprints[-1] if sprints else None)
-        )
+    selected = _select_sprint(sprints, sprint_id)
 
     story_ids = [s["id"] for s in all_stories]
     sprint_ids = [s["id"] for s in sprints]
@@ -810,6 +817,58 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         "members": members,
         "access": access,
     }
+
+
+def get_summary(*, project_id: str, user_id: str) -> dict:
+    """The current sprint's task counts for the project page: a read with no side effects
+    (get_board records a board_viewed event and snapshots the burnup; this must not)."""
+    client = get_client()
+    _board_access(client, project_id=project_id, user_id=user_id)
+    pid = str(project_id)
+
+    def rows(query) -> list[dict]:
+        return query.execute().data or []
+
+    reads = fan_out(
+        {
+            "sprints": lambda: rows(
+                client.table("sprints")
+                .select("id, name, starts_at, ends_at, status")
+                .eq("project_id", pid)
+                .order("starts_at")
+            ),
+            "stories": lambda: rows(
+                client.table("user_stories")
+                .select("id, sprint_id, archived_at")
+                .eq("project_id", pid)
+            ),
+        }
+    )
+    sprint = _select_sprint(reads["sprints"], None)
+    stories = reads["stories"]
+
+    # The board's own split: a sprint shows its live stories, and its Backlog view lists the
+    # stories with no sprint and the archived ones.
+    live_ids = (
+        [
+            s["id"]
+            for s in stories
+            if s.get("sprint_id") == sprint["id"] and not s.get("archived_at")
+        ]
+        if sprint
+        else []
+    )
+    backlog_stories = sum(1 for s in stories if s.get("sprint_id") is None or s.get("archived_at"))
+    tasks = (
+        rows(client.table("tasks").select("story_id, status").in_("story_id", live_ids))
+        if live_ids
+        else []
+    )
+    counts = {"todo": 0, "in_progress": 0, "done": 0}
+    for t in tasks:
+        if t.get("status") in counts:
+            counts[t["status"]] += 1
+    return {"sprint": sprint, "counts": counts, "backlog_stories": backlog_stories}
 
 
 # ------------------------------------------------------------ repo registry ----

@@ -276,11 +276,6 @@ const CreateProject: React.FC = () => {
           }
           skills={skills}
           selectedRoles={selectedRoles}
-          // sponsorName={sponsorName}
-          // sponsorCompany={sponsorCompany}
-          // sponsorEmail={sponsorEmail}
-          // sponsorWebsite={sponsorWebsite}
-          // sponsorDescription={sponsorDescription}
         />
       ) : (
         <div className="create-project__content">

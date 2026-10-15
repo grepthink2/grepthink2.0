@@ -333,6 +333,13 @@
     }
   }
 
+  // The line under the Markdown editor saying what the description supports.
+  &__hint {
+    margin: var(--gt-space-xs) 0 0;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-tertiary);
+  }
+
   // Input Styling
   &__input {
     width: 100%;
