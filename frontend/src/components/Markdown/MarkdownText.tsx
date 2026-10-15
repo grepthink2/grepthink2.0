@@ -1,3 +1,5 @@
+import { createContext, useContext } from 'react';
+import type { ComponentProps } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,6 +12,22 @@ interface Props {
   variant?: 'compact' | 'document';
 }
 
+// True inside a rendered link (the `a` override provides it), where an image must not add a second <a>.
+const InsideLinkContext = createContext(false);
+
+// Never load media: an image becomes a link to it, or just its alt text when its URL was unsafe.
+// Inside a link it is text (its alt, else its URL), so that link stays one anchor.
+function MarkdownImage({ src, alt }: ComponentProps<'img'>) {
+  const insideLink = useContext(InsideLinkContext);
+  const url = typeof src === 'string' ? src : '';
+  if (insideLink) return <>{alt || url}</>;
+  return url ? (
+    <a className="gt-md__link" href={url} target="_blank" rel="noreferrer">{alt || url}</a>
+  ) : (
+    <>{alt}</>
+  );
+}
+
 const COMPONENTS: Components = {
   // react-markdown empties an unsafe URL (javascript: and the like): keep the text, drop the link.
   // The other props pass through, so footnote links keep their id and data/aria attributes, and
@@ -17,16 +35,11 @@ const COMPONENTS: Components = {
   a: ({ node, href, className, children, ...rest }) => {
     if (!href) return <>{children}</>;
     const linkClass = className ? `gt-md__link ${className}` : 'gt-md__link';
-    if (href.startsWith('#')) return <a {...rest} className={linkClass} href={href}>{children}</a>;
-    return <a {...rest} className={linkClass} href={href} target="_blank" rel="noreferrer">{children}</a>;
+    const content = <InsideLinkContext.Provider value={true}>{children}</InsideLinkContext.Provider>;
+    if (href.startsWith('#')) return <a {...rest} className={linkClass} href={href}>{content}</a>;
+    return <a {...rest} className={linkClass} href={href} target="_blank" rel="noreferrer">{content}</a>;
   },
-  // Never load media: an image becomes a link to it, or just its alt text when its URL was unsafe.
-  img: ({ src, alt }) =>
-    typeof src === 'string' && src ? (
-      <a className="gt-md__link" href={src} target="_blank" rel="noreferrer">{alt || src}</a>
-    ) : (
-      <>{alt}</>
-    ),
+  img: MarkdownImage,
   code: ({ children }) => <code className="gt-md__code">{children}</code>,
   // GFM task-list items show their state; a click must not change it.
   input: ({ checked }) => (

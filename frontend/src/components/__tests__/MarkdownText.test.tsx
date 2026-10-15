@@ -74,6 +74,16 @@ describe('MarkdownText', () => {
     expect(screen.getByRole('link', { name: 'logo' })).toHaveAttribute('href', 'https://example.com/a.png');
   });
 
+  it('shows an image inside a link as text in that one link', () => {
+    const body = renderMarkdown('[![demo](https://x.test/d.png)](https://youtu.be/abc)');
+    const links = body.querySelectorAll('a');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute('href', 'https://youtu.be/abc');
+    expect(links[0]).toHaveAttribute('target', '_blank');
+    expect(links[0].textContent).toBe('demo');
+    expect(body.querySelector('a a')).toBeNull();
+  });
+
   it('opens a link in a new tab without sending the referrer', () => {
     renderMarkdown('[docs](https://example.com)');
     const link = screen.getByRole('link', { name: 'docs' });
