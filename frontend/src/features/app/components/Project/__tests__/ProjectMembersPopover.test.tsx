@@ -74,7 +74,7 @@ describe('ProjectMembersPopover', () => {
 
     const wait = (ms: number) => act(() => vi.advanceTimersByTime(ms));
 
-    it('opens after the pointer rests, closes after it leaves, and holds when it comes back', () => {
+    it('peeks while the pointer rests, closes after it leaves, and holds when it comes back', () => {
       const { unmount } = renderPopover();
 
       fireEvent.mouseEnter(trigger());
@@ -104,6 +104,24 @@ describe('ProjectMembersPopover', () => {
       unmount();
       expect(vi.getTimerCount()).toBe(0);
     });
+
+    it('pins a peek on click, so leaving no longer closes it, and a second click does', () => {
+      renderPopover();
+      fireEvent.mouseEnter(trigger());
+      wait(150);
+      expect(dialog()).toBeInTheDocument();
+
+      fireEvent.click(trigger());
+      expect(dialog()).toBeInTheDocument();
+      expect(trigger()).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.mouseLeave(trigger());
+      wait(300);
+      expect(dialog()).toBeInTheDocument();
+
+      fireEvent.click(trigger());
+      expect(dialog()).toBeNull();
+      expect(trigger()).toHaveAttribute('aria-expanded', 'false');
+    });
   });
 
   it('opens at once on a click, and closes on a second click or Escape', async () => {
@@ -126,6 +144,25 @@ describe('ProjectMembersPopover', () => {
     await user.keyboard('{Escape}');
     expect(dialog()).toBeNull();
     expect(button).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('hands focus back to the trigger when the panel closes around it', async () => {
+    const user = userEvent.setup();
+    renderPopover({ copyEmails: ['a@ucsc.edu'] });
+
+    await user.click(trigger());
+    await user.tab();
+    expect(screen.getByRole('button', { name: /copy all emails/i })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(dialog()).toBeNull();
+    expect(trigger()).toHaveFocus();
+
+    // A click on the trigger that leaves focus in the panel (Safari does not focus clicked buttons).
+    await user.click(trigger());
+    await user.tab();
+    fireEvent.click(trigger());
+    expect(dialog()).toBeNull();
+    expect(trigger()).toHaveFocus();
   });
 
   it('lists the members with their roles, and the TAs under their own heading', () => {
@@ -186,21 +223,21 @@ describe('ProjectMembersPopover', () => {
     const writeText = vi.spyOn(navigator.clipboard, 'writeText');
     const { rerender } = renderPopover({ copyEmails: ['a@ucsc.edu', 'b@ucsc.edu'] });
     await user.click(trigger());
-    const copy = screen.getByRole('button', { name: 'Copy all team member emails' });
-    expect(copy).toHaveTextContent('Copy all emails');
+    const copy = screen.getByRole('button', { name: /copy all emails/i });
 
     writeText.mockRejectedValueOnce(new Error('denied')); // a refused clipboard changes nothing
     await user.click(copy);
-    expect(copy).toHaveTextContent('Copy all emails');
+    expect(copy).toHaveAccessibleName('Copy all emails');
 
     writeText.mockResolvedValueOnce(undefined);
     await user.click(copy);
     expect(writeText).toHaveBeenLastCalledWith('a@ucsc.edu, b@ucsc.edu');
-    await waitFor(() => expect(copy).toHaveTextContent('Copied'));
+    await waitFor(() => expect(copy).toHaveAccessibleName('Copied'));
+    expect(within(copy).getByText('Copied')).toHaveAttribute('aria-live', 'polite'); // announced
     expect(copy).toHaveClass('project-members__copy--copied');
 
     rerender(<ProjectMembersPopover {...baseProps} copyEmails={[]} />);
-    expect(screen.queryByRole('button', { name: 'Copy all team member emails' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /copy all emails|copied/i })).toBeNull();
   });
 
   it('says when the team has no members yet', () => {

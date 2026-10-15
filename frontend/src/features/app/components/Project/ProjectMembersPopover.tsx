@@ -14,6 +14,9 @@ const CLOSE_DELAY_MS = 300;
 /** How long the copy button reads "Copied". */
 const COPIED_MS = 2000;
 
+/** Why the panel is open: a hover peek closes once the pointer leaves; a click pins it. */
+type OpenAs = 'hover' | 'pinned';
+
 interface ProjectMembersPopoverProps {
   members: ProjectMember[];
   tas: ApiProjectTA[];
@@ -77,9 +80,9 @@ function MemberRow({ member, currentUserId }: { member: ProjectMember; currentUs
 
 /**
  * The project header's "x/y members" stat, as the trigger of a panel listing the team (contact
- * links, a Message button, "Copy all emails") and the project's teaching assistants. Opens when
- * the pointer rests on it and closes a moment after the pointer leaves; a click, Enter or Space
- * toggles it at once, and Esc or a click outside closes it.
+ * links, a Message button, "Copy all emails") and the project's teaching assistants. Resting the
+ * pointer on it peeks at the panel, which closes a moment after the pointer leaves; a click (Enter
+ * and Space included) pins it open, or closes a pinned one, and Esc or a click outside closes it.
  */
 export default function ProjectMembersPopover({
   members,
@@ -88,8 +91,11 @@ export default function ProjectMembersPopover({
   copyEmails,
   currentUserId,
 }: ProjectMembersPopoverProps) {
-  const [open, setOpen] = useState(false);
+  const [openAs, setOpenAs] = useState<OpenAs | null>(null);
+  const open = openAs !== null;
   const [copied, setCopied] = useState(false);
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const openTimer = useRef<number | undefined>(undefined);
   const closeTimer = useRef<number | undefined>(undefined);
   const copiedTimer = useRef<number | undefined>(undefined);
@@ -104,29 +110,40 @@ export default function ProjectMembersPopover({
     [],
   );
 
-  // The trigger and the panel share one wrapper, so these cover the pointer on either.
+  // Every way of closing comes through here. Focus inside the panel would go down with it, so it
+  // goes back to the trigger, without scrolling: after a click outside, the browser then moves it
+  // to whatever was clicked. Stable, so Popover does not re-attach its listeners on every render.
+  const closePanel = useCallback(() => {
+    const panel = wrapperRef.current?.querySelector('.project-members__panel');
+    if (panel?.contains(document.activeElement)) triggerRef.current?.focus({ preventScroll: true });
+    setOpenAs(null);
+  }, []);
+
+  // The trigger and the panel share one wrapper, so these cover the pointer on either. The pointer
+  // only ever opens a peek, and only ever closes one.
   const handleMouseEnter = () => {
     window.clearTimeout(closeTimer.current);
     if (open) return;
     window.clearTimeout(openTimer.current);
-    openTimer.current = window.setTimeout(() => setOpen(true), OPEN_DELAY_MS);
+    openTimer.current = window.setTimeout(() => setOpenAs('hover'), OPEN_DELAY_MS);
   };
 
   const handleMouseLeave = () => {
     window.clearTimeout(openTimer.current);
     window.clearTimeout(closeTimer.current);
-    closeTimer.current = window.setTimeout(() => setOpen(false), CLOSE_DELAY_MS);
+    // Pinning clears this timer, so it can only ever close a peek. Scheduled even when the panel
+    // looks closed here: a peek whose timer just fired may not have rendered yet.
+    if (openAs !== 'pinned') closeTimer.current = window.setTimeout(closePanel, CLOSE_DELAY_MS);
   };
 
-  // A click decides at once, whatever the pointer had set in motion.
+  // A click decides at once, whatever the pointer had set in motion: it opens the panel or pins a
+  // peek, and closes a pinned panel.
   const handleTriggerClick = () => {
     window.clearTimeout(openTimer.current);
     window.clearTimeout(closeTimer.current);
-    setOpen((isOpen) => !isOpen);
+    if (openAs === 'pinned') closePanel();
+    else setOpenAs('pinned');
   };
-
-  // Stable, so Popover does not re-attach its Esc and outside-click listeners on every render.
-  const closePanel = useCallback(() => setOpen(false), []);
 
   const copyAllEmails = async () => {
     try {
@@ -153,6 +170,7 @@ export default function ProjectMembersPopover({
 
   const trigger = (
     <button
+      ref={triggerRef}
       type="button"
       className="project-members__trigger"
       aria-haspopup="dialog"
@@ -165,7 +183,7 @@ export default function ProjectMembersPopover({
   );
 
   return (
-    <span className="project-members" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+    <span ref={wrapperRef} className="project-members" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <Popover
         open={open}
         onClose={closePanel}
@@ -184,11 +202,11 @@ export default function ProjectMembersPopover({
             <button
               type="button"
               className={`project-members__copy${copied ? ' project-members__copy--copied' : ''}`}
-              aria-label="Copy all team member emails"
               onClick={() => void copyAllEmails()}
             >
               {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
-              <span>{copied ? 'Copied' : 'Copy all emails'}</span>
+              {/* The visible text is the button's name; the live region announces "Copied". */}
+              <span aria-live="polite">{copied ? 'Copied' : 'Copy all emails'}</span>
             </button>
           )}
         </div>
