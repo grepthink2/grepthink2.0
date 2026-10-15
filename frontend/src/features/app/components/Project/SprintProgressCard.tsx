@@ -77,12 +77,17 @@ export default function SprintProgressCard({ projectId, projectName }: SprintPro
 
   let body: ReactNode = null;
   if (status === 'loading') {
+    // The link needs no data, and this card is the page's only way to the board, so a slow
+    // request must not hide it.
     body = (
-      <div className="sprint-progress__skeleton">
-        <Skeleton height={14} width="60%" />
-        <Skeleton height={14} width="100%" />
-        <Skeleton height={14} width="40%" />
-      </div>
+      <>
+        <div className="sprint-progress__skeleton">
+          <Skeleton height={14} width="60%" />
+          <Skeleton height={14} width="100%" />
+          <Skeleton height={14} width="40%" />
+        </div>
+        {boardLink}
+      </>
     );
   } else if (status === 'forbidden') {
     body = <p className="sprint-progress__note">Only the team and class staff can see the board.</p>;

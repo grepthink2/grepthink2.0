@@ -9,11 +9,12 @@
     color: var(--gt-text-primary);
   }
 
-  // Skeleton blocks are inline; stack the loading rows.
+  // Skeleton blocks are inline; stack the loading rows above the board link.
   &__skeleton {
     display: flex;
     flex-direction: column;
     gap: var(--gt-space-sm);
+    margin: 0 0 var(--gt-space-md);
   }
 
   &__sprint {

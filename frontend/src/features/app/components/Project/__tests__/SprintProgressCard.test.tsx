@@ -73,13 +73,13 @@ describe('SprintProgressCard', () => {
     getScrumBoard.mockReset();
   });
 
-  it('is busy until the board arrives', () => {
+  it('is busy until the board arrives, and links to the board meanwhile', () => {
     getScrumBoard.mockReturnValue(new Promise(() => {}));
     render(card());
 
     expect(section()).toHaveAttribute('aria-busy', 'true');
     expect(getScrumBoard).toHaveBeenCalledWith('p1');
-    expect(boardLink()).not.toBeInTheDocument();
+    expect(boardLink()).toHaveAttribute('href', '/app/projects/p1/board');
   });
 
   it("shows the sprint's dates and status, its task counts and progress, the backlog, and a link to the board", async () => {
