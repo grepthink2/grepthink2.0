@@ -213,6 +213,18 @@ class BoardResponse(BaseModel):
     access: Literal["member", "staff"]
 
 
+class SummaryCounts(BaseModel):
+    todo: int = 0
+    in_progress: int = 0
+    done: int = 0
+
+
+class BoardSummaryResponse(BaseModel):
+    sprint: SprintOut | None = None
+    counts: SummaryCounts
+    backlog_stories: int
+
+
 class SprintResponse(BaseModel):
     message: str
     sprint: SprintOut

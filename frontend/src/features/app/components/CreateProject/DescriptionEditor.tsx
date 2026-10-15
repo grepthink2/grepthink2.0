@@ -121,6 +121,7 @@ const DescriptionEditor: React.FC<DescriptionEditorProps> = ({
               onChange={(e) => onMarkdownContentChange(e.target.value)}
               rows={15}
             />
+            <p className="create-project__hint">Markdown supported: headings, lists, tables, code and links.</p>
           </div>
         )}
       </div>

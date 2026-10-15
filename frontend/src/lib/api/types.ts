@@ -822,6 +822,13 @@ export interface ApiScrumBoard {
   access: 'member' | 'staff';
 }
 
+/** The project page's sprint card: the sprint the board opens on, its task counts, the backlog size. */
+export interface ApiScrumSummary {
+  sprint: ApiScrumSprint | null;
+  counts: { todo: number; in_progress: number; done: number };
+  backlog_stories: number;
+}
+
 export interface ApiScrumComment {
   id: string;
   author_id: string;

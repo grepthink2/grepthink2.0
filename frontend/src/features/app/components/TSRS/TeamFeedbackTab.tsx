@@ -1,18 +1,11 @@
 import { useRef, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { User } from 'lucide-react';
+import { projectRoleLabel } from '@/features/app/utils/memberUtils';
 import type { TeamMember, FeedbackEntry } from './tsrsTypes';
 import { emptyFeedbackFields, type FeedbackFieldKey } from './teamFeedbackValidation';
 import './TeamFeedbackTab.scss';
 
 type FieldKey = FeedbackFieldKey;
-
-function formatMemberRole(role: string): string {
-  const normalized = role.trim().toLowerCase();
-  if (normalized === 'product owner') return 'Product Owner';
-  if (normalized === 'scrum master') return 'Scrum Master';
-  if (normalized === 'member') return 'Member';
-  return role;
-}
 
 export interface TeamFeedbackTabHandle {
   /** Returns true if all fields are valid (caller may navigate). If invalid, shows errors, scrolls to first, returns false. */
@@ -124,7 +117,7 @@ const TeamFeedbackTab = forwardRef<TeamFeedbackTabHandle, TeamFeedbackTabProps>(
                         <span className="team-feedback-tab__you-label"> (You)</span>
                       )}
                     </div>
-                    <div className="team-feedback-tab__member-role">{formatMemberRole(member.role)}</div>
+                    <div className="team-feedback-tab__member-role">{projectRoleLabel(member.role)}</div>
                   </div>
                 </div>
 

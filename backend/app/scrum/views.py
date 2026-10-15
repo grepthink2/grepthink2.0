@@ -10,6 +10,7 @@ from app.scrum.models import (
     AiDraftRequest,
     AiDraftResponse,
     BoardResponse,
+    BoardSummaryResponse,
     CommentOut,
     CommentResponse,
     CommentsListResponse,
@@ -26,6 +27,7 @@ from app.scrum.models import (
     SprintResponse,
     StoryOut,
     StoryResponse,
+    SummaryCounts,
     TaskOut,
     TaskResponse,
     UpdateSettingsRequest,
@@ -57,6 +59,18 @@ def get_board(
 ) -> BoardResponse:
     board = controller.get_board(project_id=project_id, user_id=user_id, sprint_id=sprint_id)
     return BoardResponse(**board)
+
+
+def get_summary(project_id: str, user_id: str = Depends(require_user)) -> BoardSummaryResponse:
+    summary = controller.get_summary(project_id=project_id, user_id=user_id)
+    s = summary["sprint"]
+    return BoardSummaryResponse(
+        sprint=SprintOut(**{k: s[k] for k in ("id", "name", "starts_at", "ends_at", "status")})
+        if s
+        else None,
+        counts=SummaryCounts(**summary["counts"]),
+        backlog_stories=summary["backlog_stories"],
+    )
 
 
 def update_settings(

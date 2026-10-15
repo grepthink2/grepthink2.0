@@ -1,0 +1,180 @@
+// ProjectMembersPopover: the project header's "x/y members" trigger and the team panel it opens.
+// Plain token custom properties only, so no @use.
+
+.project-members {
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gt-space-xs);
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--gt-text-body);
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-secondary);
+    cursor: pointer;
+    border-radius: var(--gt-radius-sm);
+    transition: color var(--gt-transition-fast);
+
+    &:hover,
+    &[aria-expanded='true'] {
+      color: var(--gt-text-primary);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring);
+    }
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: var(--gt-space-sm);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--gt-text-body);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+  }
+
+  &__count {
+    color: var(--gt-text-tertiary);
+    font-size: var(--gt-text-caption);
+  }
+
+  &__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gt-space-xs);
+    margin-left: auto;
+    padding: var(--gt-space-xs) var(--gt-space-sm);
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+    color: var(--gt-text-secondary);
+    font: inherit;
+    font-size: var(--gt-text-caption);
+    font-weight: var(--gt-weight-medium);
+    cursor: pointer;
+
+    &:hover,
+    &--copied {
+      border-color: var(--gt-primary);
+      color: var(--gt-primary);
+      background: var(--gt-primary-soft);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring);
+    }
+  }
+
+  &__list {
+    list-style: none;
+    margin: var(--gt-space-sm) 0 0;
+    padding: 0;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: var(--gt-space-sm);
+    padding: var(--gt-space-sm) 0;
+    border-top: 1px solid var(--gt-border-subtle);
+
+    &:first-child {
+      border-top: 0;
+    }
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--gt-surface-sunken);
+    color: var(--gt-text-secondary);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__name {
+    overflow: hidden;
+    font-size: var(--gt-text-body);
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-primary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__role {
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-secondary);
+  }
+
+  &__links {
+    display: inline-flex;
+    gap: var(--gt-space-xs);
+  }
+
+  &__link {
+    display: inline-flex;
+    padding: var(--gt-space-xs);
+    border: 0;
+    background: none;
+    border-radius: var(--gt-radius-sm);
+    color: var(--gt-text-tertiary);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--gt-primary);
+      background: var(--gt-surface-muted);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--gt-focus-ring);
+    }
+  }
+
+  &__empty {
+    margin: var(--gt-space-sm) 0 0;
+    color: var(--gt-text-tertiary);
+    font-size: var(--gt-text-body);
+  }
+
+  // The "Teaching assistants" title sits straight in the panel, under the member list.
+  &__panel > &__title {
+    margin-top: var(--gt-space-md);
+  }
+}
+
+// Two classes, so this outranks Popover's own padding rules (.gt-popover, .gt-popover--flush)
+// whichever of the two stylesheets the bundle puts last.
+.project-members .project-members__panel {
+  width: 340px;
+  max-width: calc(100vw - 2 * var(--gt-space-lg));
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--gt-space-md);
+}

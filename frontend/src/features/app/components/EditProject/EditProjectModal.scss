@@ -145,6 +145,11 @@
     margin: 0 0 $spacing-md 0;
   }
 
+  // A hint under its field (the Markdown note under the description) sits just below it.
+  &__section-hint--after {
+    margin: var(--gt-space-xs) 0 0;
+  }
+
   // ── Form controls ──────────────────────────────────
   &__input {
     width: 100%;

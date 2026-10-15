@@ -1,4 +1,4 @@
-import type { ApiScrumBoard, ApiScrumMember, ApiScrumStory, ApiScrumTask } from '@/lib/api';
+import type { ApiScrumBoard, ApiScrumMember, ApiScrumStory, ApiScrumSummary, ApiScrumTask } from '@/lib/api';
 
 /**
  * Shared board fixtures. Every field of the API shapes is spelled out once
@@ -32,5 +32,13 @@ export const makeBoard = (over: Partial<ApiScrumBoard> = {}): ApiScrumBoard => (
   burnup: { sprint: null, cumulative: { labels: [], scope: [], completed: [], subtitle: null } },
   members: makeMembers(),
   access: 'member',
+  ...over,
+});
+
+/** The summary of makeBoard()'s board: Sprint 1 under way, one task to do, an empty backlog. */
+export const makeSummary = (over: Partial<ApiScrumSummary> = {}): ApiScrumSummary => ({
+  sprint: { id: 'sp1', name: 'Sprint 1', starts_at: '2026-08-10', ends_at: '2026-08-23', status: 'active' },
+  counts: { todo: 1, in_progress: 0, done: 0 },
+  backlog_stories: 0,
   ...over,
 });

@@ -30,3 +30,33 @@ export function getMemberCopyEmail(member: {
   const email = member.email?.trim();
   return email || null;
 }
+
+/**
+ * Labels for the `project_members.role` values the backend writes (app/projects/controller.py).
+ * `owner` is the project's creator, a different role from `product owner`.
+ */
+const PROJECT_ROLE_LABELS: Partial<Record<string, string>> = {
+  owner: 'Owner',
+  'product owner': 'Product Owner',
+  'scrum master': 'Scrum Master',
+  admin: 'Admin',
+  member: 'Member',
+};
+
+/**
+ * Human label for a project member's role. Case and stray whitespace are ignored and underscores
+ * read as spaces, so `scrum_master` reads "Scrum Master" just like the stored `scrum master`.
+ * A missing or blank role reads "Member"; a role outside the backend's five gets every word
+ * capitalised.
+ */
+export function projectRoleLabel(role: string | null | undefined): string {
+  const key = (role ?? '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  if (!key) return 'Member';
+  return (
+    PROJECT_ROLE_LABELS[key] ??
+    key
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  );
+}

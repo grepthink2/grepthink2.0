@@ -289,6 +289,11 @@
       "note": "Team members get full read/write; class staff (instructor, class TAs, meeting TA) get read + comments; everyone else 403, and a project that does not exist is 404."
     },
     {
+      "id": "view_scrum_summary", "title": "View the current sprint's task counts for a project", "role": "any",
+      "method": "GET", "endpoint": "/api/projects/{project_id}/scrum/summary", "uiRoute": "/app/projects/{projectId}",
+      "note": "The sprint the board opens on (null before the first sprint), its tasks by status, and the number of backlog stories. Same readers as the board: team members and class staff (instructor, class TAs, meeting TA); everyone else 403, and a project that does not exist is 404. Unlike view_scrum_board, records no board view."
+    },
+    {
       "id": "update_scrum_settings", "title": "Set the board's estimate scale", "role": "project-member",
       "method": "PATCH", "endpoint": "/api/projects/{project_id}/scrum/settings",
       "params": {"estimate_scale": "enum(linear|exponential|fibonacci)!"}, "uiRoute": "/app/projects/{projectId}/board"
