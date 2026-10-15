@@ -92,7 +92,7 @@ describe('Sidebar', () => {
     state.role = 'ta';
     state.ctx.selectedClass = assisted;
     renderAt('/app/home');
-    expect(screen.getByRole('heading', { name: 'Beta' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Beta' })).not.toBeInTheDocument(); // the class tile names it
     expect(screen.getByText('Create Class')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'TA Review' })).toBeInTheDocument();
     expect(screen.getByText('TSRs')).toBeInTheDocument();

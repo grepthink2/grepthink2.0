@@ -243,7 +243,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
           <div key={section.id} className={`sidebar-section sidebar-section--${section.id}`}>
             {section.title && (
               <h3 className="section-title">
-                <span>{section.id === 'class' && selectedClass ? selectedClass.name : section.title}</span>
+                <span>{section.title}</span>
               </h3>
             )}
             {section.groups.map((group, index) => (

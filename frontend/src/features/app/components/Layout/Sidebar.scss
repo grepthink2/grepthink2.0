@@ -313,6 +313,30 @@ $sidebar-divider: rgba(255, 255, 255, 0.18);
   display: none;
 }
 
+// The class section has no heading of its own. Where its first group has none either (the
+// instructor's Dashboard), the rail still gets a divider between the account items and the
+// class's; open, the gap alone separates them, like every other divider.
+.sidebar-section--class > .sidebar-group:first-child > .section-items:first-child {
+  position: relative;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    top: 0;
+    height: 1px;
+    background: $sidebar-divider;
+    @include gt-transition(opacity);
+  }
+
+  .sidebar.expanded &::before {
+    opacity: 0;
+  }
+}
+
 .section-items {
   list-style: none;
   padding: 0 $sidebar-gutter;
