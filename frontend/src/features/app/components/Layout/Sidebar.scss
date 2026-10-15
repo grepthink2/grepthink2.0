@@ -45,7 +45,7 @@ $sidebar-divider: rgba(255, 255, 255, 0.18);
   }
 }
 
-/* Brand: the mark alone in the rail, the wordmark once open */
+/* Brand: the mascot stays put in the rail; the title fades in beside it once open */
 .sidebar-header {
   padding: 0.875rem $sidebar-gutter 0;
 }
@@ -58,30 +58,28 @@ $sidebar-divider: rgba(255, 255, 255, 0.18);
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    @include gt-transition(opacity);
   }
 
+  // The mascot never moves: open or closed it sits where the rail shows it.
   &__mark {
     left: 6px; // centred in the 40px column, like the icons below
     width: 28px;
     height: auto;
   }
 
-  &__logo {
-    left: 0.25rem;
-    width: 180px;
+  // The title at the mascot's scale (28px for its 304-unit width), in the place it holds in the
+  // full wordmark: 35px in and 4px below centre. Only this fades in while the rail opens.
+  &__wordmark {
+    left: 35px;
+    top: calc(50% + 4px);
+    width: 119px;
     height: auto;
     opacity: 0;
+    @include gt-transition(opacity);
   }
 
-  .sidebar.expanded & {
-    &__mark {
-      opacity: 0;
-    }
-
-    &__logo {
-      opacity: 1;
-    }
+  .sidebar.expanded &__wordmark {
+    opacity: 1;
   }
 }
 
@@ -241,27 +239,13 @@ $sidebar-divider: rgba(255, 255, 255, 0.18);
   overflow-x: hidden; // the labels overflow the closed rail
   overscroll-behavior: contain;
 
-  // Scroll affordance: keep the rail calm at rest, but stop hiding that it
-  // scrolls entirely — a thin thumb fades in on hover instead of the
-  // previous blanket hide.
+  // The scrollbar must not reserve width: a gutter (11px in Chromium's thin one) narrows the items
+  // against the class tile above them, which does not scroll. Wheel, touch and keyboard scrolling
+  // still work; the clipped last item is the cue that there is more.
+  scrollbar-width: none;
+
   &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 2px;
-  }
-
-  &:hover::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.25);
-  }
-
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-
-  &:hover {
-    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    display: none;
   }
 }
 
@@ -327,6 +311,30 @@ $sidebar-divider: rgba(255, 255, 255, 0.18);
 // A category heading right under its section's: one divider between them is enough.
 .section-title + .sidebar-group > .group-title::before {
   display: none;
+}
+
+// The class section has no heading of its own. Where its first group has none either (the
+// instructor's Dashboard), the rail still gets a divider between the account items and the
+// class's; open, the gap alone separates them, like every other divider.
+.sidebar-section--class > .sidebar-group:first-child > .section-items:first-child {
+  position: relative;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    top: 0;
+    height: 1px;
+    background: $sidebar-divider;
+    @include gt-transition(opacity);
+  }
+
+  .sidebar.expanded &::before {
+    opacity: 0;
+  }
 }
 
 .section-items {

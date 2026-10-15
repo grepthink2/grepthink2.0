@@ -4,26 +4,11 @@
   padding: 0;
 }
 
-/* :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #213547;
-  background-color: #ffffff;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-} */
-
-/* The rest of this block down through the `prefers-color-scheme: light`
-   media query is create-vite scaffold (edits noted inline), predating both the
-   --gt-* design-token system and this app's own component-scoped styles.
-   The bare a/button tag selectors are low-specificity and normally
-   overridden by real component classes, but recoloring them (or the
-   light/dark color-scheme block) is a global, hard-to-fully-verify
-   behavior change and dark-mode handling is explicitly out of scope for
-   this token sweep — left as-is rather than churned here. */
+/* The rest of this file down to the gt globals started as create-vite
+   scaffold (edits noted inline), predating both the --gt-* design-token
+   system and this app's own component-scoped styles. The bare a/button tag
+   selectors are low-specificity and normally overridden by real component
+   classes. */
 :root {
   font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.5;
@@ -33,11 +18,13 @@
      untrue: it told the UA to paint form controls, scrollbars and the default
      canvas dark for anyone whose OS is in dark mode. Every control that set
      its own background hid that; the ones that didn't (the scrum comment
-     composer) rendered near-black. The `color` below and the
-     prefers-color-scheme block are left as-is — see the note above. */
+     composer) rendered near-black. The scaffold's dark text colour
+     (white at 87%) went with it, along with its prefers-color-scheme: light
+     override: any text without a colour of its own was white on white for
+     those users. Everything now gets the light theme whatever the OS says. */
   color-scheme: light;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #ffffff;
+  color: var(--gt-text-primary);
+  background-color: var(--gt-surface);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -47,12 +34,14 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--gt-text-link);
   text-decoration: inherit;
 }
-a:hover {
-  color: #535bf2;
-}
+/* No global `a:hover`: the scaffold's `a:hover { color }` (a tag plus a
+   pseudo-class) outranked a single-class link colour, so every link whose
+   component set a colour but no hover colour (Markdown links, contact icons,
+   the TA card's Join button, ...) turned periwinkle on hover. A link's hover
+   style belongs to its component. */
 
 html, body {
   margin: 0;
@@ -66,26 +55,13 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--gt-surface-muted);
   cursor: pointer;
   transition: border-color 0.25s;
 }
 /* The scaffold's `button:hover { border-color: #646cff }` is removed: it
    outranks a single-class rule, so any button whose border came from its
    component class (the scrum board's story cards) turned periwinkle on hover. */
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
 
 /* ---- gt design system globals ---- */
 

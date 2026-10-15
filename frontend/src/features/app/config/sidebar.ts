@@ -43,7 +43,8 @@ export type SidebarSectionId = 'main' | 'classes' | 'class' | 'footer';
 
 export interface SidebarSection {
   id: SidebarSectionId;
-  /** The section's heading; the class section's is replaced by the selected class's name. */
+  /** The section's heading. The class section has none: its category headings carry it, and a
+   *  heading would only add a blank 28px band to the closed rail. */
   title?: string;
   groups: SidebarGroup[];
 }
@@ -145,9 +146,9 @@ export function buildSidebarConfig({
     { id: 'classes', title: 'Classes', groups: [{ items: [MY_CLASSES, canCreateClasses ? CREATE_CLASS : JOIN_CLASS] }] },
   ];
   const role = classRole === undefined ? (canCreateClasses ? 'instructor' : 'student') : classRole;
-  if (role === 'instructor') sections.push({ id: 'class', title: 'Class', groups: instructorClassGroups });
-  else if (role === 'ta') sections.push({ id: 'class', title: 'Class', groups: [...studentClassGroups, taReviewGroup] });
-  else if (role === 'student') sections.push({ id: 'class', title: 'Class', groups: studentClassGroups });
+  if (role === 'instructor') sections.push({ id: 'class', groups: instructorClassGroups });
+  else if (role === 'ta') sections.push({ id: 'class', groups: [...studentClassGroups, taReviewGroup] });
+  else if (role === 'student') sections.push({ id: 'class', groups: studentClassGroups });
   sections.push(FOOTER);
   return sections;
 }
