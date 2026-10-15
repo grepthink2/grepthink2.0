@@ -15,3 +15,49 @@
 }
 .gt-md__link { color: var(--gt-text-link); text-decoration: none; }
 .gt-md__link:hover { text-decoration: underline; }
+
+// GFM constructs (remark-gfm), shared by both variants.
+.gt-md del { text-decoration: line-through; }
+.gt-md__checkbox { margin-right: var(--gt-space-xs); vertical-align: middle; }
+.gt-md .contains-task-list { list-style: none; padding-left: var(--gt-space-xs); }
+.gt-md table { border-collapse: collapse; display: block; max-width: 100%; overflow-x: auto; }
+.gt-md th, .gt-md td { padding: var(--gt-space-xs) var(--gt-space-sm); border: 1px solid var(--gt-border); text-align: left; }
+.gt-md th { background: var(--gt-surface-sunken); font-weight: var(--gt-weight-semibold); }
+.gt-md pre { overflow-x: auto; }
+
+// variant="document": a full page body (the project description). It comes after the compact
+// rules so its equal-specificity selectors win.
+.gt-md--document {
+  font-size: var(--gt-text-body);
+  line-height: var(--gt-leading-loose);
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: var(--gt-weight-semibold);
+    line-height: var(--gt-leading-snug);
+    margin: var(--gt-space-lg) 0 var(--gt-space-sm);
+  }
+  h1 { font-size: var(--gt-text-h2); }
+  h2 { font-size: var(--gt-text-h3); }
+  h3 { font-size: var(--gt-text-body-lg); }
+  h4, h5, h6 { font-size: var(--gt-text-body); }
+
+  p, ul, ol, pre, table, blockquote { margin: 0 0 var(--gt-space-md); }
+  > :first-child { margin-top: 0; }
+  > :last-child { margin-bottom: 0; }
+  ul, ol { padding-left: var(--gt-space-lg); }
+  li { margin: var(--gt-space-xs) 0; }
+  blockquote { border-left: 3px solid var(--gt-border); padding-left: var(--gt-space-md); color: var(--gt-text-secondary); }
+  hr { border: 0; border-top: 1px solid var(--gt-border); margin: var(--gt-space-lg) 0; }
+
+  pre {
+    background: var(--gt-surface-sunken);
+    padding: var(--gt-space-md);
+    border-radius: var(--gt-radius-sm);
+    font-family: var(--gt-font-mono);
+    font-size: var(--gt-text-caption);
+    line-height: var(--gt-leading-normal);
+  }
+  pre .gt-md__code { background: none; padding: 0; font-size: inherit; }
+  .gt-md__code { font-size: 0.9em; }
+  table { font-size: var(--gt-text-body); }
+}
