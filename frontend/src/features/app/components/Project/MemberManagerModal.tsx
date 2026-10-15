@@ -12,7 +12,7 @@ import { useClassRole } from '@/lib/classContext';
 import { CLASS_ROLE_LABELS } from '@features/app/config/routePermissions';
 import './MemberManagerModal.scss';
 
-import { emailToDisplayName, getInitials } from '@/features/app/utils/memberUtils';
+import { emailToDisplayName, getInitials, projectRoleLabel } from '@/features/app/utils/memberUtils';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { MessageButton } from '@features/messages/components/MessageButton';
 
@@ -20,19 +20,6 @@ import { MessageButton } from '@features/messages/components/MessageButton';
  * classes can be a student or TA in this one. '' when an older backend leaves it out. */
 function classRoleLabel(student: ApiStudent): string {
   return student.enrollment_role ? CLASS_ROLE_LABELS[student.enrollment_role] : '';
-}
-
-function projectRoleLabel(role: string): string {
-  switch (role) {
-    case 'owner':
-      return 'Product Owner';
-    case 'scrum_master':
-      return 'Scrum Master';
-    case 'admin':
-      return 'Admin';
-    default:
-      return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-  }
 }
 
 export interface MemberManagerModalProps {

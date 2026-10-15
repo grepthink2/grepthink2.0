@@ -1,4 +1,4 @@
-import type { ApiScrumStory, ApiScrumTask } from '@/lib/api';
+import type { ApiScrumBoard, ApiScrumSprint, ApiScrumStory, ApiScrumTask } from '@/lib/api';
 import type { BoardStatus } from '../config/scrumTags';
 
 /** Story rollup shown under a StoryCard — always derived, never stored (spec Part 1). */
@@ -56,4 +56,36 @@ export function assignedTaskPoints(story: ApiScrumStory): number {
 export function remainingStoryPoints(story: ApiScrumStory): number | null {
   if (story.points == null) return null;
   return Math.max(0, story.points - assignedTaskPoints(story));
+}
+
+/** Where the board's selected sprint stands, counted in tasks. */
+export interface SprintProgress {
+  /** null when the project has no sprints yet. */
+  sprint: ApiScrumSprint | null;
+  todo: number;
+  inProgress: number;
+  done: number;
+  total: number;
+  /** 0-100 share of tasks done; 0 when the sprint has no tasks. */
+  percent: number;
+  /** Stories in the board's Backlog view. */
+  backlogStories: number;
+}
+
+/**
+ * Task counts for the sprint a board payload shows. When the request names no sprint,
+ * `board.sprint_id` is the server's pick: the latest active sprint, else the latest sprint.
+ * The counted tasks come from `board.stories`, that sprint's live stories. `board.backlog` holds
+ * the unscheduled or archived stories, exactly what the board's Backlog view lists, and only its
+ * length is reported.
+ */
+export function sprintProgress(board: ApiScrumBoard): SprintProgress {
+  const sprint = board.sprints.find((s) => s.id === board.sprint_id) ?? null;
+  const tasks = collectTasks(board.stories);
+  const todo = tasksIn(tasks, 'todo').length;
+  const inProgress = tasksIn(tasks, 'in_progress').length;
+  const done = tasksIn(tasks, 'done').length;
+  const total = todo + inProgress + done;
+  const percent = total ? Math.round((done / total) * 100) : 0;
+  return { sprint, todo, inProgress, done, total, percent, backlogStories: board.backlog.length };
 }

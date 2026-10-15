@@ -1,4 +1,4 @@
-import { emailToDisplayName, getInitials, getMemberCopyEmail } from '../memberUtils';
+import { emailToDisplayName, getInitials, getMemberCopyEmail, projectRoleLabel } from '../memberUtils';
 
 describe('emailToDisplayName', () => {
   it('falls back to "Unknown" when email is missing', () => {
@@ -45,5 +45,38 @@ describe('getMemberCopyEmail', () => {
 
   it('returns null when neither is present', () => {
     expect(getMemberCopyEmail({ edu_email: '  ', email: null })).toBeNull();
+  });
+});
+
+describe('projectRoleLabel', () => {
+  it('reads both "scrum master" and "scrum_master" as Scrum Master', () => {
+    expect(projectRoleLabel('scrum master')).toBe('Scrum Master');
+    expect(projectRoleLabel('scrum_master')).toBe('Scrum Master');
+  });
+
+  it('labels a product owner', () => {
+    expect(projectRoleLabel('product owner')).toBe('Product Owner');
+  });
+
+  it('ignores surrounding whitespace and case', () => {
+    expect(projectRoleLabel(' Admin ')).toBe('Admin');
+    expect(projectRoleLabel('PRODUCT OWNER')).toBe('Product Owner');
+  });
+
+  it('labels the project creator "Owner", not "Product Owner"', () => {
+    expect(projectRoleLabel('owner')).toBe('Owner');
+  });
+
+  it('labels a plain member', () => {
+    expect(projectRoleLabel('member')).toBe('Member');
+  });
+
+  it('falls back to "Member" when the role is missing or blank', () => {
+    expect(projectRoleLabel(undefined)).toBe('Member');
+    expect(projectRoleLabel('')).toBe('Member');
+  });
+
+  it('capitalises every word of a role it does not know', () => {
+    expect(projectRoleLabel('tech lead')).toBe('Tech Lead');
   });
 });
