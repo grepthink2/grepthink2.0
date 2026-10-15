@@ -28,11 +28,10 @@ const STUDENT_MAIN: PinnedSection = ['main', undefined, [[undefined, [HOME, MESS
 const INSTRUCTOR_CLASSES: PinnedSection = ['classes', 'Classes', [[undefined, [MY_CLASSES, CREATE_CLASS]]]];
 const STUDENT_CLASSES: PinnedSection = ['classes', 'Classes', [[undefined, [MY_CLASSES, JOIN_CLASS]]]];
 
-// The selected class's pages, under category headings. The section's own title is replaced by the
-// class's name when one is selected.
+// The selected class's pages, under category headings; the section itself has no heading.
 const INSTRUCTOR_CLASS: PinnedSection = [
   'class',
-  'Class',
+  undefined,
   [
     [undefined, [['Dashboard', '/app/dashboard']]],
     [
@@ -84,8 +83,8 @@ const TA_REVIEW: PinnedGroup = [
     ['Final Reviews', '/app/ta-review/final-reviews'],
   ],
 ];
-const STUDENT_CLASS: PinnedSection = ['class', 'Class', STUDENT_GROUPS];
-const TA_CLASS: PinnedSection = ['class', 'Class', [...STUDENT_GROUPS, TA_REVIEW]];
+const STUDENT_CLASS: PinnedSection = ['class', undefined, STUDENT_GROUPS];
+const TA_CLASS: PinnedSection = ['class', undefined, [...STUDENT_GROUPS, TA_REVIEW]];
 const FOOTER: PinnedSection = [
   'footer',
   undefined,

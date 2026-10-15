@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { usePreview } from '@/lib/previewContext';
 import { useUnreadTotal } from '@features/messages/hooks/useUnreadTotal';
-import logo from '@assets/grepthink l logo.svg?url';
+import wordmark from '@assets/grepthink-wordmark-text.svg?url';
 import mark from '@assets/grepthink-mark.svg?url';
 import './Sidebar.scss';
 
@@ -191,11 +191,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
       onFocus={handleFocus}
       onBlur={handleBlur}
     >
-      {/* Brand: the mark alone in the rail, the wordmark once open */}
+      {/* Brand: the mascot stays put in the rail; the title fades in beside it once open */}
       <div className="sidebar-header">
         <div className="sidebar-brand">
           <img className="sidebar-brand__mark" src={mark} alt="" />
-          <img className="sidebar-brand__logo" src={logo} alt="GrepThink" />
+          <img className="sidebar-brand__wordmark" src={wordmark} alt="GrepThink" />
         </div>
       </div>
 
@@ -243,7 +243,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
           <div key={section.id} className={`sidebar-section sidebar-section--${section.id}`}>
             {section.title && (
               <h3 className="section-title">
-                <span>{section.id === 'class' && selectedClass ? selectedClass.name : section.title}</span>
+                <span>{section.title}</span>
               </h3>
             )}
             {section.groups.map((group, index) => (
