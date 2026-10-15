@@ -12,12 +12,14 @@ interface Props {
 
 const COMPONENTS: Components = {
   // react-markdown empties an unsafe URL (javascript: and the like): keep the text, drop the link.
-  a: ({ href, children }) =>
-    href ? (
-      <a className="gt-md__link" href={href} target="_blank" rel="noreferrer">{children}</a>
-    ) : (
-      <>{children}</>
-    ),
+  // The other props pass through, so footnote links keep their id and data/aria attributes, and
+  // an in-page link (a footnote's #…) stays in the tab.
+  a: ({ node, href, className, children, ...rest }) => {
+    if (!href) return <>{children}</>;
+    const linkClass = className ? `gt-md__link ${className}` : 'gt-md__link';
+    if (href.startsWith('#')) return <a {...rest} className={linkClass} href={href}>{children}</a>;
+    return <a {...rest} className={linkClass} href={href} target="_blank" rel="noreferrer">{children}</a>;
+  },
   // Never load media: an image becomes a link to it, or just its alt text when its URL was unsafe.
   img: ({ src, alt }) =>
     typeof src === 'string' && src ? (

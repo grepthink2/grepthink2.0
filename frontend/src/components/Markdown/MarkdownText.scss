@@ -1,3 +1,5 @@
+@use '@styles/index.scss' as *;
+
 // The shared markdown renderer's styles. They lived in features/scrum/scrum.scss, which only
 // the scrum board loads; here every page that renders MarkdownText gets them.
 .gt-md { font-family: var(--gt-font-sans); font-size: 12.5px; color: var(--gt-text-primary); line-height: var(--gt-leading-normal); }
@@ -24,6 +26,8 @@
 .gt-md th, .gt-md td { padding: var(--gt-space-xs) var(--gt-space-sm); border: 1px solid var(--gt-border); text-align: left; }
 .gt-md th { background: var(--gt-surface-sunken); font-weight: var(--gt-weight-semibold); }
 .gt-md pre { overflow-x: auto; }
+// The footnotes section's heading is .sr-only, which only ScrumBoardPage.scss defines; hide it everywhere.
+.gt-md .sr-only { @include gt-visually-hidden; }
 
 // variant="document": a full page body (the project description). It comes after the compact
 // rules so its equal-specificity selectors win.

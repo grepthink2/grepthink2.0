@@ -81,6 +81,20 @@ describe('MarkdownText', () => {
     expect(link).toHaveAttribute('rel', 'noreferrer');
   });
 
+  it('keeps footnote links in the page, each pointing at the other', () => {
+    const body = renderMarkdown('text[^1]\n\n[^1]: the note');
+    const reference = screen.getByRole('link', { name: '1' });
+    expect(reference).toHaveAttribute('href', '#user-content-fn-1');
+    expect(reference).not.toHaveAttribute('target');
+    expect(body.querySelector('#user-content-fn-1')).toHaveTextContent('the note');
+
+    const backReference = body.querySelector('a[href="#user-content-fnref-1"]');
+    expect(backReference).not.toBeNull();
+    expect(backReference).not.toHaveAttribute('target');
+    // The back-reference lands on the reference, so the reference keeps its id.
+    expect(reference).toHaveAttribute('id', 'user-content-fnref-1');
+  });
+
   it('renders plain text as a single paragraph', () => {
     const body = renderMarkdown('Find trails by name');
     expect(body.querySelectorAll('p')).toHaveLength(1);
