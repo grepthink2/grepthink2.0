@@ -71,6 +71,16 @@ describe('ProjectDetails', () => {
     expect(screen.queryByText('CSE 115C')).not.toBeInTheDocument();
   });
 
+  it('shows no class name when the project class is not in your class list', async () => {
+    api.getProject.mockResolvedValue({ project: { ...project, class_id: 'c9' } });
+    renderPage();
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Alpha' })).toBeInTheDocument();
+    // The selected class (CSE 115C) is not the project's, so it must not stand in for it.
+    expect(screen.queryByText('CSE 115C')).not.toBeInTheDocument();
+    expect(screen.queryByText('CSE 115B')).not.toBeInTheDocument();
+  });
+
   it('labels the team with the shared project role labels', async () => {
     const user = userEvent.setup();
     renderPage();

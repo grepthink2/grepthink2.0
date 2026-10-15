@@ -140,7 +140,8 @@ const ProjectDetails: React.FC = () => {
     );
   }
 
-  const className = classes.find((c) => c.id === project.class_id)?.name ?? selectedClass?.name ?? '';
+  // Only the project's own class: any other class name here would be wrong.
+  const className = classes.find((c) => c.id === project.class_id)?.name ?? '';
   const teamSize =
     typeof project.team_size === 'number' && Number.isFinite(project.team_size)
       ? String(project.team_size)
