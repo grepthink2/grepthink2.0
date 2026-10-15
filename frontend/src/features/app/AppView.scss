@@ -3,6 +3,7 @@
 .app-view {
   min-height: 100vh;
   background-color: var(--gt-surface);
+  color: var(--gt-text-primary); // text with no colour of its own reads as body text on the white shell
   position: relative;
 }
 

@@ -6,6 +6,8 @@
   position: absolute;
   min-width: 180px;
   background: var(--gt-gray-0);
+  // Its own text colour: the surface is always white, whatever colour the anchor's context passes down.
+  color: var(--gt-text-primary);
   border: 1px solid var(--gt-border);
   border-radius: var(--gt-radius-md);
   box-shadow: var(--gt-shadow-pop);
