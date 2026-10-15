@@ -90,9 +90,7 @@
     font-weight: $font-weight-medium;
     text-decoration: underline;
 
-    // index.css recolors every a:hover to a lighter indigo; keep the color that passes.
     &:hover {
-      color: var(--gt-info-text);
       text-decoration-thickness: 2px;
     }
   }

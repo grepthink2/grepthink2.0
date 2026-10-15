@@ -8,8 +8,7 @@
    scaffold (edits noted inline), predating both the --gt-* design-token
    system and this app's own component-scoped styles. The bare a/button tag
    selectors are low-specificity and normally overridden by real component
-   classes. The scaffold link colours are left as raw hex until links move to
-   --gt-text-link. */
+   classes. */
 :root {
   font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   line-height: 1.5;
@@ -35,12 +34,14 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--gt-text-link);
   text-decoration: inherit;
 }
-a:hover {
-  color: #747bff;
-}
+/* No global `a:hover`: the scaffold's `a:hover { color }` (a tag plus a
+   pseudo-class) outranked a single-class link colour, so every link whose
+   component set a colour but no hover colour (Markdown links, contact icons,
+   the TA card's Join button, ...) turned periwinkle on hover. A link's hover
+   style belongs to its component. */
 
 html, body {
   margin: 0;

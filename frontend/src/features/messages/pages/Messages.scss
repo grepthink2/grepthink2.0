@@ -545,9 +545,7 @@
   :is(p, pre) + :is(p, pre) { margin-top: $spacing-xs; }
   strong { font-weight: var(--gt-weight-semibold); }
 
-  /* :hover too, or index.css's global `a:hover` (one class + a tag) recolors the link. */
-  &__link,
-  &__link:hover {
+  &__link {
     color: var(--gt-text-link);
     text-decoration: underline;
   }
