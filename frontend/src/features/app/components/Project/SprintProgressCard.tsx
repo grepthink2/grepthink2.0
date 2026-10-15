@@ -94,7 +94,7 @@ export default function SprintProgressCard({ projectId, projectName }: SprintPro
   } else if (status === 'error') {
     body = (
       <>
-        <p className="sprint-progress__note">Couldn't load the board.</p>
+        <p className="sprint-progress__note">Couldn’t load the board.</p>
         {boardLink}
       </>
     );

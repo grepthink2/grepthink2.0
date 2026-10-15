@@ -185,4 +185,27 @@ describe('ProjectView', () => {
     expect(screen.queryByRole('region', { name: 'Sprint progress' })).not.toBeInTheDocument();
     expect(getScrumBoard).not.toHaveBeenCalled();
   });
+
+  it('renders the aside only when it has a card to hold', () => {
+    const preview = (selectedRoles: string[]) => (
+      <MemoryRouter>
+        <ProjectView projectTitle="" descriptionMarkdown="" skills={[]} selectedRoles={selectedRoles} />
+      </MemoryRouter>
+    );
+    // The Create Project preview before any role is picked: no project for a sprint card, no roles.
+    const { container, rerender, unmount } = render(preview([]));
+    const content = () => container.querySelector('.project-view__content');
+    expect(container.querySelector('.project-view__aside')).toBeNull();
+    expect(content()).toHaveClass('project-view__content--single');
+
+    rerender(preview(['frontend']));
+    expect(container.querySelector('.project-view__aside')).not.toBeNull();
+    expect(content()).not.toHaveClass('project-view__content--single');
+    unmount();
+
+    // A project page holds the sprint card, roles or not.
+    const page = renderView().container;
+    expect(page.querySelector('.project-view__aside')).not.toBeNull();
+    expect(page.querySelector('.project-view__content')).not.toHaveClass('project-view__content--single');
+  });
 });

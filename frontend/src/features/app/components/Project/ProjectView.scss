@@ -7,6 +7,8 @@
   flex-direction: column;
   gap: var(--gt-space-lg);
   font-family: var(--gt-font-sans);
+  // Text that sets no colour of its own must not inherit the scaffold's :root colour (index.css).
+  color: var(--gt-text-primary);
 
   &__card {
     background: var(--gt-gray-0);
@@ -182,6 +184,11 @@
     grid-template-columns: minmax(0, 1fr) 350px;
     gap: var(--gt-space-lg);
     align-items: start;
+
+    // No aside (the Create Project preview before a role is picked): the description fills the row.
+    &--single {
+      grid-template-columns: 1fr;
+    }
   }
 
   &__aside {

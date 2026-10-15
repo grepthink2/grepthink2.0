@@ -30,13 +30,16 @@ function MarkdownImage({ src, alt }: ComponentProps<'img'>) {
 
 const COMPONENTS: Components = {
   // react-markdown empties an unsafe URL (javascript: and the like): keep the text, drop the link.
-  // The other props pass through, so footnote links keep their id and data/aria attributes, and
-  // an in-page link (a footnote's #…) stays in the tab.
+  // The other props pass through, so footnote links keep their id and data/aria attributes. An
+  // in-page link (a footnote's #…) stays in the tab, and so does a mail link (GFM links a bare
+  // email as mailto:), which a new tab would leave blank.
   a: ({ node, href, className, children, ...rest }) => {
     if (!href) return <>{children}</>;
     const linkClass = className ? `gt-md__link ${className}` : 'gt-md__link';
     const content = <InsideLinkContext.Provider value={true}>{children}</InsideLinkContext.Provider>;
-    if (href.startsWith('#')) return <a {...rest} className={linkClass} href={href}>{content}</a>;
+    if (href.startsWith('#') || href.startsWith('mailto:')) {
+      return <a {...rest} className={linkClass} href={href}>{content}</a>;
+    }
     return <a {...rest} className={linkClass} href={href} target="_blank" rel="noreferrer">{content}</a>;
   },
   img: MarkdownImage,

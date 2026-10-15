@@ -84,9 +84,6 @@ export const ProjectViewSkeleton: React.FC = () => (
   </div>
 );
 
-/** The old name of `ProjectMember`, kept for callers that still import it. */
-export type ProjectViewMember = ProjectMember;
-
 /** Roles that can manage the project (add/drop members, edit project). */
 const MANAGER_ROLES = ['owner', 'admin', 'product owner'] as const;
 
@@ -261,6 +258,9 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
   const hasValidTeamSize = !isNaN(totalMembers) && totalMembers >= 1;
   const spotsAvailable = hasValidTeamSize ? totalMembers - members.length : null;
+  // The sprint card needs a project and the roles card a role. The Create Project preview starts
+  // with neither, and then the description takes the whole row.
+  const hasAside = Boolean(projectId) || selectedRoles.length > 0;
 
   return (
     <div className="project-view">
@@ -429,7 +429,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
         </div>
       </header>
 
-      <div className="project-view__content">
+      <div className={`project-view__content${hasAside ? '' : ' project-view__content--single'}`}>
         <section className="project-view__card project-view__description" aria-label="Project description">
           {descriptionMarkdown.trim() ? (
             <MarkdownText variant="document">{descriptionMarkdown}</MarkdownText>
@@ -438,24 +438,26 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           )}
         </section>
 
-        <div className="project-view__aside">
-          {projectId && <SprintProgressCard key={projectId} projectId={projectId} projectName={displayTitle} />}
-          {selectedRoles.length > 0 && (
-            <section className="project-view__card project-view__roles" aria-labelledby={rolesId}>
-              <h3 id={rolesId} className="project-view__section-title">
-                Roles needed
-              </h3>
-              <ul className="project-view__roles-list">
-                {selectedRoles.map((roleId) => (
-                  <li key={roleId} className="project-view__role-item">
-                    <span className="project-view__role-icon-wrap">{getRoleIcon(roleId)}</span>
-                    <span className="project-view__role-label">{getRoleLabel(roleId)}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-        </div>
+        {hasAside && (
+          <div className="project-view__aside">
+            {projectId && <SprintProgressCard key={projectId} projectId={projectId} projectName={displayTitle} />}
+            {selectedRoles.length > 0 && (
+              <section className="project-view__card project-view__roles" aria-labelledby={rolesId}>
+                <h3 id={rolesId} className="project-view__section-title">
+                  Roles needed
+                </h3>
+                <ul className="project-view__roles-list">
+                  {selectedRoles.map((roleId) => (
+                    <li key={roleId} className="project-view__role-item">
+                      <span className="project-view__role-icon-wrap">{getRoleIcon(roleId)}</span>
+                      <span className="project-view__role-label">{getRoleLabel(roleId)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+        )}
       </div>
 
       {projectId && (

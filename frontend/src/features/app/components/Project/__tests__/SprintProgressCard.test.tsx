@@ -119,7 +119,7 @@ describe('SprintProgressCard', () => {
     getScrumBoard.mockRejectedValue(new Error('boom'));
     render(card());
 
-    expect(await screen.findByText("Couldn't load the board.")).toBeInTheDocument();
+    expect(await screen.findByText('Couldn’t load the board.')).toBeInTheDocument();
     expect(boardLink()).toHaveAttribute('href', '/app/projects/p1/board');
   });
 

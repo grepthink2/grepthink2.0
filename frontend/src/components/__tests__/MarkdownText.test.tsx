@@ -68,6 +68,13 @@ describe('MarkdownText', () => {
     expect(body).toHaveTextContent('x');
   });
 
+  it('shows the alt text of an image whose URL is unsafe, without an image or a link', () => {
+    const body = renderMarkdown('![x](javascript:alert(1))');
+    expect(body.querySelector('img')).toBeNull();
+    expect(body.querySelector('a')).toBeNull();
+    expect(body).toHaveTextContent('x');
+  });
+
   it('shows an image as a link to it instead of loading it', () => {
     const body = renderMarkdown('![logo](https://example.com/a.png)');
     expect(body.querySelector('img')).toBeNull();
@@ -89,6 +96,13 @@ describe('MarkdownText', () => {
     const link = screen.getByRole('link', { name: 'docs' });
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noreferrer');
+  });
+
+  it('opens a bare email address in the mail app, not a new tab', () => {
+    renderMarkdown('Contact sponsor@example.com today');
+    const link = screen.getByRole('link', { name: 'sponsor@example.com' });
+    expect(link).toHaveAttribute('href', 'mailto:sponsor@example.com');
+    expect(link).not.toHaveAttribute('target');
   });
 
   it('keeps footnote links in the page, each pointing at the other', () => {
