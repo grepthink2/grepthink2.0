@@ -8,7 +8,6 @@ function ScrollToTop() {
   return null;
 }
 import LandingPage from '@features/landing/LandingPage';
-import ContactPage from '@features/landing/ContactPage';
 import AppView from '@/features/app/AppView';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import Home from '@features/app/pages/Home';
@@ -69,6 +68,9 @@ const VerifyResetPassword = lazy(() => import('@features/auth/pages/VerifyResetP
 const ResetPassword = lazy(() => import('@features/auth/pages/ResetPassword'));
 // The page an unsubscribe link in an email opens (signed out).
 const Unsubscribe = lazy(() => import('@features/auth/pages/Unsubscribe'));
+// The issue form previews its text with MarkdownText, so an eager ContactPage put the
+// Markdown renderer in the entry chunk every visitor downloads.
+const ContactPage = lazy(() => import('@features/landing/ContactPage'));
 function App() {
   return (
     <ErrorBoundary>
@@ -77,9 +79,9 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
-          <Route path="/contact" element={<ContactPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route element={<Suspense fallback={null}><Outlet /></Suspense>}>
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/auth/confirm" element={<AuthConfirm />} />
             <Route path="/studentsignup" element={<SignUpOrchestrator />} />
