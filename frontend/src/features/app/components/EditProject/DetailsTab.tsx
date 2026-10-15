@@ -115,6 +115,7 @@ const DetailsTab: React.FC<DetailsTabProps> = ({
           rows={6}
           aria-label="Project description"
         />
+        <p className="edit-project__section-hint">Markdown supported: headings, lists, tables, code and links.</p>
       </section>
 
       <section className="edit-project__section">

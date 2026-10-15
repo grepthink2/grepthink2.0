@@ -1,0 +1,36 @@
+// ProjectDetails: the project page's own shell, so it no longer borrows `.projects` from the
+// instructor Projects page (whose stylesheet only loads with that page). Tokens only, so no @use.
+
+.project-details {
+  padding: var(--gt-space-lg);
+  min-height: 100%;
+  font-family: var(--gt-font-sans);
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    text-align: center;
+    color: var(--gt-text-secondary);
+
+    h2 {
+      margin: 0 0 var(--gt-space-sm);
+      font-size: var(--gt-text-h3);
+      font-weight: var(--gt-weight-semibold);
+    }
+
+    p {
+      margin: 0;
+      font-size: var(--gt-text-body);
+      color: var(--gt-text-tertiary);
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .project-details {
+    padding: var(--gt-space-md);
+  }
+}

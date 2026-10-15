@@ -5,11 +5,13 @@ import type { ApiProject, ApiProjectMember, ApiProjectTA } from '@/lib/api';
 import { useClass, useClassRole } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { usePreview } from '@/lib/previewContext';
+import { projectRoleLabel } from '@/features/app/utils/memberUtils';
 import ProjectView, { ProjectViewSkeleton } from '@features/app/components/Project/ProjectView';
+import './ProjectDetails.scss';
 
 const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  const { selectedClass } = useClass();
+  const { selectedClass, classes } = useClass();
   const { user } = useAuth();
   const { isPreviewing, enterPreview } = usePreview();
   const location = useLocation();
@@ -121,7 +123,7 @@ const ProjectDetails: React.FC = () => {
   // The header's actions follow your class role, so wait for the classes too.
   if (loading || classRole === undefined) {
     return (
-      <div className="projects">
+      <div className="project-details">
         <ProjectViewSkeleton />
       </div>
     );
@@ -129,8 +131,8 @@ const ProjectDetails: React.FC = () => {
 
   if (error || !project) {
     return (
-      <div className="projects">
-        <div className="projects__empty">
+      <div className="project-details">
+        <div className="project-details__empty">
           <h2>Unable to load project</h2>
           {error && <p>{error}</p>}
         </div>
@@ -138,7 +140,7 @@ const ProjectDetails: React.FC = () => {
     );
   }
 
-  const className = selectedClass?.name ?? '';
+  const className = classes.find((c) => c.id === project.class_id)?.name ?? selectedClass?.name ?? '';
   const teamSize =
     typeof project.team_size === 'number' && Number.isFinite(project.team_size)
       ? String(project.team_size)
@@ -146,17 +148,6 @@ const ProjectDetails: React.FC = () => {
   const descriptionMarkdown = project.description ?? '';
   const skills = project.skills ?? [];
   const selectedRoles = project.looking_for_roles ?? [];
-
-  const projectRoleLabel = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return 'Product Owner';
-      case 'scrum_master':
-        return 'Scrum Master';
-      default:
-        return role;
-    }
-  };
 
   const teamMembers = members.map((m) => ({
     id: m.user_id,
@@ -169,7 +160,7 @@ const ProjectDetails: React.FC = () => {
   }));
 
   return (
-    <div className="projects">
+    <div className="project-details">
       <ProjectView
         projectId={project.id}
         projectTitle={project.name}
@@ -190,11 +181,6 @@ const ProjectDetails: React.FC = () => {
         pendingRequestId={pendingRequestId}
         onRequestSent={(id) => setPendingRequestId(id)}
         onRequestCancelled={() => setPendingRequestId(null)}
-        sponsorName={project.sponsor_name}
-        sponsorCompany={project.sponsor_company}
-        sponsorEmail={project.sponsor_email}
-        sponsorWebsite={project.sponsor_website}
-        sponsorDescription={project.sponsor_description}
       />
     </div>
   );

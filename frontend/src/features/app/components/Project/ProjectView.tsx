@@ -1,16 +1,29 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import { Brush, MonitorSmartphone, MonitorCog, Database, SquarePen, Copy, Check, MessageCircleMore, ChevronDown, LogOut, Trash2/*, Building2, Globe, Mail, User*/ } from 'lucide-react';
-import { useClickOutside } from '@features/app/components/Interest/useClickOutside';
-import EmailIcon from '@assets/ic_outline-email.svg';
-import GithubIcon from '@assets/line-md_github.svg';
-import LinkedInIcon from '@assets/mdi_linkedin.svg';
-import CodeIcon from '@assets/material-symbols_code-rounded.svg';
+import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
+import {
+  Brush,
+  Check,
+  ChevronDown,
+  Code,
+  Database,
+  LogOut,
+  MonitorCog,
+  MonitorSmartphone,
+  SquarePen,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
 import './ProjectView.scss';
 import { useAuth } from '@/lib/auth';
 import { useClass, useClassRole } from '@/lib/classContext';
-import { MessageButton } from '@features/messages/components/MessageButton';
+import MarkdownText from '@/components/Markdown/MarkdownText';
+import { Menu, MenuItem } from '@/components/Menu/Menu';
+import { Popover } from '@/components/Popover/Popover';
+import { Skeleton } from '@/components/Skeleton/Skeleton';
+import ProjectMembersPopover from './ProjectMembersPopover';
+import SprintProgressCard from './SprintProgressCard';
+import type { ProjectMember } from './projectMembers';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
 import EditProjectModal from '../EditProject/EditProjectModal';
@@ -18,60 +31,51 @@ import ConfirmModal from '../Overlays/ConfirmModal';
 import { api } from '@/lib/api';
 import type { ApiProject, ApiProjectMember, ApiProjectTA } from '@/lib/api';
 import { getMemberCopyEmail } from '@/features/app/utils/memberUtils';
-import { Skeleton } from '@/components/Skeleton/Skeleton';
 
-/** Loading placeholder mirroring the project header + team-members layout. */
+/** Stacks skeleton rows with the cards' inner rhythm. */
+const SKELETON_STACK: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 'var(--gt-space-sm)' };
+
+/**
+ * Loading placeholder for the project page. It uses the page's own cards and class names, so the
+ * skeleton and the loaded page share their geometry.
+ */
 export const ProjectViewSkeleton: React.FC = () => (
   <div className="project-view" aria-busy="true">
-    <div className="project-view__header">
+    <div className="project-view__card project-view__header">
       <div className="project-view__header-content">
         <div className="project-view__header-left">
-          <Skeleton width={260} height={28} />
-          <Skeleton width={120} height={14} style={{ marginTop: 8 }} />
-          <div className="project-view__stats" style={{ marginTop: 12 }}>
-            <Skeleton width={90} height={14} />
-            <Skeleton width={70} height={14} />
+          <div className="project-view__title">
+            <Skeleton width={260} height={28} />
+          </div>
+          <div className="project-view__class-name">
+            <Skeleton width={120} height={14} />
+          </div>
+          <div className="project-view__stats">
+            <Skeleton width={110} height={20} />
           </div>
           <div className="project-view__divider" />
           <div className="project-view__skills-list">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} width={70} height={24} radius={20} />
+              <Skeleton key={i} width={70} height={24} />
             ))}
           </div>
-        </div>
-        <div className="project-view__header-right">
-          <Skeleton width={130} height={38} radius={8} />
         </div>
       </div>
     </div>
     <div className="project-view__content">
-      <div className="project-view__left-column">
-        <div
-          className="project-view__markdown"
-          style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-        >
-          <Skeleton width="90%" height={14} />
-          <Skeleton width="80%" height={14} />
-          <Skeleton width="95%" height={14} />
-          <Skeleton width="60%" height={14} />
-        </div>
+      <div className="project-view__card project-view__description" style={SKELETON_STACK}>
+        <Skeleton width="90%" height={14} />
+        <Skeleton width="80%" height={14} />
+        <Skeleton width="95%" height={14} />
+        <Skeleton width="60%" height={14} />
       </div>
-      <div className="project-view__right-column">
-        <div className="project-view__section">
-          <div className="project-view__section-header">
-            <Skeleton width={140} height={18} />
-          </div>
-          <div className="project-view__team-list">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="project-view__team-member">
-                <div className="project-view__member-avatar">
-                  <Skeleton circle height={44} />
-                </div>
-                <div className="project-view__member-info">
-                  <Skeleton width="60%" height={14} />
-                  <Skeleton width="40%" height={12} style={{ marginTop: 6 }} />
-                </div>
-              </div>
+      <div className="project-view__aside">
+        <div className="project-view__card" style={SKELETON_STACK}>
+          <Skeleton width={120} height={18} />
+          <Skeleton width={180} height={14} />
+          <div style={{ display: 'flex', gap: 'var(--gt-space-sm)' }}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} width={56} height={40} />
             ))}
           </div>
         </div>
@@ -80,29 +84,60 @@ export const ProjectViewSkeleton: React.FC = () => (
   </div>
 );
 
-export interface ProjectViewMember {
-  id?: string;
-  displayName: string;
-  roleLabel: string;
-  email?: string;
-  githubUrl?: string;
-  linkedInUrl?: string;
-  imageUrl?: string;
-}
+/** The old name of `ProjectMember`, kept for callers that still import it. */
+export type ProjectViewMember = ProjectMember;
 
 /** Roles that can manage the project (add/drop members, edit project). */
 const MANAGER_ROLES = ['owner', 'admin', 'product owner'] as const;
+
+/** "3 spots available", "1 spot available", or "Team full" once nobody else fits. */
+function spotsText(spots: number): string {
+  if (spots <= 0) return 'Team full';
+  return spots === 1 ? '1 spot available' : `${spots} spots available`;
+}
+
+function getRoleIcon(roleId: string) {
+  switch (roleId) {
+    case 'designer':
+      return <Brush size={18} />;
+    case 'frontend':
+      return <MonitorSmartphone size={18} />;
+    case 'backend':
+      return <MonitorCog size={18} />;
+    case 'database':
+      return <Database size={18} />;
+    default:
+      return <Code size={18} />;
+  }
+}
+
+function getRoleLabel(roleId: string) {
+  switch (roleId) {
+    case 'designer':
+      return 'Designer';
+    case 'frontend':
+      return 'Frontend Developer';
+    case 'backend':
+      return 'Backend Engineer';
+    case 'database':
+      return 'Database';
+    default:
+      return roleId;
+  }
+}
 
 interface ProjectViewProps {
   projectId?: string;
   projectTitle: string;
   teamSize?: string;
+  /** The project's class, shown under the title when known. */
   className?: string;
   descriptionMarkdown: string;
   skills: string[];
   selectedRoles: string[];
-  members?: ProjectViewMember[];
-  /** TAs assigned to oversee this project. Shown separately from team members. */
+  /** The team as the header's members panel lists it. */
+  members?: ProjectMember[];
+  /** TAs assigned to oversee this project; the members panel lists them apart from the team. */
   tas?: ApiProjectTA[];
   /** Current user's role on this project (from API). Enables owner/admin to see management buttons. */
   userRoleOnProject?: string | null;
@@ -124,20 +159,13 @@ interface ProjectViewProps {
   onRequestSent?: (requestId: string) => void;
   /** Called after the pending join request is cancelled. */
   onRequestCancelled?: () => void;
-  // Sponsor information — typed so callers compile; rendering is gated
-  // behind the (still commented-out) sponsor section in the JSX below.
-  sponsorName?: string | null;
-  sponsorCompany?: string | null;
-  sponsorEmail?: string | null;
-  sponsorWebsite?: string | null;
-  sponsorDescription?: string | null;
 }
 
 const ProjectView: React.FC<ProjectViewProps> = ({
   projectId,
   projectTitle,
   teamSize: teamSizeInput = '',
-  className = 'CSE 115B',
+  className = '',
   descriptionMarkdown,
   skills,
   selectedRoles,
@@ -153,15 +181,10 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   pendingRequestId = null,
   onRequestSent,
   onRequestCancelled,
-  // sponsorName,
-  // sponsorCompany,
-  // sponsorEmail,
-  // sponsorWebsite,
-  // sponsorDescription,
 }) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { selectedClass } = useClass();
+  const rolesId = useId();
   // Your role in the project's class. The Create Project preview has no class yet: the project
   // goes to the selected class.
   const classRole = useClassRole(classId ?? selectedClass?.id);
@@ -184,10 +207,24 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const [cancellingRequest, setCancellingRequest] = useState(false);
   const [memberManagerOpen, setMemberManagerOpen] = useState(false);
   const [editProjectOpen, setEditProjectOpen] = useState(false);
-  const [emailsCopied, setEmailsCopied] = useState(false);
-  const [joinedDropdownOpen, setJoinedDropdownOpen] = useState(false);
-  const joinedDropdownRef = useRef<HTMLDivElement>(null);
-  useClickOutside(joinedDropdownRef, useCallback(() => setJoinedDropdownOpen(false), []));
+  const [joinedOpen, setJoinedOpen] = useState(false);
+  const joinedButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Esc, a click outside and "Leave project" all close the Joined menu here. Focus on its item
+  // would go down with it, so it goes back to the Joined button, without scrolling: after a click
+  // outside, the browser then moves it to whatever was clicked. Stable, so Popover keeps its listeners.
+  const closeJoined = useCallback(() => {
+    if (document.activeElement?.closest('.project-view__joined-menu')) {
+      joinedButtonRef.current?.focus({ preventScroll: true });
+    }
+    setJoinedOpen(false);
+  }, []);
+
+  // What the members panel's "Copy all emails" writes: each member's roster (edu) email first.
+  const copyEmails = useMemo(
+    () => projectMembers.map(getMemberCopyEmail).filter((email): email is string => Boolean(email)),
+    [projectMembers],
+  );
 
   // The class instructor and class TAs may manage project admins.
   const canManageAdmins = Boolean(classId) && (classRole === 'instructor' || classRole === 'ta');
@@ -220,104 +257,44 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     }
   };
 
-  const handleCopyAllEmails = async () => {
-    const emails = projectMembers
-      .map(getMemberCopyEmail)
-      .filter((email): email is string => Boolean(email));
-    if (emails.length === 0) return;
-
-    try {
-      await navigator.clipboard.writeText(emails.join(', '));
-      setEmailsCopied(true);
-      setTimeout(() => setEmailsCopied(false), 2000);
-    } catch {
-      // clipboard unavailable
-    }
-  };
-
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
   const totalMembers = parseInt(teamSizeInput.trim(), 10);
   const hasValidTeamSize = !isNaN(totalMembers) && totalMembers >= 1;
-  const currentCount = members.length;
-  const membersText = hasValidTeamSize
-    ? `${currentCount}/${totalMembers} Members`
-    : `${currentCount} Members`;
-  const spotsAvailable = hasValidTeamSize ? totalMembers - currentCount : null;
-  const spotsText =
-    spotsAvailable !== null
-      ? spotsAvailable === 1
-        ? '1 Spot Available'
-        : `${spotsAvailable} Spots Available`
-      : 'Spots Available';
-
-  const getRoleIcon = (roleId: string) => {
-    const size = 18;
-    const iconProps = { size, color: 'white', strokeWidth: 2 };
-    switch (roleId) {
-      case 'designer':
-        return <Brush {...iconProps} />;
-      case 'frontend':
-        return <MonitorSmartphone {...iconProps} />;
-      case 'backend':
-        return <MonitorCog {...iconProps} />;
-      case 'database':
-        return <Database {...iconProps} />;
-      default:
-        return <img src={CodeIcon} alt={roleId} className="project-view__role-icon-img" />;
-    }
-  };
-
-  const getRoleLabel = (roleId: string) => {
-    switch (roleId) {
-      case 'designer':
-        return 'Designer';
-      case 'frontend':
-        return 'Frontend Developer';
-      case 'backend':
-        return 'Backend Engineer';
-      case 'database':
-        return 'Database';
-      default:
-        return roleId;
-    }
-  };
+  const spotsAvailable = hasValidTeamSize ? totalMembers - members.length : null;
 
   return (
     <div className="project-view">
-      {/* Header */}
-      <div className="project-view__header">
+      <header className="project-view__card project-view__header">
         <div className="project-view__header-content">
           <div className="project-view__header-left">
             <h1 className="project-view__title">{displayTitle}</h1>
-            <p className="project-view__class-name">{className}</p>
+            {className && <p className="project-view__class-name">{className}</p>}
             <div className="project-view__stats">
-              <span className="project-view__stat">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                {membersText}
-              </span>
-              <span className="project-view__stat">{spotsText}</span>
+              <ProjectMembersPopover
+                members={members}
+                tas={tas}
+                teamSize={hasValidTeamSize ? totalMembers : null}
+                copyEmails={copyEmails}
+                currentUserId={user?.id}
+              />
+              {spotsAvailable !== null && <span className="project-view__stat">{spotsText(spotsAvailable)}</span>}
             </div>
-            <div className="project-view__divider"></div>
-            <div className="project-view__looking-for">
-              <img src={CodeIcon} alt="Code" className="project-view__icon" />
-              <span>Looking for:</span>
-              <div className="project-view__skills-list">
-                {skills.length > 0 ? (
-                  skills.map((skill) => (
-                    <span key={skill} className="project-view__skill-tag">
-                      {skill}
-                    </span>
-                  ))
-                ) : (
-                  <span className="project-view__skill-tag">Members</span>
-                )}
-              </div>
-            </div>
+            {skills.length > 0 && (
+              <>
+                <div className="project-view__divider" />
+                <div className="project-view__looking-for">
+                  <Code size={16} aria-hidden="true" />
+                  <span>Looking for:</span>
+                  <div className="project-view__skills-list">
+                    {skills.map((skill) => (
+                      <span key={skill} className="project-view__skill-tag">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           <div className="project-view__header-right">
             {canManageProject ? (
@@ -328,22 +305,11 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                   onClick={() => projectId && project && classId && setMemberManagerOpen(true)}
                   disabled={!projectId || !project || !classId}
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="8.5" cy="7" r="4" />
-                    <line x1="20" y1="8" x2="20" y2="14" />
-                    <line x1="23" y1="11" x2="17" y2="11" />
-                  </svg>
+                  <UserPlus size={18} />
                   Add/Drop Members
                 </button>
                 <button
+                  type="button"
                   className="project-view__request-button"
                   onClick={() => projectId && project && setEditProjectOpen(true)}
                   disabled={!projectId || !project}
@@ -354,6 +320,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
               </div>
             ) : canManageAdmins ? (
               <button
+                type="button"
                 className="project-view__request-button"
                 onClick={() => projectId && project && setEditProjectOpen(true)}
                 disabled={!projectId || !project}
@@ -362,40 +329,44 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 Manage Admins
               </button>
             ) : userRoleOnProject != null && userRoleOnProject !== '' ? (
-              <div className="project-view__joined-dropdown" ref={joinedDropdownRef}>
-                <button
-                  type="button"
-                  className="project-view__joined-btn"
-                  onClick={() => setJoinedDropdownOpen((o) => !o)}
-                  aria-expanded={joinedDropdownOpen}
-                  aria-haspopup="menu"
+              <Popover
+                open={joinedOpen}
+                onClose={closeJoined}
+                align="end"
+                padded={false}
+                anchor={
+                  <button
+                    ref={joinedButtonRef}
+                    type="button"
+                    className="project-view__request-button project-view__joined-btn"
+                    aria-haspopup="menu"
+                    aria-expanded={joinedOpen}
+                    onClick={() => setJoinedOpen((o) => !o)}
+                  >
+                    <Users size={18} />
+                    Joined
+                    <ChevronDown size={16} />
+                  </button>
+                }
+              >
+                <Menu
+                  ariaLabel="Project membership"
+                  autoFocus
+                  onClose={closeJoined}
+                  className="project-view__joined-menu"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="8.5" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                  Joined
-                  <ChevronDown size={16} />
-                </button>
-                {joinedDropdownOpen && (
-                  <div className="project-view__joined-menu" role="menu">
-                    <button
-                      type="button"
-                      className="project-view__joined-menu-item project-view__joined-menu-item--danger"
-                      role="menuitem"
-                      onClick={() => {
-                        setJoinedDropdownOpen(false);
-                        onLeave?.();
-                      }}
-                    >
-                      <LogOut size={15} />
-                      Leave Project
-                    </button>
-                  </div>
-                )}
-              </div>
+                  <MenuItem
+                    destructive
+                    icon={<LogOut size={15} aria-hidden="true" />}
+                    onSelect={() => {
+                      closeJoined();
+                      onLeave?.();
+                    }}
+                  >
+                    Leave project
+                  </MenuItem>
+                </Menu>
+              </Popover>
             ) : pendingRequestId ? (
               <button
                 type="button"
@@ -409,17 +380,12 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                   'Cancelling…'
                 ) : requestedHovered ? (
                   <>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    <X size={18} />
                     Unsend
                   </>
                 ) : (
                   <>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <Check size={18} />
                     Requested
                   </>
                 )}
@@ -431,6 +397,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                   className="project-view__request-button"
                   onClick={() => setRequestModalOpen(true)}
                 >
+                  <UserPlus size={18} />
                   Request to Join
                 </button>
                 <button
@@ -454,261 +421,40 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 className="project-view__request-button"
                 onClick={() => setRequestModalOpen(true)}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="8.5" cy="7" r="4" />
-                  <line x1="20" y1="8" x2="20" y2="14" />
-                  <line x1="23" y1="11" x2="17" y2="11" />
-                </svg>
+                <UserPlus size={18} />
                 Request to Join
               </button>
             )}
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="project-view__tabs" role="tablist" aria-label="Project views">
-        <button type="button" role="tab" aria-selected="true" className="project-view__tab project-view__tab--active">
-          Overview
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected="false"
-          className="project-view__tab"
-          onClick={() =>
-            projectId &&
-            navigate(`/app/projects/${projectId}/board`, {
-              state: { projectName: displayTitle },
-            })
-          }
-        >
-          Scrum Board
-        </button>
-      </div>
-
-      {/* Main Content */}
       <div className="project-view__content">
-        {/* Left Column - Markdown Preview */}
-        <div className="project-view__left-column">
-          <div className="project-view__markdown">
-            <ReactMarkdown>{descriptionMarkdown}</ReactMarkdown>
-          </div>
-        </div>
-
-        {/* Right Column - Team & Roles */}
-        <div className="project-view__right-column">
-          {/* Team Members */}
-          <div className="project-view__section">
-            <div className="project-view__section-header">
-              <h3 className="project-view__section-title">Team Members</h3>
-              {projectMembers.length > 0 && (
-                <button
-                  type="button"
-                  className={`project-view__copy-emails-btn${
-                    emailsCopied ? ' project-view__copy-emails-btn--copied' : ''
-                  }`}
-                  onClick={() => void handleCopyAllEmails()}
-                  aria-label="Copy all team member emails"
-                  title="Copy all team member emails"
-                >
-                  {emailsCopied ? <Check size={14} /> : <Copy size={14} />}
-                  <span>{emailsCopied ? 'Copied' : 'Copy All Emails'}</span>
-                </button>
-              )}
-            </div>
-            <div className="project-view__team-list">
-              {members.length === 0 ? (
-                <div className="project-view__team-member">
-                  <div className="project-view__member-avatar">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                  </div>
-                  <div className="project-view__member-info">
-                    <div className="project-view__member-name">No members yet</div>
-                    <div className="project-view__member-role">—</div>
-                    <div className="project-view__member-links" />
-                  </div>
-                </div>
-              ) : (
-                members.map((member, index) => (
-                  <div key={member.id ?? `member-${index}`} className="project-view__team-member">
-                    <div className="project-view__member-avatar">
-                      {member.imageUrl ? (
-                        <img
-                          src={member.imageUrl}
-                          alt={member.displayName}
-                          className="project-view__member-avatar-img"
-                        />
-                      ) : (
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className="project-view__member-info">
-                      <div className="project-view__member-name">{member.displayName}</div>
-                      <div className="project-view__member-role">{member.roleLabel}</div>
-                      <div className="project-view__member-links">
-                        {member.email ? (
-                          <a href={`mailto:${member.email}`} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title={member.email} aria-label={`Email ${member.displayName}`}>
-                            <img src={EmailIcon} alt="" className="project-view__link-icon" />
-                          </a>
-                        ) : (
-                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
-                            <img src={EmailIcon} alt="" className="project-view__link-icon" />
-                          </span>
-                        )}
-                        {member.githubUrl ? (
-                          <a href={member.githubUrl} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title="GitHub" aria-label={`${member.displayName} GitHub`}>
-                            <img src={GithubIcon} alt="" className="project-view__link-icon" />
-                          </a>
-                        ) : (
-                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
-                            <img src={GithubIcon} alt="" className="project-view__link-icon" />
-                          </span>
-                        )}
-                        {member.linkedInUrl ? (
-                          <a href={member.linkedInUrl} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title="LinkedIn" aria-label={`${member.displayName} LinkedIn`}>
-                            <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
-                          </a>
-                        ) : (
-                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
-                            <img src={LinkedInIcon} alt="" className="project-view__link-icon" />
-                          </span>
-                        )}
-                        {member.id && member.id !== user?.id && (
-                          <MessageButton
-                            toUserId={member.id}
-                            toUserName={member.displayName}
-                            className="project-view__link-icon-wrap project-view__message-icon-wrap"
-                          >
-                            <MessageCircleMore
-                              size={18}
-                              strokeWidth={2.75}
-                              className="project-view__message-icon"
-                              aria-hidden="true"
-                            />
-                          </MessageButton>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Teaching Assistants — overseers, not team members. */}
-          {tas.length > 0 && (
-            <div className="project-view__section">
-              <h3 className="project-view__section-title">Teaching Assistants</h3>
-              <div className="project-view__team-list">
-                {tas.map((ta) => (
-                  <div key={ta.user_id} className="project-view__team-member">
-                    <div className="project-view__member-avatar">
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
-                    </div>
-                    <div className="project-view__member-info">
-                      <div className="project-view__member-name">{ta.name}</div>
-                      <div className="project-view__member-role">Teaching Assistant</div>
-                      <div className="project-view__member-links">
-                        {ta.email ? (
-                          <a href={`mailto:${ta.email}`} target="_blank" rel="noopener noreferrer" className="project-view__link-icon-wrap" title={ta.email} aria-label={`Email ${ta.name}`}>
-                            <img src={EmailIcon} alt="" className="project-view__link-icon" />
-                          </a>
-                        ) : (
-                          <span className="project-view__link-icon-wrap project-view__link-icon-wrap--empty" aria-hidden="true">
-                            <img src={EmailIcon} alt="" className="project-view__link-icon" />
-                          </span>
-                        )}
-                        {ta.user_id && ta.user_id !== user?.id && (
-                          <MessageButton
-                            toUserId={ta.user_id}
-                            toUserName={ta.name}
-                            className="project-view__link-icon-wrap project-view__message-icon-wrap"
-                          >
-                            <MessageCircleMore
-                              size={18}
-                              strokeWidth={2.75}
-                              className="project-view__message-icon"
-                              aria-hidden="true"
-                            />
-                          </MessageButton>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        <section className="project-view__card project-view__description" aria-label="Project description">
+          {descriptionMarkdown.trim() ? (
+            <MarkdownText variant="document">{descriptionMarkdown}</MarkdownText>
+          ) : (
+            <p className="project-view__muted">No description yet.</p>
           )}
+        </section>
 
-          {/* Roles Needed */}
+        <div className="project-view__aside">
+          {projectId && <SprintProgressCard key={projectId} projectId={projectId} projectName={displayTitle} />}
           {selectedRoles.length > 0 && (
-            <div className="project-view__section">
-              <h3 className="project-view__section-title">Roles Needed</h3>
-              <div className="project-view__roles-list">
+            <section className="project-view__card project-view__roles" aria-labelledby={rolesId}>
+              <h3 id={rolesId} className="project-view__section-title">
+                Roles needed
+              </h3>
+              <ul className="project-view__roles-list">
                 {selectedRoles.map((roleId) => (
-                  <div key={roleId} className="project-view__role-item">
-                    <div className="project-view__role-icon-wrap">
-                      {getRoleIcon(roleId)}
-                    </div>
+                  <li key={roleId} className="project-view__role-item">
+                    <span className="project-view__role-icon-wrap">{getRoleIcon(roleId)}</span>
                     <span className="project-view__role-label">{getRoleLabel(roleId)}</span>
-                    <span className="project-view__role-count">+1</span>
-                  </div>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
           )}
-
-          {/* Sponsor Information */}
-          {/* {(sponsorName || sponsorCompany || sponsorEmail || sponsorWebsite || sponsorDescription) && (
-            <div className="project-view__section">
-              <h3 className="project-view__section-title">Sponsor Information</h3>
-              <div className="project-view__sponsor-card">
-                {sponsorCompany && (
-                  <div className="project-view__sponsor-row">
-                    <Building2 size={16} />
-                    <span className="project-view__sponsor-label">Company</span>
-                    <span className="project-view__sponsor-value">{sponsorCompany}</span>
-                  </div>
-                )}
-                {sponsorName && (
-                  <div className="project-view__sponsor-row">
-                    <User size={16} />
-                    <span className="project-view__sponsor-label">Contact</span>
-                    <span className="project-view__sponsor-value">{sponsorName}</span>
-                  </div>
-                )}
-                {sponsorEmail && (
-                  <div className="project-view__sponsor-row">
-                    <Mail size={16} />
-                    <span className="project-view__sponsor-label">Email</span>
-                    <a href={`mailto:${sponsorEmail}`} className="project-view__sponsor-link">{sponsorEmail}</a>
-                  </div>
-                )}
-                {sponsorWebsite && (
-                  <div className="project-view__sponsor-row">
-                    <Globe size={16} />
-                    <span className="project-view__sponsor-label">Website</span>
-                    <a href={sponsorWebsite} target="_blank" rel="noopener noreferrer" className="project-view__sponsor-link">{sponsorWebsite}</a>
-                  </div>
-                )}
-                {sponsorDescription && (
-                  <div className="project-view__sponsor-description">
-                    <p>{sponsorDescription}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )} */}
         </div>
       </div>
 
