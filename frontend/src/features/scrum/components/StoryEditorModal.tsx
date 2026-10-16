@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import type { ApiCreateStoryBody, ApiScrumMember, ApiScrumSprint } from '@/lib/api';
 import type { EstimateScale } from '../config/scrumTags';
 import { PointPicker } from './ScalePicker';
@@ -136,12 +136,15 @@ export default function StoryEditorModal({
 
         <footer className="story-editor__foot">
           <button type="button" className="story-editor__cancel" onClick={onClose}>Cancel</button>
+          {/* Busy is not disabled: submit()'s in-flight guard ignores a second click. */}
           <button
             type="button"
             className="story-editor__submit"
             onClick={submit}
-            disabled={!title.trim() || saving}
+            disabled={!title.trim()}
+            aria-busy={saving}
           >
+            {saving && <Loader2 className="story-editor__spinner" size={14} aria-hidden="true" />}
             {saving ? 'Creating…' : 'Create story'}
           </button>
         </footer>

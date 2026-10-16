@@ -145,6 +145,13 @@
   }
 
   &__add-button {
+    // Busy shows a spinner before "Saving…"; the min-width fits the longer idle label, so
+    // the button keeps its size between the two.
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 126px;
     align-self: flex-start;
     padding: 7px 16px;
     border: none;
@@ -160,5 +167,8 @@
     &:hover:not(:disabled) { background: var(--gt-primary-hover); }
     &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
     &:disabled { opacity: 0.45; cursor: not-allowed; }
+    &[aria-busy='true'] { cursor: progress; }
   }
+
+  &__spinner { @include gt-spinner; }
 }

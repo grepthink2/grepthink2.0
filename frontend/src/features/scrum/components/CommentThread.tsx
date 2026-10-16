@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 import MarkdownText from '@components/Markdown/MarkdownText';
 import { InitialsAvatar } from '@features/messages/components/InitialsAvatar';
 import { api } from '@/lib/api';
@@ -98,12 +99,15 @@ export default function CommentThread({ taskId, taskKey, members, onError, onPos
               ? `${draft.length - MAX_COMMENT} characters over the limit`
               : '**bold** · `code` · ⌘/Ctrl+Enter to post'}
           </span>
+          {/* Busy is not disabled: submit()'s in-flight guard ignores a second click. */}
           <button
             type="button"
             className="gt-comments__send"
             onClick={submit}
-            disabled={!draft.trim() || tooLong || sending}
+            disabled={!draft.trim() || tooLong}
+            aria-busy={sending}
           >
+            {sending && <Loader2 className="gt-comments__spinner" size={14} aria-hidden="true" />}
             {sending ? 'Posting…' : 'Comment'}
           </button>
         </div>

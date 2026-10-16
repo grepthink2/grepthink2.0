@@ -91,6 +91,21 @@ describe('CommentThread', () => {
     expect(screen.getByRole('button', { name: 'Comment' })).toBeDisabled();
   });
 
+  it('keeps Comment enabled while posting, with aria-busy', async () => {
+    vi.mocked(api.createScrumComment).mockReturnValue(new Promise(() => {}));   // still in flight
+    renderThread();
+    await screen.findByText('No comments yet.');
+
+    await userEvent.type(screen.getByLabelText(/comment on T-1/i), 'Nice work');
+    await userEvent.click(screen.getByRole('button', { name: 'Comment' }));
+
+    const busy = screen.getByRole('button', { name: 'Posting…' });
+    expect(busy).toBeEnabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(busy);
+    expect(api.createScrumComment).toHaveBeenCalledTimes(1);
+  });
+
   it('reports a failed post without losing the draft', async () => {
     vi.mocked(api.createScrumComment).mockRejectedValue(new Error('offline'));
     renderThread();

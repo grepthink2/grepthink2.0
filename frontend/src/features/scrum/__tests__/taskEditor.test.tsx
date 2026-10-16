@@ -201,6 +201,18 @@ describe('TaskEditorModal', () => {
     });
   });
 
+  it('stays enabled while saving, with aria-busy, and ignores a second click', async () => {
+    const p = props();
+    const onSave = vi.fn();
+    render(<TaskEditorModal {...p} task={p.story.tasks[0]} onSave={onSave} saving />);
+
+    const busy = screen.getByRole('button', { name: 'Saving…' });
+    expect(busy).toBeEnabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(busy);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it('requires a title and closes on Escape', async () => {
     const p = props();
     render(<TaskEditorModal {...p} />);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, Plus, X } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Plus, X } from 'lucide-react';
 import { Menu, MenuItem } from '@components/Menu/Menu';
 import { Popover } from '@components/Popover/Popover';
 import type {
@@ -278,12 +278,16 @@ export default function TaskEditorModal({
 
         <footer className="task-editor__foot">
           <button type="button" className="task-editor__cancel" onClick={onClose}>Cancel</button>
+          {/* Busy is not disabled: the button keeps its colour and focus, and submit()'s
+              in-flight guard ignores a second click. Disabled means "can't submit yet". */}
           <button
             type="button"
             className="task-editor__submit"
             onClick={submit}
-            disabled={!title.trim() || saving || prInvalid}
+            disabled={!title.trim() || prInvalid}
+            aria-busy={saving}
           >
+            {saving && <Loader2 className="task-editor__spinner" size={14} aria-hidden="true" />}
             {saving ? 'Saving…' : editing ? 'Save task' : 'Add task'}
           </button>
         </footer>
