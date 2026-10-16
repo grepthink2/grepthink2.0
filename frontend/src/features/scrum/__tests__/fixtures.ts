@@ -1,4 +1,6 @@
-import type { ApiScrumBoard, ApiScrumMember, ApiScrumStory, ApiScrumSummary, ApiScrumTask } from '@/lib/api';
+import type {
+  ApiScrumBoard, ApiScrumBoardSprint, ApiScrumMember, ApiScrumStory, ApiScrumSummary, ApiScrumTask,
+} from '@/lib/api';
 
 /**
  * Shared board fixtures. Every field of the API shapes is spelled out once
@@ -22,10 +24,17 @@ export const makeMembers = (): ApiScrumMember[] => [
   { user_id: 'u1', name: 'Tony Wu', image_url: null, project_role: 'owner' },
 ];
 
+/** Sprint 1 under way, with makeBoard()'s progress: one 8-point story, one task to do. */
+export const makeSprint = (over: Partial<ApiScrumBoardSprint> = {}): ApiScrumBoardSprint => ({
+  id: 'sp1', name: 'Sprint 1', starts_at: '2026-08-10', ends_at: '2026-08-23', status: 'active',
+  progress: { tasks_done: 0, tasks_total: 1, points_done: 0, points_total: 8 },
+  ...over,
+});
+
 export const makeBoard = (over: Partial<ApiScrumBoard> = {}): ApiScrumBoard => ({
   project: { id: 'p1', name: 'GrepThink', estimate_scale: 'fibonacci' },
   ai_enabled: false,
-  sprints: [{ id: 'sp1', name: 'Sprint 1', starts_at: '2026-08-10', ends_at: '2026-08-23', status: 'active' }],
+  sprints: [makeSprint()],
   sprint_id: 'sp1',
   stories: [makeStory({ points: 8, tasks: [makeTask()] })],
   backlog: [],

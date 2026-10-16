@@ -3,6 +3,7 @@ import { isBacklogStory } from '../utils/backlog';
 import { storyRollup, columnPoints, tasksIn, collectTasks } from '../utils/rollups';
 import { prLabel, prState } from '../utils/prLabel';
 import { relativeTime } from '../utils/relativeTime';
+import { percentDone, sprintDates, STATUS_LABELS } from '../utils/sprints';
 import { tagSlug, ESTIMATE_SCALES, TASK_TAGS, BOARD_COLUMNS } from '../config/scrumTags';
 import { buildMemberMap, personOf } from '../scrumTypes';
 import { makeStory, makeTask } from './fixtures';
@@ -82,6 +83,20 @@ describe('prLabel / prState', () => {
     expect(prState('closed')).toBe('closed');
     expect(prState(null)).toBe('draft');
     expect(prState('weird')).toBe('draft');
+  });
+});
+
+describe('sprint helpers', () => {
+  it('rounds the share done to a whole percent, and is 0 with nothing to count', () => {
+    expect(percentDone(0, 0)).toBe(0);
+    expect(percentDone(1, 4)).toBe(25);
+    expect(percentDone(2, 3)).toBe(67);
+  });
+  it("prints a sprint's dates as month and day", () => {
+    expect(sprintDates({ starts_at: '2026-09-07', ends_at: '2026-09-20' })).toBe('Sep 7 – Sep 20');
+  });
+  it('labels the three sprint statuses', () => {
+    expect(STATUS_LABELS).toEqual({ active: 'Active', planned: 'Planned', completed: 'Completed' });
   });
 });
 

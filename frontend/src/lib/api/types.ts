@@ -761,6 +761,19 @@ export interface ApiScrumSprint {
   status: 'planned' | 'active' | 'completed';
 }
 
+export interface ApiSprintProgress {
+  tasks_done: number;
+  tasks_total: number;
+  /** Points of done tasks over story points: the burnup's units. */
+  points_done: number;
+  points_total: number;
+}
+
+/** A sprint as the board lists it: with its live progress. */
+export interface ApiScrumBoardSprint extends ApiScrumSprint {
+  progress: ApiSprintProgress;
+}
+
 export interface ApiScrumTask {
   id: string;
   story_id: string;
@@ -811,7 +824,7 @@ export interface ApiBurnupSeries {
 export interface ApiScrumBoard {
   project: { id: string; name: string; estimate_scale: ApiEstimateScale };
   ai_enabled: boolean;
-  sprints: ApiScrumSprint[];
+  sprints: ApiScrumBoardSprint[];
   /** Sprint being viewed (null = no sprints yet / backlog only). */
   sprint_id: string | null;
   stories: ApiScrumStory[];

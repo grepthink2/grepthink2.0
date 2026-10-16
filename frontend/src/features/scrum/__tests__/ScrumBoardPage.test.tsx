@@ -6,7 +6,7 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import type { ApiScrumBoard } from '@/lib/api';
 import ScrumBoardPage, { ScrumBoardSkeleton } from '../pages/ScrumBoardPage';
 import { BOARD_VIEWS } from '../config/boardViews';
-import { makeBoard, makeStory, makeTask } from './fixtures';
+import { makeBoard, makeSprint, makeStory, makeTask } from './fixtures';
 
 vi.mock('@/lib/auth', () => ({
   useAuth: () => ({ user: { email: 'tony@ucsc.edu', user_metadata: { full_name: 'Tony Wu' } } }),
@@ -32,8 +32,8 @@ vi.mock('@/lib/api', () => ({
 const { api } = await import('@/lib/api');
 
 const TWO_SPRINTS = [
-  { id: 'sp1', name: 'Sprint 1', starts_at: '2026-08-10', ends_at: '2026-08-23', status: 'active' as const },
-  { id: 'sp2', name: 'Sprint 2', starts_at: '2026-08-24', ends_at: '2026-09-06', status: 'active' as const },
+  makeSprint(),
+  makeSprint({ id: 'sp2', name: 'Sprint 2', starts_at: '2026-08-24', ends_at: '2026-09-06' }),
 ];
 
 const boardFixture = (over: Partial<ApiScrumBoard> = {}) => makeBoard({
