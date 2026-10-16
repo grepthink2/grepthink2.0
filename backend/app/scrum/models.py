@@ -120,6 +120,21 @@ class SprintOut(BaseModel):
     status: str
 
 
+class SprintProgress(BaseModel):
+    """Tasks done over tasks, and points of done tasks over story points (the burnup's units)."""
+
+    tasks_done: int
+    tasks_total: int
+    points_done: int
+    points_total: int
+
+
+class BoardSprintOut(SprintOut):
+    """A sprint as the board lists it: with its live progress."""
+
+    progress: SprintProgress
+
+
 class TaskOut(BaseModel):
     id: str
     story_id: str
@@ -203,7 +218,7 @@ class BurnupOut(BaseModel):
 class BoardResponse(BaseModel):
     project: BoardProject
     ai_enabled: bool
-    sprints: list[SprintOut]
+    sprints: list[BoardSprintOut]
     sprint_id: str | None = None
     stories: list[StoryOut]
     backlog: list[StoryOut]

@@ -478,6 +478,20 @@ def _totals(stories: list[dict], done_tasks: list[dict]) -> tuple[int, int]:
     return scope, completed
 
 
+def _sprint_progress(stories: list[dict]) -> dict:
+    """Live progress of one sprint from its live stories (``tasks`` embedded): tasks done over
+    tasks, and points of done tasks over story points — the burnup's units (``_totals``)."""
+    tasks = [t for s in stories for t in s["tasks"]]
+    done = [t for t in tasks if t.get("status") == "done"]
+    points_total, points_done = _totals(stories, done)
+    return {
+        "tasks_done": len(done),
+        "tasks_total": len(tasks),
+        "points_done": points_done,
+        "points_total": points_total,
+    }
+
+
 def _live_burnup_totals(client, sprint_id: str) -> tuple[int, int]:
     """Totals straight from the database, for writes that have no board loaded."""
     stories = (
@@ -762,10 +776,11 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
     def live_stories(sid: str) -> list[dict]:
         return [s for s in all_stories if s.get("sprint_id") == sid and not s.get("archived_at")]
 
+    progress = {s["id"]: _sprint_progress(live_stories(s["id"])) for s in sprints}
+
     def sprint_totals(sid: str) -> tuple[int, int]:
-        in_sprint = live_stories(sid)
-        done = [t for s in in_sprint for t in s["tasks"] if t.get("status") == "done"]
-        return _totals(in_sprint, done)
+        p = progress[sid]
+        return p["points_total"], p["points_done"]
 
     snaps_by_sprint: dict[str, list[dict]] = {}
     for row in all_snaps:
@@ -833,7 +848,7 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
     return {
         "project": project,
         "ai_enabled": bool(settings.AI_API_KEY and settings.AI_BASE_URL),
-        "sprints": sprints,
+        "sprints": [{**s, "progress": progress[s["id"]]} for s in sprints],
         "sprint_id": sel_id,
         "stories": stories,
         "backlog": backlog,

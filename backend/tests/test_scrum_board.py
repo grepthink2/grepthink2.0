@@ -80,6 +80,7 @@ def _seed(monkeypatch):
             _task("a2", "A", 2, "todo", "2"),
             _task("b1", "B", 5, "done", "3", moved_by=UID, moved_at="2026-09-08T18:00:00Z"),
             _task("b2", "B", 3, "in_progress", "4"),
+            _task("d1", "D", 2, "done", "6"),  # on the backlog story: counted nowhere
         ],
         task_moves=[
             {
@@ -115,6 +116,13 @@ def test_board_shape_and_burnup(monkeypatch, client):
     assert body["members"] == [
         {"user_id": UID, "name": "Tony Wu", "image_url": None, "project_role": "owner"}
     ]
+
+    # Live stories only: E is archived, D is backlog (its done task counts nowhere).
+    assert {s["id"]: s["progress"] for s in body["sprints"]} == {
+        "S1": {"tasks_done": 1, "tasks_total": 2, "points_done": 3, "points_total": 5},
+        "S2": {"tasks_done": 1, "tasks_total": 2, "points_done": 5, "points_total": 8},
+        "S3": {"tasks_done": 0, "tasks_total": 0, "points_done": 0, "points_total": 3},
+    }
 
     # Per sprint (scope, completed): S1 (5, 3), S2 (8, 5; E is archived), S3 (3, 0).
     assert body["burnup"]["cumulative"]["scope"] == [5, 13, 16]
