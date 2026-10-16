@@ -761,6 +761,32 @@ export interface ApiScrumSprint {
   status: 'planned' | 'active' | 'completed';
 }
 
+export interface ApiSprintProgress {
+  tasks_done: number;
+  tasks_total: number;
+  /** Points of done tasks over story points: the burnup's units. */
+  points_done: number;
+  points_total: number;
+}
+
+/** A sprint as the board lists it: with its live progress. */
+export interface ApiScrumBoardSprint extends ApiScrumSprint {
+  /** Missing only from a backend older than this client (the two deploy separately). */
+  progress?: ApiSprintProgress;
+}
+
+/** A task named from another task's dependencies, or in the board's task index. */
+export interface ApiTaskRef {
+  id: string;
+  key: string;
+  title: string;
+  status: ApiBoardStatus;
+  story_id: string;
+  story_key: string;
+  /** The story's sprint; null = backlog. */
+  sprint_id: string | null;
+}
+
 export interface ApiScrumTask {
   id: string;
   story_id: string;
@@ -769,7 +795,8 @@ export interface ApiScrumTask {
   title: string;
   description_md: string | null;
   points: number | null;
-  time_estimate: string | null;
+  /** Whole hours, 1–15. */
+  estimate_hours: number | null;
   status: ApiBoardStatus;
   reporter_id: string;
   assignee_id: string | null;
@@ -781,6 +808,14 @@ export interface ApiScrumTask {
   moved_by_name: string | null;
   moved_at: string | null;
   comment_count: number;
+  /**
+   * The tasks this one depends on. Only the board load fills it: single-task responses send []
+   * (`mergeTaskResponse` keeps the board's). Missing only from a backend older than this client
+   * (the two deploy separately).
+   */
+  depends_on?: ApiTaskRef[];
+  /** The tasks that depend on this one; as `depends_on`, board-only and possibly missing. */
+  blocks?: ApiTaskRef[];
 }
 
 export interface ApiScrumStory {
@@ -792,7 +827,12 @@ export interface ApiScrumStory {
   title: string;
   description_md: string | null;
   points: number | null;
-  time_estimate: string | null;
+  /**
+   * The board's sum of its tasks' hours, null when none has one; single-row story responses send
+   * null. The web client computes its own with `storyHours` (utils/rollups.ts), which stays right
+   * after an optimistic edit.
+   */
+  estimate_hours: number | null;
   reporter_id: string;
   assignee_id: string | null;
   /** Legacy archive flag: set ⇒ the story is in the backlog whatever its sprint_id. Read-only. */
@@ -811,7 +851,7 @@ export interface ApiBurnupSeries {
 export interface ApiScrumBoard {
   project: { id: string; name: string; estimate_scale: ApiEstimateScale };
   ai_enabled: boolean;
-  sprints: ApiScrumSprint[];
+  sprints: ApiScrumBoardSprint[];
   /** Sprint being viewed (null = no sprints yet / backlog only). */
   sprint_id: string | null;
   stories: ApiScrumStory[];
@@ -820,6 +860,11 @@ export interface ApiScrumBoard {
   members: ApiScrumMember[];
   /** 'member' = full read/write; 'staff' = read + comments. */
   access: 'member' | 'staff';
+  /**
+   * Every task of the project in key order, any sprint or the backlog: the dependency picker's
+   * choices. Missing only from a backend older than this client (the two deploy separately).
+   */
+  task_index?: ApiTaskRef[];
 }
 
 /** The project page's sprint card: the sprint the board opens on, its task counts, the backlog size. */
@@ -867,7 +912,6 @@ export interface ApiCreateStoryBody {
   title: string;
   description_md?: string;
   points?: number;
-  time_estimate?: string;
   assignee_id?: string;
   /** Omit for backlog. */
   sprint_id?: string;
@@ -878,7 +922,6 @@ export interface ApiUpdateStoryBody {
   /** Explicit null clears it (an omitted key leaves it as it is). */
   description_md?: string | null;
   points?: number;
-  time_estimate?: string;
   assignee_id?: string;
   /** Explicit null moves the story to the backlog. */
   sprint_id?: string | null;
@@ -888,7 +931,8 @@ export interface ApiCreateTaskBody {
   title: string;
   description_md?: string;
   points?: number;
-  time_estimate?: string;
+  /** Whole hours, 1–15. */
+  estimate_hours?: number;
   assignee_id?: string;
   tags?: string[];
 }
@@ -898,7 +942,8 @@ export interface ApiUpdateTaskBody {
   /** Explicit null clears it (an omitted key leaves it as it is). */
   description_md?: string | null;
   points?: number;
-  time_estimate?: string | null;
+  /** Whole hours, 1–15; explicit null clears it. */
+  estimate_hours?: number | null;
   assignee_id?: string | null;
   tags?: string[];
   /** Explicit null unlinks the PR. */

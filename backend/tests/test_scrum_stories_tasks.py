@@ -80,6 +80,36 @@ def test_create_task_inherits_the_story_project_and_gets_a_task_key(monkeypatch)
     assert (out["key"], out["project_id"], out["tags"]) == ("GT-1", PID, ["backend"])
 
 
+def test_create_task_writes_estimate_hours_and_never_the_legacy_text(monkeypatch):
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)])
+    controller.create_task(
+        story_id="st1",
+        user_id=UID,
+        fields={"title": "t", "estimate_hours": 4, "time_estimate": "4h"},
+    )
+    [row] = db.rows("tasks")
+    assert row["estimate_hours"] == 4
+    assert "time_estimate" not in row
+
+
+def test_update_task_clears_estimate_hours_with_an_explicit_null(monkeypatch):
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)], tasks=[dict(TASK, estimate_hours=4)])
+    controller.update_task(task_id="t1", user_id=UID, fields={"estimate_hours": None})
+    assert db.rows("tasks")[0]["estimate_hours"] is None
+
+
+def test_story_writes_ignore_a_legacy_time_estimate(monkeypatch):
+    """A story's hours are its tasks' sum: an old client's story estimate is not written."""
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)])
+    controller.create_story(
+        project_id=PID, user_id=UID, fields={"title": "s", "time_estimate": "2d"}
+    )
+    out = controller.update_story(story_id="st1", user_id=UID, fields={"time_estimate": "2d"})
+    assert out == STORY
+    assert [s for s in db.rows("user_stories") if "time_estimate" in s] == []
+    assert [q for q in db.queries if q["op"] == "update"] == []
+
+
 def test_update_story_rejects_a_sprint_from_another_project(monkeypatch):
     db = scrum_db(monkeypatch, user_stories=[dict(STORY)], sprints=[dict(FOREIGN_SPRINT)])
     with pytest.raises(HTTPException) as e:

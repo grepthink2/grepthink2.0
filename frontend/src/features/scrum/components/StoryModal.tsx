@@ -9,7 +9,7 @@ import type { EstimateScale } from '../config/scrumTags';
 import type { MemberMap } from '../scrumTypes';
 import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
 import { isBacklogStory } from '../utils/backlog';
-import { assignedTaskPoints, remainingStoryPoints, storyRollup } from '../utils/rollups';
+import { assignedTaskPoints, remainingStoryPoints, storyHours, storyRollup } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
 import CommentThread from './CommentThread';
 import { PointPicker } from './ScalePicker';
@@ -63,6 +63,7 @@ export default function StoryModal({
   const closeRef = useRef<HTMLButtonElement>(null);
 
   const { tasksDone, tasksTotal, pointsDone } = storyRollup(story);
+  const hours = storyHours(story);
   const assigned = assignedTaskPoints(story);
   const reporter = personOf(members, story.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, story.assignee_id);
@@ -150,7 +151,7 @@ export default function StoryModal({
 
         <div className="story-modal__meta">
           {story.points != null && <PointsChip points={story.points} />}
-          {story.time_estimate && <EstimateChip estimate={story.time_estimate} />}
+          {hours != null && <EstimateChip estimate={`${hours}h`} />}
           <UserPair reporter={reporter} assignee={assignee} size={24} />
           <span className="story-modal__rollup">
             {tasksDone}/{tasksTotal} tasks{story.points ? ` · ${pointsDone}/${story.points} pts` : ''}

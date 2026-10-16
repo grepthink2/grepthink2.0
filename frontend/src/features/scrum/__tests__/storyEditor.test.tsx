@@ -50,19 +50,23 @@ describe('StoryEditorModal', () => {
     await userEvent.type(screen.getByLabelText('Title'), 'Offline maps');
     await userEvent.type(screen.getByLabelText('Description'), 'Download **before** the trailhead');
     await userEvent.click(screen.getByRole('radio', { name: '8' }));
-    await userEvent.type(screen.getByLabelText('Time estimate'), '3d');
     await userEvent.selectOptions(screen.getByLabelText('Assignee'), 'u1');
     await userEvent.selectOptions(screen.getByLabelText('Sprint'), 'sp1');
     await userEvent.click(screen.getByRole('button', { name: 'Create story' }));
 
+    // Exact: no time estimate goes with a story.
     expect(p.onCreate).toHaveBeenCalledWith({
       title: 'Offline maps',
       description_md: 'Download **before** the trailhead',
       points: 8,
-      time_estimate: '3d',
       assignee_id: 'u1',
       sprint_id: 'sp1',
     });
+  });
+
+  it("asks for no time estimate: a story's hours are the sum of its tasks'", () => {
+    render(<StoryEditorModal {...props()} />);
+    expect(screen.queryByLabelText('Time estimate')).toBeNull();
   });
 
   it('offers the active scale values and a Backlog option', () => {

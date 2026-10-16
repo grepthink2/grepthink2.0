@@ -152,6 +152,7 @@ describe('TaskEditorModal comment thread', () => {
     });
     const props = {
       story, members: makeMembers(), scale: 'fibonacci' as const, onClose: vi.fn(), onSave: vi.fn(),
+      sprints: [], taskIndex: [], onOpenRef: vi.fn(),
     };
     const { rerender } = render(<TaskEditorModal {...props} task={story.tasks[0]} />);
     await screen.findByText('No comments yet.');

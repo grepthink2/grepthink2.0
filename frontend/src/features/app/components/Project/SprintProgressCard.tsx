@@ -1,25 +1,15 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { api } from '@/lib/api';
-import type { ApiScrumSprint, ApiScrumSummary } from '@/lib/api';
+import type { ApiScrumSummary } from '@/lib/api';
 import { ApiError } from '@/lib/api/client';
+import SprintStatusPill from '@features/scrum/components/SprintStatusPill';
+import { percentDone, sprintDates } from '@features/scrum/utils/sprints';
 import './SprintProgressCard.scss';
 
 type LoadStatus = 'loading' | 'ready' | 'forbidden' | 'error';
-
-const STATUS_LABELS: Record<ApiScrumSprint['status'], string> = {
-  active: 'Active',
-  planned: 'Planned',
-  completed: 'Completed',
-};
-
-/** "Sep 7 – Sep 20" from the sprint's ISO dates. */
-function sprintDates({ starts_at, ends_at }: ApiScrumSprint): string {
-  return `${format(parseISO(starts_at), 'MMM d')} – ${format(parseISO(ends_at), 'MMM d')}`;
-}
 
 interface SprintProgressCardProps {
   projectId: string;
@@ -100,16 +90,13 @@ export default function SprintProgressCard({ projectId, projectName }: SprintPro
   } else if (summary) {
     const { sprint, counts, backlog_stories: backlogStories } = summary;
     const total = counts.todo + counts.in_progress + counts.done;
-    // 0-100 share of the sprint's tasks done; 0 while it has none.
-    const percent = total ? Math.round((counts.done / total) * 100) : 0;
+    const percent = percentDone(counts.done, total);
     body = sprint ? (
       <>
         <p className="sprint-progress__sprint">
           <span className="sprint-progress__sprint-name">{sprint.name}</span>
           <span className="sprint-progress__dates"> · {sprintDates(sprint)}</span>{' '}
-          <span className={`sprint-progress__status sprint-progress__status--${sprint.status}`}>
-            {STATUS_LABELS[sprint.status]}
-          </span>
+          <SprintStatusPill status={sprint.status} />
         </p>
         <dl className="sprint-progress__counts">
           <div className="sprint-progress__count">

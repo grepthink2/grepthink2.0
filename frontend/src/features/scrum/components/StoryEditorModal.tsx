@@ -29,7 +29,6 @@ export default function StoryEditorModal({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [points, setPoints] = useState<number | undefined>();
-  const [estimate, setEstimate] = useState('');
   const [assignee, setAssignee] = useState('');
   const [sprintId, setSprintId] = useState(currentSprintId ?? '');
   const titleRef = useRef<HTMLInputElement>(null);
@@ -48,7 +47,6 @@ export default function StoryEditorModal({
       title: trimmed,
       ...(description.trim() ? { description_md: description.trim() } : {}),
       ...(points != null ? { points } : {}),
-      ...(estimate.trim() ? { time_estimate: estimate.trim() } : {}),
       ...(assignee ? { assignee_id: assignee } : {}),
       // Omitted = backlog on create (the controller only sets non-null fields),
       // and the create body types sprint_id as optional rather than nullable.
@@ -105,18 +103,8 @@ export default function StoryEditorModal({
           <PointPicker scale={scale} value={points} onChange={setPoints} />
         </div>
 
+        {/* No time estimate: a story's hours are the sum of its tasks'. */}
         <div className="story-editor__row">
-          <label className="story-editor__field">
-            <span className="story-editor__label">Time estimate</span>
-            <input
-              type="text"
-              value={estimate}
-              maxLength={20}
-              placeholder="2d"
-              onChange={(e) => setEstimate(e.target.value)}
-            />
-          </label>
-
           <label className="story-editor__field">
             <span className="story-editor__label">Assignee</span>
             <select value={assignee} onChange={(e) => setAssignee(e.target.value)}>

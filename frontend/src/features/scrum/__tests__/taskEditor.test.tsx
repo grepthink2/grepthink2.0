@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import type { ComponentProps } from 'react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ApiTaskRef } from '@/lib/api';
 import TaskEditorModal from '../components/TaskEditorModal';
 import { remainingStoryPoints } from '../utils/rollups';
-import { makeMembers, makeStory, makeTask } from './fixtures';
+import { makeMembers, makeRef, makeSprint, makeStory, makeTask } from './fixtures';
 
 // An existing task's editor renders its comment thread, which loads on mount.
 vi.mock('@/lib/api', () => ({
@@ -26,6 +28,12 @@ const props = (storyOver = {}) => ({
   story: story(storyOver),
   members: makeMembers(),
   scale: 'fibonacci' as const,
+  sprints: [
+    makeSprint({ id: 'sp1', name: 'Sprint 1', status: 'completed' }),
+    makeSprint({ id: 'sp2', name: 'Sprint 2', status: 'active' }),
+  ],
+  taskIndex: [] as ApiTaskRef[],
+  onOpenRef: vi.fn(),
   onClose: vi.fn(),
   onCreate: vi.fn(),
 });
@@ -131,7 +139,7 @@ describe('TaskEditorModal', () => {
 
   it('edits an existing task and sends the full field set', async () => {
     const p = props();
-    const own = p.story.tasks[0];
+    const own = { ...p.story.tasks[0], estimate_hours: 2 };
     const onSave = vi.fn();
     render(<TaskEditorModal {...p} task={own} onSave={onSave} />);
 
@@ -140,14 +148,14 @@ describe('TaskEditorModal', () => {
     await userEvent.type(screen.getByLabelText('Title'), 'Renamed task');
     await userEvent.click(screen.getByRole('button', { name: 'Save task' }));
 
-    // Full set, so clearing a field actually clears it server-side.
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ title: 'Renamed task' }));
+    // Full set, so clearing a field actually clears it server-side; untouched hours go back as they were.
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ title: 'Renamed task', estimate_hours: 2 }));
   });
 
   it('clears fields with explicit nulls, so the server clears them too', async () => {
     const p = props();
     const own = makeTask({
-      id: 'a', points: 3, description_md: 'Old notes', time_estimate: '2h', assignee_id: 'u1',
+      id: 'a', points: 3, description_md: 'Old notes', estimate_hours: 2, assignee_id: 'u1',
       pr_url: 'https://github.com/o/r/pull/1',
     });
     const onSave = vi.fn();
@@ -161,7 +169,7 @@ describe('TaskEditorModal', () => {
 
     // `undefined` would vanish from the JSON body and the old values would stay.
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
-      description_md: null, time_estimate: null, assignee_id: null, pr_url: null,
+      description_md: null, estimate_hours: null, assignee_id: null, pr_url: null,
     }));
   });
 
@@ -187,6 +195,67 @@ describe('TaskEditorModal', () => {
     expect(screen.getByRole('button', { name: 'Save task' })).toBeDisabled();
   });
 
+  it.each(['16', '0', '2.5'])('refuses hours outside 1 to 15 (%s), and says why', async (typed) => {
+    const p = props();
+    const onSave = vi.fn();
+    render(<TaskEditorModal {...p} task={p.story.tasks[0]} onSave={onSave} />);
+
+    const box = screen.getByLabelText('Time estimate');
+    await userEvent.type(box, typed);
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Enter whole hours, 1 to 15.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save task' })).toBeDisabled();
+    // Enter in the title submits as well: the same guard refuses it.
+    await userEvent.type(screen.getByLabelText('Title'), '{Enter}');
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('explains the hours box', () => {
+    render(<TaskEditorModal {...props()} />);
+    const box = screen.getByLabelText('Time estimate');
+    expect(screen.getByText('Whole hours, up to 15.')).toBeInTheDocument();
+    expect(box).toHaveAccessibleDescription('Whole hours, up to 15.');
+    expect(box).toHaveAttribute('type', 'number');
+    expect(box).toHaveAttribute('min', '1');
+    expect(box).toHaveAttribute('max', '15');
+    expect(box).toHaveAttribute('step', '1');
+  });
+
+  it('does not clear the hours when the browser cannot read the box (Firefox and Safari read "4h" as empty)', () => {
+    const p = props();
+    const onSave = vi.fn();
+    render(<TaskEditorModal {...p} task={{ ...p.story.tasks[0], estimate_hours: 4 }} onSave={onSave} />);
+
+    const box = screen.getByLabelText('Time estimate');
+    // jsdom never reports badInput: stand in for the browser that was handed "4h". A keystroke is an
+    // input event (React's onChange listens to it too).
+    Object.defineProperty(box, 'validity', { configurable: true, value: { badInput: true } });
+    fireEvent.input(box, { target: { value: '' } });
+
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Enter whole hours, 1 to 15.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save task' })).toBeDisabled();
+  });
+
+  it('recovers once the unreadable text is deleted, although the box’s value never changed', () => {
+    const p = props();
+    render(<TaskEditorModal {...p} task={{ ...p.story.tasks[0], estimate_hours: 4 }} onSave={vi.fn()} />);
+
+    const box = screen.getByLabelText('Time estimate');
+    // "4h" typed: the browser reports an empty value and badInput; React fires onChange ('4' → '').
+    Object.defineProperty(box, 'validity', { configurable: true, value: { badInput: true } });
+    fireEvent.input(box, { target: { value: '' } });
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+
+    // Select all, delete: the value is still '', so no onChange — only an input event.
+    Object.defineProperty(box, 'validity', { configurable: true, value: { badInput: false } });
+    fireEvent.input(box, { target: { value: '' } });
+
+    expect(box).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByText('Whole hours, up to 15.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save task' })).toBeEnabled();
+  });
+
   it('asks for a pull request only once the task exists', () => {
     render(<TaskEditorModal {...props()} />);
     expect(screen.queryByLabelText('Pull request')).toBeNull();
@@ -203,12 +272,12 @@ describe('TaskEditorModal', () => {
     const p = props();
     render(<TaskEditorModal {...p} />);
     await userEvent.type(screen.getByLabelText('Title'), 'Full task');
-    await userEvent.type(screen.getByLabelText('Time estimate'), '4h');
+    await userEvent.type(screen.getByLabelText('Time estimate'), '4');
     await userEvent.selectOptions(screen.getByLabelText('Assignee'), 'u1');
     await userEvent.click(screen.getByRole('button', { name: 'Add task' }));
 
     expect(p.onCreate).toHaveBeenCalledWith({
-      title: 'Full task', time_estimate: '4h', assignee_id: 'u1',
+      title: 'Full task', estimate_hours: 4, assignee_id: 'u1',
     });
   });
 
@@ -315,5 +384,126 @@ describe('TaskEditorModal', () => {
     expect(screen.getByRole('button', { name: 'Add task' })).toBeDisabled();
     await userEvent.keyboard('{Escape}');
     expect(p.onClose).toHaveBeenCalled();
+  });
+});
+
+describe('TaskEditorModal dependencies', () => {
+  // The project's tasks as the board's task_index lists them: Sprint 1 is completed, Sprint 2 is
+  // the edited task's, GT-4 and GT-6 are in the backlog.
+  const REF = {
+    a: makeRef({ id: 'a', key: 'GT-1', title: 'Build form', sprint_id: 'sp2' }),
+    b: makeRef({ id: 'b', key: 'GT-2', title: 'Design API', status: 'in_progress', sprint_id: 'sp2' }),
+    c: makeRef({ id: 'c', key: 'GT-3', title: 'Old spike', status: 'done', sprint_id: 'sp1' }),
+    d: makeRef({ id: 'd', key: 'GT-4', title: 'Write docs', sprint_id: null }),
+    e: makeRef({ id: 'e', key: 'GT-5', title: 'Add tests', sprint_id: 'sp2' }),
+    f: makeRef({ id: 'f', key: 'GT-6', title: 'Polish', sprint_id: null }),
+  };
+  const INDEX = [REF.a, REF.b, REF.c, REF.d, REF.e, REF.f];
+
+  /** GT-1, in To do, depends on GT-2 (under way, so GT-1 is blocked); GT-4 depends on GT-1. */
+  const depTask = (over = {}) => makeTask({
+    id: 'a', key: 'GT-1', title: 'Build form', depends_on: [REF.b], blocks: [REF.d], ...over,
+  });
+
+  /** The editor on GT-1 for a team member, unless `over` says otherwise. */
+  const renderDeps = (over: Partial<ComponentProps<typeof TaskEditorModal>> = {}) => {
+    const p = {
+      ...props(), taskIndex: INDEX, task: depTask(), onSave: vi.fn(),
+      onAddDependency: vi.fn(), onRemoveDependency: vi.fn(), ...over,
+    };
+    render(<TaskEditorModal {...p} />);
+    return p;
+  };
+  const lists = () => within(screen.getByRole('region', { name: 'Depends on' })).getAllByRole('list');
+
+  it('lists what the task depends on, with status, and opens one from its key', async () => {
+    const p = renderDeps();
+    const [row] = within(lists()[0]).getAllByRole('listitem');
+    expect(row).toHaveTextContent('GT-2');
+    expect(row).toHaveTextContent('Design API');
+    expect(row).toHaveTextContent('In Progress');
+
+    await userEvent.click(within(row).getByRole('button', { name: 'GT-2' }));
+    expect(p.onOpenRef).toHaveBeenCalledWith(REF.b);
+  });
+
+  it('says so when the task depends on nothing', () => {
+    renderDeps({ task: depTask({ depends_on: [] }) });
+    expect(screen.getByText('No dependencies.')).toBeInTheDocument();
+  });
+
+  it('removes a dependency', async () => {
+    const p = renderDeps();
+    await userEvent.click(screen.getByRole('button', { name: 'Remove dependency on GT-2' }));
+    expect(p.onRemoveDependency).toHaveBeenCalledWith('b');
+  });
+
+  it('offers the project’s other tasks grouped by sprint and backlog', () => {
+    renderDeps();
+    const picker = screen.getByLabelText('Add a dependency');
+    expect([...picker.querySelectorAll('optgroup')].map((g) => g.label))
+      .toEqual(['Sprint 1 (completed)', 'Sprint 2', 'Backlog']);
+    // Not GT-1 itself, not GT-2 (already a dependency), not GT-4 (it depends on GT-1).
+    expect(within(picker).getAllByRole('option').map((o) => o.textContent))
+      .toEqual(['Add a dependency…', 'GT-3 · Old spike', 'GT-5 · Add tests', 'GT-6 · Polish']);
+  });
+
+  it('leaves out a group with nothing to offer', () => {
+    renderDeps({ taskIndex: [REF.a, REF.b, REF.d, REF.e] });
+    const picker = screen.getByLabelText('Add a dependency');
+    expect([...picker.querySelectorAll('optgroup')].map((g) => g.label)).toEqual(['Sprint 2']);
+  });
+
+  it('adds the picked dependency and resets the picker', async () => {
+    const p = renderDeps();
+    const add = screen.getByRole('button', { name: 'Add' });
+    expect(add).toBeDisabled();
+
+    await userEvent.selectOptions(screen.getByLabelText('Add a dependency'), 'e');
+    await userEvent.click(add);
+    expect(p.onAddDependency).toHaveBeenCalledWith('e');
+    expect(screen.getByLabelText('Add a dependency')).toHaveValue('');
+    expect(add).toBeDisabled();
+  });
+
+  it('shows the lists read-only without the write callbacks', async () => {
+    const p = renderDeps({ onAddDependency: undefined, onRemoveDependency: undefined });
+    expect(screen.queryByLabelText('Add a dependency')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Remove dependency/ })).toBeNull();
+    // Staff still follow a key to the task it names.
+    await userEvent.click(screen.getByRole('button', { name: 'GT-2' }));
+    expect(p.onOpenRef).toHaveBeenCalledWith(REF.b);
+  });
+
+  it('lists what the task blocks', async () => {
+    const p = renderDeps();
+    const section = screen.getByRole('region', { name: 'Depends on' });
+    expect(within(section).getByRole('heading', { name: 'Blocks' })).toBeInTheDocument();
+    const [row] = within(lists()[1]).getAllByRole('listitem');
+    expect(row).toHaveTextContent('Write docs');
+    expect(within(row).queryByRole('button', { name: /remove/i })).toBeNull();
+
+    await userEvent.click(within(row).getByRole('button', { name: 'GT-4' }));
+    expect(p.onOpenRef).toHaveBeenCalledWith(REF.d);
+  });
+
+  it('disables In progress and Done while blocked, and says why', () => {
+    renderDeps({ onMove: vi.fn() });
+    const status = screen.getByLabelText('Status');
+    expect(within(status).getByRole('option', { name: 'TODO' })).toBeEnabled();
+    expect(within(status).getByRole('option', { name: 'In Progress' })).toBeDisabled();
+    expect(within(status).getByRole('option', { name: 'Done' })).toBeDisabled();
+    expect(status).toHaveAccessibleDescription('GT-1 is blocked by GT-2');
+  });
+
+  it('has no dependencies section for a new task', () => {
+    render(<TaskEditorModal {...props()} taskIndex={INDEX} />);
+    expect(screen.queryByRole('region', { name: 'Depends on' })).toBeNull();
+  });
+
+  it('shows no dependency UI for a task from an older backend', () => {
+    renderDeps({ task: { ...depTask(), depends_on: undefined, blocks: undefined }, taskIndex: [] });
+    expect(screen.queryByRole('region', { name: 'Depends on' })).toBeNull();
+    expect(screen.queryByLabelText('Add a dependency')).toBeNull();
   });
 });

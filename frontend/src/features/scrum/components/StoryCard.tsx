@@ -2,7 +2,7 @@ import { Maximize2 } from 'lucide-react';
 import type { ApiScrumStory } from '@/lib/api';
 import type { MemberMap } from '../scrumTypes';
 import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
-import { storyRollup } from '../utils/rollups';
+import { storyHours, storyRollup } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
 
 interface Props {
@@ -28,6 +28,7 @@ export default function StoryCard({
   story, members, active = false, onSelect, onOpen,
 }: Props) {
   const { tasksDone, tasksTotal, pointsDone, points, percent } = storyRollup(story);
+  const hours = storyHours(story);
   const reporter = personOf(members, story.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, story.assignee_id);
   const card = (
@@ -39,7 +40,7 @@ export default function StoryCard({
     >
       <span className="gt-story__top">
         <span className="gt-story__key">{story.key}</span>
-        {story.time_estimate && <EstimateChip estimate={story.time_estimate} />}
+        {hours != null && <EstimateChip estimate={`${hours}h`} />}
         {story.points != null && <PointsChip points={story.points} />}
       </span>
 

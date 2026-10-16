@@ -6,7 +6,7 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import type { ApiScrumBoard } from '@/lib/api';
 import ScrumBoardPage, { ScrumBoardSkeleton } from '../pages/ScrumBoardPage';
 import { BOARD_VIEWS } from '../config/boardViews';
-import { makeBoard, makeStory, makeTask } from './fixtures';
+import { makeBoard, makeRef, makeSprint, makeStory, makeTask } from './fixtures';
 
 vi.mock('@/lib/auth', () => ({
   useAuth: () => ({ user: { email: 'tony@ucsc.edu', user_metadata: { full_name: 'Tony Wu' } } }),
@@ -27,13 +27,15 @@ vi.mock('@/lib/api', () => ({
     addScrumRepo: vi.fn(),
     deleteScrumRepo: vi.fn(),
     updateScrumSettings: vi.fn(),
+    addTaskDependency: vi.fn(),
+    removeTaskDependency: vi.fn(),
   },
 }));
 const { api } = await import('@/lib/api');
 
 const TWO_SPRINTS = [
-  { id: 'sp1', name: 'Sprint 1', starts_at: '2026-08-10', ends_at: '2026-08-23', status: 'active' as const },
-  { id: 'sp2', name: 'Sprint 2', starts_at: '2026-08-24', ends_at: '2026-09-06', status: 'active' as const },
+  makeSprint(),
+  makeSprint({ id: 'sp2', name: 'Sprint 2', starts_at: '2026-08-24', ends_at: '2026-09-06' }),
 ];
 
 const boardFixture = (over: Partial<ApiScrumBoard> = {}) => makeBoard({
@@ -52,6 +54,16 @@ const boardFixture = (over: Partial<ApiScrumBoard> = {}) => makeBoard({
   backlog: [makeStory({ id: 's9', key: 'US-9', title: 'Old idea', sprint_id: null })],
   ...over,
 });
+
+/** getScrumBoard for a board on Sprint 1 of two, with one story in Sprint 2 when that is asked for. */
+const answerForSprintTwo = async (_projectId: string, sprintId?: string) =>
+  sprintId === 'sp2'
+    ? boardFixture({
+        sprint_id: 'sp2',
+        sprints: TWO_SPRINTS,
+        stories: [makeStory({ id: 's3', key: 'US-3', title: 'Sprint two story', tasks: [] })],
+      })
+    : boardFixture({ sprints: TWO_SPRINTS });
 
 /** Location probe: the URL the page has navigated to, query included. */
 function Where() {
@@ -83,6 +95,8 @@ beforeEach(() => {
   vi.mocked(api.createScrumComment).mockReset();
   vi.mocked(api.getScrumRepos).mockReset().mockResolvedValue({ repos: [] });
   vi.mocked(api.addScrumRepo).mockReset();
+  vi.mocked(api.addTaskDependency).mockReset();
+  vi.mocked(api.removeTaskDependency).mockReset();
 });
 
 describe('ScrumBoardPage tabs', () => {
@@ -351,6 +365,22 @@ describe('ScrumBoardPage states', () => {
     renderAt();
     await screen.findByText('Login flow');
     expect(screen.getByRole('button', { name: 'New Story' })).toBeDisabled();
+    // Switching sprints is a read: staff keep the picker.
+    expect(screen.getByRole('button', { name: 'Sprint: Sprint 1' })).toBeEnabled();
+  });
+});
+
+describe('ScrumBoardPage sprint picker', () => {
+  it('switches sprints from the picker and hands focus back to it', async () => {
+    vi.mocked(api.getScrumBoard).mockImplementation(answerForSprintTwo);
+    renderAt();
+    await userEvent.click(await screen.findByRole('button', { name: 'Sprint: Sprint 1' }));
+    await userEvent.click(screen.getByRole('menuitemradio', { name: /^Sprint 2/ }));
+
+    expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp2');
+    expect(await screen.findByText('Sprint two story')).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: 'Sprint: Sprint 2' });
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 });
 
@@ -368,19 +398,13 @@ describe('ScrumBoardPage deep links (global search)', () => {
   });
 
   it('switches to the sprint named by ?sprint=, drops the param, and then opens the story', async () => {
-    vi.mocked(api.getScrumBoard).mockImplementation(async (_projectId: string, sprintId?: string) =>
-      sprintId === 'sp2'
-        ? boardFixture({
-            sprint_id: 'sp2',
-            sprints: TWO_SPRINTS,
-            stories: [makeStory({ id: 's3', key: 'US-3', title: 'Sprint two story', tasks: [] })],
-          })
-        : boardFixture({ sprints: TWO_SPRINTS }),
-    );
+    vi.mocked(api.getScrumBoard).mockImplementation(answerForSprintTwo);
     renderAt('/app/projects/p1/board?sprint=sp2&story=s3');
     const story = await screen.findByRole('dialog');
     expect(within(story).getByText('Sprint two story')).toBeInTheDocument();
     expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp2');
+    // The picker names the sprint, but nothing had focus to give back to it.
+    expect(screen.getByRole('button', { name: 'Sprint: Sprint 2' })).not.toHaveFocus();
   });
 
   it('ignores an unknown ?sprint= and keeps the default board', async () => {
@@ -409,23 +433,102 @@ describe('ScrumBoardPage deep links (global search)', () => {
   });
 
   // Left in the URL, ?sprint= would pull the board back to that sprint whenever the user
-  // picked another one in the sprint select.
+  // picked another one in the sprint picker.
   it('consumes ?sprint= once: one sprint switch, then the param leaves the URL', async () => {
-    vi.mocked(api.getScrumBoard).mockImplementation(async (_projectId: string, sprintId?: string) =>
-      sprintId === 'sp2'
-        ? boardFixture({
-            sprint_id: 'sp2',
-            sprints: TWO_SPRINTS,
-            stories: [makeStory({ id: 's3', key: 'US-3', title: 'Sprint two story', tasks: [] })],
-          })
-        : boardFixture({ sprints: TWO_SPRINTS }),
-    );
+    vi.mocked(api.getScrumBoard).mockImplementation(answerForSprintTwo);
     renderAt('/app/projects/p1/board?sprint=sp2&story=s3');
     await screen.findByRole('dialog');
     await waitFor(() =>
       expect(screen.getByTestId('path').textContent).toBe('/app/projects/p1/board?story=s3'));
     expect(api.getScrumBoard).toHaveBeenCalledTimes(2);
     expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp2');
+  });
+});
+
+describe('ScrumBoardPage dependencies', () => {
+  // T-1 (Sprint 1) depends on T-8, in Sprint 2, and on T-9, in the backlog.
+  const IN_SPRINT_TWO = makeRef({
+    id: 'x', key: 'T-8', title: 'Sprint two task', story_id: 's3', story_key: 'US-3', sprint_id: 'sp2',
+  });
+  const IN_BACKLOG = makeRef({
+    id: 'z', key: 'T-9', title: 'Sketch it', story_id: 's9', story_key: 'US-9', sprint_id: null,
+  });
+  /** In the index only: what the picker can still offer T-1. */
+  const SPARE = makeRef({
+    id: 'w', key: 'T-7', title: 'Spare', story_id: 's3', story_key: 'US-3', sprint_id: 'sp2',
+  });
+  const backlog = [makeStory({
+    id: 's9', key: 'US-9', title: 'Old idea', sprint_id: null,
+    tasks: [makeTask({ id: 'z', story_id: 's9', key: 'T-9', title: 'Sketch it' })],
+  })];
+  const answer = async (_projectId: string, sprintId?: string) =>
+    sprintId === 'sp2'
+      ? boardFixture({
+          sprint_id: 'sp2', sprints: TWO_SPRINTS, backlog,
+          stories: [makeStory({
+            id: 's3', key: 'US-3', title: 'Sprint two story', sprint_id: 'sp2',
+            tasks: [makeTask({ id: 'x', story_id: 's3', key: 'T-8', title: 'Sprint two task' })],
+          })],
+        })
+      : boardFixture({
+          sprints: TWO_SPRINTS, backlog, task_index: [SPARE, IN_SPRINT_TWO, IN_BACKLOG],
+          stories: [makeStory({
+            id: 's1', key: 'US-1', title: 'Login flow', points: 8,
+            tasks: [makeTask({
+              id: 'a', key: 'T-1', title: 'Build form', depends_on: [IN_SPRINT_TWO, IN_BACKLOG],
+            })],
+          })],
+        });
+
+  it('opens a dependency in another sprint by switching the board to it', async () => {
+    vi.mocked(api.getScrumBoard).mockImplementation(answer);
+    renderAt('/app/projects/p1/board?task=a');
+    const editor = await screen.findByRole('dialog', { name: /edit t-1/i });
+
+    await userEvent.click(within(editor).getByRole('button', { name: 'T-8' }));
+    const next = await screen.findByRole('dialog', { name: /edit t-8/i });
+    expect(within(next).getByLabelText('Title')).toHaveValue('Sprint two task');
+    expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp2');
+    // ?sprint= did its job and left: the picker is free to move on.
+    await waitFor(() => expect(screen.getByTestId('path').textContent).toBe('/app/projects/p1/board?task=x'));
+  });
+
+  it('opens a backlog dependency in place, without reloading the board', async () => {
+    vi.mocked(api.getScrumBoard).mockImplementation(answer);
+    renderAt('/app/projects/p1/board?task=a');
+    const editor = await screen.findByRole('dialog', { name: /edit t-1/i });
+
+    await userEvent.click(within(editor).getByRole('button', { name: 'T-9' }));
+    const next = await screen.findByRole('dialog', { name: /edit t-9/i });
+    expect(within(next).getByLabelText('Title')).toHaveValue('Sketch it');
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('path').textContent).toBe('/app/projects/p1/board?task=z');
+  });
+
+  it('adds and removes dependencies from the task editor, reloading the board', async () => {
+    vi.mocked(api.getScrumBoard).mockImplementation(answer);
+    vi.mocked(api.addTaskDependency).mockResolvedValue({ message: 'Dependency added', depends_on: [] });
+    vi.mocked(api.removeTaskDependency).mockResolvedValue(undefined);
+    renderAt('/app/projects/p1/board?task=a');
+    const editor = await screen.findByRole('dialog', { name: /edit t-1/i });
+
+    await userEvent.selectOptions(within(editor).getByLabelText('Add a dependency'), 'w');
+    await userEvent.click(within(editor).getByRole('button', { name: 'Add' }));
+    expect(api.addTaskDependency).toHaveBeenCalledWith('a', 'w');
+    await waitFor(() => expect(api.getScrumBoard).toHaveBeenCalledTimes(2));
+
+    await userEvent.click(within(editor).getByRole('button', { name: 'Remove dependency on T-9' }));
+    expect(api.removeTaskDependency).toHaveBeenCalledWith('a', 'z');
+    await waitFor(() => expect(api.getScrumBoard).toHaveBeenCalledTimes(3));
+  });
+
+  it('gives staff the lists without the controls', async () => {
+    vi.mocked(api.getScrumBoard).mockImplementation(async (...args) => ({ ...await answer(...args), access: 'staff' }));
+    renderAt('/app/projects/p1/board?task=a');
+    const editor = await screen.findByRole('dialog', { name: /edit t-1/i });
+    expect(within(editor).getByRole('button', { name: 'T-8' })).toBeInTheDocument();
+    expect(within(editor).queryByLabelText('Add a dependency')).toBeNull();
+    expect(within(editor).queryByRole('button', { name: /^Remove dependency/ })).toBeNull();
   });
 });
 

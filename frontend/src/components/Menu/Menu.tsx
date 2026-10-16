@@ -1,13 +1,21 @@
 import { useEffect, useRef, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
 import './Menu.scss';
 
-const ITEMS = '[role="menuitem"]:not(:disabled), [role="menuitemcheckbox"]:not(:disabled)';
+const ITEMS = [
+  '[role="menuitem"]:not(:disabled)',
+  '[role="menuitemcheckbox"]:not(:disabled)',
+  '[role="menuitemradio"]:not(:disabled)',
+].join(', ');
 
-export interface MenuProps extends HTMLAttributes<HTMLDivElement> {
+export interface MenuProps extends Omit<HTMLAttributes<HTMLDivElement>, 'autoFocus'> {
   onClose?: () => void;
   ariaLabel: string;
-  /** Focus the first item on mount: right for a menu opened from a button. */
-  autoFocus?: boolean;
+  /**
+   * Focus the first item on mount: right for a menu opened from a button. `'checked'` focuses
+   * the checked row instead (the first item when none is): a single-choice menu opens on the
+   * current choice. `'checked'` is an addition to the design's Menu, like `checked` below.
+   */
+  autoFocus?: boolean | 'checked';
 }
 
 /**
@@ -19,7 +27,11 @@ export function Menu({ children, onClose, ariaLabel, autoFocus = false, classNam
 
   useEffect(() => {
     if (!autoFocus || !ref.current) return;
-    ref.current.querySelector<HTMLElement>(ITEMS)?.focus();
+    const items = Array.from(ref.current.querySelectorAll<HTMLElement>(ITEMS));
+    const checked = autoFocus === 'checked'
+      ? items.find((el) => el.getAttribute('aria-checked') === 'true')
+      : undefined;
+    (checked ?? items[0])?.focus();
   }, [autoFocus]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -58,19 +70,25 @@ export interface MenuItemProps extends Omit<HTMLAttributes<HTMLButtonElement>, '
    * design's Menu, which only has actions; recorded as an intentional addition.
    */
   checked?: boolean;
+  /**
+   * With `checked`, makes the row a `menuitemradio` instead: one choice in the menu (the
+   * scrum board's sprint picker). Also not in the design's Menu; the same recorded addition.
+   */
+  radio?: boolean;
   onSelect?: () => void;
 }
 
 /** Single action row. */
 export function MenuItem({
-  icon, children, shortcut, destructive = false, disabled = false, checked, onSelect,
+  icon, children, shortcut, destructive = false, disabled = false, checked, radio = false, onSelect,
   className = '', ...rest
 }: MenuItemProps) {
   const checkable = checked !== undefined;
+  const checkableRole = radio ? 'menuitemradio' : 'menuitemcheckbox';
   return (
     <button
       type="button"
-      role={checkable ? 'menuitemcheckbox' : 'menuitem'}
+      role={checkable ? checkableRole : 'menuitem'}
       aria-checked={checkable ? checked : undefined}
       className={[
         'gt-menu__item',

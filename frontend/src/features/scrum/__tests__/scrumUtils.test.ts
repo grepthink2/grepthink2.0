@@ -1,11 +1,57 @@
 import { describe, expect, it } from 'vitest';
+import type { ApiBoardStatus, ApiScrumTask } from '@/lib/api';
 import { isBacklogStory } from '../utils/backlog';
-import { storyRollup, columnPoints, tasksIn, collectTasks } from '../utils/rollups';
+import { blockedMessage, blockers, isBlocked } from '../utils/dependencies';
+import { parseHours } from '../utils/estimateHours';
+import { storyRollup, storyHours, columnPoints, tasksIn, collectTasks } from '../utils/rollups';
 import { prLabel, prState } from '../utils/prLabel';
 import { relativeTime } from '../utils/relativeTime';
+import { percentDone, sprintDates, STATUS_LABELS } from '../utils/sprints';
 import { tagSlug, ESTIMATE_SCALES, TASK_TAGS, BOARD_COLUMNS } from '../config/scrumTags';
 import { buildMemberMap, personOf } from '../scrumTypes';
-import { makeStory, makeTask } from './fixtures';
+import { makeRef, makeStory, makeTask } from './fixtures';
+
+describe('dependencies', () => {
+  const dep = (key: string, status: ApiBoardStatus) => makeRef({ id: key, key, status });
+  const unfinished = [dep('GT-12', 'in_progress')];
+
+  it('blockers are the dependencies that are not done', () => {
+    const task = makeTask({
+      depends_on: [dep('GT-11', 'done'), dep('GT-12', 'in_progress'), dep('GT-13', 'todo')],
+    });
+    expect(blockers(task).map((d) => d.key)).toEqual(['GT-12', 'GT-13']);
+  });
+
+  it('blocks a task in To do with an unfinished dependency', () => {
+    expect(isBlocked(makeTask({ status: 'todo', depends_on: unfinished }))).toBe(true);
+  });
+
+  it('frees it once every dependency is done', () => {
+    expect(isBlocked(makeTask({ status: 'todo', depends_on: [dep('GT-12', 'done')] }))).toBe(false);
+  });
+
+  it('never blocks a task already under way', () => {
+    expect(isBlocked(makeTask({ status: 'in_progress', depends_on: unfinished }))).toBe(false);
+  });
+
+  it('reads a task from an older backend (no depends_on) as unblocked', () => {
+    const legacy: ApiScrumTask = { ...makeTask(), depends_on: undefined };
+    expect(blockers(legacy)).toEqual([]);
+    expect(isBlocked(legacy)).toBe(false);
+  });
+
+  it.each([
+    [['GT-12'], 'GT-15 is blocked by GT-12'],
+    [['GT-12', 'GT-13'], 'GT-15 is blocked by GT-12 and GT-13'],
+    [['GT-12', 'GT-13', 'GT-14'], 'GT-15 is blocked by GT-12, GT-13 and GT-14'],
+  ])('names the blockers %j, and not the finished ones', (keys, message) => {
+    const task = makeTask({
+      key: 'GT-15',
+      depends_on: [dep('GT-9', 'done'), ...keys.map((k) => dep(k, 'todo'))],
+    });
+    expect(blockedMessage(task)).toBe(message);
+  });
+});
 
 describe('storyRollup', () => {
   it('derives task/point progress from children', () => {
@@ -27,6 +73,42 @@ describe('storyRollup', () => {
     expect(storyRollup(makeStory())).toEqual({
       tasksDone: 0, tasksTotal: 0, pointsDone: 0, points: 0, percent: 0,
     });
+  });
+});
+
+describe('storyHours', () => {
+  it('is null with no tasks and with tasks that have no hours', () => {
+    expect(storyHours(makeStory({ tasks: [] }))).toBeNull();
+    expect(storyHours(makeStory({ tasks: [makeTask()] }))).toBeNull();
+  });
+
+  it('sums the tasks that have hours', () => {
+    const tasks = [makeTask({ id: 'a', estimate_hours: 3 }), makeTask({ id: 'b', estimate_hours: 2 })];
+    expect(storyHours(makeStory({ tasks }))).toBe(5);
+  });
+
+  it('counts a task without hours as 0 when another has some', () => {
+    const tasks = [makeTask({ id: 'a', estimate_hours: 3 }), makeTask({ id: 'b', estimate_hours: null })];
+    expect(storyHours(makeStory({ tasks }))).toBe(3);
+  });
+});
+
+describe('parseHours', () => {
+  it.each([
+    ['', false, { hours: null, invalid: false }],
+    ['4', false, { hours: 4, invalid: false }],
+    ['1', false, { hours: 1, invalid: false }],
+    ['15', false, { hours: 15, invalid: false }],
+    ['0', false, { hours: null, invalid: true }],
+    ['16', false, { hours: null, invalid: true }],
+    ['2.5', false, { hours: null, invalid: true }],
+    ['1e1', false, { hours: null, invalid: true }],
+    ['4h', false, { hours: null, invalid: true }],
+    // Firefox and Safari report "4h" in a number box as '' with validity.badInput.
+    ['', true, { hours: null, invalid: true }],
+    ['4', true, { hours: null, invalid: true }],
+  ])('reads %j (badInput %s)', (value, badInput, expected) => {
+    expect(parseHours(value, badInput)).toEqual(expected);
   });
 });
 
@@ -82,6 +164,20 @@ describe('prLabel / prState', () => {
     expect(prState('closed')).toBe('closed');
     expect(prState(null)).toBe('draft');
     expect(prState('weird')).toBe('draft');
+  });
+});
+
+describe('sprint helpers', () => {
+  it('rounds the share done to a whole percent, and is 0 with nothing to count', () => {
+    expect(percentDone(0, 0)).toBe(0);
+    expect(percentDone(1, 4)).toBe(25);
+    expect(percentDone(2, 3)).toBe(67);
+  });
+  it("prints a sprint's dates as month and day", () => {
+    expect(sprintDates({ starts_at: '2026-09-07', ends_at: '2026-09-20' })).toBe('Sep 7 – Sep 20');
+  });
+  it('labels the three sprint statuses', () => {
+    expect(STATUS_LABELS).toEqual({ active: 'Active', planned: 'Planned', completed: 'Completed' });
   });
 });
 

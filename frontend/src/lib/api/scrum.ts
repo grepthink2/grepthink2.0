@@ -13,6 +13,7 @@ import type {
   ApiScrumStory,
   ApiScrumSummary,
   ApiScrumTask,
+  ApiTaskRef,
   ApiUpdateSprintBody,
   ApiUpdateStoryBody,
   ApiUpdateTaskBody,
@@ -95,10 +96,26 @@ export const scrumApi = {
     return apiRequest<void>(`/api/scrum/tasks/${taskId}`, { method: 'DELETE' });
   },
 
+  /** 409 with code `task_blocked` for a task in To do that depends on a task not yet done. */
   moveScrumTask: async (taskId: string, toStatus: ApiBoardStatus) => {
     return apiRequest<{ message: string; task: ApiScrumTask }>(
       `/api/scrum/tasks/${taskId}/move`,
       { method: 'POST', body: JSON.stringify({ to_status: toStatus }) },
+    );
+  },
+
+  /** Make a task depend on another task of its project; answers with the task's dependencies. */
+  addTaskDependency: async (taskId: string, dependsOnTaskId: string) => {
+    return apiRequest<{ message: string; depends_on: ApiTaskRef[] }>(
+      `/api/scrum/tasks/${taskId}/dependencies`,
+      { method: 'POST', body: JSON.stringify({ depends_on_task_id: dependsOnTaskId }) },
+    );
+  },
+
+  removeTaskDependency: async (taskId: string, dependsOnTaskId: string) => {
+    return apiRequest<void>(
+      `/api/scrum/tasks/${taskId}/dependencies/${dependsOnTaskId}`,
+      { method: 'DELETE' },
     );
   },
 

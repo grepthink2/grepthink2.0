@@ -2,6 +2,7 @@ import { RotateCcw } from 'lucide-react';
 import type { ApiScrumStory } from '@/lib/api';
 import type { MemberMap } from '../scrumTypes';
 import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
+import { storyHours } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 export default function BacklogRow({ story, members, onOpen, onMoveToSprint, sprintName }: Props) {
   const reporter = personOf(members, story.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, story.assignee_id);
+  const hours = storyHours(story);
   return (
     <div className="gt-backlog-row">
       <span className="gt-backlog-row__key">{story.key}</span>
@@ -25,7 +27,7 @@ export default function BacklogRow({ story, members, onOpen, onMoveToSprint, spr
         {story.title}
       </button>
       <span className="gt-backlog-row__meta">
-        {story.time_estimate && <EstimateChip estimate={story.time_estimate} />}
+        {hours != null && <EstimateChip estimate={`${hours}h`} />}
         {story.points != null && <PointsChip points={story.points} size="sm" />}
         <UserPair reporter={reporter} assignee={assignee} tooltipSide="left" />
       </span>

@@ -13,7 +13,7 @@ export function PointsChip({ points, size = 'md' }: { points: number | string; s
   );
 }
 
-/** Time-estimate chip — clock glyph + human estimate ("6h", "2d"). */
+/** Time-estimate chip — clock glyph + hours ("6h"; a story's is the sum of its tasks'). */
 export function EstimateChip({ estimate }: { estimate: string }) {
   return (
     <span className="gt-estimate" title="Time estimate">
