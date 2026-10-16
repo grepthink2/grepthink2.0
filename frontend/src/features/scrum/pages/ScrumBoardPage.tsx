@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Settings } from 'lucide-react';
 import Skeleton from '@components/Skeleton/Skeleton';
@@ -15,6 +15,7 @@ import ScrumBoard from '../components/ScrumBoard';
 import StoryCard from '../components/StoryCard';
 import StoryModal from '../components/StoryModal';
 import BoardSettingsModal from '../components/BoardSettingsModal';
+import SprintPicker from '../components/SprintPicker';
 import StoryEditorModal from '../components/StoryEditorModal';
 import TaskEditorModal from '../components/TaskEditorModal';
 import { useScrumBoard } from '../hooks/useScrumBoard';
@@ -138,7 +139,7 @@ export default function ScrumBoardPage() {
   }, [notice, push, clearNotice]);
 
   // ?sprint= (search deep links): pick that sprint once the board knows it, then drop the
-  // param so the sprint select is free to move on. An unknown id is ignored — asking the
+  // param so the sprint picker is free to move on. An unknown id is ignored — asking the
   // API for it would 404, which the hook renders as a board error.
   useEffect(() => {
     if (!board || !sprintParam) return;
@@ -151,6 +152,22 @@ export default function ScrumBoardPage() {
       return params;
     }, { replace: true });
   }, [board, sprintParam, selectSprint, setSearchParams]);
+
+  // A switch from the picker shows the skeleton in place of the whole board, picker included, so the
+  // trigger the picker handed focus to is gone. Give focus to the new one once the switched board is
+  // on screen (a failed switch shows the error block: no picker, nothing to focus). Not after a
+  // ?sprint= deep link, which calls selectSprint itself: nothing had focus then.
+  const pickerRef = useRef<HTMLButtonElement>(null);
+  const refocusPicker = useRef(false);
+  const pickSprint = (id: string) => {
+    refocusPicker.current = true;
+    void selectSprint(id);
+  };
+  useEffect(() => {
+    if (loading || !refocusPicker.current) return;
+    refocusPicker.current = false;
+    pickerRef.current?.focus({ preventScroll: true });
+  }, [loading]);
 
   /**
    * Patch ?task= / ?story= in one navigation. setSearchParams does not queue like setState
@@ -284,12 +301,12 @@ export default function ScrumBoardPage() {
         </div>
         <div className="scrum-board__header-actions">
           {board.sprints.length > 0 && (
-            <label className="scrum-board__sprint-select">
-              <span className="sr-only">Sprint</span>
-              <select value={board.sprint_id ?? ''} onChange={(e) => selectSprint(e.target.value)}>
-                {board.sprints.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </label>
+            <SprintPicker
+              ref={pickerRef}
+              sprints={board.sprints}
+              selectedId={board.sprint_id}
+              onSelect={pickSprint}
+            />
           )}
           <button
             type="button"

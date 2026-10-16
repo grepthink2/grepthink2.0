@@ -53,6 +53,16 @@ const boardFixture = (over: Partial<ApiScrumBoard> = {}) => makeBoard({
   ...over,
 });
 
+/** getScrumBoard for a board on Sprint 1 of two, with one story in Sprint 2 when that is asked for. */
+const answerForSprintTwo = async (_projectId: string, sprintId?: string) =>
+  sprintId === 'sp2'
+    ? boardFixture({
+        sprint_id: 'sp2',
+        sprints: TWO_SPRINTS,
+        stories: [makeStory({ id: 's3', key: 'US-3', title: 'Sprint two story', tasks: [] })],
+      })
+    : boardFixture({ sprints: TWO_SPRINTS });
+
 /** Location probe: the URL the page has navigated to, query included. */
 function Where() {
   const loc = useLocation();
@@ -351,6 +361,22 @@ describe('ScrumBoardPage states', () => {
     renderAt();
     await screen.findByText('Login flow');
     expect(screen.getByRole('button', { name: 'New Story' })).toBeDisabled();
+    // Switching sprints is a read: staff keep the picker.
+    expect(screen.getByRole('button', { name: 'Sprint: Sprint 1' })).toBeEnabled();
+  });
+});
+
+describe('ScrumBoardPage sprint picker', () => {
+  it('switches sprints from the picker and hands focus back to it', async () => {
+    vi.mocked(api.getScrumBoard).mockImplementation(answerForSprintTwo);
+    renderAt();
+    await userEvent.click(await screen.findByRole('button', { name: 'Sprint: Sprint 1' }));
+    await userEvent.click(screen.getByRole('menuitemradio', { name: /^Sprint 2/ }));
+
+    expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp2');
+    expect(await screen.findByText('Sprint two story')).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: 'Sprint: Sprint 2' });
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 });
 
@@ -368,19 +394,13 @@ describe('ScrumBoardPage deep links (global search)', () => {
   });
 
   it('switches to the sprint named by ?sprint=, drops the param, and then opens the story', async () => {
-    vi.mocked(api.getScrumBoard).mockImplementation(async (_projectId: string, sprintId?: string) =>
-      sprintId === 'sp2'
-        ? boardFixture({
-            sprint_id: 'sp2',
-            sprints: TWO_SPRINTS,
-            stories: [makeStory({ id: 's3', key: 'US-3', title: 'Sprint two story', tasks: [] })],
-          })
-        : boardFixture({ sprints: TWO_SPRINTS }),
-    );
+    vi.mocked(api.getScrumBoard).mockImplementation(answerForSprintTwo);
     renderAt('/app/projects/p1/board?sprint=sp2&story=s3');
     const story = await screen.findByRole('dialog');
     expect(within(story).getByText('Sprint two story')).toBeInTheDocument();
     expect(api.getScrumBoard).toHaveBeenLastCalledWith('p1', 'sp2');
+    // The picker names the sprint, but nothing had focus to give back to it.
+    expect(screen.getByRole('button', { name: 'Sprint: Sprint 2' })).not.toHaveFocus();
   });
 
   it('ignores an unknown ?sprint= and keeps the default board', async () => {
@@ -409,17 +429,9 @@ describe('ScrumBoardPage deep links (global search)', () => {
   });
 
   // Left in the URL, ?sprint= would pull the board back to that sprint whenever the user
-  // picked another one in the sprint select.
+  // picked another one in the sprint picker.
   it('consumes ?sprint= once: one sprint switch, then the param leaves the URL', async () => {
-    vi.mocked(api.getScrumBoard).mockImplementation(async (_projectId: string, sprintId?: string) =>
-      sprintId === 'sp2'
-        ? boardFixture({
-            sprint_id: 'sp2',
-            sprints: TWO_SPRINTS,
-            stories: [makeStory({ id: 's3', key: 'US-3', title: 'Sprint two story', tasks: [] })],
-          })
-        : boardFixture({ sprints: TWO_SPRINTS }),
-    );
+    vi.mocked(api.getScrumBoard).mockImplementation(answerForSprintTwo);
     renderAt('/app/projects/p1/board?sprint=sp2&story=s3');
     await screen.findByRole('dialog');
     await waitFor(() =>
