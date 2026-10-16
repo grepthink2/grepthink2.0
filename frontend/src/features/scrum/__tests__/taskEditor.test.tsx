@@ -219,13 +219,33 @@ describe('TaskEditorModal', () => {
     render(<TaskEditorModal {...p} task={{ ...p.story.tasks[0], estimate_hours: 4 }} onSave={onSave} />);
 
     const box = screen.getByLabelText('Time estimate');
-    // jsdom never reports badInput: stand in for the browser that was handed "4h".
+    // jsdom never reports badInput: stand in for the browser that was handed "4h". A keystroke is an
+    // input event (React's onChange listens to it too).
     Object.defineProperty(box, 'validity', { configurable: true, value: { badInput: true } });
-    fireEvent.change(box, { target: { value: '' } });
+    fireEvent.input(box, { target: { value: '' } });
 
     expect(box).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByText('Enter whole hours, 1 to 15.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save task' })).toBeDisabled();
+  });
+
+  it('recovers once the unreadable text is deleted, although the box’s value never changed', () => {
+    const p = props();
+    render(<TaskEditorModal {...p} task={{ ...p.story.tasks[0], estimate_hours: 4 }} onSave={vi.fn()} />);
+
+    const box = screen.getByLabelText('Time estimate');
+    // "4h" typed: the browser reports an empty value and badInput; React fires onChange ('4' → '').
+    Object.defineProperty(box, 'validity', { configurable: true, value: { badInput: true } });
+    fireEvent.input(box, { target: { value: '' } });
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+
+    // Select all, delete: the value is still '', so no onChange — only an input event.
+    Object.defineProperty(box, 'validity', { configurable: true, value: { badInput: false } });
+    fireEvent.input(box, { target: { value: '' } });
+
+    expect(box).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByText('Whole hours, up to 15.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save task' })).toBeEnabled();
   });
 
   it('asks for a pull request only once the task exists', () => {

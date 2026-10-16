@@ -282,7 +282,10 @@ export default function TaskEditorModal({
                 placeholder="4"
                 aria-invalid={hoursInvalid || undefined}
                 aria-describedby="task-editor-estimate-hint"
-                onChange={(e) => { setHours(e.target.value); setHoursBad(e.target.validity.badInput); }}
+                onChange={(e) => setHours(e.target.value)}
+                // Every keystroke, not only a value change: deleting unreadable text leaves the value
+                // at '' (no onChange), and the box must stop reading as invalid then.
+                onInput={(e) => setHoursBad(e.currentTarget.validity.badInput)}
               />
               <span className="task-editor__hours-unit" aria-hidden="true">h</span>
             </div>
