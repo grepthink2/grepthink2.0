@@ -286,7 +286,7 @@
       "id": "view_scrum_board", "title": "View the scrum board (sprints, stories, tasks, burnup)", "role": "any",
       "method": "GET", "endpoint": "/api/projects/{project_id}/scrum/board",
       "params": {"sprint_id": "uuid (query — defaults to the active sprint)"}, "uiRoute": "/app/projects/{projectId}/board",
-      "note": "Team members get full read/write; class staff (instructor, class TAs, meeting TA) get read + comments; everyone else 403, and a project that does not exist is 404. Each story carries estimate_hours, the sum of its tasks' whole-hour estimates (null when none has one)."
+      "note": "Team members get full read/write; class staff (instructor, class TAs, meeting TA) get read + comments; everyone else 403, and a project that does not exist is 404. Each story carries estimate_hours, the sum of its tasks' whole-hour estimates (null when none has one). Every task carries depends_on (the tasks it depends on) and blocks (the tasks that depend on it), each named as {id, key, title, status, story_id, story_key, sprint_id} (sprint_id null = backlog); task_index lists every task of the project, any sprint or the backlog, in key order."
     },
     {
       "id": "view_scrum_summary", "title": "View the current sprint's task counts for a project", "role": "any",
@@ -340,7 +340,18 @@
     {
       "id": "move_scrum_task", "title": "Move a task between board columns", "role": "project-member",
       "method": "POST", "endpoint": "/api/scrum/tasks/{task_id}/move",
-      "params": {"to_status": "enum(todo|in_progress|done)!"}, "uiRoute": "/app/projects/{projectId}/board"
+      "params": {"to_status": "enum(todo|in_progress|done)!"}, "uiRoute": "/app/projects/{projectId}/board",
+      "note": "Refused (409, code task_blocked) while the task is in To do and depends on a task that is not done."
+    },
+    {
+      "id": "add_task_dependency", "title": "Make a task depend on another task", "role": "project-member",
+      "method": "POST", "endpoint": "/api/scrum/tasks/{task_id}/dependencies",
+      "params": {"depends_on_task_id": "uuid!"}, "uiRoute": "/app/projects/{projectId}/board",
+      "note": "Both tasks must be in the same project; any sprint or the backlog. Refused when it would form a cycle (409) or already exists (409). While a task in To do depends on a task that is not done, moving it out of To do is refused (409, code task_blocked)."
+    },
+    {
+      "id": "remove_task_dependency", "title": "Remove a task's dependency on another task", "role": "project-member",
+      "method": "DELETE", "endpoint": "/api/scrum/tasks/{task_id}/dependencies/{depends_on_task_id}", "uiRoute": "/app/projects/{projectId}/board"
     },
     {
       "id": "list_story_comments", "title": "List comments on a story", "role": "any",

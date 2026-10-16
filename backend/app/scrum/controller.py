@@ -26,6 +26,7 @@ from fastapi import HTTPException
 from app.config import settings
 from app.core import authz, events
 from app.core.db import fan_out, get_client
+from app.core.errors import AppError
 from app.notifications.controller import notify_mention
 from app.scrum.burnup import build_cumulative_series, build_sprint_series
 from app.scrum.models import ESTIMATE_SCALES, TASK_TAGS
@@ -52,6 +53,8 @@ BAD_DATE_RANGE = "ends_at must be on or after starts_at"
 TITLE_REQUIRED = "title cannot be null"
 #: 409: a story leaves through the backlog, so a sprint's scope never drops by deletion.
 STORY_IN_SPRINT = "Move the story to the backlog before deleting it"
+#: 409, code ``task_blocked``: a task in To do waits until every task it depends on is done.
+TASK_BLOCKED = "Finish the tasks this one depends on first"
 #: Task dependencies (spec 2026-10-16): the edges refused (409, 422) and a missing one (404).
 DEPENDENCY_CYCLE = "That would make the tasks depend on each other"
 SELF_DEPENDENCY = "A task can't depend on itself"
@@ -393,6 +396,36 @@ def _task_ref(task: dict, story: dict) -> dict:
     }
 
 
+def _key_order(key: str) -> tuple:
+    """Sort key for task keys: by the number after the last ``-`` ("GT-2" before "GT-10"),
+    and as text when that part is not a number (``tasks.key`` has no format check)."""
+    tail = key.rpartition("-")[2]
+    try:
+        return (0, int(tail), key)
+    except ValueError:
+        return (1, 0, key)
+
+
+def _has_unfinished_dependency(client, task_id: str) -> bool:
+    """Whether a task it depends on is not done: one read of its edges, and one more of
+    those tasks' statuses when it has any."""
+    edges = (
+        client.table("task_dependencies")
+        .select("depends_on_task_id")
+        .eq("task_id", str(task_id))
+        .execute()
+    ).data or []
+    if not edges:
+        return False
+    targets = (
+        client.table("tasks")
+        .select("id, status")
+        .in_("id", [e["depends_on_task_id"] for e in edges])
+        .execute()
+    ).data or []
+    return any(t["status"] != "done" for t in targets)
+
+
 def _depends_on(edges: list[dict], start: str, target: str) -> bool:
     """Whether ``start`` depends on ``target``, directly or through other tasks: a walk along
     ``task_id → depends_on_task_id`` over the project's edges."""
@@ -707,6 +740,14 @@ def move_task(*, task_id: str, user_id: str, to_status: str) -> dict:
     client = get_client()
     task = _get_task_or_404(client, task_id)
     _require_writer(client, project_id=task["project_id"], user_id=user_id)
+    # Only leaving To do waits for the task's dependencies (spec D1): a task already under way
+    # is never pulled back when a dependency reopens, and a move back to To do is always fine.
+    if (
+        task["status"] == "todo"
+        and to_status != "todo"
+        and _has_unfinished_dependency(client, task["id"])
+    ):
+        raise AppError(409, "task_blocked", TASK_BLOCKED)
     if task["status"] == to_status:
         return {
             "task": {**task, "moved_by_name": _name_for(client, task.get("moved_by"))},
@@ -808,6 +849,12 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
             "members": lambda: rows(
                 client.table("project_members").select("user_id, role").eq("project_id", pid)
             ),
+            "deps": lambda: rows(
+                client.table("task_dependencies")
+                .select("task_id, depends_on_task_id")
+                .eq("project_id", pid)
+                .order("created_at")
+            ),
         }
     )
     project, sprints = first["project"], first["sprints"]
@@ -899,6 +946,24 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         # Derived, never stored: the sum of the story's task hours, None when none has any.
         s["estimate_hours"] = sum(t.get("estimate_hours") or 0 for t in s["tasks"]) or None
 
+    # Both sides of every dependency, in the edges' order, from the rows already in hand: a
+    # dependency in another sprint or the backlog is among `tasks` (every task of the project).
+    story_by_id = {s["id"]: s for s in all_stories}
+    task_by_id = {t["id"]: t for t in tasks}
+
+    def ref(t: dict) -> dict:
+        return _task_ref(t, story_by_id[t["story_id"]])
+
+    for t in tasks:
+        t["depends_on"], t["blocks"] = [], []
+    for e in first["deps"]:
+        source, target = task_by_id.get(e["task_id"]), task_by_id.get(e["depends_on_task_id"])
+        if source is None or target is None:  # the cascades make this impossible; cheap to guard
+            continue
+        source["depends_on"].append(ref(target))
+        target["blocks"].append(ref(source))
+    task_index = sorted((ref(t) for t in tasks), key=lambda r: _key_order(r["key"]))
+
     sel_id = selected["id"] if selected else None
     stories = (
         [s for s in all_stories if s.get("sprint_id") == sel_id and not s.get("archived_at")]
@@ -989,6 +1054,7 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         "burnup": {"sprint": sprint_series, "cumulative": cumulative},
         "members": members,
         "access": access,
+        "task_index": task_index,
     }
 
 

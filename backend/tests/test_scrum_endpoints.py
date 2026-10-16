@@ -2,6 +2,7 @@
 
 import pytest
 
+from app.scrum import controller
 from tests.conftest import header_for
 from tests.scrum_support import PID, UID, scrum_db
 
@@ -68,6 +69,28 @@ def test_move_route_runs_the_move(monkeypatch, client):
     assert res.status_code == 200
     assert res.json()["task"]["status"] == "done"
     assert db.rows("tasks")[0]["status"] == "done"
+
+
+def test_a_blocked_move_answers_409_with_its_code(monkeypatch, client):
+    """The web client keys its refresh on the code; an API consumer can too."""
+    task = {"story_id": "st1", "project_id": PID, "title": "t", "reporter_id": UID, "tags": []}
+    db = scrum_db(
+        monkeypatch,
+        user_stories=[{"id": "st1", "project_id": PID, "key": "US-1", "sprint_id": None}],
+        tasks=[
+            {**task, "id": "t1", "key": "GT-1", "status": "todo"},
+            {**task, "id": "t2", "key": "GT-2", "status": "in_progress"},
+        ],
+        task_dependencies=[{"task_id": "t1", "depends_on_task_id": "t2", "project_id": PID}],
+    )
+    res = client.post(
+        "/api/scrum/tasks/t1/move",
+        headers=header_for("tony@ucsc.edu", sub=UID),
+        json={"to_status": "in_progress"},
+    )
+    assert res.status_code == 409
+    assert res.json() == {"detail": controller.TASK_BLOCKED, "code": "task_blocked"}
+    assert db.rows("task_moves") == []
 
 
 def test_delete_story_route_answers_204(monkeypatch, client):

@@ -105,7 +105,24 @@ def _seed(monkeypatch):
             {"id": "c1", "story_id": "B", "task_id": None},
             {"id": "c2", "story_id": None, "task_id": "b1"},
         ],
+        # b2 depends on b1 (same sprint) and on d1 (a backlog task).
+        task_dependencies=[
+            {"task_id": "b2", "depends_on_task_id": "b1", "project_id": PID},
+            {"task_id": "b2", "depends_on_task_id": "d1", "project_id": PID},
+        ],
     )
+
+
+def _ref(tid, story, sprint, status):
+    return {
+        "id": tid,
+        "key": f"GT-{tid}",
+        "title": tid,
+        "status": status,
+        "story_id": story,
+        "story_key": f"US-{story}",
+        "sprint_id": sprint,
+    }
 
 
 def test_board_shape_and_burnup(monkeypatch, client):
@@ -148,13 +165,37 @@ def test_board_shape_and_burnup(monkeypatch, client):
     assert (snap["scope_points"], snap["completed_points"]) == (8, 5)
 
 
+def test_board_names_each_tasks_dependencies_both_ways(monkeypatch, client):
+    _seed(monkeypatch)
+    body = client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID)).json()
+    tasks = {t["id"]: t for s in body["stories"] + body["backlog"] for t in s["tasks"]}
+
+    # In the edges' order; a backlog dependency has no sprint.
+    assert tasks["b2"]["depends_on"] == [
+        _ref("b1", "B", "S2", "done"),
+        _ref("d1", "D", None, "done"),
+    ]
+    assert tasks["b1"]["blocks"] == tasks["d1"]["blocks"] == [_ref("b2", "B", "S2", "in_progress")]
+    assert (tasks["b1"]["depends_on"], tasks["b2"]["blocks"]) == ([], [])
+
+    # Every task of the project for the picker, a2 (in completed S1, not on this board)
+    # included. Keys whose tail is not a number sort as text.
+    assert [t["id"] for t in body["task_index"]] == ["a1", "a2", "b1", "b2", "d1"]
+    assert body["task_index"][0] == _ref("a1", "A", "S1", "done")
+
+
+def test_the_task_index_puts_keys_in_number_order():
+    keys = ["GT-10", "GT-a1", "GT-2", "T-1", "GT-1"]
+    assert sorted(keys, key=controller._key_order) == ["GT-1", "T-1", "GT-2", "GT-10", "GT-a1"]
+
+
 def test_board_round_trips_do_not_grow_with_sprints(monkeypatch, client):
     db = _seed(monkeypatch)
     db.reset_counter()
     client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID))
-    # access 1 + three concurrent rounds (4 + 2 + 2) + snapshot upsert 1 + audit read 1
-    # + the board_viewed event insert 1
-    assert db.executes <= 12
+    # access 1 + three concurrent rounds (5 + 2 + 2) + snapshot upsert 1 + audit read 1
+    # + the board_viewed event insert 1; round 1 reads the project's dependency edges
+    assert db.executes <= 13
 
 
 def test_board_is_403_for_an_outsider_and_404_for_no_project(monkeypatch, client):
