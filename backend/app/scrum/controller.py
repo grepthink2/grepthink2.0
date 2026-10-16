@@ -52,6 +52,11 @@ BAD_DATE_RANGE = "ends_at must be on or after starts_at"
 TITLE_REQUIRED = "title cannot be null"
 #: 409: a story leaves through the backlog, so a sprint's scope never drops by deletion.
 STORY_IN_SPRINT = "Move the story to the backlog before deleting it"
+#: Task dependencies (spec 2026-10-16): the edges refused (409, 422) and a missing one (404).
+DEPENDENCY_CYCLE = "That would make the tasks depend on each other"
+SELF_DEPENDENCY = "A task can't depend on itself"
+ALREADY_DEPENDS = "Already a dependency"
+DEPENDENCY_NOT_FOUND = "Dependency not found"
 
 
 # ------------------------------------------------------------------- access ----
@@ -369,6 +374,133 @@ def delete_task(*, task_id: str, user_id: str) -> None:
     task = _get_task_or_404(client, task_id)
     _require_writer(client, project_id=task["project_id"], user_id=user_id)
     client.table("tasks").delete().eq("id", str(task_id)).execute()
+
+
+# ------------------------------------------------------------- dependencies ----
+
+
+def _task_ref(task: dict, story: dict) -> dict:
+    """A task as another task names it (``depends_on`` / ``blocks``) and as the board's
+    ``task_index`` lists it: enough to label it, and its story's sprint to open it."""
+    return {
+        "id": task["id"],
+        "key": task["key"],
+        "title": task["title"],
+        "status": task["status"],
+        "story_id": task["story_id"],
+        "story_key": story["key"],
+        "sprint_id": story.get("sprint_id"),
+    }
+
+
+def _depends_on(edges: list[dict], start: str, target: str) -> bool:
+    """Whether ``start`` depends on ``target``, directly or through other tasks: a walk along
+    ``task_id → depends_on_task_id`` over the project's edges."""
+    after: dict[str, list[str]] = {}
+    for e in edges:
+        after.setdefault(e["task_id"], []).append(e["depends_on_task_id"])
+    seen, stack = {start}, [start]
+    while stack:
+        for nxt in after.get(stack.pop(), []):
+            if nxt == target:
+                return True
+            if nxt not in seen:
+                seen.add(nxt)
+                stack.append(nxt)
+    return False
+
+
+def add_dependency(*, task_id: str, user_id: str, depends_on_task_id: str) -> list[dict]:
+    """Make ``task_id`` depend on ``depends_on_task_id``, a task of the same project in any
+    sprint or the backlog.
+
+    Who can call: team members. Returns the task's ``depends_on`` refs after the insert, in
+    the order the edges were added. Raises 422 :data:`SELF_DEPENDENCY`; 404
+    :data:`TASK_NOT_FOUND` when either task is missing or they are in different projects (a
+    task of another project answers as a missing one); 403 as :func:`_require_writer`; 409
+    :data:`ALREADY_DEPENDS`, and 409 :data:`DEPENDENCY_CYCLE` when the target already depends
+    on the task, directly or through other tasks. Five round trips.
+    """
+    if str(depends_on_task_id).lower() == str(task_id).lower():
+        raise HTTPException(status_code=422, detail=SELF_DEPENDENCY)
+    client = get_client()
+    pair = (
+        client.table("tasks")
+        .select("*")
+        .in_("id", [str(task_id), str(depends_on_task_id)])
+        .execute()
+    ).data or []
+    by_id = {str(t["id"]).lower(): t for t in pair}
+    task = by_id.get(str(task_id).lower())
+    target = by_id.get(str(depends_on_task_id).lower())
+    if not task or not target or str(task["project_id"]) != str(target["project_id"]):
+        raise HTTPException(status_code=404, detail=TASK_NOT_FOUND)
+    pid = str(task["project_id"])
+    _require_writer(client, project_id=pid, user_id=user_id)
+
+    # The database's ids from here on, so a differently-cased id in the request still matches.
+    tid, did = task["id"], target["id"]
+    edges = (
+        client.table("task_dependencies")
+        .select("task_id, depends_on_task_id")
+        .eq("project_id", pid)
+        .order("created_at")
+        .execute()
+    ).data or []
+    if any(e["task_id"] == tid and e["depends_on_task_id"] == did for e in edges):
+        raise HTTPException(status_code=409, detail=ALREADY_DEPENDS)
+    if _depends_on(edges, did, tid):
+        raise HTTPException(status_code=409, detail=DEPENDENCY_CYCLE)
+    # A concurrent duplicate loses on the primary key: DatabaseConflictError, a 409.
+    res = (
+        client.table("task_dependencies")
+        .insert(
+            {
+                "task_id": tid,
+                "depends_on_task_id": did,
+                "project_id": pid,
+                "created_by": str(user_id),
+            }
+        )
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Failed to add the dependency")
+
+    ids = [e["depends_on_task_id"] for e in edges if e["task_id"] == tid] + [did]
+    targets = (
+        client.table("tasks")
+        .select("id, key, title, status, story_id, user_stories(key, sprint_id)")
+        .in_("id", ids)
+        .execute()
+    ).data or []
+    by_target = {t["id"]: t for t in targets}
+    return [
+        _task_ref(t, t["user_stories"])
+        for i in ids
+        if (t := by_target.get(i)) and t.get("user_stories")
+    ]
+
+
+def remove_dependency(*, task_id: str, user_id: str, depends_on_task_id: str) -> None:
+    """Remove ``task_id``'s dependency on ``depends_on_task_id``.
+
+    Who can call: team members. Raises 404 :data:`TASK_NOT_FOUND`, 403 as
+    :func:`_require_writer`, and 404 :data:`DEPENDENCY_NOT_FOUND` when there is no such edge.
+    Three round trips.
+    """
+    client = get_client()
+    task = _get_task_or_404(client, task_id)
+    _require_writer(client, project_id=task["project_id"], user_id=user_id)
+    res = (
+        client.table("task_dependencies")
+        .delete()
+        .eq("task_id", str(task["id"]))
+        .eq("depends_on_task_id", str(depends_on_task_id))
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail=DEPENDENCY_NOT_FOUND)
 
 
 # ----------------------------------------------------------------- PR links ----

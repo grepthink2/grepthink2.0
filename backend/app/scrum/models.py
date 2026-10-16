@@ -90,6 +90,10 @@ class MoveTaskRequest(BaseModel):
     to_status: BoardStatus
 
 
+class AddDependencyRequest(BaseModel):
+    depends_on_task_id: str
+
+
 class CreateCommentRequest(BaseModel):
     body_md: str = Field(..., min_length=1, max_length=4000)
 
@@ -133,6 +137,18 @@ class BoardSprintOut(SprintOut):
     progress: SprintProgress
 
 
+class TaskRef(BaseModel):
+    """A task named from another task, or in the board's task index."""
+
+    id: str
+    key: str
+    title: str
+    status: BoardStatus
+    story_id: str
+    story_key: str
+    sprint_id: str | None = None  # the story's sprint; None = backlog
+
+
 class TaskOut(BaseModel):
     id: str
     story_id: str
@@ -152,6 +168,10 @@ class TaskOut(BaseModel):
     moved_by_name: str | None = None
     moved_at: str | None = None
     comment_count: int = 0
+    # Board-only: the tasks this one depends on, and the tasks that depend on it. Single-task
+    # responses (create, update, move) have no dependency rows in hand and send empty lists.
+    depends_on: list[TaskRef] = Field(default_factory=list)
+    blocks: list[TaskRef] = Field(default_factory=list)
 
 
 class StoryOut(BaseModel):
@@ -225,6 +245,8 @@ class BoardResponse(BaseModel):
     burnup: BurnupOut
     members: list[ScrumMember]
     access: Literal["member", "staff"]
+    # Every task of the project, in key order, for the dependency picker.
+    task_index: list[TaskRef] = Field(default_factory=list)
 
 
 class SummaryCounts(BaseModel):
@@ -252,6 +274,11 @@ class StoryResponse(BaseModel):
 class TaskResponse(BaseModel):
     message: str
     task: TaskOut
+
+
+class DependenciesResponse(BaseModel):
+    message: str
+    depends_on: list[TaskRef]
 
 
 class CommentsListResponse(BaseModel):
