@@ -260,13 +260,26 @@ export function useScrumBoard(
       projectId ? mutate(() => api.createStory(projectId, body), 'Couldn’t create the story') : Promise.resolve(null),
     [mutate, projectId],
   );
-  /** Structural edits (sprint move, archive) still refetch — they reshuffle lists. */
+  /** A sprint move still refetches — it reshuffles the lists. */
   const updateStory = useCallback(
     (storyId: string, body: ApiUpdateStoryBody) =>
-      ('sprint_id' in body || 'archived' in body)
+      ('sprint_id' in body)
         ? mutate(() => api.updateStory(storyId, body), 'Couldn’t save the story')
         : patchStory(storyId, body),
     [mutate, patchStory],
+  );
+  /**
+   * Delete a backlog story with its tasks. Resolves false when the write fails or is refused
+   * (a story in a sprint, a read-only preview); the notice carries the reason.
+   */
+  const deleteStory = useCallback(
+    (storyId: string): Promise<boolean> =>
+      mutate(
+        async () => { await api.deleteScrumStory(storyId); return true; },
+        'Couldn’t delete the story',
+        'Story deleted',
+      ).then((ok) => ok === true),
+    [mutate],
   );
   const createTask = useCallback(
     (storyId: string, body: ApiCreateTaskBody) =>
@@ -310,6 +323,7 @@ export function useScrumBoard(
     moveTask,
     createStory,
     updateStory,
+    deleteStory,
     createTask,
     updateTask,
     deleteTask,

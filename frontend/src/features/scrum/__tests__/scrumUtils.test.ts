@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isBacklogStory } from '../utils/backlog';
 import { storyRollup, columnPoints, tasksIn, collectTasks } from '../utils/rollups';
 import { prLabel, prState } from '../utils/prLabel';
 import { relativeTime } from '../utils/relativeTime';
@@ -26,6 +27,18 @@ describe('storyRollup', () => {
     expect(storyRollup(makeStory())).toEqual({
       tasksDone: 0, tasksTotal: 0, pointsDone: 0, points: 0, percent: 0,
     });
+  });
+});
+
+describe('isBacklogStory', () => {
+  it('puts a story with no sprint in the backlog', () => {
+    expect(isBacklogStory(makeStory({ sprint_id: null }))).toBe(true);
+  });
+  it('keeps a sprint story out of the backlog', () => {
+    expect(isBacklogStory(makeStory({ sprint_id: 'sp1' }))).toBe(false);
+  });
+  it('puts a legacy archived story in the backlog, whatever sprint it still names', () => {
+    expect(isBacklogStory(makeStory({ sprint_id: 'sp1', archived_at: '2026-09-01T00:00:00Z' }))).toBe(true);
   });
 });
 

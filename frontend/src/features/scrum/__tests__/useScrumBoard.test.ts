@@ -11,6 +11,7 @@ vi.mock('@/lib/api', () => ({
     moveScrumTask: vi.fn(),
     refreshScrumPrStates: vi.fn(),
     updateStory: vi.fn(),
+    deleteScrumStory: vi.fn(),
   },
 }));
 const { api } = await import('@/lib/api');
@@ -20,6 +21,7 @@ beforeEach(() => {
   vi.mocked(api.getScrumBoard).mockReset().mockResolvedValue(makeBoard());
   vi.mocked(api.moveScrumTask).mockReset();
   vi.mocked(api.refreshScrumPrStates).mockReset().mockResolvedValue({ updated: {} });
+  vi.mocked(api.deleteScrumStory).mockReset();
 });
 
 describe('useScrumBoard', () => {
@@ -187,6 +189,39 @@ describe('useScrumBoard', () => {
     // the first request finally lands — it must not overwrite the newer board
     await act(async () => { resolveSlow(slow); });
     expect(result.current.board?.project.name).toBe('FRESH');
+  });
+
+  it('deleteStory refetches, reports success and resolves true', async () => {
+    vi.mocked(api.deleteScrumStory).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    vi.mocked(api.getScrumBoard).mockClear();   // count the refetch only
+
+    let ok: boolean | undefined;
+    await act(async () => { ok = await result.current.deleteStory('s9'); });
+
+    expect(ok).toBe(true);
+    expect(api.deleteScrumStory).toHaveBeenCalledWith('s9');
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
+    expect(result.current.notice).toEqual({ kind: 'success', message: 'Story deleted' });
+  });
+
+  it('a refused delete resolves false with the server\'s reason', async () => {
+    vi.mocked(api.deleteScrumStory).mockRejectedValue(
+      new Error('Move the story to the backlog before deleting it'),
+    );
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    vi.mocked(api.getScrumBoard).mockClear();
+
+    let ok: boolean | undefined;
+    await act(async () => { ok = await result.current.deleteStory('s1'); });
+
+    expect(ok).toBe(false);
+    expect(api.getScrumBoard).not.toHaveBeenCalled();
+    expect(result.current.notice).toEqual({
+      kind: 'error', message: 'Move the story to the backlog before deleting it',
+    });
   });
 
   it('patches cached PR states from the background refresh', async () => {

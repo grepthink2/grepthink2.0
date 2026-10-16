@@ -795,7 +795,7 @@ export interface ApiScrumStory {
   time_estimate: string | null;
   reporter_id: string;
   assignee_id: string | null;
-  /** Set = story lives in the archive view. */
+  /** Legacy archive flag: set ⇒ the story is in the backlog whatever its sprint_id. Read-only. */
   archived_at: string | null;
   comment_count: number;
   tasks: ApiScrumTask[];
