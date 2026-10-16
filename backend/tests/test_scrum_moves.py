@@ -81,7 +81,7 @@ def test_a_move_snapshots_the_sprint_burnup(monkeypatch):
 
 def test_a_story_title_edit_skips_the_burnup_snapshot(monkeypatch):
     """A snapshot costs three extra sequential round trips; only scope-bearing edits
-    (points / sprint_id / archived) can move the burnup line."""
+    (points / sprint_id) can move the burnup line."""
     db = _board(monkeypatch)
     controller.update_story(story_id="st1", user_id=UID, fields={"title": "New title"})
     assert db.rows("sprint_burnup_days") == []

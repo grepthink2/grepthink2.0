@@ -67,7 +67,6 @@ class UpdateStoryRequest(BaseModel):
     time_estimate: str | None = Field(None, max_length=20)
     assignee_id: str | None = None
     sprint_id: str | None = None  # explicit null in JSON ⇒ move to backlog
-    archived: bool | None = None  # True sets archived_at, False clears it
 
 
 class CreateTaskRequest(BaseModel):

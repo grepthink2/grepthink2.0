@@ -75,3 +75,15 @@ def test_staff_cannot_write(monkeypatch, staff):
 def test_member_can_write(monkeypatch):
     scrum_db(monkeypatch)
     controller._require_writer(get_client(), project_id=PID, user_id=UID)  # no raise
+
+
+@pytest.mark.parametrize("staff", [INSTR, TA, MEETING_TA])
+def test_staff_cannot_delete_a_story(monkeypatch, staff):
+    db = scrum_db(
+        monkeypatch,
+        user_stories=[{"id": "st1", "project_id": PID, "key": "US-1", "sprint_id": None}],
+    )
+    with pytest.raises(HTTPException) as e:
+        controller.delete_story(story_id="st1", user_id=staff)
+    assert (e.value.status_code, e.value.detail) == (403, controller.MEMBERS_ONLY)
+    assert [s["id"] for s in db.rows("user_stories")] == ["st1"]

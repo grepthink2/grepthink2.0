@@ -128,6 +128,11 @@ def update_story(
     return StoryResponse(message="Story updated successfully", story=_story_out(row))
 
 
+def delete_story(story_id: str, user_id: str = Depends(require_user)) -> Response:
+    controller.delete_story(story_id=story_id, user_id=user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 def create_task(
     story_id: str, body: CreateTaskRequest, user_id: str = Depends(require_user)
 ) -> TaskResponse:
