@@ -63,7 +63,8 @@ export default function TaskEditorModal({
   const [description, setDescription] = useState(task?.description_md ?? '');
   const [tags, setTags] = useState<string[]>(task?.tags ?? []);
   const [points, setPoints] = useState<number | undefined>(task?.points ?? undefined);
-  const [estimate, setEstimate] = useState(task?.time_estimate ?? '');
+  // A string, so the box can hold what is being typed; sent as a number.
+  const [hours, setHours] = useState(task?.estimate_hours == null ? '' : String(task.estimate_hours));
   const [assignee, setAssignee] = useState(task?.assignee_id ?? '');
   const [prUrl, setPrUrl] = useState(task?.pr_url ?? '');
   const [labelsOpen, setLabelsOpen] = useState(false);
@@ -108,7 +109,7 @@ export default function TaskEditorModal({
         description_md: description.trim() || null,
         tags,
         points,
-        time_estimate: estimate.trim() || null,
+        estimate_hours: hours.trim() === '' ? null : Number(hours),
         assignee_id: assignee || null,
         pr_url: prUrl.trim() || null,
       });
@@ -119,7 +120,7 @@ export default function TaskEditorModal({
       ...(description.trim() ? { description_md: description.trim() } : {}),
       ...(tags.length ? { tags } : {}),
       ...(points != null ? { points } : {}),
-      ...(estimate.trim() ? { time_estimate: estimate.trim() } : {}),
+      ...(hours.trim() ? { estimate_hours: Number(hours) } : {}),
       ...(assignee ? { assignee_id: assignee } : {}),
     });
   };
@@ -268,10 +269,10 @@ export default function TaskEditorModal({
             <input
               id="task-editor-estimate"
               type="text"
-              value={estimate}
+              value={hours}
               maxLength={20}
               placeholder="4h"
-              onChange={(e) => setEstimate(e.target.value)}
+              onChange={(e) => setHours(e.target.value)}
             />
           </div>
 

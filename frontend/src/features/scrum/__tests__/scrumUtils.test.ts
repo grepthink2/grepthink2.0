@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isBacklogStory } from '../utils/backlog';
-import { storyRollup, columnPoints, tasksIn, collectTasks } from '../utils/rollups';
+import { storyRollup, storyHours, columnPoints, tasksIn, collectTasks } from '../utils/rollups';
 import { prLabel, prState } from '../utils/prLabel';
 import { relativeTime } from '../utils/relativeTime';
 import { percentDone, sprintDates, STATUS_LABELS } from '../utils/sprints';
@@ -28,6 +28,23 @@ describe('storyRollup', () => {
     expect(storyRollup(makeStory())).toEqual({
       tasksDone: 0, tasksTotal: 0, pointsDone: 0, points: 0, percent: 0,
     });
+  });
+});
+
+describe('storyHours', () => {
+  it('is null with no tasks and with tasks that have no hours', () => {
+    expect(storyHours(makeStory({ tasks: [] }))).toBeNull();
+    expect(storyHours(makeStory({ tasks: [makeTask()] }))).toBeNull();
+  });
+
+  it('sums the tasks that have hours', () => {
+    const tasks = [makeTask({ id: 'a', estimate_hours: 3 }), makeTask({ id: 'b', estimate_hours: 2 })];
+    expect(storyHours(makeStory({ tasks }))).toBe(5);
+  });
+
+  it('counts a task without hours as 0 when another has some', () => {
+    const tasks = [makeTask({ id: 'a', estimate_hours: 3 }), makeTask({ id: 'b', estimate_hours: null })];
+    expect(storyHours(makeStory({ tasks }))).toBe(3);
   });
 });
 

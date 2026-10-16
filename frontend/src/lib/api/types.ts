@@ -783,7 +783,8 @@ export interface ApiScrumTask {
   title: string;
   description_md: string | null;
   points: number | null;
-  time_estimate: string | null;
+  /** Whole hours, 1–15. */
+  estimate_hours: number | null;
   status: ApiBoardStatus;
   reporter_id: string;
   assignee_id: string | null;
@@ -806,7 +807,12 @@ export interface ApiScrumStory {
   title: string;
   description_md: string | null;
   points: number | null;
-  time_estimate: string | null;
+  /**
+   * The board's sum of its tasks' hours, null when none has one; single-row story responses send
+   * null. The web client computes its own with `storyHours` (utils/rollups.ts), which stays right
+   * after an optimistic edit.
+   */
+  estimate_hours: number | null;
   reporter_id: string;
   assignee_id: string | null;
   /** Legacy archive flag: set ⇒ the story is in the backlog whatever its sprint_id. Read-only. */
@@ -881,7 +887,6 @@ export interface ApiCreateStoryBody {
   title: string;
   description_md?: string;
   points?: number;
-  time_estimate?: string;
   assignee_id?: string;
   /** Omit for backlog. */
   sprint_id?: string;
@@ -892,7 +897,6 @@ export interface ApiUpdateStoryBody {
   /** Explicit null clears it (an omitted key leaves it as it is). */
   description_md?: string | null;
   points?: number;
-  time_estimate?: string;
   assignee_id?: string;
   /** Explicit null moves the story to the backlog. */
   sprint_id?: string | null;
@@ -902,7 +906,8 @@ export interface ApiCreateTaskBody {
   title: string;
   description_md?: string;
   points?: number;
-  time_estimate?: string;
+  /** Whole hours, 1–15. */
+  estimate_hours?: number;
   assignee_id?: string;
   tags?: string[];
 }
@@ -912,7 +917,8 @@ export interface ApiUpdateTaskBody {
   /** Explicit null clears it (an omitted key leaves it as it is). */
   description_md?: string | null;
   points?: number;
-  time_estimate?: string | null;
+  /** Whole hours, 1–15; explicit null clears it. */
+  estimate_hours?: number | null;
   assignee_id?: string | null;
   tags?: string[];
   /** Explicit null unlinks the PR. */

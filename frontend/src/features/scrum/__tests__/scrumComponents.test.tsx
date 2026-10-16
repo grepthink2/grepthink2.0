@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ApiScrumTask } from '@/lib/api';
 import BacklogRow from '../components/BacklogRow';
 import TagBadge from '../components/TagBadge';
 import StoryCard from '../components/StoryCard';
+import TaskCard from '../components/TaskCard';
 import BurnupChart from '../components/BurnupChart';
 import { seriesPoints } from '../utils/burnupGeometry';
 import { PointPicker } from '../components/ScalePicker';
@@ -29,11 +31,13 @@ describe('TagBadge', () => {
 });
 
 describe('StoryCard', () => {
+  // The story's own estimate_hours is deliberately wrong: the card must sum its tasks instead
+  // (an optimistic edit never refreshes the server's sum).
   const story = makeStory({
-    key: 'US-3', title: 'Login flow', points: 8, time_estimate: '2d', assignee_id: 'u1',
+    key: 'US-3', title: 'Login flow', points: 8, estimate_hours: 99, assignee_id: 'u1',
     tasks: [
-      makeTask({ id: 'a', key: 'T-1', points: 3, status: 'done' }),
-      makeTask({ id: 'b', key: 'T-2', points: 5, status: 'todo' }),
+      makeTask({ id: 'a', key: 'T-1', points: 3, status: 'done', estimate_hours: 8 }),
+      makeTask({ id: 'b', key: 'T-2', points: 5, status: 'todo', estimate_hours: 4 }),
     ],
   });
 
@@ -45,11 +49,39 @@ describe('StoryCard', () => {
     expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it("shows the sum of its tasks' hours, not a stored estimate", () => {
+    render(<StoryCard story={story} members={members} />);
+    expect(screen.getByText('12h')).toBeInTheDocument();
+  });
+
+  it('shows no hours chip when no task has hours', () => {
+    const unestimated = {
+      ...story,
+      tasks: story.tasks.map((t) => ({ ...t, estimate_hours: null })),
+    };
+    const { container } = render(<StoryCard story={unestimated} members={members} />);
+    expect(container.querySelector('.gt-estimate')).toBeNull();
+  });
+
   it('calls onSelect when clicked', async () => {
     const onSelect = vi.fn();
     render(<StoryCard story={story} members={members} onSelect={onSelect} />);
     await userEvent.click(screen.getByRole('button'));
     expect(onSelect).toHaveBeenCalledOnce();
+  });
+});
+
+describe('TaskCard', () => {
+  it('shows its hours', () => {
+    render(<TaskCard task={makeTask({ estimate_hours: 4 })} members={members} />);
+    expect(screen.getByText('4h')).toBeInTheDocument();
+  });
+
+  it('renders without a chip for a task row from an older backend (no estimate_hours key)', () => {
+    const legacy = { ...makeTask(), estimate_hours: undefined } as unknown as ApiScrumTask;
+    const { container } = render(<TaskCard task={legacy} members={members} />);
+    expect(screen.getByText('Task')).toBeInTheDocument();
+    expect(container.querySelector('.gt-estimate')).toBeNull();
   });
 });
 
@@ -66,6 +98,15 @@ describe('BacklogRow', () => {
     expect(move).toHaveTextContent('Move to Sprint 2');
     await userEvent.click(move);
     expect(onMoveToSprint).toHaveBeenCalledOnce();
+  });
+
+  it("shows the sum of its tasks' hours, not a stored estimate", () => {
+    const story = makeStory({
+      key: 'US-1', sprint_id: null, estimate_hours: 99,
+      tasks: [makeTask({ id: 'a', estimate_hours: 3 }), makeTask({ id: 'b', estimate_hours: 2 })],
+    });
+    render(<BacklogRow story={story} members={members} sprintName="Sprint 2" />);
+    expect(screen.getByText('5h')).toBeInTheDocument();
   });
 
   it('shows no archive date for a legacy archived story', () => {

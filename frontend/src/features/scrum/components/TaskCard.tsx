@@ -31,7 +31,7 @@ export default function TaskCard({ task, members, storyKey, onOpen }: Props) {
         <span className="gt-task__key">{task.key}</span>
         {storyKey && <span className="gt-task__story">{storyKey}</span>}
         <span className="gt-task__meta">
-          {task.time_estimate && <EstimateChip estimate={task.time_estimate} />}
+          {task.estimate_hours != null && <EstimateChip estimate={`${task.estimate_hours}h`} />}
           {task.points != null && <PointsChip points={task.points} size="sm" />}
         </span>
       </div>

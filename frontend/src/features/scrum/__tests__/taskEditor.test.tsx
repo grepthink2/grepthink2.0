@@ -131,7 +131,7 @@ describe('TaskEditorModal', () => {
 
   it('edits an existing task and sends the full field set', async () => {
     const p = props();
-    const own = p.story.tasks[0];
+    const own = { ...p.story.tasks[0], estimate_hours: 2 };
     const onSave = vi.fn();
     render(<TaskEditorModal {...p} task={own} onSave={onSave} />);
 
@@ -140,14 +140,14 @@ describe('TaskEditorModal', () => {
     await userEvent.type(screen.getByLabelText('Title'), 'Renamed task');
     await userEvent.click(screen.getByRole('button', { name: 'Save task' }));
 
-    // Full set, so clearing a field actually clears it server-side.
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ title: 'Renamed task' }));
+    // Full set, so clearing a field actually clears it server-side; untouched hours go back as they were.
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ title: 'Renamed task', estimate_hours: 2 }));
   });
 
   it('clears fields with explicit nulls, so the server clears them too', async () => {
     const p = props();
     const own = makeTask({
-      id: 'a', points: 3, description_md: 'Old notes', time_estimate: '2h', assignee_id: 'u1',
+      id: 'a', points: 3, description_md: 'Old notes', estimate_hours: 2, assignee_id: 'u1',
       pr_url: 'https://github.com/o/r/pull/1',
     });
     const onSave = vi.fn();
@@ -161,7 +161,7 @@ describe('TaskEditorModal', () => {
 
     // `undefined` would vanish from the JSON body and the old values would stay.
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
-      description_md: null, time_estimate: null, assignee_id: null, pr_url: null,
+      description_md: null, estimate_hours: null, assignee_id: null, pr_url: null,
     }));
   });
 
@@ -203,12 +203,12 @@ describe('TaskEditorModal', () => {
     const p = props();
     render(<TaskEditorModal {...p} />);
     await userEvent.type(screen.getByLabelText('Title'), 'Full task');
-    await userEvent.type(screen.getByLabelText('Time estimate'), '4h');
+    await userEvent.type(screen.getByLabelText('Time estimate'), '4');
     await userEvent.selectOptions(screen.getByLabelText('Assignee'), 'u1');
     await userEvent.click(screen.getByRole('button', { name: 'Add task' }));
 
     expect(p.onCreate).toHaveBeenCalledWith({
-      title: 'Full task', time_estimate: '4h', assignee_id: 'u1',
+      title: 'Full task', estimate_hours: 4, assignee_id: 'u1',
     });
   });
 

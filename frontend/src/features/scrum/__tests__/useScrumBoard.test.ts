@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useScrumBoard } from '../hooks/useScrumBoard';
+import { storyHours } from '../utils/rollups';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
 import type { ApiScrumBoard, ApiScrumStory, ApiScrumTask } from '@/lib/api';
 import { makeBoard, makeStory, makeTask } from './fixtures';
@@ -11,6 +12,7 @@ vi.mock('@/lib/api', () => ({
     moveScrumTask: vi.fn(),
     refreshScrumPrStates: vi.fn(),
     updateStory: vi.fn(),
+    updateScrumTask: vi.fn(),
     deleteScrumStory: vi.fn(),
   },
 }));
@@ -22,6 +24,15 @@ beforeEach(() => {
   vi.mocked(api.moveScrumTask).mockReset();
   vi.mocked(api.refreshScrumPrStates).mockReset().mockResolvedValue({ updated: {} });
   vi.mocked(api.deleteScrumStory).mockReset();
+  vi.mocked(api.updateScrumTask).mockReset();
+});
+
+/** One sprint story whose tasks carry 3 and 2 hours. */
+const hoursBoard = () => makeBoard({
+  stories: [makeStory({
+    points: 8,
+    tasks: [makeTask({ id: 't1', estimate_hours: 3 }), makeTask({ id: 't2', estimate_hours: 2 })],
+  })],
 });
 
 describe('useScrumBoard', () => {
@@ -117,6 +128,40 @@ describe('useScrumBoard', () => {
 
     // The stale failure must not restore the pre-13 snapshot over the live 5.
     expect(result.current.board!.stories[0].points).toBe(5);
+  });
+
+  it('a task save that changes its hours changes the story sum at once, without a reload', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(hoursBoard());
+    let resolveSave: (v: { message: string; task: ApiScrumTask }) => void = () => {};
+    vi.mocked(api.updateScrumTask).mockReturnValue(
+      new Promise((res) => { resolveSave = res; }) as ReturnType<typeof api.updateScrumTask>,
+    );
+
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(storyHours(result.current.board!.stories[0])).toBe(5);
+
+    act(() => { void result.current.updateTask('t1', { estimate_hours: 8 }); });
+    expect(storyHours(result.current.board!.stories[0])).toBe(10);   // optimistic
+
+    await act(async () => { resolveSave({ message: 'ok', task: makeTask({ id: 't1', estimate_hours: 8 }) }); });
+    expect(storyHours(result.current.board!.stories[0])).toBe(10);
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);   // the first load only
+  });
+
+  it('a story points change keeps the story sum', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(hoursBoard());
+    // A single-row story response: no tasks, and so no hours.
+    vi.mocked(api.updateStory).mockResolvedValue({
+      message: 'ok', story: makeStory({ points: 13, estimate_hours: null }),
+    });
+
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => { await result.current.updateStory('s1', { points: 13 }); });
+    expect(result.current.board!.stories[0].points).toBe(13);
+    expect(storyHours(result.current.board!.stories[0])).toBe(5);
   });
 
   it('ends loading when a background refresh overtakes a sprint switch', async () => {
