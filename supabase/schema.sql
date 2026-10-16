@@ -1518,6 +1518,23 @@ CREATE INDEX IF NOT EXISTS tasks_project_status_idx ON tasks (project_id, status
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON TABLE tasks TO anon, authenticated, service_role;
 
+-- ============ 4b) task_dependencies (2026-10-16_task_dependencies.sql) ============
+-- "GT-15 depends on GT-12", one row per edge; both tasks belong to project_id (the controller
+-- checks it, the column makes the board's read one filter). Browser roles hold nothing.
+CREATE TABLE IF NOT EXISTS task_dependencies (
+  task_id            uuid NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  depends_on_task_id uuid NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  project_id         uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  created_by         uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (task_id, depends_on_task_id),
+  CONSTRAINT task_dependencies_not_self CHECK (task_id <> depends_on_task_id)
+);
+CREATE INDEX IF NOT EXISTS task_dependencies_project_idx    ON task_dependencies (project_id);
+CREATE INDEX IF NOT EXISTS task_dependencies_depends_on_idx ON task_dependencies (depends_on_task_id);
+ALTER TABLE task_dependencies ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON task_dependencies FROM anon, authenticated;
+
 -- ============ 5) task_moves + apply trigger ============
 CREATE TABLE IF NOT EXISTS task_moves (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
