@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import MarkdownText from '@components/Markdown/MarkdownText';
 import type {
   ApiScrumSprint, ApiScrumStory, ApiScrumTask, ApiUpdateStoryBody,
 } from '@/lib/api';
-import { BOARD_COLUMNS } from '../config/scrumTags';
-import type { BoardStatus, EstimateScale } from '../config/scrumTags';
+import { statusLabel } from '../config/scrumTags';
+import type { EstimateScale } from '../config/scrumTags';
 import type { MemberMap } from '../scrumTypes';
 import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
-import { assignedTaskPoints, storyRollup } from '../utils/rollups';
+import { isBacklogStory } from '../utils/backlog';
+import { assignedTaskPoints, remainingStoryPoints, storyRollup } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
 import CommentThread from './CommentThread';
 import { PointPicker } from './ScalePicker';
@@ -29,25 +30,31 @@ export interface StoryModalProps {
   /** Open the task editor in create mode for this story. */
   onAddTask: () => void;
   onDeleteTask: (taskId: string) => void;
-  onMoveTask: (taskId: string, to: BoardStatus) => void;
+  /** Delete this story and its tasks; offered for a backlog story only. */
+  onDeleteStory: () => void;
+  /** The story delete is in flight: its confirm button says so and ignores clicks. */
+  deleting?: boolean;
   onCommentError: (message: string) => void;
   /** Refresh the board so comment counts on cards stay accurate. */
   onCommentPosted: () => void;
 }
 
+/** What the sticky confirm is asking about, if anything. */
+type Confirm = { kind: 'task'; task: ApiScrumTask } | { kind: 'story' } | null;
+
 /**
- * Story detail — description, meta, and the child tasks.
+ * Story detail — description, meta, the child tasks and the story's comment thread.
  *
- * The per-task status select here is the board's keyboard/assistive path:
- * HTML5 drag and drop is mouse-only, so every move must also be reachable
- * from this list.
+ * Task rows show where each task is but do not move it: that happens on the board,
+ * by drag and drop, or from the task's own editor, whose Status select is the
+ * keyboard/assistive path (HTML5 drag and drop is mouse-only).
  */
 export default function StoryModal({
   story, members, sprints, scale, canWrite = true,
-  onClose, onUpdateStory, onOpenTask, onAddTask, onDeleteTask, onMoveTask,
+  onClose, onUpdateStory, onOpenTask, onAddTask, onDeleteTask, onDeleteStory, deleting = false,
   onCommentError, onCommentPosted,
 }: StoryModalProps) {
-  const [confirmDelete, setConfirmDelete] = useState<ApiScrumTask | null>(null);
+  const [confirm, setConfirm] = useState<Confirm>(null);
   // In-place editing of the story's text (the create-only StoryEditorModal has
   // always pointed here for edits; until 2026-09-25 nothing was wired).
   const [editing, setEditing] = useState<null | 'title' | 'description'>(null);
@@ -59,6 +66,15 @@ export default function StoryModal({
   const assigned = assignedTaskPoints(story);
   const reporter = personOf(members, story.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, story.assignee_id);
+  const backlog = isBacklogStory(story);
+  // The story's points are a budget (maintainer 2026-08-29): once its tasks claim them all,
+  // no task can be added. A story without points is never capped (null).
+  const capped = remainingStoryPoints(story) === 0;
+  const taskCount = story.tasks.length;
+  const storyQuestion = taskCount === 0
+    ? `Delete ${story.key}? Its comments go too. This can't be undone.`
+    : `Delete ${story.key} and its ${taskCount} task${taskCount === 1 ? '' : 's'}? `
+      + 'Their comments and history go too. This can\'t be undone.';
 
   // Esc backs out of an edit first; only a second Esc closes the story.
   useEffect(() => {
@@ -215,24 +231,13 @@ export default function StoryModal({
                 <span className="story-modal__task-tags">
                   {t.tags.slice(0, 2).map((tag) => <TagBadge key={tag} tag={tag} />)}
                 </span>
-                <label className="story-modal__task-status">
-                  <span className="sr-only">Status of {t.key}</span>
-                  <select
-                    value={t.status}
-                    disabled={!canWrite}
-                    onChange={(e) => onMoveTask(t.id, e.target.value as BoardStatus)}
-                  >
-                    {BOARD_COLUMNS.map((c) => (
-                      <option key={c.id} value={c.id}>{c.label}</option>
-                    ))}
-                  </select>
-                </label>
+                <span className="story-modal__task-status">{statusLabel(t.status)}</span>
                 {canWrite && (
                   <button
                     type="button"
                     className="story-modal__task-delete"
                     aria-label={`Delete ${t.key}`}
-                    onClick={() => setConfirmDelete(t)}
+                    onClick={() => setConfirm({ kind: 'task', task: t })}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -242,13 +247,22 @@ export default function StoryModal({
           </ul>
 
           {canWrite && (
-            <button
-              type="button"
-              className="story-modal__add-task"
-              onClick={onAddTask}
-            >
-              <Plus size={14} aria-hidden="true" /> Add task
-            </button>
+            <>
+              <button
+                type="button"
+                className="story-modal__add-task"
+                onClick={onAddTask}
+                disabled={capped}
+                aria-describedby={capped ? 'story-modal-cap' : undefined}
+              >
+                <Plus size={14} aria-hidden="true" /> Add task
+              </button>
+              {capped && (
+                <p className="story-modal__cap" id="story-modal-cap">
+                  {`All ${story.points} points are assigned. Raise the story's points to add a task.`}
+                </p>
+              )}
+            </>
           )}
         </section>
 
@@ -268,36 +282,71 @@ export default function StoryModal({
           <footer className="story-modal__foot">
             <label className="story-modal__sprint">
               <span className="story-modal__label">Sprint</span>
+              {/* A backlog story (a legacy archived one too, whatever sprint it still names)
+                  shows a placeholder, never "Backlog": picking any sprint moves it there. */}
               <select
-                value={story.sprint_id ?? ''}
+                value={backlog ? '' : story.sprint_id ?? ''}
                 onChange={(e) => onUpdateStory({ sprint_id: e.target.value || null })}
               >
-                <option value="">Backlog</option>
-                {sprints.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {backlog
+                  ? <option value="" disabled>Move to a sprint…</option>
+                  : <option value="">Backlog</option>}
+                {sprints.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.status === 'completed' ? `${s.name} (completed)` : s.name}
+                  </option>
+                ))}
               </select>
             </label>
-            <button
-              type="button"
-              className="story-modal__archive"
-              onClick={() => onUpdateStory({ archived: !story.archived_at })}
-            >
-              {story.archived_at ? 'Restore story' : 'Archive story'}
-            </button>
+            {/* Only from the backlog: a sprint's scope never drops by deletion. */}
+            {backlog && (
+              <button
+                type="button"
+                className="story-modal__delete"
+                onClick={() => setConfirm({ kind: 'story' })}
+              >
+                Delete story
+              </button>
+            )}
           </footer>
         )}
 
-        {confirmDelete && (
-          <div className="story-modal__confirm" role="alertdialog" aria-label="Confirm delete">
-            <p>Delete {confirmDelete.key}? This also removes its comments and move history.</p>
+        {/* Keyed by its subject, so Cancel takes focus whenever the question changes. */}
+        {confirm && (
+          <div
+            key={confirm.kind === 'task' ? confirm.task.id : 'story'}
+            className="story-modal__confirm"
+            role="alertdialog"
+            aria-label="Confirm delete"
+          >
+            <p>
+              {confirm.kind === 'task'
+                ? `Delete ${confirm.task.key}? This also removes its comments and move history.`
+                : storyQuestion}
+            </p>
             <div className="story-modal__confirm-actions">
-              <button type="button" onClick={() => setConfirmDelete(null)}>Cancel</button>
-              <button
-                type="button"
-                className="story-modal__confirm-delete"
-                onClick={() => { onDeleteTask(confirmDelete.id); setConfirmDelete(null); }}
-              >
-                Delete task
-              </button>
+              {/* An alertdialog takes focus, and Cancel is the safe place for it. */}
+              <button type="button" autoFocus onClick={() => setConfirm(null)}>Cancel</button>
+              {confirm.kind === 'task' ? (
+                <button
+                  type="button"
+                  className="story-modal__confirm-delete"
+                  onClick={() => { onDeleteTask(confirm.task.id); setConfirm(null); }}
+                >
+                  Delete task
+                </button>
+              ) : (
+                // Busy, not disabled: it keeps its colour and focus, and a second click is ignored.
+                <button
+                  type="button"
+                  className="story-modal__confirm-delete"
+                  aria-busy={deleting}
+                  onClick={() => { if (!deleting) onDeleteStory(); }}
+                >
+                  {deleting && <Loader2 className="story-modal__spinner" size={14} aria-hidden="true" />}
+                  {deleting ? 'Deleting…' : 'Delete story'}
+                </button>
+              )}
             </div>
           </div>
         )}

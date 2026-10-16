@@ -69,8 +69,8 @@ export default function ScrumBoardPage() {
 
   const {
     board, loading, error, notice, clearNotice, canWrite,
-    selectSprint, moveTask, createStory, updateStory, createTask, updateTask, deleteTask,
-    updateSettings, refresh,
+    selectSprint, moveTask, createStory, updateStory, deleteStory, createTask, updateTask,
+    deleteTask, updateSettings, refresh,
   } = useScrumBoard(projectId, viewerName, user?.id);
   const { toasts, push, dismiss } = useToasts();
 
@@ -83,6 +83,7 @@ export default function ScrumBoardPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creatingStory, setCreatingStory] = useState(false);
   const [savingStory, setSavingStory] = useState(false);
+  const [deletingStory, setDeletingStory] = useState(false);
   const [storyFilter, setStoryFilter] = useState<string | null>(null);
   const projectName = (location.state as { projectName?: string } | null)?.projectName;
 
@@ -225,6 +226,14 @@ export default function ScrumBoardPage() {
     await updateTask(taskId, body);
     setSavingTask(false);
     closeTaskEditor();
+  };
+
+  /** A refused delete leaves the story open: the hook's toast says why. */
+  const handleDeleteStory = async (storyId: string) => {
+    setDeletingStory(true);
+    const ok = await deleteStory(storyId);
+    setDeletingStory(false);
+    if (ok) closeStory();              // drops ?story= and any stale ?task=
   };
 
   const handleCreateStory = async (body: ApiCreateStoryBody) => {
@@ -455,7 +464,8 @@ export default function ScrumBoardPage() {
           onOpenTask={openTask}
           onAddTask={() => startAddTask(openStory.id)}
           onDeleteTask={deleteTask}
-          onMoveTask={moveTask}
+          onDeleteStory={() => handleDeleteStory(openStory.id)}
+          deleting={deletingStory}
           onCommentError={(m) => push('error', m)}
           onCommentPosted={refresh}
         />

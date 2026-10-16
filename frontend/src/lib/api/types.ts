@@ -882,8 +882,6 @@ export interface ApiUpdateStoryBody {
   assignee_id?: string;
   /** Explicit null moves the story to the backlog. */
   sprint_id?: string | null;
-  /** true sets archived_at, false clears it. */
-  archived?: boolean;
 }
 
 export interface ApiCreateTaskBody {
