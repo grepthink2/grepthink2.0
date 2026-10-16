@@ -1,0 +1,15 @@
+// The board card's "Blocked" chip (task dependencies, spec 2026-10-16). The card's other classes
+// live in scrum.scss, a 1:1 port of the design export that is not hand-edited; this one is ours.
+// Plain token custom properties only, so no @use.
+
+.gt-task__blocked {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: var(--gt-radius-pill);
+  background: var(--gt-warning-soft);
+  color: var(--gt-warning-text);
+  font-size: 10px;
+  font-weight: var(--gt-weight-medium);
+}

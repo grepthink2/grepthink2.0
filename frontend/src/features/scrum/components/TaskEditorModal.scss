@@ -252,6 +252,89 @@
 
   &__spinner { @include gt-spinner; }
 
+  // The task's dependencies (spec 2026-10-16): what it depends on, the picker, what it blocks. The
+  // column's gap spaces the headings, so they drop their own margin here.
+  &__deps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .task-editor__section-title { margin: 0; }
+  }
+
+  &__dep-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__dep { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12.5px; }
+
+  &__dep-key {
+    font-family: var(--gt-font-mono);
+    font-size: 11px;
+    color: var(--gt-primary);
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__dep-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  &__dep-status {
+    font-size: 11px;
+    color: var(--gt-text-tertiary);
+
+    &--done { color: var(--gt-success-text); }
+  }
+
+  // The editor's icon button (the close ×), a size down.
+  &__dep-remove {
+    display: inline-flex;
+    padding: 2px;
+    border: none;
+    border-radius: var(--gt-radius-sm);
+    background: transparent;
+    color: var(--gt-text-tertiary);
+    cursor: pointer;
+    @include gt-transition(background-color, color);
+
+    &:hover { background: var(--gt-gray-100); color: var(--gt-text-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__dep-add {
+    display: flex;
+    gap: 8px;
+
+    select { flex: 1; min-width: 0; }
+  }
+
+  // The Cancel button's look, beside the picker.
+  &__dep-add-button {
+    padding: 8px 14px;
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+    font-family: $primary-font;
+    font-size: 12.5px;
+    font-weight: var(--gt-weight-medium);
+    color: var(--gt-text-secondary);
+    cursor: pointer;
+    @include gt-transition(border-color, color, opacity);
+
+    &:hover:not(:disabled) { border-color: var(--gt-border-strong); color: var(--gt-text-primary); }
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
   // The task's thread sits below Save/Cancel (the story modal's section rhythm).
   &__comments {
     padding-top: 14px;

@@ -1,11 +1,13 @@
-import { MessageSquare, Repeat } from 'lucide-react';
+import { Lock, MessageSquare, Repeat } from 'lucide-react';
 import type { ApiScrumTask } from '@/lib/api';
 import type { MemberMap } from '../scrumTypes';
 import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
 import { statusLabel } from '../config/scrumTags';
+import { blockedMessage, isBlocked } from '../utils/dependencies';
 import { relativeTime } from '../utils/relativeTime';
 import { EstimateChip, PointsChip, PRLinkChip, UserPair } from './Chips';
 import TagBadge from './TagBadge';
+import './TaskCard.scss';
 
 interface Props {
   task: ApiScrumTask;
@@ -15,7 +17,7 @@ interface Props {
   onOpen?: () => void;
 }
 
-/** The draggable unit on the board: key row, title, tags, people, PR, audit line. */
+/** The draggable unit on the board: key row (with a Blocked chip), title, tags, people, PR, audit line. */
 export default function TaskCard({ task, members, storyKey, onOpen }: Props) {
   const reporter = personOf(members, task.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, task.assignee_id);
@@ -30,6 +32,13 @@ export default function TaskCard({ task, members, storyKey, onOpen }: Props) {
       <div className="gt-task__top">
         <span className="gt-task__key">{task.key}</span>
         {storyKey && <span className="gt-task__story">{storyKey}</span>}
+        {/* In To do with an unfinished dependency: it cannot start yet. The title names the blockers. */}
+        {isBlocked(task) && (
+          <span className="gt-task__blocked" title={blockedMessage(task)}>
+            <Lock size={10} aria-hidden="true" />
+            Blocked
+          </span>
+        )}
         <span className="gt-task__meta">
           {task.estimate_hours != null && <EstimateChip estimate={`${task.estimate_hours}h`} />}
           {task.points != null && <PointsChip points={task.points} size="sm" />}

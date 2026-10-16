@@ -6,7 +6,7 @@ import { ToastStack } from '@components/Toast/Toast';
 import { useToasts } from '@components/Toast/useToasts';
 import { useAuth } from '@/lib/auth';
 import type {
-  ApiCreateStoryBody, ApiCreateTaskBody, ApiScrumStory, ApiScrumTask, ApiUpdateTaskBody,
+  ApiCreateStoryBody, ApiCreateTaskBody, ApiScrumStory, ApiScrumTask, ApiTaskRef, ApiUpdateTaskBody,
 } from '@/lib/api';
 import BacklogRow from '../components/BacklogRow';
 import BurnupChart from '../components/BurnupChart';
@@ -72,7 +72,7 @@ export default function ScrumBoardPage() {
   const {
     board, loading, error, notice, clearNotice, canWrite,
     selectSprint, moveTask, createStory, updateStory, deleteStory, createTask, updateTask,
-    deleteTask, updateSettings, refresh,
+    deleteTask, addDependency, removeDependency, updateSettings, refresh,
   } = useScrumBoard(projectId, viewerName, user?.id);
   const { toasts, push, dismiss } = useToasts();
 
@@ -170,11 +170,11 @@ export default function ScrumBoardPage() {
   }, [loading]);
 
   /**
-   * Patch ?task= / ?story= in one navigation. setSearchParams does not queue like setState
+   * Patch ?task= / ?story= / ?sprint= in one navigation. setSearchParams does not queue like setState
    * (React Router's docs say so): each call starts from this render's params, so of two calls
-   * in one event only the last lands. A handler that changes both passes both here, once.
+   * in one event only the last lands. A handler that changes several passes them here, once.
    */
-  const setParams = (patch: Partial<Record<'task' | 'story', string | null>>) => {
+  const setParams = (patch: Partial<Record<'task' | 'story' | 'sprint', string | null>>) => {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
       for (const [key, value] of Object.entries(patch)) {
@@ -206,6 +206,17 @@ export default function ScrumBoardPage() {
   const openTask = (task: ApiScrumTask) => {
     setParams({ story: null, task: task.id });
     setAddTaskStoryId(null);
+  };
+
+  /**
+   * A dependency's (or dependent's) key in the task editor → that task (spec D6). One in the shown
+   * sprint or the backlog opens in place; one in another sprint goes through ?sprint=, which the
+   * deep-link effect above switches to, and the editor opens once that board is on screen.
+   */
+  const openTaskRef = (ref: ApiTaskRef) => {
+    setAddTaskStoryId(null);
+    const otherSprint = ref.sprint_id && ref.sprint_id !== board?.sprint_id ? ref.sprint_id : null;
+    setParams({ story: null, task: ref.id, sprint: otherSprint });
   };
 
   /**
@@ -460,6 +471,12 @@ export default function ScrumBoardPage() {
             : undefined}
           onCommentError={(m) => push('error', m)}
           onCommentPosted={refresh}
+          sprints={board.sprints}
+          taskIndex={board.task_index ?? []}
+          onOpenRef={openTaskRef}
+          // Staff see both lists and change neither (spec D7).
+          onAddDependency={canWrite ? (id) => addDependency(openTaskPair.task.id, id) : undefined}
+          onRemoveDependency={canWrite ? (id) => removeDependency(openTaskPair.task.id, id) : undefined}
         />
       )}
 
@@ -472,6 +489,9 @@ export default function ScrumBoardPage() {
           onClose={closeTaskEditor}
           onBack={() => backToStory(addTaskStory.id)}
           onCreate={(body) => handleCreateTask(addTaskStory.id, body)}
+          sprints={board.sprints}
+          taskIndex={board.task_index ?? []}
+          onOpenRef={openTaskRef}
         />
       )}
 

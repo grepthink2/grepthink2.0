@@ -3,11 +3,13 @@ import { ArrowLeft, Check, Loader2, Plus, X } from 'lucide-react';
 import { Menu, MenuItem } from '@components/Menu/Menu';
 import { Popover } from '@components/Popover/Popover';
 import type {
-  ApiCreateTaskBody, ApiScrumMember, ApiScrumStory, ApiScrumTask, ApiUpdateTaskBody,
+  ApiCreateTaskBody, ApiScrumMember, ApiScrumSprint, ApiScrumStory, ApiScrumTask, ApiTaskRef,
+  ApiUpdateTaskBody,
 } from '@/lib/api';
-import { BOARD_COLUMNS, TASK_TAGS } from '../config/scrumTags';
+import { BOARD_COLUMNS, statusLabel, TASK_TAGS } from '../config/scrumTags';
 import type { BoardStatus, EstimateScale } from '../config/scrumTags';
 import { buildMemberMap } from '../scrumTypes';
+import { blockedMessage, isBlocked } from '../utils/dependencies';
 import { parseHours } from '../utils/estimateHours';
 import { isPrUrl } from '../utils/prLabel';
 import { assignedTaskPoints } from '../utils/rollups';
@@ -39,6 +41,15 @@ interface Props {
   onCommentError?: (message: string) => void;
   /** Refresh the board so the card's comment count stays in step. */
   onCommentPosted?: () => void;
+  /** The board's sprints, to group the dependency picker ("Sprint 2", "Backlog"). */
+  sprints: ApiScrumSprint[];
+  /** Every task of the project (board.task_index), for the picker. */
+  taskIndex: ApiTaskRef[];
+  /** Open another task from its key (a dependency or a dependent); the page switches sprints if needed. */
+  onOpenRef: (ref: ApiTaskRef) => void;
+  /** Present only when the viewer can edit dependencies (a team member). */
+  onAddDependency?: (dependsOnTaskId: string) => void;
+  onRemoveDependency?: (dependsOnTaskId: string) => void;
 }
 
 /**
@@ -52,10 +63,14 @@ interface Props {
  * what its tasks claim, and a task cannot claim more than the story has.
  *
  * An existing task's comment thread sits below the form's actions.
+ *
+ * An existing task also lists what it depends on and what it blocks (spec 2026-10-16), each key a
+ * link to that task. Adding or removing a dependency applies at once, not on Save; while the task is
+ * blocked, its Status select offers only To do.
  */
 export default function TaskEditorModal({
   story, task = null, members, scale, saving = false, onClose, onBack, onCreate, onSave, onMove,
-  onCommentError, onCommentPosted,
+  onCommentError, onCommentPosted, sprints, taskIndex, onOpenRef, onAddDependency, onRemoveDependency,
 }: Props) {
   const back = onBack ?? onClose;
   const editing = task != null;
@@ -71,10 +86,53 @@ export default function TaskEditorModal({
   const [assignee, setAssignee] = useState(task?.assignee_id ?? '');
   const [prUrl, setPrUrl] = useState(task?.pr_url ?? '');
   const [labelsOpen, setLabelsOpen] = useState(false);
+  /** The task picked in the dependency picker, '' for none. */
+  const [pick, setPick] = useState('');
   const titleRef = useRef<HTMLInputElement>(null);
   const labelsButtonRef = useRef<HTMLButtonElement>(null);
   const prInvalid = prUrl.trim() !== '' && !isPrUrl(prUrl.trim());
   const { invalid: hoursInvalid } = parseHours(hours, hoursBad);
+
+  // Missing from a backend older than this client: no dependency UI at all then (spec D11).
+  const dependsOn = task?.depends_on;
+  const blocks = task?.blocks ?? [];
+  const blocked = task != null && isBlocked(task);
+  // The picker: the project's other tasks by sprint, in the board's sprint order, then the backlog.
+  // Never the task itself, what it already depends on, or what depends on it (a direct cycle; a
+  // deeper one is refused by the API, whose reason the page shows).
+  const taken = new Set([task?.id, ...(dependsOn ?? []).map((d) => d.id), ...blocks.map((d) => d.id)]);
+  const offerable = taskIndex.filter((t) => !taken.has(t.id));
+  const pickerGroups = [
+    ...sprints.map((s) => ({
+      id: s.id,
+      label: s.status === 'completed' ? `${s.name} (completed)` : s.name,
+      tasks: offerable.filter((t) => t.sprint_id === s.id),
+    })),
+    { id: 'backlog', label: 'Backlog', tasks: offerable.filter((t) => t.sprint_id === null) },
+  ].filter((g) => g.tasks.length > 0);
+
+  /** One dependency (or dependent) row: its key opens it; `onRemove` only for a dependency. */
+  const refRow = (ref: ApiTaskRef, onRemove?: (id: string) => void) => (
+    <li key={ref.id} className="task-editor__dep">
+      <button type="button" className="task-editor__dep-key" onClick={() => onOpenRef(ref)}>
+        {ref.key}
+      </button>
+      <span className="task-editor__dep-title">{ref.title}</span>
+      <span className={`task-editor__dep-status task-editor__dep-status--${ref.status}`}>
+        {statusLabel(ref.status)}
+      </span>
+      {onRemove && (
+        <button
+          type="button"
+          className="task-editor__dep-remove"
+          aria-label={`Remove dependency on ${ref.key}`}
+          onClick={() => onRemove(ref.id)}
+        >
+          <X size={12} aria-hidden="true" />
+        </button>
+      )}
+    </li>
+  );
 
   // Budget left for this task: siblings count against the story, but the task's
   // own current points are its to keep when re-pointing.
@@ -171,9 +229,14 @@ export default function TaskEditorModal({
               aria-describedby="task-editor-status-hint"
               onChange={(e) => onMove(e.target.value as BoardStatus)}
             >
-              {BOARD_COLUMNS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              {/* A blocked task cannot leave To do (spec D1): the same rule as the card and the board. */}
+              {BOARD_COLUMNS.map((c) => (
+                <option key={c.id} value={c.id} disabled={blocked && c.id !== 'todo'}>{c.label}</option>
+              ))}
             </select>
-            <span className="task-editor__hint" id="task-editor-status-hint">Applies right away.</span>
+            <span className="task-editor__hint" id="task-editor-status-hint">
+              {blocked ? blockedMessage(task) : 'Applies right away.'}
+            </span>
           </div>
         )}
 
@@ -327,6 +390,45 @@ export default function TaskEditorModal({
                 : 'Its open, draft, merged or closed state shows on the card. A private repo needs a token in board settings.'}
             </span>
           </div>
+        )}
+
+        {editing && dependsOn && (
+          <section className="task-editor__deps" aria-labelledby="task-editor-deps-title">
+            <h3 className="task-editor__section-title" id="task-editor-deps-title">Depends on</h3>
+            {dependsOn.length === 0
+              ? <p className="task-editor__hint">No dependencies.</p>
+              : <ul className="task-editor__dep-list">{dependsOn.map((d) => refRow(d, onRemoveDependency))}</ul>}
+            {onAddDependency && (
+              <div className="task-editor__dep-add">
+                <label className="sr-only" htmlFor="task-editor-dep-pick">Add a dependency</label>
+                <select id="task-editor-dep-pick" value={pick} onChange={(e) => setPick(e.target.value)}>
+                  <option value="">Add a dependency…</option>
+                  {pickerGroups.map((g) => (
+                    <optgroup key={g.id} label={g.label}>
+                      {g.tasks.map((t) => <option key={t.id} value={t.id}>{`${t.key} · ${t.title}`}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="task-editor__dep-add-button"
+                  disabled={!pick}
+                  onClick={() => { onAddDependency(pick); setPick(''); }}
+                >
+                  Add
+                </button>
+              </div>
+            )}
+            <span className="task-editor__hint">
+              Applies right away. A task in To do can’t start until every task it depends on is done.
+            </span>
+            {blocks.length > 0 && (
+              <>
+                <h3 className="task-editor__section-title">Blocks</h3>
+                <ul className="task-editor__dep-list">{blocks.map((d) => refRow(d))}</ul>
+              </>
+            )}
+          </section>
         )}
 
         <footer className="task-editor__foot">

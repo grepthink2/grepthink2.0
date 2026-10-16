@@ -11,7 +11,7 @@ import { seriesPoints } from '../utils/burnupGeometry';
 import { PointPicker } from '../components/ScalePicker';
 import { UserPair } from '../components/Chips';
 import { buildMemberMap } from '../scrumTypes';
-import { makeMembers, makeStory, makeTask } from './fixtures';
+import { makeMembers, makeRef, makeStory, makeTask } from './fixtures';
 
 const members = buildMemberMap(makeMembers());
 
@@ -82,6 +82,35 @@ describe('TaskCard', () => {
     const { container } = render(<TaskCard task={legacy} members={members} />);
     expect(screen.getByText('Task')).toBeInTheDocument();
     expect(container.querySelector('.gt-estimate')).toBeNull();
+  });
+
+  it('marks a blocked task, naming its blockers on hover', () => {
+    const task = makeTask({
+      key: 'GT-15',
+      depends_on: [
+        makeRef({ id: 'b', key: 'GT-12', status: 'in_progress' }),
+        makeRef({ id: 'c', key: 'GT-13', status: 'done' }),
+      ],
+    });
+    render(<TaskCard task={task} members={members} onOpen={vi.fn()} />);
+    expect(screen.getByText('Blocked')).toHaveAttribute('title', 'GT-15 is blocked by GT-12');
+    // The card is the control: the chip is part of what it announces.
+    expect(screen.getByRole('button')).toHaveAccessibleName(/Blocked/);
+  });
+
+  it('shows no chip once every dependency is done, or once the task is under way', () => {
+    const done = [makeRef({ id: 'b', key: 'GT-12', status: 'done' })];
+    const unfinished = [makeRef({ id: 'b', key: 'GT-12', status: 'todo' })];
+    const { rerender } = render(<TaskCard task={makeTask({ depends_on: done })} members={members} />);
+    expect(screen.queryByText('Blocked')).toBeNull();
+    rerender(<TaskCard task={makeTask({ status: 'in_progress', depends_on: unfinished })} members={members} />);
+    expect(screen.queryByText('Blocked')).toBeNull();
+  });
+
+  it('renders a task from an older backend (no dependency lists) with no chip', () => {
+    render(<TaskCard task={{ ...makeTask(), depends_on: undefined, blocks: undefined }} members={members} />);
+    expect(screen.getByText('Task')).toBeInTheDocument();
+    expect(screen.queryByText('Blocked')).toBeNull();
   });
 });
 
