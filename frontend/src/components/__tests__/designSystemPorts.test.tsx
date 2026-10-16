@@ -65,6 +65,41 @@ describe('Menu', () => {
     expect(screen.getByRole('menuitemcheckbox', { name: 'backend' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByRole('menuitemcheckbox', { name: 'bug' })).toHaveAttribute('aria-checked', 'false');
   });
+
+  it('exposes single-choice rows as menuitemradio with their state, in the arrow-key path', async () => {
+    render(
+      <Menu ariaLabel="Sprints" autoFocus>
+        <MenuItem radio checked={false}>Sprint 1</MenuItem>
+        <MenuItem radio checked>Sprint 2</MenuItem>
+      </Menu>,
+    );
+    expect(screen.getByRole('menuitemradio', { name: 'Sprint 1' })).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByRole('menuitemradio', { name: 'Sprint 2' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('menuitemradio', { name: 'Sprint 1' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitemradio', { name: 'Sprint 2' })).toHaveFocus();
+  });
+
+  it('opens on the checked row with autoFocus="checked"', () => {
+    render(
+      <Menu ariaLabel="Sprints" autoFocus="checked">
+        <MenuItem radio checked={false}>Sprint 1</MenuItem>
+        <MenuItem radio checked>Sprint 2</MenuItem>
+        <MenuItem radio checked={false}>Sprint 3</MenuItem>
+      </Menu>,
+    );
+    expect(screen.getByRole('menuitemradio', { name: 'Sprint 2' })).toHaveFocus();
+  });
+
+  it('opens on the first item with autoFocus="checked" when no row is checked', () => {
+    render(
+      <Menu ariaLabel="Sprints" autoFocus="checked">
+        <MenuItem radio checked={false}>Sprint 1</MenuItem>
+        <MenuItem radio checked={false}>Sprint 2</MenuItem>
+      </Menu>,
+    );
+    expect(screen.getByRole('menuitemradio', { name: 'Sprint 1' })).toHaveFocus();
+  });
 });
 
 describe('Tooltip', () => {
