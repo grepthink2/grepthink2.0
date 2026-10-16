@@ -55,7 +55,6 @@ class CreateStoryRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description_md: str | None = Field(None, max_length=20000)
     points: int | None = Field(None, gt=0)
-    time_estimate: str | None = Field(None, max_length=20)
     assignee_id: str | None = None
     sprint_id: str | None = None
 
@@ -64,7 +63,6 @@ class UpdateStoryRequest(BaseModel):
     title: str | None = Field(None, min_length=1, max_length=200)
     description_md: str | None = Field(None, max_length=20000)
     points: int | None = Field(None, gt=0)
-    time_estimate: str | None = Field(None, max_length=20)
     assignee_id: str | None = None
     sprint_id: str | None = None  # explicit null in JSON ⇒ move to backlog
 
@@ -73,7 +71,7 @@ class CreateTaskRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description_md: str | None = Field(None, max_length=20000)
     points: int | None = Field(None, gt=0)
-    time_estimate: str | None = Field(None, max_length=20)
+    estimate_hours: int | None = Field(None, ge=1, le=15)  # whole hours
     assignee_id: str | None = None
     tags: list[str] = Field(default_factory=list)
 
@@ -82,7 +80,7 @@ class UpdateTaskRequest(BaseModel):
     title: str | None = Field(None, min_length=1, max_length=200)
     description_md: str | None = Field(None, max_length=20000)
     points: int | None = Field(None, gt=0)
-    time_estimate: str | None = Field(None, max_length=20)
+    estimate_hours: int | None = Field(None, ge=1, le=15)  # explicit null ⇒ clear
     assignee_id: str | None = None
     tags: list[str] | None = None
     pr_url: str | None = Field(None, max_length=500)  # explicit null ⇒ unlink
@@ -142,7 +140,7 @@ class TaskOut(BaseModel):
     title: str
     description_md: str | None = None
     points: int | None = None
-    time_estimate: str | None = None
+    estimate_hours: int | None = None
     status: BoardStatus
     reporter_id: str
     assignee_id: str | None = None
@@ -163,7 +161,9 @@ class StoryOut(BaseModel):
     title: str
     description_md: str | None = None
     points: int | None = None
-    time_estimate: str | None = None
+    # The sum of its tasks' hours on the board (None when none has any); single-row
+    # story responses carry no tasks, so None there.
+    estimate_hours: int | None = None
     reporter_id: str
     assignee_id: str | None = None
     archived_at: str | None = None

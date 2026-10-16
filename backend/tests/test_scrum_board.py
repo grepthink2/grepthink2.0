@@ -78,8 +78,17 @@ def _seed(monkeypatch):
         tasks=[
             _task("a1", "A", 3, "done", "1"),
             _task("a2", "A", 2, "todo", "2"),
-            _task("b1", "B", 5, "done", "3", moved_by=UID, moved_at="2026-09-08T18:00:00Z"),
-            _task("b2", "B", 3, "in_progress", "4"),
+            _task(
+                "b1",
+                "B",
+                5,
+                "done",
+                "3",
+                moved_by=UID,
+                moved_at="2026-09-08T18:00:00Z",
+                estimate_hours=3,
+            ),
+            _task("b2", "B", 3, "in_progress", "4", estimate_hours=2),
             _task("d1", "D", 2, "done", "6"),  # on the backlog story: counted nowhere
         ],
         task_moves=[
@@ -116,6 +125,11 @@ def test_board_shape_and_burnup(monkeypatch, client):
     assert body["members"] == [
         {"user_id": UID, "name": "Tony Wu", "image_url": None, "project_role": "owner"}
     ]
+
+    # A story's hours are the sum of its tasks' (B: 3 + 2); none of D's tasks has any.
+    by_key = {s["key"]: s for s in body["stories"]}
+    assert by_key["US-B"]["estimate_hours"] == 5
+    assert {s["key"]: s["estimate_hours"] for s in body["backlog"]}["US-D"] is None
 
     # Live stories only: E is archived, D is backlog (its done task counts nowhere).
     assert {s["id"]: s["progress"] for s in body["sprints"]} == {

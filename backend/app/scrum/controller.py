@@ -256,7 +256,7 @@ def create_story(*, project_id: str, user_id: str, fields: dict) -> dict:
         _require_sprint_in_project(client, fields["sprint_id"], project_id)
     key = _next_key(client, project_id, "story")
     row = {"project_id": str(project_id), "key": key, "reporter_id": str(user_id)}
-    for k in ("title", "description_md", "points", "time_estimate", "assignee_id", "sprint_id"):
+    for k in ("title", "description_md", "points", "assignee_id", "sprint_id"):
         if fields.get(k) is not None:
             row[k] = fields[k]
     res = client.table("user_stories").insert(row).execute()
@@ -275,7 +275,7 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     if "title" in fields and fields["title"] is None:
         raise HTTPException(status_code=422, detail=TITLE_REQUIRED)
     payload: dict = {}
-    for k in ("title", "description_md", "points", "time_estimate", "assignee_id"):
+    for k in ("title", "description_md", "points", "assignee_id"):
         if k in fields:
             payload[k] = fields[k]
     if "sprint_id" in fields:
@@ -328,7 +328,7 @@ def create_task(*, story_id: str, user_id: str, fields: dict) -> dict:
         "key": key,
         "reporter_id": str(user_id),
     }
-    for k in ("title", "description_md", "points", "time_estimate", "assignee_id", "tags"):
+    for k in ("title", "description_md", "points", "estimate_hours", "assignee_id", "tags"):
         if fields.get(k) is not None:
             row[k] = fields[k]
     res = client.table("tasks").insert(row).execute()
@@ -350,7 +350,7 @@ def update_task(*, task_id: str, user_id: str, fields: dict) -> dict:
     if fields.get("tags") is not None:
         _validate_tags(fields["tags"])
     payload: dict = {}
-    for k in ("title", "description_md", "points", "time_estimate", "assignee_id", "tags"):
+    for k in ("title", "description_md", "points", "estimate_hours", "assignee_id", "tags"):
         if k in fields:
             payload[k] = fields[k]
     if "pr_url" in fields and fields["pr_url"] != task.get("pr_url"):
@@ -764,6 +764,8 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
     for s in all_stories:
         s["comment_count"] = story_counts.get(s["id"], 0)
         s["tasks"] = tasks_by_story.get(s["id"], [])
+        # Derived, never stored: the sum of the story's task hours, None when none has any.
+        s["estimate_hours"] = sum(t.get("estimate_hours") or 0 for t in s["tasks"]) or None
 
     sel_id = selected["id"] if selected else None
     stories = (
