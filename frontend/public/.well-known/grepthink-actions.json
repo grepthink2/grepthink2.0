@@ -314,9 +314,14 @@
       "params": {"title": "string!", "description_md": "string (markdown)", "points": "int", "time_estimate": "string", "assignee_id": "uuid", "sprint_id": "uuid (omit for backlog)"}, "uiRoute": "/app/projects/{projectId}/board"
     },
     {
-      "id": "update_story", "title": "Update or archive a user story", "role": "project-member",
+      "id": "update_story", "title": "Update or move a user story", "role": "project-member",
       "method": "PATCH", "endpoint": "/api/scrum/stories/{story_id}",
-      "params": {"title": "string", "description_md": "string (markdown)", "points": "int", "time_estimate": "string", "assignee_id": "uuid", "sprint_id": "uuid (explicit null moves to backlog)", "archived": "bool"}, "uiRoute": "/app/projects/{projectId}/board"
+      "params": {"title": "string", "description_md": "string (markdown)", "points": "int", "time_estimate": "string", "assignee_id": "uuid", "sprint_id": "uuid (explicit null moves to backlog)"}, "uiRoute": "/app/projects/{projectId}/board"
+    },
+    {
+      "id": "delete_scrum_story", "title": "Delete a backlog story and its tasks", "role": "project-member",
+      "method": "DELETE", "endpoint": "/api/scrum/stories/{story_id}", "uiRoute": "/app/projects/{projectId}/board",
+      "note": "Backlog stories only: 409 'Move the story to the backlog before deleting it' for a story in a sprint. Removes the story's tasks, comments and move history."
     },
     {
       "id": "create_scrum_task", "title": "Add a task to a story", "role": "project-member",

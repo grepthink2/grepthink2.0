@@ -20,6 +20,7 @@ vi.mock('@/lib/api', () => ({
     createStory: vi.fn(),
     createScrumTask: vi.fn(),
     deleteScrumTask: vi.fn(),
+    deleteScrumStory: vi.fn(),
     getScrumComments: vi.fn(),
     createScrumComment: vi.fn(),
     getScrumRepos: vi.fn(),
@@ -77,6 +78,7 @@ beforeEach(() => {
   vi.mocked(api.updateStory).mockReset();
   vi.mocked(api.createScrumTask).mockReset();
   vi.mocked(api.createStory).mockReset();
+  vi.mocked(api.deleteScrumStory).mockReset();
   vi.mocked(api.getScrumComments).mockReset().mockResolvedValue({ comments: [] });
   vi.mocked(api.createScrumComment).mockReset();
   vi.mocked(api.getScrumRepos).mockReset().mockResolvedValue({ repos: [] });
@@ -164,7 +166,7 @@ describe('ScrumBoardPage story detail', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Open US-1' }));
 
     const story = await screen.findByRole('dialog');
-    expect(within(story).getByRole('combobox', { name: /Status of T-1/ })).toBeInTheDocument();
+    expect(within(story).getByText('TODO')).toBeInTheDocument();      // T-1's status, as text
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
   });
 
@@ -176,26 +178,96 @@ describe('ScrumBoardPage story detail', () => {
     expect(within(dialog).getByRole('button', { name: /back to US-2 Roster import/i })).toBeInTheDocument();
   });
 
-  it('moves a task from the status select — the keyboard path for DnD', async () => {
+  it("moves a task from the task editor's status select", async () => {
     vi.mocked(api.moveScrumTask).mockResolvedValue({ message: 'ok', task: makeTask({ id: 'a', status: 'done' }) });
     renderAt();
-    await screen.findByText('Login flow');
-    await userEvent.click(screen.getByRole('button', { name: 'Open US-1' }));
-    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(await screen.findByText('Build form'));
+    const editor = await screen.findByRole('dialog', { name: /edit t-1/i });
 
-    await userEvent.selectOptions(within(dialog).getByRole('combobox', { name: /Status of T-1/ }), 'done');
+    // The keyboard path for drag and drop.
+    await userEvent.selectOptions(within(editor).getByLabelText('Status'), 'done');
     expect(api.moveScrumTask).toHaveBeenCalledWith('a', 'done');
   });
 
-  it('archives a story from the footer', async () => {
-    vi.mocked(api.updateStory).mockResolvedValue({ message: 'ok', story: makeStory() });
+  it("gives staff no Status select in the task editor", async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue({ ...boardFixture(), access: 'staff' });
+    renderAt('/app/projects/p1/board?task=a');
+    const editor = await screen.findByRole('dialog', { name: /edit t-1/i });
+    expect(within(editor).queryByLabelText('Status')).toBeNull();
+  });
+
+  it('offers no Status select for a task of a backlog story', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture({
+      backlog: [makeStory({
+        id: 's9', key: 'US-9', title: 'Old idea', sprint_id: null,
+        tasks: [makeTask({ id: 'z', story_id: 's9', key: 'T-9', title: 'Sketch it' })],
+      })],
+    }));
+    renderAt('/app/projects/p1/board?task=z');
+    const editor = await screen.findByRole('dialog', { name: /edit t-9/i });
+    expect(within(editor).queryByLabelText('Status')).toBeNull();
+  });
+
+  it('moves a backlog story to the shown sprint', async () => {
+    vi.mocked(api.updateStory).mockResolvedValue({ message: 'ok', story: makeStory({ id: 's9', sprint_id: 'sp1' }) });
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('tab', { name: 'Backlog' }));
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Move US-9 to Sprint 1' }));
+    expect(api.updateStory).toHaveBeenCalledWith('s9', { sprint_id: 'sp1' });
+  });
+
+  it('deletes a backlog story and closes it', async () => {
+    vi.mocked(api.deleteScrumStory).mockResolvedValue(undefined);
+    renderAt('/app/projects/p1/board?view=backlog&story=s9');
+    const story = await screen.findByRole('dialog');
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture({ backlog: [] }));   // the refetch
+
+    await userEvent.click(within(story).getByRole('button', { name: 'Delete story' }));
+    const confirm = within(story).getByRole('alertdialog');
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Delete story' }));
+
+    expect(api.deleteScrumStory).toHaveBeenCalledWith('s9');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() =>
+      expect(screen.getByTestId('path').textContent).toBe('/app/projects/p1/board?view=backlog'));
+  });
+
+  it('deleting a story also drops a stale ?task=', async () => {
+    vi.mocked(api.deleteScrumStory).mockResolvedValue(undefined);
+    // ?task= names no task on this board (else its editor, not the story, would be open).
+    renderAt('/app/projects/p1/board?view=backlog&story=s9&task=gone');
+    const story = await screen.findByRole('dialog');
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture({ backlog: [] }));
+
+    await userEvent.click(within(story).getByRole('button', { name: 'Delete story' }));
+    await userEvent.click(within(within(story).getByRole('alertdialog')).getByRole('button', { name: 'Delete story' }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('path').textContent).toBe('/app/projects/p1/board?view=backlog'));
+  });
+
+  it('offers no Delete story for a sprint story', async () => {
     renderAt();
     await screen.findByText('Login flow');
     await userEvent.click(screen.getByRole('button', { name: 'Open US-1' }));
-    const dialog = await screen.findByRole('dialog');
+    const story = await screen.findByRole('dialog');
+    expect(within(story).queryByRole('button', { name: 'Delete story' })).toBeNull();
+  });
 
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Archive story' }));
-    expect(api.updateStory).toHaveBeenCalledWith('s1', { archived: true });
+  it('a refused delete keeps the story open and explains', async () => {
+    vi.mocked(api.deleteScrumStory).mockRejectedValue(
+      new Error('Move the story to the backlog before deleting it'),
+    );
+    renderAt('/app/projects/p1/board?view=backlog&story=s9');
+    const story = await screen.findByRole('dialog');
+
+    await userEvent.click(within(story).getByRole('button', { name: 'Delete story' }));
+    await userEvent.click(within(within(story).getByRole('alertdialog')).getByRole('button', { name: 'Delete story' }));
+
+    expect(await screen.findByText('Move the story to the backlog before deleting it')).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByText('Old idea')).toBeInTheDocument();
   });
 
   it('adds a task to the open story through the task editor', async () => {

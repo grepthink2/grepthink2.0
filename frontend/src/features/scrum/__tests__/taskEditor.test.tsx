@@ -1,9 +1,20 @@
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TaskEditorModal from '../components/TaskEditorModal';
 import { remainingStoryPoints } from '../utils/rollups';
 import { makeMembers, makeStory, makeTask } from './fixtures';
+
+// An existing task's editor renders its comment thread, which loads on mount.
+vi.mock('@/lib/api', () => ({
+  api: { getScrumComments: vi.fn(), createScrumComment: vi.fn() },
+}));
+const { api } = await import('@/lib/api');
+
+beforeEach(() => {
+  vi.mocked(api.getScrumComments).mockReset().mockResolvedValue({ comments: [] });
+  vi.mocked(api.createScrumComment).mockReset();
+});
 
 const story = (over = {}) => makeStory({
   key: 'US-1', points: 8,
@@ -199,6 +210,103 @@ describe('TaskEditorModal', () => {
     expect(p.onCreate).toHaveBeenCalledWith({
       title: 'Full task', time_estimate: '4h', assignee_id: 'u1',
     });
+  });
+
+  it('shows the comment thread for an existing task only', async () => {
+    const p = props();
+    const { unmount } = render(<TaskEditorModal {...p} task={makeTask({ id: 'a', key: 'T-1' })} onSave={vi.fn()} />);
+    expect(await screen.findByLabelText('Comment on T-1')).toBeInTheDocument();
+    expect(api.getScrumComments).toHaveBeenCalledWith('tasks', 'a');
+    unmount();
+
+    vi.mocked(api.getScrumComments).mockClear();
+    render(<TaskEditorModal {...p} />);               // create mode: nothing to comment on yet
+    expect(screen.queryByRole('textbox', { name: /comment on/i })).toBeNull();
+    expect(api.getScrumComments).not.toHaveBeenCalled();
+  });
+
+  it('keeps unsaved edits when the thread posts and the parent re-renders', async () => {
+    const comment = {
+      id: 'c1', author_id: 'u1', author_name: 'Tony Wu', body_md: 'Looks good',
+      created_at: new Date().toISOString(),
+    };
+    vi.mocked(api.createScrumComment).mockResolvedValue({ message: 'ok', comment });
+    const p = props();
+    const own = makeTask({ id: 'a', key: 'T-1', title: 'Build form' });
+    const onCommentPosted = vi.fn();
+    const { rerender } = render(
+      <TaskEditorModal {...p} task={own} onSave={vi.fn()} onCommentPosted={onCommentPosted} />,
+    );
+
+    await userEvent.clear(screen.getByLabelText('Title'));
+    await userEvent.type(screen.getByLabelText('Title'), 'Build the signup form');
+    await userEvent.type(await screen.findByLabelText('Comment on T-1'), 'Looks good');
+    await userEvent.click(screen.getByRole('button', { name: 'Comment' }));
+    await waitFor(() => expect(onCommentPosted).toHaveBeenCalled());
+
+    // The page refetches the board after a post: the same task comes back as a new object.
+    rerender(
+      <TaskEditorModal
+        {...p} task={{ ...own, comment_count: own.comment_count + 1 }} onSave={vi.fn()} onClose={vi.fn()}
+        onCommentPosted={onCommentPosted}
+      />,
+    );
+    expect(screen.getByLabelText('Title')).toHaveValue('Build the signup form');
+  });
+
+  it('leaves focus in the composer when the page re-renders after a post', async () => {
+    const comment = {
+      id: 'c1', author_id: 'u1', author_name: 'Tony Wu', body_md: 'First',
+      created_at: new Date().toISOString(),
+    };
+    vi.mocked(api.createScrumComment).mockResolvedValue({ message: 'ok', comment });
+    const p = props();
+    const own = makeTask({ id: 'a', key: 'T-1' });
+    const { rerender } = render(<TaskEditorModal {...p} task={own} onSave={vi.fn()} />);
+
+    const box = await screen.findByLabelText('Comment on T-1');
+    await userEvent.type(box, 'First');
+    await userEvent.keyboard('{Control>}{Enter}{/Control}');
+    await waitFor(() => expect(box).toHaveValue(''));
+
+    // The board page hands the editor a new onClose on every render, a refetch included.
+    rerender(<TaskEditorModal {...p} task={{ ...own, comment_count: 1 }} onSave={vi.fn()} onClose={vi.fn()} />);
+    expect(box).toHaveFocus();
+  });
+
+  it('moves the task from its status select right away', async () => {
+    const onMove = vi.fn();
+    const onSave = vi.fn();
+    render(
+      <TaskEditorModal
+        {...props()} task={makeTask({ id: 'a', key: 'T-1', status: 'todo' })}
+        onSave={onSave} onMove={onMove}
+      />,
+    );
+    const status = screen.getByLabelText('Status');
+    expect(status).toHaveValue('todo');
+    expect(status).toHaveAccessibleDescription('Applies right away.');
+
+    await userEvent.selectOptions(status, 'done');
+    expect(onMove).toHaveBeenCalledWith('done');
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('has no status select when the page cannot move the task', () => {
+    render(<TaskEditorModal {...props()} task={makeTask({ id: 'a', key: 'T-1' })} onSave={vi.fn()} />);
+    expect(screen.queryByLabelText('Status')).toBeNull();
+  });
+
+  it('stays enabled while saving, with aria-busy, and ignores a second click', async () => {
+    const p = props();
+    const onSave = vi.fn();
+    render(<TaskEditorModal {...p} task={p.story.tasks[0]} onSave={onSave} saving />);
+
+    const busy = screen.getByRole('button', { name: 'Saving…' });
+    expect(busy).toBeEnabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(busy);
+    expect(onSave).not.toHaveBeenCalled();
   });
 
   it('requires a title and closes on Escape', async () => {

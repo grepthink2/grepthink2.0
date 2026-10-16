@@ -99,6 +99,13 @@ describe('StoryEditorModal', () => {
   it('blocks a double submit while saving', async () => {
     const p = props();
     render(<StoryEditorModal {...p} saving />);
-    expect(screen.getByRole('button', { name: 'Creating…' })).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Title'), 'Trail search');
+
+    // Busy, not disabled: the button keeps its colour and its focus; the guard ignores clicks.
+    const busy = screen.getByRole('button', { name: 'Creating…' });
+    expect(busy).toBeEnabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(busy);
+    expect(p.onCreate).not.toHaveBeenCalled();
   });
 });

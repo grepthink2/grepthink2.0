@@ -196,7 +196,6 @@
     @include gt-transition(background-color);
 
     &:last-child { border-bottom: none; }
-    &--focused { background: var(--gt-info-soft); border-radius: var(--gt-radius-sm); }
   }
   &__task-key {
     font-family: var(--gt-font-mono);
@@ -227,7 +226,9 @@
   }
   &__task-tags { display: inline-flex; gap: 4px; flex-shrink: 0; }
 
-  &__task-status select,
+  // Where the task is; it moves on the board or from its own editor.
+  &__task-status { font-size: 11px; color: var(--gt-text-tertiary); flex-shrink: 0; }
+
   &__sprint select {
     padding: 4px 8px;
     border: 1px solid var(--gt-border);
@@ -274,9 +275,13 @@
     cursor: pointer;
     @include gt-transition(border-color, color, background-color);
 
-    &:hover { border-color: var(--gt-primary); color: var(--gt-primary); background: var(--gt-green-50); }
+    &:hover:not(:disabled) { border-color: var(--gt-primary); color: var(--gt-primary); background: var(--gt-green-50); }
     &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
   }
+
+  // Why "Add task" is disabled: the story's points are all assigned.
+  &__cap { margin: 6px 0 0; font-size: 11px; color: var(--gt-text-tertiary); }
 
   &__foot {
     display: flex;
@@ -288,19 +293,20 @@
   }
   &__sprint { display: flex; flex-direction: column; gap: 4px; }
 
-  &__archive {
+  // A backlog story's delete: a danger outline, so it never reads as the footer's main action.
+  &__delete {
     padding: 6px 14px;
-    border: 1px solid var(--gt-border);
+    border: 1px solid var(--gt-error);
     border-radius: var(--gt-radius-sm);
     background: var(--gt-gray-0);
     font-family: $primary-font;
     font-size: 11.5px;
     font-weight: var(--gt-weight-medium);
-    color: var(--gt-text-secondary);
+    color: var(--gt-error-text);
     cursor: pointer;
-    @include gt-transition(border-color, color);
+    @include gt-transition(background-color);
 
-    &:hover { border-color: var(--gt-primary); color: var(--gt-primary); }
+    &:hover { background: var(--gt-error-soft); }
     &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
   }
 
@@ -333,10 +339,21 @@
     }
   }
   &__confirm-delete {
+    // Busy (a story delete), it shows a spinner before "Deleting…": the min-width fits that,
+    // its longest state, so the confirm's buttons never shift.
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 108px;
     background: var(--gt-error) !important;
     border-color: var(--gt-error) !important;
     color: var(--gt-gray-0);
+
+    &[aria-busy='true'] { cursor: progress; }
   }
+
+  &__spinner { @include gt-spinner; }
 }
 
 .story-modal__comments {

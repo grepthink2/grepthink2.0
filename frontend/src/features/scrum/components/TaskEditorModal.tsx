@@ -1,17 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, Plus, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Check, Loader2, Plus, X } from 'lucide-react';
 import { Menu, MenuItem } from '@components/Menu/Menu';
 import { Popover } from '@components/Popover/Popover';
 import type {
   ApiCreateTaskBody, ApiScrumMember, ApiScrumStory, ApiScrumTask, ApiUpdateTaskBody,
 } from '@/lib/api';
-import { TASK_TAGS } from '../config/scrumTags';
-import type { EstimateScale } from '../config/scrumTags';
+import { BOARD_COLUMNS, TASK_TAGS } from '../config/scrumTags';
+import type { BoardStatus, EstimateScale } from '../config/scrumTags';
+import { buildMemberMap } from '../scrumTypes';
 import { isPrUrl } from '../utils/prLabel';
 import { assignedTaskPoints } from '../utils/rollups';
+import CommentThread from './CommentThread';
 import { PointPicker } from './ScalePicker';
 import TagBadge from './TagBadge';
 import './TaskEditorModal.scss';
+
+const ignoreCommentError = () => {};
 
 interface Props {
   /** The parent story — this editor is only reachable from its detail. */
@@ -27,6 +31,13 @@ interface Props {
   onBack?: () => void;
   onCreate?: (body: ApiCreateTaskBody) => void;
   onSave?: (body: ApiUpdateTaskBody) => void;
+  /** Move the task to another column at once (no Save). Present only when the viewer can move
+   *  this task: a team member, on a sprint story. Its select is the keyboard path for DnD. */
+  onMove?: (to: BoardStatus) => void;
+  /** A comment that failed to post (edit mode: an existing task has a thread). */
+  onCommentError?: (message: string) => void;
+  /** Refresh the board so the card's comment count stays in step. */
+  onCommentPosted?: () => void;
 }
 
 /**
@@ -38,12 +49,16 @@ interface Props {
  * Points are capped at what the parent story has left (maintainer 2026-08-29):
  * the story estimate is a budget in both directions — a story cannot drop below
  * what its tasks claim, and a task cannot claim more than the story has.
+ *
+ * An existing task's comment thread sits below the form's actions.
  */
 export default function TaskEditorModal({
-  story, task = null, members, scale, saving = false, onClose, onBack, onCreate, onSave,
+  story, task = null, members, scale, saving = false, onClose, onBack, onCreate, onSave, onMove,
+  onCommentError, onCommentPosted,
 }: Props) {
   const back = onBack ?? onClose;
   const editing = task != null;
+  const memberMap = useMemo(() => buildMemberMap(members), [members]);
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description_md ?? '');
   const [tags, setTags] = useState<string[]>(task?.tags ?? []);
@@ -64,9 +79,12 @@ export default function TaskEditorModal({
   useEffect(() => {
     const onEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onEscape);
-    titleRef.current?.focus();
     return () => document.removeEventListener('keydown', onEscape);
   }, [onClose]);
+
+  // The title takes focus when the editor opens, and only then: the page passes a new onClose
+  // on every render, and a board refetch after a comment must not pull focus out of the thread.
+  useEffect(() => { titleRef.current?.focus(); }, []);
 
   const toggleTag = (tag: string) =>
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -137,6 +155,22 @@ export default function TaskEditorModal({
         <h2 className="task-editor__title" id="task-editor-title">
           {editing ? `Edit ${task.key}` : `New task in ${story.key}`}
         </h2>
+
+        {/* The board's keyboard/assistive path: HTML5 drag and drop is mouse-only. */}
+        {editing && onMove && (
+          <div className="task-editor__field task-editor__status">
+            <label className="task-editor__label" htmlFor="task-editor-status">Status</label>
+            <select
+              id="task-editor-status"
+              value={task.status}
+              aria-describedby="task-editor-status-hint"
+              onChange={(e) => onMove(e.target.value as BoardStatus)}
+            >
+              {BOARD_COLUMNS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+            <span className="task-editor__hint" id="task-editor-status-hint">Applies right away.</span>
+          </div>
+        )}
 
         <div className="task-editor__field">
           <label className="task-editor__label" htmlFor="task-editor-title-input">Title</label>
@@ -278,15 +312,34 @@ export default function TaskEditorModal({
 
         <footer className="task-editor__foot">
           <button type="button" className="task-editor__cancel" onClick={onClose}>Cancel</button>
+          {/* Busy is not disabled: the button keeps its colour and focus, and submit()'s
+              in-flight guard ignores a second click. Disabled means "can't submit yet". */}
           <button
             type="button"
             className="task-editor__submit"
             onClick={submit}
-            disabled={!title.trim() || saving || prInvalid}
+            disabled={!title.trim() || prInvalid}
+            aria-busy={saving}
           >
+            {saving && <Loader2 className="task-editor__spinner" size={14} aria-hidden="true" />}
             {saving ? 'Saving…' : editing ? 'Save task' : 'Add task'}
           </button>
         </footer>
+
+        {/* After the footer, so the form and its actions stay on the first screen; the
+            backdrop scrolls a long thread. Posting never touches the form's fields. */}
+        {editing && (
+          <section className="task-editor__comments">
+            <h3 className="task-editor__section-title">Comments</h3>
+            <CommentThread
+              key={task.id}
+              parent={{ kind: 'tasks', id: task.id, key: task.key }}
+              members={memberMap}
+              onError={onCommentError ?? ignoreCommentError}
+              onPosted={onCommentPosted}
+            />
+          </section>
+        )}
       </div>
     </div>
   );

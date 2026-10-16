@@ -36,6 +36,7 @@ const METHODS = [
   'deleteManualRosterEntry',
   'deleteProject',
   'deleteScrumRepo',
+  'deleteScrumStory',
   'deleteScrumTask',
   'demoteTA',
   'dismissJoinRequest',

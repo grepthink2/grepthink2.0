@@ -19,6 +19,7 @@ import StoryEditorModal from '../components/StoryEditorModal';
 import TaskEditorModal from '../components/TaskEditorModal';
 import { useScrumBoard } from '../hooks/useScrumBoard';
 import { buildMemberMap } from '../scrumTypes';
+import { isBacklogStory } from '../utils/backlog';
 import { collectTasks } from '../utils/rollups';
 import '../scrum.scss';
 import './ScrumBoardPage.scss';
@@ -69,8 +70,8 @@ export default function ScrumBoardPage() {
 
   const {
     board, loading, error, notice, clearNotice, canWrite,
-    selectSprint, moveTask, createStory, updateStory, createTask, updateTask, deleteTask,
-    updateSettings, refresh,
+    selectSprint, moveTask, createStory, updateStory, deleteStory, createTask, updateTask,
+    deleteTask, updateSettings, refresh,
   } = useScrumBoard(projectId, viewerName, user?.id);
   const { toasts, push, dismiss } = useToasts();
 
@@ -83,6 +84,7 @@ export default function ScrumBoardPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creatingStory, setCreatingStory] = useState(false);
   const [savingStory, setSavingStory] = useState(false);
+  const [deletingStory, setDeletingStory] = useState(false);
   const [storyFilter, setStoryFilter] = useState<string | null>(null);
   const projectName = (location.state as { projectName?: string } | null)?.projectName;
 
@@ -227,6 +229,14 @@ export default function ScrumBoardPage() {
     closeTaskEditor();
   };
 
+  /** A refused delete leaves the story open: the hook's toast says why. */
+  const handleDeleteStory = async (storyId: string) => {
+    setDeletingStory(true);
+    const ok = await deleteStory(storyId);
+    setDeletingStory(false);
+    if (ok) closeStory();              // drops ?story= and any stale ?task=
+  };
+
   const handleCreateStory = async (body: ApiCreateStoryBody) => {
     setSavingStory(true);
     const created = await createStory(body);
@@ -364,16 +374,17 @@ export default function ScrumBoardPage() {
                   story={s}
                   members={members}
                   onOpen={() => setStoryParam(s.id)}
-                  onRestore={canWrite && board.sprint_id
+                  onMoveToSprint={canWrite && board.sprint_id
                     ? () => updateStory(s.id, { sprint_id: board.sprint_id })
                     : undefined}
+                  sprintName={sprint?.name ?? ''}
                 />
               ))}
             </div>
           ) : (
             <div className="scrum-board__empty-state">
               <h2>Backlog is empty</h2>
-              <p>Stories you archive or leave unscheduled show up here.</p>
+              <p>Stories that aren't in a sprint show up here.</p>
             </div>
           )
         )}
@@ -412,9 +423,12 @@ export default function ScrumBoardPage() {
       </div>
 
       {/* One modal at a time: the task editor takes precedence over the story
-          detail, and opening either closes the other (maintainer 2026-09-10). */}
+          detail, and opening either closes the other (maintainer 2026-09-10).
+          Keyed by task: another ?task= starts a fresh form, while a refetch of the same
+          task (after a comment is posted) keeps the unsaved edits. */}
       {openTaskPair && (
         <TaskEditorModal
+          key={openTaskPair.task.id}
           story={openTaskPair.story}
           task={openTaskPair.task}
           members={board.members}
@@ -423,6 +437,12 @@ export default function ScrumBoardPage() {
           onClose={closeTaskEditor}
           onBack={() => backToStory(openTaskPair.story.id)}
           onSave={(body) => handleSaveTask(openTaskPair.task.id, body)}
+          // Staff never move tasks, and the optimistic move only knows sprint stories.
+          onMove={canWrite && !isBacklogStory(openTaskPair.story)
+            ? (to) => moveTask(openTaskPair.task.id, to)
+            : undefined}
+          onCommentError={(m) => push('error', m)}
+          onCommentPosted={refresh}
         />
       )}
 
@@ -450,7 +470,8 @@ export default function ScrumBoardPage() {
           onOpenTask={openTask}
           onAddTask={() => startAddTask(openStory.id)}
           onDeleteTask={deleteTask}
-          onMoveTask={moveTask}
+          onDeleteStory={() => handleDeleteStory(openStory.id)}
+          deleting={deletingStory}
           onCommentError={(m) => push('error', m)}
           onCommentPosted={refresh}
         />

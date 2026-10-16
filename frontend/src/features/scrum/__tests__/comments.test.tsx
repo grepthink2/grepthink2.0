@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CommentThread from '../components/CommentThread';
-import StoryModal from '../components/StoryModal';
+import TaskEditorModal from '../components/TaskEditorModal';
 import { buildMemberMap } from '../scrumTypes';
 import { makeMembers, makeStory, makeTask } from './fixtures';
 
@@ -15,7 +15,14 @@ const members = buildMemberMap(makeMembers());
 const onError = vi.fn();
 const onPosted = vi.fn();
 const renderThread = () =>
-  render(<CommentThread taskId="t1" taskKey="T-1" members={members} onError={onError} onPosted={onPosted} />);
+  render(
+    <CommentThread
+      parent={{ kind: 'tasks', id: 't1', key: 'T-1' }}
+      members={members}
+      onError={onError}
+      onPosted={onPosted}
+    />,
+  );
 
 const comment = (over = {}) => ({
   id: 'c1', author_id: 'u1', author_name: 'Tony Wu',
@@ -58,6 +65,25 @@ describe('CommentThread', () => {
     expect(onPosted).toHaveBeenCalled();
   });
 
+  it('posts to a story when the parent is a story', async () => {
+    vi.mocked(api.createScrumComment).mockResolvedValue({ message: 'ok', comment: comment({ body_md: 'Story note' }) });
+    render(
+      <CommentThread
+        parent={{ kind: 'stories', id: 's1', key: 'US-1' }}
+        members={members}
+        onError={onError}
+        onPosted={onPosted}
+      />,
+    );
+    await screen.findByText('No comments yet.');
+    expect(api.getScrumComments).toHaveBeenCalledWith('stories', 's1');
+
+    await userEvent.type(screen.getByLabelText('Comment on US-1'), 'Story note');
+    await userEvent.click(screen.getByRole('button', { name: 'Comment' }));
+
+    expect(api.createScrumComment).toHaveBeenCalledWith('stories', 's1', 'Story note');
+  });
+
   it('submits on Cmd/Ctrl+Enter', async () => {
     vi.mocked(api.createScrumComment).mockResolvedValue({ message: 'ok', comment: comment() });
     renderThread();
@@ -91,6 +117,21 @@ describe('CommentThread', () => {
     expect(screen.getByRole('button', { name: 'Comment' })).toBeDisabled();
   });
 
+  it('keeps Comment enabled while posting, with aria-busy', async () => {
+    vi.mocked(api.createScrumComment).mockReturnValue(new Promise(() => {}));   // still in flight
+    renderThread();
+    await screen.findByText('No comments yet.');
+
+    await userEvent.type(screen.getByLabelText(/comment on T-1/i), 'Nice work');
+    await userEvent.click(screen.getByRole('button', { name: 'Comment' }));
+
+    const busy = screen.getByRole('button', { name: 'Posting…' });
+    expect(busy).toBeEnabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(busy);
+    expect(api.createScrumComment).toHaveBeenCalledTimes(1);
+  });
+
   it('reports a failed post without losing the draft', async () => {
     vi.mocked(api.createScrumComment).mockRejectedValue(new Error('offline'));
     renderThread();
@@ -104,21 +145,19 @@ describe('CommentThread', () => {
   });
 });
 
-describe('StoryModal comment thread', () => {
+describe('TaskEditorModal comment thread', () => {
   it('starts each task with an empty composer: a draft does not follow the reader', async () => {
     const story = makeStory({
       tasks: [makeTask({ id: 'a', key: 'T-1' }), makeTask({ id: 'b', key: 'T-2' })],
     });
     const props = {
-      story, members, sprints: [], scale: 'fibonacci' as const, canWrite: true,
-      onClose: vi.fn(), onUpdateStory: vi.fn(), onOpenTask: vi.fn(), onAddTask: vi.fn(),
-      onDeleteTask: vi.fn(), onMoveTask: vi.fn(), onCommentError: vi.fn(), onCommentPosted: vi.fn(),
+      story, members: makeMembers(), scale: 'fibonacci' as const, onClose: vi.fn(), onSave: vi.fn(),
     };
-    const { rerender } = render(<StoryModal {...props} focusTaskId="a" />);
+    const { rerender } = render(<TaskEditorModal {...props} task={story.tasks[0]} />);
     await screen.findByText('No comments yet.');
     await userEvent.type(screen.getByLabelText(/comment on T-1/i), 'Meant for T-1');
 
-    rerender(<StoryModal {...props} focusTaskId="b" />);
+    rerender(<TaskEditorModal {...props} task={story.tasks[1]} />);
     const box = (await screen.findByLabelText(/comment on T-2/i)) as HTMLTextAreaElement;
     expect(box.value).toBe('');
     expect(api.getScrumComments).toHaveBeenLastCalledWith('tasks', 'b');

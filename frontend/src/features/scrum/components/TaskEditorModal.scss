@@ -98,6 +98,9 @@
   &__field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
   &__row { display: flex; gap: 12px; flex-wrap: wrap; }
 
+  // Three options: a select sized to them rather than the dialog's width.
+  &__status select { align-self: flex-start; min-width: 160px; }
+
   &__label {
     font-size: 10.5px;
     font-weight: var(--gt-weight-semibold);
@@ -218,11 +221,34 @@
   }
 
   &__submit {
+    // Busy, it shows a spinner before "Saving…": the min-width fits that, its longest state,
+    // so the footer never shifts between idle and busy.
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 112px;
     border: none;
     background: var(--gt-primary);
     color: var(--gt-gray-0);
 
     &:hover:not(:disabled) { background: var(--gt-primary-hover); }
     &:disabled { opacity: 0.45; cursor: not-allowed; }
+    &[aria-busy='true'] { cursor: progress; }
+  }
+
+  &__spinner { @include gt-spinner; }
+
+  // The task's thread sits below Save/Cancel (the story modal's section rhythm).
+  &__comments {
+    padding-top: 14px;
+    border-top: 1px solid var(--gt-border);
+  }
+
+  &__section-title {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-secondary);
   }
 }

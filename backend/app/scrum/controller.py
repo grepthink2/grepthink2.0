@@ -50,6 +50,8 @@ REPO_NOT_FOUND = "Repo not found"
 #: 422s raised from more than one place.
 BAD_DATE_RANGE = "ends_at must be on or after starts_at"
 TITLE_REQUIRED = "title cannot be null"
+#: 409: a story leaves through the backlog, so a sprint's scope never drops by deletion.
+STORY_IN_SPRINT = "Move the story to the backlog before deleting it"
 
 
 # ------------------------------------------------------------------- access ----
@@ -232,6 +234,13 @@ def _get_story_or_404(client, story_id: str) -> dict:
     return row
 
 
+def _in_backlog(story: dict) -> bool:
+    """Whether the board lists ``story`` in its backlog: it has no sprint, or it is a legacy
+    archived row (``archived_at`` set), whatever sprint it still names. Nothing sets
+    ``archived_at`` any more, and :func:`update_story` clears it on any sprint write."""
+    return story.get("sprint_id") is None or bool(story.get("archived_at"))
+
+
 def _get_task_or_404(client, task_id: str) -> dict:
     res = client.table("tasks").select("*").eq("id", str(task_id)).maybe_single().execute()
     row = res.data if res else None
@@ -273,8 +282,8 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
         if fields["sprint_id"] is not None:
             _require_sprint_in_project(client, fields["sprint_id"], story["project_id"])
         payload["sprint_id"] = fields["sprint_id"]  # None ⇒ backlog
-    if "archived" in fields and fields["archived"] is not None:
-        payload["archived_at"] = datetime.now(UTC).isoformat() if fields["archived"] else None
+        # a sprint write also clears the legacy archive flag
+        payload["archived_at"] = None
     if not payload:
         return story
     payload["updated_at"] = datetime.now(UTC).isoformat()
@@ -285,11 +294,26 @@ def update_story(*, story_id: str, user_id: str, fields: dict) -> dict:
     # more sequential round-trips (two to recompute totals, one to upsert), so
     # a title or description edit would pay ~half the request for nothing —
     # `completed` comes from task status, which a story write never touches.
-    if {"points", "sprint_id", "archived_at"} & payload.keys():
+    if {"points", "sprint_id"} & payload.keys():
         for sid in {story.get("sprint_id"), res.data[0].get("sprint_id")}:
             if sid:
                 _snapshot_burnup_safe(client, sid)
     return res.data[0]
+
+
+def delete_story(*, story_id: str, user_id: str) -> None:
+    """Delete a backlog story; Postgres cascades its tasks, their comments and move history.
+
+    Who can call: team members. Raises 404 :data:`STORY_NOT_FOUND`, 403 :data:`MEMBERS_ONLY`,
+    and 409 :data:`STORY_IN_SPRINT` for a story in a sprint. No burnup snapshot: a backlog
+    story is outside every sprint's scope.
+    """
+    client = get_client()
+    story = _get_story_or_404(client, story_id)
+    _require_writer(client, project_id=story["project_id"], user_id=user_id)
+    if not _in_backlog(story):
+        raise HTTPException(status_code=409, detail=STORY_IN_SPRINT)
+    client.table("user_stories").delete().eq("id", str(story_id)).execute()
 
 
 def create_task(*, story_id: str, user_id: str, fields: dict) -> dict:
@@ -733,7 +757,7 @@ def get_board(*, project_id: str, user_id: str, sprint_id: str | None) -> dict:
         if sel_id
         else []
     )
-    backlog = [s for s in all_stories if s.get("sprint_id") is None or s.get("archived_at")]
+    backlog = [s for s in all_stories if _in_backlog(s)]
 
     def live_stories(sid: str) -> list[dict]:
         return [s for s in all_stories if s.get("sprint_id") == sid and not s.get("archived_at")]
@@ -848,7 +872,7 @@ def get_summary(*, project_id: str, user_id: str) -> dict:
     stories = reads["stories"]
 
     # The board's own split: a sprint shows its live stories, and its Backlog view lists the
-    # stories with no sprint and the archived ones.
+    # stories with no sprint and the legacy archived ones (_in_backlog).
     live_ids = (
         [
             s["id"]
@@ -858,7 +882,7 @@ def get_summary(*, project_id: str, user_id: str) -> dict:
         if sprint
         else []
     )
-    backlog_stories = sum(1 for s in stories if s.get("sprint_id") is None or s.get("archived_at"))
+    backlog_stories = sum(1 for s in stories if _in_backlog(s))
     tasks = (
         rows(client.table("tasks").select("story_id, status").in_("story_id", live_ids))
         if live_ids

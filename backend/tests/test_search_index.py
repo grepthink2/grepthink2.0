@@ -247,11 +247,13 @@ def world() -> FakeSupabase:
                 assignee=S2,
                 points=3,
             ),  # reached only through task t5
+            # A legacy archived row that still names its old sprint: the board lists it in
+            # the backlog, so search must too (never the stale sprint).
             story(
                 "st9",
                 "US-1",
                 "Old idea",
-                sprint_id=None,
+                sprint_id=SP1,
                 reporter=UID,
                 assignee=UID,
                 points=1,
@@ -456,6 +458,7 @@ EXPECTED_STUDENT = {
         f"{BOARD}?view=backlog&task=t2",
     ),
     ("task", "t5"): ("Write the CSV exporter", "Grepthink 2.0", f"{BOARD}?sprint={SP1}&task=t5"),
+    ("task", "t4"): ("Task of an archived story", "Grepthink 2.0", f"{BOARD}?view=backlog&task=t4"),
     ("story", "st1"): (
         "Instructor imports a roster",
         "Sprint 3 · 8 pts · Grepthink 2.0",
@@ -471,6 +474,7 @@ EXPECTED_STUDENT = {
         "Sprint 3 · 3 pts · Grepthink 2.0",
         f"{BOARD}?sprint={SP1}&story=st5",
     ),
+    ("story", "st9"): ("Old idea", "1 pts · Grepthink 2.0", f"{BOARD}?view=backlog&story=st9"),
     ("conversation", "c-dm"): ("Ashton Liu", "Direct message", "/app/messages/c-dm"),
     ("conversation", "c-ghost"): ("Direct message", "Direct message", "/app/messages/c-ghost"),
     ("conversation", "c-team"): ("Grepthink 2.0", "Team channel", "/app/messages/c-team"),
@@ -487,8 +491,8 @@ EXPECTED_STUDENT = {
 def test_student_sees_own_work_and_class_only_in_two_waves(monkeypatch):
     items, fake = index_for(monkeypatch, UID)
 
-    # Nothing from Beta; not t3/t4/t6/t7 or st3/st6/st7/st9 (someone else's, archived, or on a
-    # board UID cannot open); not the draft a2.
+    # Nothing from Beta; not t3/t6/t7 or st3/st6/st7 (someone else's, or on a board UID cannot
+    # open); not the draft a2. The archived st9 and its task t4 open in the backlog.
     assert summary(items) == EXPECTED_STUDENT
     assert by_id(items, S2)["same_project"] is True
     assert by_id(items, INSTR)["same_project"] is False

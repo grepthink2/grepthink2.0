@@ -40,3 +40,14 @@ def test_move_route_runs_the_move(monkeypatch, client):
     assert res.status_code == 200
     assert res.json()["task"]["status"] == "done"
     assert db.rows("tasks")[0]["status"] == "done"
+
+
+def test_delete_story_route_answers_204(monkeypatch, client):
+    db = scrum_db(
+        monkeypatch,
+        user_stories=[{"id": "st1", "project_id": PID, "key": "US-1", "sprint_id": None}],
+    )
+    res = client.delete("/api/scrum/stories/st1", headers=header_for("tony@ucsc.edu", sub=UID))
+    assert res.status_code == 204
+    assert res.content == b""
+    assert db.rows("user_stories") == []

@@ -72,6 +72,11 @@ export const scrumApi = {
     );
   },
 
+  /** A backlog story and its tasks; 409 for a story in a sprint (move it to the backlog first). */
+  deleteScrumStory: async (storyId: string) => {
+    return apiRequest<void>(`/api/scrum/stories/${storyId}`, { method: 'DELETE' });
+  },
+
   createScrumTask: async (storyId: string, body: ApiCreateTaskBody) => {
     return apiRequest<{ message: string; task: ApiScrumTask }>(
       `/api/scrum/stories/${storyId}/tasks`,

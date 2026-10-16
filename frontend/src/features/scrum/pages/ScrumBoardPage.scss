@@ -252,6 +252,11 @@
   .story-slot__open:focus-visible { opacity: 1; }
 }
 
+// Keep the card's top row (key, estimate, points) clear of the open control: 24px button
+// + 6px offset − 14px card padding + 8px gap. Scoped to the slot, so scrum.scss stays a 1:1
+// port; the button never reaches the title, which starts ~40px down.
+.story-slot > .gt-story .gt-story__top { padding-right: 24px; }
+
 .story-slot__open {
   position: absolute;
   top: 6px;
