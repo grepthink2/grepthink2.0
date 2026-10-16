@@ -775,6 +775,18 @@ export interface ApiScrumBoardSprint extends ApiScrumSprint {
   progress?: ApiSprintProgress;
 }
 
+/** A task named from another task's dependencies, or in the board's task index. */
+export interface ApiTaskRef {
+  id: string;
+  key: string;
+  title: string;
+  status: ApiBoardStatus;
+  story_id: string;
+  story_key: string;
+  /** The story's sprint; null = backlog. */
+  sprint_id: string | null;
+}
+
 export interface ApiScrumTask {
   id: string;
   story_id: string;
@@ -796,6 +808,14 @@ export interface ApiScrumTask {
   moved_by_name: string | null;
   moved_at: string | null;
   comment_count: number;
+  /**
+   * The tasks this one depends on. Only the board load fills it: single-task responses send []
+   * (`mergeTaskResponse` keeps the board's). Missing only from a backend older than this client
+   * (the two deploy separately).
+   */
+  depends_on?: ApiTaskRef[];
+  /** The tasks that depend on this one; as `depends_on`, board-only and possibly missing. */
+  blocks?: ApiTaskRef[];
 }
 
 export interface ApiScrumStory {
@@ -840,6 +860,11 @@ export interface ApiScrumBoard {
   members: ApiScrumMember[];
   /** 'member' = full read/write; 'staff' = read + comments. */
   access: 'member' | 'staff';
+  /**
+   * Every task of the project in key order, any sprint or the backlog: the dependency picker's
+   * choices. Missing only from a backend older than this client (the two deploy separately).
+   */
+  task_index?: ApiTaskRef[];
 }
 
 /** The project page's sprint card: the sprint the board opens on, its task counts, the backlog size. */

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { ApiBoardStatus, ApiScrumTask } from '@/lib/api';
 import { isBacklogStory } from '../utils/backlog';
+import { blockedMessage, blockers, isBlocked } from '../utils/dependencies';
 import { parseHours } from '../utils/estimateHours';
 import { storyRollup, storyHours, columnPoints, tasksIn, collectTasks } from '../utils/rollups';
 import { prLabel, prState } from '../utils/prLabel';
@@ -7,7 +9,49 @@ import { relativeTime } from '../utils/relativeTime';
 import { percentDone, sprintDates, STATUS_LABELS } from '../utils/sprints';
 import { tagSlug, ESTIMATE_SCALES, TASK_TAGS, BOARD_COLUMNS } from '../config/scrumTags';
 import { buildMemberMap, personOf } from '../scrumTypes';
-import { makeStory, makeTask } from './fixtures';
+import { makeRef, makeStory, makeTask } from './fixtures';
+
+describe('dependencies', () => {
+  const dep = (key: string, status: ApiBoardStatus) => makeRef({ id: key, key, status });
+  const unfinished = [dep('GT-12', 'in_progress')];
+
+  it('blockers are the dependencies that are not done', () => {
+    const task = makeTask({
+      depends_on: [dep('GT-11', 'done'), dep('GT-12', 'in_progress'), dep('GT-13', 'todo')],
+    });
+    expect(blockers(task).map((d) => d.key)).toEqual(['GT-12', 'GT-13']);
+  });
+
+  it('blocks a task in To do with an unfinished dependency', () => {
+    expect(isBlocked(makeTask({ status: 'todo', depends_on: unfinished }))).toBe(true);
+  });
+
+  it('frees it once every dependency is done', () => {
+    expect(isBlocked(makeTask({ status: 'todo', depends_on: [dep('GT-12', 'done')] }))).toBe(false);
+  });
+
+  it('never blocks a task already under way', () => {
+    expect(isBlocked(makeTask({ status: 'in_progress', depends_on: unfinished }))).toBe(false);
+  });
+
+  it('reads a task from an older backend (no depends_on) as unblocked', () => {
+    const legacy: ApiScrumTask = { ...makeTask(), depends_on: undefined };
+    expect(blockers(legacy)).toEqual([]);
+    expect(isBlocked(legacy)).toBe(false);
+  });
+
+  it.each([
+    [['GT-12'], 'GT-15 is blocked by GT-12'],
+    [['GT-12', 'GT-13'], 'GT-15 is blocked by GT-12 and GT-13'],
+    [['GT-12', 'GT-13', 'GT-14'], 'GT-15 is blocked by GT-12, GT-13 and GT-14'],
+  ])('names the blockers %j, and not the finished ones', (keys, message) => {
+    const task = makeTask({
+      key: 'GT-15',
+      depends_on: [dep('GT-9', 'done'), ...keys.map((k) => dep(k, 'todo'))],
+    });
+    expect(blockedMessage(task)).toBe(message);
+  });
+});
 
 describe('storyRollup', () => {
   it('derives task/point progress from children', () => {

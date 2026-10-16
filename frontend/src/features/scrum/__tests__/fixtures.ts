@@ -1,5 +1,6 @@
 import type {
   ApiScrumBoard, ApiScrumBoardSprint, ApiScrumMember, ApiScrumStory, ApiScrumSummary, ApiScrumTask,
+  ApiTaskRef,
 } from '@/lib/api';
 
 /**
@@ -11,7 +12,14 @@ export const makeTask = (over: Partial<ApiScrumTask> = {}): ApiScrumTask => ({
   id: 'a', story_id: 's1', key: 'T-1', title: 'Task', description_md: null,
   points: null, estimate_hours: null, status: 'todo', reporter_id: 'u1',
   assignee_id: null, tags: [], pr_url: null, pr_provider: null, pr_state: null,
-  moved_by: null, moved_by_name: null, moved_at: null, comment_count: 0, ...over,
+  moved_by: null, moved_by_name: null, moved_at: null, comment_count: 0,
+  depends_on: [], blocks: [], ...over,
+});
+
+/** A task as another task names it: makeTask()'s task, on makeStory()'s story in Sprint 1. */
+export const makeRef = (over: Partial<ApiTaskRef> = {}): ApiTaskRef => ({
+  id: 'a', key: 'T-1', title: 'Task', status: 'todo', story_id: 's1', story_key: 'US-1',
+  sprint_id: 'sp1', ...over,
 });
 
 export const makeStory = (over: Partial<ApiScrumStory> = {}): ApiScrumStory => ({
@@ -41,6 +49,7 @@ export const makeBoard = (over: Partial<ApiScrumBoard> = {}): ApiScrumBoard => (
   burnup: { sprint: null, cumulative: { labels: [], scope: [], completed: [], subtitle: null } },
   members: makeMembers(),
   access: 'member',
+  task_index: [],
   ...over,
 });
 
