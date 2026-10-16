@@ -196,7 +196,6 @@
     @include gt-transition(background-color);
 
     &:last-child { border-bottom: none; }
-    &--focused { background: var(--gt-info-soft); border-radius: var(--gt-radius-sm); }
   }
   &__task-key {
     font-family: var(--gt-font-mono);

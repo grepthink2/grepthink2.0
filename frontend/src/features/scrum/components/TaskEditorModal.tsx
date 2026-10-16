@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Loader2, Plus, X } from 'lucide-react';
 import { Menu, MenuItem } from '@components/Menu/Menu';
 import { Popover } from '@components/Popover/Popover';
@@ -7,11 +7,15 @@ import type {
 } from '@/lib/api';
 import { TASK_TAGS } from '../config/scrumTags';
 import type { EstimateScale } from '../config/scrumTags';
+import { buildMemberMap } from '../scrumTypes';
 import { isPrUrl } from '../utils/prLabel';
 import { assignedTaskPoints } from '../utils/rollups';
+import CommentThread from './CommentThread';
 import { PointPicker } from './ScalePicker';
 import TagBadge from './TagBadge';
 import './TaskEditorModal.scss';
+
+const ignoreCommentError = () => {};
 
 interface Props {
   /** The parent story — this editor is only reachable from its detail. */
@@ -27,6 +31,10 @@ interface Props {
   onBack?: () => void;
   onCreate?: (body: ApiCreateTaskBody) => void;
   onSave?: (body: ApiUpdateTaskBody) => void;
+  /** A comment that failed to post (edit mode: an existing task has a thread). */
+  onCommentError?: (message: string) => void;
+  /** Refresh the board so the card's comment count stays in step. */
+  onCommentPosted?: () => void;
 }
 
 /**
@@ -38,12 +46,16 @@ interface Props {
  * Points are capped at what the parent story has left (maintainer 2026-08-29):
  * the story estimate is a budget in both directions — a story cannot drop below
  * what its tasks claim, and a task cannot claim more than the story has.
+ *
+ * An existing task's comment thread sits below the form's actions.
  */
 export default function TaskEditorModal({
   story, task = null, members, scale, saving = false, onClose, onBack, onCreate, onSave,
+  onCommentError, onCommentPosted,
 }: Props) {
   const back = onBack ?? onClose;
   const editing = task != null;
+  const memberMap = useMemo(() => buildMemberMap(members), [members]);
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description_md ?? '');
   const [tags, setTags] = useState<string[]>(task?.tags ?? []);
@@ -64,9 +76,12 @@ export default function TaskEditorModal({
   useEffect(() => {
     const onEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onEscape);
-    titleRef.current?.focus();
     return () => document.removeEventListener('keydown', onEscape);
   }, [onClose]);
+
+  // The title takes focus when the editor opens, and only then: the page passes a new onClose
+  // on every render, and a board refetch after a comment must not pull focus out of the thread.
+  useEffect(() => { titleRef.current?.focus(); }, []);
 
   const toggleTag = (tag: string) =>
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -291,6 +306,21 @@ export default function TaskEditorModal({
             {saving ? 'Saving…' : editing ? 'Save task' : 'Add task'}
           </button>
         </footer>
+
+        {/* After the footer, so the form and its actions stay on the first screen; the
+            backdrop scrolls a long thread. Posting never touches the form's fields. */}
+        {editing && (
+          <section className="task-editor__comments">
+            <h3 className="task-editor__section-title">Comments</h3>
+            <CommentThread
+              key={task.id}
+              parent={{ kind: 'tasks', id: task.id, key: task.key }}
+              members={memberMap}
+              onError={onCommentError ?? ignoreCommentError}
+              onPosted={onCommentPosted}
+            />
+          </section>
+        )}
       </div>
     </div>
   );

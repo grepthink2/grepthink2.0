@@ -412,9 +412,12 @@ export default function ScrumBoardPage() {
       </div>
 
       {/* One modal at a time: the task editor takes precedence over the story
-          detail, and opening either closes the other (maintainer 2026-09-10). */}
+          detail, and opening either closes the other (maintainer 2026-09-10).
+          Keyed by task: another ?task= starts a fresh form, while a refetch of the same
+          task (after a comment is posted) keeps the unsaved edits. */}
       {openTaskPair && (
         <TaskEditorModal
+          key={openTaskPair.task.id}
           story={openTaskPair.story}
           task={openTaskPair.task}
           members={board.members}
@@ -423,6 +426,8 @@ export default function ScrumBoardPage() {
           onClose={closeTaskEditor}
           onBack={() => backToStory(openTaskPair.story.id)}
           onSave={(body) => handleSaveTask(openTaskPair.task.id, body)}
+          onCommentError={(m) => push('error', m)}
+          onCommentPosted={refresh}
         />
       )}
 

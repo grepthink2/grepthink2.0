@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StoryModal from '../components/StoryModal';
@@ -8,6 +8,13 @@ import { makeMembers, makeStory } from './fixtures';
 vi.mock('@/lib/api', () => ({
   api: { getScrumComments: vi.fn(), createScrumComment: vi.fn() },
 }));
+const { api } = await import('@/lib/api');
+
+// The story's comment thread loads on mount.
+beforeEach(() => {
+  vi.mocked(api.getScrumComments).mockReset().mockResolvedValue({ comments: [] });
+  vi.mocked(api.createScrumComment).mockReset();
+});
 
 const setup = (storyOver = {}, over = {}) => {
   const props = {
@@ -103,5 +110,20 @@ describe('StoryModal — editing the story (maintainer 2026-09-25)', () => {
     setup({ description_md: null }, { canWrite: false });
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add a description' })).toBeNull();
+  });
+});
+
+describe('StoryModal — comments', () => {
+  it("renders the story's comment thread", async () => {
+    setup();
+    expect(await screen.findByLabelText('Comment on US-1')).toBeInTheDocument();
+    expect(api.getScrumComments).toHaveBeenCalledWith('stories', 's1');
+  });
+
+  it('gives staff no Delete story and no sprint select, but the comment thread', async () => {
+    setup({ sprint_id: null }, { canWrite: false });
+    expect(await screen.findByLabelText('Comment on US-1')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete story' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'Sprint' })).toBeNull();
   });
 });

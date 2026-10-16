@@ -20,8 +20,6 @@ export interface StoryModalProps {
   members: MemberMap;
   sprints: ApiScrumSprint[];
   scale: EstimateScale;
-  /** Scroll to and highlight this task (set when opened from a card). */
-  focusTaskId?: string | null;
   canWrite?: boolean;
   onClose: () => void;
   onUpdateStory: (body: ApiUpdateStoryBody) => void;
@@ -45,18 +43,16 @@ export interface StoryModalProps {
  * from this list.
  */
 export default function StoryModal({
-  story, members, sprints, scale, focusTaskId, canWrite = true,
+  story, members, sprints, scale, canWrite = true,
   onClose, onUpdateStory, onOpenTask, onAddTask, onDeleteTask, onMoveTask,
   onCommentError, onCommentPosted,
 }: StoryModalProps) {
-  const focusedTask = story.tasks.find((t) => t.id === focusTaskId) ?? null;
   const [confirmDelete, setConfirmDelete] = useState<ApiScrumTask | null>(null);
   // In-place editing of the story's text (the create-only StoryEditorModal has
   // always pointed here for edits; until 2026-09-25 nothing was wired).
   const [editing, setEditing] = useState<null | 'title' | 'description'>(null);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
-  const focusRef = useRef<HTMLLIElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   const { tasksDone, tasksTotal, pointsDone } = storyRollup(story);
@@ -95,15 +91,8 @@ export default function StoryModal({
     setEditing(null);
   };
 
-  // Opening from a card should land on that task, not the top of the list.
-  useEffect(() => {
-    if (focusTaskId && focusRef.current) {
-      // Optional-called: jsdom (and non-DOM renderers) omit scrollIntoView.
-      focusRef.current.scrollIntoView?.({ block: 'nearest' });
-    } else {
-      closeRef.current?.focus();
-    }
-  }, [focusTaskId]);
+  // Focus starts on the close button, inside the dialog.
+  useEffect(() => { closeRef.current?.focus(); }, []);
 
   return (
     <div className="story-modal-backdrop" onClick={onClose} role="presentation">
@@ -214,11 +203,7 @@ export default function StoryModal({
           )}
           <ul className="story-modal__task-list">
             {story.tasks.map((t) => (
-              <li
-                key={t.id}
-                ref={t.id === focusTaskId ? focusRef : undefined}
-                className={`story-modal__task${t.id === focusTaskId ? ' story-modal__task--focused' : ''}`}
-              >
+              <li key={t.id} className="story-modal__task">
                 <span className="story-modal__task-key">{t.key}</span>
                 <button
                   type="button"
@@ -267,19 +252,17 @@ export default function StoryModal({
           )}
         </section>
 
-        {focusedTask && (
-          <section className="story-modal__comments">
-            <h3 className="story-modal__section-title">Comments on {focusedTask.key}</h3>
-            <CommentThread
-              key={focusedTask.id}
-              taskId={focusedTask.id}
-              taskKey={focusedTask.key}
-              members={members}
-              onError={onCommentError}
-              onPosted={onCommentPosted}
-            />
-          </section>
-        )}
+        {/* The story's own thread; staff comment too (D2). A task's thread is in its editor. */}
+        <section className="story-modal__comments">
+          <h3 className="story-modal__section-title">Comments</h3>
+          <CommentThread
+            key={story.id}
+            parent={{ kind: 'stories', id: story.id, key: story.key }}
+            members={members}
+            onError={onCommentError}
+            onPosted={onCommentPosted}
+          />
+        </section>
 
         {canWrite && (
           <footer className="story-modal__foot">

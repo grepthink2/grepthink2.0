@@ -235,4 +235,17 @@
   }
 
   &__spinner { @include gt-spinner; }
+
+  // The task's thread sits below Save/Cancel (the story modal's section rhythm).
+  &__comments {
+    padding-top: 14px;
+    border-top: 1px solid var(--gt-border);
+  }
+
+  &__section-title {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: var(--gt-weight-semibold);
+    color: var(--gt-text-secondary);
+  }
 }
