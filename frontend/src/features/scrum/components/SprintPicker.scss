@@ -1,0 +1,129 @@
+@use '@styles/index.scss' as *;
+
+// SprintPicker: the scrum board header's sprint switcher, a menu button whose rows carry each sprint's
+// progress (spec: docs/superpowers/specs/2026-10-16-scrum-sprint-picker-design.md). It composes the
+// ported Popover + Menu; the design export has no sprint picker. Tokens only.
+
+.sprint-picker {
+  display: inline-flex;
+
+  // The header's 34px control (ScrumBoardPage.scss). Padding is explicit: the scaffold `button` rule
+  // (index.css) pads 0.6em 1.2em.
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    max-width: 240px;
+    padding: 0 10px;
+    border: 1px solid var(--gt-border);
+    border-radius: var(--gt-radius-sm);
+    background: var(--gt-gray-0);
+    color: var(--gt-text-primary);
+    font-family: $primary-font;
+    font-size: 12.5px;
+    font-weight: var(--gt-weight-medium);
+    cursor: pointer;
+    @include gt-transition(border-color, color);
+
+    &:hover,
+    &[aria-expanded='true'] { border-color: var(--gt-primary); }
+
+    &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+  }
+
+  &__trigger-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__chevron {
+    flex-shrink: 0;
+    color: var(--gt-text-tertiary);
+  }
+
+  // Many sprints scroll; focus() on the checked row scrolls it into view. With align="end" and the
+  // header's actions pinned right, the surface stays inside the board's content column.
+  &__menu {
+    width: min(360px, calc(100vw - 48px));
+    max-height: min(420px, calc(100vh - 140px));
+    overflow-y: auto;
+  }
+
+  // MenuItem is a 32px, nowrap row (Menu.scss); these rows stack three lines. Two classes, so this
+  // outranks `.gt-menu__item` whichever of the two stylesheets the bundle puts last.
+  &__menu &__item {
+    height: auto;
+    padding: 8px 10px;
+    align-items: flex-start;
+  }
+
+  &__item .gt-menu__label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    white-space: normal;
+  }
+
+  // Every row carries the check, so the labels line up; only the selected row shows it.
+  &__item .gt-menu__icon { margin-top: 2px; }
+  &__item:not([aria-checked='true']) .gt-menu__icon { visibility: hidden; }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: var(--gt-space-sm);
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__item[aria-checked='true'] &__name { font-weight: var(--gt-weight-semibold); }
+
+  // Wraps if it must.
+  &__meta {
+    font-size: var(--gt-text-caption);
+    font-weight: var(--gt-weight-regular);
+    color: var(--gt-text-tertiary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__progress {
+    display: flex;
+    align-items: center;
+    gap: var(--gt-space-sm);
+  }
+
+  // The project card's track (SprintProgressCard.scss) at the design ProgressBar's `sm` height.
+  &__bar {
+    flex: 1;
+    display: block;
+    height: 4px;
+    overflow: hidden;
+    border-radius: var(--gt-radius-pill);
+    background: var(--gt-surface-sunken);
+  }
+
+  // No width transition: the rows mount at their value.
+  &__bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--gt-primary);
+  }
+
+  &__pct {
+    min-width: 3ch;
+    text-align: right;
+    font-size: var(--gt-text-caption);
+    color: var(--gt-text-tertiary);
+    font-variant-numeric: tabular-nums;
+  }
+}
