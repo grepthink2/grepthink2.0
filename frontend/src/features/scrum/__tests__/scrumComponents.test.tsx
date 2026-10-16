@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import BacklogRow from '../components/BacklogRow';
 import TagBadge from '../components/TagBadge';
 import StoryCard from '../components/StoryCard';
 import BurnupChart from '../components/BurnupChart';
@@ -49,6 +50,32 @@ describe('StoryCard', () => {
     render(<StoryCard story={story} members={members} onSelect={onSelect} />);
     await userEvent.click(screen.getByRole('button'));
     expect(onSelect).toHaveBeenCalledOnce();
+  });
+});
+
+describe('BacklogRow', () => {
+  it('names the sprint in its move button', async () => {
+    const onMoveToSprint = vi.fn();
+    render(
+      <BacklogRow
+        story={makeStory({ key: 'US-1', sprint_id: null })} members={members}
+        sprintName="Sprint 2" onMoveToSprint={onMoveToSprint}
+      />,
+    );
+    const move = screen.getByRole('button', { name: 'Move US-1 to Sprint 2' });
+    expect(move).toHaveTextContent('Move to Sprint 2');
+    await userEvent.click(move);
+    expect(onMoveToSprint).toHaveBeenCalledOnce();
+  });
+
+  it('shows no archive date for a legacy archived story', () => {
+    const { container } = render(
+      <BacklogRow
+        story={makeStory({ key: 'US-1', sprint_id: 'sp1', archived_at: '2026-09-01T00:00:00Z' })}
+        members={members} sprintName="Sprint 2"
+      />,
+    );
+    expect(container).not.toHaveTextContent(/archived/i);
   });
 });
 

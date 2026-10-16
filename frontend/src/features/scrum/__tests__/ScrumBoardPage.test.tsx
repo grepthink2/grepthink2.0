@@ -178,6 +178,46 @@ describe('ScrumBoardPage story detail', () => {
     expect(within(dialog).getByRole('button', { name: /back to US-2 Roster import/i })).toBeInTheDocument();
   });
 
+  it("moves a task from the task editor's status select", async () => {
+    vi.mocked(api.moveScrumTask).mockResolvedValue({ message: 'ok', task: makeTask({ id: 'a', status: 'done' }) });
+    renderAt();
+    await userEvent.click(await screen.findByText('Build form'));
+    const editor = await screen.findByRole('dialog', { name: /edit t-1/i });
+
+    // The keyboard path for drag and drop.
+    await userEvent.selectOptions(within(editor).getByLabelText('Status'), 'done');
+    expect(api.moveScrumTask).toHaveBeenCalledWith('a', 'done');
+  });
+
+  it("gives staff no Status select in the task editor", async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue({ ...boardFixture(), access: 'staff' });
+    renderAt('/app/projects/p1/board?task=a');
+    const editor = await screen.findByRole('dialog', { name: /edit t-1/i });
+    expect(within(editor).queryByLabelText('Status')).toBeNull();
+  });
+
+  it('offers no Status select for a task of a backlog story', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(boardFixture({
+      backlog: [makeStory({
+        id: 's9', key: 'US-9', title: 'Old idea', sprint_id: null,
+        tasks: [makeTask({ id: 'z', story_id: 's9', key: 'T-9', title: 'Sketch it' })],
+      })],
+    }));
+    renderAt('/app/projects/p1/board?task=z');
+    const editor = await screen.findByRole('dialog', { name: /edit t-9/i });
+    expect(within(editor).queryByLabelText('Status')).toBeNull();
+  });
+
+  it('moves a backlog story to the shown sprint', async () => {
+    vi.mocked(api.updateStory).mockResolvedValue({ message: 'ok', story: makeStory({ id: 's9', sprint_id: 'sp1' }) });
+    renderAt();
+    await screen.findByText('Login flow');
+    await userEvent.click(screen.getByRole('tab', { name: 'Backlog' }));
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Move US-9 to Sprint 1' }));
+    expect(api.updateStory).toHaveBeenCalledWith('s9', { sprint_id: 'sp1' });
+  });
+
   it('deletes a backlog story and closes it', async () => {
     vi.mocked(api.deleteScrumStory).mockResolvedValue(undefined);
     renderAt('/app/projects/p1/board?view=backlog&story=s9');

@@ -19,6 +19,7 @@ import StoryEditorModal from '../components/StoryEditorModal';
 import TaskEditorModal from '../components/TaskEditorModal';
 import { useScrumBoard } from '../hooks/useScrumBoard';
 import { buildMemberMap } from '../scrumTypes';
+import { isBacklogStory } from '../utils/backlog';
 import { collectTasks } from '../utils/rollups';
 import '../scrum.scss';
 import './ScrumBoardPage.scss';
@@ -373,16 +374,17 @@ export default function ScrumBoardPage() {
                   story={s}
                   members={members}
                   onOpen={() => setStoryParam(s.id)}
-                  onRestore={canWrite && board.sprint_id
+                  onMoveToSprint={canWrite && board.sprint_id
                     ? () => updateStory(s.id, { sprint_id: board.sprint_id })
                     : undefined}
+                  sprintName={sprint?.name ?? ''}
                 />
               ))}
             </div>
           ) : (
             <div className="scrum-board__empty-state">
               <h2>Backlog is empty</h2>
-              <p>Stories you archive or leave unscheduled show up here.</p>
+              <p>Stories that aren't in a sprint show up here.</p>
             </div>
           )
         )}
@@ -435,6 +437,10 @@ export default function ScrumBoardPage() {
           onClose={closeTaskEditor}
           onBack={() => backToStory(openTaskPair.story.id)}
           onSave={(body) => handleSaveTask(openTaskPair.task.id, body)}
+          // Staff never move tasks, and the optimistic move only knows sprint stories.
+          onMove={canWrite && !isBacklogStory(openTaskPair.story)
+            ? (to) => moveTask(openTaskPair.task.id, to)
+            : undefined}
           onCommentError={(m) => push('error', m)}
           onCommentPosted={refresh}
         />

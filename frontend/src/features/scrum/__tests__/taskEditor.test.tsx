@@ -274,6 +274,29 @@ describe('TaskEditorModal', () => {
     expect(box).toHaveFocus();
   });
 
+  it('moves the task from its status select right away', async () => {
+    const onMove = vi.fn();
+    const onSave = vi.fn();
+    render(
+      <TaskEditorModal
+        {...props()} task={makeTask({ id: 'a', key: 'T-1', status: 'todo' })}
+        onSave={onSave} onMove={onMove}
+      />,
+    );
+    const status = screen.getByLabelText('Status');
+    expect(status).toHaveValue('todo');
+    expect(status).toHaveAccessibleDescription('Applies right away.');
+
+    await userEvent.selectOptions(status, 'done');
+    expect(onMove).toHaveBeenCalledWith('done');
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('has no status select when the page cannot move the task', () => {
+    render(<TaskEditorModal {...props()} task={makeTask({ id: 'a', key: 'T-1' })} onSave={vi.fn()} />);
+    expect(screen.queryByLabelText('Status')).toBeNull();
+  });
+
   it('stays enabled while saving, with aria-busy, and ignores a second click', async () => {
     const p = props();
     const onSave = vi.fn();

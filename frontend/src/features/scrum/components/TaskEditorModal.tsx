@@ -5,8 +5,8 @@ import { Popover } from '@components/Popover/Popover';
 import type {
   ApiCreateTaskBody, ApiScrumMember, ApiScrumStory, ApiScrumTask, ApiUpdateTaskBody,
 } from '@/lib/api';
-import { TASK_TAGS } from '../config/scrumTags';
-import type { EstimateScale } from '../config/scrumTags';
+import { BOARD_COLUMNS, TASK_TAGS } from '../config/scrumTags';
+import type { BoardStatus, EstimateScale } from '../config/scrumTags';
 import { buildMemberMap } from '../scrumTypes';
 import { isPrUrl } from '../utils/prLabel';
 import { assignedTaskPoints } from '../utils/rollups';
@@ -31,6 +31,9 @@ interface Props {
   onBack?: () => void;
   onCreate?: (body: ApiCreateTaskBody) => void;
   onSave?: (body: ApiUpdateTaskBody) => void;
+  /** Move the task to another column at once (no Save). Present only when the viewer can move
+   *  this task: a team member, on a sprint story. Its select is the keyboard path for DnD. */
+  onMove?: (to: BoardStatus) => void;
   /** A comment that failed to post (edit mode: an existing task has a thread). */
   onCommentError?: (message: string) => void;
   /** Refresh the board so the card's comment count stays in step. */
@@ -50,7 +53,7 @@ interface Props {
  * An existing task's comment thread sits below the form's actions.
  */
 export default function TaskEditorModal({
-  story, task = null, members, scale, saving = false, onClose, onBack, onCreate, onSave,
+  story, task = null, members, scale, saving = false, onClose, onBack, onCreate, onSave, onMove,
   onCommentError, onCommentPosted,
 }: Props) {
   const back = onBack ?? onClose;
@@ -152,6 +155,22 @@ export default function TaskEditorModal({
         <h2 className="task-editor__title" id="task-editor-title">
           {editing ? `Edit ${task.key}` : `New task in ${story.key}`}
         </h2>
+
+        {/* The board's keyboard/assistive path: HTML5 drag and drop is mouse-only. */}
+        {editing && onMove && (
+          <div className="task-editor__field task-editor__status">
+            <label className="task-editor__label" htmlFor="task-editor-status">Status</label>
+            <select
+              id="task-editor-status"
+              value={task.status}
+              aria-describedby="task-editor-status-hint"
+              onChange={(e) => onMove(e.target.value as BoardStatus)}
+            >
+              {BOARD_COLUMNS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+            <span className="task-editor__hint" id="task-editor-status-hint">Applies right away.</span>
+          </div>
+        )}
 
         <div className="task-editor__field">
           <label className="task-editor__label" htmlFor="task-editor-title-input">Title</label>

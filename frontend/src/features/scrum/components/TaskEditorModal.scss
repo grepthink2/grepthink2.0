@@ -98,6 +98,9 @@
   &__field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
   &__row { display: flex; gap: 12px; flex-wrap: wrap; }
 
+  // Three options: a select sized to them rather than the dialog's width.
+  &__status select { align-self: flex-start; min-width: 160px; }
+
   &__label {
     font-size: 10.5px;
     font-weight: var(--gt-weight-semibold);

@@ -22,8 +22,8 @@ interface Props {
  * The three fixed columns with HTML5 drag & drop — the same mechanic the
  * Assign board uses (bare id on `text/plain`, modifier classes for state).
  *
- * Dragging is mouse-only by nature; the keyboard/AT path is the status
- * select in the task detail (F5), which every card links to via Enter.
+ * Dragging is mouse-only by nature; the keyboard/AT path is the Status
+ * select in the task editor (F5), which every card opens with Enter.
  */
 export default function ScrumBoard({
   tasks, members, storyKeys, canWrite = true, onMove, onOpenTask,

@@ -18,6 +18,8 @@
 //   * .gt-comments__send stays enabled while posting (spec 2026-10-15 G): it is an
 //     inline-flex with a min-width that fits its busy state, a .gt-comments__spinner
 //     (the gt-spinner mixin, hence the @use above) before "Posting…", and a progress cursor
+//   * .gt-backlog-row__archived is dropped: the archive is gone (spec 2026-10-15 A), and a
+//     legacy archived story is an ordinary backlog row
 // Re-port from the design file when it changes; do not hand-edit values.
 
 /* ============================================================
@@ -421,7 +423,6 @@
 }
 .gt-backlog-row__title:hover { color: var(--gt-primary); }
 .gt-backlog-row__title:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
-.gt-backlog-row__archived { font-size: 10px; color: var(--gt-text-tertiary); font-style: italic; flex-shrink: 0; }
 .gt-backlog-row__meta { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .gt-backlog-row__restore {
   display: inline-flex;
