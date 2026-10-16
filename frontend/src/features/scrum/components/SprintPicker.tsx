@@ -1,13 +1,26 @@
 import {
-  useCallback, useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent, type Ref,
+  useCallback, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent, type Ref,
 } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 import { Menu, MenuItem } from '@/components/Menu/Menu';
 import { Popover } from '@/components/Popover/Popover';
-import type { ApiScrumBoardSprint } from '@/lib/api';
+import type { ApiScrumBoardSprint, ApiSprintProgress } from '@/lib/api';
 import { percentDone, sprintDates } from '../utils/sprints';
 import SprintStatusPill from './SprintStatusPill';
 import './SprintPicker.scss';
+
+/**
+ * The least space kept between the open menu and either side of the viewport, when the viewport has that much to spare:
+ * the board's side padding (ScrumBoardPage.scss), so a moved menu lines up with the board.
+ */
+const GUTTER = 24;
+
+/** The story card's vocabulary ("1/2 tasks · 3/8 pts"): points only when the sprint has any. */
+function progressSummary(p: ApiSprintProgress): string {
+  if (p.tasks_total === 0) return 'No tasks yet';
+  const points = p.points_total > 0 ? ` · ${p.points_done}/${p.points_total} pts` : '';
+  return `${p.tasks_done}/${p.tasks_total} tasks${points}`;
+}
 
 interface SprintPickerProps {
   /** In starts_at order, as the API returns them. */
@@ -29,7 +42,23 @@ interface SprintPickerProps {
  */
 export default function SprintPicker({ sprints, selectedId, onSelect, ref }: SprintPickerProps) {
   const [open, setOpen] = useState(false);
+  const [shift, setShift] = useState(0);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // align="end" hangs the menu from the trigger's right side, but the gear and New Story follow the trigger, so on a
+  // phone the menu would run off the left of the screen. Once open it moves right just enough to stay GUTTER px inside
+  // the viewport (with less than 2 × GUTTER to spare it is centred), measured before the browser paints — as
+  // DefinitionPopover does on the analytics page.
+  useLayoutEffect(() => {
+    const trigger = triggerRef.current;
+    const surface = trigger?.nextElementSibling; // the Popover's surface, rendered after its anchor
+    if (!open || !trigger || !surface) return;
+    const { width } = surface.getBoundingClientRect();
+    const at = trigger.getBoundingClientRect().right - width; // the menu's left side before any shift
+    const viewport = document.documentElement.clientWidth;
+    const edge = Math.min(GUTTER, (viewport - width) / 2);
+    setShift(Math.min(Math.max(at, edge), viewport - edge - width) - at);
+  }, [open]);
 
   // The trigger is ours (close hands focus back to it) and the page's (it refocuses it after a switch).
   const setTrigger = useCallback((node: HTMLButtonElement | null) => {
@@ -96,7 +125,15 @@ export default function SprintPicker({ sprints, selectedId, onSelect, ref }: Spr
 
   return (
     <span className="sprint-picker">
-      <Popover open={open} onClose={close} anchor={trigger} placement="bottom" align="end" padded={false}>
+      <Popover
+        open={open}
+        onClose={close}
+        anchor={trigger}
+        placement="bottom"
+        align="end"
+        padded={false}
+        style={shift ? { right: -shift } : undefined}
+      >
         <Menu
           ariaLabel="Sprints"
           autoFocus="checked"
@@ -105,11 +142,9 @@ export default function SprintPicker({ sprints, selectedId, onSelect, ref }: Spr
           className="sprint-picker__menu"
         >
           {sprints.map((s) => {
+            // Without progress (a backend older than this client), the row shows the dates alone.
             const p = s.progress;
-            const percent = percentDone(p.tasks_done, p.tasks_total);
-            // The story card's vocabulary ("1/2 tasks · 3/8 pts"): points only when the sprint has any.
-            const points = p.points_total > 0 ? ` · ${p.points_done}/${p.points_total} pts` : '';
-            const summary = p.tasks_total === 0 ? 'No tasks yet' : `${p.tasks_done}/${p.tasks_total} tasks${points}`;
+            const percent = p ? percentDone(p.tasks_done, p.tasks_total) : 0;
             return (
               <MenuItem
                 key={s.id}
@@ -123,14 +158,16 @@ export default function SprintPicker({ sprints, selectedId, onSelect, ref }: Spr
                   <span className="sprint-picker__name">{s.name}</span>
                   <SprintStatusPill status={s.status} />
                 </span>
-                <span className="sprint-picker__meta">{sprintDates(s)} · {summary}</span>
+                <span className="sprint-picker__meta">{sprintDates(s)}{p && ` · ${progressSummary(p)}`}</span>
                 {/* Spans only: the row is a <button>. The bar is decorative, as on the story card. */}
-                <span className="sprint-picker__progress">
-                  <span className="sprint-picker__bar" aria-hidden="true">
-                    <span className="sprint-picker__bar-fill" style={{ width: `${percent}%` }} />
+                {p && (
+                  <span className="sprint-picker__progress">
+                    <span className="sprint-picker__bar" aria-hidden="true">
+                      <span className="sprint-picker__bar-fill" style={{ width: `${percent}%` }} />
+                    </span>
+                    {p.tasks_total > 0 && <span className="sprint-picker__pct">{percent}%</span>}
                   </span>
-                  {p.tasks_total > 0 && <span className="sprint-picker__pct">{percent}%</span>}
-                </span>
+                )}
               </MenuItem>
             );
           })}

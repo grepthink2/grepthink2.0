@@ -771,7 +771,8 @@ export interface ApiSprintProgress {
 
 /** A sprint as the board lists it: with its live progress. */
 export interface ApiScrumBoardSprint extends ApiScrumSprint {
-  progress: ApiSprintProgress;
+  /** Missing only from a backend older than this client (the two deploy separately). */
+  progress?: ApiSprintProgress;
 }
 
 export interface ApiScrumTask {

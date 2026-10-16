@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SprintPicker from '../components/SprintPicker';
@@ -86,6 +86,15 @@ describe('SprintPicker', () => {
     expect(third).toHaveTextContent('2/2 tasks');
     expect(third).not.toHaveTextContent('pts');
     expect(within(third).getByText('100%')).toBeInTheDocument();
+  });
+
+  it('lists a sprint by its dates alone when the board has no progress for it (an older backend)', async () => {
+    render(<SprintPicker sprints={[makeSprint({ progress: undefined })]} selectedId="sp1" onSelect={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Sprint: Sprint 1' }));
+
+    const only = row('Sprint 1');
+    expect(only).toHaveTextContent(/Aug 10 – Aug 23$/);
+    expect(only.querySelector('.sprint-picker__bar')).toBeNull();
   });
 
   it('picks another sprint and closes', async () => {
@@ -183,5 +192,36 @@ describe('SprintPicker', () => {
 
     expect(onSelect).toHaveBeenCalledWith('sp1');
     expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  describe('keeps the menu on screen', () => {
+    const rect = (left: number, width: number) => ({ left, right: left + width, width, top: 0, bottom: 34, height: 34, x: left, y: 0, toJSON: () => ({}) }) as DOMRect;
+    /** A `viewport`-wide page, the trigger's right side at `triggerRight`, a `menuWidth` menu hanging from it. */
+    const layout = (viewport: number, triggerRight: number, menuWidth: number) => {
+      vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(viewport);
+      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+        if (this.classList.contains('sprint-picker__trigger')) return rect(triggerRight - 90, 90);
+        if (this.classList.contains('gt-popover')) return rect(triggerRight - menuWidth, menuWidth);
+        return rect(0, 0);
+      });
+    };
+    const openMenu = async () => {
+      await userEvent.click(renderPicker().trigger);
+      return screen.getByRole('menu').closest('.gt-popover') as HTMLElement;
+    };
+    afterEach(() => vi.restoreAllMocks());
+
+    it('hangs it from the trigger when it fits', async () => {
+      layout(1024, 854, 362);
+      expect((await openMenu()).style.right).toBe('');
+    });
+    it('moves it right until its left side is in line with the board, 24 px in (the gear and New Story follow the trigger)', async () => {
+      layout(500, 331, 362);
+      expect((await openMenu()).style.right).toBe('-55px'); // its left side lands at 331 − 362 + 55 = 24
+    });
+    it('centres it on a phone, with less than 48 px to spare', async () => {
+      layout(382, 213, 336);
+      expect((await openMenu()).style.right).toBe('-146px'); // (382 − 336) / 2 = 23 on either side
+    });
   });
 });

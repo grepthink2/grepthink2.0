@@ -3,7 +3,8 @@
 **Date:** 2026-10-16
 **Branch:** `feat/scrum-sprint-picker`, stacked on `fix/scrum-board-batch1` (head `21a99779`; not yet merged)
 **Status:** Reviewed against the code on 2026-10-16 (Fable); implementation-ready. The maintainer asked
-to "plan and do" this batch, so every open question below ends in a decision.
+to "plan and do" this batch, so every open question below ends in a decision. Amended the same day after
+browser verification: D7.
 
 ## The ask (maintainer, 2026-10-15, Board note 3)
 
@@ -44,6 +45,16 @@ viewing the progress of it (like a progress bar)."
   (4px). Porting `ProgressBar` for both the card and the picker is a follow-up.
 - **D6. Resolved open questions** (details in "Open questions, answered"): one chronological list, no
   groups; rows are `menuitemradio`; the trigger shows no bar.
+- **D7. Phones and an older backend** (added after browser verification). Three gaps the review missed:
+  (a) `align="end"` hangs the menu from the trigger's right side, but the gear and New Story follow the
+  trigger, so at 382px the menu started 122px off the left of the screen. Once open, the picker moves the
+  menu right just enough to stay 24px (the board's padding) inside the viewport, centring it when there
+  is less to spare — `DefinitionPopover`'s pattern (`features/analytics/components/DefinitionPopover.tsx`).
+  (b) A long sprint name kept the 240px trigger from shrinking, which squeezed the gear to 24px and
+  wrapped New Story onto two lines: the picker now gives way (`min-width: 0` down to the trigger) and those
+  two never shrink. (c) The two Vercel projects deploy separately, so a new client can briefly meet an old
+  backend: `progress` is optional, and a row without it shows the dates alone (it crashed the menu).
+  Rows also keep one height with or without the `%` (the progress line is 18px either way).
 
 ## Backend
 
@@ -105,7 +116,10 @@ export interface ApiSprintProgress {
   points_total: number;
 }
 /** A sprint as the board lists it: with its live progress. */
-export interface ApiScrumBoardSprint extends ApiScrumSprint { progress: ApiSprintProgress; }
+export interface ApiScrumBoardSprint extends ApiScrumSprint {
+  /** Missing only from a backend older than this client (the two deploy separately). */
+  progress?: ApiSprintProgress;
+}
 ```
 
 `ApiScrumBoard.sprints: ApiScrumBoardSprint[]`. `ApiScrumSprint` stays as it is: `ApiScrumSummary.sprint`
@@ -206,7 +220,8 @@ with `p = s.progress`, `percent = percentDone(p.tasks_done, p.tasks_total)` and
 — the story card's own vocabulary ("1/2 tasks · 3/8 pts", `StoryCard.tsx:50-52`). Spans only: the row is
 a `<button>`, so `div`s are invalid, and the bar is decorative (`aria-hidden`, as `StoryCard.tsx:55`) —
 a labelled `progressbar` inside the row would be read into the row's name. The row's accessible name
-is its text: "Sprint 2 Active Sep 7 – Sep 20 · 5/8 tasks · 12/20 pts 63%".
+is its text: "Sprint 2 Active Sep 7 – Sep 20 · 5/8 tasks · 12/20 pts 63%". Without `progress` (D7c) the
+row is the head and the dates alone: no summary, no bar.
 
 **Closing.** The Popover takes Esc in the capture phase and stops it (`Popover.tsx:40-45`), so `Menu`'s
 own Escape branch (`Menu.tsx:34`) never runs inside it: every way out goes through one stable `close`
@@ -233,16 +248,18 @@ staff too (`ScrumBoardPage.tsx:286`). No sprints → the page renders no picker 
 Board view's "No sprints yet" explains. One sprint → one checked row (its progress is still worth a look).
 
 Hooks lint (every rule an error, no compiler): refs are read only in handlers, `close` and effects
-(`react-hooks/refs` forbids `ref.current` during render); no `setState` in an effect;
+(`react-hooks/refs` forbids `ref.current` during render); the one `setState` in an effect is D7a's
+shift, a `useLayoutEffect` measuring from refs, which the rule allows (as in `DefinitionPopover`);
 `onKeyDown`/`onBlur` are plain handlers.
 
 ### Styles — `SprintPicker.scss` (`@use '@styles/index.scss' as *;` for `$primary-font` and mixins)
 
 Tokens only (`npm run lint:design` flags bare hex); every token below exists in `styles/tokens/*.css`.
 
-- `.sprint-picker { display: inline-flex; }`
+- `.sprint-picker { display: inline-flex; min-width: 0; > .gt-popover-anchor { min-width: 0; } }` — gives
+  way when the header's actions run out of room (D7b).
 - `&__trigger`: the header's 34px control (`ScrumBoardPage.scss:151-170`): `display: inline-flex;
-  align-items: center; gap: 6px; height: 34px; max-width: 240px; padding: 0 10px` (explicit — the
+  align-items: center; gap: 6px; height: 34px; min-width: 0; max-width: 240px; padding: 0 10px` (explicit — the
   scaffold `button` rule in `index.css:51-59` pads `0.6em 1.2em`, see the note at
   `ScrumBoardPage.scss:177-181`); `border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm);
   background: var(--gt-gray-0); color: var(--gt-text-primary); font-family: $primary-font; font-size:
@@ -252,10 +269,10 @@ Tokens only (`npm run lint:design` flags bare hex); every token below exists in 
 - `&__trigger-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }`,
   `&__chevron { flex-shrink: 0; color: var(--gt-text-tertiary); }`.
 - `&__menu { width: min(360px, calc(100vw - 48px)); max-height: min(420px, calc(100vh - 140px));
-  overflow-y: auto; }` — many sprints scroll; `focus()` on the checked row scrolls it into view. With
-  `align="end"` and the actions pinned right (below), the surface stays inside the content column
-  (board padding 24px a side, `ScrumBoardPage.scss:9`; the sidebar is off-canvas below 768px,
-  `Layout/Sidebar.scss:34-44`).
+  overflow-y: auto; }` — many sprints scroll; `focus()` on the checked row scrolls it into view. On a
+  phone the menu would run off the left of the screen from `align="end"`; the picker moves it in (D7a:
+  24px from either side, the board's padding, `ScrumBoardPage.scss:9`; the sidebar is off-canvas below
+  768px, `Layout/Sidebar.scss:34-44`).
 - `&__item { height: auto; padding: 8px 10px; align-items: flex-start; }` and
   `&__item .gt-menu__label { display: flex; flex-direction: column; gap: 4px; min-width: 0;
   white-space: normal; }` — `MenuItem` is a 32px, `nowrap` row (`Menu.scss:10,29`).
@@ -268,7 +285,8 @@ Tokens only (`npm run lint:design` flags bare hex); every token below exists in 
   `&__item[aria-checked='true'] &__name { font-weight: var(--gt-weight-semibold); }`.
 - `&__meta { font-size: var(--gt-text-caption); font-weight: var(--gt-weight-regular); color:
   var(--gt-text-tertiary); font-variant-numeric: tabular-nums; }` (wraps if it must).
-- `&__progress { display: flex; align-items: center; gap: var(--gt-space-sm); }`,
+- `&__progress { display: flex; align-items: center; gap: var(--gt-space-sm); min-height: 18px; }` (one
+  line with or without the `%`, so every row is one height; `&__pct` sets `line-height: 18px`),
   `&__bar { flex: 1; display: block; height: 4px; overflow: hidden; border-radius: var(--gt-radius-pill);
   background: var(--gt-surface-sunken); }` (the card's track, `SprintProgressCard.scss:92-98`, at the
   design primitive's `sm` height), `&__bar-fill { display: block; height: 100%; border-radius: inherit;
@@ -280,7 +298,8 @@ Tokens only (`npm run lint:design` flags bare hex); every token below exists in 
 
 `ScrumBoardPage.scss`: drop `&__sprint-select select` (`:151`, `:165-170`); add `margin-left: auto` to
 `&__header-actions` (`:22-26`) so the row sits at the right when the header wraps (`flex-wrap`,
-`justify-content: space-between`, `:14-20`, leaves a lone wrapped item at the start). The board's three
+`justify-content: space-between`, `:14-20`, leaves a lone wrapped item at the start), and `min-width: 0`
+so it is never wider than that line; `flex-shrink: 0` on `&__icon-button` and `&__primary` (D7b). The board's three
 columns have no narrow layout (`:82-87`); phones are not a supported board layout today, and this batch
 only has to avoid making the header worse.
 
@@ -348,6 +367,9 @@ and the budget are untouched). Assert:
      "Sprint 3"; `Enter` calls `onSelect('sp3')`.
   8. `userEvent.tab()` out of the menu closes it.
   9. `fireEvent.mouseDown(document.body)` closes it.
+  10. (D7c) A sprint without `progress` lists its dates alone, with no bar.
+  11. (D7a, layout faked as `DefinitionPopover`'s tests do) the menu hangs from the trigger when it fits;
+      moves right until its left side is 24px in; is centred with less than 48px to spare.
 - **`scrumUtils.test.ts`**: `percentDone(0, 0) === 0`, `(1, 4) === 25`, `(2, 3) === 67`;
   `sprintDates` gives `'Sep 7 – Sep 20'`; `STATUS_LABELS` has the three labels.
 - **`ScrumBoardPage.test.tsx`**: "switches sprints from the picker and hands focus back to it" — with

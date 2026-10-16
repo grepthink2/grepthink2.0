@@ -6,6 +6,11 @@
 
 .sprint-picker {
   display: inline-flex;
+  // When the header's actions run out of room (a phone, a long sprint name), the picker gives way and its name
+  // truncates; the gear and New Story keep their size. Popover's anchor span sits between it and the trigger.
+  min-width: 0;
+
+  > .gt-popover-anchor { min-width: 0; }
 
   // The header's 34px control (ScrumBoardPage.scss). Padding is explicit: the scaffold `button` rule
   // (index.css) pads 0.6em 1.2em.
@@ -14,6 +19,7 @@
     align-items: center;
     gap: 6px;
     height: 34px;
+    min-width: 0;
     max-width: 240px;
     padding: 0 10px;
     border: 1px solid var(--gt-border);
@@ -95,10 +101,12 @@
     font-variant-numeric: tabular-nums;
   }
 
+  // One line tall with or without the % (a sprint with no tasks has none), so every row is the same height.
   &__progress {
     display: flex;
     align-items: center;
     gap: var(--gt-space-sm);
+    min-height: 18px;
   }
 
   // The project card's track (SprintProgressCard.scss) at the design ProgressBar's `sm` height.
@@ -123,6 +131,7 @@
     min-width: 3ch;
     text-align: right;
     font-size: var(--gt-text-caption);
+    line-height: 18px;
     color: var(--gt-text-tertiary);
     font-variant-numeric: tabular-nums;
   }
