@@ -1492,7 +1492,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   title          text NOT NULL CHECK (char_length(title) BETWEEN 1 AND 200),
   description_md text CHECK (char_length(description_md) <= 20000),
   points         integer CHECK (points > 0),
-  time_estimate  text CHECK (char_length(time_estimate) <= 20),
+  time_estimate  text CHECK (char_length(time_estimate) <= 20),  -- legacy; dropped by the task-hours contract migration
+  estimate_hours smallint,                                       -- whole hours (2026-10-16_task_estimate_hours.sql)
   status         text NOT NULL DEFAULT 'todo',
   reporter_id    uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   assignee_id    uuid REFERENCES profiles(id) ON DELETE SET NULL,
@@ -1507,6 +1508,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at     timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT tasks_key_uq          UNIQUE (project_id, key),
   CONSTRAINT tasks_status_valid    CHECK (status IN ('todo','in_progress','done')),
+  CONSTRAINT tasks_estimate_hours_valid CHECK (estimate_hours IS NULL OR estimate_hours BETWEEN 1 AND 15),
   CONSTRAINT tasks_provider_valid  CHECK (pr_provider IS NULL OR pr_provider IN ('github','gitlab')),
   CONSTRAINT tasks_pr_state_valid  CHECK (pr_state IS NULL OR pr_state IN ('open','merged','closed','draft')),
   CONSTRAINT tasks_tags_valid      CHECK (tags <@ ARRAY['backend','frontend','ui/ux','infra','design','research','bug','chore','optimization','docs']::text[])
