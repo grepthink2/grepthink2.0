@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TaskEditorModal from '../components/TaskEditorModal';
 import { remainingStoryPoints } from '../utils/rollups';
@@ -184,6 +184,47 @@ describe('TaskEditorModal', () => {
     await userEvent.type(screen.getByLabelText('Pull request'), 'https://github.com/ucsc/app');
     expect(screen.getByLabelText('Pull request')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByText(/Paste a GitHub pull request link/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save task' })).toBeDisabled();
+  });
+
+  it.each(['16', '0', '2.5'])('refuses hours outside 1 to 15 (%s), and says why', async (typed) => {
+    const p = props();
+    const onSave = vi.fn();
+    render(<TaskEditorModal {...p} task={p.story.tasks[0]} onSave={onSave} />);
+
+    const box = screen.getByLabelText('Time estimate');
+    await userEvent.type(box, typed);
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Enter whole hours, 1 to 15.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save task' })).toBeDisabled();
+    // Enter in the title submits as well: the same guard refuses it.
+    await userEvent.type(screen.getByLabelText('Title'), '{Enter}');
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('explains the hours box', () => {
+    render(<TaskEditorModal {...props()} />);
+    const box = screen.getByLabelText('Time estimate');
+    expect(screen.getByText('Whole hours, up to 15.')).toBeInTheDocument();
+    expect(box).toHaveAccessibleDescription('Whole hours, up to 15.');
+    expect(box).toHaveAttribute('type', 'number');
+    expect(box).toHaveAttribute('min', '1');
+    expect(box).toHaveAttribute('max', '15');
+    expect(box).toHaveAttribute('step', '1');
+  });
+
+  it('does not clear the hours when the browser cannot read the box (Firefox and Safari read "4h" as empty)', () => {
+    const p = props();
+    const onSave = vi.fn();
+    render(<TaskEditorModal {...p} task={{ ...p.story.tasks[0], estimate_hours: 4 }} onSave={onSave} />);
+
+    const box = screen.getByLabelText('Time estimate');
+    // jsdom never reports badInput: stand in for the browser that was handed "4h".
+    Object.defineProperty(box, 'validity', { configurable: true, value: { badInput: true } });
+    fireEvent.change(box, { target: { value: '' } });
+
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Enter whole hours, 1 to 15.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save task' })).toBeDisabled();
   });
 

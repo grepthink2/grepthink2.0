@@ -8,6 +8,7 @@ import type {
 import { BOARD_COLUMNS, TASK_TAGS } from '../config/scrumTags';
 import type { BoardStatus, EstimateScale } from '../config/scrumTags';
 import { buildMemberMap } from '../scrumTypes';
+import { parseHours } from '../utils/estimateHours';
 import { isPrUrl } from '../utils/prLabel';
 import { assignedTaskPoints } from '../utils/rollups';
 import CommentThread from './CommentThread';
@@ -65,12 +66,15 @@ export default function TaskEditorModal({
   const [points, setPoints] = useState<number | undefined>(task?.points ?? undefined);
   // A string, so the box can hold what is being typed; sent as a number.
   const [hours, setHours] = useState(task?.estimate_hours == null ? '' : String(task.estimate_hours));
+  // Firefox and Safari give a number box's unreadable text ("4h") as '' — not a cleared box.
+  const [hoursBad, setHoursBad] = useState(false);
   const [assignee, setAssignee] = useState(task?.assignee_id ?? '');
   const [prUrl, setPrUrl] = useState(task?.pr_url ?? '');
   const [labelsOpen, setLabelsOpen] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
   const labelsButtonRef = useRef<HTMLButtonElement>(null);
   const prInvalid = prUrl.trim() !== '' && !isPrUrl(prUrl.trim());
+  const { invalid: hoursInvalid } = parseHours(hours, hoursBad);
 
   // Budget left for this task: siblings count against the story, but the task's
   // own current points are its to keep when re-pointing.
@@ -99,7 +103,7 @@ export default function TaskEditorModal({
 
   const submit = () => {
     const trimmed = title.trim();
-    if (!trimmed || saving || prInvalid) return;
+    if (!trimmed || saving || prInvalid || hoursInvalid) return;
     if (editing) {
       // Edits send the full field set with explicit nulls: clearing a description,
       // unassigning or unlinking a PR must persist. `undefined` would be dropped
@@ -266,14 +270,25 @@ export default function TaskEditorModal({
         <div className="task-editor__row">
           <div className="task-editor__field">
             <label className="task-editor__label" htmlFor="task-editor-estimate">Time estimate</label>
-            <input
-              id="task-editor-estimate"
-              type="text"
-              value={hours}
-              maxLength={20}
-              placeholder="4h"
-              onChange={(e) => setHours(e.target.value)}
-            />
+            <div className="task-editor__hours">
+              <input
+                id="task-editor-estimate"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={15}
+                step={1}
+                value={hours}
+                placeholder="4"
+                aria-invalid={hoursInvalid || undefined}
+                aria-describedby="task-editor-estimate-hint"
+                onChange={(e) => { setHours(e.target.value); setHoursBad(e.target.validity.badInput); }}
+              />
+              <span className="task-editor__hours-unit" aria-hidden="true">h</span>
+            </div>
+            <span className="task-editor__hint" id="task-editor-estimate-hint">
+              {hoursInvalid ? 'Enter whole hours, 1 to 15.' : 'Whole hours, up to 15.'}
+            </span>
           </div>
 
           <div className="task-editor__field">
@@ -319,7 +334,7 @@ export default function TaskEditorModal({
             type="button"
             className="task-editor__submit"
             onClick={submit}
-            disabled={!title.trim() || prInvalid}
+            disabled={!title.trim() || prInvalid || hoursInvalid}
             aria-busy={saving}
           >
             {saving && <Loader2 className="task-editor__spinner" size={14} aria-hidden="true" />}

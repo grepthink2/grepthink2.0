@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isBacklogStory } from '../utils/backlog';
+import { parseHours } from '../utils/estimateHours';
 import { storyRollup, storyHours, columnPoints, tasksIn, collectTasks } from '../utils/rollups';
 import { prLabel, prState } from '../utils/prLabel';
 import { relativeTime } from '../utils/relativeTime';
@@ -45,6 +46,25 @@ describe('storyHours', () => {
   it('counts a task without hours as 0 when another has some', () => {
     const tasks = [makeTask({ id: 'a', estimate_hours: 3 }), makeTask({ id: 'b', estimate_hours: null })];
     expect(storyHours(makeStory({ tasks }))).toBe(3);
+  });
+});
+
+describe('parseHours', () => {
+  it.each([
+    ['', false, { hours: null, invalid: false }],
+    ['4', false, { hours: 4, invalid: false }],
+    ['1', false, { hours: 1, invalid: false }],
+    ['15', false, { hours: 15, invalid: false }],
+    ['0', false, { hours: null, invalid: true }],
+    ['16', false, { hours: null, invalid: true }],
+    ['2.5', false, { hours: null, invalid: true }],
+    ['1e1', false, { hours: null, invalid: true }],
+    ['4h', false, { hours: null, invalid: true }],
+    // Firefox and Safari report "4h" in a number box as '' with validity.badInput.
+    ['', true, { hours: null, invalid: true }],
+    ['4', true, { hours: null, invalid: true }],
+  ])('reads %j (badInput %s)', (value, badInput, expected) => {
+    expect(parseHours(value, badInput)).toEqual(expected);
   });
 });
 

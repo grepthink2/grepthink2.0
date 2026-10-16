@@ -111,6 +111,17 @@
 
   &__hint { font-size: 11px; color: var(--gt-text-tertiary); }
 
+  // The hours box with its unit after it; the unit is decorative (the label names the field).
+  &__hours {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    input { flex: 1; min-width: 0; }
+  }
+
+  &__hours-unit { font-size: 12.5px; color: var(--gt-text-tertiary); }
+
   // Labels follow the design system's tag vocabulary: chosen labels are TagBadges
   // with their × (design/components/scrum/TagBadge), and more are picked from a
   // Popover + Menu. The trigger is the design's ghost button, sized to the badge row.
@@ -187,6 +198,8 @@
   }
 
   input[aria-invalid='true'] + .task-editor__hint { color: var(--gt-error-text); }
+  // The hours hint follows the box's wrapper, not the input itself.
+  &__hours:has(input[aria-invalid='true']) + &__hint { color: var(--gt-error-text); }
 
   textarea { resize: vertical; line-height: var(--gt-leading-normal); }
   select { cursor: pointer; }
