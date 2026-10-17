@@ -19,6 +19,9 @@ const HOME: PinnedItem = ['Home', '/app/home'];
 const MESSAGES: PinnedItem = ['Messages', '/app/messages'];
 const ANALYTICS: PinnedItem = ['Analytics', '/app/analytics'];
 const MY_CLASSES: PinnedItem = ['My Classes', '/app/my-classes'];
+// The selected class's own task board elsewhere; the item's path is the link itself.
+const TASKS_URL = 'https://tasks.grepthink2.com/cse115a';
+const TASKS: PinnedItem = ['Tasks - External', TASKS_URL];
 const CREATE_CLASS: PinnedItem = ['Create Class', '/app/create-class'];
 const JOIN_CLASS: PinnedItem = ['Join Class', '/app/join-class'];
 
@@ -133,8 +136,8 @@ describe('buildSidebarConfig', () => {
   it('gives no two items of one sidebar the same icon', () => {
     for (const canCreateClasses of [true, false]) {
       for (const classRole of ['instructor', 'ta', 'student'] as const) {
-        const items = buildSidebarConfig({ canCreateClasses, classRole }).flatMap((section) =>
-          section.groups.flatMap((group) => group.items),
+        const items = buildSidebarConfig({ canCreateClasses, classRole, externalTasksUrl: TASKS_URL }).flatMap(
+          (section) => section.groups.flatMap((group) => group.items),
         );
         const icons = items.map((item) => item.icon);
         expect(new Set(icons).size, `${canCreateClasses ? 'creator' : 'student account'} as ${classRole}`).toBe(
@@ -142,6 +145,96 @@ describe('buildSidebarConfig', () => {
         );
       }
     }
+  });
+});
+
+describe("the class's Tasks - External link", () => {
+  const withLink = (canCreateClasses: boolean, classRole: ClassRole) =>
+    buildSidebarConfig({ canCreateClasses, classRole, externalTasksUrl: TASKS_URL }).map(pin);
+
+  const INSTRUCTOR_CLASS_WITH_TASKS: PinnedSection = [
+    'class',
+    undefined,
+    [
+      [undefined, [['Dashboard', '/app/dashboard']]],
+      [
+        'Teams',
+        [
+          ['Projects', '/app/projects'],
+          ['Roster', '/app/roster'],
+        ],
+      ],
+      [
+        'Coursework',
+        [
+          ['Modules', '/app/modules'],
+          ['Final Reviews', '/app/ta-review/final-reviews'],
+          TASKS,
+        ],
+      ],
+      [
+        'TAs',
+        [
+          ['TA Management', '/app/ta-management'],
+          ['TA Meetings', '/app/ta-meetings'],
+        ],
+      ],
+    ],
+  ];
+  const [TEAM, , CLASS_GROUP] = STUDENT_GROUPS;
+  const STUDENT_GROUPS_WITH_TASKS: PinnedGroup[] = [
+    TEAM,
+    ['Coursework', [['Assignments', '/app/assignments'], TASKS]],
+    CLASS_GROUP,
+  ];
+
+  it('closes Coursework for the class instructor', () => {
+    expect(withLink(true, 'instructor')).toEqual([INSTRUCTOR_MAIN, INSTRUCTOR_CLASSES, INSTRUCTOR_CLASS_WITH_TASKS, FOOTER]);
+  });
+
+  it('closes Coursework for a student and for a TA', () => {
+    expect(withLink(false, 'student')).toEqual([
+      STUDENT_MAIN,
+      STUDENT_CLASSES,
+      ['class', undefined, STUDENT_GROUPS_WITH_TASKS],
+      FOOTER,
+    ]);
+    expect(withLink(false, 'ta')).toEqual([
+      STUDENT_MAIN,
+      STUDENT_CLASSES,
+      ['class', undefined, [...STUDENT_GROUPS_WITH_TASKS, TA_REVIEW]],
+      FOOTER,
+    ]);
+  });
+
+  it('is left out when the class has no link', () => {
+    expect(buildSidebarConfig({ canCreateClasses: true, classRole: 'instructor', externalTasksUrl: null }).map(pin)).toEqual([
+      INSTRUCTOR_MAIN,
+      INSTRUCTOR_CLASSES,
+      INSTRUCTOR_CLASS,
+      FOOTER,
+    ]);
+    expect(buildSidebarConfig({ canCreateClasses: false, classRole: 'student', externalTasksUrl: null }).map(pin)).toEqual([
+      STUDENT_MAIN,
+      STUDENT_CLASSES,
+      STUDENT_CLASS,
+      FOOTER,
+    ]);
+  });
+
+  it('needs a selected class: no class section, no link', () => {
+    expect(buildSidebarConfig({ canCreateClasses: false, classRole: null, externalTasksUrl: TASKS_URL }).map(pin)).toEqual([
+      STUDENT_MAIN,
+      STUDENT_CLASSES,
+      FOOTER,
+    ]);
+  });
+
+  it('is the only item that leaves GrepThink', () => {
+    const items = buildSidebarConfig({ canCreateClasses: true, classRole: 'instructor', externalTasksUrl: TASKS_URL }).flatMap(
+      (section) => section.groups.flatMap((group) => group.items),
+    );
+    expect(items.filter((item) => item.external).map((item) => item.label)).toEqual(['Tasks - External']);
   });
 });
 

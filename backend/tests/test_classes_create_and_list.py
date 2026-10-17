@@ -127,6 +127,27 @@ def test_create_class_without_an_institution_leaves_it_unset(create_db, monkeypa
     assert "institution_id" not in created
 
 
+def test_create_class_records_its_tasks_link(create_db, monkeypatch):
+    _codes(monkeypatch, ["FREE0001"] * 5)
+    created = classes.create_class(
+        "JOB-191",
+        None,
+        "Fall",
+        datetime.date(2026, 9, 21),
+        INSTR,
+        external_tasks_url="https://job191.yeterly.ai/",
+    )
+    assert created["external_tasks_url"] == "https://job191.yeterly.ai/"
+    assert create_db.executes <= 4, _trace(create_db)
+
+
+def test_create_class_without_a_tasks_link_leaves_the_column_out(create_db, monkeypatch):
+    # Not written at all, so creating a class without a link never depends on the column.
+    _codes(monkeypatch, ["FREE0001"] * 5)
+    created = classes.create_class("SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR)
+    assert "external_tasks_url" not in created
+
+
 def test_auto_created_tsrs_carry_their_deadline_in_the_schools_zone(
     create_db, monkeypatch, with_istinye
 ):
@@ -202,6 +223,24 @@ def test_create_class_route_passes_institution_id_through(client, instructor_rou
     assert captured["institution_id"] == UUID(UCSC_ID)
 
 
+def test_create_class_route_passes_the_tasks_link_through(client, instructor_route_db, monkeypatch):
+    captured: dict = {}
+    monkeypatch.setattr(
+        classes,
+        "create_class",
+        lambda *args, **kwargs: captured.update(kwargs) or {"id": "new-class"},
+    )
+
+    res = client.post(
+        "/api/classes",
+        headers=_route_header(),
+        json={**ROUTE_BODY, "external_tasks_url": " https://tasks.grepthink2.com/cse115a "},
+    )
+
+    assert res.status_code == 200, res.text
+    assert captured["external_tasks_url"] == "https://tasks.grepthink2.com/cse115a"
+
+
 def test_create_class_route_rejects_a_non_uuid_institution_id(client, instructor_route_db):
     res = client.post(
         "/api/classes",
@@ -230,11 +269,14 @@ def _class(cid, owner, name, code, **extra):
         "image_url": None,
         "review_period_open": False,
         "review_zoom_url": None,
+        "external_tasks_url": None,
         **extra,
     }
 
 
 C_IST = "class-ist"
+#: C1's "Tasks - External" link, which everyone in the class sees in its sidebar.
+C1_TASKS = "https://tasks.grepthink2.com/cse115c"
 
 
 @pytest.fixture
@@ -251,7 +293,14 @@ def list_db(monkeypatch):
             {"id": LONER, "email": "loner@ucsc.edu"},
         ],
         classes=[
-            _class(C1, INSTR, "CSE 115C", "AAAA1111", institution_id=UCSC_ID),
+            _class(
+                C1,
+                INSTR,
+                "CSE 115C",
+                "AAAA1111",
+                institution_id=UCSC_ID,
+                external_tasks_url=C1_TASKS,
+            ),
             _class(C2, OTHER_INSTR, "CSE 110", "BBBB2222"),
             _class(C3, INSTR, "CSE 130", "CCCC3333", status="complete"),
             _class(C_IST, TA1, "SE 301", "DDDD4444", institution_id=IST_ID),
@@ -287,6 +336,7 @@ STUDENT_KEYS = {
     "start_date",
     "year",
     "image_url",
+    "external_tasks_url",
     "institution_id",
     "teacher_email",
     "enrolled_count",
@@ -304,8 +354,16 @@ def test_students_see_their_classes_with_the_teacher_email(list_db):
         ("other@ucsc.edu", 1, "student"),  # a NULL enrollment_role is a student
     ]
     assert [c["institution"] for c in out] == [UCSC_SUMMARY, None]
+    # The sidebar's "Tasks - External" item: shown for C1, hidden for C2.
+    assert [c["external_tasks_url"] for c in out] == [C1_TASKS, None]
     # created and enrolled classes in one wave, then the counts
     assert list_db.executes <= 3, _trace(list_db)
+
+
+def test_a_ta_sees_the_tasks_link_of_a_class_they_assist(list_db):
+    out = classes.get_classes_for_user(TA1)
+    assisted = next(c for c in out if c["id"] == C1)
+    assert (assisted["my_role"], assisted["external_tasks_url"]) == ("ta", C1_TASKS)
 
 
 def test_an_account_with_no_classes_gets_an_empty_list(list_db):
@@ -318,7 +376,9 @@ def test_instructors_see_the_classes_they_created(list_db):
     by_id = {c["id"]: c for c in out}
     assert set(by_id) == {C1, C3}
     assert by_id[C1] == {
-        **_class(C1, INSTR, "CSE 115C", "AAAA1111", institution_id=UCSC_ID),
+        **_class(
+            C1, INSTR, "CSE 115C", "AAAA1111", institution_id=UCSC_ID, external_tasks_url=C1_TASKS
+        ),
         "enrolled_count": 2,
         "my_role": "instructor",
         "institution": UCSC_SUMMARY,

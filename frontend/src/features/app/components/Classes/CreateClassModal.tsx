@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
+import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
 import { useInstitutionsWithRetry } from '@/lib/institutions';
 import DatePickerField from '@/features/app/components/Fields/DatePickerField';
 import './CreateClassModal.scss';
@@ -24,6 +25,11 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const [termStartDate, setTermStartDate] = useState('');
   const [tsrCount, setTsrCount] = useState(DEFAULT_TSR_COUNT['Fall']);
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  // The class's "Tasks - External" link. Checked once you leave the box (or submit), not mid-word.
+  const [tasksUrl, setTasksUrl] = useState('');
+  const [tasksUrlChecked, setTasksUrlChecked] = useState(false);
+  const [tasksUrlRefused, setTasksUrlRefused] = useState(false); // the API said no
+  const tasksUrlInput = useRef<HTMLInputElement>(null);
   const [instructorOnly, setInstructorOnly] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,6 +57,13 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   // Never create a class without its school just because the list has not (or could not) load.
   const schoolsPending = institutions === undefined;
   const schoolsFailed = institutions === null;
+
+  const parsedTasksUrl = parseExternalTasksUrl(tasksUrl);
+  const tasksUrlError = tasksUrlRefused
+    ? LINK_REFUSED_BY_API
+    : tasksUrlChecked && 'error' in parsedTasksUrl
+      ? parsedTasksUrl.error
+      : null;
 
   const handleTermChange = (term: Term) => {
     setSelectedTerm(term);
@@ -113,6 +126,13 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setError('First week of term is required');
       return;
     }
+    if ('error' in parsedTasksUrl) {
+      // The box says why; focus takes a screen reader there, and no older error stays up.
+      setError(null);
+      setTasksUrlChecked(true);
+      tasksUrlInput.current?.focus();
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -126,6 +146,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         start_date: termStartDate,
         tsr_count: tsrCount,
         institution_id: institutionId || undefined,
+        external_tasks_url: parsedTasksUrl.url ?? undefined,
       });
 
       const createdId = result.class?.id;
@@ -152,12 +173,20 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setTermStartDate('');
       setTsrCount(DEFAULT_TSR_COUNT['Fall']);
       setCsvFile(null);
+      setTasksUrl('');
+      setTasksUrlChecked(false);
+      setTasksUrlRefused(false);
       setInstructorOnly(false);
       handleClose();
       navigate('/app/dashboard');
     } catch (err) {
       console.error('Failed to create class:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create class');
+      if (isExternalTasksUrlRefusal(err)) {
+        setTasksUrlRefused(true);
+        tasksUrlInput.current?.focus();
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to create class');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -298,6 +327,43 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
                 <span>{csvFile ? csvFile.name : 'Choose CSV File'}</span>
               </div>
             </label>
+          </div>
+
+          {/* Tasks - External link: the class's task board elsewhere */}
+          <div className="create-class-modal__field">
+            <label htmlFor="create-class-tasks-url" className="create-class-modal__label">
+              Tasks - External Link (Optional)
+            </label>
+            <p id="create-class-tasks-url-hint" className="create-class-modal__description">
+              Your class&apos;s task board elsewhere. Everyone in the class sees it as Tasks&nbsp;-&nbsp;External in
+              the sidebar. You can change it later in Class Settings.
+            </p>
+            <input
+              ref={tasksUrlInput}
+              id="create-class-tasks-url"
+              type="text"
+              inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              className="create-class-modal__input"
+              placeholder="https://tasks.example.com/your-class"
+              value={tasksUrl}
+              onChange={(e) => {
+                setTasksUrl(e.target.value);
+                setTasksUrlRefused(false);
+              }}
+              onBlur={() => setTasksUrlChecked(true)}
+              aria-invalid={tasksUrlError ? true : undefined}
+              aria-describedby={
+                tasksUrlError ? 'create-class-tasks-url-hint create-class-tasks-url-error' : 'create-class-tasks-url-hint'
+              }
+            />
+            {tasksUrlError && (
+              <p id="create-class-tasks-url-error" className="create-class-modal__field-error">
+                {tasksUrlError}
+              </p>
+            )}
           </div>
 
           {/* Instructor Only Checkbox */}

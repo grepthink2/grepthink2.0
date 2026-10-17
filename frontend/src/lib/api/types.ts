@@ -37,6 +37,8 @@ export interface ApiClass {
   /** The school the class belongs to; null when unassigned or before the institutions migration. */
   institution?: ApiInstitutionSummary | null;
   institution_id?: string | null;
+  /** The class's task board elsewhere, its sidebar's "Tasks - External" item; null hides it. */
+  external_tasks_url?: string | null;
 }
 
 /**

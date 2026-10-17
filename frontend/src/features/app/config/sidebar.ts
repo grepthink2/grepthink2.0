@@ -14,6 +14,7 @@ import {
   House,
   LayoutDashboard,
   ListChecks,
+  ListTodo,
   LogIn,
   MessageSquare,
   Settings,
@@ -27,10 +28,13 @@ export type UserRole = 'instructor' | 'student';
 
 export interface SidebarItem {
   label: string;
+  /** The item's page, or for an `external` item the address it opens. */
   path: string;
   icon: LucideIcon;
   /** Pages this item also stays lit on, besides its own page and the pages under it. */
   alsoActiveOn?: readonly string[];
+  /** A link to another site, opened in a new tab (the class's "Tasks - External" board). */
+  external?: boolean;
 }
 
 /** Items under one category heading; a group without a title leads its section. */
@@ -62,6 +66,8 @@ const MY_CLASSES: SidebarItem = { label: 'My Classes', path: '/app/my-classes', 
 const CREATE_CLASS: SidebarItem = { label: 'Create Class', path: '/app/create-class', icon: CirclePlus };
 const JOIN_CLASS: SidebarItem = { label: 'Join Class', path: '/app/join-class', icon: LogIn };
 
+const COURSEWORK = 'Coursework';
+
 const instructorClassGroups: SidebarGroup[] = [
   { items: [{ label: 'Dashboard', path: '/app/dashboard', icon: LayoutDashboard }] },
   {
@@ -73,7 +79,7 @@ const instructorClassGroups: SidebarGroup[] = [
     ],
   },
   {
-    title: 'Coursework',
+    title: COURSEWORK,
     items: [
       { label: 'Modules', path: '/app/modules', icon: Blocks },
       { label: 'Final Reviews', path: '/app/ta-review/final-reviews', icon: ClipboardCheck },
@@ -97,7 +103,7 @@ const studentClassGroups: SidebarGroup[] = [
       { label: 'Create Project', path: '/app/create-project', icon: FolderPlus },
     ],
   },
-  { title: 'Coursework', items: [{ label: 'Assignments', path: '/app/assignments', icon: ClipboardList }] },
+  { title: COURSEWORK, items: [{ label: 'Assignments', path: '/app/assignments', icon: ClipboardList }] },
   {
     title: 'Class',
     items: [
@@ -128,27 +134,41 @@ const FOOTER: SidebarSection = {
   ],
 };
 
+/** The class's groups, Coursework closing with the class's own task board when it has one. */
+function withTasksLink(groups: SidebarGroup[], externalTasksUrl: string | null): SidebarGroup[] {
+  if (!externalTasksUrl) return groups;
+  const tasks: SidebarItem = { label: 'Tasks - External', path: externalTasksUrl, icon: ListTodo, external: true };
+  return groups.map((group) => (group.title === COURSEWORK ? { ...group, items: [...group.items, tasks] } : group));
+}
+
 /**
  * The sidebar for an account and its role in the selected class (`undefined` while the classes
  * load, `null` with no class selected). The top sections keep each account's familiar pages. The
  * class section follows the class role; while the classes load it is the account's usual one, so
- * it does not pop in, and with no class selected it is hidden.
+ * it does not pop in, and with no class selected it is hidden. `externalTasksUrl` is the selected
+ * class's "Tasks - External" link, already checked to be http(s); every role sees it.
  */
 export function buildSidebarConfig({
   canCreateClasses,
   classRole,
+  externalTasksUrl = null,
 }: {
   canCreateClasses: boolean;
   classRole: ClassRole | null | undefined;
+  externalTasksUrl?: string | null;
 }): SidebarSection[] {
   const sections: SidebarSection[] = [
     { id: 'main', groups: [{ items: canCreateClasses ? [HOME, MESSAGES, ANALYTICS] : [HOME, MESSAGES] }] },
     { id: 'classes', title: 'Classes', groups: [{ items: [MY_CLASSES, canCreateClasses ? CREATE_CLASS : JOIN_CLASS] }] },
   ];
   const role = classRole === undefined ? (canCreateClasses ? 'instructor' : 'student') : classRole;
-  if (role === 'instructor') sections.push({ id: 'class', groups: instructorClassGroups });
-  else if (role === 'ta') sections.push({ id: 'class', groups: [...studentClassGroups, taReviewGroup] });
-  else if (role === 'student') sections.push({ id: 'class', groups: studentClassGroups });
+  const classSection = (groups: SidebarGroup[]): SidebarSection => ({
+    id: 'class',
+    groups: withTasksLink(groups, externalTasksUrl),
+  });
+  if (role === 'instructor') sections.push(classSection(instructorClassGroups));
+  else if (role === 'ta') sections.push(classSection([...studentClassGroups, taReviewGroup]));
+  else if (role === 'student') sections.push(classSection(studentClassGroups));
   sections.push(FOOTER);
   return sections;
 }

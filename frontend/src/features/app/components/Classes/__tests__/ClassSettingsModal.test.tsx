@@ -1,0 +1,171 @@
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Class } from '@/lib/classContext';
+
+const ctx = vi.hoisted(() => ({
+  getClassStatus: vi.fn(() => 'active' as const),
+  setClassLifecycleStatus: vi.fn(),
+  hideClassFromUI: vi.fn(),
+  setClassExternalTasksUrl: vi.fn(),
+}));
+vi.mock('@/lib/classContext', () => ({ useClass: () => ctx }));
+vi.mock('@/lib/api', () => ({ api: { getClassRoster: vi.fn() } }));
+
+import ClassSettingsModal from '../ClassSettingsModal';
+
+const JOB_BOARD = 'https://job191.yeterly.ai/';
+
+function cls(id: string, external_tasks_url: string | null): Class {
+  return {
+    id,
+    name: id.toUpperCase(),
+    created_by: 'me',
+    created_at: '2026-09-27',
+    my_role: 'instructor',
+    institution: null,
+    external_tasks_url,
+  };
+}
+
+const job = cls('job-191', JOB_BOARD);
+
+function renderSettings(classItem: Class) {
+  return render(<ClassSettingsModal isOpen onClose={() => {}} classItem={classItem} />);
+}
+
+const linkBox = () => screen.getByLabelText(/Tasks - External link/i);
+const saveButton = () => screen.getByRole('button', { name: 'Save link' });
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  ctx.setClassExternalTasksUrl.mockResolvedValue(undefined);
+});
+
+describe('ClassSettingsModal — Tasks - External link', () => {
+  it("shows the class's current link, with an empty status line ready to announce a save", () => {
+    renderSettings(job);
+    expect(linkBox()).toHaveValue(JOB_BOARD);
+    // A live region already on the page is announced when its text changes; one inserted along
+    // with its text often is not.
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('offers Save only once the link changes', async () => {
+    const user = userEvent.setup();
+    renderSettings(job);
+    expect(saveButton()).toBeDisabled();
+    await user.type(linkBox(), 'board');
+    expect(saveButton()).toBeEnabled();
+  });
+
+  it('saves a changed link, less surrounding spaces, and says so', async () => {
+    const user = userEvent.setup();
+    renderSettings(job);
+    await user.clear(linkBox());
+    await user.type(linkBox(), '  https://tasks.grepthink2.com/cse115a ');
+    await user.click(saveButton());
+    expect(ctx.setClassExternalTasksUrl).toHaveBeenCalledWith('job-191', 'https://tasks.grepthink2.com/cse115a');
+    expect(await screen.findByRole('status')).toHaveTextContent(/saved/i);
+  });
+
+  it('removes the link', async () => {
+    const user = userEvent.setup();
+    renderSettings(job);
+    await user.click(screen.getByRole('button', { name: 'Remove link' }));
+    expect(ctx.setClassExternalTasksUrl).toHaveBeenCalledWith('job-191', null);
+    expect(await screen.findByRole('status')).toHaveTextContent(/removed/i);
+  });
+
+  it('saves an emptied box as no link', async () => {
+    const user = userEvent.setup();
+    renderSettings(job);
+    await user.clear(linkBox());
+    await user.click(saveButton());
+    expect(ctx.setClassExternalTasksUrl).toHaveBeenCalledWith('job-191', null);
+  });
+
+  it('keeps keyboard focus in the link box when the button pressed goes away', async () => {
+    // Remove disappears and Save turns disabled once the link is saved; focus must not fall to the page.
+    const user = userEvent.setup();
+    renderSettings(job);
+    await user.click(screen.getByRole('button', { name: 'Remove link' }));
+    await screen.findByRole('status');
+    expect(linkBox()).toHaveFocus();
+
+    await user.type(linkBox(), JOB_BOARD);
+    await user.click(saveButton());
+    expect(await screen.findByRole('status')).toHaveTextContent(/saved/i);
+    expect(linkBox()).toHaveFocus();
+  });
+
+  it('offers Remove only when the class has a link', () => {
+    renderSettings(cls('cse-115a', null));
+    expect(linkBox()).toHaveValue('');
+    expect(screen.queryByRole('button', { name: 'Remove link' })).not.toBeInTheDocument();
+  });
+
+  it('refuses a link that is not a full web address, says why at the box, and saves nothing', async () => {
+    const user = userEvent.setup();
+    renderSettings(cls('cse-115a', null));
+    await user.type(linkBox(), 'ftp://example.org/tasks');
+    await user.click(saveButton());
+    expect(ctx.setClassExternalTasksUrl).not.toHaveBeenCalled();
+    expect(linkBox()).toHaveAttribute('aria-invalid', 'true');
+    expect(linkBox()).toHaveAccessibleDescription(/https:\/\//);
+    expect(linkBox()).toHaveFocus(); // so a screen reader reads the reason
+  });
+
+  it('keeps what you typed and says why when the save fails', async () => {
+    const user = userEvent.setup();
+    ctx.setClassExternalTasksUrl.mockRejectedValue(new Error('Failed to update the tasks link'));
+    renderSettings(cls('cse-115a', null));
+    await user.type(linkBox(), JOB_BOARD);
+    await user.click(saveButton());
+    expect(await screen.findByRole('alert')).toHaveTextContent('Failed to update the tasks link');
+    expect(linkBox()).toHaveValue(JOB_BOARD);
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('says what to do when the API refuses the link, not a bare status code', async () => {
+    const user = userEvent.setup();
+    ctx.setClassExternalTasksUrl.mockRejectedValue(
+      Object.assign(new Error('Request failed with status 422'), {
+        status: 422,
+        detail: [{ type: 'value_error', loc: ['body', 'external_tasks_url'], msg: 'Value error, refused' }],
+      }),
+    );
+    renderSettings(cls('cse-115a', null));
+    await user.type(linkBox(), JOB_BOARD);
+    await user.click(saveButton());
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/can't be used/);
+    expect(alert).not.toHaveTextContent('422');
+  });
+
+  it("keeps a save that lands late out of the next class's dialog", async () => {
+    // Save on one class, close, open another before the save answers.
+    const user = userEvent.setup();
+    let finish: () => void = () => {};
+    ctx.setClassExternalTasksUrl.mockReturnValueOnce(new Promise<void>((resolve) => (finish = resolve)));
+    const { rerender } = renderSettings(cls('cse-115a', null));
+    await user.type(linkBox(), 'https://tasks.grepthink2.com/cse115a');
+    await user.click(screen.getByRole('button', { name: 'Save link' }));
+    rerender(<ClassSettingsModal isOpen onClose={() => {}} classItem={job} />);
+    await act(async () => finish());
+
+    expect(linkBox()).toHaveValue(JOB_BOARD); // the open class's own link, not the other's
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(saveButton()).toBeDisabled(); // "Save link", not stuck on "Saving…"
+    expect(screen.getByRole('button', { name: 'Remove link' })).toBeEnabled();
+  });
+
+  it("starts from the next class's link when another class is opened", async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderSettings(job);
+    await user.type(linkBox(), 'unsaved');
+    rerender(<ClassSettingsModal isOpen onClose={() => {}} classItem={cls('cse-115a', null)} />);
+    expect(linkBox()).toHaveValue('');
+    expect(saveButton()).toBeDisabled();
+  });
+});
