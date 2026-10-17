@@ -192,6 +192,11 @@ npm --prefix frontend run build && npm --prefix frontend run lint && npm --prefi
 cd backend && .venv/bin/ruff format --check . && .venv/bin/ruff check . && .venv/bin/python -m pytest --cov
 ```
 
+The backend suite also runs [`backend/scripts/check_api_client.py`](backend/scripts/check_api_client.py),
+which fails when the web client or the agent action catalog calls a route that does not exist,
+or when a route has no caller in `frontend/src`; CI runs it as a step of its own too, so each
+finding shows up as an annotation on the pull request.
+
 Both suites measure coverage. The build fails below the thresholds in
 [`frontend/vite.config.ts`](frontend/vite.config.ts) (`coverage.thresholds`) and
 [`backend/.coveragerc`](backend/.coveragerc) (`fail_under`). Raise them as coverage grows; never

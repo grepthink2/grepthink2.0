@@ -87,6 +87,11 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
+      - name: API client and routes agree
+        # scripts/check_api_client.py, which pytest runs too: every request in frontend/src and
+        # every catalog action needs a route, and every route a caller or an allowlist reason.
+        # Here each finding is also an annotation on the line it is about.
+        run: python scripts/check_api_client.py
       - name: Test with coverage
         # .coveragerc: branch coverage over app/, and the fail_under threshold.
         run: pytest --cov --cov-report=term-missing:skip-covered --cov-report=xml
