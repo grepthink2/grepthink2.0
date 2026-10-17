@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://github.com/grepthink2/grepthink2.0/actions/workflows/test.yml?query=branch%3Amain"><img alt="Tests on main" src="https://github.com/grepthink2/grepthink2.0/actions/workflows/test.yml/badge.svg?branch=main"></a>
   <a href="https://codecov.io/gh/grepthink2/grepthink2.0"><img alt="Coverage" src="https://codecov.io/gh/grepthink2/grepthink2.0/branch/main/graph/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-blue"></a>
   <a href="https://grepthink2.com"><img alt="grepthink2.com deployment" src="https://img.shields.io/github/deployments/grepthink2/grepthink2.0/Production%20%E2%80%93%20grepthink2-0-frontend?label=grepthink2.com&logo=vercel&logoColor=white"></a>
   <a href="https://api.grepthink2.com/health"><img alt="api.grepthink2.com deployment" src="https://img.shields.io/github/deployments/grepthink2/grepthink2.0/Production%20%E2%80%93%20grepthink2-0-backend?label=api.grepthink2.com&logo=vercel&logoColor=white"></a>
 </p>
@@ -225,3 +226,13 @@ it exists.
 
 Found a vulnerability? Report it privately, as [SECURITY.md](SECURITY.md) describes, rather than
 in a public issue.
+
+## License
+
+GrepThink 2.0 is free software under the [GNU Affero General Public License v3.0](LICENSE)
+(`AGPL-3.0-only`). You may run, study, change and share it, and if you run a modified version as a
+service you must offer its source to your users. Copyright © 2026 GrepThink.
+
+Contributions are accepted under the [Contributor License Agreement](CLA.md), which lets the project
+also offer GrepThink under other terms, for example to an institution that cannot accept the AGPL.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the short version of how to contribute.
