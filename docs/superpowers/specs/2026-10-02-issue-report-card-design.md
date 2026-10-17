@@ -3,7 +3,7 @@
 **Date:** 2026-10-02
 **Branch:** `feat/issue-report-card` (cut from `origin/beta` @ `961326c`)
 **Status:** Agreed with the maintainer on 2026-10-02: where reports go, what gates them, and
-which credential files them. Nothing is implemented.
+which credential files them. Implemented in #213 (merged 2026-10-14).
 
 ## Problem
 

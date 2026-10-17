@@ -105,13 +105,16 @@ To add a new feature, create a folder under `app/` with `url.py`, `views.py`, `c
 | Prefix | Description |
 |--------|-------------|
 | `/health` | Health check |
-| `/api` | Auth helpers and `profiles` upsert (`test-auth`, `login-check`, `create-user`) |
+| `/api` | Auth helpers (`login-check`, `check-email`, `check-user-exists`, `create-user`, which inserts the `profiles` row or fills a missing role) |
 | `/api/classes` | Classes, enrollments, invites, class students and projects |
-| `/api/projects` | Projects, members, roles, join requests, `test-create` |
+| `/api/projects` | Projects, members, roles, join requests |
 | `/api/assignments` | Assignments; TSR listing/editing under assignment scope (`class_id` query on list) |
 | `/api/tsrs` | Submit and list TSRs by project |
 | `/api/staffing` | Interest forms, instructor preference views, assign / unassign / auto-assign |
-| `/api/messages` | Direct messaging — inbox, send message, conversation messages, mark read |
+| `/api/messages` | Direct and team messaging: inbox, send message, conversation messages, mark read |
+
+This table covers the oldest prefixes. AGENTS.md, "API surface", lists all of them, and each feature's
+`url.py` is the source of truth.
 
 ## Testing
 
