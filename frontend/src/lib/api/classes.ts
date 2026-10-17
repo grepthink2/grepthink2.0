@@ -22,6 +22,8 @@ export const classesApi = {
     start_date: string;
     tsr_count?: number;
     institution_id?: string;
+    /** The class's "Tasks - External" link; omit for none. */
+    external_tasks_url?: string;
   }) => {
     return apiRequest<{ message: string; class: ApiClass }>('/api/classes', {
       method: 'POST',
@@ -37,6 +39,15 @@ export const classesApi = {
     return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+    });
+  },
+
+  // Set or change (a full http(s) link) or remove (null) the class's "Tasks - External" link
+  // (class instructor only). Returns {message, class} with the updated class.
+  updateClassExternalTasksUrl: async (classId: string, externalTasksUrl: string | null) => {
+    return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/external-tasks-url`, {
+      method: 'PATCH',
+      body: JSON.stringify({ external_tasks_url: externalTasksUrl }),
     });
   },
 

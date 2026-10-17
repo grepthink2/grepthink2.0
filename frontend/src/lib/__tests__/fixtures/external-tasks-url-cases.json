@@ -1,0 +1,82 @@
+{
+  "about": "The Tasks - External link rule's cases, read by the web (src/lib/__tests__/externalTasksUrl.test.ts) and the API (backend/tests/test_classes_external_tasks_url.py), so the two cannot drift: what the web accepts, the API accepts too. accepted: [typed, stored]. blank: means no link. The 2048-character boundary is built in each suite.",
+  "accepted": [
+    [
+      "https://job191.yeterly.ai/",
+      "https://job191.yeterly.ai/"
+    ],
+    [
+      "https://tasks.grepthink2.com/cse115a",
+      "https://tasks.grepthink2.com/cse115a"
+    ],
+    [
+      "http://example.org/board?sprint=2#todo",
+      "http://example.org/board?sprint=2#todo"
+    ],
+    [
+      "HTTPS://Example.org",
+      "HTTPS://Example.org"
+    ],
+    [
+      "https://example.org:8443/x",
+      "https://example.org:8443/x"
+    ],
+    [
+      "  https://example.org  ",
+      "https://example.org"
+    ],
+    [
+      "https://istinye.edu.tr/g\u00f6revler",
+      "https://istinye.edu.tr/g\u00f6revler"
+    ],
+    [
+      "https://example.org/\ud83e\udee9",
+      "https://example.org/\ud83e\udee9"
+    ],
+    [
+      "https://example.org/\u1c89",
+      "https://example.org/\u1c89"
+    ],
+    [
+      "https://example.org/\u0378",
+      "https://example.org/\u0378"
+    ],
+    [
+      "https://[::1]:8443/tasks",
+      "https://[::1]:8443/tasks"
+    ],
+    [
+      "\ufeffhttps://example.org/board\ufeff",
+      "https://example.org/board"
+    ]
+  ],
+  "blank": [
+    "",
+    "   "
+  ],
+  "refused": [
+    "javascript:alert(1)",
+    "javascript://example.org/%0aalert(1)",
+    "data:text/html,<script>alert(1)</script>",
+    "ftp://example.org/tasks",
+    "mailto:ta@example.org",
+    "example.org/tasks",
+    "//example.org/tasks",
+    "https://",
+    "https:///example.org",
+    "https:example.org",
+    "https://exa mple.org",
+    "https://example.org/my tasks",
+    "https://example.org/\ttasks",
+    "https://example.org/\u200btasks",
+    "https://example.org/\u00a0tasks",
+    "https://example.org/\ue000tasks",
+    "https://example.org:99999",
+    "https://example.org:abc",
+    "https://[::1",
+    "https://u\uff0fser@example.org",
+    "https://user\uff1apass@example.org",
+    "https://user[x]@example.org",
+    "https://u]@example.org"
+  ]
+}

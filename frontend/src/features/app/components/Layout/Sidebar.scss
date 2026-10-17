@@ -359,6 +359,9 @@ $sidebar-divider: rgba(255, 255, 255, 0.18);
   text-align: left;
   border-radius: 8px; // Rounded corners for the button
   white-space: nowrap;
+  // The class's "Tasks - External" item is a link: no underline, and a button's line height.
+  text-decoration: none;
+  line-height: normal;
 
   > svg {
     flex-shrink: 0;
@@ -366,6 +369,13 @@ $sidebar-divider: rgba(255, 255, 255, 0.18);
 
   &__label {
     min-width: 0;
+    opacity: 0;
+    @include gt-transition(opacity);
+  }
+
+  // The "opens in a new tab" arrow at the end of an external item, shown with the label.
+  &__external {
+    margin-left: auto;
     opacity: 0;
     @include gt-transition(opacity);
   }
@@ -419,6 +429,10 @@ $sidebar-divider: rgba(255, 255, 255, 0.18);
   .sidebar.expanded & {
     &__label {
       opacity: 1;
+    }
+
+    &__external {
+      opacity: 0.6;
     }
 
     &.active::before {

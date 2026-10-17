@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Class, ClassRole } from '@/lib/classContext';
@@ -201,6 +201,83 @@ describe('Sidebar', () => {
     openClassSwitcher();
     expect(screen.getByText('Gamma')).toBeInTheDocument();
     expect(screen.queryByText('Instructor')).not.toBeInTheDocument();
+  });
+});
+
+describe('the Tasks - External link', () => {
+  const JOB_BOARD = 'https://job191.yeterly.ai/';
+  const tasksLink = () => screen.queryByRole('link', { name: /Tasks - External/ });
+
+  it("opens the selected class's link in a new tab, last under Coursework", () => {
+    state.canCreateClasses = false;
+    state.role = 'student';
+    state.ctx.selectedClass = { ...cls('job', 'JOB-191', 'student'), external_tasks_url: JOB_BOARD };
+    renderAt('/app/home');
+
+    const link = tasksLink();
+    expect(link).toHaveAttribute('href', JOB_BOARD);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link?.getAttribute('rel')?.split(' ')).toEqual(expect.arrayContaining(['noopener', 'noreferrer']));
+    expect(link).toHaveAccessibleName(/opens in a new tab/i);
+    const group = link?.closest('.sidebar-group') as HTMLElement;
+    expect(within(group).getByRole('heading')).toHaveTextContent('Coursework');
+    expect(within(group).getAllByRole('listitem').at(-1)).toContainElement(link);
+  });
+
+  it("shows the instructor their class's link too", () => {
+    state.ctx.selectedClass = { ...taught, external_tasks_url: JOB_BOARD };
+    renderAt('/app/home');
+    expect(tasksLink()).toHaveAttribute('href', JOB_BOARD);
+  });
+
+  it('is not there when the class has no link', () => {
+    renderAt('/app/home');
+    expect(screen.getByText('Modules')).toBeInTheDocument();
+    expect(tasksLink()).not.toBeInTheDocument();
+    expect(screen.queryByText('Tasks - External')).not.toBeInTheDocument();
+  });
+
+  it('never turns a stored link that is not http(s) into a link', () => {
+    state.ctx.selectedClass = { ...taught, external_tasks_url: 'javascript:alert(document.cookie)' };
+    renderAt('/app/home');
+    expect(screen.queryByText('Tasks - External')).not.toBeInTheDocument();
+  });
+
+  it('lets go of focus after a click, so coming back to the tab does not hold the rail open', () => {
+    // Chrome focuses a clicked link and focuses it again when you return to the tab, which the
+    // rail would read as keyboard focus inside it.
+    state.ctx.selectedClass = { ...taught, external_tasks_url: JOB_BOARD };
+    renderAt('/app/home');
+    const link = tasksLink() as HTMLElement;
+    link.addEventListener('click', (event) => event.preventDefault()); // jsdom cannot open a tab
+    link.focus();
+    fireEvent.click(link, { detail: 1 });
+    expect(link).not.toHaveFocus();
+  });
+
+  it('keeps focus on the link after a keyboard press', () => {
+    state.ctx.selectedClass = { ...taught, external_tasks_url: JOB_BOARD };
+    renderAt('/app/home');
+    const link = tasksLink() as HTMLElement;
+    link.addEventListener('click', (event) => event.preventDefault());
+    link.focus();
+    fireEvent.click(link, { detail: 0 }); // Enter on a link clicks it with detail 0
+    expect(link).toHaveFocus();
+  });
+
+  it('closes the phone drawer once it opens the link', () => {
+    state.ctx.selectedClass = { ...taught, external_tasks_url: JOB_BOARD };
+    const onMobileClose = vi.fn();
+    render(
+      <MemoryRouter initialEntries={['/app/home']}>
+        <Sidebar mobileOpen onMobileClose={onMobileClose} />
+      </MemoryRouter>,
+    );
+    // jsdom cannot open a tab; keep it from trying.
+    const link = tasksLink() as HTMLElement;
+    link.addEventListener('click', (event) => event.preventDefault());
+    fireEvent.click(link);
+    expect(onMobileClose).toHaveBeenCalledTimes(1);
   });
 });
 

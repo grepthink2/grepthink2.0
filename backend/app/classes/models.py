@@ -3,12 +3,51 @@ Class management request models
 """
 
 import datetime
+import re
+import unicodedata
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from pydantic import AfterValidator, BaseModel, Field, ValidationInfo, field_validator
 
 ClassStatus = Literal["active", "complete"]
+
+#: The longest "Tasks - External" link a class keeps; the classes_external_tasks_url_valid CHECK
+#: allows the same, so a link the API accepts never fails in the database.
+MAX_EXTERNAL_TASKS_URL_LENGTH = 2048
+#: What a link can't contain: control and format characters, surrogates, private use, and every
+#: kind of space (the web client refuses the same). A code point these Unicode tables don't know
+#: yet passes, as it does in a browser that knows it.
+_REFUSED_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Co", "Zs", "Zl", "Zp"})
+#: The spaces dropped around a link: whitespace, and the zero-width no-break space (U+FEFF) that a
+#: browser's trim() drops too, so a link the web client trimmed is never refused here.
+_SURROUNDING_SPACE = re.compile(r"^[\s﻿]+|[\s﻿]+$")
+
+
+def _external_tasks_url(value: str | None) -> str | None:
+    """A class's "Tasks - External" link, kept as typed less surrounding spaces; blank is none.
+
+    The web client renders it as a link's ``href``, so only a full ``http(s)://`` address with a
+    host passes: a ``javascript:`` or ``data:`` URL would run in GrepThink's origin when clicked.
+    """
+    url = _SURROUNDING_SPACE.sub("", value or "")
+    if not url:
+        return None
+    if len(url) > MAX_EXTERNAL_TASKS_URL_LENGTH:
+        raise ValueError(f"The link is over {MAX_EXTERNAL_TASKS_URL_LENGTH:,} characters")
+    if any(unicodedata.category(ch) in _REFUSED_CATEGORIES for ch in url):
+        raise ValueError("The link can't contain spaces")
+    parts = urlsplit(url)  # raises ValueError for a malformed IPv6 host
+    # urlsplit only finds a host after "//", so "https:example.org" has none.
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise ValueError("Enter a full link starting with https:// or http://")
+    _ = parts.port  # raises ValueError for a port that is not a number up to 65535
+    return url
+
+
+#: A "Tasks - External" link in a request: a full http(s) address, or blank/null for none.
+ExternalTasksUrl = Annotated[str | None, AfterValidator(_external_tasks_url)]
 
 
 class CreateClassRequest(BaseModel):
@@ -22,6 +61,8 @@ class CreateClassRequest(BaseModel):
     #: The school the class belongs to (``GET /api/institutions``). Optional until the
     #: institutions contract step makes ``classes.institution_id`` required.
     institution_id: UUID | None = None
+    #: The class's task board elsewhere, shown as "Tasks - External" in its sidebar.
+    external_tasks_url: ExternalTasksUrl = None
 
 
 class InviteStudentRequest(BaseModel):
@@ -40,6 +81,16 @@ class UpdateClassStatusRequest(BaseModel):
     """Request model for updating a class lifecycle status (class instructor only)."""
 
     status: ClassStatus
+
+
+class UpdateClassExternalTasksUrlRequest(BaseModel):
+    """Set, change or remove the class's "Tasks - External" link (class instructor only).
+
+    The field is required, null or blank removing the link, so a body that names no link is a
+    422 rather than a removal.
+    """
+
+    external_tasks_url: ExternalTasksUrl
 
 
 class AddManualRosterStudentRequest(BaseModel):

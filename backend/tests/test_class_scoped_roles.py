@@ -46,6 +46,15 @@ ROUTES = [
         id="class-status",
     ),
     pytest.param(
+        "patch",
+        f"/api/classes/{CLASS}/external-tasks-url",
+        {"json": {"external_tasks_url": "https://tasks.example.org/"}},
+        f"{CLASSES}.update_class_external_tasks_url",
+        {"id": CLASS},
+        ("instructor_id", "class_id"),
+        id="class-tasks-link",
+    ),
+    pytest.param(
         "post",
         f"/api/classes/{CLASS}/invite",
         {"json": {"student_email": "ann@ucsc.edu"}},

@@ -185,6 +185,9 @@ CSV = "Email Address,Status\na@ucsc.edu,Enrolled\n"
 
 INSTRUCTOR_ONLY = {
     "update_class_status": lambda caller, cid: classes.update_class_status(cid, "complete", caller),
+    "update_class_external_tasks_url": lambda caller, cid: classes.update_class_external_tasks_url(
+        cid, "https://tasks.example.org/", caller
+    ),
     "invite_student_to_class": lambda caller, cid: classes.invite_student_to_class(
         cid, "s1@ucsc.edu", caller
     ),
