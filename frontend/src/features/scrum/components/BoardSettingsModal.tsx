@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FolderGit2, Trash2, X } from 'lucide-react';
+import { FolderGit2, Loader2, Trash2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { ApiScrumRepo } from '@/lib/api';
 import type { EstimateScale } from '../config/scrumTags';
@@ -156,12 +156,15 @@ export default function BoardSettingsModal({
                   onChange={(e) => setToken(e.target.value)}
                 />
               </label>
+              {/* Busy is not disabled: addRepo()'s in-flight guard ignores a second click. */}
               <button
                 type="button"
                 className="board-settings__add-button"
                 onClick={addRepo}
-                disabled={!repoUrl.trim() || saving}
+                disabled={!repoUrl.trim()}
+                aria-busy={saving}
               >
+                {saving && <Loader2 className="board-settings__spinner" size={14} aria-hidden="true" />}
                 {saving ? 'Saving…' : 'Add repository'}
               </button>
             </div>

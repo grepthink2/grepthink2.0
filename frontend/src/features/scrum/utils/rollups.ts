@@ -22,6 +22,12 @@ export function storyRollup(story: ApiScrumStory): StoryRollup {
   return { tasksDone, tasksTotal, pointsDone, points: story.points ?? 0, percent };
 }
 
+/** A story's hours: the sum of its tasks' estimates; null when no task has one (spec D2). */
+export function storyHours(story: Pick<ApiScrumStory, 'tasks'>): number | null {
+  const hours = story.tasks.reduce((sum, t) => sum + (t.estimate_hours ?? 0), 0);
+  return story.tasks.some((t) => t.estimate_hours != null) ? hours : null;
+}
+
 /** Point total for one board column header ("n pts"). */
 export function columnPoints(tasks: ApiScrumTask[], status: BoardStatus): number {
   return tasks.reduce((sum, t) => (t.status === status ? sum + (t.points ?? 0) : sum), 0);

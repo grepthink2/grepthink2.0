@@ -1,0 +1,24 @@
+// SprintStatusPill: a sprint's status, on the board's sprint picker and the project page's sprint card.
+// Moved from SprintProgressCard.scss (its `&__status` block). Plain token custom properties only, so no @use.
+
+.sprint-status {
+  padding: 2px var(--gt-space-sm);
+  border-radius: var(--gt-radius-pill);
+  font-size: var(--gt-text-caption);
+  font-weight: var(--gt-weight-medium);
+
+  &--active {
+    background: var(--gt-success-soft);
+    color: var(--gt-success-text);
+  }
+
+  &--planned {
+    background: var(--gt-info-soft);
+    color: var(--gt-info-text);
+  }
+
+  &--completed {
+    background: var(--gt-surface-sunken);
+    color: var(--gt-text-secondary);
+  }
+}

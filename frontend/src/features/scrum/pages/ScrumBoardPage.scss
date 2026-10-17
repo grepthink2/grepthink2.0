@@ -19,10 +19,14 @@
     flex-wrap: wrap;
   }
 
+  // Pinned right, also when the header wraps them onto their own line, and no wider than that line: the
+  // sprint picker gives way.
   &__header-actions {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    margin-left: auto;
+    min-width: 0;
   }
 
   &__title {
@@ -148,9 +152,11 @@
     &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
   }
 
-  &__sprint-select select,
+  // The sprint picker (components/SprintPicker.scss) draws its own 34px trigger to match, and gives way
+  // when the actions run out of room: these two never shrink.
   &__icon-button,
   &__primary {
+    flex-shrink: 0;
     height: 34px;
     border-radius: var(--gt-radius-sm);
     font-family: $primary-font;
@@ -160,13 +166,6 @@
 
     &:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
-  }
-
-  &__sprint-select select {
-    padding: 0 10px;
-    border: 1px solid var(--gt-border);
-    background: var(--gt-gray-0);
-    color: var(--gt-text-primary);
   }
 
   &__icon-button {
@@ -251,6 +250,11 @@
   &:hover .story-slot__open,
   .story-slot__open:focus-visible { opacity: 1; }
 }
+
+// Keep the card's top row (key, estimate, points) clear of the open control: 24px button
+// + 6px offset − 14px card padding + 8px gap. Scoped to the slot, so scrum.scss stays a 1:1
+// port; the button never reaches the title, which starts ~40px down.
+.story-slot > .gt-story .gt-story__top { padding-right: 24px; }
 
 .story-slot__open {
   position: absolute;

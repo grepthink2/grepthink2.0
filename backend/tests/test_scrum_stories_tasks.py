@@ -1,4 +1,4 @@
-"""Story/task creation (key RPC), updates, task delete, tag validation, PR links."""
+"""Story/task creation (key RPC), updates, story and task delete, tag validation, PR links."""
 
 import pytest
 from fastapi import HTTPException
@@ -8,6 +8,16 @@ from app.scrum import controller
 from tests.scrum_support import OTHER_PID, PID, TA, UID, scrum_db
 
 STORY = {"id": "st1", "project_id": PID, "key": "US-1", "title": "Search", "sprint_id": None}
+SPRINT = {
+    "id": "sp1",
+    "project_id": PID,
+    "name": "Sprint 1",
+    "starts_at": "2026-08-17",
+    "ends_at": "2026-08-30",
+    "status": "active",
+}
+#: A legacy archived row: archived_at is set and it may still name the sprint it left.
+ARCHIVED_AT = "2026-09-01T00:00:00Z"
 TASK = {
     "id": "t1",
     "story_id": "st1",
@@ -70,6 +80,36 @@ def test_create_task_inherits_the_story_project_and_gets_a_task_key(monkeypatch)
     assert (out["key"], out["project_id"], out["tags"]) == ("GT-1", PID, ["backend"])
 
 
+def test_create_task_writes_estimate_hours_and_never_the_legacy_text(monkeypatch):
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)])
+    controller.create_task(
+        story_id="st1",
+        user_id=UID,
+        fields={"title": "t", "estimate_hours": 4, "time_estimate": "4h"},
+    )
+    [row] = db.rows("tasks")
+    assert row["estimate_hours"] == 4
+    assert "time_estimate" not in row
+
+
+def test_update_task_clears_estimate_hours_with_an_explicit_null(monkeypatch):
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)], tasks=[dict(TASK, estimate_hours=4)])
+    controller.update_task(task_id="t1", user_id=UID, fields={"estimate_hours": None})
+    assert db.rows("tasks")[0]["estimate_hours"] is None
+
+
+def test_story_writes_ignore_a_legacy_time_estimate(monkeypatch):
+    """A story's hours are its tasks' sum: an old client's story estimate is not written."""
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)])
+    controller.create_story(
+        project_id=PID, user_id=UID, fields={"title": "s", "time_estimate": "2d"}
+    )
+    out = controller.update_story(story_id="st1", user_id=UID, fields={"time_estimate": "2d"})
+    assert out == STORY
+    assert [s for s in db.rows("user_stories") if "time_estimate" in s] == []
+    assert [q for q in db.queries if q["op"] == "update"] == []
+
+
 def test_update_story_rejects_a_sprint_from_another_project(monkeypatch):
     db = scrum_db(monkeypatch, user_stories=[dict(STORY)], sprints=[dict(FOREIGN_SPRINT)])
     with pytest.raises(HTTPException) as e:
@@ -78,11 +118,28 @@ def test_update_story_rejects_a_sprint_from_another_project(monkeypatch):
     assert db.rows("user_stories")[0]["sprint_id"] is None
 
 
-def test_update_story_archive_sets_the_timestamp(monkeypatch):
-    db = scrum_db(monkeypatch, user_stories=[dict(STORY)])
-    controller.update_story(story_id="st1", user_id=UID, fields={"archived": True})
+@pytest.mark.parametrize("target", ["sp1", None])
+def test_update_story_sprint_write_clears_the_legacy_archive_flag(monkeypatch, target):
+    """Moving a legacy archived story, to a sprint (its old one included) or to the backlog,
+    normalises it: afterwards only sprint_id says where it is."""
+    db = scrum_db(
+        monkeypatch,
+        sprints=[dict(SPRINT)],
+        user_stories=[dict(STORY, sprint_id="sp1", archived_at=ARCHIVED_AT)],
+    )
+    controller.update_story(story_id="st1", user_id=UID, fields={"sprint_id": target})
     stored = db.rows("user_stories")[0]
-    assert stored["archived_at"] is not None and "archived" not in stored
+    assert stored["archived_at"] is None
+    assert stored["sprint_id"] == target
+
+
+def test_update_story_ignores_an_archived_field(monkeypatch):
+    """The archive is gone: an old client or the catalog sending `archived` changes nothing."""
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)])
+    out = controller.update_story(story_id="st1", user_id=UID, fields={"archived": True})
+    assert out == STORY
+    assert "archived_at" not in db.rows("user_stories")[0]
+    assert [q for q in db.queries if q["op"] == "update"] == []
 
 
 def test_update_story_rejects_a_null_title(monkeypatch):
@@ -103,6 +160,41 @@ def test_delete_task_removes_it(monkeypatch):
     db = scrum_db(monkeypatch, user_stories=[dict(STORY)], tasks=[dict(TASK)])
     controller.delete_task(task_id="t1", user_id=UID)
     assert db.rows("tasks") == []
+
+
+def test_delete_story_removes_a_backlog_story(monkeypatch):
+    # Postgres cascades the story's tasks, comments and moves (ON DELETE CASCADE); the fake
+    # does not, so only the story row is asserted.
+    db = scrum_db(monkeypatch, user_stories=[dict(STORY)])
+    controller.delete_story(story_id="st1", user_id=UID)
+    assert db.rows("user_stories") == []
+    assert db.executes <= 3
+
+
+def test_delete_story_removes_a_legacy_archived_story_whatever_its_sprint(monkeypatch):
+    """The board lists an archived row in the backlog even while it names a sprint."""
+    db = scrum_db(
+        monkeypatch,
+        sprints=[dict(SPRINT)],
+        user_stories=[dict(STORY, sprint_id="sp1", archived_at=ARCHIVED_AT)],
+    )
+    controller.delete_story(story_id="st1", user_id=UID)
+    assert db.rows("user_stories") == []
+
+
+def test_delete_story_refuses_a_story_in_a_sprint(monkeypatch):
+    db = scrum_db(monkeypatch, sprints=[dict(SPRINT)], user_stories=[dict(STORY, sprint_id="sp1")])
+    with pytest.raises(HTTPException) as e:
+        controller.delete_story(story_id="st1", user_id=UID)
+    assert (e.value.status_code, e.value.detail) == (409, controller.STORY_IN_SPRINT)
+    assert [s["id"] for s in db.rows("user_stories")] == ["st1"]
+
+
+def test_delete_story_404_when_missing(monkeypatch):
+    scrum_db(monkeypatch)
+    with pytest.raises(HTTPException) as e:
+        controller.delete_story(story_id="nope", user_id=UID)
+    assert (e.value.status_code, e.value.detail) == (404, controller.STORY_NOT_FOUND)
 
 
 def test_pr_fields_fetch_failure_stores_a_null_state(monkeypatch):

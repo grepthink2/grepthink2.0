@@ -32,27 +32,7 @@
     color: var(--gt-text-primary);
   }
 
-  &__status {
-    padding: 2px var(--gt-space-sm);
-    border-radius: var(--gt-radius-pill);
-    font-size: var(--gt-text-caption);
-    font-weight: var(--gt-weight-medium);
-
-    &--active {
-      background: var(--gt-success-soft);
-      color: var(--gt-success-text);
-    }
-
-    &--planned {
-      background: var(--gt-info-soft);
-      color: var(--gt-info-text);
-    }
-
-    &--completed {
-      background: var(--gt-surface-sunken);
-      color: var(--gt-text-secondary);
-    }
-  }
+  // The status pill is SprintStatusPill (features/scrum/components), shared with the board's sprint picker.
 
   &__counts {
     display: grid;

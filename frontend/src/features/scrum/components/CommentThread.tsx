@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatDistanceToNowStrict } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 import MarkdownText from '@components/Markdown/MarkdownText';
 import { InitialsAvatar } from '@features/messages/components/InitialsAvatar';
 import { api } from '@/lib/api';
@@ -9,9 +10,15 @@ import type { MemberMap } from '../scrumTypes';
 /** Mirrors the backend's body_md CHECK — the server is authoritative. */
 const MAX_COMMENT = 4000;
 
+/** What a thread hangs off: the API's own path segment, the row's id, and its key for labels. */
+interface CommentParent {
+  kind: 'stories' | 'tasks';
+  id: string;
+  key: string;
+}
+
 interface Props {
-  taskId: string;
-  taskKey: string;
+  parent: CommentParent;
   members: MemberMap;
   onError: (message: string) => void;
   /** Lets the parent keep the card's comment count in step. */
@@ -19,38 +26,39 @@ interface Props {
 }
 
 /**
- * Task comment thread (D10: task threads are the v1 surface).
+ * The comment thread on a task (in its editor) or a story (in its detail).
  *
  * The composer is a plain textarea for now; mentions (issue #191) swap it for
  * MentionTextarea, at which point @mentions light up here and in the
  * markdown bodies without touching this file's data flow.
  */
-export default function CommentThread({ taskId, taskKey, members, onError, onPosted }: Props) {
+export default function CommentThread({ parent, members, onError, onPosted }: Props) {
+  const { kind, id, key } = parent;
   const [comments, setComments] = useState<ApiScrumComment[] | null>(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
 
-  // StoryModal keys this component by task, so each task starts with an empty
-  // thread and no leftover draft; nothing needs resetting here.
+  // Callers key this component by the parent's id, so each task or story starts with an
+  // empty thread and no leftover draft; nothing needs resetting here.
   useEffect(() => {
     let alive = true;
-    api.getScrumComments('tasks', taskId)
+    api.getScrumComments(kind, id)
       .then(({ comments: rows }) => { if (alive) setComments(rows); })
       .catch(() => { if (alive) setComments([]); });
     return () => { alive = false; };
-  }, [taskId]);
+  }, [kind, id]);
 
   const submit = async () => {
     const body = draft.trim();
     if (!body || sending) return;
     setSending(true);
     try {
-      const { comment } = await api.createScrumComment('tasks', taskId, body);
+      const { comment } = await api.createScrumComment(kind, id, body);
       setComments((prev) => [...(prev ?? []), comment]);
       setDraft('');
       onPosted?.();
     } catch (err) {
-      onError(err instanceof Error ? err.message : `Couldn’t post your comment on ${taskKey}`);
+      onError(err instanceof Error ? err.message : `Couldn’t post your comment on ${key}`);
     } finally {
       setSending(false);
     }
@@ -87,7 +95,7 @@ export default function CommentThread({ taskId, taskKey, members, onError, onPos
           className="gt-comments__input"
           rows={2}
           value={draft}
-          aria-label={`Comment on ${taskKey}`}
+          aria-label={`Comment on ${key}`}
           placeholder="Add a comment… (markdown supported)"
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) void submit(); }}
@@ -98,12 +106,15 @@ export default function CommentThread({ taskId, taskKey, members, onError, onPos
               ? `${draft.length - MAX_COMMENT} characters over the limit`
               : '**bold** · `code` · ⌘/Ctrl+Enter to post'}
           </span>
+          {/* Busy is not disabled: submit()'s in-flight guard ignores a second click. */}
           <button
             type="button"
             className="gt-comments__send"
             onClick={submit}
-            disabled={!draft.trim() || tooLong || sending}
+            disabled={!draft.trim() || tooLong}
+            aria-busy={sending}
           >
+            {sending && <Loader2 className="gt-comments__spinner" size={14} aria-hidden="true" />}
             {sending ? 'Posting…' : 'Comment'}
           </button>
         </div>

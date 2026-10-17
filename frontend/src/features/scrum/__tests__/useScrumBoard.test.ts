@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useScrumBoard } from '../hooks/useScrumBoard';
+import { findTask } from '../utils/boardReducer';
+import { isBlocked } from '../utils/dependencies';
+import { storyHours } from '../utils/rollups';
+import { ApiError } from '@/lib/api/client';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
-import type { ApiScrumBoard, ApiScrumStory, ApiScrumTask } from '@/lib/api';
-import { makeBoard, makeStory, makeTask } from './fixtures';
+import type { ApiBoardStatus, ApiScrumBoard, ApiScrumStory, ApiScrumTask } from '@/lib/api';
+import { makeBoard, makeRef, makeStory, makeTask } from './fixtures';
 
 vi.mock('@/lib/api', () => ({
   api: {
@@ -11,6 +15,10 @@ vi.mock('@/lib/api', () => ({
     moveScrumTask: vi.fn(),
     refreshScrumPrStates: vi.fn(),
     updateStory: vi.fn(),
+    updateScrumTask: vi.fn(),
+    deleteScrumStory: vi.fn(),
+    addTaskDependency: vi.fn(),
+    removeTaskDependency: vi.fn(),
   },
 }));
 const { api } = await import('@/lib/api');
@@ -20,6 +28,41 @@ beforeEach(() => {
   vi.mocked(api.getScrumBoard).mockReset().mockResolvedValue(makeBoard());
   vi.mocked(api.moveScrumTask).mockReset();
   vi.mocked(api.refreshScrumPrStates).mockReset().mockResolvedValue({ updated: {} });
+  vi.mocked(api.deleteScrumStory).mockReset();
+  vi.mocked(api.updateScrumTask).mockReset();
+  vi.mocked(api.addTaskDependency).mockReset();
+  vi.mocked(api.removeTaskDependency).mockReset();
+});
+
+/** The server's detail for a refused move (backend TASK_BLOCKED). */
+const TASK_BLOCKED = 'Finish the tasks this one depends on first';
+
+/**
+ * GT-2 (task a, in To do, three comments) depends on GT-1 (task b), which is `blocker` on this copy
+ * of the board: under way by default, so GT-2 is blocked.
+ */
+const dependencyBoard = (blocker: ApiBoardStatus = 'in_progress') => makeBoard({
+  stories: [makeStory({
+    points: 8,
+    tasks: [
+      makeTask({
+        id: 'a', key: 'GT-2', status: 'todo', comment_count: 3, moved_by: 'u1', moved_by_name: 'Tony Wu',
+        moved_at: '2026-08-20T12:00:00Z', depends_on: [makeRef({ id: 'b', key: 'GT-1', status: blocker })],
+      }),
+      makeTask({
+        id: 'b', key: 'GT-1', status: blocker,
+        blocks: [makeRef({ id: 'a', key: 'GT-2', status: 'todo' })],
+      }),
+    ],
+  })],
+});
+
+/** One sprint story whose tasks carry 3 and 2 hours. */
+const hoursBoard = () => makeBoard({
+  stories: [makeStory({
+    points: 8,
+    tasks: [makeTask({ id: 't1', estimate_hours: 3 }), makeTask({ id: 't2', estimate_hours: 2 })],
+  })],
 });
 
 describe('useScrumBoard', () => {
@@ -117,6 +160,40 @@ describe('useScrumBoard', () => {
     expect(result.current.board!.stories[0].points).toBe(5);
   });
 
+  it('a task save that changes its hours changes the story sum at once, without a reload', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(hoursBoard());
+    let resolveSave: (v: { message: string; task: ApiScrumTask }) => void = () => {};
+    vi.mocked(api.updateScrumTask).mockReturnValue(
+      new Promise((res) => { resolveSave = res; }) as ReturnType<typeof api.updateScrumTask>,
+    );
+
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(storyHours(result.current.board!.stories[0])).toBe(5);
+
+    act(() => { void result.current.updateTask('t1', { estimate_hours: 8 }); });
+    expect(storyHours(result.current.board!.stories[0])).toBe(10);   // optimistic
+
+    await act(async () => { resolveSave({ message: 'ok', task: makeTask({ id: 't1', estimate_hours: 8 }) }); });
+    expect(storyHours(result.current.board!.stories[0])).toBe(10);
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);   // the first load only
+  });
+
+  it('a story points change keeps the story sum', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(hoursBoard());
+    // A single-row story response: no tasks, and so no hours.
+    vi.mocked(api.updateStory).mockResolvedValue({
+      message: 'ok', story: makeStory({ points: 13, estimate_hours: null }),
+    });
+
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => { await result.current.updateStory('s1', { points: 13 }); });
+    expect(result.current.board!.stories[0].points).toBe(13);
+    expect(storyHours(result.current.board!.stories[0])).toBe(5);
+  });
+
   it('ends loading when a background refresh overtakes a sprint switch', async () => {
     const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -156,6 +233,7 @@ describe('useScrumBoard', () => {
 
     expect(result.current.board!.stories[0].tasks[0].status).toBe('todo');
     expect(result.current.notice).toEqual({ kind: 'error', message: 'network down' });
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);   // an ordinary failure reloads nothing
     act(() => result.current.clearNotice());
     expect(result.current.notice).toBeNull();
   });
@@ -189,6 +267,39 @@ describe('useScrumBoard', () => {
     expect(result.current.board?.project.name).toBe('FRESH');
   });
 
+  it('deleteStory refetches, reports success and resolves true', async () => {
+    vi.mocked(api.deleteScrumStory).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    vi.mocked(api.getScrumBoard).mockClear();   // count the refetch only
+
+    let ok: boolean | undefined;
+    await act(async () => { ok = await result.current.deleteStory('s9'); });
+
+    expect(ok).toBe(true);
+    expect(api.deleteScrumStory).toHaveBeenCalledWith('s9');
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
+    expect(result.current.notice).toEqual({ kind: 'success', message: 'Story deleted' });
+  });
+
+  it('a refused delete resolves false with the server\'s reason', async () => {
+    vi.mocked(api.deleteScrumStory).mockRejectedValue(
+      new Error('Move the story to the backlog before deleting it'),
+    );
+    const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    vi.mocked(api.getScrumBoard).mockClear();
+
+    let ok: boolean | undefined;
+    await act(async () => { ok = await result.current.deleteStory('s1'); });
+
+    expect(ok).toBe(false);
+    expect(api.getScrumBoard).not.toHaveBeenCalled();
+    expect(result.current.notice).toEqual({
+      kind: 'error', message: 'Move the story to the backlog before deleting it',
+    });
+  });
+
   it('patches cached PR states from the background refresh', async () => {
     vi.mocked(api.refreshScrumPrStates).mockResolvedValue({ updated: { a: 'merged' } });
     const { result } = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
@@ -201,5 +312,133 @@ describe('useScrumBoard', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toBeNull();
     expect(result.current.notice).toBeNull();
+  });
+});
+
+describe('useScrumBoard dependencies', () => {
+  const renderBoard = async () => {
+    const hook = renderHook(() => useScrumBoard('p1', 'Tony Wu'));
+    await waitFor(() => expect(hook.result.current.loading).toBe(false));
+    const task = (id: string) => findTask(hook.result.current.board!.stories, id)!;
+    return { result: hook.result, task };
+  };
+
+  it('refuses to move a blocked task, explains, and reloads the board', async () => {
+    vi.mocked(api.getScrumBoard)
+      .mockResolvedValueOnce(dependencyBoard())          // this copy: GT-1 under way
+      .mockResolvedValueOnce(dependencyBoard('done'));   // the reload: a teammate finished GT-1
+    const { result, task } = await renderBoard();
+
+    // To do → To do is no move at all, as ever.
+    await act(async () => { await result.current.moveTask('a', 'todo'); });
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
+
+    await act(async () => { await result.current.moveTask('a', 'in_progress'); });
+    expect(api.moveScrumTask).not.toHaveBeenCalled();
+    expect(task('a').status).toBe('todo');
+    expect(result.current.notice).toEqual({ kind: 'error', message: 'GT-2 is blocked by GT-1' });
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(2);
+    // The copy was stale: the reload clears the block on its own.
+    await waitFor(() => expect(isBlocked(task('a'))).toBe(false));
+  });
+
+  it('moving the blocker to done unblocks its dependent at once', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(dependencyBoard());
+    let resolveMove: (v: { message: string; task: ApiScrumTask }) => void = () => {};
+    vi.mocked(api.moveScrumTask)
+      .mockReturnValueOnce(new Promise((res) => { resolveMove = res; }) as ReturnType<typeof api.moveScrumTask>)
+      .mockReturnValueOnce(new Promise(() => {}) as ReturnType<typeof api.moveScrumTask>);
+    const { result, task } = await renderBoard();
+
+    act(() => { void result.current.moveTask('b', 'done'); });
+    // Before the server answers, GT-2's copy of GT-1 already says Done…
+    expect(task('a').depends_on![0].status).toBe('done');
+    expect(isBlocked(task('a'))).toBe(false);
+    // …so GT-2 goes through at once.
+    act(() => { void result.current.moveTask('a', 'in_progress'); });
+    expect(api.moveScrumTask).toHaveBeenLastCalledWith('a', 'in_progress');
+    expect(result.current.notice).toBeNull();
+
+    // GT-1's own response carries no lists: it still names GT-2 in its blocks.
+    await act(async () => {
+      resolveMove({ message: 'ok', task: makeTask({ id: 'b', key: 'GT-1', status: 'done' }) });
+    });
+    expect(task('b').blocks!.map((r) => r.id)).toEqual(['a']);
+    expect(task('a').depends_on![0].status).toBe('done');
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);   // patched, never refetched
+  });
+
+  it('a rolled-back move puts the ref’s status back', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(dependencyBoard());
+    vi.mocked(api.moveScrumTask).mockRejectedValue(new Error('network down'));
+    const { result, task } = await renderBoard();
+
+    await act(async () => { await result.current.moveTask('b', 'done'); });
+    expect(task('b').status).toBe('in_progress');
+    expect(task('a').depends_on![0].status).toBe('in_progress');
+    expect(isBlocked(task('a'))).toBe(true);
+  });
+
+  it('a 409 task_blocked rolls back, shows the server’s reason and reloads', async () => {
+    vi.mocked(api.getScrumBoard)
+      .mockResolvedValueOnce(dependencyBoard('done'))          // this copy: GT-1 done
+      .mockResolvedValueOnce(dependencyBoard('in_progress'));  // the server's: GT-1 reopened
+    vi.mocked(api.moveScrumTask).mockRejectedValue(
+      new ApiError(409, TASK_BLOCKED, 'Request failed with status 409', 'task_blocked'),
+    );
+    const { result, task } = await renderBoard();
+
+    await act(async () => { await result.current.moveTask('a', 'in_progress'); });
+    expect(task('a').status).toBe('todo');
+    expect(result.current.notice).toEqual({ kind: 'error', message: TASK_BLOCKED });
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(isBlocked(task('a'))).toBe(true));
+  });
+
+  it('a task save keeps its dependencies, comment count and mover', async () => {
+    vi.mocked(api.getScrumBoard).mockResolvedValue(dependencyBoard());
+    // update_task's response: no dependency rows, no comment count, no mover's name.
+    vi.mocked(api.updateScrumTask).mockResolvedValue({
+      message: 'ok',
+      task: makeTask({ id: 'a', key: 'GT-2', title: 'x', moved_by: 'u1', moved_at: '2026-08-20T12:00:00Z' }),
+    });
+    const { result, task } = await renderBoard();
+
+    await act(async () => { await result.current.updateTask('a', { title: 'x' }); });
+    expect(task('a').title).toBe('x');
+    expect(task('a').depends_on!.map((r) => r.id)).toEqual(['b']);
+    expect(task('a').comment_count).toBe(3);
+    expect(task('a').moved_by_name).toBe('Tony Wu');
+    expect(isBlocked(task('a'))).toBe(true);
+  });
+
+  it('adds and removes a dependency, reloading the board after each', async () => {
+    vi.mocked(api.addTaskDependency).mockResolvedValue({ message: 'Dependency added', depends_on: [] });
+    vi.mocked(api.removeTaskDependency).mockResolvedValue(undefined);
+    const { result } = await renderBoard();
+
+    await act(async () => { await result.current.addDependency('a', 'b'); });
+    expect(api.addTaskDependency).toHaveBeenCalledWith('a', 'b');
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(2);
+
+    await act(async () => { await result.current.removeDependency('a', 'b'); });
+    expect(api.removeTaskDependency).toHaveBeenCalledWith('a', 'b');
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(3);
+    expect(result.current.notice).toBeNull();
+  });
+
+  it('a refused dependency explains with the server’s reason', async () => {
+    // A cycle deeper than the picker can see comes back from the server.
+    const cycle = 'That would make the tasks depend on each other';
+    vi.mocked(api.addTaskDependency).mockRejectedValue(
+      new ApiError(409, cycle, 'Request failed with status 409'),
+    );
+    const { result } = await renderBoard();
+
+    let out: unknown;
+    await act(async () => { out = await result.current.addDependency('a', 'b'); });
+    expect(out).toBeNull();
+    expect(result.current.notice).toEqual({ kind: 'error', message: cycle });
+    expect(api.getScrumBoard).toHaveBeenCalledTimes(1);
   });
 });

@@ -244,14 +244,22 @@ def _pts(points) -> str | None:
     return f"{points} pts" if points else None
 
 
+def _in_backlog(story: dict) -> bool:
+    """The scrum board's backlog rule (``app.scrum.controller._in_backlog``): no sprint, or a
+    legacy archived row (``archived_at`` set) whatever sprint it still names."""
+    return story.get("sprint_id") is None or bool(story.get("archived_at"))
+
+
 def _stories(
     stories: dict[str, dict], project_names: dict[str, str | None], openable: set[str]
 ) -> list[dict]:
     out = []
     for s in stories.values():
-        if s["project_id"] not in openable or s.get("archived_at"):
+        if s["project_id"] not in openable:
             continue
-        sprint = (s.get("sprints") or {}).get("name")
+        backlog = _in_backlog(s)
+        # Never the stale sprints(name) a legacy archived row still embeds.
+        sprint = None if backlog else (s.get("sprints") or {}).get("name")
         out.append(
             {
                 "id": s["id"],
@@ -267,7 +275,9 @@ def _stories(
                 "points": s.get("points"),
                 "sprint": sprint,
                 "updated_at": s.get("updated_at"),
-                "href": _board_href(s["project_id"], s.get("sprint_id"), story=s["id"]),
+                "href": _board_href(
+                    s["project_id"], None if backlog else s.get("sprint_id"), story=s["id"]
+                ),
             }
         )
     return out
@@ -284,8 +294,8 @@ def _tasks(
         if t["project_id"] not in openable:
             continue
         story = stories.get(t.get("story_id"))
-        if story is not None and story.get("archived_at"):
-            continue  # the board shows these only in the archive
+        # A task opens where the board lists its story: that sprint, or the backlog.
+        sprint_id = story.get("sprint_id") if story and not _in_backlog(story) else None
         out.append(
             {
                 "id": t["id"],
@@ -298,9 +308,7 @@ def _tasks(
                 "tags": t.get("tags") or None,
                 "points": t.get("points"),
                 "updated_at": t.get("updated_at"),
-                "href": _board_href(
-                    t["project_id"], story.get("sprint_id") if story else None, task=t["id"]
-                ),
+                "href": _board_href(t["project_id"], sprint_id, task=t["id"]),
             }
         )
     return out

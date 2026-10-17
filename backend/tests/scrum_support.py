@@ -23,7 +23,10 @@ MEETING_TA = "meeting-ta-1"
 STUDENT = "student-1"
 OUTSIDER = "outsider-1"
 
-RELATIONS = {("projects", "classes"): ("class_id", "id", False)}
+RELATIONS = {
+    ("projects", "classes"): ("class_id", "id", False),
+    ("tasks", "user_stories"): ("story_id", "id", False),  # a dependency's story key and sprint
+}
 
 
 def profile(uid: str, first: str, last: str = "X") -> dict:

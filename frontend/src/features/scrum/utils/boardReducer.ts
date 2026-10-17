@@ -1,4 +1,4 @@
-import type { ApiScrumStory, ApiScrumTask } from '@/lib/api';
+import type { ApiScrumStory, ApiScrumTask, ApiTaskRef } from '@/lib/api';
 import type { BoardStatus } from '../config/scrumTags';
 
 /**
@@ -48,22 +48,60 @@ export function applyOptimisticMove(
 }
 
 /**
- * Reconcile with the server's task row (authoritative moved_at / moved_by_name).
+ * A single-task response over the board's copy. The response never carries what only the board load
+ * supplies — `depends_on`, `blocks`, `comment_count` — and `update_task`'s carries no `moved_by_name`
+ * (spec D11); those stay as the board had them. A move response's `moved_by_name` wins (it is resolved).
  *
- * The name is the one field the server may know less about than we do: a
- * response without `moved_by_name` (an older backend, a no-op move) would
- * otherwise blank the name the optimistic write just put on screen and the
- * card would flip to "Unknown" a beat after the drop. Keep what we had.
+ * The name is the one field the server may know less about than we do: a response without
+ * `moved_by_name` (an older backend, a no-op move, any field edit) would otherwise blank the name the
+ * board shows, and the card would flip to "Unknown" a beat after the drop.
  */
+export function mergeTaskResponse(boardTask: ApiScrumTask, response: ApiScrumTask): ApiScrumTask {
+  return {
+    ...response,
+    depends_on: boardTask.depends_on,
+    blocks: boardTask.blocks,
+    comment_count: boardTask.comment_count,
+    moved_by_name: response.moved_by_name ?? boardTask.moved_by_name,
+  };
+}
+
+/** Reconcile with the server's task row (authoritative moved_at / moved_by_name). */
 export function confirmMove(
   stories: ApiScrumStory[],
   taskId: string,
   serverTask: ApiScrumTask,
 ): ApiScrumStory[] {
-  return mapTask(stories, taskId, (prev) => ({
-    ...serverTask,
-    moved_by_name: serverTask.moved_by_name ?? prev.moved_by_name,
-  }));
+  return mapTask(stories, taskId, (prev) => mergeTaskResponse(prev, serverTask));
+}
+
+/**
+ * A moved task's new status, written into every ref that names it (spec D9): its dependents'
+ * `depends_on` and its dependencies' `blocks`. A move never refetches the board, so without this a
+ * dependent would read its blocker as unfinished until the next load. Stories and tasks with no
+ * such ref keep their identity.
+ */
+export function syncRefStatus(
+  stories: ApiScrumStory[],
+  taskId: string,
+  status: BoardStatus,
+): ApiScrumStory[] {
+  const sync = (refs: ApiTaskRef[] | undefined) =>
+    refs?.some((r) => r.id === taskId && r.status !== status)
+      ? refs.map((r) => (r.id === taskId ? { ...r, status } : r))
+      : refs;
+  return stories.map((s) => {
+    const tasks = s.tasks ?? [];
+    let changed = false;
+    const next = tasks.map((t) => {
+      const dependsOn = sync(t.depends_on);
+      const blocks = sync(t.blocks);
+      if (dependsOn === t.depends_on && blocks === t.blocks) return t;
+      changed = true;
+      return { ...t, depends_on: dependsOn, blocks };
+    });
+    return changed ? { ...s, tasks: next } : s;
+  });
 }
 
 /** Undo a failed move by restoring the pre-move snapshot. */

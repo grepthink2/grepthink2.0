@@ -6,6 +6,7 @@ from app.dependencies import require_user
 from app.limiter import limiter
 from app.scrum import controller
 from app.scrum.models import (
+    AddDependencyRequest,
     AddScrumRepoRequest,
     AiDraftRequest,
     AiDraftResponse,
@@ -18,6 +19,7 @@ from app.scrum.models import (
     CreateSprintRequest,
     CreateStoryRequest,
     CreateTaskRequest,
+    DependenciesResponse,
     MoveTaskRequest,
     PrRefreshResponse,
     ScrumRepoOut,
@@ -29,6 +31,7 @@ from app.scrum.models import (
     StoryResponse,
     SummaryCounts,
     TaskOut,
+    TaskRef,
     TaskResponse,
     UpdateSettingsRequest,
     UpdateSprintRequest,
@@ -128,6 +131,11 @@ def update_story(
     return StoryResponse(message="Story updated successfully", story=_story_out(row))
 
 
+def delete_story(story_id: str, user_id: str = Depends(require_user)) -> Response:
+    controller.delete_story(story_id=story_id, user_id=user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 def create_task(
     story_id: str, body: CreateTaskRequest, user_id: str = Depends(require_user)
 ) -> TaskResponse:
@@ -156,6 +164,24 @@ def move_task(
 ) -> TaskResponse:
     out = controller.move_task(task_id=task_id, user_id=user_id, to_status=body.to_status)
     return TaskResponse(message="Task moved successfully", task=_task_out(out["task"]))
+
+
+def add_dependency(
+    task_id: str, body: AddDependencyRequest, user_id: str = Depends(require_user)
+) -> DependenciesResponse:
+    refs = controller.add_dependency(
+        task_id=task_id, user_id=user_id, depends_on_task_id=body.depends_on_task_id
+    )
+    return DependenciesResponse(message="Dependency added", depends_on=[TaskRef(**r) for r in refs])
+
+
+def remove_dependency(
+    task_id: str, depends_on_task_id: str, user_id: str = Depends(require_user)
+) -> Response:
+    controller.remove_dependency(
+        task_id=task_id, user_id=user_id, depends_on_task_id=depends_on_task_id
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 def list_story_comments(

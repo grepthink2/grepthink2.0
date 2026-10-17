@@ -82,6 +82,20 @@ describe('BoardSettingsModal — repositories (D8)', () => {
     expect(api.addScrumRepo).toHaveBeenCalledWith('p1', { repo_url: 'https://github.com/team/pub' });
   });
 
+  it('keeps Add repository enabled while saving', async () => {
+    vi.mocked(api.addScrumRepo).mockReturnValue(new Promise(() => {}));   // still in flight
+    render(<BoardSettingsModal {...props} />);
+
+    await userEvent.type(screen.getByLabelText(/repository url/i), 'https://github.com/team/api');
+    await userEvent.click(screen.getByRole('button', { name: 'Add repository' }));
+
+    const busy = await screen.findByRole('button', { name: 'Saving…' });
+    expect(busy).toBeEnabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(busy);
+    expect(api.addScrumRepo).toHaveBeenCalledTimes(1);
+  });
+
   it('reports a rejected URL instead of failing silently', async () => {
     vi.mocked(api.addScrumRepo).mockRejectedValue(new Error('Repo URL must be a github.com or git.ucsc.edu repository'));
     render(<BoardSettingsModal {...props} />);

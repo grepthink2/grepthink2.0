@@ -78,8 +78,18 @@ def _seed(monkeypatch):
         tasks=[
             _task("a1", "A", 3, "done", "1"),
             _task("a2", "A", 2, "todo", "2"),
-            _task("b1", "B", 5, "done", "3", moved_by=UID, moved_at="2026-09-08T18:00:00Z"),
-            _task("b2", "B", 3, "in_progress", "4"),
+            _task(
+                "b1",
+                "B",
+                5,
+                "done",
+                "3",
+                moved_by=UID,
+                moved_at="2026-09-08T18:00:00Z",
+                estimate_hours=3,
+            ),
+            _task("b2", "B", 3, "in_progress", "4", estimate_hours=2),
+            _task("d1", "D", 2, "done", "6"),  # on the backlog story: counted nowhere
         ],
         task_moves=[
             {
@@ -95,7 +105,24 @@ def _seed(monkeypatch):
             {"id": "c1", "story_id": "B", "task_id": None},
             {"id": "c2", "story_id": None, "task_id": "b1"},
         ],
+        # b2 depends on b1 (same sprint) and on d1 (a backlog task).
+        task_dependencies=[
+            {"task_id": "b2", "depends_on_task_id": "b1", "project_id": PID},
+            {"task_id": "b2", "depends_on_task_id": "d1", "project_id": PID},
+        ],
     )
+
+
+def _ref(tid, story, sprint, status):
+    return {
+        "id": tid,
+        "key": f"GT-{tid}",
+        "title": tid,
+        "status": status,
+        "story_id": story,
+        "story_key": f"US-{story}",
+        "sprint_id": sprint,
+    }
 
 
 def test_board_shape_and_burnup(monkeypatch, client):
@@ -116,6 +143,18 @@ def test_board_shape_and_burnup(monkeypatch, client):
         {"user_id": UID, "name": "Tony Wu", "image_url": None, "project_role": "owner"}
     ]
 
+    # A story's hours are the sum of its tasks' (B: 3 + 2); none of D's tasks has any.
+    by_key = {s["key"]: s for s in body["stories"]}
+    assert by_key["US-B"]["estimate_hours"] == 5
+    assert {s["key"]: s["estimate_hours"] for s in body["backlog"]}["US-D"] is None
+
+    # Live stories only: E is archived, D is backlog (its done task counts nowhere).
+    assert {s["id"]: s["progress"] for s in body["sprints"]} == {
+        "S1": {"tasks_done": 1, "tasks_total": 2, "points_done": 3, "points_total": 5},
+        "S2": {"tasks_done": 1, "tasks_total": 2, "points_done": 5, "points_total": 8},
+        "S3": {"tasks_done": 0, "tasks_total": 0, "points_done": 0, "points_total": 3},
+    }
+
     # Per sprint (scope, completed): S1 (5, 3), S2 (8, 5; E is archived), S3 (3, 0).
     assert body["burnup"]["cumulative"]["scope"] == [5, 13, 16]
     assert body["burnup"]["cumulative"]["completed"] == [3, 8, 8]
@@ -126,13 +165,37 @@ def test_board_shape_and_burnup(monkeypatch, client):
     assert (snap["scope_points"], snap["completed_points"]) == (8, 5)
 
 
+def test_board_names_each_tasks_dependencies_both_ways(monkeypatch, client):
+    _seed(monkeypatch)
+    body = client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID)).json()
+    tasks = {t["id"]: t for s in body["stories"] + body["backlog"] for t in s["tasks"]}
+
+    # In the edges' order; a backlog dependency has no sprint.
+    assert tasks["b2"]["depends_on"] == [
+        _ref("b1", "B", "S2", "done"),
+        _ref("d1", "D", None, "done"),
+    ]
+    assert tasks["b1"]["blocks"] == tasks["d1"]["blocks"] == [_ref("b2", "B", "S2", "in_progress")]
+    assert (tasks["b1"]["depends_on"], tasks["b2"]["blocks"]) == ([], [])
+
+    # Every task of the project for the picker, a2 (in completed S1, not on this board)
+    # included. Keys whose tail is not a number sort as text.
+    assert [t["id"] for t in body["task_index"]] == ["a1", "a2", "b1", "b2", "d1"]
+    assert body["task_index"][0] == _ref("a1", "A", "S1", "done")
+
+
+def test_the_task_index_puts_keys_in_number_order():
+    keys = ["GT-10", "GT-a1", "GT-2", "T-1", "GT-1"]
+    assert sorted(keys, key=controller._key_order) == ["GT-1", "T-1", "GT-2", "GT-10", "GT-a1"]
+
+
 def test_board_round_trips_do_not_grow_with_sprints(monkeypatch, client):
     db = _seed(monkeypatch)
     db.reset_counter()
     client.get(URL, headers=header_for("tony@ucsc.edu", sub=UID))
-    # access 1 + three concurrent rounds (4 + 2 + 2) + snapshot upsert 1 + audit read 1
-    # + the board_viewed event insert 1
-    assert db.executes <= 12
+    # access 1 + three concurrent rounds (5 + 2 + 2) + snapshot upsert 1 + audit read 1
+    # + the board_viewed event insert 1; round 1 reads the project's dependency edges
+    assert db.executes <= 13
 
 
 def test_board_is_403_for_an_outsider_and_404_for_no_project(monkeypatch, client):

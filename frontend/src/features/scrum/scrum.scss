@@ -1,3 +1,5 @@
+@use '@styles/index.scss' as *;
+
 // Scrum layer — ported 1:1 from design/components/scrum/scrum.css so the two
 // stay diffable (D12 keeps the .gt-* class names verbatim). Only deltas:
 //   * the two literal purple/gold values now read from --gt-purple and
@@ -13,6 +15,11 @@
 //     .gt-story:focus-visible is restated after it so keyboard focus still wins
 //   * the .gt-md rules live in components/Markdown/MarkdownText.scss, which the shared
 //     renderer imports: the contact page's issue preview never loads this file
+//   * .gt-comments__send stays enabled while posting (spec 2026-10-15 G): it is an
+//     inline-flex with a min-width that fits its busy state, a .gt-comments__spinner
+//     (the gt-spinner mixin, hence the @use above) before "Posting…", and a progress cursor
+//   * .gt-backlog-row__archived is dropped: the archive is gone (spec 2026-10-15 A), and a
+//     legacy archived story is an ordinary backlog row
 // Re-port from the design file when it changes; do not hand-edit values.
 
 /* ============================================================
@@ -369,6 +376,11 @@
 .gt-comments__composer-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .gt-comments__hint { font-size: 10px; color: var(--gt-text-tertiary); font-family: var(--gt-font-mono); }
 .gt-comments__send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 112px;
   padding: 6px 16px;
   border: none;
   border-radius: var(--gt-radius-sm);
@@ -383,6 +395,8 @@
 .gt-comments__send:hover:not(:disabled) { background: var(--gt-primary-hover); }
 .gt-comments__send:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
 .gt-comments__send:disabled { opacity: 0.45; cursor: not-allowed; }
+.gt-comments__send[aria-busy='true'] { cursor: progress; }
+.gt-comments__spinner { @include gt-spinner; }
 
 /* ── BacklogRow ─────────────────────────────────────────── */
 .gt-backlog-row {
@@ -409,7 +423,6 @@
 }
 .gt-backlog-row__title:hover { color: var(--gt-primary); }
 .gt-backlog-row__title:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
-.gt-backlog-row__archived { font-size: 10px; color: var(--gt-text-tertiary); font-style: italic; flex-shrink: 0; }
 .gt-backlog-row__meta { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .gt-backlog-row__restore {
   display: inline-flex;

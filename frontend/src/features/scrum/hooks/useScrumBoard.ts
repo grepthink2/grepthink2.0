@@ -5,11 +5,13 @@ import type {
   ApiScrumBoard, ApiScrumStory, ApiScrumTask, ApiUpdateSprintBody, ApiUpdateStoryBody,
   ApiUpdateTaskBody,
 } from '@/lib/api';
+import { ApiError } from '@/lib/api/client';
 import { ReadOnlyPreviewError } from '@/lib/previewGuard';
 import {
   applyOptimisticMove, applyPrStates, applyStoryPatch, applyTaskPatch,
-  confirmMove, findStory, findTask, rollbackMove,
+  confirmMove, findStory, findTask, mapTask, mergeTaskResponse, rollbackMove, syncRefStatus,
 } from '../utils/boardReducer';
+import { blockedMessage, isBlocked } from '../utils/dependencies';
 
 /** Transient user-facing message. F9 renders these as toasts. */
 export interface BoardNotice {
@@ -152,12 +154,23 @@ export function useScrumBoard(
     [load],
   );
 
-  /** Optimistic status change; rolls the card back and explains if the write fails. */
+  /**
+   * Optimistic status change; rolls the card back and explains if the write fails. Every step also
+   * writes the task's status into the refs that name it, across the sprint and the backlog, so a
+   * dependent reads its blocker's new column at once (spec D9).
+   */
   const moveTask = useCallback(
     async (taskId: string, to: ApiBoardStatus) => {
       const current = boardRef.current;
       const snapshot = current ? findTask(current.stories, taskId) : null;
       if (!snapshot || snapshot.status === to) return;
+      // A blocked task never leaves To do: refused before asking, so the card never moves. The
+      // copy may be stale (a teammate finished the blocker), so the board reloads behind the toast.
+      if (to !== 'todo' && isBlocked(snapshot)) {
+        setNotice({ kind: 'error', message: blockedMessage(snapshot) });
+        void refresh();
+        return;
+      }
 
       // Prefer the board's own member list: it carries the same display name
       // the server will reconcile with, whereas the auth token's metadata is
@@ -165,18 +178,30 @@ export function useScrumBoard(
       // (an instructor or TA viewing a team's board).
       const mover = (viewerId && current?.members.find((m) => m.user_id === viewerId)?.name)
         || viewerName;
-      setBoard((prev) =>
-        prev ? { ...prev, stories: applyOptimisticMove(prev.stories, taskId, to, mover) } : prev,
-      );
+      setBoard((prev) => (prev ? {
+        ...prev,
+        stories: syncRefStatus(applyOptimisticMove(prev.stories, taskId, to, mover), taskId, to),
+        backlog: syncRefStatus(prev.backlog, taskId, to),
+      } : prev));
       try {
         const { task } = await api.moveScrumTask(taskId, to);
-        setBoard((prev) => (prev ? { ...prev, stories: confirmMove(prev.stories, taskId, task) } : prev));
+        setBoard((prev) => (prev ? {
+          ...prev,
+          stories: syncRefStatus(confirmMove(prev.stories, taskId, task), taskId, task.status),
+          backlog: syncRefStatus(prev.backlog, taskId, task.status),
+        } : prev));
       } catch (err) {
-        setBoard((prev) => (prev ? { ...prev, stories: rollbackMove(prev.stories, snapshot) } : prev));
+        setBoard((prev) => (prev ? {
+          ...prev,
+          stories: syncRefStatus(rollbackMove(prev.stories, snapshot), taskId, snapshot.status),
+          backlog: syncRefStatus(prev.backlog, taskId, snapshot.status),
+        } : prev));
         setNotice(noticeFor(err, `Couldn't move ${snapshot.key}`));
+        // The server refused a block this copy did not show: reload it so the chip appears (D10).
+        if (err instanceof ApiError && err.code === 'task_blocked') void refresh();
       }
     },
-    [viewerName, viewerId],
+    [viewerName, viewerId, refresh],
   );
 
   /**
@@ -229,7 +254,11 @@ export function useScrumBoard(
     try {
       const { task } = await api.updateScrumTask(taskId, body);
       if (writeSeq.current.get(taskId) !== seq) return task;   // superseded
-      local(task);
+      // The response has no dependency lists, comment count or mover's name: the board's stay.
+      setBoard((prev) => (prev ? {
+        ...prev,
+        stories: mapTask(prev.stories, taskId, (t) => mergeTaskResponse(t, task)),
+      } : prev));
       return task;
     } catch (err) {
       if (writeSeq.current.get(taskId) !== seq) return null;   // superseded
@@ -260,13 +289,26 @@ export function useScrumBoard(
       projectId ? mutate(() => api.createStory(projectId, body), 'Couldn’t create the story') : Promise.resolve(null),
     [mutate, projectId],
   );
-  /** Structural edits (sprint move, archive) still refetch — they reshuffle lists. */
+  /** A sprint move still refetches — it reshuffles the lists. */
   const updateStory = useCallback(
     (storyId: string, body: ApiUpdateStoryBody) =>
-      ('sprint_id' in body || 'archived' in body)
+      ('sprint_id' in body)
         ? mutate(() => api.updateStory(storyId, body), 'Couldn’t save the story')
         : patchStory(storyId, body),
     [mutate, patchStory],
+  );
+  /**
+   * Delete a backlog story with its tasks. Resolves false when the write fails or is refused
+   * (a story in a sprint, a read-only preview); the notice carries the reason.
+   */
+  const deleteStory = useCallback(
+    (storyId: string): Promise<boolean> =>
+      mutate(
+        async () => { await api.deleteScrumStory(storyId); return true; },
+        'Couldn’t delete the story',
+        'Story deleted',
+      ).then((ok) => ok === true),
+    [mutate],
   );
   const createTask = useCallback(
     (storyId: string, body: ApiCreateTaskBody) =>
@@ -279,6 +321,17 @@ export function useScrumBoard(
   );
   const deleteTask = useCallback(
     (taskId: string) => mutate(() => api.deleteScrumTask(taskId), 'Couldn’t delete the task', 'Task deleted'),
+    [mutate],
+  );
+  /** Both sides of the edge change (one task's depends_on, the other's blocks): reload the board. */
+  const addDependency = useCallback(
+    (taskId: string, dependsOnTaskId: string) =>
+      mutate(() => api.addTaskDependency(taskId, dependsOnTaskId), 'Couldn’t add the dependency'),
+    [mutate],
+  );
+  const removeDependency = useCallback(
+    (taskId: string, dependsOnTaskId: string) =>
+      mutate(() => api.removeTaskDependency(taskId, dependsOnTaskId), 'Couldn’t remove the dependency'),
     [mutate],
   );
   const createSprint = useCallback(
@@ -310,9 +363,12 @@ export function useScrumBoard(
     moveTask,
     createStory,
     updateStory,
+    deleteStory,
     createTask,
     updateTask,
     deleteTask,
+    addDependency,
+    removeDependency,
     createSprint,
     updateSprint,
     updateSettings,

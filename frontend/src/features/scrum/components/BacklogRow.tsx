@@ -1,39 +1,45 @@
 import { RotateCcw } from 'lucide-react';
-import { format } from 'date-fns';
 import type { ApiScrumStory } from '@/lib/api';
 import type { MemberMap } from '../scrumTypes';
 import { personOf, UNKNOWN_PERSON } from '../scrumTypes';
+import { storyHours } from '../utils/rollups';
 import { EstimateChip, PointsChip, UserPair } from './Chips';
 
 interface Props {
   story: ApiScrumStory;
   members: MemberMap;
   onOpen?: () => void;
-  /** Shows the restore action ("Move to sprint"). */
-  onRestore?: () => void;
+  /** Shows the move action: into the sprint the board shows. */
+  onMoveToSprint?: () => void;
+  /** That sprint's name, which the move button says. */
+  sprintName: string;
 }
 
-/** Dense archive/backlog row — the backlog doubles as the story archive (req 12). */
-export default function BacklogRow({ story, members, onOpen, onRestore }: Props) {
+/** Dense backlog row: a story that isn't in a sprint (a legacy archived one included). */
+export default function BacklogRow({ story, members, onOpen, onMoveToSprint, sprintName }: Props) {
   const reporter = personOf(members, story.reporter_id, UNKNOWN_PERSON);
   const assignee = personOf(members, story.assignee_id);
-  const archived = story.archived_at ? format(new Date(story.archived_at), 'MMM d') : null;
+  const hours = storyHours(story);
   return (
     <div className="gt-backlog-row">
       <span className="gt-backlog-row__key">{story.key}</span>
       <button type="button" className="gt-backlog-row__title" onClick={onOpen}>
         {story.title}
       </button>
-      {archived && <span className="gt-backlog-row__archived">archived {archived}</span>}
       <span className="gt-backlog-row__meta">
-        {story.time_estimate && <EstimateChip estimate={story.time_estimate} />}
+        {hours != null && <EstimateChip estimate={`${hours}h`} />}
         {story.points != null && <PointsChip points={story.points} size="sm" />}
         <UserPair reporter={reporter} assignee={assignee} tooltipSide="left" />
       </span>
-      {onRestore && (
-        <button type="button" className="gt-backlog-row__restore" onClick={onRestore}>
+      {onMoveToSprint && (
+        <button
+          type="button"
+          className="gt-backlog-row__restore"
+          aria-label={`Move ${story.key} to ${sprintName}`}
+          onClick={onMoveToSprint}
+        >
           <RotateCcw size={12} aria-hidden="true" />
-          Move to sprint
+          {`Move to ${sprintName}`}
         </button>
       )}
     </div>

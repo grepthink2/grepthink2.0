@@ -1,17 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, Plus, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Check, Loader2, Plus, X } from 'lucide-react';
 import { Menu, MenuItem } from '@components/Menu/Menu';
 import { Popover } from '@components/Popover/Popover';
 import type {
-  ApiCreateTaskBody, ApiScrumMember, ApiScrumStory, ApiScrumTask, ApiUpdateTaskBody,
+  ApiCreateTaskBody, ApiScrumMember, ApiScrumSprint, ApiScrumStory, ApiScrumTask, ApiTaskRef,
+  ApiUpdateTaskBody,
 } from '@/lib/api';
-import { TASK_TAGS } from '../config/scrumTags';
-import type { EstimateScale } from '../config/scrumTags';
+import { BOARD_COLUMNS, statusLabel, TASK_TAGS } from '../config/scrumTags';
+import type { BoardStatus, EstimateScale } from '../config/scrumTags';
+import { buildMemberMap } from '../scrumTypes';
+import { blockedMessage, isBlocked } from '../utils/dependencies';
+import { parseHours } from '../utils/estimateHours';
 import { isPrUrl } from '../utils/prLabel';
 import { assignedTaskPoints } from '../utils/rollups';
+import CommentThread from './CommentThread';
 import { PointPicker } from './ScalePicker';
 import TagBadge from './TagBadge';
 import './TaskEditorModal.scss';
+
+const ignoreCommentError = () => {};
 
 interface Props {
   /** The parent story — this editor is only reachable from its detail. */
@@ -27,6 +34,22 @@ interface Props {
   onBack?: () => void;
   onCreate?: (body: ApiCreateTaskBody) => void;
   onSave?: (body: ApiUpdateTaskBody) => void;
+  /** Move the task to another column at once (no Save). Present only when the viewer can move
+   *  this task: a team member, on a sprint story. Its select is the keyboard path for DnD. */
+  onMove?: (to: BoardStatus) => void;
+  /** A comment that failed to post (edit mode: an existing task has a thread). */
+  onCommentError?: (message: string) => void;
+  /** Refresh the board so the card's comment count stays in step. */
+  onCommentPosted?: () => void;
+  /** The board's sprints, to group the dependency picker ("Sprint 2", "Backlog"). */
+  sprints: ApiScrumSprint[];
+  /** Every task of the project (board.task_index), for the picker. */
+  taskIndex: ApiTaskRef[];
+  /** Open another task from its key (a dependency or a dependent); the page switches sprints if needed. */
+  onOpenRef: (ref: ApiTaskRef) => void;
+  /** Present only when the viewer can edit dependencies (a team member). */
+  onAddDependency?: (dependsOnTaskId: string) => void;
+  onRemoveDependency?: (dependsOnTaskId: string) => void;
 }
 
 /**
@@ -38,23 +61,78 @@ interface Props {
  * Points are capped at what the parent story has left (maintainer 2026-08-29):
  * the story estimate is a budget in both directions — a story cannot drop below
  * what its tasks claim, and a task cannot claim more than the story has.
+ *
+ * An existing task's comment thread sits below the form's actions.
+ *
+ * An existing task also lists what it depends on and what it blocks (spec 2026-10-16), each key a
+ * link to that task. Adding or removing a dependency applies at once, not on Save; while the task is
+ * blocked, its Status select offers only To do.
  */
 export default function TaskEditorModal({
-  story, task = null, members, scale, saving = false, onClose, onBack, onCreate, onSave,
+  story, task = null, members, scale, saving = false, onClose, onBack, onCreate, onSave, onMove,
+  onCommentError, onCommentPosted, sprints, taskIndex, onOpenRef, onAddDependency, onRemoveDependency,
 }: Props) {
   const back = onBack ?? onClose;
   const editing = task != null;
+  const memberMap = useMemo(() => buildMemberMap(members), [members]);
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description_md ?? '');
   const [tags, setTags] = useState<string[]>(task?.tags ?? []);
   const [points, setPoints] = useState<number | undefined>(task?.points ?? undefined);
-  const [estimate, setEstimate] = useState(task?.time_estimate ?? '');
+  // A string, so the box can hold what is being typed; sent as a number.
+  const [hours, setHours] = useState(task?.estimate_hours == null ? '' : String(task.estimate_hours));
+  // Firefox and Safari give a number box's unreadable text ("4h") as '' — not a cleared box.
+  const [hoursBad, setHoursBad] = useState(false);
   const [assignee, setAssignee] = useState(task?.assignee_id ?? '');
   const [prUrl, setPrUrl] = useState(task?.pr_url ?? '');
   const [labelsOpen, setLabelsOpen] = useState(false);
+  /** The task picked in the dependency picker, '' for none. */
+  const [pick, setPick] = useState('');
   const titleRef = useRef<HTMLInputElement>(null);
   const labelsButtonRef = useRef<HTMLButtonElement>(null);
   const prInvalid = prUrl.trim() !== '' && !isPrUrl(prUrl.trim());
+  const { invalid: hoursInvalid } = parseHours(hours, hoursBad);
+
+  // Missing from a backend older than this client: no dependency UI at all then (spec D11).
+  const dependsOn = task?.depends_on;
+  const blocks = task?.blocks ?? [];
+  const blocked = task != null && isBlocked(task);
+  // The picker: the project's other tasks by sprint, in the board's sprint order, then the backlog.
+  // Never the task itself, what it already depends on, or what depends on it (a direct cycle; a
+  // deeper one is refused by the API, whose reason the page shows).
+  const taken = new Set([task?.id, ...(dependsOn ?? []).map((d) => d.id), ...blocks.map((d) => d.id)]);
+  const offerable = taskIndex.filter((t) => !taken.has(t.id));
+  const pickerGroups = [
+    ...sprints.map((s) => ({
+      id: s.id,
+      label: s.status === 'completed' ? `${s.name} (completed)` : s.name,
+      tasks: offerable.filter((t) => t.sprint_id === s.id),
+    })),
+    { id: 'backlog', label: 'Backlog', tasks: offerable.filter((t) => t.sprint_id === null) },
+  ].filter((g) => g.tasks.length > 0);
+
+  /** One dependency (or dependent) row: its key opens it; `onRemove` only for a dependency. */
+  const refRow = (ref: ApiTaskRef, onRemove?: (id: string) => void) => (
+    <li key={ref.id} className="task-editor__dep">
+      <button type="button" className="task-editor__dep-key" onClick={() => onOpenRef(ref)}>
+        {ref.key}
+      </button>
+      <span className="task-editor__dep-title">{ref.title}</span>
+      <span className={`task-editor__dep-status task-editor__dep-status--${ref.status}`}>
+        {statusLabel(ref.status)}
+      </span>
+      {onRemove && (
+        <button
+          type="button"
+          className="task-editor__dep-remove"
+          aria-label={`Remove dependency on ${ref.key}`}
+          onClick={() => onRemove(ref.id)}
+        >
+          <X size={12} aria-hidden="true" />
+        </button>
+      )}
+    </li>
+  );
 
   // Budget left for this task: siblings count against the story, but the task's
   // own current points are its to keep when re-pointing.
@@ -64,9 +142,12 @@ export default function TaskEditorModal({
   useEffect(() => {
     const onEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onEscape);
-    titleRef.current?.focus();
     return () => document.removeEventListener('keydown', onEscape);
   }, [onClose]);
+
+  // The title takes focus when the editor opens, and only then: the page passes a new onClose
+  // on every render, and a board refetch after a comment must not pull focus out of the thread.
+  useEffect(() => { titleRef.current?.focus(); }, []);
 
   const toggleTag = (tag: string) =>
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -80,7 +161,7 @@ export default function TaskEditorModal({
 
   const submit = () => {
     const trimmed = title.trim();
-    if (!trimmed || saving || prInvalid) return;
+    if (!trimmed || saving || prInvalid || hoursInvalid) return;
     if (editing) {
       // Edits send the full field set with explicit nulls: clearing a description,
       // unassigning or unlinking a PR must persist. `undefined` would be dropped
@@ -90,7 +171,7 @@ export default function TaskEditorModal({
         description_md: description.trim() || null,
         tags,
         points,
-        time_estimate: estimate.trim() || null,
+        estimate_hours: hours.trim() === '' ? null : Number(hours),
         assignee_id: assignee || null,
         pr_url: prUrl.trim() || null,
       });
@@ -101,7 +182,7 @@ export default function TaskEditorModal({
       ...(description.trim() ? { description_md: description.trim() } : {}),
       ...(tags.length ? { tags } : {}),
       ...(points != null ? { points } : {}),
-      ...(estimate.trim() ? { time_estimate: estimate.trim() } : {}),
+      ...(hours.trim() ? { estimate_hours: Number(hours) } : {}),
       ...(assignee ? { assignee_id: assignee } : {}),
     });
   };
@@ -137,6 +218,27 @@ export default function TaskEditorModal({
         <h2 className="task-editor__title" id="task-editor-title">
           {editing ? `Edit ${task.key}` : `New task in ${story.key}`}
         </h2>
+
+        {/* The board's keyboard/assistive path: HTML5 drag and drop is mouse-only. */}
+        {editing && onMove && (
+          <div className="task-editor__field task-editor__status">
+            <label className="task-editor__label" htmlFor="task-editor-status">Status</label>
+            <select
+              id="task-editor-status"
+              value={task.status}
+              aria-describedby="task-editor-status-hint"
+              onChange={(e) => onMove(e.target.value as BoardStatus)}
+            >
+              {/* A blocked task cannot leave To do (spec D1): the same rule as the card and the board. */}
+              {BOARD_COLUMNS.map((c) => (
+                <option key={c.id} value={c.id} disabled={blocked && c.id !== 'todo'}>{c.label}</option>
+              ))}
+            </select>
+            <span className="task-editor__hint" id="task-editor-status-hint">
+              {blocked ? blockedMessage(task) : 'Applies right away.'}
+            </span>
+          </div>
+        )}
 
         <div className="task-editor__field">
           <label className="task-editor__label" htmlFor="task-editor-title-input">Title</label>
@@ -231,14 +333,28 @@ export default function TaskEditorModal({
         <div className="task-editor__row">
           <div className="task-editor__field">
             <label className="task-editor__label" htmlFor="task-editor-estimate">Time estimate</label>
-            <input
-              id="task-editor-estimate"
-              type="text"
-              value={estimate}
-              maxLength={20}
-              placeholder="4h"
-              onChange={(e) => setEstimate(e.target.value)}
-            />
+            <div className="task-editor__hours">
+              <input
+                id="task-editor-estimate"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={15}
+                step={1}
+                value={hours}
+                placeholder="4"
+                aria-invalid={hoursInvalid || undefined}
+                aria-describedby="task-editor-estimate-hint"
+                onChange={(e) => setHours(e.target.value)}
+                // Every keystroke, not only a value change: deleting unreadable text leaves the value
+                // at '' (no onChange), and the box must stop reading as invalid then.
+                onInput={(e) => setHoursBad(e.currentTarget.validity.badInput)}
+              />
+              <span className="task-editor__hours-unit" aria-hidden="true">h</span>
+            </div>
+            <span className="task-editor__hint" id="task-editor-estimate-hint">
+              {hoursInvalid ? 'Enter whole hours, 1 to 15.' : 'Whole hours, up to 15.'}
+            </span>
           </div>
 
           <div className="task-editor__field">
@@ -276,17 +392,75 @@ export default function TaskEditorModal({
           </div>
         )}
 
+        {editing && dependsOn && (
+          <section className="task-editor__deps" aria-labelledby="task-editor-deps-title">
+            <h3 className="task-editor__section-title" id="task-editor-deps-title">Depends on</h3>
+            {dependsOn.length === 0
+              ? <p className="task-editor__hint">No dependencies.</p>
+              : <ul className="task-editor__dep-list">{dependsOn.map((d) => refRow(d, onRemoveDependency))}</ul>}
+            {onAddDependency && (
+              <div className="task-editor__dep-add">
+                <label className="sr-only" htmlFor="task-editor-dep-pick">Add a dependency</label>
+                <select id="task-editor-dep-pick" value={pick} onChange={(e) => setPick(e.target.value)}>
+                  <option value="">Add a dependency…</option>
+                  {pickerGroups.map((g) => (
+                    <optgroup key={g.id} label={g.label}>
+                      {g.tasks.map((t) => <option key={t.id} value={t.id}>{`${t.key} · ${t.title}`}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="task-editor__dep-add-button"
+                  disabled={!pick}
+                  onClick={() => { onAddDependency(pick); setPick(''); }}
+                >
+                  Add
+                </button>
+              </div>
+            )}
+            <span className="task-editor__hint">
+              Applies right away. A task in To do can’t start until every task it depends on is done.
+            </span>
+            {blocks.length > 0 && (
+              <>
+                <h3 className="task-editor__section-title">Blocks</h3>
+                <ul className="task-editor__dep-list">{blocks.map((d) => refRow(d))}</ul>
+              </>
+            )}
+          </section>
+        )}
+
         <footer className="task-editor__foot">
           <button type="button" className="task-editor__cancel" onClick={onClose}>Cancel</button>
+          {/* Busy is not disabled: the button keeps its colour and focus, and submit()'s
+              in-flight guard ignores a second click. Disabled means "can't submit yet". */}
           <button
             type="button"
             className="task-editor__submit"
             onClick={submit}
-            disabled={!title.trim() || saving || prInvalid}
+            disabled={!title.trim() || prInvalid || hoursInvalid}
+            aria-busy={saving}
           >
+            {saving && <Loader2 className="task-editor__spinner" size={14} aria-hidden="true" />}
             {saving ? 'Saving…' : editing ? 'Save task' : 'Add task'}
           </button>
         </footer>
+
+        {/* After the footer, so the form and its actions stay on the first screen; the
+            backdrop scrolls a long thread. Posting never touches the form's fields. */}
+        {editing && (
+          <section className="task-editor__comments">
+            <h3 className="task-editor__section-title">Comments</h3>
+            <CommentThread
+              key={task.id}
+              parent={{ kind: 'tasks', id: task.id, key: task.key }}
+              members={memberMap}
+              onError={onCommentError ?? ignoreCommentError}
+              onPosted={onCommentPosted}
+            />
+          </section>
+        )}
       </div>
     </div>
   );

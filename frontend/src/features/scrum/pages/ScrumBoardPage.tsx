@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Settings } from 'lucide-react';
 import Skeleton from '@components/Skeleton/Skeleton';
@@ -6,7 +6,7 @@ import { ToastStack } from '@components/Toast/Toast';
 import { useToasts } from '@components/Toast/useToasts';
 import { useAuth } from '@/lib/auth';
 import type {
-  ApiCreateStoryBody, ApiCreateTaskBody, ApiScrumStory, ApiScrumTask, ApiUpdateTaskBody,
+  ApiCreateStoryBody, ApiCreateTaskBody, ApiScrumStory, ApiScrumTask, ApiTaskRef, ApiUpdateTaskBody,
 } from '@/lib/api';
 import BacklogRow from '../components/BacklogRow';
 import BurnupChart from '../components/BurnupChart';
@@ -15,10 +15,12 @@ import ScrumBoard from '../components/ScrumBoard';
 import StoryCard from '../components/StoryCard';
 import StoryModal from '../components/StoryModal';
 import BoardSettingsModal from '../components/BoardSettingsModal';
+import SprintPicker from '../components/SprintPicker';
 import StoryEditorModal from '../components/StoryEditorModal';
 import TaskEditorModal from '../components/TaskEditorModal';
 import { useScrumBoard } from '../hooks/useScrumBoard';
 import { buildMemberMap } from '../scrumTypes';
+import { isBacklogStory } from '../utils/backlog';
 import { collectTasks } from '../utils/rollups';
 import '../scrum.scss';
 import './ScrumBoardPage.scss';
@@ -69,8 +71,8 @@ export default function ScrumBoardPage() {
 
   const {
     board, loading, error, notice, clearNotice, canWrite,
-    selectSprint, moveTask, createStory, updateStory, createTask, updateTask, deleteTask,
-    updateSettings, refresh,
+    selectSprint, moveTask, createStory, updateStory, deleteStory, createTask, updateTask,
+    deleteTask, addDependency, removeDependency, updateSettings, refresh,
   } = useScrumBoard(projectId, viewerName, user?.id);
   const { toasts, push, dismiss } = useToasts();
 
@@ -83,6 +85,7 @@ export default function ScrumBoardPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creatingStory, setCreatingStory] = useState(false);
   const [savingStory, setSavingStory] = useState(false);
+  const [deletingStory, setDeletingStory] = useState(false);
   const [storyFilter, setStoryFilter] = useState<string | null>(null);
   const projectName = (location.state as { projectName?: string } | null)?.projectName;
 
@@ -136,7 +139,7 @@ export default function ScrumBoardPage() {
   }, [notice, push, clearNotice]);
 
   // ?sprint= (search deep links): pick that sprint once the board knows it, then drop the
-  // param so the sprint select is free to move on. An unknown id is ignored — asking the
+  // param so the sprint picker is free to move on. An unknown id is ignored — asking the
   // API for it would 404, which the hook renders as a board error.
   useEffect(() => {
     if (!board || !sprintParam) return;
@@ -150,12 +153,28 @@ export default function ScrumBoardPage() {
     }, { replace: true });
   }, [board, sprintParam, selectSprint, setSearchParams]);
 
+  // A switch from the picker shows the skeleton in place of the whole board, picker included, so the
+  // trigger the picker handed focus to is gone. Give focus to the new one once the switched board is
+  // on screen (a failed switch shows the error block: no picker, nothing to focus). Not after a
+  // ?sprint= deep link, which calls selectSprint itself: nothing had focus then.
+  const pickerRef = useRef<HTMLButtonElement>(null);
+  const refocusPicker = useRef(false);
+  const pickSprint = (id: string) => {
+    refocusPicker.current = true;
+    void selectSprint(id);
+  };
+  useEffect(() => {
+    if (loading || !refocusPicker.current) return;
+    refocusPicker.current = false;
+    pickerRef.current?.focus({ preventScroll: true });
+  }, [loading]);
+
   /**
-   * Patch ?task= / ?story= in one navigation. setSearchParams does not queue like setState
+   * Patch ?task= / ?story= / ?sprint= in one navigation. setSearchParams does not queue like setState
    * (React Router's docs say so): each call starts from this render's params, so of two calls
-   * in one event only the last lands. A handler that changes both passes both here, once.
+   * in one event only the last lands. A handler that changes several passes them here, once.
    */
-  const setParams = (patch: Partial<Record<'task' | 'story', string | null>>) => {
+  const setParams = (patch: Partial<Record<'task' | 'story' | 'sprint', string | null>>) => {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
       for (const [key, value] of Object.entries(patch)) {
@@ -187,6 +206,17 @@ export default function ScrumBoardPage() {
   const openTask = (task: ApiScrumTask) => {
     setParams({ story: null, task: task.id });
     setAddTaskStoryId(null);
+  };
+
+  /**
+   * A dependency's (or dependent's) key in the task editor → that task (spec D6). One in the shown
+   * sprint or the backlog opens in place; one in another sprint goes through ?sprint=, which the
+   * deep-link effect above switches to, and the editor opens once that board is on screen.
+   */
+  const openTaskRef = (ref: ApiTaskRef) => {
+    setAddTaskStoryId(null);
+    const otherSprint = ref.sprint_id && ref.sprint_id !== board?.sprint_id ? ref.sprint_id : null;
+    setParams({ story: null, task: ref.id, sprint: otherSprint });
   };
 
   /**
@@ -225,6 +255,14 @@ export default function ScrumBoardPage() {
     await updateTask(taskId, body);
     setSavingTask(false);
     closeTaskEditor();
+  };
+
+  /** A refused delete leaves the story open: the hook's toast says why. */
+  const handleDeleteStory = async (storyId: string) => {
+    setDeletingStory(true);
+    const ok = await deleteStory(storyId);
+    setDeletingStory(false);
+    if (ok) closeStory();              // drops ?story= and any stale ?task=
   };
 
   const handleCreateStory = async (body: ApiCreateStoryBody) => {
@@ -274,12 +312,12 @@ export default function ScrumBoardPage() {
         </div>
         <div className="scrum-board__header-actions">
           {board.sprints.length > 0 && (
-            <label className="scrum-board__sprint-select">
-              <span className="sr-only">Sprint</span>
-              <select value={board.sprint_id ?? ''} onChange={(e) => selectSprint(e.target.value)}>
-                {board.sprints.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </label>
+            <SprintPicker
+              ref={pickerRef}
+              sprints={board.sprints}
+              selectedId={board.sprint_id}
+              onSelect={pickSprint}
+            />
           )}
           <button
             type="button"
@@ -364,16 +402,17 @@ export default function ScrumBoardPage() {
                   story={s}
                   members={members}
                   onOpen={() => setStoryParam(s.id)}
-                  onRestore={canWrite && board.sprint_id
+                  onMoveToSprint={canWrite && board.sprint_id
                     ? () => updateStory(s.id, { sprint_id: board.sprint_id })
                     : undefined}
+                  sprintName={sprint?.name ?? ''}
                 />
               ))}
             </div>
           ) : (
             <div className="scrum-board__empty-state">
               <h2>Backlog is empty</h2>
-              <p>Stories you archive or leave unscheduled show up here.</p>
+              <p>Stories that aren't in a sprint show up here.</p>
             </div>
           )
         )}
@@ -412,9 +451,12 @@ export default function ScrumBoardPage() {
       </div>
 
       {/* One modal at a time: the task editor takes precedence over the story
-          detail, and opening either closes the other (maintainer 2026-09-10). */}
+          detail, and opening either closes the other (maintainer 2026-09-10).
+          Keyed by task: another ?task= starts a fresh form, while a refetch of the same
+          task (after a comment is posted) keeps the unsaved edits. */}
       {openTaskPair && (
         <TaskEditorModal
+          key={openTaskPair.task.id}
           story={openTaskPair.story}
           task={openTaskPair.task}
           members={board.members}
@@ -423,6 +465,18 @@ export default function ScrumBoardPage() {
           onClose={closeTaskEditor}
           onBack={() => backToStory(openTaskPair.story.id)}
           onSave={(body) => handleSaveTask(openTaskPair.task.id, body)}
+          // Staff never move tasks, and the optimistic move only knows sprint stories.
+          onMove={canWrite && !isBacklogStory(openTaskPair.story)
+            ? (to) => moveTask(openTaskPair.task.id, to)
+            : undefined}
+          onCommentError={(m) => push('error', m)}
+          onCommentPosted={refresh}
+          sprints={board.sprints}
+          taskIndex={board.task_index ?? []}
+          onOpenRef={openTaskRef}
+          // Staff see both lists and change neither (spec D7).
+          onAddDependency={canWrite ? (id) => addDependency(openTaskPair.task.id, id) : undefined}
+          onRemoveDependency={canWrite ? (id) => removeDependency(openTaskPair.task.id, id) : undefined}
         />
       )}
 
@@ -435,6 +489,9 @@ export default function ScrumBoardPage() {
           onClose={closeTaskEditor}
           onBack={() => backToStory(addTaskStory.id)}
           onCreate={(body) => handleCreateTask(addTaskStory.id, body)}
+          sprints={board.sprints}
+          taskIndex={board.task_index ?? []}
+          onOpenRef={openTaskRef}
         />
       )}
 
@@ -450,7 +507,8 @@ export default function ScrumBoardPage() {
           onOpenTask={openTask}
           onAddTask={() => startAddTask(openStory.id)}
           onDeleteTask={deleteTask}
-          onMoveTask={moveTask}
+          onDeleteStory={() => handleDeleteStory(openStory.id)}
+          deleting={deletingStory}
           onCommentError={(m) => push('error', m)}
           onCommentPosted={refresh}
         />
