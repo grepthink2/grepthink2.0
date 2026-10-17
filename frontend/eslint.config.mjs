@@ -15,7 +15,7 @@ const reactHooksRulesAsErrors = Object.fromEntries(
 
 export default tseslint.config(
   // Ignore build artifacts and config files
-  { ignores: ['dist', 'node_modules'] },
+  { ignores: ['dist', 'node_modules', 'coverage'] },
   
   // Base JavaScript recommended rules
   {

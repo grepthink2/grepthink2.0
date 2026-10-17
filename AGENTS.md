@@ -25,6 +25,7 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 | Auth      | Supabase Auth (JWT); PyJWT verification (HS256 + ES256) |
 | Tests     | pytest + `tests/fake_supabase.py` (backend), Vitest 5 + Testing Library (frontend) |
 | Lint      | ruff check + format (backend), ESLint 10 + `lint:design` (frontend) |
+| Coverage  | pytest-cov (`backend/.coveragerc`: branch, `fail_under`), @vitest/coverage-v8 (`vite.config.ts` thresholds), Codecov |
 | Tooling   | Node 24 in CI (`engines` >= 22.12), `backend/requirements-dev.txt` |
 
 ## Directory structure
@@ -118,6 +119,7 @@ design/               # Claude Design export (design system); replace it wholesa
 cd backend && .venv/bin/pip install -r requirements-dev.txt   # runtime + test/lint tools
 .venv/bin/ruff format . && .venv/bin/ruff check .             # lint gate
 .venv/bin/python -m pytest                  # no network: conftest stubs SUPABASE_* env
+.venv/bin/python -m pytest --cov            # same, plus coverage (.coveragerc: branch, fail_under)
 .venv/bin/python run.py                     # serve on :5001 (needs the real repo-root .env)
 
 # Frontend (Node 24)
@@ -126,6 +128,7 @@ npm run dev                                 # Vite dev server on :5173 (proxies 
 npm run lint                                # ESLint: any finding fails (react-hooks rules are errors)
 npm run build                               # tsc -b && vite build  (the typecheck gate)
 npx vitest run                              # unit + component tests
+npm run test:coverage                       # same, plus coverage (thresholds in vite.config.ts)
 ```
 
 ## Supabase, Vercel and Cloudflare CLIs: always use the project profiles
@@ -253,4 +256,11 @@ The full agent-facing action catalog (method, params, role) lives at
 - Frontend: `npm run lint && npm run lint:design && npm run build && npx vitest run` (no lint findings, all green).
 - New backend route → add the matching method to `frontend/src/lib/api/<domain>.ts`.
 - New migration → `backend/database/migrations/<YYYY-MM>/<YYYY-MM-DD>_<name>.sql`, in the folder for its
-  month; update `supabase/schema.sql` once it is applied.
+  month; update `supabase/schema.sql` once it is applied (CI warns on a pull request that adds a
+  migration without touching the snapshot).
+- CI (`.github/workflows/test.yml`) runs the same gates with coverage on every pull request into
+  `beta` or `main`. The thresholds (`backend/.coveragerc` `fail_under`, `frontend/vite.config.ts`
+  `coverage.thresholds`) only ever go up.
+- Open a pull request into `beta` and fill in `.github/PULL_REQUEST_TEMPLATE.md` (what changed, how
+  it was verified). Never push to `main`: it takes merge-commit pull requests from `beta` with green
+  checks only (`.github/rulesets/main.json`).
