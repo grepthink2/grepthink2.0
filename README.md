@@ -1,8 +1,21 @@
-# GrepThink 2.0
+<p align="center">
+  <a href="https://grepthink2.com"><img src="design/assets/grepthink-logo.svg" alt="GrepThink" width="420"></a>
+</p>
 
-Team-project management for UC Santa Cruz's CSE 115 series (Software Engineering), and the
-v2 rebuild of [grepthink.com](https://www.grepthink.com). Live at
+<p align="center">
+  <a href="https://github.com/grepthink2/grepthink2.0/actions/workflows/test.yml?query=branch%3Amain"><img alt="Tests on main" src="https://github.com/grepthink2/grepthink2.0/actions/workflows/test.yml/badge.svg?branch=main"></a>
+  <a href="https://codecov.io/gh/grepthink2/grepthink2.0"><img alt="Coverage" src="https://codecov.io/gh/grepthink2/grepthink2.0/branch/main/graph/badge.svg"></a>
+  <a href="https://grepthink2.com"><img alt="grepthink2.com deployment" src="https://img.shields.io/github/deployments/grepthink2/grepthink2.0/Production%20%E2%80%93%20grepthink2-0-frontend?label=grepthink2.com&logo=vercel&logoColor=white"></a>
+  <a href="https://api.grepthink2.com/health"><img alt="api.grepthink2.com deployment" src="https://img.shields.io/github/deployments/grepthink2/grepthink2.0/Production%20%E2%80%93%20grepthink2-0-backend?label=api.grepthink2.com&logo=vercel&logoColor=white"></a>
+</p>
+
+**GrepThink** is team-project management for software-engineering courses. Students form project
+teams and submit team self-reviews; TAs run the weekly meetings and review the submissions;
+instructors run classes, rosters and staffing. It is the platform behind UC Santa Cruz's CSE 115
+series, the v2 rebuild of [grepthink.com](https://www.grepthink.com), and it is live at
 [grepthink2.com](https://grepthink2.com).
+
+## What it does
 
 - **Classes and rosters:** instructors create a class under their school, import a roster,
   invite students and designate TAs. One account can hold a different role in each class.
@@ -25,6 +38,7 @@ v2 rebuild of [grepthink.com](https://www.grepthink.com). Live at
 | `supabase/` | schema snapshot, auth and storage setup for a fresh database | [supabase/README.md](supabase/README.md) |
 | `design/` | the Claude Design export (the design system), ported into `frontend/` by hand | [design/PORTING.md](design/PORTING.md) |
 | `docs/superpowers/specs/` | design records for the larger features, cited from code | |
+| `.github/` | CI workflow, Dependabot, the pull-request template and the branch rulesets | "Tests and checks" and "Branches" below |
 
 Start with [AGENTS.md](AGENTS.md): architecture, roles, conventions, and the gotchas that bite.
 [AUTH.md](AUTH.md) covers sign-in and authorization. [DEPLOY.md](DEPLOY.md) covers Vercel,
@@ -168,25 +182,46 @@ answers 401.
 
 ## Tests and checks
 
-CI runs these on every pull request into `beta`. Run them before you push:
+CI ([`.github/workflows/test.yml`](.github/workflows/test.yml)) runs these on every pull request
+into `beta` or `main`, and again on the merge commit. Run them before you push:
 
 ```bash
 # frontend
-npm --prefix frontend run build && npm --prefix frontend run lint && npm --prefix frontend run lint:design && npm --prefix frontend run test
+npm --prefix frontend run build && npm --prefix frontend run lint && npm --prefix frontend run lint:design && npm --prefix frontend run test:coverage
 # backend
-cd backend && .venv/bin/ruff format --check . && .venv/bin/ruff check . && .venv/bin/python -m pytest
+cd backend && .venv/bin/ruff format --check . && .venv/bin/ruff check . && .venv/bin/python -m pytest --cov
 ```
 
-`npm test` at the repo root runs both test suites; it uses `backend/.venv` when it exists.
+Both suites measure coverage. The build fails below the thresholds in
+[`frontend/vite.config.ts`](frontend/vite.config.ts) (`coverage.thresholds`) and
+[`backend/.coveragerc`](backend/.coveragerc) (`fail_under`). Raise them as coverage grows; never
+lower them to get a build through. CI writes the numbers to the run's summary, keeps the reports
+as artifacts for two weeks, and uploads them to Codecov for the badge above.
+
+`npm test` at the repo root runs both test suites without coverage; it uses `backend/.venv` when
+it exists.
 
 ## Branches, releases and the database
 
-- Work on a feature branch and open a pull request into `beta`. CI runs the checks above.
-- A release is a pull request from `beta` into `main`, merged with a merge commit; squashing it
-  leaves the two branches in conflict. Vercel deploys `main` to production.
+- Work on a feature branch and open a pull request into `beta`. Fill in the template: what
+  changed, how you verified it, which gates ran.
+- Nothing lands on `main` except a pull request from `beta` whose checks pass, merged with a
+  merge commit; squashing it leaves the two branches in conflict. Vercel deploys `main` to
+  production. [`.github/rulesets/`](.github/rulesets/) holds this policy as GitHub rulesets
+  (`main.json`: pull requests only, both CI jobs required, merge commits only, no force-push or
+  deletion; `beta.json`: no force-push or deletion), importable from the repository's Settings →
+  Rules.
+- Dependabot opens grouped dependency updates against `beta` once a week
+  ([`.github/dependabot.yml`](.github/dependabot.yml)).
 - Merging never changes a database. Add a migration as
   `backend/database/migrations/<YYYY-MM>/<YYYY-MM-DD>_<name>.sql`, apply it by hand to DEV, and
   apply it to PROD before the release whose code needs it ([DEPLOY.md](DEPLOY.md), "Database
-  migrations").
+  migrations"). Update `supabase/schema.sql` once it is applied; CI leaves a warning on a pull
+  request that adds a migration without touching the snapshot.
 - Implementation plans stay local (`docs/superpowers/plans/` is gitignored). Open work goes in
   GitHub issues.
+
+## Security
+
+Found a vulnerability? Report it privately, as [SECURITY.md](SECURITY.md) describes, rather than
+in a public issue.

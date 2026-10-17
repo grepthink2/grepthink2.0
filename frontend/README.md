@@ -21,6 +21,7 @@ npm run lint         # ESLint: any finding fails; every react-hooks rule is an e
 npm run lint:design  # no raw hex colours outside the token files
 npm run build        # tsc -b && vite build (the type-check gate)
 npx vitest run       # unit and component tests
+npm run test:coverage  # the same with coverage; thresholds in vite.config.ts fail the run when missed
 ```
 
 ## Project Structure
