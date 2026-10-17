@@ -62,7 +62,21 @@ export default defineConfig(({ mode }) => {
       css: true,
       coverage: {
         provider: 'v8',
-        reporter: ['text', 'html'],
+        // Every source file counts, not only the ones a test happens to import.
+        include: ['src/**/*.{ts,tsx}'],
+        exclude: [
+          'src/**/*.test.{ts,tsx}',
+          'src/**/__tests__/**',
+          'src/test/**',
+          'src/**/*.d.ts',
+          'src/main.tsx',
+        ],
+        // text-summary for the terminal, html to browse locally, lcov for Codecov,
+        // json-summary for the CI job summary.
+        reporter: ['text-summary', 'html', 'lcov', 'json-summary'],
+        // 54% lines, 50% branches on 2026-10-16. Raise these as coverage grows; never
+        // lower them to get a build through.
+        thresholds: { lines: 52, statements: 52, branches: 48, functions: 48 },
       },
     },
   };

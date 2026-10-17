@@ -1,0 +1,49 @@
+# Dependabot version updates. Minor and patch bumps arrive grouped, one pull request per
+# ecosystem per week; a major bump gets its own pull request so React, Vite, FastAPI or the
+# router are reviewed on their own. Targets beta because that is where pull requests go
+# (README, "Branches, releases and the database").
+# Security updates (Dependabot alerts) are a repository setting, not this file.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /frontend
+    target-branch: beta
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Los_Angeles
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      npm-minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: pip
+    directory: /backend
+    target-branch: beta
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Los_Angeles
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      pip-minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: beta
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns: ["*"]

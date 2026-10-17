@@ -1,0 +1,16 @@
+# coverage.py settings, read by `pytest --cov` (pytest-cov) and by `coverage report`.
+# They live here rather than in pyproject.toml for the reason ruff.toml gives: Vercel reads
+# pyproject.toml as a dependency source.
+[run]
+source = app
+branch = True
+
+[report]
+# Line + branch coverage, as a percentage. 84% on 2026-10-16. Raise this as coverage grows;
+# never lower it to get a build through.
+fail_under = 82
+precision = 1
+skip_empty = True
+
+[xml]
+output = coverage.xml

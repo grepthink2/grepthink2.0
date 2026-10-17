@@ -154,10 +154,12 @@ Where a test goes, so the suite stays one assertion per fact:
 - Files are named for the unit under test (`test_<module>_<topic>.py`), never for the ticket,
   review or version that produced the tests.
 
-Before removing or merging tests, record coverage and check nothing was lost:
+Coverage is a gate. `.coveragerc` sets branch coverage over `app/` and a `fail_under` threshold
+that CI enforces; raise it as coverage grows (84% on 2026-10-16), never lower it. Before removing
+or merging tests, check nothing was lost:
 
 ```bash
-python -m pytest --cov=app --cov-branch --cov-report=term-missing   # 82.74% line+branch, 2026-10-11
+python -m pytest --cov --cov-report=term-missing:skip-covered
 ```
 
 ## Style Guide
