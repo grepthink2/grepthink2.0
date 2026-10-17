@@ -201,6 +201,64 @@
     font-family: $primary-font;
   }
 
+  // The Tasks - External link box (the same look as Create Class's fields).
+  &__input {
+    width: 100%;
+    padding: 10px 14px;
+    background-color: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-size: 0.875rem;
+    font-family: $primary-font;
+    color: $text-primary;
+
+    &::placeholder {
+      color: $text-secondary;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $accent-color;
+    }
+
+    &[aria-invalid='true'] {
+      border-color: var(--gt-error);
+    }
+  }
+
+  &__link-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  // Disabled here means "nothing to save yet", not "busy".
+  &__save-button:disabled {
+    cursor: default;
+  }
+
+  &__text-button {
+    padding: 0;
+    border: none;
+    background: none;
+    color: $text-secondary;
+    font-size: 0.875rem;
+    font-weight: $font-weight-medium;
+    font-family: $primary-font;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      color: var(--gt-error-text);
+    }
+
+    &:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+  }
+
   &__delete-button {
     display: inline-flex;
     align-items: center;

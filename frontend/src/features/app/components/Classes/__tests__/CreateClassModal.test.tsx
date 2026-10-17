@@ -143,3 +143,55 @@ describe('CreateClassModal — school', () => {
     expect(vi.mocked(api.createClass).mock.calls[0][0].institution_id).toBeUndefined();
   });
 });
+
+describe('CreateClassModal — Tasks - External link', () => {
+  const linkBox = () => screen.getByLabelText(/Tasks - External link/i);
+
+  beforeEach(() => {
+    state.institutions = []; // no school to pick
+  });
+
+  it('creates the class with the link as typed, less surrounding spaces', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await fillCourse(user);
+    await user.type(linkBox(), '  https://job191.yeterly.ai/ ');
+    await user.click(submit());
+    expect(api.createClass).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'SE 301', external_tasks_url: 'https://job191.yeterly.ai/' }),
+    );
+  });
+
+  it('creates the class without a link when the box is left empty', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await fillCourse(user);
+    await user.click(submit());
+    expect(api.createClass).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(api.createClass).mock.calls[0][0].external_tasks_url).toBeUndefined();
+  });
+
+  it('refuses a link that is not a full web address, says why, and creates nothing', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await fillCourse(user);
+    await user.type(linkBox(), 'job191.yeterly.ai');
+    await user.click(submit());
+    expect(api.createClass).not.toHaveBeenCalled();
+    expect(linkBox()).toHaveAttribute('aria-invalid', 'true');
+    expect(linkBox()).toHaveAccessibleDescription(/https:\/\//);
+  });
+
+  it('flags a bad link once you leave the box, and clears the flag once it is fixed', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await user.type(linkBox(), 'javascript:alert(1)');
+    expect(linkBox()).not.toHaveAttribute('aria-invalid', 'true'); // not while still typing
+    await user.tab();
+    expect(linkBox()).toHaveAttribute('aria-invalid', 'true');
+
+    await user.clear(linkBox());
+    await user.type(linkBox(), 'https://job191.yeterly.ai/');
+    expect(linkBox()).not.toHaveAttribute('aria-invalid', 'true');
+  });
+});

@@ -30,6 +30,8 @@ export interface Class {
   /** The school the class belongs to, when known. */
   institution: School | null;
   institution_id?: string | null;
+  /** The class's task board elsewhere, its sidebar's "Tasks - External" item; null hides it. */
+  external_tasks_url?: string | null;
 }
 
 /** API row → Class. An older backend omits `my_role`: a class you created is yours to teach. */

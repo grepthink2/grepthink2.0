@@ -39,7 +39,7 @@
     {
       "id": "create_class", "title": "Create a class", "role": "instructor",
       "method": "POST", "endpoint": "/api/classes",
-      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "tsr_count": "int", "institution_id": "uuid"},
+      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "tsr_count": "int", "institution_id": "uuid", "external_tasks_url": "string (a full http(s) URL; the class sidebar's Tasks - External link)"},
       "uiRoute": "/app → Create Class"
     },
     {
@@ -82,6 +82,12 @@
       "id": "set_class_status", "title": "Set class to active/complete", "role": "instructor",
       "method": "PATCH", "endpoint": "/api/classes/{class_id}/status",
       "params": {"status": "enum(active|complete)!"}
+    },
+    {
+      "id": "set_class_tasks_link", "title": "Set, change or remove a class's Tasks - External link", "role": "instructor",
+      "method": "PATCH", "endpoint": "/api/classes/{class_id}/external-tasks-url",
+      "params": {"external_tasks_url": "string! (a full http(s) URL; explicit null or blank removes the link)"},
+      "uiRoute": "/app/my-classes → Class Settings"
     },
 
     {

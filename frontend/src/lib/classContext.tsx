@@ -103,6 +103,8 @@ interface ClassContextValue {
   setSuccessMessage: (message: string | null) => void;
   getClassStatus: (classItem: Class) => ClassLifecycleStatus;
   setClassLifecycleStatus: (classId: string, status: ClassLifecycleStatus) => Promise<void>;
+  /** Save (null removes) the class's "Tasks - External" link; the sidebar shows it at once. */
+  setClassExternalTasksUrl: (classId: string, externalTasksUrl: string | null) => Promise<void>;
   hideClassFromUI: (classId: string) => void;
 }
 
@@ -265,13 +267,29 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     [],
   );
 
-  const setClassLifecycleStatus = useCallback(async (classId: string, status: ClassLifecycleStatus) => {
-    const { class: updated } = await api.updateClassStatus(classId, status);
-    // Retire the loads in flight: one may answer the old status and undo this change.
+  /** Apply a class row the API just updated: to the list, and to the selected class. */
+  const applyUpdatedClass = useCallback((classId: string, updated: Partial<Class>) => {
+    // Retire the loads in flight: one may answer the old row and undo this change.
     appliedSeq.current = loadSeq.current;
     setClasses((prev) => prev.map((c) => (c.id === classId ? { ...c, ...updated } : c)));
     setSelectedClassState((prev) => (prev?.id === classId ? { ...prev, ...updated } : prev));
   }, []);
+
+  const setClassLifecycleStatus = useCallback(
+    async (classId: string, status: ClassLifecycleStatus) => {
+      const { class: updated } = await api.updateClassStatus(classId, status);
+      applyUpdatedClass(classId, updated);
+    },
+    [applyUpdatedClass],
+  );
+
+  const setClassExternalTasksUrl = useCallback(
+    async (classId: string, externalTasksUrl: string | null) => {
+      const { class: updated } = await api.updateClassExternalTasksUrl(classId, externalTasksUrl);
+      applyUpdatedClass(classId, updated);
+    },
+    [applyUpdatedClass],
+  );
 
   const hideClassFromUI = useCallback(
     (classId: string) => {
@@ -399,6 +417,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setSuccessMessage,
       getClassStatus,
       setClassLifecycleStatus,
+      setClassExternalTasksUrl,
       hideClassFromUI,
     }),
     [
@@ -417,6 +436,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       successMessage,
       getClassStatus,
       setClassLifecycleStatus,
+      setClassExternalTasksUrl,
       hideClassFromUI,
     ],
   );
