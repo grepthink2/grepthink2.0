@@ -3,6 +3,8 @@ Class management request models
 """
 
 import datetime
+import re
+import unicodedata
 from typing import Annotated, Literal
 from urllib.parse import urlsplit
 from uuid import UUID
@@ -14,6 +16,13 @@ ClassStatus = Literal["active", "complete"]
 #: The longest "Tasks - External" link a class keeps; the classes_external_tasks_url_valid CHECK
 #: allows the same, so a link the API accepts never fails in the database.
 MAX_EXTERNAL_TASKS_URL_LENGTH = 2048
+#: What a link can't contain: control and format characters, surrogates, private use, and every
+#: kind of space (the web client refuses the same). A code point these Unicode tables don't know
+#: yet passes, as it does in a browser that knows it.
+_REFUSED_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Co", "Zs", "Zl", "Zp"})
+#: The spaces dropped around a link: whitespace, and the zero-width no-break space (U+FEFF) that a
+#: browser's trim() drops too, so a link the web client trimmed is never refused here.
+_SURROUNDING_SPACE = re.compile(r"^[\s﻿]+|[\s﻿]+$")
 
 
 def _external_tasks_url(value: str | None) -> str | None:
@@ -22,12 +31,12 @@ def _external_tasks_url(value: str | None) -> str | None:
     The web client renders it as a link's ``href``, so only a full ``http(s)://`` address with a
     host passes: a ``javascript:`` or ``data:`` URL would run in GrepThink's origin when clicked.
     """
-    url = (value or "").strip()
+    url = _SURROUNDING_SPACE.sub("", value or "")
     if not url:
         return None
     if len(url) > MAX_EXTERNAL_TASKS_URL_LENGTH:
         raise ValueError(f"The link is over {MAX_EXTERNAL_TASKS_URL_LENGTH:,} characters")
-    if any(ch.isspace() or not ch.isprintable() for ch in url):
+    if any(unicodedata.category(ch) in _REFUSED_CATEGORIES for ch in url):
         raise ValueError("The link can't contain spaces")
     parts = urlsplit(url)  # raises ValueError for a malformed IPv6 host
     # urlsplit only finds a host after "//", so "https:example.org" has none.

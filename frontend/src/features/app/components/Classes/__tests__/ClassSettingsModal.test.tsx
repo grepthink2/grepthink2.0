@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Class } from '@/lib/classContext';
@@ -43,9 +43,12 @@ beforeEach(() => {
 });
 
 describe('ClassSettingsModal — Tasks - External link', () => {
-  it("shows the class's current link", () => {
+  it("shows the class's current link, with an empty status line ready to announce a save", () => {
     renderSettings(job);
     expect(linkBox()).toHaveValue(JOB_BOARD);
+    // A live region already on the page is announced when its text changes; one inserted along
+    // with its text often is not.
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 
   it('offers Save only once the link changes', async () => {
@@ -102,7 +105,7 @@ describe('ClassSettingsModal — Tasks - External link', () => {
     expect(screen.queryByRole('button', { name: 'Remove link' })).not.toBeInTheDocument();
   });
 
-  it('refuses a link that is not a full web address, says why, and saves nothing', async () => {
+  it('refuses a link that is not a full web address, says why at the box, and saves nothing', async () => {
     const user = userEvent.setup();
     renderSettings(cls('cse-115a', null));
     await user.type(linkBox(), 'ftp://example.org/tasks');
@@ -110,6 +113,7 @@ describe('ClassSettingsModal — Tasks - External link', () => {
     expect(ctx.setClassExternalTasksUrl).not.toHaveBeenCalled();
     expect(linkBox()).toHaveAttribute('aria-invalid', 'true');
     expect(linkBox()).toHaveAccessibleDescription(/https:\/\//);
+    expect(linkBox()).toHaveFocus(); // so a screen reader reads the reason
   });
 
   it('keeps what you typed and says why when the save fails', async () => {
@@ -120,7 +124,40 @@ describe('ClassSettingsModal — Tasks - External link', () => {
     await user.click(saveButton());
     expect(await screen.findByRole('alert')).toHaveTextContent('Failed to update the tasks link');
     expect(linkBox()).toHaveValue(JOB_BOARD);
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('says what to do when the API refuses the link, not a bare status code', async () => {
+    const user = userEvent.setup();
+    ctx.setClassExternalTasksUrl.mockRejectedValue(
+      Object.assign(new Error('Request failed with status 422'), {
+        status: 422,
+        detail: [{ type: 'value_error', loc: ['body', 'external_tasks_url'], msg: 'Value error, refused' }],
+      }),
+    );
+    renderSettings(cls('cse-115a', null));
+    await user.type(linkBox(), JOB_BOARD);
+    await user.click(saveButton());
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/can't be used/);
+    expect(alert).not.toHaveTextContent('422');
+  });
+
+  it("keeps a save that lands late out of the next class's dialog", async () => {
+    // Save on one class, close, open another before the save answers.
+    const user = userEvent.setup();
+    let finish: () => void = () => {};
+    ctx.setClassExternalTasksUrl.mockReturnValueOnce(new Promise<void>((resolve) => (finish = resolve)));
+    const { rerender } = renderSettings(cls('cse-115a', null));
+    await user.type(linkBox(), 'https://tasks.grepthink2.com/cse115a');
+    await user.click(screen.getByRole('button', { name: 'Save link' }));
+    rerender(<ClassSettingsModal isOpen onClose={() => {}} classItem={job} />);
+    await act(async () => finish());
+
+    expect(linkBox()).toHaveValue(JOB_BOARD); // the open class's own link, not the other's
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(saveButton()).toBeDisabled(); // "Save link", not stuck on "Saving…"
+    expect(screen.getByRole('button', { name: 'Remove link' })).toBeEnabled();
   });
 
   it("starts from the next class's link when another class is opened", async () => {

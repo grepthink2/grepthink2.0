@@ -4,7 +4,7 @@ import type { Class } from '@/lib/classContext';
 import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
-import { parseExternalTasksUrl } from '@/lib/externalTasksUrl';
+import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
 import ConfirmModal from '@features/app/components/Overlays/ConfirmModal';
 import {
   buildClassExportCsv,
@@ -53,10 +53,17 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       setTasksUrl(openClass.external_tasks_url ?? '');
       setSavedTasksUrl(openClass.external_tasks_url ?? null);
       setTasksUrlChecked(false);
+      setIsSavingTasksUrl(false);
       setTasksUrlSaveError(null);
       setTasksUrlNotice(null);
     }
   }
+
+  // The class the dialog shows now, for a save that answers after it moved on to another.
+  const openClassId = useRef<string | null>(null);
+  useEffect(() => {
+    openClassId.current = openClass?.id ?? null;
+  }, [openClass]);
 
   const parsedTasksUrl = parseExternalTasksUrl(tasksUrl);
   const tasksUrlProblem = tasksUrlChecked && 'error' in parsedTasksUrl ? parsedTasksUrl.error : null;
@@ -116,11 +123,13 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
 
   const saveTasksUrl = async (next: string | null) => {
     if (!classItem || isSavingTasksUrl) return;
+    const classId = classItem.id;
     setIsSavingTasksUrl(true);
     setTasksUrlSaveError(null);
     setTasksUrlNotice(null);
     try {
-      await setClassExternalTasksUrl(classItem.id, next);
+      await setClassExternalTasksUrl(classId, next);
+      if (openClassId.current !== classId) return; // the dialog shows another class now
       setSavedTasksUrl(next);
       setTasksUrl(next ?? '');
       setTasksUrlChecked(false);
@@ -128,15 +137,24 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       // Remove goes away and Save turns disabled: keep the keyboard in the box, not on the page.
       tasksUrlInput.current?.focus();
     } catch (err) {
-      setTasksUrlSaveError(err instanceof Error ? err.message : 'Failed to update the tasks link');
+      if (openClassId.current !== classId) return;
+      setTasksUrlSaveError(
+        isExternalTasksUrlRefusal(err)
+          ? LINK_REFUSED_BY_API
+          : err instanceof Error
+            ? err.message
+            : 'Failed to update the tasks link',
+      );
     } finally {
-      setIsSavingTasksUrl(false);
+      if (openClassId.current === classId) setIsSavingTasksUrl(false);
     }
   };
 
   const handleSaveTasksUrl = () => {
     if ('error' in parsedTasksUrl) {
-      setTasksUrlChecked(true); // the box says why
+      // The box says why; focus takes a screen reader there.
+      setTasksUrlChecked(true);
+      tasksUrlInput.current?.focus();
       return;
     }
     void saveTasksUrl(parsedTasksUrl.url);
@@ -298,15 +316,14 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                     Remove link
                   </button>
                 )}
+                {/* Always on the page, so a screen reader announces the text when it appears */}
+                <span className="class-settings-modal__link-notice" role="status">
+                  {tasksUrlNotice}
+                </span>
               </div>
               {tasksUrlSaveError && (
                 <p className="class-settings-modal__export-error" role="alert">
                   {tasksUrlSaveError}
-                </p>
-              )}
-              {tasksUrlNotice && (
-                <p className="class-settings-modal__hint" role="status">
-                  {tasksUrlNotice}
                 </p>
               )}
             </section>

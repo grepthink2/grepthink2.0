@@ -14,6 +14,9 @@ the other instructor-only routes in ``test_classes_authz.py`` and ``test_class_s
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
@@ -28,39 +31,20 @@ CLASS = "c0000000-0000-0000-0000-000000000001"
 EXISTING = "https://tasks.grepthink2.com/cse115a"
 NEW_CLASS = {"name": "CSE 115A", "term": "Fall", "start_date": "2026-09-24"}
 
+#: The web client's cases too: what the web accepts, the API must accept (else a 422 in the
+#: dialog), so both suites read one table.
+CASES = json.loads(
+    (
+        Path(__file__).resolve().parents[2]
+        / "frontend/src/lib/__tests__/fixtures/external-tasks-url-cases.json"
+    ).read_text(encoding="utf-8")
+)
 #: Exactly the column's limit: "https://example.org/" is 20 characters.
 LONGEST = "https://example.org/" + "a" * 2028
 
-ACCEPTED = [
-    ("https://job191.yeterly.ai/", "https://job191.yeterly.ai/"),
-    ("https://tasks.grepthink2.com/cse115a", "https://tasks.grepthink2.com/cse115a"),
-    ("http://example.org/board?sprint=2#todo", "http://example.org/board?sprint=2#todo"),
-    ("HTTPS://Example.org", "HTTPS://Example.org"),
-    ("https://example.org:8443/x", "https://example.org:8443/x"),
-    ("  https://example.org  ", "https://example.org"),
-    (LONGEST, LONGEST),
-]
-BLANK = [None, "", "   "]
-REFUSED = [
-    "javascript:alert(1)",
-    "javascript://example.org/%0aalert(1)",
-    "data:text/html,<script>alert(1)</script>",
-    "ftp://example.org/tasks",
-    "mailto:ta@example.org",
-    "example.org/tasks",
-    "//example.org/tasks",
-    "https://",
-    "https:///example.org",
-    "https:example.org",
-    "https://exa mple.org",
-    "https://example.org/my tasks",
-    "https://example.org/\ttasks",
-    "https://example.org/​tasks",
-    "https://example.org:99999",
-    "https://example.org:abc",
-    "https://[::1",
-    LONGEST + "a",
-]
+ACCEPTED = [*map(tuple, CASES["accepted"]), (LONGEST, LONGEST)]
+BLANK = [None, *CASES["blank"]]
+REFUSED = [*CASES["refused"], LONGEST + "a"]
 
 MODELS = [
     pytest.param(lambda url: CreateClassRequest(**NEW_CLASS, external_tasks_url=url), id="create"),

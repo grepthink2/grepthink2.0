@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiInstitution } from '@/lib/api';
 
 const UCSC: ApiInstitution = { id: 'ucsc', name: 'UC Santa Cruz', slug: 'ucsc', email_domains: ['ucsc.edu'] };
@@ -150,6 +150,7 @@ describe('CreateClassModal — Tasks - External link', () => {
   beforeEach(() => {
     state.institutions = []; // no school to pick
   });
+  afterEach(() => vi.restoreAllMocks()); // the console spies
 
   it('creates the class with the link as typed, less surrounding spaces', async () => {
     const user = userEvent.setup();
@@ -180,6 +181,44 @@ describe('CreateClassModal — Tasks - External link', () => {
     expect(api.createClass).not.toHaveBeenCalled();
     expect(linkBox()).toHaveAttribute('aria-invalid', 'true');
     expect(linkBox()).toHaveAccessibleDescription(/https:\/\//);
+  });
+
+  it('points at the link box, not an older error, when the link is what blocks the class', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(api.createClass).mockRejectedValueOnce(new Error('Failed to create class'));
+    renderModal();
+    await fillCourse(user);
+    await user.click(submit());
+    expect(await screen.findByText('Failed to create class')).toBeInTheDocument();
+
+    await user.type(linkBox(), 'job191.yeterly.ai');
+    await user.click(submit());
+    expect(screen.queryByText('Failed to create class')).not.toBeInTheDocument();
+    expect(linkBox()).toHaveFocus();
+    expect(api.createClass).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the API refusing the link at the link box, not as a bare status code', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(api.createClass).mockRejectedValueOnce(
+      Object.assign(new Error('Request failed with status 422'), {
+        status: 422,
+        detail: [{ type: 'value_error', loc: ['body', 'external_tasks_url'], msg: 'Value error, refused' }],
+      }),
+    );
+    renderModal();
+    await fillCourse(user);
+    await user.type(linkBox(), 'https://job191.yeterly.ai/');
+    await user.click(submit());
+    await waitFor(() => expect(linkBox()).toHaveAttribute('aria-invalid', 'true'));
+    expect(linkBox()).toHaveAccessibleDescription(/can't be used/);
+    expect(linkBox()).toHaveFocus();
+    expect(screen.queryByText('Request failed with status 422')).not.toBeInTheDocument();
+
+    await user.type(linkBox(), 'x'); // editing the link clears the refusal
+    expect(linkBox()).not.toHaveAttribute('aria-invalid', 'true');
   });
 
   it('flags a bad link once you leave the box, and clears the flag once it is fixed', async () => {

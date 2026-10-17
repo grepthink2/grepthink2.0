@@ -243,6 +243,28 @@ describe('the Tasks - External link', () => {
     expect(screen.queryByText('Tasks - External')).not.toBeInTheDocument();
   });
 
+  it('lets go of focus after a click, so coming back to the tab does not hold the rail open', () => {
+    // Chrome focuses a clicked link and focuses it again when you return to the tab, which the
+    // rail would read as keyboard focus inside it.
+    state.ctx.selectedClass = { ...taught, external_tasks_url: JOB_BOARD };
+    renderAt('/app/home');
+    const link = tasksLink() as HTMLElement;
+    link.addEventListener('click', (event) => event.preventDefault()); // jsdom cannot open a tab
+    link.focus();
+    fireEvent.click(link, { detail: 1 });
+    expect(link).not.toHaveFocus();
+  });
+
+  it('keeps focus on the link after a keyboard press', () => {
+    state.ctx.selectedClass = { ...taught, external_tasks_url: JOB_BOARD };
+    renderAt('/app/home');
+    const link = tasksLink() as HTMLElement;
+    link.addEventListener('click', (event) => event.preventDefault());
+    link.focus();
+    fireEvent.click(link, { detail: 0 }); // Enter on a link clicks it with detail 0
+    expect(link).toHaveFocus();
+  });
+
   it('closes the phone drawer once it opens the link', () => {
     state.ctx.selectedClass = { ...taught, external_tasks_url: JOB_BOARD };
     const onMobileClose = vi.fn();

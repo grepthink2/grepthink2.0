@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
-import { parseExternalTasksUrl } from '@/lib/externalTasksUrl';
+import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
 import { useInstitutionsWithRetry } from '@/lib/institutions';
 import DatePickerField from '@/features/app/components/Fields/DatePickerField';
 import './CreateClassModal.scss';
@@ -28,6 +28,8 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   // The class's "Tasks - External" link. Checked once you leave the box (or submit), not mid-word.
   const [tasksUrl, setTasksUrl] = useState('');
   const [tasksUrlChecked, setTasksUrlChecked] = useState(false);
+  const [tasksUrlRefused, setTasksUrlRefused] = useState(false); // the API said no
+  const tasksUrlInput = useRef<HTMLInputElement>(null);
   const [instructorOnly, setInstructorOnly] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,7 +59,11 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const schoolsFailed = institutions === null;
 
   const parsedTasksUrl = parseExternalTasksUrl(tasksUrl);
-  const tasksUrlError = tasksUrlChecked && 'error' in parsedTasksUrl ? parsedTasksUrl.error : null;
+  const tasksUrlError = tasksUrlRefused
+    ? LINK_REFUSED_BY_API
+    : tasksUrlChecked && 'error' in parsedTasksUrl
+      ? parsedTasksUrl.error
+      : null;
 
   const handleTermChange = (term: Term) => {
     setSelectedTerm(term);
@@ -121,7 +127,10 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       return;
     }
     if ('error' in parsedTasksUrl) {
-      setTasksUrlChecked(true); // the box says why
+      // The box says why; focus takes a screen reader there, and no older error stays up.
+      setError(null);
+      setTasksUrlChecked(true);
+      tasksUrlInput.current?.focus();
       return;
     }
 
@@ -166,12 +175,18 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setCsvFile(null);
       setTasksUrl('');
       setTasksUrlChecked(false);
+      setTasksUrlRefused(false);
       setInstructorOnly(false);
       handleClose();
       navigate('/app/dashboard');
     } catch (err) {
       console.error('Failed to create class:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create class');
+      if (isExternalTasksUrlRefusal(err)) {
+        setTasksUrlRefused(true);
+        tasksUrlInput.current?.focus();
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to create class');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -324,6 +339,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
               the sidebar. You can change it later in Class Settings.
             </p>
             <input
+              ref={tasksUrlInput}
               id="create-class-tasks-url"
               type="text"
               inputMode="url"
@@ -333,7 +349,10 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
               className="create-class-modal__input"
               placeholder="https://tasks.example.com/your-class"
               value={tasksUrl}
-              onChange={(e) => setTasksUrl(e.target.value)}
+              onChange={(e) => {
+                setTasksUrl(e.target.value);
+                setTasksUrlRefused(false);
+              }}
               onBlur={() => setTasksUrlChecked(true)}
               aria-invalid={tasksUrlError ? true : undefined}
               aria-describedby={

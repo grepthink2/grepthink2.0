@@ -271,7 +271,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenCreateClass, onOpenJoinClass, o
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`${item.label} (opens in a new tab)`}
-                            onClick={finishSelection}
+                            onClick={(event) => {
+                              // Chrome focuses a clicked link and focuses it again when you come back
+                              // to this tab, which would hold the rail open. Enter (detail 0) keeps it.
+                              if (event.detail > 0) event.currentTarget.blur();
+                              finishSelection();
+                            }}
                           >
                             {React.createElement(item.icon, { size: 18 })}
                             <span className="sidebar-item__label">{item.label}</span>
