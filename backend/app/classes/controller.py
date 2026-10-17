@@ -563,6 +563,7 @@ def create_class(
     user_id: str,
     tsr_count: int | None = None,
     institution_id: UUID | str | None = None,
+    external_tasks_url: str | None = None,
 ) -> dict:
     """
     Create a new class with a unique course code and auto-generate TSR assignments.
@@ -571,6 +572,8 @@ def create_class(
     starting after the first 2 weeks of class. tsr_count overrides the
     term-based default (5 for Fall/Winter/Spring, 3 for Summer). ``institution_id`` must name
     an existing institution (400 otherwise); omitted, the class has none.
+    ``external_tasks_url`` (validated by the request model) is the class's "Tasks - External"
+    sidebar link; omitted, the class has none.
     """
     try:
         if institution_id is not None and not is_known_institution(institution_id):
@@ -598,6 +601,8 @@ def create_class(
             class_data["description"] = description
         if institution_id is not None:
             class_data["institution_id"] = str(institution_id)
+        if external_tasks_url is not None:
+            class_data["external_tasks_url"] = external_tasks_url
 
         result = client.table("classes").insert(class_data).execute()
         new_class = result.data[0]
@@ -662,10 +667,11 @@ def _attach_enrolled_counts(classes: list[dict], count_by_class: dict[str, int])
         cls["enrolled_count"] = count_by_class.get(cls["id"], 0)
 
 
-#: The class columns an enrolled student or TA may see (no review Zoom room, no settings).
+#: The class columns an enrolled student or TA may see (no review Zoom room, no settings). The
+#: "Tasks - External" link is for everyone in the class: it is their sidebar's item.
 _ENROLLED_CLASS_COLUMNS = (
     "id, name, description, created_by, created_at, course_code, status, term, start_date, "
-    "year, image_url"
+    "year, image_url, external_tasks_url"
 )
 
 
@@ -779,6 +785,43 @@ def update_class_status(class_id: UUID, status: str, instructor_id: str) -> dict
             status,
         )
         raise HTTPException(status_code=500, detail="Failed to update class status")
+
+
+def update_class_external_tasks_url(
+    class_id: UUID, external_tasks_url: str | None, instructor_id: str
+) -> dict:
+    """Set, change or remove (``None``) the class's "Tasks - External" sidebar link.
+
+    Only the class instructor may (404 for a missing class, 403 for anyone else). The link
+    arrives validated by the request model. Returns the updated class row.
+    """
+    try:
+        client = get_client()
+        cid = str(class_id)
+
+        _require_owner(client, instructor_id, cid)
+
+        update_result = (
+            client.table("classes")
+            .update({"external_tasks_url": external_tasks_url})
+            .eq("id", cid)
+            .execute()
+        )
+        if not update_result.data:
+            raise HTTPException(status_code=500, detail="Failed to update the tasks link")
+
+        logger.info(
+            "Class tasks link %s | class_id=%s updated_by=%s",
+            "set" if external_tasks_url else "removed",
+            class_id,
+            instructor_id,
+        )
+        return update_result.data[0]
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error updating class tasks link | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to update the tasks link")
 
 
 def join_class_by_code(course_code: str, user_id: str) -> dict:
