@@ -195,6 +195,9 @@ The full agent-facing action catalog (method, params, role) lives at
 - **`lib/api/*.ts` can drift from routes** — the client is hand-maintained, no codegen.
   Confirm a route exists before adding or calling a client method, and add the method to
   the matching domain file (`lib/api.ts` spreads them all into `api`).
+  `backend/scripts/check_api_client.py` (run by pytest and as its own CI step) fails when a
+  request in `frontend/src` or an action in `grepthink-actions.json` matches no route, or when
+  a route has no caller there and no reason in its `SERVER_ONLY` list.
 - **Never depend on unapplied SQL.** Migrations in `backend/database/migrations/` are
   applied by hand, dev first and then prod; merging does not apply them. Code must work on
   the schema that is live, and an upsert needs a unique constraint that already exists.

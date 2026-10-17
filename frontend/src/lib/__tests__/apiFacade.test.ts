@@ -24,7 +24,6 @@ const METHODS = [
   'confirmUnsubscribe',
   'createAssignment',
   'createClass',
-  'createClassProject',
   'createProject',
   'createProjectTsr',
   'createScrumComment',
