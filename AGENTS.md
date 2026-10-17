@@ -158,7 +158,7 @@ of them for another Vercel account. Reads are fine; ask the maintainer before an
 
 ## API surface
 Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `login-check`,
-`create-user`, `check-email`), `/api/classes`, `/api/institutions`, `/api/projects`, `/api/assignments`,
+`create-user`, `check-email`, `check-user-exists`), `/api/classes`, `/api/institutions`, `/api/projects`, `/api/assignments`,
 `/api/tsrs`, `/api/staffing`, `/api/messages`, `/api/profiles`, `/api/contact`,
 `/api/issues` (public issue form → GitHub issue), `/api/notifications`, `/api/tas`, `/api/stats`, `/api/analytics` (scope, dashboard), `/api/email`
 (outbox dispatch, Maileroo webhook, unsubscribe, email preferences), `/api/scrum` +
@@ -173,7 +173,7 @@ The full agent-facing action catalog (method, params, role) lives at
   IDOR — authorization correctness is 100% in Python. Verify access on every read/write.
 - **Two distinct project-TA roles (by design):** `projects.assigned_ta_id` = the
   *meeting TA* (runs the weekly meeting + takes attendance; `app/attendance`).
-  `project_ta_assignments` = the *review TA* (reviews TSRs; `app/tas`). Both draw
+  `project_review_tas` = the *review TA* (reviews TSRs; `app/tas`). Both draw
   from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
   designating via TA Management or TA Meetings writes the same `enrollment_role`
   (the legacy `class_tas` table was removed).
@@ -252,8 +252,10 @@ The full agent-facing action catalog (method, params, role) lives at
 `@assets/`→`src/assets/`, `@styles/`→`src/styles/`.
 
 ## Before you commit
-- Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest` (all green).
-- Frontend: `npm run lint && npm run lint:design && npm run build && npx vitest run` (no lint findings, all green).
+- Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest --cov` (all green,
+  coverage above `.coveragerc`'s `fail_under`).
+- Frontend: `npm run lint && npm run lint:design && npm run build && npm run test:coverage` (no lint findings,
+  all green, thresholds met).
 - New backend route → add the matching method to `frontend/src/lib/api/<domain>.ts`.
 - New migration → `backend/database/migrations/<YYYY-MM>/<YYYY-MM-DD>_<name>.sql`, in the folder for its
   month; update `supabase/schema.sql` once it is applied (CI warns on a pull request that adds a

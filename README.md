@@ -211,8 +211,8 @@ it exists.
   (`main.json`: pull requests only, both CI jobs required, merge commits only, no force-push or
   deletion; `beta.json`: no force-push or deletion), importable from the repository's Settings →
   Rules.
-- Dependabot opens grouped dependency updates against `beta` once a week
-  ([`.github/dependabot.yml`](.github/dependabot.yml)).
+- Dependabot opens grouped dependency updates against `beta`: weekly for npm and pip, monthly for
+  GitHub Actions ([`.github/dependabot.yml`](.github/dependabot.yml)).
 - Merging never changes a database. Add a migration as
   `backend/database/migrations/<YYYY-MM>/<YYYY-MM-DD>_<name>.sql`, apply it by hand to DEV, and
   apply it to PROD before the release whose code needs it ([DEPLOY.md](DEPLOY.md), "Database

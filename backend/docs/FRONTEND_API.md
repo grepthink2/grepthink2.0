@@ -1,5 +1,7 @@
 # Frontend API reference
 
+> ⚠️ **Scheduled for removal** (proposed 2026-10-17 in the docs-cleanup PR): it lists 65 of the backend's 156 routes, links a `DEVELOPER_GUIDE.md` that was never committed, and still describes routes that no longer exist (`/api/test-auth`). Superseded by each feature's `url.py`, the OpenAPI pages at `/docs` and `/redoc`, and the agent catalog `frontend/public/.well-known/grepthink-actions.json`. Say so on that PR if anything here is still needed.
+
 This document lists **HTTP endpoints** the React app can call, with **what each one does** and **who it is for**. The canonical route table lives in each feature’s `url.py`; this guide is optimized for product and frontend work.
 
 **Also useful:** interactive OpenAPI at `/docs` and `/redoc` when the backend is running. Deeper backend behavior (RLS, helpers) is in [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md).

@@ -1,5 +1,7 @@
 # Prompt for Claude Design — GrepThink Analytics round (2026-10-07)
 
+> ⚠️ **Scheduled for removal** (proposed 2026-10-17 in the docs-cleanup PR): a one-shot prompt that was delivered on 2026-10-07 and is referenced nowhere. The brief it attached (`README.md` in this folder) stays as the record of what was asked for, and `sample-data*.json` are byte-identical copies of `frontend/src/features/analytics/__tests__/fixtures/dashboard*.json`. Say so on that PR if anything here is still needed.
+
 Attach `README.md`, `sample-data.json` and `sample-data.empty.json` from this folder, then send the text below to
 the "GrepThink Design System" project.
 

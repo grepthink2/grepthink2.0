@@ -183,7 +183,7 @@ Every endpoint answers these two conditions the same way:
 ## Type Hints
 
 - Use type hints for function parameters and return values
-- Use `Optional[T]` for optional parameters; `list`, `dict` for collections
+- Use `T | None` for optional parameters (ruff's `UP` rules rewrite `Optional[T]`); `list`, `dict` for collections
 - Use `UUID` from `uuid` for ID parameters
 - Use `Literal["draft", "publish"]` for fixed string enums in Pydantic
 
