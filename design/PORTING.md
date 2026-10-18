@@ -23,6 +23,7 @@ then ported into `frontend/src/` — the reverse of `/design-sync`. This file is
 | Analytics | `design_handoff_analytics/` | `features/analytics/` (`analytics.scss` mirrors `components/analytics/analytics.css` class-for-class, incl. `.gt-status--in_progress`, `--wide`, `--stacked`, `.gt-table__export` + `utils/csv.ts`) | ported; timeliness (TimelinessBars / OnTimeMeter) deferred as planned |
 | ⌘K search | `design_handoff_search/` | — | **not started** (no `features/search`, header still has the pseudo search input) |
 | Schedule | `design_handoff_schedule/` | — | **not started** (Student Home's card is still the commented-out mock; no `/app/schedule`, no `class_events` table) |
+| Team meetings | `design_handoff_team_meetings/` | — | **not started** (`EditProjectModal` has Details · Team only; no `team_meetings` table; `ProjectView` aside has no card) |
 
 ## What maps where
 
@@ -40,6 +41,7 @@ then ported into `frontend/src/` — the reverse of `/design-sync`. This file is
 | `components/analytics/*` | `frontend/src/features/analytics/components/` (`/app/analytics`); class names 1:1 (`.gt-analytics`, `.gt-chart-card`, `.gt-legend`, `.gt-tooltip`, `.gt-filter`, `.gt-line`, `.gt-split`, `.gt-stack`, `.gt-cols`, `.gt-trend`, `.gt-table`, `.gt-series--*`/`.gt-status--*` → `--series`); `StatTile` = extend `Dashboard/DashboardMetricCard` with `__delta`/`__spark` (see `design_handoff_analytics/NOTES.md`) |
 | `components/search/*` | new `frontend/src/features/search/` (palette, trigger, model) + replace `.app-header__search-bar` with `SearchTrigger` — per `design_handoff_search/README.md` |
 | `components/schedule/*` | new `frontend/src/features/schedule/` (`ScheduleList`, `ScheduleItem`, `ScheduleDivider`, `ScheduleDayHeader`, `scheduleModel.ts`) + the `/app/schedule` route; the compact variant replaces the mock block in `Home/StudentHomeDashboard.tsx` (`.student-home__schedule-*`) — per `design_handoff_schedule/README.md` |
+| `components/domain/TeamMeetings*` | `features/app/components/EditProject/MeetingsTab.tsx` (third tab, `viewerIsProductOwner` only) + `features/project/teamMeetingsModel.ts` + a `TeamMeetingsCard` in `Project/ProjectView.tsx`'s aside; SCSS = the `.gt-tm*` / `.gt-tmform*` blocks of `domain.css` — per `design_handoff_team_meetings/README.md` |
 | `components/**/*.css` (BEM `.gt-*`) | feature/component SCSS (same class names) |
 | `components/**/<Name>.jsx` + `.d.ts` | React TSX components (typed props match `.d.ts`) |
 
