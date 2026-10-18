@@ -1,0 +1,117 @@
+<!-- @dsCard group="Components" viewport="760x1500" name="Schedule — Today's card & agenda" subtitle="ScheduleList compact (today · peek · loading · error) and agenda, one ScheduleItem per kind + state, ScheduleDivider, ScheduleDayHeader, the kind palette" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="./scheduleData.js"></script>
+<script src="./scheduleSrcLoader.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); color: var(--gt-text-primary); }
+  a { color: var(--gt-text-link); } a:hover { color: var(--gt-info-text); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 18px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .card { background: var(--gt-surface); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-card); padding: 16px 20px 14px; }
+  .card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .card__title { margin: 0; font-size: 16px; font-weight: 600; }
+  .card__date { font-size: 12px; color: var(--gt-text-tertiary); }
+  .panel { background: var(--gt-surface); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-card); }
+  .list { list-style: none; margin: 0; padding: 4px 0; }
+  .list .gt-sched-item + .gt-sched-item { border-top: 1px solid var(--gt-border-subtle); }
+  .kinds { display: flex; gap: 10px; flex-wrap: wrap; }
+  .kind { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; background: var(--gt-surface); border-radius: 7px; box-shadow: var(--gt-shadow-hairline); font-size: 12px; font-weight: 500; }
+  .kind small { color: var(--gt-text-tertiary); font-weight: 400; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel-deferred">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { ScheduleList, ScheduleItem, ScheduleDivider, ScheduleDayHeader, ScheduleIcon, SCHEDULE_KINDS, ScheduleModel } = NS;
+const { findOverlaps } = ScheduleModel;
+const S = window.GT_SCHEDULE_SAMPLE;
+const LIVE = new Date(S.nows.live), QUIET = new Date(S.nows.quiet), MORNING = new Date(S.nows.morning);
+const PT = 'America/Los_Angeles';
+const byId = (list, id) => list.find((i) => i.id === id);
+
+function CompactCard({ title = 'Today’s Schedule', date, children }) {
+  return <section className="card"><div className="card__head"><h3 className="card__title">{title}</h3>{date && <span className="card__date">{date}</span>}</div>{children}</section>;
+}
+
+function Demo() {
+  const overlaps = findOverlaps(S.student);
+  const kindRows = [
+    { it: byId(S.student, 's-m4'), lens: 'student' },
+    { it: byId(S.student, 's-fr1'), lens: 'student' },
+    { it: byId(S.student, 's-mt1'), lens: 'student' },
+    { it: byId(S.student, 's-l4'), lens: 'student' },
+    { it: byId(S.student, 's-oh1'), lens: 'student' },
+    { it: byId(S.student, 's-d1'), lens: 'student' },
+  ];
+  const stateRows = [
+    { it: byId(S.student, 's-m3'), lens: 'student', label: 'past · Present' },
+    { it: byId(S.student, 's-m2'), lens: 'student' },
+    { it: byId(S.student, 's-l6'), lens: 'student' },
+    { it: byId(S.ta, 't-m7'), lens: 'ta' },
+    { it: byId(S.student, 's-oh2'), lens: 'student' },
+    { it: byId(S.student, 's-ad1'), lens: 'student' },
+    { it: byId(S.ta, 't-m5'), lens: 'ta' },
+  ];
+  return (
+    <div>
+      <p className="lbl">Kind palette — icon + label travel with the color (gold stays for achievements, red for errors)</p>
+      <div className="kinds">
+        {SCHEDULE_KINDS.filter((k) => k.icon).map((k) => (
+          <span key={k.kind} className="kind"><ol className="list" style={{ padding: 0 }}><li className={`gt-sched-item gt-sched-item--${k.kind}`} style={{ display: 'block', padding: 0, minHeight: 0 }}><span className="gt-sched-item__tile"><ScheduleIcon name={k.icon} /></span></li></ol>{k.label} <small>{k.kind}</small></span>
+        ))}
+        <span className="kind"><span style={{ width: 28, borderTop: '1px dashed var(--gt-border-strong)' }} />Sprint edge <small>rule, not a row</small></span>
+      </div>
+
+      <p className="lbl">ScheduleList compact — today (live TA meeting, Now line, overlap, deadline marker) · nothing today → peek at the next day</p>
+      <div className="cols">
+        <CompactCard date="Tue, Oct 20"><ScheduleList variant="compact" items={S.student} now={LIVE} zone={PT} calendarHref={S.calendarHref} /></CompactCard>
+        <CompactCard date="Sat, Oct 24"><ScheduleList variant="compact" items={S.student} now={QUIET} zone={PT} calendarHref={S.calendarHref} /></CompactCard>
+      </div>
+
+      <p className="lbl">Loading · Error · Viewer in another zone (times in GMT+5:30, campus time on hover)</p>
+      <div className="cols">
+        <CompactCard><ScheduleList variant="compact" status="loading" /></CompactCard>
+        <CompactCard><ScheduleList variant="compact" status="error" onRetry={() => {}} /></CompactCard>
+        <CompactCard date="Tue, Oct 20"><ScheduleList variant="compact" items={S.student} now={MORNING} zone="Asia/Kolkata" calendarHref={S.calendarHref} /></CompactCard>
+        <CompactCard date="Tue, Oct 20"><ScheduleList variant="compact" items={S.ta} now={LIVE} zone={PT} lens="ta" onMarkAttendance={() => {}} onSetTime={() => {}} calendarHref={S.calendarHref} /></CompactCard>
+      </div>
+
+      <p className="lbl">ScheduleItem (agenda) — one per kind</p>
+      <ol className="panel list">
+        {kindRows.map(({ it, lens }) => <ScheduleItem key={it.id} item={it} lens={lens} now={LIVE} zone={PT} overlaps={overlaps.get(it.id) || []} />)}
+      </ol>
+
+      <p className="lbl">States — past with attendance (Present / Absent) · cancelled · Time TBD (TA: Set time) · overlapping · all-day · live (TA: Mark attendance)</p>
+      <ol className="panel list">
+        {stateRows.map(({ it, lens }) => <ScheduleItem key={it.id} item={it} lens={lens} now={LIVE} zone={PT} overlaps={overlaps.get(it.id) || []} onMarkAttendance={() => {}} onSetTime={() => {}} />)}
+      </ol>
+
+      <p className="lbl">ScheduleDayHeader · ScheduleDivider · Now line</p>
+      <div className="panel" style={{ paddingBottom: 8 }}>
+        <ScheduleDayHeader dayKey="2026-10-20" now={LIVE} zone={PT} />
+        <ScheduleDivider sprint={{ name: 'Sprint 2', edge: 'end' }} isToday />
+        <ScheduleDayHeader dayKey="2026-10-22" now={LIVE} zone={PT} />
+        <ScheduleDivider sprint={{ name: 'Sprint 3', edge: 'start' }} />
+        <ol className="list"><li className="gt-sched__now" aria-label="Now, 3:12 PM"><span className="gt-sched__now-label">Now · 3:12 PM</span><span className="gt-sched__now-line" aria-hidden="true" /></li></ol>
+      </div>
+
+      <p className="lbl">ScheduleList agenda — this week, student lens (sticky day headers scroll with the page)</p>
+      <ScheduleList variant="agenda" items={S.student} now={LIVE} zone={PT} calendarHref={S.calendarHref} />
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+<script>loadScheduleSources('../..').then(runDeferredBabel);</script>
+</body>
+</html>

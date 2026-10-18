@@ -22,6 +22,7 @@ then ported into `frontend/src/` — the reverse of `/design-sync`. This file is
 | Landing + assistant | `design_handoff_landing/` | `features/landing/**`, `features/app/components/Assistant/` | ported |
 | Analytics | `design_handoff_analytics/` | `features/analytics/` (`analytics.scss` mirrors `components/analytics/analytics.css` class-for-class, incl. `.gt-status--in_progress`, `--wide`, `--stacked`, `.gt-table__export` + `utils/csv.ts`) | ported; timeliness (TimelinessBars / OnTimeMeter) deferred as planned |
 | ⌘K search | `design_handoff_search/` | — | **not started** (no `features/search`, header still has the pseudo search input) |
+| Schedule | `design_handoff_schedule/` | — | **not started** (Student Home's card is still the commented-out mock; no `/app/schedule`, no `class_events` table) |
 
 ## What maps where
 
@@ -38,6 +39,7 @@ then ported into `frontend/src/` — the reverse of `/design-sync`. This file is
 | `components/scrum/*` | `frontend/src/features/scrum/` (`scrum.scss` is a 1:1 port of `scrum.css`; re-port, never hand-edit values) |
 | `components/analytics/*` | `frontend/src/features/analytics/components/` (`/app/analytics`); class names 1:1 (`.gt-analytics`, `.gt-chart-card`, `.gt-legend`, `.gt-tooltip`, `.gt-filter`, `.gt-line`, `.gt-split`, `.gt-stack`, `.gt-cols`, `.gt-trend`, `.gt-table`, `.gt-series--*`/`.gt-status--*` → `--series`); `StatTile` = extend `Dashboard/DashboardMetricCard` with `__delta`/`__spark` (see `design_handoff_analytics/NOTES.md`) |
 | `components/search/*` | new `frontend/src/features/search/` (palette, trigger, model) + replace `.app-header__search-bar` with `SearchTrigger` — per `design_handoff_search/README.md` |
+| `components/schedule/*` | new `frontend/src/features/schedule/` (`ScheduleList`, `ScheduleItem`, `ScheduleDivider`, `ScheduleDayHeader`, `scheduleModel.ts`) + the `/app/schedule` route; the compact variant replaces the mock block in `Home/StudentHomeDashboard.tsx` (`.student-home__schedule-*`) — per `design_handoff_schedule/README.md` |
 | `components/**/*.css` (BEM `.gt-*`) | feature/component SCSS (same class names) |
 | `components/**/<Name>.jsx` + `.d.ts` | React TSX components (typed props match `.d.ts`) |
 
@@ -54,7 +56,7 @@ then ported into `frontend/src/` — the reverse of `/design-sync`. This file is
 ## Tokens the codebase layer does not have yet (design-only; add on first use)
 
 `--gt-blue-50…900` (codebase has `--gt-blue-500` only) · `--gt-red-*`, `--gt-error-icon` · `--gt-amber-*` ·
-`--gt-chart-*`, `--gt-opacity-refetch`, `--gt-series-*`, `--gt-status-*`, `--series` · `--gt-gold-deep` ·
+`--gt-chart-*`, `--gt-opacity-refetch`, `--gt-series-*`, `--gt-status-*`, `--series` · `--gt-sched-*` (schedule kind palette + Now line) · `--gt-gold-deep` ·
 `--gt-text-dark` (`$text-dark` exists in `_colors.scss`) · `--gt-disabled-bg/-text`, `--gt-button-secondary/-hover`
 (`$disabled-bg`, `$button-secondary*` exist in `_colors.scss`) · `--gt-text-xs` (11px) · the `--gt-bg` / `--gt-*-bg` aliases.
 `frontend/src/styles/tokens/*.css` are the only files `lint:design` lets a hex literal live in, so a new

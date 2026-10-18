@@ -1,0 +1,222 @@
+/* ============================================================
+   GrepThink · Schedule layer
+   .gt-sched (ScheduleList: compact card body / agenda week) · .gt-sched-day (ScheduleDayHeader)
+   .gt-sched-divider (sprint rule) · .gt-sched-item (ScheduleItem)
+   Token-only; no raw hex (lint:design). Kind palette = one (soft, text) token pair per kind
+   (--gt-sched-* in tokens/colors.css), set per modifier class like .gt-series--*.
+   ============================================================ */
+
+/* ── Kind palette (tokens/colors.css --gt-sched-*; icon + label always accompany the color) ── */
+.gt-sched-item__tile { background: var(--gt-sched-lecture-soft); color: var(--gt-sched-lecture-text); }
+.gt-sched-item--ta_meeting .gt-sched-item__tile { background: var(--gt-sched-ta-soft); color: var(--gt-sched-ta-text); }
+.gt-sched-item--ta_meeting .gt-sched-item__kind, .gt-sched-item--ta_meeting .gt-sched-item__countdown { color: var(--gt-sched-ta-text); }
+.gt-sched-item--final_review .gt-sched-item__tile { background: var(--gt-sched-review-soft); color: var(--gt-sched-review-text); }
+.gt-sched-item--final_review .gt-sched-item__kind, .gt-sched-item--final_review .gt-sched-item__countdown { color: var(--gt-sched-review-text); }
+.gt-sched-item--meeting .gt-sched-item__tile { background: var(--gt-sched-meeting-soft); color: var(--gt-sched-meeting-text); }
+.gt-sched-item--meeting .gt-sched-item__kind, .gt-sched-item--meeting .gt-sched-item__countdown { color: var(--gt-sched-meeting-text); }
+.gt-sched-item--office_hours .gt-sched-item__tile { background: var(--gt-sched-oh-soft); color: var(--gt-sched-oh-text); border-color: var(--gt-sched-oh-border); }
+.gt-sched-item--office_hours .gt-sched-item__kind { color: var(--gt-sched-oh-text); }
+.gt-sched-item--deadline .gt-sched-item__tile { background: transparent; color: var(--gt-sched-deadline-text); }
+.gt-sched-item--deadline .gt-sched-item__kind { color: var(--gt-sched-deadline-text); }
+
+/* ── List root ────────────────────────────────────────────── */
+.gt-sched { font-family: var(--gt-font-sans); color: var(--gt-text-primary); }
+.gt-sched__days, .gt-sched__items { list-style: none; margin: 0; padding: 0; }
+.gt-sched--agenda .gt-sched__days { background: var(--gt-surface); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-card); overflow: clip; }
+.gt-sched--agenda .gt-sched__day + .gt-sched__day { border-top: 1px solid var(--gt-border); }
+.gt-sched--agenda .gt-sched__day { padding-bottom: 6px; }
+
+/* ── Day header ───────────────────────────────────────────── */
+.gt-sched-day { display: flex; align-items: baseline; gap: 8px; padding: 12px 16px 6px; }
+.gt-sched--agenda .gt-sched-day { position: sticky; top: 0; z-index: 2; padding: 10px 16px; background: var(--gt-surface); border-bottom: 1px solid var(--gt-border-subtle); }
+.gt-sched-day__title { margin: 0; font-size: 13px; font-weight: var(--gt-weight-semibold); line-height: 1.4; color: var(--gt-text-primary); }
+.gt-sched-day--today .gt-sched-day__title { color: var(--gt-green-700); }
+.gt-sched-day__date { font-size: 12px; color: var(--gt-text-tertiary); }
+.gt-sched-day__aside { margin-left: auto; font-size: 11.5px; color: var(--gt-text-tertiary); }
+.gt-sched-day__empty { margin: 0; padding: 8px 16px 12px; font-size: 12.5px; color: var(--gt-text-tertiary); }
+
+/* ── Sprint divider (a rule with a label — never a row) ───── */
+.gt-sched-divider { display: flex; align-items: center; gap: 10px; padding: 8px 16px 2px; }
+.gt-sched-divider__label { font-size: 10.5px; font-weight: var(--gt-weight-semibold); text-transform: uppercase; letter-spacing: 0.04em; color: var(--gt-text-tertiary); white-space: nowrap; }
+.gt-sched-divider__rule { flex: 1; height: 0; margin: 0; border: 0; border-top: 1px dashed var(--gt-border-strong); }
+
+/* ── Item row ─────────────────────────────────────────────── */
+.gt-sched-item {
+  position: relative; display: grid; grid-template-columns: 112px 28px minmax(0, 1fr) auto; column-gap: 12px; align-items: start;
+  min-height: 44px; padding: 10px 16px; box-sizing: border-box;
+}
+.gt-sched--agenda .gt-sched-item + .gt-sched-item { border-top: 1px solid var(--gt-border-subtle); }
+.gt-sched-item__time { display: flex; flex-direction: column; gap: 1px; padding-top: 2px; font-variant-numeric: tabular-nums; min-width: 0; }
+.gt-sched-item__range, .gt-sched-item__start { font-size: 13px; font-weight: var(--gt-weight-medium); line-height: 1.35; color: var(--gt-text-primary); white-space: nowrap; }
+.gt-sched-item__start { display: none; }
+.gt-sched-item__dur, .gt-sched-item__due { font-size: 11.5px; line-height: 1.3; color: var(--gt-text-tertiary); }
+.gt-sched-item__allday { font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); }
+.gt-sched-item__tbd { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); white-space: nowrap; }
+.gt-sched-item__tile {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 28px; height: 28px; box-sizing: border-box;
+  border-radius: var(--gt-radius-sm); border: 1px dashed transparent;
+}
+.gt-sched-item__main { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-top: 1px; }
+.gt-sched-item__head { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.gt-sched-item__title { font-size: 14px; font-weight: var(--gt-weight-semibold); line-height: 1.35; color: var(--gt-text-primary); min-width: 0; overflow-wrap: anywhere; }
+.gt-sched-item__title a { color: inherit; text-decoration: none; }
+.gt-sched-item__title a:hover { text-decoration: underline; }
+.gt-sched-item__title a:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
+.gt-sched-item__meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; line-height: 1.4; color: var(--gt-text-tertiary); min-width: 0; }
+.gt-sched-item__meta-primary { font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); }
+.gt-sched-item__kind { font-size: 10.5px; font-weight: var(--gt-weight-semibold); text-transform: uppercase; letter-spacing: 0.04em; color: var(--gt-text-secondary); }
+.gt-sched-item__sep { color: var(--gt-gray-400); }
+.gt-sched-item__place { display: inline-flex; align-items: center; gap: 4px; }
+.gt-sched-item__faces { display: inline-flex; align-items: center; gap: 4px; margin-left: 2px; }
+.gt-sched-item__people { display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap; font-size: 12px; color: var(--gt-text-secondary); }
+.gt-sched-item__person { display: inline-flex; align-items: center; gap: 6px; }
+.gt-sched-item__person-role { color: var(--gt-text-tertiary); }
+.gt-sched-item__note { margin: 1px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--gt-text-secondary); }
+.gt-sched-item__reason { margin: 0; font-size: 12px; color: var(--gt-text-tertiary); }
+.gt-sched-item__actions { display: flex; align-items: center; gap: 8px; justify-self: end; }
+.gt-sched-item__sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* actions: one button shape, primary inside the Join window */
+.gt-sched-item__action {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; box-sizing: border-box;
+  border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); background: var(--gt-surface); color: var(--gt-text-secondary);
+  font-family: var(--gt-font-sans); font-size: 13px; font-weight: var(--gt-weight-medium); line-height: 1; text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast), border-color var(--gt-transition-fast);
+}
+.gt-sched-item__action:hover { background: var(--gt-surface-muted); color: var(--gt-text-primary); }
+.gt-sched-item__action:active { transform: translateY(0.5px); }
+.gt-sched-item__action:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.gt-sched-item__action--primary { border-color: var(--gt-primary); background: var(--gt-primary); color: var(--gt-text-inverse); font-weight: var(--gt-weight-semibold); }
+.gt-sched-item__action--primary:hover { border-color: var(--gt-primary-hover); background: var(--gt-primary-hover); color: var(--gt-text-inverse); }
+.gt-sched-item__toggle {
+  display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: none; border-radius: var(--gt-radius-sm);
+  background: transparent; color: var(--gt-text-tertiary); cursor: pointer; transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
+}
+.gt-sched-item__toggle:hover { background: var(--gt-surface-muted); color: var(--gt-text-primary); }
+.gt-sched-item__toggle:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+.gt-sched-item__toggle svg { transition: transform var(--gt-transition-fast); }
+.gt-sched-item__toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.gt-sched-item__panel { grid-column: 1 / -1; margin-top: 10px; }
+.gt-sched-item__panel .gt-meeting-card { box-shadow: none; background: var(--gt-surface-muted); }
+
+/* status */
+.gt-sched-item__live {
+  display: inline-flex; align-items: center; gap: 5px; height: 18px; padding: 0 7px; border-radius: var(--gt-radius-pill);
+  background: var(--gt-success-soft); color: var(--gt-success-text); font-size: 10.5px; font-weight: var(--gt-weight-semibold); text-transform: uppercase; letter-spacing: 0.04em;
+}
+.gt-sched-item__live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gt-success); animation: gt-sched-pulse 1.6s ease-out infinite; }
+@keyframes gt-sched-pulse { 0% { box-shadow: 0 0 0 0 rgba(1, 129, 86, 0.35); } 100% { box-shadow: 0 0 0 6px rgba(1, 129, 86, 0); } }
+.gt-sched-item__countdown { font-size: 12px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-secondary); white-space: nowrap; }
+.gt-sched-item__head .gt-badge { padding: 1px 7px; font-size: 10.5px; }
+.gt-sched-item--past .gt-sched-item__time, .gt-sched-item--past .gt-sched-item__tile, .gt-sched-item--past .gt-sched-item__title,
+.gt-sched-item--past .gt-sched-item__meta, .gt-sched-item--past .gt-sched-item__people, .gt-sched-item--past .gt-sched-item__note { opacity: 0.55; }
+.gt-sched-item--cancelled .gt-sched-item__title { text-decoration: line-through; text-decoration-thickness: 1px; color: var(--gt-text-tertiary); }
+.gt-sched-item--cancelled .gt-sched-item__tile { background: var(--gt-gray-100); color: var(--gt-text-tertiary); border-color: transparent; }
+.gt-sched-item--cancelled .gt-sched-item__time, .gt-sched-item--cancelled .gt-sched-item__meta { opacity: 0.55; }
+.gt-sched-item--tbd .gt-sched-item__time { padding-top: 3px; }
+
+/* deadline marker — lighter than any meeting: no tile fill, one line */
+.gt-sched-item--marker { min-height: 36px; padding-top: 6px; padding-bottom: 6px; align-items: center; }
+.gt-sched-item--marker .gt-sched-item__time { padding-top: 0; }
+.gt-sched-item--marker .gt-sched-item__tile { border: none; background: transparent; }
+.gt-sched-item--marker .gt-sched-item__main { flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; padding-top: 0; }
+.gt-sched-item--marker .gt-sched-item__title { font-size: 13px; font-weight: var(--gt-weight-medium); }
+
+/* ── Now line ─────────────────────────────────────────────── */
+.gt-sched__now { display: grid; grid-template-columns: 112px 1fr; column-gap: 12px; align-items: center; padding: 2px 16px; }
+.gt-sched__now-label { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: var(--gt-weight-semibold); text-transform: uppercase; letter-spacing: 0.04em; color: var(--gt-green-700); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gt-sched__now-line { position: relative; flex: 1; height: 2px; border-radius: 1px; background: var(--gt-sched-now); }
+.gt-sched__now-line::before { content: ''; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--gt-sched-now); }
+
+/* ── States ───────────────────────────────────────────────── */
+.gt-sched__state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 28px 16px; text-align: center; }
+.gt-sched__state--quiet { padding: 14px 16px 8px; }
+.gt-sched__state-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin-bottom: 4px; border-radius: 50%; background: var(--gt-surface-sunken); color: var(--gt-text-tertiary); }
+.gt-sched__state-title { margin: 0; font-size: 13.5px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
+.gt-sched__state--error .gt-sched__state-title { color: var(--gt-text-secondary); }
+.gt-sched__state-hint { margin: 0; max-width: 340px; font-size: 12px; line-height: var(--gt-leading-normal); color: var(--gt-text-tertiary); }
+.gt-sched__link, .gt-sched__retry { display: inline-flex; align-items: center; gap: 5px; border: none; background: transparent; padding: 0; font-family: var(--gt-font-sans); font-size: 12px; font-weight: var(--gt-weight-medium); color: var(--gt-text-link); text-decoration: none; cursor: pointer; }
+.gt-sched__link:hover, .gt-sched__retry:hover { text-decoration: underline; }
+.gt-sched__link:focus-visible, .gt-sched__retry:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); border-radius: 3px; }
+.gt-sched__skeleton { display: grid; grid-template-columns: 112px 28px minmax(0, 1fr); column-gap: 12px; align-items: center; padding: 12px 16px; }
+.gt-sched__skeleton-lines { display: flex; flex-direction: column; gap: 7px; }
+.gt-sched__more { padding: 6px 16px 2px; }
+.gt-sched__footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--gt-border-subtle); font-size: 12px; color: var(--gt-text-tertiary); }
+.gt-sched__zone { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--gt-text-tertiary); }
+
+/* ── Agenda toolbar ───────────────────────────────────────── */
+.gt-sched__toolbar { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.gt-sched__week { display: inline-flex; align-items: center; gap: 2px; padding: 2px; background: var(--gt-surface); border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); box-sizing: border-box; }
+.gt-sched__week-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; border-radius: 5px; background: transparent; color: var(--gt-text-secondary); cursor: pointer; transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast); }
+.gt-sched__week-btn:hover { background: var(--gt-surface-muted); color: var(--gt-text-primary); }
+.gt-sched__week-btn:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+.gt-sched__week-cur { min-width: 112px; height: 32px; padding: 0 12px; border: none; border-radius: 5px; background: transparent; font-family: var(--gt-font-sans); font-size: 13px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); cursor: pointer; }
+.gt-sched__week-cur:not(:disabled):hover { background: var(--gt-surface-muted); }
+.gt-sched__week-cur:disabled { cursor: default; }
+.gt-sched__week-cur:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+.gt-sched__range { font-size: 12.5px; color: var(--gt-text-tertiary); font-variant-numeric: tabular-nums; }
+.gt-sched__filters { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.gt-sched__select-wrap { position: relative; display: inline-flex; align-items: center; }
+.gt-sched__select {
+  height: 32px; padding: 0 28px 0 10px; appearance: none; border: 1px solid var(--gt-border); border-radius: var(--gt-radius-sm); background: var(--gt-surface);
+  font-family: var(--gt-font-sans); font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-primary); cursor: pointer;
+  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
+}
+.gt-sched__select:hover { border-color: var(--gt-border-strong); }
+.gt-sched__select:focus { outline: none; border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
+.gt-sched__select-chev { position: absolute; right: 9px; color: var(--gt-text-tertiary); pointer-events: none; display: inline-flex; }
+/* kind chips — same spec as the search layer's .gt-scope (merge the SCSS when both exist) */
+.gt-sched__chip {
+  display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; flex-shrink: 0;
+  border: 1px solid var(--gt-border-subtle); border-radius: var(--gt-radius-pill); background: var(--gt-surface);
+  font-family: var(--gt-font-sans); font-size: 11.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); cursor: pointer;
+  transition: background-color var(--gt-transition-fast), border-color var(--gt-transition-fast), color var(--gt-transition-fast);
+}
+.gt-sched__chip:hover { background: var(--gt-primary-soft); border-color: var(--gt-green-200); color: var(--gt-green-700); }
+.gt-sched__chip:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+.gt-sched__chip[aria-pressed="true"], .gt-sched__chip[aria-pressed="true"]:hover { background: var(--gt-primary); border-color: var(--gt-primary); color: var(--gt-text-inverse); }
+
+/* ── Compact (Today's Schedule card body) ─────────────────── */
+.gt-sched--compact .gt-sched-item { grid-template-columns: 60px 24px minmax(0, 1fr); column-gap: 10px; padding: 8px 0; }
+.gt-sched--compact .gt-sched-item__range { display: none; }
+.gt-sched--compact .gt-sched-item__start { display: block; font-size: 12.5px; }
+.gt-sched--compact .gt-sched-item__tile { width: 24px; height: 24px; }
+.gt-sched--compact .gt-sched-item__title { font-size: 13px; }
+.gt-sched--compact .gt-sched-item__meta { font-size: 11.5px; }
+.gt-sched--compact .gt-sched-item__actions { margin-top: 6px; }
+.gt-sched--compact .gt-sched-item__action { height: 32px; padding: 0 12px; font-size: 12.5px; }
+.gt-sched--compact .gt-sched-item--marker { min-height: 32px; padding: 5px 0; }
+.gt-sched--compact .gt-sched__now { display: flex; gap: 10px; padding: 4px 0; }
+.gt-sched--compact .gt-sched-day { padding: 10px 0 2px; }
+.gt-sched--compact .gt-sched-divider { padding: 6px 0 2px; }
+.gt-sched--compact .gt-sched__skeleton { grid-template-columns: 60px 24px minmax(0, 1fr); column-gap: 10px; padding: 10px 0; }
+.gt-sched--compact .gt-sched__state { padding: 20px 8px; }
+.gt-sched--compact .gt-sched__state--quiet { padding: 10px 0 4px; align-items: flex-start; text-align: left; }
+.gt-sched--compact .gt-sched__more { padding: 6px 0 0; }
+
+/* ── Phone (< 768px) ──────────────────────────────────────── */
+@media (max-width: 767px) {
+  .gt-sched--agenda .gt-sched-item { grid-template-columns: 64px 24px minmax(0, 1fr); row-gap: 8px; padding: 10px 12px; }
+  .gt-sched--agenda .gt-sched-item__range { display: none; }
+  .gt-sched--agenda .gt-sched-item__start { display: block; font-size: 12.5px; }
+  .gt-sched--agenda .gt-sched-item__tile { width: 24px; height: 24px; }
+  .gt-sched--agenda .gt-sched-item__actions { grid-column: 2 / -1; justify-self: stretch; }
+  .gt-sched--agenda .gt-sched-item__action { flex: 1; min-height: 44px; }
+  .gt-sched--agenda .gt-sched-item__toggle { min-width: 44px; min-height: 44px; }
+  .gt-sched--agenda .gt-sched__now { grid-template-columns: 64px 1fr; padding: 2px 12px; }
+  .gt-sched--agenda .gt-sched-day, .gt-sched--agenda .gt-sched-divider, .gt-sched--agenda .gt-sched__skeleton, .gt-sched--agenda .gt-sched-day__empty, .gt-sched--agenda .gt-sched__more { padding-left: 12px; padding-right: 12px; }
+  .gt-sched--agenda .gt-sched__skeleton { grid-template-columns: 64px 24px minmax(0, 1fr); }
+  .gt-sched--compact .gt-sched-item__action { min-height: 44px; }
+  .gt-sched__toolbar { gap: 10px; }
+  .gt-sched__week { width: 100%; justify-content: space-between; }
+  .gt-sched__week-btn { min-width: 44px; min-height: 44px; }
+  .gt-sched__week-cur { min-height: 44px; }
+  .gt-sched__filters { margin-left: 0; width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .gt-sched__filters::-webkit-scrollbar { display: none; }
+  .gt-sched__chip { min-height: 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gt-sched-item__live-dot { animation: none; }
+  .gt-sched-item__action, .gt-sched-item__toggle, .gt-sched-item__toggle svg, .gt-sched__week-btn, .gt-sched__chip, .gt-sched__select { transition: none; }
+}
