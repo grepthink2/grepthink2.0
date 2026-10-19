@@ -1,7 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ApiProject } from '@/lib/api';
+import type { ApiProject, ApiProjectMember } from '@/lib/api';
+
+// Edit Project's Save Changes calls the API; nothing else here does.
+const updateProject = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/api', () => ({ api: { updateProject } }));
+
 import EditProjectModal from '../../EditProject/EditProjectModal';
 import { TeamMeetingsList, type TeamMeetingsListProps } from '../TeamMeetingsList';
 import type { TeamMeeting } from '../teamMeetingsModel';
@@ -271,6 +276,60 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(onUpdate).toHaveBeenLastCalledWith('m-past', expect.objectContaining({ startsAt: '2026-10-13T22:00:00.000Z' }));
   });
 
+  it('keeps a past meeting’s editor or confirm in view: Past can’t fold it away', async () => {
+    const user = userEvent.setup();
+    renderManage({ meetings: [meeting(), past] });
+
+    const toggle = screen.getByRole('button', { name: 'Past (1)' });
+    await user.click(toggle);
+    await user.click(screen.getByRole('button', { name: 'Edit Kickoff' }));
+    expect(toggle).toBeDisabled();
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('heading', { name: 'Edit meeting' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await user.click(screen.getByRole('button', { name: 'Delete Kickoff' }));
+    expect(toggle).toBeDisabled();
+    expect(screen.getByText(/Delete 'Kickoff'\?/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    // With nothing open, Past folds as usual.
+    expect(toggle).toBeEnabled();
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Kickoff')).not.toBeInTheDocument();
+  });
+
+  it('shows an editor opened on a past meeting even with Past folded', () => {
+    renderManage({ meetings: [meeting(), past], defaultEditingId: 'm-past' });
+    expect(screen.getByRole('heading', { name: 'Edit meeting' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Past (1)' })).toBeDisabled();
+  });
+
+  it('keeps the form and its draft when the meeting being edited ends', async () => {
+    const user = userEvent.setup();
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const props = { meetings: [live, meeting()], onUpdate };
+    const { rerender } = renderManage(props);
+
+    await user.click(screen.getByRole('button', { name: 'Edit Standup' }));
+    await user.clear(titleBox());
+    await user.type(titleBox(), 'Standup, longer');
+    // 4:05 PM PT: the 3:00 – 4:00 PM meeting ends while its editor is open.
+    const later = new Date('2026-10-20T23:05:00Z');
+    rerender(<TeamMeetingsList variant="manage" canManage now={later} zone={LA} schoolZone={LA} {...props} />);
+
+    expect(screen.getByRole('heading', { name: 'Edit meeting' })).toBeInTheDocument();
+    expect(titleBox()).toHaveValue('Standup, longer');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onUpdate).toHaveBeenCalledWith('m-live', expect.objectContaining({ title: 'Standup, longer' }));
+
+    // Once the editor closes, the meeting goes where it now belongs.
+    expect(await screen.findByRole('button', { name: 'Past (1)' })).toBeInTheDocument();
+    expect(screen.queryByText('Standup')).not.toBeInTheDocument();
+  });
+
   it('keeps one editor open at a time', async () => {
     const user = userEvent.setup();
     renderManage({ meetings: [meeting(), meeting({ id: 'm2', title: 'Demo', startsAt: '2026-10-23T22:00:00Z' })] });
@@ -458,7 +517,11 @@ describe('TeamMeetingsList — the project-page card', () => {
 });
 
 describe('TeamMeetingsList in the Edit Project modal', () => {
-  const project = { id: 'p1', class_id: 'c1', name: 'Alpha', created_by: 'u-po' } as ApiProject;
+  const project = { id: 'p1', class_id: 'c1', name: 'Alpha', created_by: 'u-po', team_size: 4 } as ApiProject;
+
+  beforeEach(() => {
+    updateProject.mockReset();
+  });
 
   function renderModal(props: Partial<React.ComponentProps<typeof EditProjectModal>> = {}) {
     const onClose = vi.fn();
@@ -502,6 +565,69 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     expect(screen.getByRole('button', { name: /Delete Project/ })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Done' }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps Save Changes on the Meetings tab while Details has unsaved edits, and saves them', async () => {
+    const user = userEvent.setup();
+    updateProject.mockResolvedValue({ message: 'Project updated', project: { ...project, name: 'Beta' } });
+    const onProjectChange = vi.fn();
+    const { onClose } = renderModal({ onProjectChange });
+
+    const name = screen.getByRole('textbox', { name: 'Project name' });
+    await user.clear(name);
+    await user.type(name, 'Beta');
+    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+
+    expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+    expect(updateProject).toHaveBeenCalledWith('p1', expect.objectContaining({ name: 'Beta', team_size: 4 }));
+    expect(onProjectChange).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps Save Changes on the Meetings tab while Team has an unsaved role change', async () => {
+    const user = userEvent.setup();
+    const members = [
+      { user_id: 'u-po', email: 'ana@ucsc.edu', project_role: 'product owner', joined_at: '2026-10-01' },
+      { user_id: 'u-ben', email: 'ben@ucsc.edu', project_role: 'member', joined_at: '2026-10-02' },
+    ] as ApiProjectMember[];
+    renderModal({ projectMembers: members });
+
+    await user.click(screen.getByRole('button', { name: 'Team' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Select Scrum Master' }), 'u-ben');
+    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+
+    expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
+  });
+
+  it('drops staged edits on the Meetings tab’s Cancel, as the other tabs do', async () => {
+    const user = userEvent.setup();
+    const { onClose } = renderModal();
+
+    await user.type(screen.getByRole('textbox', { name: 'Project name' }), ' 2');
+    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(updateProject).not.toHaveBeenCalled();
+  });
+
+  it('shows Done again once the staged edit is undone', async () => {
+    const user = userEvent.setup();
+    renderModal();
+
+    const name = screen.getByRole('textbox', { name: 'Project name' });
+    await user.type(name, '!');
+    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Details' }));
+    await user.type(screen.getByRole('textbox', { name: 'Project name' }), '{Backspace}');
+    await user.click(screen.getByRole('button', { name: 'Meetings' }));
+    expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument();
   });
 
   it('opens on the Meetings tab when asked, and on Details for anyone else', () => {

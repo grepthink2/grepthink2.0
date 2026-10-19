@@ -91,6 +91,8 @@ export function TeamMeetingsList({
   const [editing, setEditing] = useState<string | null>(defaultEditingId);
   const [confirmId, setConfirmId] = useState<string | null>(defaultConfirmId);
   const [pastOpen, setPastOpen] = useState(defaultPastOpen);
+  /** The row an editor or delete confirm was opened on, and the list it was in then. */
+  const [held, setHeld] = useState<HeldRow | null>(null);
   /** What is being saved: 'new', a meeting id, or `del:<id>` for a delete. */
   const [busy, setBusy] = useState<string | null>(null);
   /** Which of those keys failed last time. */
@@ -98,7 +100,16 @@ export function TeamMeetingsList({
   const [announce, setAnnounce] = useState('');
   const uid = useId();
 
-  const { upcoming, past } = splitMeetings(meetings, now);
+  const split = splitMeetings(meetings, now);
+  const inPastNow = (id: string): boolean => split.past.some((m) => m.id === id);
+  // A row with an open editor or delete confirm stays in the list it was in when that opened, until
+  // it closes: folding Past can't hide it, and a meeting that ends meanwhile keeps its form and draft
+  // (React keeps a row's state only while the row stays in one list).
+  const openId = editing && editing !== 'new' ? editing : confirmId;
+  const hold = !openId ? null : held?.id === openId ? held : { id: openId, inPast: inPastNow(openId) };
+  const { upcoming, past } = holdRow(split, hold);
+  const holdsPast = !!hold?.inPast && past.some((m) => m.id === hold.id);
+  const showPast = pastOpen || holdsPast;
   const differs = zoneDiffers(vz, schoolZone, now);
   const zoneNote = differs ? `Times in ${zoneLabel(vz, now)} · campus is ${zoneLabel(schoolZone, now)}` : null;
   const campusRange = (m: TeamMeeting): string | undefined =>
@@ -126,14 +137,16 @@ export function TeamMeetingsList({
       setConfirmId(null);
       setAnnounce('Meeting deleted.');
     });
-  // An editor or a confirm opens without the error its last attempt left behind.
+  // An editor or a confirm opens without the error its last attempt left behind, and holds its row.
   const startEdit = (key: string) => {
     setConfirmId(null);
     setFailed((f) => ({ ...f, [key]: false }));
+    if (key !== 'new') setHeld({ id: key, inPast: inPastNow(key) });
     setEditing(key);
   };
   const startDelete = (id: string) => {
     setFailed((f) => ({ ...f, [`del:${id}`]: false }));
+    setHeld({ id, inPast: inPastNow(id) });
     setConfirmId(id);
   };
   const cls = ['gt-tm', `gt-tm--${variant}`, className].filter(Boolean).join(' ');
@@ -325,13 +338,14 @@ export function TeamMeetingsList({
             <button
               type="button"
               className="gt-tm__past-toggle"
-              aria-expanded={pastOpen}
+              aria-expanded={showPast}
               aria-controls={`${uid}-past`}
               onClick={() => setPastOpen(!pastOpen)}
+              disabled={holdsPast}
             >
               <ScheduleIcon name="chevron-right" size={14} />Past ({past.length})
             </button>
-            {pastOpen && <ol id={`${uid}-past`} className="gt-tm__list gt-tm__list--past">{past.map((m) => row(m, true))}</ol>}
+            {showPast && <ol id={`${uid}-past`} className="gt-tm__list gt-tm__list--past">{past.map((m) => row(m, true))}</ol>}
           </div>
         )}
       </>
@@ -372,6 +386,28 @@ export function TeamMeetingsList({
       <span className="gt-tm__sr" role="status" aria-live="polite">{announce}</span>
     </section>
   );
+}
+
+interface HeldRow {
+  id: string;
+  /** The row was in Past when its editor or confirm opened. */
+  inPast: boolean;
+}
+
+/** The meetings split, with a held row put back in the list it was held in if the clock has moved it. */
+function holdRow(split: { upcoming: TeamMeeting[]; past: TeamMeeting[] }, hold: HeldRow | null) {
+  if (!hold) return split;
+  const moved = (hold.inPast ? split.upcoming : split.past).find((m) => m.id === hold.id);
+  if (!moved) return split;
+  const start = (m: TeamMeeting): number => new Date(m.startsAt).getTime();
+  const insert = (list: TeamMeeting[], goesBefore: (m: TeamMeeting) => boolean): TeamMeeting[] => {
+    const i = list.findIndex(goesBefore);
+    return i === -1 ? [...list, moved] : [...list.slice(0, i), moved, ...list.slice(i)];
+  };
+  // Upcoming runs soonest first, Past most recent first.
+  return hold.inPast
+    ? { upcoming: split.upcoming.filter((m) => m !== moved), past: insert(split.past, (m) => start(m) < start(moved)) }
+    : { upcoming: insert(split.upcoming, (m) => start(m) > start(moved)), past: split.past.filter((m) => m !== moved) };
 }
 
 /** "Couldn’t load team meetings." with a Try again link: a quiet line, never a red panel. */

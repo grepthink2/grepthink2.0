@@ -300,6 +300,20 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Edits on Details or Team that only Save Changes sends: the fields against what they were seeded
+  // with. While there are any, the Meetings tab keeps Cancel / Save Changes, so they are never dropped
+  // by a Done that looks like it saves everything.
+  const hasStagedEdits =
+    name !== (project.name ?? '') ||
+    description !== (project.description ?? '') ||
+    teamSize !== String(project.team_size ?? '') ||
+    pendingLogoFile !== null ||
+    logoRemoved ||
+    productOwnerId !== initialRoles.productOwnerId ||
+    scrumMasterId !== initialRoles.scrumMasterId ||
+    adminIds.size !== initialRoles.adminIds.size ||
+    [...adminIds].some((id) => !initialRoles.adminIds.has(id));
+
   const memberOptions: MemberOption[] = projectMembers.map((m) => ({
     userId: m.user_id,
     displayName: emailToDisplayName(m.email),
@@ -417,8 +431,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
               </button>
             )}
             <div className="edit-project__footer-right">
-              {activeTab === 'meetings' ? (
-                // Each meeting saves on its own, so this tab has nothing left to save: Done closes.
+              {activeTab === 'meetings' && !hasStagedEdits ? (
+                // Each meeting saves on its own, so with nothing staged elsewhere Done just closes.
                 <button
                   type="button"
                   className="edit-project__btn edit-project__btn--save"
