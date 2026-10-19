@@ -23,6 +23,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
   const [courseName, setCourseName] = useState('');
   const [selectedTerm, setSelectedTerm] = useState<Term>('Fall');
   const [termStartDate, setTermStartDate] = useState('');
+  const [termEndDate, setTermEndDate] = useState('');
   const [tsrCount, setTsrCount] = useState(DEFAULT_TSR_COUNT['Fall']);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   // The class's "Tasks - External" link. Checked once you leave the box (or submit), not mid-word.
@@ -126,6 +127,15 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setError('First week of term is required');
       return;
     }
+    if (!termEndDate.trim()) {
+      setError('Last day of classes is required');
+      return;
+    }
+    // Both are yyyy-MM-dd, which sort as dates do. The same day is fine.
+    if (termEndDate < termStartDate) {
+      setError("The last day of classes can't be before the first week of term");
+      return;
+    }
     if ('error' in parsedTasksUrl) {
       // The box says why; focus takes a screen reader there, and no older error stays up.
       setError(null);
@@ -144,6 +154,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
         description,
         term: selectedTerm,
         start_date: termStartDate,
+        end_date: termEndDate,
         tsr_count: tsrCount,
         institution_id: institutionId || undefined,
         external_tasks_url: parsedTasksUrl.url ?? undefined,
@@ -171,6 +182,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
       setCourseName('');
       setSelectedTerm('Fall');
       setTermStartDate('');
+      setTermEndDate('');
       setTsrCount(DEFAULT_TSR_COUNT['Fall']);
       setCsvFile(null);
       setTasksUrl('');
@@ -288,6 +300,17 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
             labelClassName="create-class-modal__label"
           />
 
+          {/* Term End Date */}
+          <div className="create-class-modal__field">
+            <DatePickerField
+              label="Last Day of Classes"
+              value={termEndDate}
+              onChange={setTermEndDate}
+              labelClassName="create-class-modal__label"
+            />
+            <p className="create-class-modal__description">Before finals week</p>
+          </div>
+
           {/* TSR Count */}
           <div className="create-class-modal__field">
             <label className="create-class-modal__label">
@@ -404,6 +427,7 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
                 isSubmitting ||
                 !courseName.trim() ||
                 !termStartDate.trim() ||
+                !termEndDate.trim() ||
                 schoolsPending ||
                 schoolsFailed ||
                 (needsInstitution && !institutionId)

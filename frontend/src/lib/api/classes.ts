@@ -20,6 +20,8 @@ export const classesApi = {
     description?: string;
     term: string;
     start_date: string;
+    /** The last day of classes, before finals: a YYYY-MM-DD day, not before `start_date`. */
+    end_date: string;
     tsr_count?: number;
     institution_id?: string;
     /** The class's "Tasks - External" link; omit for none. */
@@ -48,6 +50,15 @@ export const classesApi = {
     return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/external-tasks-url`, {
       method: 'PATCH',
       body: JSON.stringify({ external_tasks_url: externalTasksUrl }),
+    });
+  },
+
+  // Set or change the class's last day of classes, before finals (a YYYY-MM-DD day, not before the
+  // class's first week of term; class instructor only). Returns {message, class} with the updated class.
+  updateClassEndDate: async (classId: string, endDate: string) => {
+    return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/end-date`, {
+      method: 'PATCH',
+      body: JSON.stringify({ end_date: endDate }),
     });
   },
 

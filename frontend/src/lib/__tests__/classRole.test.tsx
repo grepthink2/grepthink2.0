@@ -7,6 +7,7 @@ const api = vi.hoisted(() => ({
   getClasses: vi.fn(),
   updateClassStatus: vi.fn(),
   updateClassExternalTasksUrl: vi.fn(),
+  updateClassEndDate: vi.fn(),
 }));
 const preview = vi.hoisted(() => ({ isPreviewing: false, exitPreview: vi.fn() }));
 
@@ -66,6 +67,8 @@ function Probe() {
       <output data-testid="statuses">{classes.map((c) => `${c.id}:${c.status}`).join(',')}</output>
       <output data-testid="links">{classes.map((c) => `${c.id}:${c.external_tasks_url ?? '-'}`).join(',')}</output>
       <output data-testid="selected-link">{selectedClass?.external_tasks_url ?? '-'}</output>
+      <output data-testid="end-dates">{classes.map((c) => `${c.id}:${c.end_date ?? '-'}`).join(',')}</output>
+      <output data-testid="selected-end-date">{selectedClass?.end_date ?? '-'}</output>
       {classes.map((c) => (
         <button key={c.id} onClick={() => setSelectedClass(c)}>{`select ${c.id}`}</button>
       ))}
@@ -83,7 +86,7 @@ function Landing() {
 
 /** What pages do: refresh on a timer or with a spinner, join a class, change a class's status. */
 function Controls() {
-  const { refreshClasses, setClassLifecycleStatus, setClassExternalTasksUrl } = useClass();
+  const { refreshClasses, setClassLifecycleStatus, setClassExternalTasksUrl, setClassEndDate } = useClass();
   const [joined, setJoined] = useState(false);
   const join = async () => {
     await refreshClasses(false, 'new'); // JoinClassModal / CreateClassModal
@@ -96,6 +99,7 @@ function Controls() {
       <button onClick={() => void join()}>join new</button>
       <button onClick={() => void setClassLifecycleStatus('x', 'complete')}>complete x</button>
       <button onClick={() => void setClassExternalTasksUrl('x', 'https://tasks.example.org/x')}>link x</button>
+      <button onClick={() => void setClassEndDate('x', '2026-12-04')}>last day x</button>
       {joined && <Landing />}
     </>
   );
@@ -481,6 +485,28 @@ describe('refreshes', () => {
     await act(async () => stale.resolve({ classes: [cls('x', { my_role: 'instructor', external_tasks_url: null })] }));
     expect(text('links')).toBe(`x:${LINK}`);
     expect(text('selected-link')).toBe(LINK);
+  });
+
+  it('shows a saved last day at once, and keeps it when a refresh in flight answers the old one', async () => {
+    const DAY = '2026-12-04';
+    api.getClasses.mockResolvedValue({ classes: [cls('x', { my_role: 'instructor', end_date: null })] });
+    api.updateClassEndDate.mockResolvedValue({
+      message: 'Last day of classes updated',
+      class: cls('x', { my_role: 'instructor', end_date: DAY }),
+    });
+    renderProvider(<Controls />);
+    await waitFor(() => expect(text('end-dates')).toBe('x:-'));
+    const stale = deferred<unknown>();
+    api.getClasses.mockReturnValueOnce(stale.promise);
+    at(60);
+    await regainFocus(); // a slow refresh goes out before the save
+    await act(async () => screen.getByText('last day x').click());
+    expect(api.updateClassEndDate).toHaveBeenCalledWith('x', DAY);
+    await waitFor(() => expect(text('end-dates')).toBe(`x:${DAY}`));
+    expect(text('selected-end-date')).toBe(DAY); // the selected class gets it too
+    await act(async () => stale.resolve({ classes: [cls('x', { my_role: 'instructor', end_date: null })] }));
+    expect(text('end-dates')).toBe(`x:${DAY}`);
+    expect(text('selected-end-date')).toBe(DAY);
   });
 
   it('still selects the class that a superseded refresh asked for', async () => {
