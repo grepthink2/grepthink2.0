@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarCheck, Check, ChevronRight, Clock, Video, X } from 'lucide-react';
+import { CalendarCheck, ChevronRight, Clock, Video, X } from 'lucide-react';
 import { useClass, useSelectedClassRole } from '@/lib/classContext';
 import { useAuth } from '@/lib/auth';
 import { api, type ApiClassTA, type ApiFinalReviewSchedule, type ApiFinalReviewTeam } from '@/lib/api';
@@ -11,26 +11,12 @@ import { Skeleton } from '@/components/Skeleton/Skeleton';
 import '../components/TAManagement/TAManagement.scss';
 import './FinalReviews.scss';
 
-/** ISO timestamptz → value for <input type="datetime-local"> (local wall clock). */
-const toInputValue = (iso: string | null): string => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
+/** Why a TA can't sign up to review a team yet: the backend's refusal, word for word. */
+const NO_SLOT_HINT = "This team hasn't booked a review slot yet.";
 
 const Avatar: React.FC<{ name: string; email?: string | null }> = ({ name, email }) => (
   <span className="fr-avatar" aria-hidden="true">{getInitials(name || '', email || '')}</span>
 );
-
-/** Visually hidden but screen-reader-visible — no existing sr-only utility
- * class in this codebase, so this is inlined for the one aria-errormessage
- * target below rather than adding a new global class for a single use. */
-const srOnlyStyle: React.CSSProperties = {
-  position: 'absolute', width: 1, height: 1, padding: 0, margin: -1,
-  overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0,
-};
 
 /**
  * Page-shaped loading placeholder: a title-bar block plus three day-section
@@ -74,39 +60,15 @@ const FinalReviews: React.FC = () => {
   const [taOptions, setTaOptions] = useState<ApiClassTA[]>([]);
   const [zoomEditing, setZoomEditing] = useState(false);
   const [zoomDraft, setZoomDraft] = useState('');
-  /**
-   * Per-row datetime-local drafts (instructor). Committed explicitly — on
-   * Enter or the row's confirm button — never on blur; a plain blur (tabbing
-   * or clicking away without confirming) reverts the draft to the saved
-   * value instead, so a stray click can't silently commit a half-typed time.
-   */
-  const [timeDrafts, setTimeDrafts] = useState<Record<string, string>>({});
-  /** project_id → true while its time draft fails to parse as a date. */
-  const [timeInvalid, setTimeInvalid] = useState<Record<string, boolean>>({});
-  /** project_id → that row's confirm-✓ button element, so the time input's
-   * onBlur can tell "focus is moving to ✓" apart from "focus is leaving the
-   * row" via e.relatedTarget (works for both mouse and keyboard — Tabbing
-   * to ✓ fires a real blur before any click/keypress on the button would). */
-  const confirmBtnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const isInstructor = viewerRole === 'instructor';
   const isTa = viewerRole === 'ta';
 
-  /** Stores a fetched schedule and resets the per-row time drafts from it. */
-  const applySchedule = useCallback((scheduleRes: ApiFinalReviewSchedule) => {
-    setSchedule(scheduleRes);
-    setTimeDrafts(Object.fromEntries(
-      scheduleRes.teams.map((t) => [t.project_id, toInputValue(t.final_review_at)]),
-    ));
-    // Fresh server data supersedes any stale per-row validation state.
-    setTimeInvalid({});
-  }, []);
-
   /** Refetches after a mutation; the page stays on screen while it runs. */
   const loadSchedule = useCallback(async () => {
     if (!classId) return;
-    applySchedule(await api.getFinalReviewSchedule(classId));
-  }, [classId, applySchedule]);
+    setSchedule(await api.getFinalReviewSchedule(classId));
+  }, [classId]);
 
   useEffect(() => {
     if (!classId) return;
@@ -114,7 +76,7 @@ const FinalReviews: React.FC = () => {
     api.getFinalReviewSchedule(classId)
       .then((scheduleRes) => {
         if (cancelled) return;
-        applySchedule(scheduleRes);
+        setSchedule(scheduleRes);
         setLoaded({ classId, error: null });
       })
       .catch((err) => {
@@ -127,7 +89,7 @@ const FinalReviews: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [classId, applySchedule]);
+  }, [classId]);
 
   // Instructor: class TAs for the appoint/override dropdown. Anyone else (or
   // no class) gets an empty list.
@@ -186,55 +148,6 @@ const FinalReviews: React.FC = () => {
     if (!classId) return;
     void mutate('zoom', () => api.setReviewZoom(classId, zoomDraft.trim() || null))
       .then((ok) => { if (ok) setZoomEditing(false); });
-  };
-
-  /** Parse a datetime-local draft: '' → clear (null), invalid → undefined. */
-  const parseTimeDraft = (draft: string): string | null | undefined => {
-    if (!draft) return null;
-    const d = new Date(draft);
-    if (Number.isNaN(d.getTime())) return undefined;
-    return d.toISOString();
-  };
-
-  /** Enter or the row's ✓ button — the only ways a time edit reaches the API. */
-  const commitTime = (team: ApiFinalReviewTeam) => {
-    const draft = timeDrafts[team.project_id] ?? '';
-    if (draft === toInputValue(team.final_review_at)) {
-      setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
-      return; // unchanged
-    }
-    // An emptied draft against a previously-scheduled time is NOT a valid
-    // confirm-to-clear — the dedicated ✕ Clear button owns intentional
-    // clears. Without this, selecting-all-and-deleting the input then
-    // pressing Enter/✓ would silently wipe the schedule via parseTimeDraft's
-    // '' → null. Flag it instead.
-    if (draft === '' && team.final_review_at) {
-      setTimeInvalid((prev) => ({ ...prev, [team.project_id]: true }));
-      return;
-    }
-    const iso = parseTimeDraft(draft);
-    if (iso === undefined) {
-      // Unparseable — flag it and stop; never send a bad value to the API.
-      setTimeInvalid((prev) => ({ ...prev, [team.project_id]: true }));
-      return;
-    }
-    setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
-    void mutate(team.project_id, () => api.setFinalReviewTime(team.project_id, iso));
-  };
-
-  /** Plain blur (no Enter/✓) discards an uncommitted edit. */
-  const revertTime = (team: ApiFinalReviewTeam) => {
-    // A commit for this row is in flight (or just landed) — don't fight it;
-    // the row will re-sync from the authoritative server response either way.
-    if (busy === team.project_id) return;
-    setTimeDrafts((prev) => ({ ...prev, [team.project_id]: toInputValue(team.final_review_at) }));
-    setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
-  };
-
-  const clearTime = (team: ApiFinalReviewTeam) => {
-    if (!team.final_review_at) return;
-    setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
-    void mutate(team.project_id, () => api.setFinalReviewTime(team.project_id, null));
   };
 
   const groups = useMemo(() => groupByDay(schedule?.teams ?? []), [schedule]);
@@ -301,6 +214,18 @@ const FinalReviews: React.FC = () => {
             Sign up to review
           </button>
           <span className="fr-row__hint">Sign-ups closed</span>
+        </span>
+      );
+    }
+    // A TA can review a team only once it holds a slot (the instructor can appoint at any time).
+    if (!team.final_review_at) {
+      const hintId = `fr-no-slot-${team.project_id}`;
+      return (
+        <span className="fr-row__signup-wrap">
+          <button type="button" className="fr-btn fr-btn--signup" disabled aria-describedby={hintId}>
+            Sign up to review
+          </button>
+          <span id={hintId} className="fr-row__hint">{NO_SLOT_HINT}</span>
         </span>
       );
     }
@@ -431,8 +356,7 @@ const FinalReviews: React.FC = () => {
       {groups.length === 0 ? (
         <div className="ta-page__empty ta-page__empty--stack">
           <p className="ta-page__empty-text">
-            No teams in this class yet. The schedule fills in once teams exist
-            {isInstructor ? ' and you set each team’s review time.' : '.'}
+            No teams in this class yet. The schedule fills in once teams book review slots.
           </p>
         </div>
       ) : (
@@ -454,94 +378,10 @@ const FinalReviews: React.FC = () => {
                   <div key={team.project_id} className="fr-row">
                     <div className="fr-row__cell fr-row__cell--time">
                       <span className="fr-row__label">Time</span>
-                      {isInstructor ? (
-                        <span className="fr-row__time-edit">
-                          <input
-                            type="datetime-local"
-                            className="fr-row__time-input"
-                            value={timeDrafts[team.project_id] ?? ''}
-                            disabled={busy === team.project_id}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              setTimeDrafts((prev) => ({ ...prev, [team.project_id]: value }));
-                              setTimeInvalid((prev) => (prev[team.project_id] ? { ...prev, [team.project_id]: false } : prev));
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                commitTime(team);
-                              }
-                            }}
-                            onBlur={(e) => {
-                              // Focus moving to this row's own ✓ button is not
-                              // an abandoned edit — skip the revert so a
-                              // keyboard user Tabbing to ✓ (a real blur, with
-                              // no mouse event to intercept) still gets to
-                              // commit what they typed instead of it being
-                              // silently reverted first.
-                              if (e.relatedTarget === confirmBtnRefs.current[team.project_id]) return;
-                              revertTime(team);
-                            }}
-                            aria-invalid={timeInvalid[team.project_id] ? 'true' : undefined}
-                            aria-errormessage={timeInvalid[team.project_id] ? `time-error-${team.project_id}` : undefined}
-                            aria-label={`Review time for ${team.name ?? 'team'}`}
-                          />
-                          {timeInvalid[team.project_id] && (
-                            <span id={`time-error-${team.project_id}`} style={srOnlyStyle}>
-                              Invalid or unconfirmable time — use ✕ to clear the schedule instead.
-                            </span>
-                          )}
-                          <button
-                            ref={(el) => { confirmBtnRefs.current[team.project_id] = el; }}
-                            type="button"
-                            className="fr-row__time-confirm"
-                            title="Confirm time"
-                            aria-label={`Confirm review time for ${team.name ?? 'team'}`}
-                            disabled={busy === team.project_id
-                              || (timeDrafts[team.project_id] ?? '') === toInputValue(team.final_review_at)}
-                            // Composes with the input's relatedTarget-aware
-                            // onBlur above, covering the two ways focus can
-                            // leave the input on a click: on browsers where a
-                            // <button> takes focus on click (jsdom's default,
-                            // Chromium), the resulting blur's relatedTarget IS
-                            // this button, which onBlur already recognizes and
-                            // skips reverting for. But on macOS Safari/Firefox
-                            // — where a plain <button> does NOT take focus on
-                            // click — the input would still blur (its default
-                            // "unfocus" action, since focus isn't moving
-                            // anywhere focusable), only now with
-                            // relatedTarget === null, which onBlur can't
-                            // recognize, so it would revert; the disabled
-                            // check above would then grey the button out
-                            // mid-gesture, killing the click before it fires.
-                            // preventDefault() here stops that default
-                            // "unfocus" action outright, so the input never
-                            // blurs at all for a pointer-driven click, on any
-                            // browser.
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => commitTime(team)}
-                          >
-                            <Check size={14} />
-                          </button>
-                          {team.final_review_at && (
-                            <button
-                              type="button"
-                              className="fr-row__time-clear"
-                              title="Clear time"
-                              aria-label={`Clear review time for ${team.name ?? 'team'}`}
-                              disabled={busy === team.project_id}
-                              onClick={() => clearTime(team)}
-                            >
-                              <X size={14} />
-                            </button>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="fr-row__value">
-                          <Clock size={15} className="fr-row__icon" />
-                          {when ? formatTime(when) : <span className="fr-row__hint">Not scheduled</span>}
-                        </span>
-                      )}
+                      <span className="fr-row__value">
+                        <Clock size={15} className="fr-row__icon" />
+                        {when ? formatTime(when) : <span className="fr-row__hint">Not scheduled</span>}
+                      </span>
                     </div>
                     <div className="fr-row__cell fr-row__cell--team">
                       <span className="fr-row__label">Team</span>

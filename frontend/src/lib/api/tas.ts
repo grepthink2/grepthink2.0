@@ -9,6 +9,8 @@ import type {
   ApiFinalReviewNotes,
   ApiFinalReviewSchedule,
   ApiProjectTA,
+  ApiReviewSlotBooking,
+  ApiReviewSlots,
   ApiTAMeetingSchedule,
   ApiTeamAttendance,
   EnrollmentRole,
@@ -185,11 +187,41 @@ export const tasApi = {
     );
   },
 
-  /** Instructor: set (or clear, with null) a team's final-review slot (ISO time). */
-  setFinalReviewTime: async (projectId: string, scheduledAt: string | null) => {
-    return apiRequest<{ message: string; project_id: string; final_review_at: string | null }>(
-      `/api/tas/projects/${projectId}/review-time`,
-      { method: 'POST', body: JSON.stringify({ scheduled_at: scheduledAt }) },
+  // A team's review time comes only from the slot it books: the instructor posts
+  // slots; the team's Product Owner books, moves or releases one while sign-ups
+  // are open; the instructor places or releases any team at any time.
+
+  /** Any class member: every slot with the team that booked it, plus the caller's own team. */
+  getReviewSlots: async (classId: string) => {
+    return apiRequest<ApiReviewSlots>(`/api/tas/classes/${classId}/review-slots`);
+  },
+
+  /** Instructor: post 60-minute slots at these ISO start times; times that already have one are skipped. */
+  createReviewSlots: async (classId: string, startsAt: string[]) => {
+    return apiRequest<{ created: number }>(
+      `/api/tas/classes/${classId}/review-slots`,
+      { method: 'POST', body: JSON.stringify({ starts_at: startsAt }) },
+    );
+  },
+
+  /** Instructor: delete a free slot (409 while a team holds it). */
+  deleteReviewSlot: async (slotId: string) => {
+    return apiRequest<void>(`/api/tas/review-slots/${slotId}`, { method: 'DELETE' });
+  },
+
+  /** Book a slot for a team, or move the team to it (409 when another team got it first). */
+  bookReviewSlot: async (slotId: string, projectId: string) => {
+    return apiRequest<ApiReviewSlotBooking>(
+      `/api/tas/review-slots/${slotId}/book`,
+      { method: 'POST', body: JSON.stringify({ project_id: projectId }) },
+    );
+  },
+
+  /** Free the team's slot; `released` is false when it held none. */
+  releaseReviewSlot: async (projectId: string) => {
+    return apiRequest<{ released: boolean }>(
+      `/api/tas/projects/${projectId}/review-slot/release`,
+      { method: 'POST' },
     );
   },
 

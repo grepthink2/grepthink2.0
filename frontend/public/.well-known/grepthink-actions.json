@@ -234,6 +234,32 @@
       "method": "POST", "endpoint": "/api/tas/projects/{project_id}/assign", "params": {"user_id": "uuid!"}
     },
     {
+      "id": "list_review_slots", "title": "List a class's final-review slots and the teams that booked them", "role": "class member",
+      "method": "GET", "endpoint": "/api/tas/classes/{class_id}/review-slots",
+      "note": "Every slot in time order with its team (null = free), signups_open, and my_team: the caller's team (null when on none), with its time, the shared Zoom room and both reviewers once it holds a slot. The instructor and class TAs also get unbooked_teams (each with its Product Owner) and review_zoom_url. 403 outside the class."
+    },
+    {
+      "id": "create_review_slots", "title": "Post final-review slots", "role": "instructor",
+      "method": "POST", "endpoint": "/api/tas/classes/{class_id}/review-slots",
+      "params": {"starts_at": "datetime[]! (ISO 8601 with an offset; 1-200, all different)"},
+      "note": "Each slot lasts 60 minutes; a time that already has a slot in the class is skipped. Answers {created: n}."
+    },
+    {
+      "id": "delete_review_slot", "title": "Delete a free final-review slot", "role": "instructor",
+      "method": "DELETE", "endpoint": "/api/tas/review-slots/{slot_id}",
+      "note": "204 on success; 409 'Release the team before deleting its slot.' while a team holds it."
+    },
+    {
+      "id": "book_review_slot", "title": "Book a final-review slot for a team, or move the team to it", "role": "product owner|instructor",
+      "method": "POST", "endpoint": "/api/tas/review-slots/{slot_id}/book", "params": {"project_id": "uuid!"},
+      "note": "Answers {status: booked|moved, slot_id, starts_at}; a move frees the team's old slot and drops its Review TA. The team's Product Owner only while sign-ups are open (403 'Sign-ups aren't open.'); the instructor at any time. 409 'That slot was just taken.' when another team holds it."
+    },
+    {
+      "id": "release_review_slot", "title": "Release a team's final-review slot", "role": "product owner|instructor",
+      "method": "POST", "endpoint": "/api/tas/projects/{project_id}/review-slot/release",
+      "note": "Clears the team's review time and drops its Review TA; answers {released: false} when it held no slot. Same rules as book_review_slot."
+    },
+    {
       "id": "assign_meeting_ta", "title": "Assign the meeting TA for a project", "role": "instructor",
       "method": "POST", "endpoint": "/api/projects/{project_id}/assign-ta",
       "params": {"ta_id": "uuid (null to clear)"}, "note": "Sets projects.assigned_ta_id — who runs the weekly meeting + takes attendance."
