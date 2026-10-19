@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardTool","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardCheck","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartEmptyState","sourcePath":"components/analytics/ChartEmptyState.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"DefinitionPopover","sourcePath":"components/analytics/DefinitionPopover.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StatTile","sourcePath":"components/analytics/StatTile.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"UnreadBadge","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"Arrow","sourcePath":"components/figma-reference/Arrow.jsx"},{"name":"ButtonContentArea","sourcePath":"components/figma-reference/ButtonContentArea.jsx"},{"name":"Calendar","sourcePath":"components/figma-reference/Calendar.jsx"},{"name":"DAvatars223","sourcePath":"components/figma-reference/DAvatars223.jsx"},{"name":"DAvatars63","sourcePath":"components/figma-reference/DAvatars63.jsx"},{"name":"DateActive","sourcePath":"components/figma-reference/DateActive.jsx"},{"name":"DateInactive","sourcePath":"components/figma-reference/DateInactive.jsx"},{"name":"Favorite","sourcePath":"components/figma-reference/Favorite.jsx"},{"name":"Grid","sourcePath":"components/figma-reference/Grid.jsx"},{"name":"Icons","sourcePath":"components/figma-reference/Icons.jsx"},{"name":"Monitor","sourcePath":"components/figma-reference/Monitor.jsx"},{"name":"Month","sourcePath":"components/figma-reference/Month.jsx"},{"name":"Navigation","sourcePath":"components/figma-reference/Navigation.jsx"},{"name":"Scrollbar","sourcePath":"components/figma-reference/Scrollbar.jsx"},{"name":"Thumb","sourcePath":"components/figma-reference/Thumb.jsx"},{"name":"ToggleSwitch","sourcePath":"components/figma-reference/ToggleSwitch.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"},{"name":"SearchField","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"28ffe2b0b65c","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"bab9bbee64ce","components/analytics/ChartEmptyState.jsx":"97c8e5272c77","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/DefinitionPopover.jsx":"f65cc5200c24","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/StatTile.jsx":"86841d27a604","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"cc24daede726","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"e87694c0f32c","components/display/Badge.jsx":"180509dfc2c9","components/display/Card.jsx":"4ba0490439c9","components/display/ProgressBar.jsx":"0b4aaf2c1290","components/display/StatCard.jsx":"57f73bd82bca","components/display/Table.jsx":"ca3970dc13d3","components/display/Tag.jsx":"e3ab4e532516","components/display/Tooltip.jsx":"fdf93185ec4e","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"497141765f63","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"cee7f6e18f47","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMemberCard.jsx":"6df7ada471d5","components/domain/TypingIndicator.jsx":"87abba71cd36","components/feedback/Alert.jsx":"9fd839b8885b","components/feedback/EmptyState.jsx":"ade9686d1d6c","components/feedback/Menu.jsx":"f2803bde1913","components/feedback/Modal.jsx":"b3423627eb3e","components/feedback/Popover.jsx":"5c61a414f282","components/feedback/Toast.jsx":"7cea98a32e2b","components/figma-reference/Arrow.jsx":"b47fae3b397e","components/figma-reference/ButtonContentArea.jsx":"d04e8778b0cd","components/figma-reference/Calendar.jsx":"e9b4e8547380","components/figma-reference/DAvatars223.jsx":"f8a6724e71c1","components/figma-reference/DAvatars63.jsx":"eabe483d1087","components/figma-reference/DateActive.jsx":"98368642fc18","components/figma-reference/DateInactive.jsx":"aa5b005439e4","components/figma-reference/Favorite.jsx":"cf904bbc095e","components/figma-reference/Grid.jsx":"ffce96c170ef","components/figma-reference/Icons.jsx":"8c100167f4e4","components/figma-reference/Monitor.jsx":"fed77441cdb3","components/figma-reference/Month.jsx":"753bdc051edd","components/figma-reference/Navigation.jsx":"4ca43ce20a81","components/figma-reference/Scrollbar.jsx":"2c920accb1b9","components/figma-reference/Thumb.jsx":"fe01d87bb4eb","components/figma-reference/ToggleSwitch.jsx":"4eaaaf74364f","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"18c33813ee4c","components/navigation/SidebarNavItem.jsx":"da5237605ea2","components/navigation/Tabs.jsx":"a1cbfe065547","components/primitives/Button.jsx":"5eacee058949","components/primitives/Checkbox.jsx":"a9a0b92b227a","components/primitives/DatePickerField.jsx":"ad63bc301a8b","components/primitives/IconButton.jsx":"ab72be8fcc12","components/primitives/Input.jsx":"89d3caa5e496","components/primitives/RadioGroup.jsx":"b3bb3e033eb8","components/primitives/Select.jsx":"8dec7dc350d7","components/primitives/Textarea.jsx":"40b57e72e0b1","components/primitives/Toggle.jsx":"cbbe66982d51","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","components/search/CommandPalette.jsx":"91b68465b97d","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"dbdea95a0d31","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"5fa718bd8651","ui_kits/grepthink/App.jsx":"b4731ebd95d5","ui_kits/grepthink/Screens.jsx":"ee94282eb492","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/Shell.jsx":"c8070c465885","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"68373b119804"},"inlinedExternals":[],"unexposedExports":[{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"}]} */
+/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardTool","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardCheck","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartEmptyState","sourcePath":"components/analytics/ChartEmptyState.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"DefinitionPopover","sourcePath":"components/analytics/DefinitionPopover.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StatTile","sourcePath":"components/analytics/StatTile.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"UnreadBadge","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMeetingForm","sourcePath":"components/domain/TeamMeetingForm.jsx"},{"name":"TeamMeetingsList","sourcePath":"components/domain/TeamMeetingsList.jsx"},{"name":"TEAM_MEETING_TITLE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_NOTE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DEFAULT_DURATION","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DURATIONS","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMeetingsModel","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"Arrow","sourcePath":"components/figma-reference/Arrow.jsx"},{"name":"ButtonContentArea","sourcePath":"components/figma-reference/ButtonContentArea.jsx"},{"name":"Calendar","sourcePath":"components/figma-reference/Calendar.jsx"},{"name":"DAvatars223","sourcePath":"components/figma-reference/DAvatars223.jsx"},{"name":"DAvatars63","sourcePath":"components/figma-reference/DAvatars63.jsx"},{"name":"DateActive","sourcePath":"components/figma-reference/DateActive.jsx"},{"name":"DateInactive","sourcePath":"components/figma-reference/DateInactive.jsx"},{"name":"Favorite","sourcePath":"components/figma-reference/Favorite.jsx"},{"name":"Grid","sourcePath":"components/figma-reference/Grid.jsx"},{"name":"Icons","sourcePath":"components/figma-reference/Icons.jsx"},{"name":"Monitor","sourcePath":"components/figma-reference/Monitor.jsx"},{"name":"Month","sourcePath":"components/figma-reference/Month.jsx"},{"name":"Navigation","sourcePath":"components/figma-reference/Navigation.jsx"},{"name":"Scrollbar","sourcePath":"components/figma-reference/Scrollbar.jsx"},{"name":"Thumb","sourcePath":"components/figma-reference/Thumb.jsx"},{"name":"ToggleSwitch","sourcePath":"components/figma-reference/ToggleSwitch.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"ScheduleDayHeader","sourcePath":"components/schedule/ScheduleDayHeader.jsx"},{"name":"ScheduleDivider","sourcePath":"components/schedule/ScheduleDivider.jsx"},{"name":"ScheduleIcon","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleItem","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleList","sourcePath":"components/schedule/ScheduleList.jsx"},{"name":"SCHOOL_ZONE","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"JOIN_WINDOW_MS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"COUNTDOWN_DAYS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"SCHEDULE_KINDS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"ScheduleModel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"},{"name":"SearchField","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"28ffe2b0b65c","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"bab9bbee64ce","components/analytics/ChartEmptyState.jsx":"97c8e5272c77","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/DefinitionPopover.jsx":"f65cc5200c24","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/StatTile.jsx":"86841d27a604","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"cc24daede726","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"e87694c0f32c","components/display/Badge.jsx":"180509dfc2c9","components/display/Card.jsx":"4ba0490439c9","components/display/ProgressBar.jsx":"0b4aaf2c1290","components/display/StatCard.jsx":"57f73bd82bca","components/display/Table.jsx":"ca3970dc13d3","components/display/Tag.jsx":"e3ab4e532516","components/display/Tooltip.jsx":"fdf93185ec4e","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"497141765f63","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"cee7f6e18f47","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMeetingForm.jsx":"d3569d566cf4","components/domain/TeamMeetingsList.jsx":"af2eb2deea8a","components/domain/TeamMeetingsModel.jsx":"0c0f093c5b00","components/domain/TeamMemberCard.jsx":"6df7ada471d5","components/domain/TypingIndicator.jsx":"87abba71cd36","components/domain/teamMeetingsData.js":"e0e94053f793","components/domain/teamMeetingsSrcLoader.js":"0d9182269148","components/feedback/Alert.jsx":"9fd839b8885b","components/feedback/EmptyState.jsx":"ade9686d1d6c","components/feedback/Menu.jsx":"f2803bde1913","components/feedback/Modal.jsx":"b3423627eb3e","components/feedback/Popover.jsx":"5c61a414f282","components/feedback/Toast.jsx":"7cea98a32e2b","components/figma-reference/Arrow.jsx":"b47fae3b397e","components/figma-reference/ButtonContentArea.jsx":"d04e8778b0cd","components/figma-reference/Calendar.jsx":"e9b4e8547380","components/figma-reference/DAvatars223.jsx":"f8a6724e71c1","components/figma-reference/DAvatars63.jsx":"eabe483d1087","components/figma-reference/DateActive.jsx":"98368642fc18","components/figma-reference/DateInactive.jsx":"aa5b005439e4","components/figma-reference/Favorite.jsx":"cf904bbc095e","components/figma-reference/Grid.jsx":"ffce96c170ef","components/figma-reference/Icons.jsx":"8c100167f4e4","components/figma-reference/Monitor.jsx":"fed77441cdb3","components/figma-reference/Month.jsx":"753bdc051edd","components/figma-reference/Navigation.jsx":"4ca43ce20a81","components/figma-reference/Scrollbar.jsx":"2c920accb1b9","components/figma-reference/Thumb.jsx":"fe01d87bb4eb","components/figma-reference/ToggleSwitch.jsx":"4eaaaf74364f","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"18c33813ee4c","components/navigation/SidebarNavItem.jsx":"da5237605ea2","components/navigation/Tabs.jsx":"a1cbfe065547","components/primitives/Button.jsx":"5eacee058949","components/primitives/Checkbox.jsx":"a9a0b92b227a","components/primitives/DatePickerField.jsx":"ad63bc301a8b","components/primitives/IconButton.jsx":"ab72be8fcc12","components/primitives/Input.jsx":"89d3caa5e496","components/primitives/RadioGroup.jsx":"b3bb3e033eb8","components/primitives/Select.jsx":"8dec7dc350d7","components/primitives/Textarea.jsx":"40b57e72e0b1","components/primitives/Toggle.jsx":"cbbe66982d51","components/schedule/ScheduleDayHeader.jsx":"90ffba22a0e8","components/schedule/ScheduleDivider.jsx":"b6e47ba7e0d5","components/schedule/ScheduleItem.jsx":"13adbe3e120c","components/schedule/ScheduleList.jsx":"4ba48a676d71","components/schedule/ScheduleModel.jsx":"6f175cb8c5b9","components/schedule/scheduleData.js":"487a52d77d86","components/schedule/scheduleSrcLoader.js":"ddd0381767b6","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","components/search/CommandPalette.jsx":"91b68465b97d","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"dbdea95a0d31","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"5fa718bd8651","ui_kits/grepthink/App.jsx":"b4731ebd95d5","ui_kits/grepthink/ScheduleScreen.jsx":"bbc70119a451","ui_kits/grepthink/Screens.jsx":"ee94282eb492","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/Shell.jsx":"c8070c465885","ui_kits/grepthink/TeamMeetingsScreen.jsx":"ee83a4b3e148","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"68373b119804"},"inlinedExternals":[],"unexposedExports":[{"name":"campusTimeOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"countdown","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dayKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"draftFrom","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"endsAtOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"findOverlaps","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDayLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtMeetingWhen","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtTime","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtTimeRange","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeekLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"groupByDay","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"instantToZoned","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isHttpUrl","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isJoinable","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isLive","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isPast","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isoDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isoMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"keyToDate","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"kindMeta","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"nextUp","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"nowIndex","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"shiftKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"showTeamMeetingsCard","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"sortItems","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"splitMeetings","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"statusOf","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"toScheduleItem","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"todayOrPeek","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useNow","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"},{"name":"validateTeamMeeting","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"viewerZone","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"weekKeys","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneDiffers","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zonedToInstant","sourcePath":"components/domain/TeamMeetingsModel.jsx"}]} */
 
 (() => {
 
@@ -3731,6 +3731,139 @@ function TypingIndicator({
 }
 Object.assign(__ds_scope, { TypingIndicator });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/TypingIndicator.jsx", error: String((e && e.message) || e) }); }
+
+// components/domain/teamMeetingsData.js
+try { (() => {
+/* GrepThink team meetings — sample data for the design kit (throwaway; the data layer owns the real shape).
+   Authored in campus time (PT), stored as UTC ISO. window.GT_TEAM_MEETINGS_SAMPLE */
+(function () {
+  // PDT (-07:00) until Nov 1 2026, PST (-08:00) after.
+  const at = (day, hm) => new Date(`${day}T${hm}:00${day >= '2026-11-01' ? '-08:00' : '-07:00'}`).toISOString();
+  const Z = 'https://ucsc.zoom.us/j/93312007451';
+  const people = {
+    'u-ashton': {
+      id: 'u-ashton',
+      name: 'Ashton Liu',
+      role: 'Product Owner'
+    },
+    'u-tony': {
+      id: 'u-tony',
+      name: 'Tony Wang',
+      role: 'Scrum Master'
+    },
+    'u-landon': {
+      id: 'u-landon',
+      name: 'Landon Nguyen',
+      role: 'Member'
+    },
+    'u-josh': {
+      id: 'u-josh',
+      name: 'Joshua Cruz',
+      role: 'Member'
+    }
+  };
+  const m = (id, title, day, hm, durationMinutes, extra) => ({
+    id,
+    projectId: 'p-gt2',
+    title,
+    startsAt: at(day, hm),
+    durationMinutes,
+    location: null,
+    zoomUrl: null,
+    note: null,
+    createdBy: 'u-ashton',
+    updatedAt: at('2026-10-12', '09:00'),
+    ...extra
+  });
+  const past = [m('tm-p1', 'Kickoff', '2026-10-05', '15:00', 30, {
+    zoomUrl: Z,
+    note: 'Introductions, repo access, how we run sprints.'
+  }), m('tm-p2', 'Sprint 2 planning', '2026-10-06', '15:00', 60, {
+    zoomUrl: Z
+  }), m('tm-p3', 'Midterm check-in with Priya', '2026-10-14', '14:00', 30, {
+    location: 'E2 room 180'
+  })];
+  const upcoming = [m('tm-1', 'Sprint 3 planning', '2026-10-20', '15:00', 60, {
+    zoomUrl: Z,
+    note: 'Bring your estimates for the backlog items tagged sprint-3.'
+  }), m('tm-2', 'Design review with Priya', '2026-10-22', '16:00', 45, {
+    location: 'E2 room 180',
+    zoomUrl: Z
+  }), m('tm-3', 'Sponsor demo', '2026-10-30', '13:00', 60, {
+    zoomUrl: Z,
+    note: 'Demo the roster import end to end — Landon drives, Tony takes questions.'
+  }), m('tm-4', 'Retro + pizza', '2026-11-02', '17:30', 60, {
+    location: 'BE 301'
+  })];
+  const more = [m('tm-5', 'API contract review', '2026-10-21', '11:00', 30, {
+    zoomUrl: Z
+  }), m('tm-6', 'Pair-programming block', '2026-10-24', '10:00', 120, {
+    zoomUrl: Z,
+    note: 'Optional. Grab whoever is on the same story.'
+  }), m('tm-7', 'Usability test dry run', '2026-10-27', '15:00', 45, {
+    location: 'E2 room 180'
+  }), m('tm-8', 'Final review rehearsal — full run-through with slides, demo and Q&A practice', '2026-11-05', '16:00', 60, {
+    zoomUrl: Z,
+    note: 'Everyone presents their own slice. Time each section; we have 20 minutes total including questions, so keep the demo under eight.'
+  }), m('tm-9', 'Prep for final review', '2026-11-06', '16:00', 60, {
+    zoomUrl: Z
+  })];
+  window.GT_TEAM_MEETINGS_SAMPLE = {
+    now: at('2026-10-20', '15:12'),
+    teamName: 'Team 1',
+    projectName: 'GrepThink 2.0',
+    classLabel: '2026F CSE 115B',
+    zoom: Z,
+    people,
+    members: ['Ashton Liu', 'Tony Wang', 'Landon Nguyen', 'Joshua Cruz'],
+    past,
+    upcoming,
+    more,
+    meetings: [...past, ...upcoming],
+    many: [...past, ...upcoming, ...more]
+  };
+})();
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/teamMeetingsData.js", error: String((e && e.message) || e) }); }
+
+// components/domain/teamMeetingsSrcLoader.js
+try { (() => {
+/* Dev fallback: when the compiled _ds_bundle.js predates the team-meetings components (it regenerates
+   once per turn), transpile them straight from source into the same namespace. Needs the schedule
+   family first (loadScheduleSources). Inert as soon as the bundle carries TeamMeetingsList. */
+window.loadTeamMeetingSources = async function loadTeamMeetingSources(base) {
+  if (window.loadScheduleSources) await window.loadScheduleSources(base);
+  const NS = window.GrepThinkDesignSystem_36e7e3 || (window.GrepThinkDesignSystem_36e7e3 = {});
+  if (NS.TeamMeetingsList && NS.TeamMeetingForm && NS.TeamMeetingsModel) return NS;
+  const order = ['TeamMeetingsModel', 'TeamMeetingForm', 'TeamMeetingsList'];
+  for (const name of order) {
+    let src = await (await fetch(`${base}/components/domain/${name}.jsx`)).text();
+    const needed = [],
+      found = [];
+    src = src.replace(/import\s*\{([^}]*)\}\s*from\s*'[^']+';?/g, (m, names) => {
+      needed.push(...names.split(',').map(s => s.trim()).filter(Boolean));
+      return '';
+    });
+    src = src.replace(/^import React[^\n]*$/mg, '');
+    src = src.replace(/^export\s+(function|const)\s+([A-Za-z_$][\w$]*)/mg, (m, kind, id) => {
+      found.push(id);
+      return `${kind} ${id}`;
+    });
+    const prelude = needed.length ? `const {${[...new Set(needed)].join(',')}} = __NS;\n` : '';
+    const code = Babel.transform(prelude + src + `\n;Object.assign(__NS, {${found.join(',')}});`, {
+      presets: ['react']
+    }).code;
+    new Function('React', '__NS', code)(window.React, NS);
+  }
+  return NS;
+};
+window.runDeferredBabel = window.runDeferredBabel || function runDeferredBabel() {
+  document.querySelectorAll('script[type="text/babel-deferred"]').forEach(s => {
+    new Function(Babel.transform(s.textContent, {
+      presets: ['react']
+    }).code)();
+  });
+};
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/teamMeetingsSrcLoader.js", error: String((e && e.message) || e) }); }
 
 // components/feedback/Alert.jsx
 try { (() => {
@@ -13228,6 +13361,2790 @@ function Toggle({
 Object.assign(__ds_scope, { Toggle });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Toggle.jsx", error: String((e && e.message) || e) }); }
 
+// components/schedule/ScheduleDivider.jsx
+try { (() => {
+/**
+ * Sprint edge: a dashed rule with an inline muted label at the top of its day.
+ * Not an event — no time, no button, no card.
+ */
+function ScheduleDivider({
+  item,
+  sprint,
+  isToday = false,
+  className = ''
+}) {
+  const s = sprint || item && item.sprint || {};
+  const label = `${s.name || 'Sprint'} ${s.edge === 'end' ? 'ends' : 'starts'}${isToday ? ' today' : ''}`;
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-sched-divider', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-divider__label"
+  }, label), /*#__PURE__*/React.createElement("hr", {
+    className: "gt-sched-divider__rule",
+    "aria-hidden": "true"
+  }));
+}
+Object.assign(__ds_scope, { ScheduleDivider });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/schedule/ScheduleDivider.jsx", error: String((e && e.message) || e) }); }
+
+// components/schedule/ScheduleModel.jsx
+try { (() => {
+/**
+ * Pure schedule model: kinds, zone-aware day math, status, the Join window,
+ * grouping, overlap detection and formatters. No UI.
+ * The codebase ports this to `features/schedule/scheduleModel.ts`.
+ */
+
+const SCHOOL_ZONE = 'America/Los_Angeles';
+/** "Join Zoom" is prominent from 10 minutes before start until the end. */
+const JOIN_WINDOW_MS = 10 * 60 * 1000;
+/** Final reviews show a countdown once they are less than a week away. */
+const COUNTDOWN_DAYS = 7;
+
+/** Kind palette: icon + label always travel together; the tone names a (soft, text) token pair in schedule.css. */
+const SCHEDULE_KINDS = [{
+  kind: 'ta_meeting',
+  label: 'TA meeting',
+  icon: 'video',
+  tone: 'green',
+  filterLabel: 'TA meetings'
+}, {
+  kind: 'final_review',
+  label: 'Final review',
+  icon: 'clipboard-check',
+  tone: 'purple',
+  filterLabel: 'Final reviews'
+}, {
+  kind: 'meeting',
+  label: 'Meeting',
+  icon: 'users',
+  tone: 'blue',
+  filterLabel: 'Meetings'
+}, {
+  kind: 'lecture',
+  label: 'Lecture',
+  icon: 'book-open',
+  tone: 'gray',
+  filterLabel: 'Lectures'
+}, {
+  kind: 'office_hours',
+  label: 'Office hours',
+  icon: 'door-open',
+  tone: 'outline',
+  filterLabel: 'Office hours'
+}, {
+  kind: 'deadline',
+  label: 'Deadline',
+  icon: 'flag',
+  tone: 'amber',
+  filterLabel: 'Deadlines'
+}, {
+  kind: 'sprint',
+  label: 'Sprint',
+  icon: null,
+  tone: null,
+  filterLabel: null
+}];
+const KIND_BY_ID = Object.fromEntries(SCHEDULE_KINDS.map(k => [k.kind, k]));
+function kindMeta(kind) {
+  return KIND_BY_ID[kind] || {
+    kind,
+    label: kind,
+    icon: 'calendar-days',
+    tone: 'gray'
+  };
+}
+const toDate = v => v instanceof Date ? v : new Date(v);
+const fmtCache = new Map();
+function fmt(zone, opts) {
+  const k = zone + JSON.stringify(opts);
+  if (!fmtCache.has(k)) fmtCache.set(k, new Intl.DateTimeFormat('en-US', {
+    timeZone: zone,
+    ...opts
+  }));
+  return fmtCache.get(k);
+}
+
+/* ── Day keys ('YYYY-MM-DD' in a zone) — all calendar math happens on keys, so DST never moves a day ── */
+function dayKey(when, zone = SCHOOL_ZONE) {
+  const p = fmt(zone, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(toDate(when));
+  const g = t => p.find(x => x.type === t).value;
+  return `${g('year')}-${g('month')}-${g('day')}`;
+}
+function keyToDate(key) {
+  return new Date(`${key}T12:00:00Z`);
+}
+function shiftKey(key, days) {
+  const d = keyToDate(key);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+/** Mon…Sun keys of the week containing `anchorKey`. */
+function weekKeys(anchorKey) {
+  const dow = (keyToDate(anchorKey).getUTCDay() + 6) % 7;
+  const mon = shiftKey(anchorKey, -dow);
+  return Array.from({
+    length: 7
+  }, (_, i) => shiftKey(mon, i));
+}
+
+/* ── Status ─────────────────────────────────────────────────── */
+/** upcoming | live | past | cancelled | tbd. `cancelled`/`tbd` come from the data; the rest is derived from the clock. */
+function statusOf(item, now = new Date(), zone = SCHOOL_ZONE) {
+  if (item.status === 'cancelled' || item.status === 'tbd') return item.status;
+  if (item.kind === 'sprint') return 'upcoming';
+  const n = toDate(now).getTime();
+  const s = toDate(item.startsAt).getTime();
+  if (item.allDay) return dayKey(s, zone) < dayKey(n, zone) ? 'past' : 'upcoming';
+  const e = item.endsAt ? toDate(item.endsAt).getTime() : s;
+  if (e <= n) return 'past';
+  if (s <= n) return 'live';
+  return 'upcoming';
+}
+/** True inside the Join window: 10 min before start → end, for items with a Zoom link. */
+function isJoinable(item, now = new Date()) {
+  if (!item.zoomUrl || item.allDay || item.status === 'cancelled' || item.status === 'tbd') return false;
+  const n = toDate(now).getTime(),
+    s = toDate(item.startsAt).getTime(),
+    e = item.endsAt ? toDate(item.endsAt).getTime() : s;
+  return n >= s - JOIN_WINDOW_MS && n < e;
+}
+/** "today" | "tomorrow" | "in 3 days" when the item starts within COUNTDOWN_DAYS; otherwise null. */
+function countdown(item, now = new Date(), zone = SCHOOL_ZONE) {
+  const today = dayKey(now, zone),
+    day = dayKey(item.startsAt, zone);
+  if (day < today) return null;
+  const days = Math.round((keyToDate(day) - keyToDate(today)) / 86400000);
+  if (days >= COUNTDOWN_DAYS) return null;
+  return days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`;
+}
+
+/* ── Order, groups, overlaps ────────────────────────────────── */
+const rank = it => it.kind === 'sprint' ? 0 : it.status === 'tbd' ? 3 : it.allDay ? 1 : 2;
+/** Day, then: sprint edges → all-day → timed by start → Time TBD last. */
+function sortItems(items, zone = SCHOOL_ZONE) {
+  return [...items].sort((a, b) => {
+    const ka = dayKey(a.startsAt, zone),
+      kb = dayKey(b.startsAt, zone);
+    if (ka !== kb) return ka < kb ? -1 : 1;
+    const r = rank(a) - rank(b);
+    if (r) return r;
+    const d = toDate(a.startsAt) - toDate(b.startsAt);
+    if (d) return d;
+    return String(a.title || '').localeCompare(String(b.title || ''));
+  });
+}
+/** [{ key, isToday, dividers: sprint items, items: everything else }] in day order. */
+function groupByDay(items, {
+  zone = SCHOOL_ZONE,
+  now = new Date()
+} = {}) {
+  const today = dayKey(now, zone);
+  const map = new Map();
+  for (const it of sortItems(items, zone)) {
+    const key = dayKey(it.startsAt, zone);
+    if (!map.has(key)) map.set(key, {
+      key,
+      isToday: key === today,
+      dividers: [],
+      items: []
+    });
+    (it.kind === 'sprint' ? map.get(key).dividers : map.get(key).items).push(it);
+  }
+  return [...map.values()];
+}
+/** Map id → the other timed items it overlaps with (deadlines, sprint edges, cancelled and TBD never overlap). */
+function findOverlaps(items) {
+  const timed = items.filter(it => !it.allDay && it.endsAt && it.kind !== 'sprint' && it.kind !== 'deadline' && it.status !== 'cancelled' && it.status !== 'tbd');
+  const out = new Map();
+  const add = (a, b) => {
+    if (!out.has(a.id)) out.set(a.id, []);
+    out.get(a.id).push(b);
+  };
+  for (let i = 0; i < timed.length; i++) for (let j = i + 1; j < timed.length; j++) {
+    const a = timed[i],
+      b = timed[j];
+    if (toDate(a.startsAt) < toDate(b.endsAt) && toDate(b.startsAt) < toDate(a.endsAt)) {
+      add(a, b);
+      add(b, a);
+    }
+  }
+  return out;
+}
+/** Where the "Now" line sits in a day's sorted items: before the first timed item that hasn't ended; -1 when the day has no timed items. */
+function nowIndex(dayItems, now = new Date()) {
+  const n = toDate(now).getTime();
+  let idx = -1,
+    timed = false;
+  for (let i = 0; i < dayItems.length; i++) {
+    const it = dayItems[i];
+    if (it.allDay || it.status === 'tbd' || it.kind === 'sprint') continue;
+    timed = true;
+    const e = it.endsAt ? toDate(it.endsAt).getTime() : toDate(it.startsAt).getTime();
+    if (e > n) {
+      idx = i;
+      break;
+    }
+  }
+  if (!timed) return -1;
+  return idx === -1 ? dayItems.length : idx;
+}
+/** First non-sprint item that starts after `now` (for "Next up" in empty states). */
+function nextUp(items, now = new Date()) {
+  const n = toDate(now).getTime();
+  return sortItems(items).find(it => it.kind !== 'sprint' && it.status !== 'cancelled' && toDate(it.startsAt).getTime() > n) || null;
+}
+/** Compact card: today's group, or the next day with something ("peek"), or nothing. */
+function todayOrPeek(items, now = new Date(), zone = SCHOOL_ZONE) {
+  const today = dayKey(now, zone);
+  const groups = groupByDay(items, {
+    zone,
+    now
+  });
+  const td = groups.find(g => g.key === today);
+  if (td && td.items.length) return {
+    mode: 'today',
+    day: td
+  };
+  const next = groups.find(g => g.key > today && g.items.length);
+  if (next) return {
+    mode: 'peek',
+    day: next,
+    todayDividers: td ? td.dividers : []
+  };
+  return {
+    mode: 'none',
+    day: null,
+    todayDividers: td ? td.dividers : []
+  };
+}
+
+/* ── Formatters (viewer's zone unless told otherwise) ───────── */
+function fmtTime(when, zone = SCHOOL_ZONE) {
+  return fmt(zone, {
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(toDate(when));
+}
+/** "3:00 – 3:45 PM" (period shown once when both sides share it). */
+function fmtTimeRange(item, zone = SCHOOL_ZONE) {
+  const a = fmtTime(item.startsAt, zone);
+  if (!item.endsAt) return a;
+  const b = fmtTime(item.endsAt, zone);
+  const [at, ap] = a.split(' '),
+    [, bp] = b.split(' ');
+  return ap === bp ? `${at} – ${b}` : `${a} – ${b}`;
+}
+/** "45 min" · "1 h 5 min" · "2 h"; null without an end. */
+function fmtDuration(item) {
+  if (!item.endsAt || item.allDay) return null;
+  const mins = Math.round((toDate(item.endsAt) - toDate(item.startsAt)) / 60000);
+  if (mins <= 0) return null;
+  const h = Math.floor(mins / 60),
+    m = mins % 60;
+  return h ? m ? `${h} h ${m} min` : `${h} h` : `${m} min`;
+}
+/** ISO 8601 duration for <time datetime>: "PT45M", "PT1H5M". */
+function isoDuration(item) {
+  if (!item.endsAt) return null;
+  const mins = Math.round((toDate(item.endsAt) - toDate(item.startsAt)) / 60000);
+  const h = Math.floor(mins / 60),
+    m = mins % 60;
+  return `PT${h ? `${h}H` : ''}${m || !h ? `${m}M` : ''}`;
+}
+/** { title: 'Today' | 'Tomorrow' | 'Yesterday' | 'Thursday', date: 'Tue, Oct 20' | 'Oct 22' } */
+function fmtDayLabel(key, now = new Date(), zone = SCHOOL_ZONE) {
+  const today = dayKey(now, zone);
+  const d = keyToDate(key);
+  const rel = key === today ? 'Today' : key === shiftKey(today, 1) ? 'Tomorrow' : key === shiftKey(today, -1) ? 'Yesterday' : null;
+  if (rel) return {
+    title: rel,
+    date: fmt('UTC', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    }).format(d),
+    isToday: key === today
+  };
+  return {
+    title: fmt('UTC', {
+      weekday: 'long'
+    }).format(d),
+    date: fmt('UTC', {
+      month: 'short',
+      day: 'numeric'
+    }).format(d),
+    isToday: false
+  };
+}
+/** { title: 'This week' | 'Next week' | 'Last week' | null, range: 'Oct 19 – 25' | 'Oct 26 – Nov 1' | 'Dec 28 – Jan 3, 2027' } */
+function fmtWeekLabel(keys, now = new Date(), zone = SCHOOL_ZONE) {
+  const thisMon = weekKeys(dayKey(now, zone))[0];
+  const title = keys[0] === thisMon ? 'This week' : keys[0] === shiftKey(thisMon, 7) ? 'Next week' : keys[0] === shiftKey(thisMon, -7) ? 'Last week' : null;
+  const a = keyToDate(keys[0]),
+    b = keyToDate(keys[6]);
+  const md = fmt('UTC', {
+    month: 'short',
+    day: 'numeric'
+  });
+  const sameMonth = a.getUTCMonth() === b.getUTCMonth();
+  const year = b.getUTCFullYear() !== keyToDate(dayKey(now, zone)).getUTCFullYear() ? `, ${b.getUTCFullYear()}` : '';
+  const range = sameMonth ? `${md.format(a)} – ${b.getUTCDate()}${year}` : `${md.format(a)} – ${md.format(b)}${year}`;
+  return {
+    title,
+    range
+  };
+}
+/** Short zone label: "PT", "ET", "GMT+5:30", "CET". */
+function zoneLabel(zone, when = new Date()) {
+  const part = fmt(zone, {
+    timeZoneName: 'short'
+  }).formatToParts(toDate(when)).find(p => p.type === 'timeZoneName');
+  const v = part ? part.value : zone;
+  return /^[PMCEAH][SD]T$/.test(v) ? `${v[0]}T` : v;
+}
+/** True when two zones have different UTC offsets at `when` (names alone would call PDT ≠ PST a difference). */
+function zoneDiffers(zoneA, zoneB, when = new Date()) {
+  if (zoneA === zoneB) return false;
+  const off = z => {
+    const p = fmt(z, {
+      timeZoneName: 'longOffset'
+    }).formatToParts(toDate(when)).find(x => x.type === 'timeZoneName');
+    return p ? p.value : z;
+  };
+  return off(zoneA) !== off(zoneB);
+}
+/** The viewer's IANA zone. */
+function viewerZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || SCHOOL_ZONE;
+  } catch {
+    return SCHOOL_ZONE;
+  }
+}
+
+/** Ticking clock (30s default) so Live / Join / the Now line move without a reload. */
+function useNow(ms = 30000, fixed) {
+  const fixedMs = fixed ? toDate(fixed).getTime() : null;
+  const [now, setNow] = React.useState(() => fixedMs != null ? new Date(fixedMs) : new Date());
+  React.useEffect(() => {
+    if (fixedMs != null) {
+      setNow(new Date(fixedMs));
+      return undefined;
+    }
+    const t = setInterval(() => setNow(new Date()), ms);
+    return () => clearInterval(t);
+  }, [ms, fixedMs]);
+  return fixedMs != null && now.getTime() !== fixedMs ? new Date(fixedMs) : now;
+}
+const ScheduleModel = {
+  kinds: SCHEDULE_KINDS,
+  kindMeta,
+  dayKey,
+  shiftKey,
+  weekKeys,
+  statusOf,
+  isJoinable,
+  countdown,
+  sortItems,
+  groupByDay,
+  findOverlaps,
+  nowIndex,
+  nextUp,
+  todayOrPeek,
+  fmtTime,
+  fmtTimeRange,
+  fmtDuration,
+  isoDuration,
+  fmtDayLabel,
+  fmtWeekLabel,
+  zoneLabel,
+  zoneDiffers,
+  viewerZone,
+  SCHOOL_ZONE,
+  JOIN_WINDOW_MS,
+  COUNTDOWN_DAYS
+};
+Object.assign(__ds_scope, { SCHOOL_ZONE, JOIN_WINDOW_MS, COUNTDOWN_DAYS, SCHEDULE_KINDS, kindMeta, dayKey, keyToDate, shiftKey, weekKeys, statusOf, isJoinable, countdown, sortItems, groupByDay, findOverlaps, nowIndex, nextUp, todayOrPeek, fmtTime, fmtTimeRange, fmtDuration, isoDuration, fmtDayLabel, fmtWeekLabel, zoneLabel, zoneDiffers, viewerZone, useNow, ScheduleModel });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/schedule/ScheduleModel.jsx", error: String((e && e.message) || e) }); }
+
+// components/domain/TeamMeetingsModel.jsx
+try { (() => {
+const {
+  dayKey,
+  fmtTime,
+  fmtTimeRange,
+  zoneLabel
+} = __ds_scope.ScheduleModel;
+
+/**
+ * Pure model for a team's own one-off meetings (Edit Project → Meetings tab, the project-page
+ * "Team meetings" card). No UI. Ports to `features/project/teamMeetingsModel.ts`.
+ * Data shape: { id, projectId, title, startsAt (ISO instant), durationMinutes, location, zoomUrl, note, createdBy, updatedAt }
+ */
+const TEAM_MEETING_TITLE_MAX = 80;
+const TEAM_MEETING_NOTE_MAX = 500;
+const TEAM_MEETING_DEFAULT_DURATION = 60;
+/** 15-minute steps to 2 h, then the common long slots. */
+const TEAM_MEETING_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240];
+const toDate = v => v instanceof Date ? v : new Date(v);
+
+/** "45 min" · "1 h" · "1 h 15 min" */
+function fmtMinutes(mins) {
+  const h = Math.floor(mins / 60),
+    m = mins % 60;
+  return h ? m ? `${h} h ${m} min` : `${h} h` : `${m} min`;
+}
+/** ISO 8601 duration for <time datetime>: "PT1H15M" */
+function isoMinutes(mins) {
+  const h = Math.floor(mins / 60),
+    m = mins % 60;
+  return `PT${h ? `${h}H` : ''}${m || !h ? `${m}M` : ''}`;
+}
+function endsAtOf(m) {
+  return new Date(toDate(m.startsAt).getTime() + (Number(m.durationMinutes) || 0) * 60000).toISOString();
+}
+function isLive(m, now = new Date()) {
+  const n = toDate(now).getTime();
+  return toDate(m.startsAt).getTime() <= n && n < toDate(endsAtOf(m)).getTime();
+}
+function isPast(m, now = new Date()) {
+  return toDate(endsAtOf(m)).getTime() <= toDate(now).getTime();
+}
+
+/** { upcoming: soonest first (a meeting in progress counts as upcoming), past: most recent first } */
+function splitMeetings(meetings = [], now = new Date()) {
+  const upcoming = [],
+    past = [];
+  for (const m of meetings) (isPast(m, now) ? past : upcoming).push(m);
+  upcoming.sort((a, b) => toDate(a.startsAt) - toDate(b.startsAt) || String(a.title || '').localeCompare(String(b.title || '')));
+  past.sort((a, b) => toDate(b.startsAt) - toDate(a.startsAt));
+  return {
+    upcoming,
+    past
+  };
+}
+
+/** TeamMeeting → ScheduleItemData (kind 'meeting') for ScheduleItem rows and the schedule feed. `people` maps createdBy → person. */
+function toScheduleItem(m, {
+  teamName,
+  people = {},
+  href
+} = {}) {
+  const host = m.createdBy && typeof m.createdBy === 'object' ? m.createdBy : people[m.createdBy];
+  return {
+    id: m.id,
+    kind: 'meeting',
+    title: m.title,
+    startsAt: toDate(m.startsAt).toISOString(),
+    endsAt: endsAtOf(m),
+    allDay: false,
+    scope: 'team',
+    teamName,
+    projectId: m.projectId,
+    location: m.location || undefined,
+    zoomUrl: m.zoomUrl || undefined,
+    note: m.note || undefined,
+    host: host ? {
+      id: host.id,
+      name: host.name,
+      avatarUrl: host.avatarUrl,
+      you: host.you,
+      role: 'Organizer'
+    } : undefined,
+    href
+  };
+}
+
+/* ── Wall clock ↔ instant (the viewer's zone; two-pass offset correction, DST-safe) ─────────── */
+const wallParts = (d, zone) => {
+  const p = new Intl.DateTimeFormat('en-US', {
+    timeZone: zone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).formatToParts(d);
+  const g = t => p.find(x => x.type === t).value;
+  return {
+    date: `${g('year')}-${g('month')}-${g('day')}`,
+    time: `${g('hour') === '24' ? '00' : g('hour')}:${g('minute')}`
+  };
+};
+/** 'YYYY-MM-DD' + 'HH:MM' read on `zone`'s clock → Date. */
+function zonedToInstant(date, time, zone = __ds_scope.SCHOOL_ZONE) {
+  const [y, mo, d] = date.split('-').map(Number),
+    [h, mi] = time.split(':').map(Number);
+  const wall = Date.UTC(y, mo - 1, d, h, mi);
+  let t = wall;
+  for (let i = 0; i < 2; i++) {
+    const p = wallParts(new Date(t), zone);
+    const [py, pm, pd] = p.date.split('-').map(Number),
+      [ph, pmi] = p.time.split(':').map(Number);
+    t += wall - Date.UTC(py, pm - 1, pd, ph, pmi);
+  }
+  return new Date(t);
+}
+/** Date/ISO → { date: 'YYYY-MM-DD', time: 'HH:MM' } on `zone`'s clock. */
+function instantToZoned(when, zone = __ds_scope.SCHOOL_ZONE) {
+  return wallParts(toDate(when), zone);
+}
+
+/** "3:00 PM PT" (+ " · Wed" when the campus day differs) for a date + time typed on the viewer's clock; null until both are set. */
+function campusTimeOf(date, time, zone, schoolZone = __ds_scope.SCHOOL_ZONE) {
+  if (!date || !time) return null;
+  const inst = zonedToInstant(date, time, zone);
+  const sameDay = dayKey(inst, zone) === dayKey(inst, schoolZone);
+  const wd = new Intl.DateTimeFormat('en-US', {
+    timeZone: schoolZone,
+    weekday: 'short'
+  }).format(inst);
+  return `${fmtTime(inst, schoolZone)} ${zoneLabel(schoolZone, inst)}${sameDay ? '' : ` · ${wd}`}`;
+}
+
+/** { day: 'Tue, Oct 20' (adds the year when it isn't this one), start: '3:00', end: '4:00 PM', range: '3:00 – 4:00 PM' } */
+function fmtMeetingWhen(m, zone = __ds_scope.SCHOOL_ZONE, now = new Date()) {
+  const s = toDate(m.startsAt),
+    e = toDate(endsAtOf(m));
+  const yr = d => new Intl.DateTimeFormat('en-US', {
+    timeZone: zone,
+    year: 'numeric'
+  }).format(d);
+  const day = new Intl.DateTimeFormat('en-US', {
+    timeZone: zone,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    ...(yr(s) === yr(toDate(now)) ? {} : {
+      year: 'numeric'
+    })
+  }).format(s);
+  const a = fmtTime(s, zone),
+    b = fmtTime(e, zone);
+  const [at, ap] = a.split(' '),
+    [, bp] = b.split(' ');
+  return {
+    day,
+    start: ap === bp ? at : a,
+    end: b,
+    range: fmtTimeRange({
+      startsAt: s,
+      endsAt: e
+    }, zone)
+  };
+}
+
+/* ── Form draft + validation ───────────────────────────────────────────────────────────────── */
+function draftFrom(m, zone = __ds_scope.SCHOOL_ZONE) {
+  if (!m) return {
+    title: '',
+    date: '',
+    time: '',
+    durationMinutes: TEAM_MEETING_DEFAULT_DURATION,
+    location: '',
+    zoomUrl: '',
+    note: ''
+  };
+  const z = instantToZoned(m.startsAt, zone);
+  return {
+    title: m.title || '',
+    date: z.date,
+    time: z.time,
+    durationMinutes: Number(m.durationMinutes) || TEAM_MEETING_DEFAULT_DURATION,
+    location: m.location || '',
+    zoomUrl: m.zoomUrl || '',
+    note: m.note || ''
+  };
+}
+function isHttpUrl(s) {
+  try {
+    const u = new URL(s);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+/**
+ * Validate a draft typed on the viewer's clock.
+ * → { valid, errors: { title?, date?, time?, zoomUrl?, note? }, value: API payload { title, startsAt, durationMinutes, location, zoomUrl, note } | null }
+ * `creating` adds the no-past-start rule; edits may keep (or move) a time that has passed.
+ */
+function validateTeamMeeting(draft, {
+  now = new Date(),
+  zone = __ds_scope.SCHOOL_ZONE,
+  creating = true
+} = {}) {
+  const errors = {};
+  const title = (draft.title || '').trim();
+  if (!title) errors.title = 'Give the meeting a title.';else if (title.length > TEAM_MEETING_TITLE_MAX) errors.title = `Keep it under ${TEAM_MEETING_TITLE_MAX} characters.`;
+  if (!draft.date) errors.date = 'Pick a date.';
+  if (!draft.time) errors.time = 'Pick a start time.';
+  let startsAt = null;
+  if (draft.date && draft.time) {
+    startsAt = zonedToInstant(draft.date, draft.time, zone);
+    if (creating && startsAt.getTime() < toDate(now).getTime()) errors.time = 'That time has already passed.';
+  }
+  const zoomUrl = (draft.zoomUrl || '').trim();
+  if (zoomUrl && !isHttpUrl(zoomUrl)) errors.zoomUrl = 'Enter the full link, like https://ucsc.zoom.us/j/…';
+  const note = (draft.note || '').trim();
+  if (note.length > TEAM_MEETING_NOTE_MAX) errors.note = `Keep the note under ${TEAM_MEETING_NOTE_MAX} characters.`;
+  const valid = Object.keys(errors).length === 0;
+  return {
+    valid,
+    errors,
+    value: valid ? {
+      title,
+      startsAt: startsAt.toISOString(),
+      durationMinutes: Number(draft.durationMinutes) || TEAM_MEETING_DEFAULT_DURATION,
+      location: (draft.location || '').trim() || null,
+      zoomUrl: zoomUrl || null,
+      note: note || null
+    } : null
+  };
+}
+/** Should the project page render the card? Members see it once a meeting exists; the Product Owner also gets the quiet "Add one" line. */
+function showTeamMeetingsCard(meetings = [], {
+  canManage = false,
+  status = 'ready'
+} = {}) {
+  return status !== 'ready' || meetings.length > 0 || canManage;
+}
+const TeamMeetingsModel = {
+  TEAM_MEETING_TITLE_MAX,
+  TEAM_MEETING_NOTE_MAX,
+  TEAM_MEETING_DEFAULT_DURATION,
+  TEAM_MEETING_DURATIONS,
+  fmtMinutes,
+  isoMinutes,
+  endsAtOf,
+  isLive,
+  isPast,
+  splitMeetings,
+  toScheduleItem,
+  zonedToInstant,
+  instantToZoned,
+  campusTimeOf,
+  fmtMeetingWhen,
+  draftFrom,
+  isHttpUrl,
+  validateTeamMeeting,
+  showTeamMeetingsCard
+};
+Object.assign(__ds_scope, { TEAM_MEETING_TITLE_MAX, TEAM_MEETING_NOTE_MAX, TEAM_MEETING_DEFAULT_DURATION, TEAM_MEETING_DURATIONS, fmtMinutes, isoMinutes, endsAtOf, isLive, isPast, splitMeetings, toScheduleItem, zonedToInstant, instantToZoned, campusTimeOf, fmtMeetingWhen, draftFrom, isHttpUrl, validateTeamMeeting, showTeamMeetingsCard, TeamMeetingsModel });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/TeamMeetingsModel.jsx", error: String((e && e.message) || e) }); }
+
+// components/domain/TeamMeetingForm.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const {
+  zoneDiffers,
+  viewerZone,
+  dayKey
+} = __ds_scope.ScheduleModel;
+const {
+  draftFrom,
+  validateTeamMeeting,
+  campusTimeOf,
+  fmtMinutes
+} = __ds_scope.TeamMeetingsModel;
+const ORDER = ['title', 'date', 'time', 'zoomUrl', 'note'];
+
+/**
+ * Add / edit one team meeting. Lives inline in the Edit Project → Meetings tab: above the list for a
+ * new meeting, in place of the row it edits. Times are typed on the viewer's clock (like the Final
+ * Reviews time fields); when the viewer's zone differs from campus the campus time appears under the
+ * time field. Validates on submit, focuses the first problem; Esc cancels and stays inside the form
+ * (the modal doesn't close). A save error (`error`) renders inline and keeps what was typed.
+ */
+function TeamMeetingForm({
+  mode = 'create',
+  meeting = null,
+  now,
+  zone,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  saving = false,
+  error = null,
+  onSubmit,
+  onCancel,
+  className = ''
+}) {
+  const vz = zone || viewerZone();
+  const [draft, setDraft] = React.useState(() => draftFrom(meeting, vz));
+  const [errors, setErrors] = React.useState({});
+  const uid = React.useId();
+  const rootRef = React.useRef(null);
+  React.useEffect(() => {
+    const el = rootRef.current && rootRef.current.querySelector('input[name="title"]');
+    if (el) el.focus();
+  }, []);
+  const nowD = now || new Date();
+  const creating = mode === 'create';
+  const differs = zoneDiffers(vz, schoolZone, nowD);
+  const campus = differs ? campusTimeOf(draft.date, draft.time, vz, schoolZone) : null;
+  const f = k => `${uid}-${k}`;
+  const set = k => e => {
+    const v = e && e.target ? e.target.value : e;
+    setDraft(d => ({
+      ...d,
+      [k]: v
+    }));
+    if (errors[k]) setErrors(er => {
+      const n = {
+        ...er
+      };
+      delete n[k];
+      return n;
+    });
+  };
+  const submit = e => {
+    e.preventDefault();
+    if (saving) return;
+    const r = validateTeamMeeting(draft, {
+      now: nowD,
+      zone: vz,
+      creating
+    });
+    setErrors(r.errors);
+    if (!r.valid) {
+      const first = ORDER.find(k => r.errors[k]);
+      const el = rootRef.current && rootRef.current.querySelector(`[name="${first}"]`);
+      if (el) el.focus();
+      return;
+    }
+    if (onSubmit) onSubmit(r.value, draft);
+  };
+  const onKeyDown = e => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      e.preventDefault();
+      if (!saving && onCancel) onCancel();
+    }
+  };
+  const control = (k, extra) => ({
+    id: f(k),
+    name: k,
+    className: 'gt-input',
+    value: draft[k],
+    onChange: set(k),
+    disabled: saving,
+    'aria-invalid': errors[k] ? true : undefined,
+    'aria-describedby': errors[k] ? f(`${k}-err`) : extra && extra.help ? f(`${k}-help`) : undefined
+  });
+  const field = (k, label, node, {
+    required,
+    help
+  } = {}) => /*#__PURE__*/React.createElement("div", {
+    className: ['gt-field', errors[k] ? 'gt-field--error' : ''].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "gt-field__label",
+    htmlFor: f(k)
+  }, label, required && /*#__PURE__*/React.createElement("span", {
+    className: "gt-field__required",
+    "aria-hidden": "true"
+  }, " *")), node, errors[k] ? /*#__PURE__*/React.createElement("p", {
+    className: "gt-field__error",
+    id: f(`${k}-err`)
+  }, errors[k]) : help ? /*#__PURE__*/React.createElement("p", {
+    className: "gt-field__help gt-tmform__campus",
+    id: f(`${k}-help`)
+  }, help) : null);
+  return /*#__PURE__*/React.createElement("form", {
+    ref: rootRef,
+    className: ['gt-tmform', className].filter(Boolean).join(' '),
+    onSubmit: submit,
+    onKeyDown: onKeyDown,
+    "aria-labelledby": f('h'),
+    noValidate: true
+  }, /*#__PURE__*/React.createElement("h4", {
+    id: f('h'),
+    className: "gt-tmform__title"
+  }, creating ? 'New meeting' : 'Edit meeting'), /*#__PURE__*/React.createElement("div", {
+    className: ['gt-field', errors.title ? 'gt-field--error' : ''].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "gt-field__label",
+    htmlFor: f('title')
+  }, "Title", /*#__PURE__*/React.createElement("span", {
+    className: "gt-field__required",
+    "aria-hidden": "true"
+  }, " *")), /*#__PURE__*/React.createElement("input", _extends({}, control('title'), {
+    type: "text",
+    maxLength: __ds_scope.TEAM_MEETING_TITLE_MAX,
+    placeholder: "Sprint 3 planning",
+    autoComplete: "off"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-field__footer"
+  }, errors.title ? /*#__PURE__*/React.createElement("p", {
+    className: "gt-field__error",
+    id: f('title-err')
+  }, errors.title) : /*#__PURE__*/React.createElement("span", null), /*#__PURE__*/React.createElement("span", {
+    className: "gt-field__count"
+  }, draft.title.length, "/", __ds_scope.TEAM_MEETING_TITLE_MAX))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-tmform__grid gt-tmform__grid--when"
+  }, field('date', 'Date', /*#__PURE__*/React.createElement("input", _extends({}, control('date'), {
+    type: "date",
+    min: creating ? dayKey(nowD, vz) : undefined
+  })), {
+    required: true
+  }), field('time', 'Start time', /*#__PURE__*/React.createElement("input", _extends({}, control('time', {
+    help: campus
+  }), {
+    type: "time",
+    step: 900
+  })), {
+    required: true,
+    help: campus ? `${campus} on campus` : null
+  }), /*#__PURE__*/React.createElement(__ds_scope.Select, {
+    id: f('durationMinutes'),
+    name: "durationMinutes",
+    label: "Duration",
+    value: String(draft.durationMinutes),
+    onChange: set('durationMinutes'),
+    disabled: saving,
+    options: __ds_scope.TEAM_MEETING_DURATIONS.map(d => ({
+      value: String(d),
+      label: fmtMinutes(d)
+    }))
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-tmform__grid gt-tmform__grid--place"
+  }, field('location', 'Room', /*#__PURE__*/React.createElement("input", _extends({}, control('location'), {
+    type: "text",
+    placeholder: "E2 room 180",
+    autoComplete: "off"
+  }))), field('zoomUrl', 'Zoom link', /*#__PURE__*/React.createElement("input", _extends({}, control('zoomUrl'), {
+    type: "url",
+    inputMode: "url",
+    placeholder: "https://ucsc.zoom.us/j/\u2026",
+    autoComplete: "off",
+    spellCheck: false
+  })))), /*#__PURE__*/React.createElement(__ds_scope.Textarea, {
+    id: f('note'),
+    name: "note",
+    label: "Note",
+    rows: 2,
+    value: draft.note,
+    onChange: set('note'),
+    maxLength: __ds_scope.TEAM_MEETING_NOTE_MAX,
+    showCount: true,
+    placeholder: "Anything the team should bring or read first",
+    error: errors.note,
+    disabled: saving
+  }), error && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
+    tone: "error"
+  }, error), /*#__PURE__*/React.createElement("div", {
+    className: "gt-tmform__foot"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    type: "button",
+    variant: "secondary",
+    size: "sm",
+    onClick: onCancel,
+    disabled: saving
+  }, "Cancel"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    type: "submit",
+    size: "sm",
+    loading: saving
+  }, creating ? 'Add meeting' : 'Save changes')));
+}
+Object.assign(__ds_scope, { TeamMeetingForm });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/TeamMeetingForm.jsx", error: String((e && e.message) || e) }); }
+
+// components/schedule/ScheduleDayHeader.jsx
+try { (() => {
+/**
+ * Day heading — "Today · Tue, Oct 20" / "Thursday · Oct 22". Sticky inside the agenda.
+ * Pass `dayKey` to derive the label, or `title` + `date` for custom headings ("Next · Monday, Oct 26").
+ */
+function ScheduleDayHeader({
+  dayKey,
+  now,
+  zone = __ds_scope.SCHOOL_ZONE,
+  title,
+  date,
+  isToday,
+  aside,
+  id,
+  as: Tag = 'h3',
+  className = ''
+}) {
+  const lbl = dayKey ? __ds_scope.fmtDayLabel(dayKey, now || new Date(), zone) : {
+    title,
+    date,
+    isToday: !!isToday
+  };
+  const today = isToday !== undefined ? isToday : lbl.isToday;
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-sched-day', today ? 'gt-sched-day--today' : '', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement(Tag, {
+    className: "gt-sched-day__title",
+    id: id
+  }, title !== undefined ? title : lbl.title), (date !== undefined ? date : lbl.date) && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-day__date"
+  }, date !== undefined ? date : lbl.date), aside && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-day__aside"
+  }, aside));
+}
+Object.assign(__ds_scope, { ScheduleDayHeader });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/schedule/ScheduleDayHeader.jsx", error: String((e && e.message) || e) }); }
+
+// components/schedule/ScheduleItem.jsx
+try { (() => {
+/* Lucide paths (24 viewBox, stroke 2, round caps) — the production app imports lucide-react. */
+const PATHS = {
+  video: '<path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>',
+  'clipboard-check': '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  'book-open': '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  'door-open': '<path d="M13 4h3a2 2 0 0 1 2 2v14"/><path d="M2 20h3"/><path d="M13 20h9"/><path d="M10 12v.01"/><path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.562Z"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  'calendar-days': '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/>',
+  'calendar-plus': '<path d="M8 2v4"/><path d="M16 2v4"/><path d="M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"/><path d="M3 10h18"/><path d="M16 19h6"/><path d="M19 16v6"/>',
+  'chevron-left': '<path d="m15 18-6-6 6-6"/>',
+  'chevron-right': '<path d="m9 18 6-6-6-6"/>',
+  'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+  'map-pin': '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  'refresh-cw': '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  'circle-alert': '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>',
+  'arrow-right': '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>'
+};
+
+/** Lucide-shaped inline icon used across the schedule family. */
+function ScheduleIcon({
+  name,
+  size = 16,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": "true",
+    focusable: "false",
+    className: className,
+    dangerouslySetInnerHTML: {
+      __html: PATHS[name] || PATHS['calendar-days']
+    }
+  });
+}
+const ATTENDANCE = {
+  present: ['success', 'Present'],
+  late: ['warning', 'Late'],
+  absent: ['error', 'Absent'],
+  unmarked: ['neutral', 'Not marked']
+};
+
+/**
+ * One schedule row: time cell · kind tile · title/meta/people · actions.
+ * Same component for the compact card and the agenda; `lens` only changes which actions appear.
+ */
+function ScheduleItem({
+  item,
+  variant = 'agenda',
+  lens = 'student',
+  now,
+  zone = __ds_scope.SCHOOL_ZONE,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  showSchoolTime = false,
+  overlaps = [],
+  expandable,
+  expanded = false,
+  onToggle,
+  onJoin,
+  onMarkAttendance,
+  onSetTime,
+  onOpen,
+  className = ''
+}) {
+  const nowD = now || new Date();
+  const meta = __ds_scope.kindMeta(item.kind);
+  const status = __ds_scope.statusOf(item, nowD, zone);
+  const joinable = __ds_scope.isJoinable(item, nowD);
+  const compact = variant === 'compact';
+  const marker = item.kind === 'deadline';
+  const isTbd = status === 'tbd';
+  const isAllDay = !!item.allDay && !isTbd;
+  const staff = lens !== 'student';
+  const title = item.title || meta.label;
+  const kindInTitle = title.toLowerCase().includes(meta.label.toLowerCase());
+  const cd = item.kind === 'final_review' && status === 'upcoming' ? __ds_scope.countdown(item, nowD, zone) : null;
+  const schoolTitle = showSchoolTime && !isAllDay && !isTbd ? `${__ds_scope.fmtTimeRange(item, schoolZone)} ${__ds_scope.zoneLabel(schoolZone, item.startsAt)}` : undefined;
+  const dur = __ds_scope.fmtDuration(item);
+  const canExpand = expandable !== undefined ? expandable : !compact && item.kind === 'ta_meeting' && status !== 'cancelled' && !isTbd;
+  const panelId = `gt-sched-panel-${item.id}`;
+
+  // time strings
+  const startFull = __ds_scope.fmtTime(item.startsAt, zone);
+  let startShort = startFull,
+    endStr = null;
+  if (item.endsAt && !isAllDay) {
+    endStr = __ds_scope.fmtTime(item.endsAt, zone);
+    const [at, ap] = startFull.split(' '),
+      [, bp] = endStr.split(' ');
+    if (ap === bp) startShort = at;
+  }
+
+  // context line
+  const parts = [];
+  const primary = item.teamName || (item.kind === 'meeting' && item.scope === 'class' ? 'Whole class' : null);
+  if (primary) parts.push({
+    text: primary,
+    primary: true
+  });
+  if (item.classLabel && item.classLabel !== primary) parts.push({
+    text: item.classLabel
+  });
+  if (item.location) parts.push({
+    text: item.location,
+    place: 'map-pin'
+  });else if (item.zoomUrl && item.kind !== 'ta_meeting') parts.push({
+    text: item.kind === 'final_review' ? 'Shared Zoom room' : 'Zoom',
+    place: 'video'
+  });
+  if (item.recurrenceLabel) parts.push({
+    text: item.recurrenceLabel
+  });
+  if (item.meetingsPerWeek > 1 && item.meetingIndex) parts.push({
+    text: `Meeting ${item.meetingIndex} of ${item.meetingsPerWeek} this week`
+  });
+  if (staff && item.kind === 'ta_meeting' && status === 'past' && item.attendance && typeof item.attendance === 'object') parts.push({
+    text: `${item.attendance.present}/${item.attendance.total} present`
+  });
+
+  // people
+  const people = [];
+  if (item.host && item.kind !== 'final_review') people.push({
+    ...item.host,
+    role: item.host.role || (item.kind === 'meeting' ? 'Organizer' : item.kind === 'ta_meeting' ? 'TA' : undefined)
+  });
+  (item.reviewers || []).forEach(r => people.push({
+    ...r,
+    role: r.slot === 'home' ? 'Home TA' : 'Review TA'
+  }));
+  const personName = p => p.you ? 'You' : p.name;
+  const att = item.kind === 'ta_meeting' && status === 'past' && typeof item.attendance === 'string' ? ATTENDANCE[item.attendance] : null;
+
+  // actions
+  const actions = [];
+  if (joinable) {
+    actions.push(/*#__PURE__*/React.createElement("a", {
+      key: "join",
+      className: "gt-sched-item__action gt-sched-item__action--primary",
+      href: item.zoomUrl,
+      target: "_blank",
+      rel: "noreferrer",
+      onClick: onJoin ? () => onJoin(item) : undefined
+    }, /*#__PURE__*/React.createElement(ScheduleIcon, {
+      name: "video",
+      size: 15
+    }), "Join Zoom"));
+  } else if (!compact && item.zoomUrl && status === 'upcoming') {
+    actions.push(/*#__PURE__*/React.createElement("a", {
+      key: "zoom",
+      className: "gt-sched-item__action",
+      href: item.zoomUrl,
+      target: "_blank",
+      rel: "noreferrer",
+      onClick: onJoin ? () => onJoin(item) : undefined
+    }, /*#__PURE__*/React.createElement(ScheduleIcon, {
+      name: "video",
+      size: 15
+    }), "Zoom"));
+  }
+  if (staff && item.kind === 'ta_meeting' && (status === 'live' || status === 'past') && onMarkAttendance) {
+    actions.push(/*#__PURE__*/React.createElement("button", {
+      key: "mark",
+      type: "button",
+      className: "gt-sched-item__action",
+      onClick: () => onMarkAttendance(item)
+    }, "Mark attendance"));
+  }
+  if (staff && isTbd && onSetTime && item.kind !== 'deadline') {
+    actions.push(/*#__PURE__*/React.createElement("button", {
+      key: "set",
+      type: "button",
+      className: "gt-sched-item__action",
+      onClick: () => onSetTime(item)
+    }, /*#__PURE__*/React.createElement(ScheduleIcon, {
+      name: "clock",
+      size: 15
+    }), "Set time"));
+  }
+  if (canExpand) {
+    actions.push(/*#__PURE__*/React.createElement("button", {
+      key: "more",
+      type: "button",
+      className: "gt-sched-item__toggle",
+      "aria-expanded": expanded,
+      "aria-controls": panelId,
+      "aria-label": expanded ? 'Hide meeting details' : 'Show meeting details',
+      onClick: () => onToggle && onToggle(item)
+    }, /*#__PURE__*/React.createElement(ScheduleIcon, {
+      name: "chevron-down",
+      size: 16
+    })));
+  }
+  let panel = null;
+  if (canExpand && expanded) {
+    const d = __ds_scope.fmtDayLabel(__ds_scope.dayKey(item.startsAt, zone), nowD, zone);
+    const when = `${d.title === 'Today' || d.title === 'Tomorrow' || d.title === 'Yesterday' ? d.date : `${d.title.slice(0, 3)}, ${d.date}`} · ${__ds_scope.fmtTimeRange(item, zone)}`;
+    panel = /*#__PURE__*/React.createElement("div", {
+      id: panelId,
+      className: "gt-sched-item__panel"
+    }, /*#__PURE__*/React.createElement(__ds_scope.MeetingCard, {
+      team: item.teamName || title,
+      time: when,
+      zoomUrl: item.zoomUrl || undefined,
+      attendees: item.attendees || [],
+      attendance: item.attendance && typeof item.attendance === 'object' ? item.attendance : undefined,
+      status: status === 'past' ? item.attendance === 'absent' ? 'missed' : 'completed' : 'upcoming',
+      onMarkAttendance: staff && onMarkAttendance ? () => onMarkAttendance(item) : undefined
+    }));
+  }
+  const cls = ['gt-sched-item', `gt-sched-item--${item.kind}`, `gt-sched-item--${status}`, marker ? 'gt-sched-item--marker' : '', isAllDay ? 'gt-sched-item--allday' : '', overlaps.length ? 'gt-sched-item--overlap' : '', expanded ? 'gt-sched-item--expanded' : '', className].filter(Boolean).join(' ');
+  const sepBefore = i => i > 0 || !kindInTitle;
+  const overlapTitle = overlaps.length ? `Overlaps with ${overlaps.map(o => o.title).join(', ')}` : undefined;
+  return /*#__PURE__*/React.createElement("li", {
+    className: cls,
+    "aria-current": status === 'live' ? 'true' : undefined
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched-item__time"
+  }, isTbd ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__tbd"
+  }, /*#__PURE__*/React.createElement(ScheduleIcon, {
+    name: "clock",
+    size: 13
+  }), "Time TBD") : isAllDay ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__allday"
+  }, "All day") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__range",
+    title: schoolTitle
+  }, /*#__PURE__*/React.createElement("time", {
+    dateTime: item.startsAt
+  }, endStr ? startShort : startFull), endStr && /*#__PURE__*/React.createElement(React.Fragment, null, " \u2013 ", /*#__PURE__*/React.createElement("time", {
+    dateTime: item.endsAt
+  }, endStr))), /*#__PURE__*/React.createElement("time", {
+    className: "gt-sched-item__start",
+    dateTime: item.startsAt,
+    title: schoolTitle
+  }, startFull), dur ? /*#__PURE__*/React.createElement("time", {
+    className: "gt-sched-item__dur",
+    dateTime: __ds_scope.isoDuration(item)
+  }, dur) : marker ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__due"
+  }, "Due") : null)), /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__tile"
+  }, /*#__PURE__*/React.createElement(ScheduleIcon, {
+    name: meta.icon || 'calendar-days',
+    size: compact ? 14 : 16
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched-item__main"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched-item__head"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__title"
+  }, item.href ? /*#__PURE__*/React.createElement("a", {
+    href: item.href,
+    onClick: onOpen ? e => {
+      e.preventDefault();
+      onOpen(item);
+    } : undefined
+  }, title) : title), status === 'live' && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__live"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__live-dot",
+    "aria-hidden": "true"
+  }), "Live"), cd && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__countdown"
+  }, cd), att && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    tone: att[0]
+  }, att[1]), status === 'cancelled' && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    tone: "neutral"
+  }, "Cancelled"), overlaps.length > 0 && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
+    tone: "warning",
+    title: overlapTitle
+  }, "Overlaps", /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__sr"
+  }, " with ", overlaps.map(o => o.title).join(', ')))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched-item__meta"
+  }, !kindInTitle && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__kind"
+  }, meta.label), parts.map((p, i) => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: i
+  }, sepBefore(i) && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__sep",
+    "aria-hidden": "true"
+  }, "\xB7"), /*#__PURE__*/React.createElement("span", {
+    className: p.primary ? 'gt-sched-item__meta-primary' : p.place ? 'gt-sched-item__place' : undefined
+  }, p.place && /*#__PURE__*/React.createElement(ScheduleIcon, {
+    name: p.place,
+    size: 12
+  }), p.text))), compact && people.length > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__faces"
+  }, people.map((p, i) => /*#__PURE__*/React.createElement(__ds_scope.Avatar, {
+    key: i,
+    size: "xs",
+    name: p.name,
+    src: p.avatarUrl,
+    title: `${personName(p)}${p.role ? ` · ${p.role}` : ''}`
+  })))), !compact && people.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched-item__people"
+  }, people.map((p, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "gt-sched-item__person"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Avatar, {
+    size: "xs",
+    name: p.name,
+    src: p.avatarUrl
+  }), personName(p), p.role && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched-item__person-role"
+  }, "\xB7 ", p.role)))), !compact && item.note && status !== 'cancelled' && /*#__PURE__*/React.createElement("p", {
+    className: "gt-sched-item__note"
+  }, item.note), status === 'cancelled' && item.cancelReason && /*#__PURE__*/React.createElement("p", {
+    className: "gt-sched-item__reason"
+  }, item.cancelReason), compact && actions.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched-item__actions"
+  }, actions)), !compact && actions.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched-item__actions"
+  }, actions), panel);
+}
+Object.assign(__ds_scope, { ScheduleIcon, ScheduleItem });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/schedule/ScheduleItem.jsx", error: String((e && e.message) || e) }); }
+
+// components/domain/TeamMeetingsList.jsx
+try { (() => {
+const {
+  viewerZone,
+  zoneDiffers,
+  zoneLabel,
+  groupByDay,
+  fmtTimeRange
+} = __ds_scope.ScheduleModel;
+const {
+  splitMeetings,
+  isLive,
+  toScheduleItem,
+  fmtMeetingWhen,
+  fmtMinutes,
+  isoMinutes,
+  endsAtOf
+} = __ds_scope.TeamMeetingsModel;
+
+/** Ticking clock — ScheduleModel.useNow in production; a local copy keeps the kit working on an older bundle. */
+function useClock(ms = 30000, fixed) {
+  const fixedMs = fixed ? new Date(fixed).getTime() : null;
+  const [now, setNow] = React.useState(() => fixedMs != null ? new Date(fixedMs) : new Date());
+  React.useEffect(() => {
+    if (fixedMs != null) {
+      setNow(new Date(fixedMs));
+      return undefined;
+    }
+    const t = setInterval(() => setNow(new Date()), ms);
+    return () => clearInterval(t);
+  }, [ms, fixedMs]);
+  return fixedMs != null && now.getTime() !== fixedMs ? new Date(fixedMs) : now;
+}
+const useNow = __ds_scope.ScheduleModel.useNow || useClock;
+const SAVE_ERROR = 'Couldn’t save this meeting. Your changes are still here — try again.';
+const DELETE_ERROR = 'Couldn’t delete. Try again.';
+
+/**
+ * A team's one-off meetings.
+ * `variant="manage"` — the Edit Project → Meetings tab (Product Owner only): upcoming first, "Past (n)" collapsed,
+ *   Edit / Delete per row, "Add meeting" opens TeamMeetingForm above the list, Edit replaces the row with it,
+ *   Delete confirms inline. One editor at a time.
+ * `variant="card"` — the project-page "Team meetings" card body for every member: upcoming meetings as compact
+ *   ScheduleItem rows (kind meeting) grouped by day, "Past meetings (n)" collapsed. Returns a quiet "Add one" line
+ *   for the Product Owner when there are none; `showTeamMeetingsCard()` tells the page whether to render the card at all.
+ */
+function TeamMeetingsList({
+  variant = 'manage',
+  meetings = [],
+  status = 'ready',
+  now: nowProp,
+  zone,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  canManage = false,
+  teamName,
+  people = {},
+  onCreate,
+  onUpdate,
+  onDelete,
+  onRetry,
+  onManage,
+  onJoin,
+  scheduleHref = '/app/schedule',
+  maxUpcoming = 5,
+  defaultEditingId = null,
+  defaultConfirmId = null,
+  defaultPastOpen = false,
+  className = ''
+}) {
+  const now = useNow(30000, nowProp);
+  const vz = zone || viewerZone();
+  const [editing, setEditing] = React.useState(defaultEditingId); // 'new' | id | null
+  const [confirmId, setConfirmId] = React.useState(defaultConfirmId);
+  const [pastOpen, setPastOpen] = React.useState(defaultPastOpen);
+  const [busy, setBusy] = React.useState(null); // 'new' | id | `del:${id}`
+  const [errors, setErrors] = React.useState({});
+  const [announce, setAnnounce] = React.useState('');
+  const uid = React.useId();
+  const {
+    upcoming,
+    past
+  } = splitMeetings(meetings, now);
+  const differs = zoneDiffers(vz, schoolZone, now);
+  const zoneNote = differs ? `Times in ${zoneLabel(vz, now)} · campus is ${zoneLabel(schoolZone, now)}` : null;
+  const campusRange = m => differs ? `${fmtTimeRange({
+    startsAt: m.startsAt,
+    endsAt: endsAtOf(m)
+  }, schoolZone)} ${zoneLabel(schoolZone, m.startsAt)}` : undefined;
+  const run = async (key, fn, done) => {
+    setBusy(key);
+    setErrors(e => ({
+      ...e,
+      [key]: null
+    }));
+    try {
+      await fn();
+      done();
+    } catch (err) {
+      setErrors(e => ({
+        ...e,
+        [key]: true
+      }));
+    } finally {
+      setBusy(null);
+    }
+  };
+  const save = (key, value) => run(key, () => key === 'new' ? onCreate && onCreate(value) : onUpdate && onUpdate(key, value), () => {
+    setEditing(null);
+    setAnnounce(key === 'new' ? 'Meeting added.' : 'Meeting saved.');
+  });
+  const remove = m => run(`del:${m.id}`, () => onDelete && onDelete(m.id), () => {
+    setConfirmId(null);
+    setAnnounce('Meeting deleted.');
+  });
+  const startEdit = id => {
+    setConfirmId(null);
+    setEditing(id);
+  };
+  const cls = ['gt-tm', `gt-tm--${variant}`, className].filter(Boolean).join(' ');
+
+  /* ── card: compact ScheduleItem rows grouped by day ─────────────────────────────────────── */
+  if (variant === 'card') {
+    if (status === 'loading') return /*#__PURE__*/React.createElement("div", {
+      className: cls,
+      role: "status",
+      "aria-busy": "true",
+      "aria-label": "Loading team meetings"
+    }, [0, 1].map(i => /*#__PURE__*/React.createElement(CardSkeleton, {
+      key: i
+    })));
+    if (status === 'error') return /*#__PURE__*/React.createElement("div", {
+      className: cls
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "gt-tm__state gt-tm__state--error"
+    }, "Couldn\u2019t load team meetings.", /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-tm__link",
+      onClick: onRetry
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "refresh-cw",
+      size: 13
+    }), "Try again")));
+    if (!upcoming.length && !past.length) {
+      return canManage ? /*#__PURE__*/React.createElement("div", {
+        className: cls
+      }, /*#__PURE__*/React.createElement("p", {
+        className: "gt-tm__quiet"
+      }, "No team meetings yet. ", /*#__PURE__*/React.createElement("button", {
+        type: "button",
+        className: "gt-tm__link",
+        onClick: onManage
+      }, "Add one"))) : null;
+    }
+    const shown = upcoming.slice(0, maxUpcoming),
+      more = upcoming.length - shown.length;
+    const toItem = m => toScheduleItem(m, {
+      teamName,
+      people
+    });
+    const rows = list => groupByDay(list.map(toItem), {
+      zone: vz,
+      now
+    }).map(g => /*#__PURE__*/React.createElement(React.Fragment, {
+      key: g.key
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleDayHeader, {
+      dayKey: g.key,
+      now: now,
+      zone: vz
+    }), /*#__PURE__*/React.createElement("ol", {
+      className: "gt-sched__items"
+    }, g.items.map(it => /*#__PURE__*/React.createElement(__ds_scope.ScheduleItem, {
+      key: it.id,
+      item: it,
+      variant: "compact",
+      now: now,
+      zone: vz,
+      schoolZone: schoolZone,
+      showSchoolTime: differs,
+      onJoin: onJoin
+    })))));
+    return /*#__PURE__*/React.createElement("div", {
+      className: cls
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-sched gt-sched--compact"
+    }, shown.length ? rows(shown) : /*#__PURE__*/React.createElement("p", {
+      className: "gt-tm__quiet"
+    }, "No upcoming meetings."), more > 0 && /*#__PURE__*/React.createElement("p", {
+      className: "gt-tm__more"
+    }, /*#__PURE__*/React.createElement("a", {
+      className: "gt-tm__link",
+      href: scheduleHref
+    }, "+", more, " more \xB7 See all in Schedule", /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "arrow-right",
+      size: 13
+    }))), past.length > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "gt-tm__past"
+    }, /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-tm__past-toggle",
+      "aria-expanded": pastOpen,
+      "aria-controls": `${uid}-past`,
+      onClick: () => setPastOpen(!pastOpen)
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "chevron-right",
+      size: 14
+    }), "Past meetings (", past.length, ")"), pastOpen && /*#__PURE__*/React.createElement("div", {
+      id: `${uid}-past`
+    }, rows(past))), zoneNote && /*#__PURE__*/React.createElement("div", {
+      className: "gt-sched__footer"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-sched__zone"
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "globe",
+      size: 13
+    }), zoneNote))));
+  }
+
+  /* ── manage: the Meetings tab ───────────────────────────────────────────────────────────── */
+  const row = (m, isPastRow) => {
+    if (editing === m.id) {
+      return /*#__PURE__*/React.createElement("li", {
+        key: m.id,
+        className: "gt-tm-row gt-tm-row--editing"
+      }, /*#__PURE__*/React.createElement(__ds_scope.TeamMeetingForm, {
+        mode: "edit",
+        meeting: m,
+        now: now,
+        zone: vz,
+        schoolZone: schoolZone,
+        saving: busy === m.id,
+        error: errors[m.id] ? SAVE_ERROR : null,
+        onSubmit: value => save(m.id, value),
+        onCancel: () => setEditing(null)
+      }));
+    }
+    if (confirmId === m.id) {
+      return /*#__PURE__*/React.createElement(ConfirmRow, {
+        key: m.id,
+        meeting: m,
+        busy: busy === `del:${m.id}`,
+        error: errors[`del:${m.id}`] ? DELETE_ERROR : null,
+        onConfirm: () => remove(m),
+        onCancel: () => setConfirmId(null)
+      });
+    }
+    const when = fmtMeetingWhen(m, vz, now);
+    const live = !isPastRow && isLive(m, now);
+    return /*#__PURE__*/React.createElement("li", {
+      key: m.id,
+      className: ['gt-tm-row', isPastRow ? 'gt-tm-row--past' : '', live ? 'gt-tm-row--live' : ''].filter(Boolean).join(' '),
+      "aria-current": live ? 'true' : undefined
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-tm-row__tile"
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "users",
+      size: 16
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "gt-tm-row__main"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-tm-row__head"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-tm-row__title"
+    }, m.title), live && /*#__PURE__*/React.createElement("span", {
+      className: "gt-sched-item__live"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-sched-item__live-dot",
+      "aria-hidden": "true"
+    }), "Live")), /*#__PURE__*/React.createElement("div", {
+      className: "gt-tm-row__when",
+      title: campusRange(m)
+    }, /*#__PURE__*/React.createElement("time", {
+      className: "gt-tm-row__day",
+      dateTime: m.startsAt
+    }, when.day), /*#__PURE__*/React.createElement("span", {
+      className: "gt-tm-row__sep",
+      "aria-hidden": "true"
+    }, "\xB7"), /*#__PURE__*/React.createElement("span", {
+      className: "gt-tm-row__range"
+    }, /*#__PURE__*/React.createElement("time", {
+      dateTime: m.startsAt
+    }, when.start), " \u2013 ", /*#__PURE__*/React.createElement("time", {
+      dateTime: endsAtOf(m)
+    }, when.end)), /*#__PURE__*/React.createElement("time", {
+      className: "gt-tm-row__dur",
+      dateTime: isoMinutes(m.durationMinutes)
+    }, fmtMinutes(m.durationMinutes)), m.location && /*#__PURE__*/React.createElement("span", {
+      className: "gt-tm-row__place"
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "map-pin",
+      size: 12
+    }), m.location), m.zoomUrl && /*#__PURE__*/React.createElement("a", {
+      className: "gt-tm-row__place gt-tm-row__place--link",
+      href: m.zoomUrl,
+      target: "_blank",
+      rel: "noreferrer"
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "video",
+      size: 12
+    }), "Zoom")), m.note && /*#__PURE__*/React.createElement("p", {
+      className: "gt-tm-row__note",
+      title: m.note
+    }, m.note)), canManage && /*#__PURE__*/React.createElement("div", {
+      className: "gt-tm-row__actions"
+    }, /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-tm__btn",
+      onClick: () => startEdit(m.id),
+      disabled: !!editing,
+      "aria-label": `Edit ${m.title}`
+    }, "Edit"), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-tm__btn gt-tm__btn--danger",
+      onClick: () => {
+        setConfirmId(m.id);
+      },
+      disabled: !!editing,
+      "aria-label": `Delete ${m.title}`
+    }, "Delete")));
+  };
+  let body;
+  if (status === 'loading') {
+    body = /*#__PURE__*/React.createElement("div", {
+      role: "status",
+      "aria-busy": "true",
+      "aria-label": "Loading team meetings"
+    }, [0, 1, 2].map(i => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "gt-tm__skeleton"
+    }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: 28,
+      height: 28,
+      radius: 7
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "gt-tm__skeleton-lines"
+    }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: "42%",
+      height: 12
+    }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+      width: "68%",
+      height: 10
+    })))));
+  } else if (status === 'error') {
+    body = /*#__PURE__*/React.createElement("p", {
+      className: "gt-tm__state gt-tm__state--error"
+    }, "Couldn\u2019t load team meetings.", /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-tm__link",
+      onClick: onRetry
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "refresh-cw",
+      size: 13
+    }), "Try again"));
+  } else if (!meetings.length && editing !== 'new') {
+    body = /*#__PURE__*/React.createElement("div", {
+      className: "gt-tm__empty"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-tm__empty-icon"
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "calendar-days",
+      size: 18
+    })), /*#__PURE__*/React.createElement("p", {
+      className: "gt-tm__empty-title"
+    }, "No team meetings yet"), /*#__PURE__*/React.createElement("p", {
+      className: "gt-tm__empty-hint"
+    }, "A design review, sprint planning, a sponsor demo \u2014 everyone on the team sees them in their schedule."), canManage && /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      size: "sm",
+      iconLeft: /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+        name: "calendar-plus",
+        size: 15
+      }),
+      onClick: () => startEdit('new')
+    }, "Add meeting"));
+  } else {
+    body = /*#__PURE__*/React.createElement(React.Fragment, null, upcoming.length > 0 && /*#__PURE__*/React.createElement("ol", {
+      className: "gt-tm__list"
+    }, upcoming.map(m => row(m, false))), !upcoming.length && meetings.length > 0 && editing !== 'new' && /*#__PURE__*/React.createElement("p", {
+      className: "gt-tm__quiet"
+    }, "No upcoming meetings."), past.length > 0 && /*#__PURE__*/React.createElement("div", {
+      className: "gt-tm__past"
+    }, /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-tm__past-toggle",
+      "aria-expanded": pastOpen,
+      "aria-controls": `${uid}-past`,
+      onClick: () => setPastOpen(!pastOpen)
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "chevron-right",
+      size: 14
+    }), "Past (", past.length, ")"), pastOpen && /*#__PURE__*/React.createElement("ol", {
+      id: `${uid}-past`,
+      className: "gt-tm__list gt-tm__list--past"
+    }, past.map(m => row(m, true)))));
+  }
+  const count = status === 'ready' && meetings.length ? `${upcoming.length} upcoming${past.length ? ` · ${past.length} past` : ''}` : null;
+  return /*#__PURE__*/React.createElement("section", {
+    className: cls,
+    "aria-label": "Team meetings"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-tm__head"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "gt-tm__hint"
+  }, "One-off meetings for the whole team. They show up in everyone\u2019s schedule and calendar feed.", count && /*#__PURE__*/React.createElement("span", {
+    className: "gt-tm__count"
+  }, count)), canManage && status === 'ready' && meetings.length > 0 && /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: "secondary",
+    iconLeft: /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "calendar-plus",
+      size: 15
+    }),
+    onClick: () => startEdit('new'),
+    disabled: !!editing
+  }, "Add meeting")), zoneNote && /*#__PURE__*/React.createElement("p", {
+    className: "gt-tm__zone"
+  }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+    name: "globe",
+    size: 13
+  }), zoneNote), editing === 'new' && /*#__PURE__*/React.createElement("div", {
+    className: "gt-tm__new"
+  }, /*#__PURE__*/React.createElement(__ds_scope.TeamMeetingForm, {
+    mode: "create",
+    now: now,
+    zone: vz,
+    schoolZone: schoolZone,
+    saving: busy === 'new',
+    error: errors.new ? SAVE_ERROR : null,
+    onSubmit: value => save('new', value),
+    onCancel: () => setEditing(null)
+  })), body, /*#__PURE__*/React.createElement("span", {
+    className: "gt-tm__sr",
+    role: "status",
+    "aria-live": "polite"
+  }, announce));
+}
+function ConfirmRow({
+  meeting,
+  busy,
+  error,
+  onConfirm,
+  onCancel
+}) {
+  const ref = React.useRef(null);
+  const uid = React.useId();
+  React.useEffect(() => {
+    const el = ref.current && ref.current.querySelector('[data-cancel]');
+    if (el) el.focus();
+  }, []);
+  const onKeyDown = e => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      e.preventDefault();
+      if (!busy) onCancel();
+    }
+  };
+  return /*#__PURE__*/React.createElement("li", {
+    ref: ref,
+    className: "gt-tm-row gt-tm-row--confirm",
+    role: "group",
+    "aria-labelledby": `${uid}-q`,
+    onKeyDown: onKeyDown
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-tm-row__tile gt-tm-row__tile--alert"
+  }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+    name: "circle-alert",
+    size: 16
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-tm-row__main"
+  }, /*#__PURE__*/React.createElement("p", {
+    id: `${uid}-q`,
+    className: "gt-tm-row__confirm-text"
+  }, "Delete '", meeting.title, "'? It disappears from your team's calendars."), error && /*#__PURE__*/React.createElement("p", {
+    className: "gt-tm-row__error",
+    role: "alert"
+  }, error)), /*#__PURE__*/React.createElement("div", {
+    className: "gt-tm-row__actions"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: "danger",
+    loading: busy,
+    onClick: onConfirm
+  }, "Delete"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    variant: "secondary",
+    onClick: onCancel,
+    disabled: busy,
+    "data-cancel": "true"
+  }, "Cancel")));
+}
+function CardSkeleton() {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "gt-tm__skeleton gt-tm__skeleton--card"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: 44,
+    height: 12
+  }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: 24,
+    height: 24,
+    radius: 7
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "gt-tm__skeleton-lines"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: "55%",
+    height: 12
+  }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: "35%",
+    height: 10
+  })));
+}
+Object.assign(__ds_scope, { TeamMeetingsList });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/TeamMeetingsList.jsx", error: String((e && e.message) || e) }); }
+
+// components/schedule/ScheduleList.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+function NowLine({
+  now,
+  zone
+}) {
+  const t = __ds_scope.fmtTime(now, zone);
+  return /*#__PURE__*/React.createElement("li", {
+    className: "gt-sched__now",
+    "aria-label": `Now, ${t}`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched__now-label"
+  }, "Now \xB7 ", t), /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched__now-line",
+    "aria-hidden": "true"
+  }));
+}
+function SkeletonRows({
+  count,
+  compact
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    role: "status",
+    "aria-busy": "true",
+    "aria-label": "Loading schedule"
+  }, Array.from({
+    length: count
+  }).map((_, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "gt-sched__skeleton"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: compact ? 46 : 84,
+    height: 12,
+    radius: 4
+  }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: compact ? 24 : 28,
+    height: compact ? 24 : 28,
+    radius: 7
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched__skeleton-lines"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: i % 2 ? '48%' : '62%',
+    height: 12,
+    radius: 4
+  }), /*#__PURE__*/React.createElement(__ds_scope.Skeleton, {
+    width: i % 2 ? '70%' : '36%',
+    height: 10,
+    radius: 4
+  })))));
+}
+function ErrorState({
+  onRetry,
+  compact
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched__state gt-sched__state--error",
+    role: "alert"
+  }, !compact && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched__state-icon"
+  }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+    name: "circle-alert",
+    size: 18
+  })), /*#__PURE__*/React.createElement("p", {
+    className: "gt-sched__state-title"
+  }, "Couldn\u2019t load your schedule"), /*#__PURE__*/React.createElement("p", {
+    className: "gt-sched__state-hint"
+  }, "Check your connection", onRetry ? /*#__PURE__*/React.createElement(React.Fragment, null, ", then ", /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-sched__retry",
+    onClick: onRetry
+  }, "try again")) : ' and refresh', "."));
+}
+const peekDate = lbl => lbl.title === 'Tomorrow' || lbl.title === 'Today' ? `${lbl.title} · ${lbl.date}` : `${lbl.title}, ${lbl.date}`;
+
+/**
+ * ScheduleList — `compact` (the Today's Schedule card body: today + Now line, or a peek at the next
+ * day) and `agenda` (full-width week with sticky day headers, ‹ This week › and filters).
+ * One component for every lens; `lens` only changes the actions rows offer.
+ */
+function ScheduleList({
+  variant = 'compact',
+  items = [],
+  now,
+  zone,
+  schoolZone = __ds_scope.SCHOOL_ZONE,
+  lens = 'student',
+  status = 'ready',
+  onRetry,
+  maxItems = 5,
+  seeAllHref = '/app/schedule',
+  calendarHref,
+  weekAnchor,
+  onWeekChange,
+  classes,
+  classId,
+  onClassChange,
+  kinds,
+  onKindsChange,
+  showEmptyDays = false,
+  onJoin,
+  onMarkAttendance,
+  onSetTime,
+  onOpen,
+  expandedId,
+  onToggle,
+  className = ''
+}) {
+  const liveNow = __ds_scope.useNow(30000, now instanceof Date ? now : undefined);
+  const vz = zone || __ds_scope.viewerZone();
+  const compact = variant === 'compact';
+  const differs = __ds_scope.zoneDiffers(vz, schoolZone, liveNow);
+  const zoneNote = differs ? `Times in ${__ds_scope.zoneLabel(vz, liveNow)} · campus is ${__ds_scope.zoneLabel(schoolZone, liveNow)}` : null;
+  const today = __ds_scope.dayKey(liveNow, vz);
+  const [innerExpanded, setInnerExpanded] = React.useState(null);
+  const expanded = expandedId !== undefined ? expandedId : innerExpanded;
+  const toggle = React.useCallback(it => {
+    if (onToggle) onToggle(it);else setInnerExpanded(cur => cur === it.id ? null : it.id);
+  }, [onToggle]);
+  const overlaps = React.useMemo(() => __ds_scope.findOverlaps(items), [items]);
+  // agenda state (declared up front so hook order never depends on `variant`)
+  const [innerAnchor, setInnerAnchor] = React.useState(today);
+  React.useEffect(() => {
+    setInnerAnchor(today);
+  }, [today]);
+  const [innerKinds, setInnerKinds] = React.useState([]);
+  const [innerClass, setInnerClass] = React.useState('all');
+  const common = {
+    variant,
+    lens,
+    now: liveNow,
+    zone: vz,
+    schoolZone,
+    showSchoolTime: differs,
+    onJoin,
+    onMarkAttendance,
+    onSetTime,
+    onOpen,
+    onToggle: toggle
+  };
+  const renderItems = (dayItems, withNow) => {
+    const ni = withNow ? __ds_scope.nowIndex(dayItems, liveNow) : -1;
+    const out = [];
+    dayItems.forEach((it, i) => {
+      if (i === ni) out.push(/*#__PURE__*/React.createElement(NowLine, {
+        key: "now",
+        now: liveNow,
+        zone: vz
+      }));
+      out.push(/*#__PURE__*/React.createElement(__ds_scope.ScheduleItem, _extends({
+        key: it.id,
+        item: it,
+        overlaps: overlaps.get(it.id) || [],
+        expanded: expanded === it.id
+      }, common)));
+    });
+    if (ni === dayItems.length) out.push(/*#__PURE__*/React.createElement(NowLine, {
+      key: "now",
+      now: liveNow,
+      zone: vz
+    }));
+    return out;
+  };
+  const zoneEl = zoneNote ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched__zone"
+  }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+    name: "globe",
+    size: 13
+  }), zoneNote) : null;
+  const calendarLink = calendarHref ? /*#__PURE__*/React.createElement("a", {
+    className: "gt-sched__link",
+    href: calendarHref
+  }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+    name: "calendar-plus",
+    size: 14
+  }), "Add to your calendar") : null;
+
+  /* ── compact ─────────────────────────────────────────────── */
+  if (compact) {
+    let body;
+    let footerLinks = null;
+    if (status === 'loading') body = /*#__PURE__*/React.createElement(SkeletonRows, {
+      count: 3,
+      compact: true
+    });else if (status === 'error') body = /*#__PURE__*/React.createElement(ErrorState, {
+      onRetry: onRetry,
+      compact: true
+    });else {
+      const pick = __ds_scope.todayOrPeek(items, liveNow, vz);
+      if (pick.mode === 'today') {
+        const shown = pick.day.items.slice(0, maxItems);
+        const extra = pick.day.items.length - shown.length;
+        body = /*#__PURE__*/React.createElement(React.Fragment, null, pick.day.dividers.map(d => /*#__PURE__*/React.createElement(__ds_scope.ScheduleDivider, {
+          key: d.id,
+          item: d,
+          isToday: true
+        })), /*#__PURE__*/React.createElement("ol", {
+          className: "gt-sched__items",
+          "aria-label": "Today"
+        }, renderItems(shown, true)), extra > 0 && /*#__PURE__*/React.createElement("div", {
+          className: "gt-sched__more"
+        }, /*#__PURE__*/React.createElement("a", {
+          className: "gt-sched__link",
+          href: seeAllHref
+        }, "+", extra, " more today", /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+          name: "arrow-right",
+          size: 13
+        }))));
+        footerLinks = /*#__PURE__*/React.createElement("a", {
+          className: "gt-sched__link",
+          href: seeAllHref
+        }, "See week", /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+          name: "arrow-right",
+          size: 13
+        }));
+      } else {
+        const lbl = pick.day ? __ds_scope.fmtDayLabel(pick.day.key, liveNow, vz) : null;
+        body = /*#__PURE__*/React.createElement(React.Fragment, null, (pick.todayDividers || []).map(d => /*#__PURE__*/React.createElement(__ds_scope.ScheduleDivider, {
+          key: d.id,
+          item: d,
+          isToday: true
+        })), /*#__PURE__*/React.createElement("div", {
+          className: "gt-sched__state gt-sched__state--quiet"
+        }, /*#__PURE__*/React.createElement("p", {
+          className: "gt-sched__state-title"
+        }, "Nothing scheduled today"), !pick.day && /*#__PURE__*/React.createElement("p", {
+          className: "gt-sched__state-hint"
+        }, "Class events and deadlines will appear here.")), pick.day && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(__ds_scope.ScheduleDayHeader, {
+          title: "Next",
+          date: peekDate(lbl),
+          as: "h4"
+        }), /*#__PURE__*/React.createElement("ol", {
+          className: "gt-sched__items",
+          "aria-label": `Next: ${peekDate(lbl)}`
+        }, renderItems(pick.day.items.slice(0, 3), false)), pick.day.items.length > 3 && /*#__PURE__*/React.createElement("div", {
+          className: "gt-sched__more"
+        }, /*#__PURE__*/React.createElement("a", {
+          className: "gt-sched__link",
+          href: seeAllHref
+        }, "+", pick.day.items.length - 3, " more that day", /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+          name: "arrow-right",
+          size: 13
+        })))));
+        footerLinks = /*#__PURE__*/React.createElement(React.Fragment, null, calendarLink, /*#__PURE__*/React.createElement("a", {
+          className: "gt-sched__link",
+          href: seeAllHref
+        }, "See week", /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+          name: "arrow-right",
+          size: 13
+        })));
+      }
+    }
+    return /*#__PURE__*/React.createElement("div", {
+      className: ['gt-sched', 'gt-sched--compact', className].filter(Boolean).join(' ')
+    }, body, status === 'ready' && /*#__PURE__*/React.createElement("div", {
+      className: "gt-sched__footer"
+    }, zoneEl || /*#__PURE__*/React.createElement("span", null), /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: 'inline-flex',
+        gap: 14
+      }
+    }, footerLinks)));
+  }
+
+  /* ── agenda ──────────────────────────────────────────────── */
+  const anchor = weekAnchor || innerAnchor;
+  const keys = __ds_scope.weekKeys(anchor);
+  const setAnchor = k => onWeekChange ? onWeekChange(k) : setInnerAnchor(k);
+  const wk = __ds_scope.fmtWeekLabel(keys, liveNow, vz);
+  const onThisWeek = wk.title === 'This week';
+  const activeKinds = kinds || innerKinds;
+  const setKinds = next => onKindsChange ? onKindsChange(next) : setInnerKinds(next);
+  const cls = classId || innerClass;
+  const setCls = v => onClassChange ? onClassChange(v) : setInnerClass(v);
+  const inWeek = items.filter(it => {
+    const k = __ds_scope.dayKey(it.startsAt, vz);
+    return k >= keys[0] && k <= keys[6];
+  });
+  const filtered = inWeek.filter(it => (cls === 'all' || !it.classId || it.classId === cls) && (it.kind === 'sprint' || activeKinds.length === 0 || activeKinds.includes(it.kind)));
+  const groups = __ds_scope.groupByDay(filtered, {
+    zone: vz,
+    now: liveNow
+  });
+  const byKey = new Map(groups.map(g => [g.key, g]));
+  const shownKeys = keys.filter(k => showEmptyDays || byKey.has(k) || k === today);
+  const hasRows = groups.some(g => g.items.length);
+  const filtersOn = cls !== 'all' || activeKinds.length > 0;
+  const toolbar = /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched__toolbar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched__week",
+    role: "group",
+    "aria-label": "Week"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-sched__week-btn",
+    "aria-label": "Previous week",
+    onClick: () => setAnchor(__ds_scope.shiftKey(keys[0], -7))
+  }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+    name: "chevron-left",
+    size: 16
+  })), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-sched__week-cur",
+    disabled: onThisWeek,
+    title: onThisWeek ? undefined : 'Back to this week',
+    onClick: () => setAnchor(today)
+  }, wk.title || wk.range), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-sched__week-btn",
+    "aria-label": "Next week",
+    onClick: () => setAnchor(__ds_scope.shiftKey(keys[0], 7))
+  }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+    name: "chevron-right",
+    size: 16
+  }))), wk.title && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched__range"
+  }, wk.range), zoneEl, /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched__filters",
+    role: "group",
+    "aria-label": "Filters"
+  }, classes && classes.length > 1 && /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched__select-wrap"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: "gt-sched__select",
+    "aria-label": "Class",
+    value: cls,
+    onChange: e => setCls(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "all"
+  }, "All classes"), classes.map(c => /*#__PURE__*/React.createElement("option", {
+    key: c.id,
+    value: c.id
+  }, c.label))), /*#__PURE__*/React.createElement("span", {
+    className: "gt-sched__select-chev"
+  }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+    name: "chevron-down",
+    size: 14
+  }))), __ds_scope.SCHEDULE_KINDS.filter(k => k.filterLabel).map(k => {
+    const on = activeKinds.includes(k.kind);
+    return /*#__PURE__*/React.createElement("button", {
+      key: k.kind,
+      type: "button",
+      className: "gt-sched__chip",
+      "aria-pressed": on,
+      onClick: () => setKinds(on ? activeKinds.filter(x => x !== k.kind) : [...activeKinds, k.kind])
+    }, k.filterLabel);
+  })));
+  let body;
+  if (status === 'loading') body = /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched__days"
+  }, /*#__PURE__*/React.createElement(SkeletonRows, {
+    count: 5
+  }));else if (status === 'error') body = /*#__PURE__*/React.createElement("div", {
+    className: "gt-sched__days"
+  }, /*#__PURE__*/React.createElement(ErrorState, {
+    onRetry: onRetry
+  }));else if (!hasRows && !groups.some(g => g.dividers.length)) {
+    const next = __ds_scope.nextUp(items, liveNow);
+    const nextLbl = next ? __ds_scope.fmtDayLabel(__ds_scope.dayKey(next.startsAt, vz), liveNow, vz) : null;
+    body = /*#__PURE__*/React.createElement("div", {
+      className: "gt-sched__days"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "gt-sched__state"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-sched__state-icon"
+    }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleIcon, {
+      name: "calendar-days",
+      size: 18
+    })), /*#__PURE__*/React.createElement("p", {
+      className: "gt-sched__state-title"
+    }, filtersOn && inWeek.length ? 'Nothing matches these filters' : `Nothing scheduled ${wk.title ? wk.title.toLowerCase() : 'that week'}`), filtersOn && inWeek.length ? /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-sched__retry",
+      onClick: () => {
+        setKinds([]);
+        setCls('all');
+      }
+    }, "Clear filters") : /*#__PURE__*/React.createElement(React.Fragment, null, next && /*#__PURE__*/React.createElement("p", {
+      className: "gt-sched__state-hint"
+    }, "Next up: ", next.title, next.teamName ? ` · ${next.teamName}` : '', " \xB7 ", peekDate(nextLbl), next.allDay || next.status === 'tbd' ? '' : ` · ${__ds_scope.fmtTime(next.startsAt, vz)}`), calendarLink)));
+  } else {
+    body = /*#__PURE__*/React.createElement("ol", {
+      className: "gt-sched__days"
+    }, shownKeys.map(k => {
+      const g = byKey.get(k) || {
+        key: k,
+        isToday: k === today,
+        dividers: [],
+        items: []
+      };
+      const hid = `gt-sched-day-${k}`;
+      return /*#__PURE__*/React.createElement("li", {
+        key: k,
+        className: "gt-sched__day"
+      }, /*#__PURE__*/React.createElement(__ds_scope.ScheduleDayHeader, {
+        dayKey: k,
+        now: liveNow,
+        zone: vz,
+        id: hid
+      }), g.dividers.map(d => /*#__PURE__*/React.createElement(__ds_scope.ScheduleDivider, {
+        key: d.id,
+        item: d,
+        isToday: g.isToday
+      })), g.items.length ? /*#__PURE__*/React.createElement("ol", {
+        className: "gt-sched__items",
+        "aria-labelledby": hid
+      }, renderItems(g.items, g.isToday)) : /*#__PURE__*/React.createElement("p", {
+        className: "gt-sched-day__empty"
+      }, "Nothing scheduled"));
+    }));
+  }
+  return /*#__PURE__*/React.createElement("section", {
+    className: ['gt-sched', 'gt-sched--agenda', className].filter(Boolean).join(' '),
+    "aria-label": "Schedule"
+  }, toolbar, body);
+}
+Object.assign(__ds_scope, { ScheduleList });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/schedule/ScheduleList.jsx", error: String((e && e.message) || e) }); }
+
+// components/schedule/scheduleData.js
+try { (() => {
+/* GrepThink schedule — sample items for the design kit (throwaway; the data layer owns the real shape).
+   All times authored in campus time (PT) and stored as UTC ISO. window.GT_SCHEDULE_SAMPLE */
+(function () {
+  // PDT (-07:00) until Nov 1 2026, PST (-08:00) after.
+  const at = (day, hm) => new Date(`${day}T${hm}:00${day >= '2026-11-01' ? '-08:00' : '-07:00'}`).toISOString();
+  const Z = {
+    team1: 'https://ucsc.zoom.us/j/93312007451',
+    team4: 'https://ucsc.zoom.us/j/95520018812',
+    team6: 'https://ucsc.zoom.us/j/91877402133',
+    review: 'https://ucsc.zoom.us/j/98001133770',
+    staff: 'https://ucsc.zoom.us/j/92210007788',
+    oh: 'https://ucsc.zoom.us/j/97120033401'
+  };
+  const PRIYA = {
+    id: 'u-priya',
+    name: 'Priya Kapoor',
+    role: 'TA'
+  };
+  const MARCUS = {
+    id: 'u-marcus',
+    name: 'Marcus Lee',
+    role: 'TA'
+  };
+  const DANA = {
+    id: 'u-dana',
+    name: 'Dana Whitfield',
+    role: 'TA'
+  };
+  const PROF = {
+    id: 'u-jullig',
+    name: 'Prof. Jullig',
+    role: 'Instructor'
+  };
+  const ASHTON = {
+    id: 'u-ashton',
+    name: 'Ashton Liu',
+    role: 'Scrum Master'
+  };
+  const C115B = {
+    classId: 'c115b',
+    classLabel: 'CSE 115B'
+  };
+  const C115A = {
+    classId: 'c115a',
+    classLabel: 'CSE 115A'
+  };
+  const TEAM1 = ['Ashton Liu', 'Tony Wang', 'Landon Nguyen', 'Joshua Cruz'];
+  const lecture = (id, day, cls, extra) => ({
+    id,
+    kind: 'lecture',
+    title: 'Lecture',
+    startsAt: at(day, cls === C115A ? '09:50' : '13:20'),
+    endsAt: at(day, cls === C115A ? '10:55' : '14:25'),
+    location: cls === C115A ? 'Thimann Lecture Hall 3' : 'Engineering 2, Room 192',
+    recurrenceLabel: cls === C115A ? 'Tue & Thu' : 'Mon · Wed · Fri',
+    ...cls,
+    ...extra
+  });
+  const taMeeting = (id, day, hm, team, extra) => {
+    const [h, m] = hm.split(':').map(Number);
+    const end = `${String(h).padStart(2, '0')}:${String(m + 45).padStart(2, '0')}`;
+    return {
+      id,
+      kind: 'ta_meeting',
+      title: 'TA meeting',
+      startsAt: at(day, hm),
+      endsAt: at(day, end),
+      teamName: team,
+      ...C115B,
+      meetingsPerWeek: 2,
+      ...extra
+    };
+  };
+  const sprint = (id, day, name, edge) => ({
+    id,
+    kind: 'sprint',
+    title: name,
+    startsAt: at(day, '00:00'),
+    allDay: true,
+    sprint: {
+      name,
+      edge
+    }
+  });
+  const deadline = (id, day, title, cls = C115B) => ({
+    id,
+    kind: 'deadline',
+    title,
+    startsAt: at(day, '23:59'),
+    endsAt: null,
+    href: '/app/assignments',
+    ...cls
+  });
+
+  /* ── Student: Joshua Cruz · Team 1 · CSE 115B · TA Priya Kapoor ─────────────── */
+  const student = [
+  // last week
+  lecture('s-l1', '2026-10-12', C115B), lecture('s-l2', '2026-10-14', C115B), lecture('s-l3', '2026-10-16', C115B), taMeeting('s-m1', '2026-10-12', '15:00', 'Team 1', {
+    host: PRIYA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Mon',
+    meetingIndex: 1,
+    attendance: 'late',
+    attendees: TEAM1
+  }), taMeeting('s-m2', '2026-10-13', '15:00', 'Team 1', {
+    host: PRIYA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Tue',
+    meetingIndex: 2,
+    attendance: 'absent',
+    attendees: TEAM1
+  }), deadline('s-d0', '2026-10-13', 'TSR 3 due'),
+  // this week (Mon Oct 19 – Sun Oct 25)
+  lecture('s-l4', '2026-10-19', C115B), taMeeting('s-m3', '2026-10-19', '15:00', 'Team 1', {
+    host: PRIYA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Mon',
+    meetingIndex: 1,
+    attendance: 'present',
+    attendees: TEAM1
+  }), sprint('s-sp1', '2026-10-20', 'Sprint 2', 'end'), {
+    id: 's-oh1',
+    kind: 'office_hours',
+    title: 'Office hours',
+    startsAt: at('2026-10-20', '10:00'),
+    endsAt: at('2026-10-20', '10:50'),
+    host: PRIYA,
+    location: 'Baskin Engineering 105',
+    recurrenceLabel: 'Weekly · Tue',
+    ...C115B
+  }, {
+    id: 's-mt1',
+    kind: 'meeting',
+    title: 'Sprint 3 planning',
+    startsAt: at('2026-10-20', '13:00'),
+    endsAt: at('2026-10-20', '13:30'),
+    teamName: 'Team 1',
+    scope: 'team',
+    host: ASHTON,
+    zoomUrl: Z.team1,
+    note: 'Bring your estimates for the top 10 backlog stories.',
+    ...C115B
+  }, taMeeting('s-m4', '2026-10-20', '15:00', 'Team 1', {
+    host: PRIYA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Tue',
+    meetingIndex: 2,
+    attendance: 'present',
+    attendees: TEAM1
+  }), {
+    id: 's-oh2',
+    kind: 'office_hours',
+    title: 'Office hours',
+    startsAt: at('2026-10-20', '15:30'),
+    endsAt: at('2026-10-20', '16:30'),
+    host: PROF,
+    zoomUrl: Z.oh,
+    recurrenceLabel: 'Weekly · Tue',
+    ...C115B
+  }, deadline('s-d1', '2026-10-20', 'TSR 4 due'), sprint('s-sp2', '2026-10-21', 'Sprint 3', 'start'), lecture('s-l5', '2026-10-21', C115B), {
+    id: 's-mt2',
+    kind: 'meeting',
+    title: 'Team 1 retro',
+    startsAt: at('2026-10-22', '00:00'),
+    endsAt: null,
+    status: 'tbd',
+    teamName: 'Team 1',
+    scope: 'team',
+    host: ASHTON,
+    zoomUrl: Z.team1,
+    ...C115B
+  }, {
+    id: 's-ad1',
+    kind: 'deadline',
+    title: 'Peer eval window opens',
+    startsAt: at('2026-10-22', '00:00'),
+    allDay: true,
+    ...C115B
+  }, lecture('s-l6', '2026-10-23', C115B, {
+    status: 'cancelled',
+    cancelReason: 'Cancelled · instructor at a conference — the recorded lecture is on Canvas.'
+  }), {
+    id: 's-fr1',
+    kind: 'final_review',
+    title: 'Final review',
+    startsAt: at('2026-10-23', '14:40'),
+    endsAt: at('2026-10-23', '15:00'),
+    teamName: 'Team 1',
+    zoomUrl: Z.review,
+    reviewers: [{
+      ...PRIYA,
+      slot: 'home'
+    }, {
+      ...MARCUS,
+      slot: 'review'
+    }],
+    ...C115B
+  },
+  // next week
+  lecture('s-l7', '2026-10-26', C115B), lecture('s-l8', '2026-10-28', C115B), lecture('s-l9', '2026-10-30', C115B), taMeeting('s-m5', '2026-10-26', '15:00', 'Team 1', {
+    host: PRIYA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Mon',
+    meetingIndex: 1,
+    attendees: TEAM1
+  }), {
+    id: 's-oh3',
+    kind: 'office_hours',
+    title: 'Office hours',
+    startsAt: at('2026-10-27', '10:00'),
+    endsAt: at('2026-10-27', '10:50'),
+    host: PRIYA,
+    location: 'Baskin Engineering 105',
+    recurrenceLabel: 'Weekly · Tue',
+    ...C115B
+  }, taMeeting('s-m6', '2026-10-27', '15:00', 'Team 1', {
+    host: PRIYA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Tue',
+    meetingIndex: 2,
+    attendees: TEAM1
+  }), deadline('s-d2', '2026-10-27', 'TSR 5 due'),
+  // week after
+  sprint('s-sp3', '2026-11-03', 'Sprint 3', 'end'), lecture('s-l10', '2026-11-02', C115B), taMeeting('s-m7', '2026-11-02', '15:00', 'Team 1', {
+    host: PRIYA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Mon',
+    meetingIndex: 1,
+    attendees: TEAM1
+  })];
+
+  /* ── TA: Priya Kapoor · Teams 1, 4, 6 (CSE 115B) + Team 2 (CSE 115A) ─────────── */
+  const YOU_TA = {
+    ...PRIYA,
+    you: true
+  };
+  const T4 = ['Mina Park', 'Devon Reyes', 'Sam Okafor', 'Lily Chen', 'Omar Haddad'];
+  const T6 = ['Grace Kim', 'Theo Marsh', 'Ivy Rao', 'Noah Bell'];
+  const ta = [taMeeting('t-m1', '2026-10-19', '14:00', 'Team 1', {
+    host: YOU_TA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Mon',
+    meetingIndex: 1,
+    attendance: {
+      present: 3,
+      total: 4
+    },
+    attendees: TEAM1
+  }), taMeeting('t-m2', '2026-10-19', '15:00', 'Team 4', {
+    host: YOU_TA,
+    zoomUrl: Z.team4,
+    recurrenceLabel: 'Weekly · Mon',
+    meetingIndex: 1,
+    attendance: {
+      present: 5,
+      total: 5
+    },
+    attendees: T4
+  }), taMeeting('t-m3', '2026-10-19', '16:00', 'Team 6', {
+    host: YOU_TA,
+    zoomUrl: Z.team6,
+    recurrenceLabel: 'Weekly · Mon',
+    meetingIndex: 1,
+    attendance: {
+      present: 2,
+      total: 4
+    },
+    attendees: T6
+  }), sprint('t-sp1', '2026-10-20', 'Sprint 2 · Team 1', 'end'), {
+    id: 't-oh1',
+    kind: 'office_hours',
+    title: 'Office hours',
+    startsAt: at('2026-10-20', '10:00'),
+    endsAt: at('2026-10-20', '10:50'),
+    host: YOU_TA,
+    location: 'Baskin Engineering 105',
+    recurrenceLabel: 'Weekly · Tue',
+    ...C115B
+  }, taMeeting('t-m4', '2026-10-20', '14:00', 'Team 1', {
+    host: YOU_TA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Tue',
+    meetingIndex: 2,
+    attendance: {
+      present: 4,
+      total: 4
+    },
+    attendees: TEAM1
+  }), taMeeting('t-m5', '2026-10-20', '15:00', 'Team 4', {
+    host: YOU_TA,
+    zoomUrl: Z.team4,
+    recurrenceLabel: 'Weekly · Tue',
+    meetingIndex: 2,
+    attendance: {
+      present: 3,
+      total: 5
+    },
+    attendees: T4
+  }), taMeeting('t-m6', '2026-10-20', '16:00', 'Team 6', {
+    host: YOU_TA,
+    zoomUrl: Z.team6,
+    recurrenceLabel: 'Weekly · Tue',
+    meetingIndex: 2,
+    attendance: {
+      present: 0,
+      total: 4
+    },
+    attendees: T6
+  }), {
+    id: 't-m7',
+    kind: 'ta_meeting',
+    title: 'TA meeting',
+    startsAt: at('2026-10-20', '00:00'),
+    endsAt: null,
+    status: 'tbd',
+    teamName: 'Team 9',
+    host: YOU_TA,
+    recurrenceLabel: 'Weekly · Tue',
+    meetingsPerWeek: 2,
+    meetingIndex: 2,
+    ...C115B
+  }, deadline('t-d1', '2026-10-20', 'TSR 4 due'), sprint('t-sp2', '2026-10-21', 'Sprint 3 · Team 1', 'start'), taMeeting('t-m8', '2026-10-21', '13:00', 'Team 2', {
+    host: YOU_TA,
+    zoomUrl: Z.staff,
+    recurrenceLabel: 'Weekly · Wed',
+    meetingsPerWeek: 1,
+    attendees: ['Ana Sousa', 'Ben Ito', 'Chloe Adams'],
+    ...C115A
+  }), {
+    id: 't-mt1',
+    kind: 'meeting',
+    title: 'TA sync',
+    startsAt: at('2026-10-22', '11:00'),
+    endsAt: at('2026-10-22', '11:30'),
+    host: PROF,
+    zoomUrl: Z.staff,
+    status: 'cancelled',
+    cancelReason: 'Cancelled · moved to next Thursday.',
+    ...C115B
+  }, {
+    id: 't-ad1',
+    kind: 'deadline',
+    title: 'Peer eval window opens',
+    startsAt: at('2026-10-22', '00:00'),
+    allDay: true,
+    ...C115B
+  }, {
+    id: 't-fr1',
+    kind: 'final_review',
+    title: 'Final review',
+    startsAt: at('2026-10-23', '14:40'),
+    endsAt: at('2026-10-23', '15:00'),
+    teamName: 'Team 1',
+    zoomUrl: Z.review,
+    reviewers: [{
+      ...YOU_TA,
+      slot: 'home'
+    }, {
+      ...MARCUS,
+      slot: 'review'
+    }],
+    ...C115B
+  }, {
+    id: 't-fr2',
+    kind: 'final_review',
+    title: 'Final review',
+    startsAt: at('2026-10-23', '15:00'),
+    endsAt: at('2026-10-23', '15:20'),
+    teamName: 'Team 7',
+    zoomUrl: Z.review,
+    reviewers: [{
+      ...MARCUS,
+      slot: 'home'
+    }, {
+      ...YOU_TA,
+      slot: 'review'
+    }],
+    ...C115B
+  }, taMeeting('t-m9', '2026-10-26', '14:00', 'Team 1', {
+    host: YOU_TA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Mon',
+    meetingIndex: 1,
+    attendees: TEAM1
+  }), taMeeting('t-m10', '2026-10-26', '15:00', 'Team 4', {
+    host: YOU_TA,
+    zoomUrl: Z.team4,
+    recurrenceLabel: 'Weekly · Mon',
+    meetingIndex: 1,
+    attendees: T4
+  }), taMeeting('t-m11', '2026-10-26', '16:00', 'Team 6', {
+    host: YOU_TA,
+    zoomUrl: Z.team6,
+    recurrenceLabel: 'Weekly · Mon',
+    meetingIndex: 1,
+    attendees: T6
+  }), {
+    id: 't-oh2',
+    kind: 'office_hours',
+    title: 'Office hours',
+    startsAt: at('2026-10-27', '10:00'),
+    endsAt: at('2026-10-27', '10:50'),
+    host: YOU_TA,
+    location: 'Baskin Engineering 105',
+    recurrenceLabel: 'Weekly · Tue',
+    ...C115B
+  }, deadline('t-d2', '2026-10-27', 'TSR 5 due')];
+
+  /* ── Instructor: Prof. Jullig · CSE 115B + CSE 115A ───────────────────────────── */
+  const YOU_PROF = {
+    ...PROF,
+    you: true
+  };
+  const fr = (id, hm, team, home, review) => {
+    const [h, m] = hm.split(':').map(Number);
+    const end = `${String(h + Math.floor((m + 20) / 60)).padStart(2, '0')}:${String((m + 20) % 60).padStart(2, '0')}`;
+    return {
+      id,
+      kind: 'final_review',
+      title: 'Final review',
+      startsAt: at('2026-10-23', hm),
+      endsAt: at('2026-10-23', end),
+      teamName: team,
+      zoomUrl: Z.review,
+      reviewers: [{
+        ...home,
+        slot: 'home'
+      }, {
+        ...review,
+        slot: 'review'
+      }],
+      ...C115B
+    };
+  };
+  const instructor = [lecture('i-l1', '2026-10-19', C115B), lecture('i-l0', '2026-10-20', C115A), lecture('i-l2', '2026-10-21', C115B), lecture('i-l3', '2026-10-22', C115A), lecture('i-l4', '2026-10-23', C115B, {
+    status: 'cancelled',
+    cancelReason: 'Cancelled · at a conference — recorded lecture posted to Canvas.'
+  }), taMeeting('i-m1', '2026-10-20', '14:00', 'Team 1', {
+    host: PRIYA,
+    zoomUrl: Z.team1,
+    recurrenceLabel: 'Weekly · Tue',
+    meetingIndex: 2,
+    attendance: {
+      present: 4,
+      total: 4
+    },
+    attendees: TEAM1
+  }), taMeeting('i-m2', '2026-10-20', '15:00', 'Team 4', {
+    host: PRIYA,
+    zoomUrl: Z.team4,
+    recurrenceLabel: 'Weekly · Tue',
+    meetingIndex: 2,
+    attendance: {
+      present: 3,
+      total: 5
+    },
+    attendees: T4
+  }), taMeeting('i-m3', '2026-10-20', '15:00', 'Team 3', {
+    host: MARCUS,
+    zoomUrl: Z.staff,
+    recurrenceLabel: 'Weekly · Tue',
+    meetingIndex: 2,
+    attendance: {
+      present: 0,
+      total: 4
+    },
+    attendees: ['Rin Sato', 'Eli Brooks', 'Maya Patel', 'Jon Reed']
+  }), {
+    id: 'i-oh1',
+    kind: 'office_hours',
+    title: 'Office hours',
+    startsAt: at('2026-10-20', '15:30'),
+    endsAt: at('2026-10-20', '16:30'),
+    host: YOU_PROF,
+    zoomUrl: Z.oh,
+    recurrenceLabel: 'Weekly · Tue',
+    ...C115B
+  }, deadline('i-d1', '2026-10-20', 'TSR 4 due'), {
+    id: 'i-mt1',
+    kind: 'meeting',
+    title: 'TA sync',
+    startsAt: at('2026-10-22', '11:00'),
+    endsAt: at('2026-10-22', '11:30'),
+    host: YOU_PROF,
+    zoomUrl: Z.staff,
+    note: 'Final-review pairings and the TSR 4 grading rubric.',
+    ...C115B
+  }, {
+    id: 'i-mt2',
+    kind: 'meeting',
+    title: 'Industry panel',
+    startsAt: at('2026-10-22', '17:00'),
+    endsAt: at('2026-10-22', '18:00'),
+    scope: 'class',
+    host: YOU_PROF,
+    location: 'Media Theater M110',
+    note: 'Guests from two sponsor companies; attendance counts toward participation.',
+    ...C115B
+  }, {
+    id: 'i-ad1',
+    kind: 'deadline',
+    title: 'Peer eval window opens',
+    startsAt: at('2026-10-22', '00:00'),
+    allDay: true,
+    ...C115B
+  }, fr('i-fr1', '14:00', 'Team 3', MARCUS, DANA), fr('i-fr2', '14:20', 'Team 5', DANA, PRIYA), fr('i-fr3', '14:40', 'Team 1', PRIYA, MARCUS), fr('i-fr4', '15:00', 'Team 7', MARCUS, PRIYA), {
+    id: 'i-mt3',
+    kind: 'meeting',
+    title: 'Sponsor check-in · Team 5',
+    startsAt: at('2026-10-21', '00:00'),
+    endsAt: null,
+    status: 'tbd',
+    teamName: 'Team 5',
+    scope: 'team',
+    host: YOU_PROF,
+    zoomUrl: Z.staff,
+    ...C115B
+  }, lecture('i-l5', '2026-10-26', C115B), lecture('i-l6', '2026-10-27', C115A), lecture('i-l7', '2026-10-28', C115B), {
+    id: 'i-oh2',
+    kind: 'office_hours',
+    title: 'Office hours',
+    startsAt: at('2026-10-27', '15:30'),
+    endsAt: at('2026-10-27', '16:30'),
+    host: YOU_PROF,
+    zoomUrl: Z.oh,
+    recurrenceLabel: 'Weekly · Tue',
+    ...C115B
+  }, deadline('i-d2', '2026-10-27', 'TSR 5 due')];
+  window.GT_SCHEDULE_SAMPLE = {
+    student,
+    ta,
+    instructor,
+    classes: [{
+      id: 'c115b',
+      label: 'CSE 115B'
+    }, {
+      id: 'c115a',
+      label: 'CSE 115A'
+    }],
+    nows: {
+      live: at('2026-10-20', '15:12'),
+      morning: at('2026-10-20', '09:00'),
+      evening: at('2026-10-20', '20:30'),
+      quiet: at('2026-10-24', '11:00')
+    },
+    calendarHref: '/api/schedule/calendar.ics'
+  };
+})();
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/schedule/scheduleData.js", error: String((e && e.message) || e) }); }
+
+// components/schedule/scheduleSrcLoader.js
+try { (() => {
+/* Dev fallback: when the compiled _ds_bundle.js predates components/schedule/
+   (it regenerates once per turn), transpile the family straight from source into
+   the same namespace. Inert as soon as the bundle carries ScheduleList. */
+window.loadScheduleSources = async function loadScheduleSources(base) {
+  const NS = window.GrepThinkDesignSystem_36e7e3 || (window.GrepThinkDesignSystem_36e7e3 = {});
+  if (NS.ScheduleList && NS.ScheduleModel && NS.ScheduleIcon) return NS;
+  const order = ['ScheduleModel', 'ScheduleItem', 'ScheduleDivider', 'ScheduleDayHeader', 'ScheduleList'];
+  for (const name of order) {
+    let src = await (await fetch(`${base}/components/schedule/${name}.jsx`)).text();
+    const needed = [],
+      found = [];
+    src = src.replace(/import\s*\{([^}]*)\}\s*from\s*'[^']+';?/g, (m, names) => {
+      needed.push(...names.split(',').map(s => s.trim()).filter(Boolean));
+      return '';
+    });
+    src = src.replace(/^import React[^\n]*$/mg, '');
+    src = src.replace(/^export\s+(function|const)\s+([A-Za-z_$][\w$]*)/mg, (m, kind, id) => {
+      found.push(id);
+      return `${kind} ${id}`;
+    });
+    const prelude = needed.length ? `const {${[...new Set(needed)].join(',')}} = __NS;\n` : '';
+    const code = Babel.transform(prelude + src + `\n;Object.assign(__NS, {${found.join(',')}});`, {
+      presets: ['react']
+    }).code;
+    new Function('React', '__NS', code)(window.React, NS);
+  }
+  return NS;
+};
+
+/* Transpile + run an inline <script type="text/babel-deferred"> after the sources are in. */
+window.runDeferredBabel = window.runDeferredBabel || function runDeferredBabel() {
+  document.querySelectorAll('script[type="text/babel-deferred"]').forEach(s => {
+    new Function(Babel.transform(s.textContent, {
+      presets: ['react']
+    }).code)();
+  });
+};
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/schedule/scheduleSrcLoader.js", error: String((e && e.message) || e) }); }
+
 // components/scrum/AIDraftButton.jsx
 try { (() => {
 /**
@@ -17323,6 +20240,649 @@ function App() {
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/App.jsx", error: String((e && e.message) || e) }); }
 
+// ui_kits/grepthink/ScheduleScreen.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/* GrepThink schedule — UI-kit screen composition.
+   Composes components/schedule/*; reads window.GT_SCHEDULE_SAMPLE. The clock is pinned per demo "now". */
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const {
+  ScheduleList,
+  SidebarNavItem,
+  SidebarSectionTitle,
+  Avatar,
+  Badge,
+  Kbd,
+  ModKey
+} = NS;
+const modKey = ModKey || (() => '⌘');
+const S = window.GT_SCHEDULE_SAMPLE;
+const PT = 'America/Los_Angeles';
+const NOWS = {
+  live: {
+    label: 'Tue 3:12 PM',
+    at: new Date(S.nows.live)
+  },
+  morning: {
+    label: 'Tue 9:00 AM',
+    at: new Date(S.nows.morning)
+  },
+  evening: {
+    label: 'Tue 8:30 PM',
+    at: new Date(S.nows.evening)
+  },
+  quiet: {
+    label: 'Sat (empty)',
+    at: new Date(S.nows.quiet)
+  }
+};
+const ZONES = {
+  pt: {
+    label: 'PT',
+    zone: PT
+  },
+  ist: {
+    label: 'IST',
+    zone: 'Asia/Kolkata'
+  }
+};
+const USERS = {
+  student: {
+    name: 'Joshua Cruz',
+    first: 'Josh'
+  },
+  ta: {
+    name: 'Priya Kapoor',
+    first: 'Priya'
+  },
+  instructor: {
+    name: 'Richard Jullig',
+    first: 'Prof. Jullig'
+  }
+};
+const dateLabel = (now, zone) => new Intl.DateTimeFormat('en-US', {
+  timeZone: zone,
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric'
+}).format(now);
+const svg = (d, size = 18) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  dangerouslySetInnerHTML: {
+    __html: d
+  }
+});
+const I = {
+  home: svg('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'),
+  msg: svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+  cal: svg('<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>'),
+  classes: svg('<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>'),
+  project: svg('<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>'),
+  video: svg('<path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/>'),
+  check: svg('<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>'),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  bell: svg('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>', 20),
+  menu: svg('<path d="M4 6h16M4 12h16M4 18h16"/>', 22),
+  search: svg('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', 18),
+  book: svg('<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>', 16),
+  folder: svg('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>', 16),
+  chev: svg('<path d="m6 9 6 6 6-6"/>', 14)
+};
+function Shell({
+  phone,
+  lens,
+  screen,
+  title,
+  children
+}) {
+  const staff = lens !== 'student';
+  return /*#__PURE__*/React.createElement("div", {
+    className: "sch-app"
+  }, !phone && /*#__PURE__*/React.createElement("aside", {
+    className: "sch-side"
+  }, /*#__PURE__*/React.createElement("img", {
+    className: "sch-side__logo",
+    src: "../../assets/grepthink-logo.svg",
+    alt: "GrepThink"
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sch-class"
+  }, I.classes, /*#__PURE__*/React.createElement("span", null, "2026F CSE 115B"), /*#__PURE__*/React.createElement("span", null, I.chev)), /*#__PURE__*/React.createElement(SidebarSectionTitle, null, "Main"), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.home,
+    label: "Home",
+    active: screen === 'home'
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.msg,
+    label: "Messages",
+    badge: 4
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.cal,
+    label: "Schedule",
+    active: screen === 'agenda'
+  }), staff ? /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.video,
+    label: "TA Meetings"
+  }) : /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.classes,
+    label: "My Classes"
+  }), staff ? /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.check,
+    label: "Final Reviews"
+  }) : /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.project,
+    label: "My Project"
+  }), /*#__PURE__*/React.createElement(SidebarSectionTitle, null, "Settings"), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.gear,
+    label: "Settings"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 'auto',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      fontSize: 11.5,
+      color: 'rgba(255,255,255,.75)',
+      padding: '8px 4px'
+    }
+  }, "Press ", /*#__PURE__*/React.createElement(Kbd, {
+    onDark: true,
+    keys: [modKey(), 'K']
+  }), " to search")), /*#__PURE__*/React.createElement("div", {
+    className: "sch-main"
+  }, /*#__PURE__*/React.createElement("header", {
+    className: "sch-header"
+  }, phone && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sch-header__menu",
+    "aria-label": "Open menu"
+  }, I.menu), /*#__PURE__*/React.createElement("h1", {
+    className: "sch-header__title"
+  }, title), /*#__PURE__*/React.createElement("div", {
+    className: "sch-header__right"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sch-header__icon",
+    "aria-label": "Search"
+  }, I.search), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sch-header__icon",
+    "aria-label": "Notifications"
+  }, I.bell), !phone && /*#__PURE__*/React.createElement(Avatar, {
+    name: USERS[lens].name,
+    size: "sm"
+  }))), /*#__PURE__*/React.createElement("main", {
+    className: "sch-content"
+  }, children)));
+}
+function ScheduleCard({
+  lens,
+  now,
+  zone,
+  status,
+  log,
+  ...rest
+}) {
+  return /*#__PURE__*/React.createElement("section", {
+    className: "sch-card",
+    "aria-labelledby": "schedule-heading"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sch-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    id: "schedule-heading",
+    className: "sch-card__title"
+  }, "Today\u2019s Schedule"), /*#__PURE__*/React.createElement("span", {
+    className: "sch-card__date"
+  }, dateLabel(now, zone))), /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "compact",
+    items: S[lens],
+    lens: lens,
+    now: now,
+    zone: zone,
+    status: status,
+    onRetry: () => log('retry'),
+    calendarHref: S.calendarHref,
+    seeAllHref: "#agenda",
+    onJoin: it => log(`join · ${it.title}${it.teamName ? ` · ${it.teamName}` : ''}`),
+    onMarkAttendance: it => log(`mark attendance · ${it.teamName}`),
+    onSetTime: it => log(`set time · ${it.teamName || it.title}`)
+  }, rest)));
+}
+function HomeView({
+  lens,
+  now,
+  zone,
+  status,
+  log
+}) {
+  const staff = lens !== 'student';
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: "sch-home__welcome"
+  }, "Welcome Back, ", USERS[lens].first), /*#__PURE__*/React.createElement("div", {
+    className: "sch-home__grid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sch-home__col"
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "sch-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sch-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "sch-card__title"
+  }, staff ? 'TSRs to review' : 'Upcoming Deadlines'), /*#__PURE__*/React.createElement("a", {
+    href: "#",
+    style: {
+      fontSize: 12,
+      fontWeight: 500
+    }
+  }, "See All")), /*#__PURE__*/React.createElement("div", {
+    className: "sch-row"
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
+    className: "sch-row__name"
+  }, "TSR 4"), /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+    className: "sch-row__meta"
+  }, "CSE 115B \xB7 ", staff ? '48 of 62 submitted' : 'GrepThink 2.0')), /*#__PURE__*/React.createElement("span", {
+    className: "sch-row__meta"
+  }, "Oct 20, 2026"), /*#__PURE__*/React.createElement(Badge, {
+    tone: "error"
+  }, "Due Soon")), /*#__PURE__*/React.createElement("div", {
+    className: "sch-row"
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
+    className: "sch-row__name"
+  }, "TSR 5"), /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+    className: "sch-row__meta"
+  }, "CSE 115B \xB7 ", staff ? 'opens Oct 21' : 'GrepThink 2.0')), /*#__PURE__*/React.createElement("span", {
+    className: "sch-row__meta"
+  }, "Oct 27, 2026"), /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, "Not Started")), /*#__PURE__*/React.createElement("div", {
+    className: "sch-row"
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
+    className: "sch-row__name"
+  }, "Interest Form"), /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+    className: "sch-row__meta"
+  }, "CSE 115B")), /*#__PURE__*/React.createElement("span", {
+    className: "sch-row__meta"
+  }, "Oct 12, 2026"), /*#__PURE__*/React.createElement(Badge, {
+    tone: "success"
+  }, "Submitted"))), /*#__PURE__*/React.createElement("section", {
+    className: "sch-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sch-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "sch-card__title"
+  }, staff ? 'Join requests' : 'Join Requests')), /*#__PURE__*/React.createElement("p", {
+    style: {
+      margin: '8px 0 0',
+      fontSize: 13,
+      color: 'var(--gt-text-tertiary)'
+    }
+  }, staff ? '2 pending · oldest 2 days' : 'No pending requests.'))), /*#__PURE__*/React.createElement("div", {
+    className: "sch-home__col"
+  }, !staff && /*#__PURE__*/React.createElement("div", {
+    className: "sch-toolbar",
+    role: "toolbar",
+    "aria-label": "Quick actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sch-toolbar__btn sch-toolbar__btn--join"
+  }, I.book, "Join Class"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sch-toolbar__btn sch-toolbar__btn--messages"
+  }, I.msg, "Messages"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sch-toolbar__btn sch-toolbar__btn--browse"
+  }, I.folder, "Browse")), /*#__PURE__*/React.createElement(ScheduleCard, {
+    lens: lens,
+    now: now,
+    zone: zone,
+    status: status,
+    log: log
+  }), /*#__PURE__*/React.createElement("section", {
+    className: "sch-card",
+    "aria-labelledby": "team-heading"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sch-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    id: "team-heading",
+    className: "sch-card__title"
+  }, staff ? 'Your teams' : 'Your team'), !staff && /*#__PURE__*/React.createElement("span", {
+    className: "sch-card__date"
+  }, "GrepThink 2.0")), /*#__PURE__*/React.createElement("ul", {
+    className: "sch-team",
+    style: {
+      marginTop: 8
+    }
+  }, (staff ? [['Team 1', 'GrepThink 2.0 · 4 members'], ['Team 4', 'Slug Dining · 5 members'], ['Team 6', 'Campus Nav AR · 4 members']] : [['Ashton Liu', 'Product Owner'], ['Tony Wang', 'Scrum Master'], ['Landon Nguyen', 'Member'], ['Joshua Cruz', 'Member (You)']]).map(([n, r]) => /*#__PURE__*/React.createElement("li", {
+    key: n
+  }, /*#__PURE__*/React.createElement(Avatar, {
+    name: n,
+    size: "md",
+    square: staff
+  }), /*#__PURE__*/React.createElement("span", null, n, /*#__PURE__*/React.createElement("small", null, r)))))))));
+}
+function AgendaView({
+  lens,
+  now,
+  zone,
+  status,
+  log,
+  ...rest
+}) {
+  return /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "agenda",
+    items: S[lens],
+    lens: lens,
+    now: now,
+    zone: zone,
+    status: status,
+    onRetry: () => log('retry'),
+    classes: lens === 'student' ? undefined : S.classes,
+    calendarHref: S.calendarHref,
+    onJoin: it => log(`join · ${it.title}${it.teamName ? ` · ${it.teamName}` : ''}`),
+    onMarkAttendance: it => log(`mark attendance · ${it.teamName}`),
+    onSetTime: it => log(`set time · ${it.teamName || it.title}`)
+  }, rest));
+}
+function StatesView({
+  log
+}) {
+  const C = ({
+    title,
+    date,
+    children
+  }) => /*#__PURE__*/React.createElement("section", {
+    className: "sch-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sch-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "sch-card__title"
+  }, title || 'Today’s Schedule'), date && /*#__PURE__*/React.createElement("span", {
+    className: "sch-card__date"
+  }, date)), children);
+  const common = {
+    calendarHref: S.calendarHref,
+    seeAllHref: '#agenda',
+    onMarkAttendance: it => log(`mark attendance · ${it.teamName}`),
+    onSetTime: it => log(`set time · ${it.teamName || it.title}`)
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "sch-states"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "sch-states__lbl"
+  }, "Compact card \u2014 Student"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Loading"), /*#__PURE__*/React.createElement(C, null, /*#__PURE__*/React.createElement(ScheduleList, {
+    variant: "compact",
+    status: "loading"
+  }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Error"), /*#__PURE__*/React.createElement(C, null, /*#__PURE__*/React.createElement(ScheduleList, {
+    variant: "compact",
+    status: "error",
+    onRetry: () => log('retry')
+  }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Live now \u2014 Now line, Join window, overlap, deadline marker, sprint rule"), /*#__PURE__*/React.createElement(C, {
+    date: "Tue, Oct 20"
+  }, /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "compact",
+    items: S.student,
+    now: NOWS.live.at,
+    zone: PT
+  }, common)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Morning \u2014 nothing live yet, Now line on top"), /*#__PURE__*/React.createElement(C, {
+    date: "Tue, Oct 20"
+  }, /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "compact",
+    items: S.student,
+    now: NOWS.morning.at,
+    zone: PT
+  }, common)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Evening \u2014 all past (dimmed), attendance shown"), /*#__PURE__*/React.createElement(C, {
+    date: "Tue, Oct 20"
+  }, /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "compact",
+    items: S.student,
+    now: NOWS.evening.at,
+    zone: PT
+  }, common)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Nothing today \u2014 peek at the next day, Add to your calendar"), /*#__PURE__*/React.createElement(C, {
+    date: "Sat, Oct 24"
+  }, /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "compact",
+    items: S.student,
+    now: NOWS.quiet.at,
+    zone: PT
+  }, common)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Viewer in IST \u2014 times in the viewer's zone, campus time on hover"), /*#__PURE__*/React.createElement(C, {
+    date: "Tue, Oct 20"
+  }, /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "compact",
+    items: S.student,
+    now: NOWS.morning.at,
+    zone: "Asia/Kolkata"
+  }, common)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "No items at all"), /*#__PURE__*/React.createElement(C, {
+    date: "Sat, Oct 24"
+  }, /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "compact",
+    items: [],
+    now: NOWS.quiet.at,
+    zone: PT
+  }, common)))), /*#__PURE__*/React.createElement("p", {
+    className: "sch-states__lbl"
+  }, "Compact card \u2014 TA \xB7 Instructor"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "TA, live \u2014 Mark attendance, Time TBD \u2192 Set time, +more"), /*#__PURE__*/React.createElement(C, {
+    date: "Tue, Oct 20"
+  }, /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "compact",
+    items: S.ta,
+    lens: "ta",
+    now: NOWS.live.at,
+    zone: PT
+  }, common)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Instructor, live"), /*#__PURE__*/React.createElement(C, {
+    date: "Tue, Oct 20"
+  }, /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "compact",
+    items: S.instructor,
+    lens: "instructor",
+    now: NOWS.live.at,
+    zone: PT
+  }, common)))), /*#__PURE__*/React.createElement("p", {
+    className: "sch-states__lbl"
+  }, "Agenda"), /*#__PURE__*/React.createElement("div", {
+    className: "sch-states__wide"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Loading"), /*#__PURE__*/React.createElement(ScheduleList, {
+    variant: "agenda",
+    status: "loading",
+    now: NOWS.live.at,
+    zone: PT
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "sch-states__wide"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Error"), /*#__PURE__*/React.createElement(ScheduleList, {
+    variant: "agenda",
+    status: "error",
+    now: NOWS.live.at,
+    zone: PT,
+    onRetry: () => log('retry')
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "sch-states__wide"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Empty week (Dec 14 \u2013 20) \u2014 next item + Add to your calendar"), /*#__PURE__*/React.createElement(ScheduleList, {
+    variant: "agenda",
+    items: S.student,
+    now: NOWS.live.at,
+    zone: PT,
+    weekAnchor: "2026-12-14",
+    onWeekChange: () => {},
+    calendarHref: S.calendarHref
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "sch-states__wide"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Kind filter on (Final reviews) \u2014 sprint rules stay"), /*#__PURE__*/React.createElement(ScheduleList, {
+    variant: "agenda",
+    items: S.student,
+    now: NOWS.live.at,
+    zone: PT,
+    kinds: ['final_review'],
+    onKindsChange: () => {}
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "sch-states__wide"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "sch-caption"
+  }, "Expanded TA meeting (MeetingCard) \u2014 TA lens, IST viewer"), /*#__PURE__*/React.createElement(ScheduleList, _extends({
+    variant: "agenda",
+    items: S.ta,
+    lens: "ta",
+    now: NOWS.live.at,
+    zone: "Asia/Kolkata",
+    classes: S.classes,
+    expandedId: "t-m5",
+    onToggle: () => {}
+  }, common))));
+}
+function ScheduleApp() {
+  const [view, setView] = React.useState('home'); // home | agenda | states | phone
+  const [lens, setLens] = React.useState('student');
+  const [nowKey, setNowKey] = React.useState('live');
+  const [zoneKey, setZoneKey] = React.useState('pt');
+  const [status, setStatus] = React.useState('ready');
+  const [last, setLast] = React.useState(null);
+  const now = NOWS[nowKey].at,
+    zone = ZONES[zoneKey].zone;
+  const log = React.useCallback(s => setLast(s), []);
+  const title = view === 'agenda' ? 'Schedule' : view === 'states' ? 'Schedule — states' : 'Home';
+  let stage;
+  if (view === 'phone') {
+    stage = /*#__PURE__*/React.createElement("div", {
+      className: "sch-stage sch-stage--phone"
+    }, /*#__PURE__*/React.createElement(Shell, {
+      phone: true,
+      lens: lens,
+      screen: "home",
+      title: "Home"
+    }, /*#__PURE__*/React.createElement(HomeView, {
+      lens: lens,
+      now: now,
+      zone: zone,
+      status: status,
+      log: log
+    })), /*#__PURE__*/React.createElement(Shell, {
+      phone: true,
+      lens: lens,
+      screen: "agenda",
+      title: "Schedule"
+    }, /*#__PURE__*/React.createElement(AgendaView, {
+      lens: lens,
+      now: now,
+      zone: zone,
+      status: status,
+      log: log
+    })));
+  } else {
+    stage = /*#__PURE__*/React.createElement("div", {
+      className: "sch-stage"
+    }, /*#__PURE__*/React.createElement(Shell, {
+      lens: lens,
+      screen: view,
+      title: title
+    }, view === 'home' && /*#__PURE__*/React.createElement(HomeView, {
+      lens: lens,
+      now: now,
+      zone: zone,
+      status: status,
+      log: log
+    }), view === 'agenda' && /*#__PURE__*/React.createElement(AgendaView, {
+      lens: lens,
+      now: now,
+      zone: zone,
+      status: status,
+      log: log
+    }), view === 'states' && /*#__PURE__*/React.createElement(StatesView, {
+      log: log
+    })));
+  }
+  const Opt = ({
+    on,
+    onClick,
+    children
+  }) => /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "sch-demo__opt",
+    "aria-pressed": on,
+    onClick: onClick
+  }, children);
+  return /*#__PURE__*/React.createElement(React.Fragment, null, stage, /*#__PURE__*/React.createElement("div", {
+    className: "sch-demo",
+    role: "toolbar",
+    "aria-label": "Demo controls"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__lbl"
+  }, "view"), ['home', 'agenda', 'states', 'phone'].map(v => /*#__PURE__*/React.createElement(Opt, {
+    key: v,
+    on: view === v,
+    onClick: () => setView(v)
+  }, v))), /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__lbl"
+  }, "lens"), ['student', 'ta', 'instructor'].map(l => /*#__PURE__*/React.createElement(Opt, {
+    key: l,
+    on: lens === l,
+    onClick: () => setLens(l)
+  }, l))), /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__lbl"
+  }, "now"), Object.keys(NOWS).map(k => /*#__PURE__*/React.createElement(Opt, {
+    key: k,
+    on: nowKey === k,
+    onClick: () => setNowKey(k)
+  }, NOWS[k].label))), /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__lbl"
+  }, "zone"), Object.keys(ZONES).map(k => /*#__PURE__*/React.createElement(Opt, {
+    key: k,
+    on: zoneKey === k,
+    onClick: () => setZoneKey(k)
+  }, ZONES[k].label))), /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__lbl"
+  }, "data"), ['ready', 'loading', 'error'].map(s => /*#__PURE__*/React.createElement(Opt, {
+    key: s,
+    on: status === s,
+    onClick: () => setStatus(s)
+  }, s))), last && /*#__PURE__*/React.createElement("span", {
+    className: "sch-demo__log"
+  }, "\u2192 ", last)));
+}
+window.ScheduleApp = ScheduleApp;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/ScheduleScreen.jsx", error: String((e && e.message) || e) }); }
+
 // ui_kits/grepthink/Screens.jsx
 try { (() => {
 const NS = window.GrepThinkDesignSystem_36e7e3;
@@ -18621,6 +22181,849 @@ window.GTKShell = {
 };
 })(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/Shell.jsx", error: String((e && e.message) || e) }); }
 
+// ui_kits/grepthink/TeamMeetingsScreen.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/* GrepThink team meetings — UI-kit screen composition.
+   Composes components/domain/TeamMeetings*; reads window.GT_TEAM_MEETINGS_SAMPLE. The clock is pinned to Tue Oct 20, 2026 3:12 PM PT. */
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const {
+  TeamMeetingsList,
+  TeamMeetingForm,
+  TeamMeetingsModel,
+  SidebarNavItem,
+  SidebarSectionTitle,
+  Avatar,
+  AvatarGroup,
+  Button,
+  ProgressBar,
+  Kbd,
+  ModKey
+} = NS;
+const {
+  showTeamMeetingsCard
+} = TeamMeetingsModel;
+const modKey = ModKey || (() => '⌘');
+const S = window.GT_TEAM_MEETINGS_SAMPLE;
+const NOW = new Date(S.now);
+const ZONES = {
+  pt: {
+    label: 'PT',
+    zone: 'America/Los_Angeles'
+  },
+  ist: {
+    label: 'IST',
+    zone: 'Asia/Kolkata'
+  }
+};
+const ROLES = {
+  po: {
+    label: 'product owner',
+    name: 'Ashton Liu',
+    first: 'Ashton'
+  },
+  member: {
+    label: 'member',
+    name: 'Joshua Cruz',
+    first: 'Josh'
+  }
+};
+const delay = ms => new Promise(r => setTimeout(r, ms));
+const svg = (d, size = 18) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true",
+  dangerouslySetInnerHTML: {
+    __html: d
+  }
+});
+const I = {
+  home: svg('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'),
+  msg: svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+  cal: svg('<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>'),
+  calDays: svg('<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/>', 16),
+  classes: svg('<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>'),
+  project: svg('<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>'),
+  folderKanban: svg('<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/>', 28),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  gear16: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>', 16),
+  users: svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', 16),
+  bell: svg('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>', 20),
+  menu: svg('<path d="M4 6h16M4 12h16M4 18h16"/>', 22),
+  search: svg('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', 18),
+  chev: svg('<path d="m6 9 6 6 6-6"/>', 14),
+  x: svg('<path d="M18 6L6 18M6 6l12 12"/>', 24),
+  trash: svg('<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>', 16),
+  camera: svg('<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>', 16),
+  code: svg('<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>', 15),
+  server: svg('<rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/>', 15),
+  bug: svg('<path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/>', 15)
+};
+function Shell({
+  phone,
+  role,
+  title,
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "tm-app"
+  }, !phone && /*#__PURE__*/React.createElement("aside", {
+    className: "tm-side"
+  }, /*#__PURE__*/React.createElement("img", {
+    className: "tm-side__logo",
+    src: "../../assets/grepthink-logo.svg",
+    alt: "GrepThink"
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-class"
+  }, I.classes, /*#__PURE__*/React.createElement("span", null, S.classLabel), /*#__PURE__*/React.createElement("span", null, I.chev)), /*#__PURE__*/React.createElement(SidebarSectionTitle, null, "Main"), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.home,
+    label: "Home"
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.msg,
+    label: "Messages",
+    badge: 4
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.cal,
+    label: "Schedule"
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.classes,
+    label: "My Classes"
+  }), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.project,
+    label: "My Project",
+    active: true
+  }), /*#__PURE__*/React.createElement(SidebarSectionTitle, null, "Settings"), /*#__PURE__*/React.createElement(SidebarNavItem, {
+    icon: I.gear,
+    label: "Settings"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 'auto',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      fontSize: 11.5,
+      color: 'rgba(255,255,255,.75)',
+      padding: '8px 4px'
+    }
+  }, "Press ", /*#__PURE__*/React.createElement(Kbd, {
+    onDark: true,
+    keys: [modKey(), 'K']
+  }), " to search")), /*#__PURE__*/React.createElement("div", {
+    className: "tm-main"
+  }, /*#__PURE__*/React.createElement("header", {
+    className: "tm-header"
+  }, phone && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-header__menu",
+    "aria-label": "Open menu"
+  }, I.menu), /*#__PURE__*/React.createElement("h1", {
+    className: "tm-header__title"
+  }, title), /*#__PURE__*/React.createElement("div", {
+    className: "tm-header__right"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-header__icon",
+    "aria-label": "Search"
+  }, I.search), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-header__icon",
+    "aria-label": "Notifications"
+  }, I.bell), !phone && /*#__PURE__*/React.createElement(Avatar, {
+    name: ROLES[role].name,
+    size: "sm"
+  }))), /*#__PURE__*/React.createElement("main", {
+    className: "tm-content"
+  }, children)));
+}
+
+/* The project page's "Team meetings" card — chrome belongs to the page, the body is TeamMeetingsList. */
+function TeamMeetingsCard({
+  meetings,
+  status,
+  zone,
+  canManage,
+  onManage,
+  log,
+  ...rest
+}) {
+  if (!showTeamMeetingsCard(meetings, {
+    canManage,
+    status
+  })) return null;
+  return /*#__PURE__*/React.createElement("section", {
+    className: "tm-card",
+    "aria-labelledby": "tm-card-heading"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    id: "tm-card-heading",
+    className: "tm-card__title"
+  }, "Team meetings"), canManage && status === 'ready' && meetings.length > 0 && /*#__PURE__*/React.createElement("a", {
+    href: "#manage",
+    onClick: e => {
+      e.preventDefault();
+      onManage();
+    }
+  }, "Manage")), /*#__PURE__*/React.createElement(TeamMeetingsList, _extends({
+    variant: "card",
+    meetings: meetings,
+    status: status,
+    now: NOW,
+    zone: zone,
+    teamName: S.teamName,
+    people: S.people,
+    canManage: canManage,
+    onManage: onManage,
+    onRetry: () => log('retry'),
+    onJoin: it => log(`join · ${it.title}`)
+  }, rest)));
+}
+function ProjectPage({
+  role,
+  meetings,
+  status,
+  zone,
+  onEdit,
+  log
+}) {
+  const po = role === 'po';
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("header", {
+    className: "tm-pv__header"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tm-pv__logo"
+  }, I.folderKanban), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: "tm-pv__title"
+  }, S.projectName), /*#__PURE__*/React.createElement("p", {
+    className: "tm-pv__meta"
+  }, S.classLabel, " \xB7 ", S.teamName, " \xB7 4 of 5 members")), /*#__PURE__*/React.createElement("div", {
+    className: "tm-pv__members"
+  }, /*#__PURE__*/React.createElement(AvatarGroup, {
+    names: S.members,
+    max: 5,
+    size: "sm"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "tm-pv__actions"
+  }, po && /*#__PURE__*/React.createElement(Button, {
+    variant: "secondary",
+    size: "sm",
+    iconLeft: I.users,
+    onClick: () => log('manage members')
+  }, "Manage Members"), po && /*#__PURE__*/React.createElement(Button, {
+    variant: "secondary",
+    size: "sm",
+    iconLeft: I.gear16,
+    onClick: () => onEdit('details')
+  }, "Edit Project"))), /*#__PURE__*/React.createElement("div", {
+    className: "tm-pv__content"
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "tm-card tm-desc",
+    "aria-label": "Project description"
+  }, /*#__PURE__*/React.createElement("p", null, "GrepThink 2.0 is the team and project platform CSE 115 runs on: roster import, team formation, sprint boards, TSRs and TA meetings in one place."), /*#__PURE__*/React.createElement("p", null, "This quarter the team owns the schedule layer and the \u2318K search, and ships the analytics dashboard's first release to the 115B staff."), /*#__PURE__*/React.createElement("h4", null, "Sprint 3 goals"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", null, "Today's Schedule card on Student Home, with the live Now line"), /*#__PURE__*/React.createElement("li", null, "Global search over people, projects, stories and TSRs"), /*#__PURE__*/React.createElement("li", null, "Roster import end to end, with a sponsor demo on Oct 30"))), /*#__PURE__*/React.createElement("div", {
+    className: "tm-pv__aside"
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "tm-card",
+    "aria-labelledby": "sprint-heading"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    id: "sprint-heading",
+    className: "tm-card__title"
+  }, "Sprint 3"), /*#__PURE__*/React.createElement("span", {
+    className: "tm-card__date"
+  }, "Oct 19 \u2013 30")), /*#__PURE__*/React.createElement(ProgressBar, {
+    value: 6,
+    max: 14,
+    size: "sm"
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "tm-sprint__meta"
+  }, /*#__PURE__*/React.createElement("span", null, "6 of 14 points done"), /*#__PURE__*/React.createElement("span", null, "10 days left"))), /*#__PURE__*/React.createElement(TeamMeetingsCard, {
+    meetings: meetings,
+    status: status,
+    zone: zone,
+    canManage: po,
+    onManage: () => onEdit('meetings'),
+    log: log
+  }), /*#__PURE__*/React.createElement("section", {
+    className: "tm-card",
+    "aria-labelledby": "roles-heading"
+  }, /*#__PURE__*/React.createElement("h2", {
+    id: "roles-heading",
+    className: "tm-card__title"
+  }, "Roles needed"), /*#__PURE__*/React.createElement("ul", {
+    className: "tm-roles"
+  }, /*#__PURE__*/React.createElement("li", null, /*#__PURE__*/React.createElement("span", {
+    className: "tm-roles__ico"
+  }, I.code), "Frontend"), /*#__PURE__*/React.createElement("li", null, /*#__PURE__*/React.createElement("span", {
+    className: "tm-roles__ico"
+  }, I.server), "Backend"), /*#__PURE__*/React.createElement("li", null, /*#__PURE__*/React.createElement("span", {
+    className: "tm-roles__ico"
+  }, I.bug), "QA & testing"))))));
+}
+
+/* Edit Project modal (mirrors EditProjectModal.tsx): Details · Team, plus Meetings for the Product Owner only. */
+function EditProjectModal({
+  role,
+  tab,
+  onTab,
+  onClose,
+  inline,
+  children
+}) {
+  const po = role === 'po';
+  const tabs = [['details', I.gear16, 'Details'], ['team', I.users, 'Team'], ...(po ? [['meetings', I.calDays, 'Meetings']] : [])];
+  const sheet = /*#__PURE__*/React.createElement("div", {
+    className: ['tm-ep', inline ? 'tm-ep--inline' : ''].filter(Boolean).join(' '),
+    role: "dialog",
+    "aria-modal": inline ? undefined : 'true',
+    "aria-labelledby": "ep-title"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-ep__close",
+    "aria-label": "Close",
+    onClick: onClose
+  }, I.x), /*#__PURE__*/React.createElement("header", {
+    className: "tm-ep__header"
+  }, /*#__PURE__*/React.createElement("h2", {
+    id: "ep-title",
+    className: "tm-ep__title"
+  }, "Edit Project"), /*#__PURE__*/React.createElement("p", {
+    className: "tm-ep__subtitle"
+  }, "Manage your project configuration and team roles")), /*#__PURE__*/React.createElement("div", {
+    className: "tm-ep__tabs",
+    role: "tablist"
+  }, tabs.map(([id, icon, label]) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    type: "button",
+    role: "tab",
+    "aria-selected": tab === id,
+    className: `tm-ep__tab ${tab === id ? 'tm-ep__tab--active' : ''}`,
+    onClick: () => onTab(id)
+  }, icon, /*#__PURE__*/React.createElement("span", null, label)))), /*#__PURE__*/React.createElement("div", {
+    className: "tm-ep__body"
+  }, tab === 'details' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("section", {
+    className: "tm-ep__section"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "tm-ep__section-title"
+  }, "Project Logo"), /*#__PURE__*/React.createElement("p", {
+    className: "tm-ep__section-hint"
+  }, "Shown on Browse Projects when set. Leave empty to use the default icon."), /*#__PURE__*/React.createElement("div", {
+    className: "tm-ep__logo-row"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-ep__logo"
+  }, I.folderKanban), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-ep__logo-change"
+  }, I.camera, "Upload logo"))), /*#__PURE__*/React.createElement("section", {
+    className: "tm-ep__section"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "tm-ep__section-title"
+  }, "Project Name"), /*#__PURE__*/React.createElement("input", {
+    className: "tm-ep__input",
+    defaultValue: S.projectName,
+    "aria-label": "Project name"
+  })), /*#__PURE__*/React.createElement("section", {
+    className: "tm-ep__section"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "tm-ep__section-title"
+  }, "Description"), /*#__PURE__*/React.createElement("textarea", {
+    className: "tm-ep__textarea",
+    rows: 4,
+    "aria-label": "Project description",
+    defaultValue: "GrepThink 2.0 is the team and project platform CSE 115 runs on."
+  })), /*#__PURE__*/React.createElement("section", {
+    className: "tm-ep__section"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "tm-ep__section-title"
+  }, "Max Team Size"), /*#__PURE__*/React.createElement("p", {
+    className: "tm-ep__section-hint"
+  }, "Maximum number of members allowed on this project."), /*#__PURE__*/React.createElement("input", {
+    className: "tm-ep__input tm-ep__input--short",
+    type: "number",
+    defaultValue: 5,
+    "aria-label": "Max team size"
+  }))), tab === 'team' && /*#__PURE__*/React.createElement("section", {
+    className: "tm-ep__section"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "tm-ep__section-title"
+  }, "Team roles"), /*#__PURE__*/React.createElement("p", {
+    className: "tm-ep__section-hint"
+  }, "Assign the Scrum roles for this project."), /*#__PURE__*/React.createElement("div", {
+    className: "tm-ep__role-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tm-ep__role-name"
+  }, "Product Owner"), /*#__PURE__*/React.createElement("select", {
+    className: "tm-ep__select",
+    defaultValue: "u-ashton",
+    "aria-label": "Product Owner"
+  }, Object.values(S.people).map(p => /*#__PURE__*/React.createElement("option", {
+    key: p.id,
+    value: p.id
+  }, p.name)))), /*#__PURE__*/React.createElement("div", {
+    className: "tm-ep__role-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tm-ep__role-name"
+  }, "Scrum Master"), /*#__PURE__*/React.createElement("select", {
+    className: "tm-ep__select",
+    defaultValue: "u-tony",
+    "aria-label": "Scrum Master"
+  }, Object.values(S.people).map(p => /*#__PURE__*/React.createElement("option", {
+    key: p.id,
+    value: p.id
+  }, p.name))))), tab === 'meetings' && children), /*#__PURE__*/React.createElement("footer", {
+    className: "tm-ep__footer"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-ep__btn tm-ep__btn--delete"
+  }, I.trash, "Delete Project"), /*#__PURE__*/React.createElement("div", {
+    className: "tm-ep__footer-right"
+  }, tab === 'meetings' ? /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-ep__btn tm-ep__btn--save",
+    onClick: onClose
+  }, "Done") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-ep__btn tm-ep__btn--secondary",
+    onClick: onClose
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-ep__btn tm-ep__btn--save",
+    onClick: onClose
+  }, "Save Changes")))));
+  if (inline) return sheet;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "tm-ep-backdrop",
+    onMouseDown: e => {
+      if (e.target === e.currentTarget) onClose();
+    }
+  }, sheet);
+}
+function StatesView({
+  zone,
+  log
+}) {
+  const noop = () => delay(600);
+  const fail = () => delay(600).then(() => {
+    throw new Error('fail');
+  });
+  const P = ({
+    cap,
+    wide,
+    children
+  }) => /*#__PURE__*/React.createElement("div", {
+    className: wide ? 'tm-states__wide' : ''
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "tm-caption"
+  }, cap), children);
+  const Card = ({
+    manage,
+    children
+  }) => /*#__PURE__*/React.createElement("section", {
+    className: "tm-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-card__head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "tm-card__title"
+  }, "Team meetings"), manage && /*#__PURE__*/React.createElement("a", {
+    href: "#manage",
+    onClick: e => e.preventDefault()
+  }, "Manage")), children);
+  const common = {
+    now: NOW,
+    zone,
+    canManage: true,
+    onCreate: noop,
+    onUpdate: noop,
+    onDelete: noop
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "tm-states"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "tm-states__lbl"
+  }, "Meetings tab \u2014 Product Owner"), /*#__PURE__*/React.createElement(P, {
+    cap: "Ready \u2014 4 upcoming (one live), Past (3) collapsed",
+    wide: true
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-panel"
+  }, /*#__PURE__*/React.createElement(TeamMeetingsList, _extends({
+    variant: "manage",
+    meetings: S.meetings
+  }, common)))), /*#__PURE__*/React.createElement(P, {
+    cap: "One editor at a time \u2014 a row in edit (Add / other Edit disabled) \xB7 a delete waiting on its confirm",
+    wide: true
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-panel"
+  }, /*#__PURE__*/React.createElement(TeamMeetingsList, _extends({
+    variant: "manage",
+    meetings: S.upcoming
+  }, common, {
+    defaultEditingId: "tm-2",
+    defaultConfirmId: "tm-3"
+  })))), /*#__PURE__*/React.createElement(P, {
+    cap: "Empty"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-panel"
+  }, /*#__PURE__*/React.createElement(TeamMeetingsList, _extends({
+    variant: "manage",
+    meetings: []
+  }, common)))), /*#__PURE__*/React.createElement(P, {
+    cap: "Loading"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-panel"
+  }, /*#__PURE__*/React.createElement(TeamMeetingsList, {
+    variant: "manage",
+    status: "loading",
+    now: NOW
+  }))), /*#__PURE__*/React.createElement(P, {
+    cap: "Error"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-panel"
+  }, /*#__PURE__*/React.createElement(TeamMeetingsList, {
+    variant: "manage",
+    status: "error",
+    now: NOW,
+    onRetry: () => log('retry')
+  }))), /*#__PURE__*/React.createElement(P, {
+    cap: "Saving fails \u2014 try Add meeting \u2192 Add: the error stays inline, the draft is kept"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-panel"
+  }, /*#__PURE__*/React.createElement(TeamMeetingsList, _extends({
+    variant: "manage",
+    meetings: S.upcoming.slice(0, 2)
+  }, common, {
+    onCreate: fail,
+    onUpdate: fail,
+    onDelete: fail
+  })))), /*#__PURE__*/React.createElement(P, {
+    cap: "8+ meetings with a long title, past open",
+    wide: true
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-panel"
+  }, /*#__PURE__*/React.createElement(TeamMeetingsList, _extends({
+    variant: "manage",
+    meetings: S.many
+  }, common, {
+    defaultPastOpen: true
+  })))), /*#__PURE__*/React.createElement("p", {
+    className: "tm-states__lbl"
+  }, "TeamMeetingForm"), /*#__PURE__*/React.createElement(P, {
+    cap: "New \u2014 viewer in IST: the campus time sits under the start time"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-panel"
+  }, /*#__PURE__*/React.createElement(TeamMeetingForm, {
+    mode: "create",
+    now: NOW,
+    zone: "Asia/Kolkata",
+    onSubmit: v => log(`submit · ${v.title}`),
+    onCancel: () => log('cancel')
+  }))), /*#__PURE__*/React.createElement(P, {
+    cap: "Edit \u2014 save error, draft kept"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-panel"
+  }, /*#__PURE__*/React.createElement(TeamMeetingForm, {
+    mode: "edit",
+    meeting: S.upcoming[2],
+    now: NOW,
+    zone: zone,
+    error: "Couldn\u2019t save this meeting. Your changes are still here \u2014 try again.",
+    onSubmit: () => {},
+    onCancel: () => {}
+  }))), /*#__PURE__*/React.createElement(P, {
+    cap: "Edit \u2014 saving"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tm-panel"
+  }, /*#__PURE__*/React.createElement(TeamMeetingForm, {
+    mode: "edit",
+    meeting: S.upcoming[1],
+    now: NOW,
+    zone: zone,
+    saving: true,
+    onSubmit: () => {},
+    onCancel: () => {}
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "tm-states__lbl"
+  }, "Project-page card \u2014 every member"), /*#__PURE__*/React.createElement(P, {
+    cap: "Ready \u2014 live meeting \u2192 Join Zoom, grouped by day, Past meetings (3)"
+  }, /*#__PURE__*/React.createElement(Card, {
+    manage: true
+  }, /*#__PURE__*/React.createElement(TeamMeetingsList, {
+    variant: "card",
+    meetings: S.meetings,
+    teamName: S.teamName,
+    people: S.people,
+    canManage: true,
+    now: NOW,
+    zone: zone,
+    onJoin: it => log(`join · ${it.title}`)
+  }))), /*#__PURE__*/React.createElement(P, {
+    cap: "Past open (dimmed rows)"
+  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(TeamMeetingsList, {
+    variant: "card",
+    meetings: S.meetings,
+    teamName: S.teamName,
+    people: S.people,
+    now: NOW,
+    zone: zone,
+    defaultPastOpen: true
+  }))), /*#__PURE__*/React.createElement(P, {
+    cap: "9 upcoming \u2014 five shown, then +4 more \xB7 See all in Schedule"
+  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(TeamMeetingsList, {
+    variant: "card",
+    meetings: S.many,
+    teamName: S.teamName,
+    people: S.people,
+    now: NOW,
+    zone: zone
+  }))), /*#__PURE__*/React.createElement(P, {
+    cap: "Empty, Product Owner \u2014 the quiet line with Add one"
+  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(TeamMeetingsList, {
+    variant: "card",
+    meetings: [],
+    canManage: true,
+    now: NOW,
+    zone: zone,
+    onManage: () => log('manage')
+  }))), /*#__PURE__*/React.createElement(P, {
+    cap: "Empty, member \u2014 the card is not rendered"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "tm-note"
+  }, "showTeamMeetingsCard([], ", '{ canManage: false }', ") \u2192 false: the page skips the card until the first meeting exists.")), /*#__PURE__*/React.createElement(P, {
+    cap: "Viewer in IST \u2014 times in IST, campus time on hover, zone note"
+  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(TeamMeetingsList, {
+    variant: "card",
+    meetings: S.meetings,
+    teamName: S.teamName,
+    people: S.people,
+    now: NOW,
+    zone: "Asia/Kolkata"
+  }))), /*#__PURE__*/React.createElement(P, {
+    cap: "Loading \xB7 Error"
+  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(TeamMeetingsList, {
+    variant: "card",
+    status: "loading",
+    now: NOW
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 16
+    }
+  }), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(TeamMeetingsList, {
+    variant: "card",
+    status: "error",
+    now: NOW,
+    onRetry: () => log('retry')
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "tm-states__lbl"
+  }, "A member opens Edit Project \u2014 no Meetings tab"), /*#__PURE__*/React.createElement(P, {
+    cap: "Details \xB7 Team only (canEditProjectDetails as today)",
+    wide: true
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 580
+    }
+  }, /*#__PURE__*/React.createElement(EditProjectModal, {
+    inline: true,
+    role: "member",
+    tab: "details",
+    onTab: () => {},
+    onClose: () => {}
+  }))));
+}
+function TeamMeetingsApp() {
+  const [view, setView] = React.useState('project'); // project | modal | states | phone
+  const [role, setRole] = React.useState('po');
+  const [zoneKey, setZoneKey] = React.useState('pt');
+  const [data, setData] = React.useState('ready'); // ready | empty | many | loading | error
+  const [apiOk, setApiOk] = React.useState(true);
+  const [tab, setTab] = React.useState('meetings');
+  const [meetings, setMeetings] = React.useState(S.meetings);
+  const [last, setLast] = React.useState(null);
+  const zone = ZONES[zoneKey].zone;
+  const log = React.useCallback(s => setLast(s), []);
+  const status = data === 'loading' || data === 'error' ? data : 'ready';
+  const pickData = d => {
+    setData(d);
+    if (d === 'ready') setMeetings(S.meetings);
+    if (d === 'empty') setMeetings([]);
+    if (d === 'many') setMeetings(S.many);
+  };
+  const guard = async ms => {
+    await delay(ms);
+    if (!apiOk) throw new Error('Request failed');
+  };
+  const api = {
+    onCreate: async v => {
+      await guard(700);
+      setMeetings(ms => [...ms, {
+        id: `tm-${Date.now()}`,
+        projectId: 'p-gt2',
+        createdBy: 'u-ashton',
+        updatedAt: new Date().toISOString(),
+        ...v
+      }]);
+      log(`created · ${v.title}`);
+    },
+    onUpdate: async (id, v) => {
+      await guard(700);
+      setMeetings(ms => ms.map(m => m.id === id ? {
+        ...m,
+        ...v,
+        updatedAt: new Date().toISOString()
+      } : m));
+      log(`saved · ${v.title}`);
+    },
+    onDelete: async id => {
+      await guard(600);
+      setMeetings(ms => ms.filter(m => m.id !== id));
+      log('deleted');
+    }
+  };
+  const openEdit = t => {
+    setTab(role === 'po' ? t : 'details');
+    setView('modal');
+  };
+  const closeEdit = () => setView('project');
+  const manageList = extra => /*#__PURE__*/React.createElement(TeamMeetingsList, _extends({
+    variant: "manage",
+    meetings: meetings,
+    status: status,
+    now: NOW,
+    zone: zone,
+    canManage: true
+  }, api, {
+    onRetry: () => log('retry')
+  }, extra));
+  let stage;
+  if (view === 'phone') {
+    stage = /*#__PURE__*/React.createElement("div", {
+      className: "tm-stage tm-stage--phone"
+    }, /*#__PURE__*/React.createElement(Shell, {
+      phone: true,
+      role: role,
+      title: "My Project"
+    }, /*#__PURE__*/React.createElement(ProjectPage, {
+      role: role,
+      meetings: meetings,
+      status: status,
+      zone: zone,
+      onEdit: () => {},
+      log: log
+    })), /*#__PURE__*/React.createElement(Shell, {
+      phone: true,
+      role: "po",
+      title: "My Project"
+    }, /*#__PURE__*/React.createElement(ProjectPage, {
+      role: "po",
+      meetings: meetings,
+      status: status,
+      zone: zone,
+      onEdit: () => {},
+      log: log
+    }), /*#__PURE__*/React.createElement(EditProjectModal, {
+      role: "po",
+      tab: "meetings",
+      onTab: () => {},
+      onClose: () => {}
+    }, manageList({
+      defaultEditingId: 'new'
+    }))));
+  } else {
+    stage = /*#__PURE__*/React.createElement("div", {
+      className: "tm-stage"
+    }, /*#__PURE__*/React.createElement(Shell, {
+      role: role,
+      title: view === 'states' ? 'Team meetings — states' : 'My Project'
+    }, view === 'states' ? /*#__PURE__*/React.createElement(StatesView, {
+      zone: zone,
+      log: log
+    }) : /*#__PURE__*/React.createElement(ProjectPage, {
+      role: role,
+      meetings: meetings,
+      status: status,
+      zone: zone,
+      onEdit: openEdit,
+      log: log
+    }), view === 'modal' && /*#__PURE__*/React.createElement(EditProjectModal, {
+      role: role,
+      tab: tab,
+      onTab: setTab,
+      onClose: closeEdit
+    }, manageList())));
+  }
+  const Opt = ({
+    on,
+    onClick,
+    children
+  }) => /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "tm-demo__opt",
+    "aria-pressed": on,
+    onClick: onClick
+  }, children);
+  return /*#__PURE__*/React.createElement(React.Fragment, null, stage, /*#__PURE__*/React.createElement("div", {
+    className: "tm-demo",
+    role: "toolbar",
+    "aria-label": "Demo controls"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__lbl"
+  }, "view"), ['project', 'modal', 'states', 'phone'].map(v => /*#__PURE__*/React.createElement(Opt, {
+    key: v,
+    on: view === v,
+    onClick: () => {
+      setView(v);
+      if (v === 'modal') setTab(role === 'po' ? 'meetings' : 'details');
+    }
+  }, v))), /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__lbl"
+  }, "role"), Object.keys(ROLES).map(r => /*#__PURE__*/React.createElement(Opt, {
+    key: r,
+    on: role === r,
+    onClick: () => {
+      setRole(r);
+      if (r !== 'po') setTab('details');else setTab('meetings');
+    }
+  }, ROLES[r].label))), /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__lbl"
+  }, "zone"), Object.keys(ZONES).map(k => /*#__PURE__*/React.createElement(Opt, {
+    key: k,
+    on: zoneKey === k,
+    onClick: () => setZoneKey(k)
+  }, ZONES[k].label))), /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__lbl"
+  }, "data"), ['ready', 'empty', 'many', 'loading', 'error'].map(d => /*#__PURE__*/React.createElement(Opt, {
+    key: d,
+    on: data === d,
+    onClick: () => pickData(d)
+  }, d))), /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__group"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__lbl"
+  }, "api"), /*#__PURE__*/React.createElement(Opt, {
+    on: apiOk,
+    onClick: () => setApiOk(true)
+  }, "ok"), /*#__PURE__*/React.createElement(Opt, {
+    on: !apiOk,
+    onClick: () => setApiOk(false)
+  }, "fails")), last && /*#__PURE__*/React.createElement("span", {
+    className: "tm-demo__log"
+  }, "\u2192 ", last)));
+}
+window.TeamMeetingsApp = TeamMeetingsApp;
+})(); } catch (e) { __ds_ns.__errors.push({ path: "ui_kits/grepthink/TeamMeetingsScreen.jsx", error: String((e && e.message) || e) }); }
+
 // ui_kits/grepthink/analyticsData.js
 try { (() => {
 /* Sample payloads for the Analytics UI kit — copies of
@@ -19355,6 +23758,20 @@ __ds_ns.TSRForm = __ds_scope.TSRForm;
 
 __ds_ns.TSRSummaryCard = __ds_scope.TSRSummaryCard;
 
+__ds_ns.TeamMeetingForm = __ds_scope.TeamMeetingForm;
+
+__ds_ns.TeamMeetingsList = __ds_scope.TeamMeetingsList;
+
+__ds_ns.TEAM_MEETING_TITLE_MAX = __ds_scope.TEAM_MEETING_TITLE_MAX;
+
+__ds_ns.TEAM_MEETING_NOTE_MAX = __ds_scope.TEAM_MEETING_NOTE_MAX;
+
+__ds_ns.TEAM_MEETING_DEFAULT_DURATION = __ds_scope.TEAM_MEETING_DEFAULT_DURATION;
+
+__ds_ns.TEAM_MEETING_DURATIONS = __ds_scope.TEAM_MEETING_DURATIONS;
+
+__ds_ns.TeamMeetingsModel = __ds_scope.TeamMeetingsModel;
+
 __ds_ns.TeamMemberCard = __ds_scope.TeamMemberCard;
 
 __ds_ns.RoleSelect = __ds_scope.RoleSelect;
@@ -19470,6 +23887,26 @@ __ds_ns.Select = __ds_scope.Select;
 __ds_ns.Textarea = __ds_scope.Textarea;
 
 __ds_ns.Toggle = __ds_scope.Toggle;
+
+__ds_ns.ScheduleDayHeader = __ds_scope.ScheduleDayHeader;
+
+__ds_ns.ScheduleDivider = __ds_scope.ScheduleDivider;
+
+__ds_ns.ScheduleIcon = __ds_scope.ScheduleIcon;
+
+__ds_ns.ScheduleItem = __ds_scope.ScheduleItem;
+
+__ds_ns.ScheduleList = __ds_scope.ScheduleList;
+
+__ds_ns.SCHOOL_ZONE = __ds_scope.SCHOOL_ZONE;
+
+__ds_ns.JOIN_WINDOW_MS = __ds_scope.JOIN_WINDOW_MS;
+
+__ds_ns.COUNTDOWN_DAYS = __ds_scope.COUNTDOWN_DAYS;
+
+__ds_ns.SCHEDULE_KINDS = __ds_scope.SCHEDULE_KINDS;
+
+__ds_ns.ScheduleModel = __ds_scope.ScheduleModel;
 
 __ds_ns.AIDraftButton = __ds_scope.AIDraftButton;
 

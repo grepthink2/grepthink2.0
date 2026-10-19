@@ -25,6 +25,7 @@
               "components/marketing/**",
               "components/navigation/**",
               "components/primitives/**",
+              "components/schedule/**",
               "components/scrum/**",
               "components/search/**",
               "ui_kits/grepthink-landing/**",
@@ -502,6 +503,34 @@
         "message": "<ScalePicker> doesn't accept that prop. Declared props: value, onChange, className."
       },
       {
+        "selector": "JSXOpeningElement[name.name='ScheduleDayHeader'] > JSXAttribute > JSXIdentifier[name!=/^(?:dayKey|now|zone|title|date|isToday|aside|id|as|className|key|ref|className|style|children)$/]",
+        "message": "<ScheduleDayHeader> doesn't accept that prop. Declared props: dayKey, now, zone, title, date, isToday, aside, id, as, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ScheduleDivider'] > JSXAttribute > JSXIdentifier[name!=/^(?:item|sprint|isToday|className|key|ref|className|style|children)$/]",
+        "message": "<ScheduleDivider> doesn't accept that prop. Declared props: item, sprint, isToday, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ScheduleIcon'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|size|className|key|ref|className|style|children)$/]",
+        "message": "<ScheduleIcon> doesn't accept that prop. Declared props: name, size, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ScheduleList'] > JSXAttribute > JSXIdentifier[name!=/^(?:variant|items|now|zone|schoolZone|lens|status|onRetry|maxItems|seeAllHref|calendarHref|weekAnchor|onWeekChange|classes|classId|onClassChange|kinds|onKindsChange|showEmptyDays|onJoin|onMarkAttendance|onSetTime|onOpen|expandedId|onToggle|className|key|ref|className|style|children)$/]",
+        "message": "<ScheduleList> doesn't accept that prop. Declared props: variant, items, now, zone, schoolZone, lens, status, onRetry, maxItems, seeAllHref, calendarHref, weekAnchor, onWeekChange, classes, classId, onClassChange, kinds, onKindsChange, showEmptyDays, onJoin, onMarkAttendance, onSetTime, onOpen, expandedId, onToggle, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ScheduleList'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:compact|agenda)$/]",
+        "message": "<ScheduleList> variant must be one of 'compact' | 'agenda'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ScheduleList'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:ready|loading|error)$/]",
+        "message": "<ScheduleList> status must be one of 'ready' | 'loading' | 'error'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SchedulePerson'] > JSXAttribute > JSXIdentifier[name!=/^(?:id|name|avatarUrl|role|you|key|ref|className|style|children)$/]",
+        "message": "<SchedulePerson> doesn't accept that prop. Declared props: id, name, avatarUrl, role, you."
+      },
+      {
         "selector": "JSXOpeningElement[name.name='Scrollbar'] > JSXAttribute > JSXIdentifier[name!=/^(?:className|style|oS|horizontal|position|icon1|icon2|icon3|icon4|key|ref|className|style|children)$/]",
         "message": "<Scrollbar> doesn't accept that prop. Declared props: className, style, oS, horizontal, position, icon1, icon2, icon3, icon4."
       },
@@ -612,6 +641,30 @@
       {
         "selector": "JSXOpeningElement[name.name='TaskMoveAudit'] > JSXAttribute > JSXIdentifier[name!=/^(?:to|by|at|key|ref|className|style|children)$/]",
         "message": "<TaskMoveAudit> doesn't accept that prop. Declared props: to, by, at."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TeamMeetingForm'] > JSXAttribute > JSXIdentifier[name!=/^(?:mode|meeting|now|zone|schoolZone|saving|error|onSubmit|onCancel|className|key|ref|className|style|children)$/]",
+        "message": "<TeamMeetingForm> doesn't accept that prop. Declared props: mode, meeting, now, zone, schoolZone, saving, error, onSubmit, onCancel, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TeamMeetingForm'] > JSXAttribute[name.name='mode'] > Literal[value!=/^(?:create|edit)$/]",
+        "message": "<TeamMeetingForm> mode must be one of 'create' | 'edit'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TeamMeetingsList'] > JSXAttribute > JSXIdentifier[name!=/^(?:variant|meetings|status|now|zone|schoolZone|canManage|teamName|people|onCreate|onUpdate|onDelete|onRetry|onManage|onJoin|scheduleHref|maxUpcoming|defaultEditingId|defaultConfirmId|defaultPastOpen|className|key|ref|className|style|children)$/]",
+        "message": "<TeamMeetingsList> doesn't accept that prop. Declared props: variant, meetings, status, now, zone, schoolZone, canManage, teamName, people, onCreate, onUpdate, onDelete, onRetry, onManage, onJoin, scheduleHref, maxUpcoming, defaultEditingId, defaultConfirmId, defaultPastOpen, className."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TeamMeetingsList'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:manage|card)$/]",
+        "message": "<TeamMeetingsList> variant must be one of 'manage' | 'card'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TeamMeetingsList'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:ready|loading|error)$/]",
+        "message": "<TeamMeetingsList> status must be one of 'ready' | 'loading' | 'error'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TeamMeeting'] > JSXAttribute > JSXIdentifier[name!=/^(?:id|projectId|title|startsAt|durationMinutes|location|zoomUrl|note|createdBy|updatedAt|key|ref|className|style|children)$/]",
+        "message": "<TeamMeeting> doesn't accept that prop. Declared props: id, projectId, title, startsAt, durationMinutes, location, zoomUrl, note, createdBy, updatedAt."
       },
       {
         "selector": "JSXOpeningElement[name.name='TeamMemberCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|email|role|skills|actions|className|key|ref|className|style|children)$/]",
@@ -924,6 +977,21 @@
       "ScalePicker": {
         "replaces": []
       },
+      "ScheduleDayHeader": {
+        "replaces": []
+      },
+      "ScheduleDivider": {
+        "replaces": []
+      },
+      "ScheduleIcon": {
+        "replaces": []
+      },
+      "ScheduleList": {
+        "replaces": []
+      },
+      "SchedulePerson": {
+        "replaces": []
+      },
       "Scrollbar": {
         "replaces": []
       },
@@ -985,6 +1053,15 @@
         "replaces": []
       },
       "TaskMoveAudit": {
+        "replaces": []
+      },
+      "TeamMeetingForm": {
+        "replaces": []
+      },
+      "TeamMeetingsList": {
+        "replaces": []
+      },
+      "TeamMeeting": {
         "replaces": []
       },
       "TeamMemberCard": {
@@ -1254,6 +1331,19 @@
       "--gt-red-500",
       "--gt-red-600",
       "--gt-red-700",
+      "--gt-sched-deadline-text",
+      "--gt-sched-lecture-soft",
+      "--gt-sched-lecture-text",
+      "--gt-sched-meeting-soft",
+      "--gt-sched-meeting-text",
+      "--gt-sched-now",
+      "--gt-sched-oh-border",
+      "--gt-sched-oh-soft",
+      "--gt-sched-oh-text",
+      "--gt-sched-review-soft",
+      "--gt-sched-review-text",
+      "--gt-sched-ta-soft",
+      "--gt-sched-ta-text",
       "--gt-scrim",
       "--gt-series-1",
       "--gt-series-2",
@@ -1404,6 +1494,19 @@
       "--gt-chart-wash": "color",
       "--gt-chart-hover": "color",
       "--gt-opacity-refetch": "other",
+      "--gt-sched-ta-soft": "color",
+      "--gt-sched-ta-text": "font",
+      "--gt-sched-review-soft": "color",
+      "--gt-sched-review-text": "font",
+      "--gt-sched-meeting-soft": "color",
+      "--gt-sched-meeting-text": "font",
+      "--gt-sched-lecture-soft": "color",
+      "--gt-sched-lecture-text": "font",
+      "--gt-sched-oh-soft": "color",
+      "--gt-sched-oh-text": "font",
+      "--gt-sched-oh-border": "color",
+      "--gt-sched-deadline-text": "font",
+      "--gt-sched-now": "color",
       "--gt-gold": "color",
       "--gt-gold-text": "font",
       "--gt-gold-deep": "color",

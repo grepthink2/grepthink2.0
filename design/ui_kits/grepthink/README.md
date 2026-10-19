@@ -5,6 +5,7 @@ design-system components (`window.GrepThinkDesignSystem_36e7e3`).
 
 - `index.html` — entry; loads React + Babel + `_ds_bundle.js` + the JSX below.
 - `scrum-board.html` — Scrum Board screen: sprint stories, 3-column DnD board with move audit, burnup charts (sprint + cumulative), backlog, story modal (markdown + comments + AI draft). Composes `components/scrum/`.
+- `schedule.html` — Schedule: Student Home with the Today's Schedule card, the `/app/schedule` agenda week, every state, Student / TA / Instructor lenses, another time zone, phone. Composes `components/schedule/` (`ScheduleScreen.jsx`).
 - `Shell.jsx` — green sidebar (class selector, sections, dark-mode row) + top header (title, search, bell).
 - `Screens.jsx` — Home, Projects, Assignments, TSR, Messages, Roster, Meetings.
 - `App.jsx` — persona switcher (Student / TA / Instructor) + navigation state.
