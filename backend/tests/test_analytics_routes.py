@@ -34,6 +34,12 @@ def _remap(rows: list[dict]) -> list[dict]:
     return [{**r, "class_id": _UUIDS.get(r["class_id"], r["class_id"])} for r in rows]
 
 
+def _varies_by(response) -> set[str]:
+    """The headers a response's Vary names. The routes add Authorization; Starlette's CORS
+    middleware adds Origin to every response since 1.7, so compare names, not the whole string."""
+    return {name.strip() for name in response.headers.get("vary", "").split(",") if name.strip()}
+
+
 CLASSES_UUID = [{**c, "id": _UUIDS.get(c["id"], c["id"])} for c in CLASSES]
 COUNTS_UUID = {
     **COUNTS,
@@ -103,7 +109,7 @@ def test_scope_lists_the_callers_institutions_and_is_empty_for_students(client):
     assert (
         r.status_code == 200
         and r.headers["cache-control"] == "no-cache"
-        and r.headers["vary"] == "Authorization"
+        and "Authorization" in _varies_by(r)
     )
     body = r.json()
     # prof created UCSC classes only; c9 is someone else's
@@ -136,9 +142,7 @@ def test_dashboard_happy_path_sets_the_headers_and_records_the_view(client, _set
         headers=PROF,
     )
     assert r.status_code == 200, r.text
-    assert (
-        r.headers["cache-control"] == "private, max-age=60" and r.headers["vary"] == "Authorization"
-    )
+    assert r.headers["cache-control"] == "private, max-age=60" and "Authorization" in _varies_by(r)
     body = r.json()
     assert body["meta"]["class"] == {"id": C1, "label": "CSE 115A · Fall 2026"}
     assert body["overview"]["messages"] == 1284 and body["failures"] == []
@@ -181,7 +185,7 @@ def test_fresh_bypasses_the_cache_and_is_never_stored_by_the_browser(client):
     )
     r = client.get(f"{BASE}/dashboard", params={**params, "fresh": "1"}, headers=PROF)
     assert r.json()["meta"]["cached"] is False
-    assert r.headers["cache-control"] == "no-store" and r.headers["vary"] == "Authorization"
+    assert r.headers["cache-control"] == "no-store" and "Authorization" in _varies_by(r)
 
 
 def test_a_degraded_payload_still_answers_200(client, _setup):
