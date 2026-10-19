@@ -305,6 +305,8 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                   setEndDateNotice(null);
                 }}
                 labelClassName="class-settings-modal__label"
+                // A day picked while the save is in flight would be written over by the day being saved.
+                disabled={isSavingEndDate}
               />
               <p className="class-settings-modal__hint">Before finals week</p>
               <div className="class-settings-modal__link-actions">
@@ -314,7 +316,7 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                   onClick={() => void saveEndDate()}
                   disabled={!endDateChanged || isSavingEndDate}
                 >
-                  {isSavingEndDate ? 'Saving…' : 'Save'}
+                  {isSavingEndDate ? 'Saving…' : 'Save last day'}
                 </button>
                 {/* Always on the page, so a screen reader announces the text when it appears */}
                 <span className="class-settings-modal__link-notice" role="status">

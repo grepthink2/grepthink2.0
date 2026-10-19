@@ -16,8 +16,18 @@ vi.mock('@/lib/classContext', () => ({ useClass: () => ctx }));
 vi.mock('@/lib/api', () => ({ api: { getClassRoster: vi.fn() } }));
 // The real picker is a calendar popover; a button that shows its day and picks another is enough here.
 vi.mock('@features/app/components/Fields/DatePickerField', () => ({
-  default: ({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) => (
-    <button type="button" onClick={() => onChange(picks.day)}>
+  default: ({
+    label,
+    value,
+    onChange,
+    disabled,
+  }: {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    disabled?: boolean;
+  }) => (
+    <button type="button" disabled={disabled} onClick={() => onChange(picks.day)}>
       {label}: {value || 'not set'}
     </button>
   ),
@@ -189,7 +199,7 @@ describe('ClassSettingsModal — Tasks - External link', () => {
 
 describe('ClassSettingsModal — last day of classes', () => {
   const endDateField = () => screen.getByRole('button', { name: /^Last Day of Classes/ });
-  const endDateSave = () => screen.getByRole('button', { name: 'Save' });
+  const endDateSave = () => screen.getByRole('button', { name: 'Save last day' });
   const endDateSection = () => sectionOf(endDateField());
 
   it("shows the class's last day and a hint, with an empty status line ready to announce a save", () => {
@@ -232,7 +242,7 @@ describe('ClassSettingsModal — last day of classes', () => {
     expect(ctx.setClassExternalTasksUrl).not.toHaveBeenCalled();
   });
 
-  it('shows Saving… and cannot be pressed again while the save is in flight', async () => {
+  it('shows Saving…, and neither the button nor the day can be changed while the save is in flight', async () => {
     const user = userEvent.setup();
     let finish: () => void = () => {};
     ctx.setClassEndDate.mockReturnValueOnce(new Promise<void>((resolve) => (finish = resolve)));
@@ -240,9 +250,12 @@ describe('ClassSettingsModal — last day of classes', () => {
     await user.click(endDateField());
     await user.click(endDateSave());
     expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    // A day picked now would be written over by the day being saved when its answer lands.
+    expect(endDateField()).toBeDisabled();
 
     await act(async () => finish());
     expect(await endDateSection().findByRole('status')).toHaveTextContent(/saved/i);
+    expect(endDateField()).toBeEnabled();
     expect(ctx.setClassEndDate).toHaveBeenCalledTimes(1);
   });
 
@@ -293,7 +306,7 @@ describe('ClassSettingsModal — last day of classes', () => {
 
     expect(endDateField()).toHaveTextContent('Last Day of Classes: 2026-12-18'); // the open class's own day
     expect(endDateSection().getByRole('status')).toBeEmptyDOMElement();
-    expect(endDateSave()).toBeDisabled(); // "Save", not stuck on "Saving…"
+    expect(endDateSave()).toBeDisabled(); // "Save last day", not stuck on "Saving…"
   });
 
   it("keeps a failure that lands late out of the next class's dialog", async () => {

@@ -628,8 +628,9 @@ def get_ta_schedule(
     projects with their member ids embedded; wave 2 the weekly meeting slots
     (reused for the current-meeting pick) and the assigned TAs' profiles; then
     one attendance read. At most 6 queries in 3 waves (was 9-11 sequential).
-    The school's time zone comes from the institutions cache that every request
-    shares, so it adds no query per request.
+    The school's time zone comes from the institutions list, which every request
+    shares through a five-minute in-process cache: it adds no query while that
+    cache is warm, and the first request after it expires reads the list again.
     """
     try:
         client = get_client()

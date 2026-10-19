@@ -2,9 +2,9 @@
 
 A class has a ``term`` (Fall, Winter, Spring, Summer, ...), a ``start_date`` (its first day) and an
 ``end_date`` (its last day of classes, before finals). The dates decide how many weeks TA meetings
-run. A class with no ``end_date``, or with no ``start_date`` to count from, keeps the fixed length
-its term had before classes had end dates. Pure functions: nothing here reads the database or the
-clock.
+run, up to ``MAX_TERM_WEEKS``. A class with no ``end_date``, or with no ``start_date`` to count
+from, keeps the fixed length its term had before classes had end dates. Pure functions: nothing
+here reads the database or the clock.
 """
 
 from __future__ import annotations
@@ -21,6 +21,12 @@ _SUMMER_TSR_COUNT = 3
 # quarter, ~6 for a summer session (e.g. CSE115A, late June to the end of July).
 _FULL_TERM_WEEKS = 10
 _SUMMER_TERM_WEEKS = 6
+
+#: The most weeks a term can run: a last day of classes falls within the 53rd week from the first
+#: day, so a typo in the year can't stretch TA Meetings across years. The API refuses a later
+#: day, and the ``classes_end_date_after_start`` CHECK allows the same (``start_date + 370``).
+MAX_TERM_WEEKS = 53
+_LATEST_LAST_DAY_OFFSET = timedelta(weeks=MAX_TERM_WEEKS) - timedelta(days=1)
 
 
 def _is_full_term(term: str | None) -> bool:
@@ -41,10 +47,23 @@ def term_week_count(term: str | None, start_date: date | None, end_date: date | 
     """Weeks TA meetings run: week 1 starts on ``start_date``, the last week holds ``end_date``.
 
     Without both dates, the fixed length of the term (10 weeks for a full quarter, 6 otherwise).
+    Never more than ``MAX_TERM_WEEKS``: the API refuses a later day, so only a row written
+    around it is capped.
     """
     if start_date is None or end_date is None:
         return _fixed_week_count(term)
-    return (end_date - start_date).days // 7 + 1
+    return min((end_date - start_date).days // 7 + 1, MAX_TERM_WEEKS)
+
+
+def latest_last_day(start_date: date) -> date:
+    """The latest last day of classes for a class that starts on ``start_date``.
+
+    The end of week ``MAX_TERM_WEEKS``: 370 days after the first day, so within a year of the first
+    week of term. ``date.max`` when that day would pass the end of the calendar.
+    """
+    if start_date > date.max - _LATEST_LAST_DAY_OFFSET:
+        return date.max
+    return start_date + _LATEST_LAST_DAY_OFFSET
 
 
 def term_last_day(term: str | None, start_date: date | None, end_date: date | None) -> date | None:

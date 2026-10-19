@@ -14,7 +14,7 @@ from fastapi import HTTPException
 
 from app.assignments import deadlines
 from app.classes import terms
-from app.classes.models import END_BEFORE_START
+from app.classes.models import END_BEFORE_START, END_TOO_LATE
 from app.config import settings
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
@@ -824,22 +824,91 @@ def update_class_external_tasks_url(
         raise HTTPException(status_code=500, detail="Failed to update the tasks link")
 
 
+def _class_project_ids(client, class_id: str) -> list[str]:
+    """The id of every project (team) in the class. One read."""
+    rows = client.table("projects").select("id").eq("class_id", class_id).execute().data or []
+    return [row["id"] for row in rows]
+
+
+def _refuse_hiding_attendance(
+    client,
+    project_ids: list[str],
+    term: str | None,
+    start: datetime.date,
+    end_date: datetime.date,
+) -> None:
+    """409 when ``end_date`` would leave a week that already has attendance past the term.
+
+    TA Meetings counts its weeks from the last day (``terms.term_week_count``) and refuses a week
+    past that count, so marks recorded there could no longer be opened. One read: the class's
+    highest week above the new count, newest first. The detail names the first day of that week,
+    the earliest last day that keeps every recorded week. A class with no teams has no attendance,
+    so nothing is read.
+    """
+    if not project_ids:
+        return
+    weeks = terms.term_week_count(term, start, end_date)
+    latest = (
+        client.table("attendance")
+        .select("week_number")
+        .in_("project_id", project_ids)
+        .gt("week_number", weeks)
+        .order("week_number", desc=True)
+        .limit(1)
+        .execute()
+    ).data
+    if latest:
+        week = int(latest[0]["week_number"])
+        earliest = start + datetime.timedelta(weeks=week - 1)
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Week {week} already has attendance. "
+                f"Pick {earliest:%b} {earliest.day}, {earliest.year} or later."
+            ),
+        )
+
+
 def update_class_end_date(class_id: UUID, end_date: datetime.date, instructor_id: str) -> dict:
     """Set or change the class's last day of classes (before finals).
 
-    Only the class instructor may (404 for a missing class, 403 for anyone else), and the day
-    can't be before the class's first week of term (400, nothing written; a class with no
-    ``start_date`` has nothing to fall before). The owner check reads ``start_date`` with the
-    class, so the comparison costs no round trip. Returns the updated class row.
+    Only the class instructor may (404 for a missing class, 403 for anyone else). For a class with
+    a ``start_date`` the day must also be:
+
+    - from that first week of term to a year after it, that is, at most 370 days on (400);
+    - late enough to keep every week that already has attendance (409; the detail names the
+      earliest day that does). TA Meetings counts its weeks from the last day, so a week past it
+      could no longer be opened.
+
+    Nothing is written when a day is refused. A class with no ``start_date`` has nothing to count
+    from or to fall before, so any day goes: its weeks stay the term's fixed length.
+
+    Round trips: the owner check (it reads ``term`` and ``start_date`` with the class) runs beside
+    the class's team ids; then one attendance read, only for a class with a start date and teams;
+    then the update. At most 4 queries in 3 waves. Returns the updated class row.
     """
     try:
         client = get_client()
         cid = str(class_id)
 
-        class_row = _require_owner(client, instructor_id, cid, columns="id, created_by, start_date")
-        start_date = class_row.get("start_date")
-        if start_date is not None and end_date < datetime.date.fromisoformat(start_date):
-            raise HTTPException(status_code=400, detail=END_BEFORE_START)
+        reads = fan_out(
+            {
+                "class": lambda: _require_owner(
+                    client, instructor_id, cid, columns="id, created_by, term, start_date"
+                ),
+                "project_ids": lambda: _class_project_ids(client, cid),
+            }
+        )
+        class_row = reads["class"]
+        if class_row.get("start_date") is not None:
+            start = datetime.date.fromisoformat(class_row["start_date"])
+            if end_date < start:
+                raise HTTPException(status_code=400, detail=END_BEFORE_START)
+            if end_date > terms.latest_last_day(start):
+                raise HTTPException(status_code=400, detail=END_TOO_LATE)
+            _refuse_hiding_attendance(
+                client, reads["project_ids"], class_row.get("term"), start, end_date
+            )
 
         update_result = (
             client.table("classes")

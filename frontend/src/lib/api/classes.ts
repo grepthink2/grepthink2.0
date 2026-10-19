@@ -20,7 +20,7 @@ export const classesApi = {
     description?: string;
     term: string;
     start_date: string;
-    /** The last day of classes, before finals: a YYYY-MM-DD day, not before `start_date`. */
+    /** The last day of classes, before finals: a YYYY-MM-DD day from `start_date` to 370 days after it. */
     end_date: string;
     tsr_count?: number;
     institution_id?: string;
@@ -53,8 +53,10 @@ export const classesApi = {
     });
   },
 
-  // Set or change the class's last day of classes, before finals (a YYYY-MM-DD day, not before the
-  // class's first week of term; class instructor only). Returns {message, class} with the updated class.
+  // Set or change the class's last day of classes, before finals (a YYYY-MM-DD day from the class's
+  // first week of term to 370 days after it; class instructor only). A day that would hide a week with
+  // attendance is refused with a 409 naming the earliest day that keeps it. Returns {message, class}
+  // with the updated class.
   updateClassEndDate: async (classId: string, endDate: string) => {
     return apiRequest<{ message: string; class: ApiClass }>(`/api/classes/${classId}/end-date`, {
       method: 'PATCH',

@@ -16,16 +16,25 @@
 --   - POST /api/classes with a last day, and PATCH /api/classes/{class_id}/end-date.
 -- The code before it never reads the column, so applying this early is safe.
 --
--- The CHECK keeps a last day from falling before the first week of term (a class with no start_date
--- has nothing to fall before). The API refuses the same first, 422 when a class is created and 400
--- when its last day is changed, so a bad day never reaches the CHECK as a 500. Every existing row
--- passes: the new column is NULL.
+-- The CHECK keeps a last day inside the term: not before the first week of term, and not more than
+-- 370 days after it (the end of week 53, within a year: app/classes/terms.py MAX_TERM_WEEKS), so a
+-- typo in the year can't stretch TA Meetings across years. A class with no start_date has nothing
+-- to count from or to fall before. The API refuses the same first, 422 when a class is created and
+-- 400 when its last day is changed, so a bad day never reaches the CHECK as a 500. Every existing
+-- row passes on PROD: the new column is NULL.
 --
--- Applied: DEV 2026-10-18 (by Claude, via the Supabase connector)   PROD — pending
+-- Where a class may already have a last day (DEV), look for one the bound would refuse before
+-- running the last statement, which fails on such a row:
+--   SELECT id, name, start_date, end_date FROM public.classes WHERE end_date > start_date + 370;
+--
+-- Applied: DEV 2026-10-18 (by Claude, via the Supabase connector), with the CHECK as end_date >=
+--          start_date alone; the controller re-applies this file on DEV to add the 370-day bound
+--          (the CHECK is dropped and added again)   PROD — pending
 
 ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS end_date date;
 
 ALTER TABLE public.classes DROP CONSTRAINT IF EXISTS classes_end_date_after_start;
 ALTER TABLE public.classes ADD CONSTRAINT classes_end_date_after_start CHECK (
-  end_date IS NULL OR start_date IS NULL OR end_date >= start_date
+  end_date IS NULL OR start_date IS NULL
+  OR (end_date >= start_date AND end_date <= start_date + 370)
 );

@@ -39,7 +39,7 @@
     {
       "id": "create_class", "title": "Create a class", "role": "instructor",
       "method": "POST", "endpoint": "/api/classes",
-      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "end_date": "date (the last day of classes, before finals; not before start_date, else 422)", "tsr_count": "int", "institution_id": "uuid", "external_tasks_url": "string (a full http(s) URL; the class sidebar's Tasks - External link)"},
+      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "end_date": "date (the last day of classes, before finals; from start_date to 370 days after it, else 422)", "tsr_count": "int", "institution_id": "uuid", "external_tasks_url": "string (a full http(s) URL; the class sidebar's Tasks - External link)"},
       "uiRoute": "/app → Create Class"
     },
     {
@@ -92,7 +92,7 @@
     {
       "id": "set_class_end_date", "title": "Set or change a class's last day of classes", "role": "instructor",
       "method": "PATCH", "endpoint": "/api/classes/{class_id}/end-date",
-      "params": {"end_date": "date! (the last day of classes, before finals; not before the class's start_date, else 400)"},
+      "params": {"end_date": "date! (the last day of classes, before finals; from the class's start_date to 370 days after it, else 400; 409 when a week after the new last day already has attendance)"},
       "uiRoute": "/app/my-classes → Class Settings"
     },
 

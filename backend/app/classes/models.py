@@ -18,12 +18,17 @@ from pydantic import (
     model_validator,
 )
 
+from app.classes import terms
+
 ClassStatus = Literal["active", "complete"]
 
 #: Why a last day of classes is refused when it falls before the term's first day: a 422 when a
 #: class is created, a 400 when a class's day is changed. The classes_end_date_after_start CHECK
 #: refuses the same in the database, so a day the API accepts never fails there.
 END_BEFORE_START = "The last day of classes can't be before the first week of term."
+#: Why it is refused when it falls over a year after the first day (``terms.latest_last_day``: the
+#: end of week 53, 370 days on): the same 422 and 400. The CHECK allows exactly that far.
+END_TOO_LATE = "The last day of classes must be within a year of the first week of term."
 
 #: The longest "Tasks - External" link a class keeps; the classes_external_tasks_url_valid CHECK
 #: allows the same, so a link the API accepts never fails in the database.
@@ -70,8 +75,9 @@ class CreateClassRequest(BaseModel):
     term: str
     start_date: datetime.date
     #: The last day of classes, before finals: TA meetings run from ``start_date`` through it.
-    #: Optional so a client that names none keeps working; the class then keeps its term's
-    #: fixed length until the instructor sets one.
+    #: Between ``start_date`` and 370 days after it (53 weeks). Optional so a client that names
+    #: none keeps working; the class then keeps its term's fixed length until the instructor
+    #: sets one.
     end_date: datetime.date | None = None
     tsr_count: int | None = None
     #: The school the class belongs to (``GET /api/institutions``). Optional until the
@@ -81,11 +87,14 @@ class CreateClassRequest(BaseModel):
     external_tasks_url: ExternalTasksUrl = None
 
     @model_validator(mode="after")
-    def end_is_not_before_start(self) -> Self:
-        """Refuse (422) a last day of classes before the first week of term, before anything is
-        created."""
-        if self.end_date is not None and self.end_date < self.start_date:
-            raise ValueError(END_BEFORE_START)
+    def end_is_within_the_term(self) -> Self:
+        """Refuse (422) a last day of classes before the first week of term, or over a year after
+        it, before anything is created."""
+        if self.end_date is not None:
+            if self.end_date < self.start_date:
+                raise ValueError(END_BEFORE_START)
+            if self.end_date > terms.latest_last_day(self.start_date):
+                raise ValueError(END_TOO_LATE)
         return self
 
 
@@ -121,8 +130,9 @@ class UpdateClassEndDateRequest(BaseModel):
     """Set or change the class's last day of classes (class instructor only).
 
     The day is required: a body that names none, or a null, is a 422, so the day is never cleared
-    by accident. That it isn't before the class's first week of term needs the class's
-    ``start_date``, so the controller checks it (400).
+    by accident. That it falls from the class's first week of term to a year after it needs the
+    class's ``start_date``, so the controller checks it (400), and that it hides no week that
+    already has attendance (409).
     """
 
     end_date: datetime.date
