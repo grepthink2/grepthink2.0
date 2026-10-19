@@ -39,7 +39,7 @@ MAX_EXTERNAL_TASKS_URL_LENGTH = 2048
 _REFUSED_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Co", "Zs", "Zl", "Zp"})
 #: The spaces dropped around a link: whitespace, and the zero-width no-break space (U+FEFF) that a
 #: browser's trim() drops too, so a link the web client trimmed is never refused here.
-_SURROUNDING_SPACE = re.compile(r"^[\s﻿]+|[\s﻿]+$")
+_SURROUNDING_SPACE = re.compile(r"^[\s\uFEFF]+|[\s\uFEFF]+$")
 
 
 def _external_tasks_url(value: str | None) -> str | None:
