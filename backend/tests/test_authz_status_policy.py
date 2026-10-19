@@ -28,6 +28,8 @@ from app.projects import controller as projects
 from app.staffing import controller as staffing
 from app.tas import controller as tas
 from app.tas import review_slots
+from app.team_meetings import controller as team_meetings
+from app.team_meetings.models import TeamMeetingCreate, TeamMeetingUpdate
 from app.tsr import controller as tsr
 from app.tsr.models import CreateTSRRequest
 from tests.fake_supabase import FakeSupabase
@@ -40,17 +42,21 @@ NOT_ENROLLED = "You are not enrolled in this class"
 INSTRUCTOR_ROLE_REQUIRED = "Instructor role required"
 PROJECT_NOT_FOUND = "Project not found"
 NOT_PROJECT_MEMBER = "Not a member of this project"
+ONLY_PRODUCT_OWNER = "Only the team's Product Owner can change meetings."
 
 INSTR = "10000000-0000-0000-0000-000000000001"
 OTHER_INSTR = "10000000-0000-0000-0000-000000000002"
 TA1 = "20000000-0000-0000-0000-000000000001"
 S1 = "30000000-0000-0000-0000-000000000001"
+PO2 = "30000000-0000-0000-0000-000000000002"  # P2's Product Owner
 OUTSIDER = "40000000-0000-0000-0000-000000000001"
 CLASS = "c0000000-0000-0000-0000-000000000001"
 TA1_CLASS = "c0000000-0000-0000-0000-000000000002"  # TA1 teaches it
 MISSING_CLASS = "c0000000-0000-0000-0000-00000000dead"
 P1 = "d0000000-0000-0000-0000-000000000001"
+P2 = "d0000000-0000-0000-0000-000000000002"  # PO2's team; no assigned TA
 MISSING_PROJECT = "d0000000-0000-0000-0000-00000000dead"
+MEETING = "e0000000-0000-0000-0000-000000000001"
 A_FEEDBACK = "a0000000-0000-0000-0000-000000000001"
 A_ORPHAN = "a0000000-0000-0000-0000-000000000002"  # its class row no longer exists
 
@@ -107,8 +113,8 @@ def _feedback_assignment(aid: str, class_id: str) -> dict:
 @pytest.fixture
 def db(monkeypatch):
     """CLASS belongs to INSTR. TA1 (ta) and S1 (student) are enrolled; S1 is on P1,
-    whose assigned TA is TA1, who also created TA1_CLASS. OTHER_INSTR and OUTSIDER have no
-    tie to CLASS."""
+    whose assigned TA is TA1, who also created TA1_CLASS. P2's only member is its Product
+    Owner, PO2, and it has no assigned TA. OTHER_INSTR and OUTSIDER have no tie to CLASS."""
     fake = FakeSupabase(
         profiles=[
             {
@@ -149,9 +155,20 @@ def db(monkeypatch):
                 "assigned_ta_id": TA1,
                 "team_size": 4,
                 "num_members": 1,
-            }
+            },
+            {
+                "id": P2,
+                "class_id": CLASS,
+                "name": "Beta",
+                "assigned_ta_id": None,
+                "team_size": 4,
+                "num_members": 1,
+            },
         ],
-        project_members=[{"id": "m-s1", "project_id": P1, "user_id": S1, "role": "member"}],
+        project_members=[
+            {"id": "m-s1", "project_id": P1, "user_id": S1, "role": "member"},
+            {"id": "m-po2", "project_id": P2, "user_id": PO2, "role": "product owner"},
+        ],
         assignments=[
             _feedback_assignment(A_FEEDBACK, CLASS),
             _feedback_assignment(A_ORPHAN, MISSING_CLASS),
@@ -258,6 +275,14 @@ def _tsr(project_id: str) -> CreateTSRRequest:
         percent_contribution=50,
         positive_feedback="p",
         constructive_feedback="c",
+    )
+
+
+def _meeting() -> TeamMeetingCreate:
+    # The refusals below come before the clock is read, so this date can go stale.
+    return TeamMeetingCreate(
+        title="Sprint 3 planning",
+        starts_at=datetime.datetime(2026, 10, 20, 22, tzinfo=datetime.UTC),
     )
 
 
@@ -601,6 +626,91 @@ CASES = {
         lambda db: tsr.view_tsrs(OUTSIDER, P1),
         403,
         NOT_PROJECT_MEMBER,
+    ),
+    # app.team_meetings: the team, its class instructor and its assigned TA read; only a member
+    # whose role on that team is Product Owner writes. P1 has no Product Owner in this fixture.
+    "team_meetings.list/missing-project": (
+        lambda db: team_meetings.list_team_meetings(MISSING_PROJECT, S1),
+        404,
+        PROJECT_NOT_FOUND,
+    ),
+    "team_meetings.list/not-on-the-team": (
+        lambda db: team_meetings.list_team_meetings(P1, OUTSIDER),
+        403,
+        NOT_PROJECT_MEMBER,
+    ),
+    # A class TA reads the teams they are assigned to (TA1 is P1's), not every team in the class.
+    "team_meetings.list/class-ta-of-another-team": (
+        lambda db: team_meetings.list_team_meetings(P2, TA1),
+        403,
+        NOT_PROJECT_MEMBER,
+    ),
+    "team_meetings.create/missing-project": (
+        lambda db: team_meetings.create_team_meeting(MISSING_PROJECT, S1, _meeting()),
+        404,
+        PROJECT_NOT_FOUND,
+    ),
+    "team_meetings.update/missing-project": (
+        lambda db: team_meetings.update_team_meeting(
+            MISSING_PROJECT, MEETING, S1, TeamMeetingUpdate(title="Moved")
+        ),
+        404,
+        PROJECT_NOT_FOUND,
+    ),
+    "team_meetings.delete/missing-project": (
+        lambda db: team_meetings.delete_team_meeting(MISSING_PROJECT, MEETING, S1),
+        404,
+        PROJECT_NOT_FOUND,
+    ),
+    "team_meetings.create/not-on-the-team": (
+        lambda db: team_meetings.create_team_meeting(P1, OUTSIDER, _meeting()),
+        403,
+        NOT_PROJECT_MEMBER,
+    ),
+    "team_meetings.create/member-who-is-not-product-owner": (
+        lambda db: team_meetings.create_team_meeting(P1, S1, _meeting()),
+        403,
+        ONLY_PRODUCT_OWNER,
+    ),
+    "team_meetings.create/class-instructor": (
+        lambda db: team_meetings.create_team_meeting(P1, INSTR, _meeting()),
+        403,
+        ONLY_PRODUCT_OWNER,
+    ),
+    "team_meetings.create/assigned-ta": (
+        lambda db: team_meetings.create_team_meeting(P1, TA1, _meeting()),
+        403,
+        ONLY_PRODUCT_OWNER,
+    ),
+    # The Product Owner of another team has no say here: a role is a role on one project.
+    "team_meetings.create/product-owner-of-another-team": (
+        lambda db: team_meetings.create_team_meeting(P1, PO2, _meeting()),
+        403,
+        NOT_PROJECT_MEMBER,
+    ),
+    "team_meetings.update/product-owner-of-another-team": (
+        lambda db: team_meetings.update_team_meeting(
+            P1, MEETING, PO2, TeamMeetingUpdate(title="Moved")
+        ),
+        403,
+        NOT_PROJECT_MEMBER,
+    ),
+    "team_meetings.delete/product-owner-of-another-team": (
+        lambda db: team_meetings.delete_team_meeting(P1, MEETING, PO2),
+        403,
+        NOT_PROJECT_MEMBER,
+    ),
+    "team_meetings.update/member-who-is-not-product-owner": (
+        lambda db: team_meetings.update_team_meeting(
+            P1, MEETING, S1, TeamMeetingUpdate(title="Moved")
+        ),
+        403,
+        ONLY_PRODUCT_OWNER,
+    ),
+    "team_meetings.delete/member-who-is-not-product-owner": (
+        lambda db: team_meetings.delete_team_meeting(P1, MEETING, S1),
+        403,
+        ONLY_PRODUCT_OWNER,
     ),
 }
 

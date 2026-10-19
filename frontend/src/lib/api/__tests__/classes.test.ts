@@ -40,3 +40,27 @@ describe("updateClassExternalTasksUrl (the class's Tasks - External link)", () =
     expect(result.class.external_tasks_url).toBe(link);
   });
 });
+
+describe("updateClassEndDate (the class's last day of classes)", () => {
+  it('sets it with a PATCH naming the day, and answers the updated class', async () => {
+    const updated = { id: 'c1', name: 'CSE 115A', created_by: 'me', created_at: '', end_date: '2026-12-04' };
+    fetchMock.mockResolvedValue(jsonResponse(200, { message: 'Last day of classes updated', class: updated }));
+    const result = await classesApi.updateClassEndDate('c1', '2026-12-04');
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/classes/c1/end-date');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body as string)).toEqual({ end_date: '2026-12-04' });
+    expect(result.class.end_date).toBe('2026-12-04');
+  });
+
+  it("throws the API's reason when the day is refused", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(400, { detail: "The last day of classes can't be before the first week of term." }),
+    );
+    await expect(classesApi.updateClassEndDate('c1', '2026-09-01')).rejects.toMatchObject({
+      status: 400,
+      message: "The last day of classes can't be before the first week of term.",
+    });
+  });
+});

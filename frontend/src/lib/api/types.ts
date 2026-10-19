@@ -27,6 +27,8 @@ export interface ApiClass {
   teacher_email?: string;
   term?: string;
   start_date?: string;
+  /** The last day of classes, before finals (YYYY-MM-DD); null until the class has one. */
+  end_date?: string | null;
   year?: number;
   image_url?: string;
   status?: 'active' | 'complete';
@@ -398,6 +400,36 @@ export interface ApiProjectMember {
   github?: string;
   image_url?: string;
   edu_email?: string | null;
+}
+
+/**
+ * One of a team's own one-off meetings (/api/projects/{project_id}/meetings), which its Product
+ * Owner keeps. Not the TA's weekly slot: that is ApiTeamMeeting.
+ */
+export interface ApiProjectMeeting {
+  id: string;
+  project_id: string;
+  title: string;
+  /** ISO 8601 instant with its offset, e.g. "2026-10-20T22:00:00+00:00". */
+  starts_at: string;
+  duration_minutes: number;
+  location: string | null;
+  zoom_url: string | null;
+  note: string | null;
+  /** Null once the creator's profile is deleted. */
+  created_by: string | null;
+  updated_at: string;
+}
+
+/** The body that adds a team meeting (POST); a PATCH sends any part of it. */
+export interface ProjectMeetingPayload {
+  title: string;
+  /** ISO 8601 with an offset: the API refuses a time without one. */
+  starts_at: string;
+  duration_minutes: number;
+  location: string | null;
+  zoom_url: string | null;
+  note: string | null;
 }
 
 export interface CreateProjectPayload {

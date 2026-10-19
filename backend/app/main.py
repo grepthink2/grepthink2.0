@@ -42,6 +42,7 @@ from app.search.url import router as search_router
 from app.staffing.url import router as staffing_router
 from app.stats.url import router as stats_router
 from app.tas.url import router as tas_router
+from app.team_meetings.url import router as team_meetings_router
 from app.tsr.url import router as tsr_router
 
 logger = logging.getLogger(__name__)
@@ -114,6 +115,7 @@ for router in (
     classes_router,
     institutions_router,
     projects_router,
+    team_meetings_router,
     assignments_router,
     tsr_router,
     staffing_router,

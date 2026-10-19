@@ -119,8 +119,11 @@ export const tasApi = {
     );
   },
 
-  /** Set a team's weekly meeting slot (day/time/Zoom) for a given meeting-in-week. */
-  updateProjectMeeting: async (
+  /**
+   * Set a team's weekly TA meeting slot (day/time/Zoom) for a given meeting-in-week
+   * (PATCH /api/projects/:id/meeting). A team's own meetings are projectsApi's *ProjectMeeting(s).
+   */
+  updateProjectMeetingSlot: async (
     projectId: string,
     data: { meeting_in_week?: number; zoom_url?: string | null; meeting_day?: string | null; meeting_time?: string | null },
   ) => {

@@ -364,6 +364,8 @@ CREATE TABLE IF NOT EXISTS "public"."classes" (
     "review_period_open" boolean DEFAULT false NOT NULL,
     "review_zoom_url" "text",
     "external_tasks_url" "text",
+    "end_date" "date",
+    CONSTRAINT "classes_end_date_after_start" CHECK ((("end_date" IS NULL) OR ("start_date" IS NULL) OR (("end_date" >= "start_date") AND ("end_date" <= ("start_date" + 370))))),
     CONSTRAINT "classes_external_tasks_url_valid" CHECK ((("external_tasks_url" IS NULL) OR (("length"("external_tasks_url") <= 2048) AND ("external_tasks_url" ~* '^https?://[^/?#[:space:]]+[^[:space:]]*$'::"text"))))
 );
 
@@ -469,6 +471,43 @@ CREATE TABLE IF NOT EXISTS "public"."interest_team_preferences" (
 
 
 ALTER TABLE "public"."interest_team_preferences" OWNER TO "postgres";
+
+
+-- meetings: 2026-06-26_meetings.sql, plus kind, note, meetings_kind_valid, meetings_team_meeting_shape, the
+-- three length caps, ON DELETE SET NULL on meetings_created_by_fkey and meetings_project_once_idx from
+-- 2026-10-18_team_meetings.sql (Applied: DEV 2026-10-18, PROD pending). Its primary key, indexes, foreign keys,
+-- RLS and grant follow in the sections below, as in a dump.
+CREATE TABLE IF NOT EXISTS "public"."meetings" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "class_id" "uuid" NOT NULL,
+    "project_id" "uuid",
+    "title" "text",
+    "cadence" "text" DEFAULT 'weekly'::"text" NOT NULL,
+    "day_of_week" "text",
+    "start_time" time without time zone,
+    "scheduled_at" timestamp with time zone,
+    "duration_minutes" integer DEFAULT 30 NOT NULL,
+    "sequence" integer DEFAULT 1 NOT NULL,
+    "location" "text",
+    "zoom_url" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "kind" "text" DEFAULT 'ta_meeting'::"text" NOT NULL,
+    "note" "text",
+    CONSTRAINT "meetings_cadence_valid" CHECK (("cadence" = ANY (ARRAY['weekly'::"text", 'once'::"text"]))),
+    CONSTRAINT "meetings_day_valid" CHECK ((("day_of_week" IS NULL) OR ("lower"("day_of_week") = ANY (ARRAY['monday'::"text", 'tuesday'::"text", 'wednesday'::"text", 'thursday'::"text", 'friday'::"text", 'saturday'::"text", 'sunday'::"text"])))),
+    CONSTRAINT "meetings_kind_valid" CHECK (("kind" = ANY (ARRAY['ta_meeting'::"text", 'team_meeting'::"text"]))),
+    CONSTRAINT "meetings_location_length" CHECK ((("location" IS NULL) OR ("char_length"("location") <= 120))),
+    CONSTRAINT "meetings_note_length" CHECK ((("note" IS NULL) OR ("char_length"("note") <= 500))),
+    CONSTRAINT "meetings_seq_positive" CHECK (("sequence" >= 1)),
+    CONSTRAINT "meetings_shape" CHECK ((("cadence" = 'weekly'::"text") OR (("cadence" = 'once'::"text") AND ("scheduled_at" IS NOT NULL)))),
+    CONSTRAINT "meetings_team_meeting_shape" CHECK ((("kind" <> 'team_meeting'::"text") OR (("cadence" = 'once'::"text") AND ("project_id" IS NOT NULL) AND ("title" IS NOT NULL) AND (("char_length"("btrim"("title")) >= 1) AND ("char_length"("btrim"("title")) <= 80)) AND (("duration_minutes" % 15) = 0) AND (("duration_minutes" >= 15) AND ("duration_minutes" <= 240))))),
+    CONSTRAINT "meetings_zoom_url_length" CHECK ((("zoom_url" IS NULL) OR ("char_length"("zoom_url") <= 500)))
+);
+
+
+ALTER TABLE "public"."meetings" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."messages" (
@@ -799,6 +838,11 @@ ALTER TABLE ONLY "public"."interest_team_preferences"
 
 
 
+ALTER TABLE ONLY "public"."meetings"
+    ADD CONSTRAINT "meetings_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."messages"
     ADD CONSTRAINT "messages_pkey" PRIMARY KEY ("id");
 
@@ -938,6 +982,10 @@ CREATE INDEX "idx_final_review_slots_created_by" ON "public"."final_review_slots
 
 
 
+CREATE INDEX "idx_meetings_created_by" ON "public"."meetings" USING "btree" ("created_by");
+
+
+
 CREATE INDEX "idx_project_review_tas_class" ON "public"."project_review_tas" USING "btree" ("class_id");
 
 
@@ -971,6 +1019,22 @@ CREATE INDEX "interest_team_preferences_class_idx" ON "public"."interest_team_pr
 
 
 CREATE INDEX "interest_team_preferences_peer_idx" ON "public"."interest_team_preferences" USING "btree" ("peer_user_id", "class_id");
+
+
+
+CREATE INDEX "meetings_class_idx" ON "public"."meetings" USING "btree" ("class_id");
+
+
+
+CREATE INDEX "meetings_project_idx" ON "public"."meetings" USING "btree" ("project_id");
+
+
+
+CREATE INDEX "meetings_project_once_idx" ON "public"."meetings" USING "btree" ("project_id", "scheduled_at") WHERE ("cadence" = 'once'::"text");
+
+
+
+CREATE UNIQUE INDEX "meetings_project_seq_uniq" ON "public"."meetings" USING "btree" ("project_id", "sequence") WHERE ("cadence" = 'weekly'::"text");
 
 
 
@@ -1161,6 +1225,21 @@ ALTER TABLE ONLY "public"."interest_team_preferences"
 
 
 
+ALTER TABLE ONLY "public"."meetings"
+    ADD CONSTRAINT "meetings_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."meetings"
+    ADD CONSTRAINT "meetings_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."meetings"
+    ADD CONSTRAINT "meetings_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."messages"
     ADD CONSTRAINT "messages_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."conversations"("id");
 
@@ -1305,6 +1384,9 @@ ALTER TABLE "public"."interest_submissions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."interest_team_preferences" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."meetings" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."messages" ENABLE ROW LEVEL SECURITY;
@@ -1482,6 +1564,11 @@ GRANT ALL ON TABLE "public"."interest_submissions" TO "service_role";
 GRANT ALL ON TABLE "public"."interest_team_preferences" TO "anon";
 GRANT ALL ON TABLE "public"."interest_team_preferences" TO "authenticated";
 GRANT ALL ON TABLE "public"."interest_team_preferences" TO "service_role";
+
+
+
+-- meetings is service_role only: the browser roles hold nothing on it (2026-09-21_lock_down_direct_table_access.sql).
+GRANT ALL ON TABLE "public"."meetings" TO "service_role";
 
 
 

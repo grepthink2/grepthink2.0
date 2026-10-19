@@ -19,6 +19,8 @@ export interface Class {
   /** Present for instructor-owned classes from API (used for course lifecycle filters). */
   term?: string;
   start_date?: string;
+  /** The last day of classes, before finals (YYYY-MM-DD); null until the class has one. */
+  end_date?: string | null;
   year?: number;
   image_url?: string;
   /** Lifecycle status from classes.status — active or complete. */

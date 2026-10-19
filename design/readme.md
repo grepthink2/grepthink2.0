@@ -164,6 +164,20 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   SearchPagination, EntityIcon, MatchText, Kbd (+modKey), SearchModel (+SEARCH_ENTITIES, rankResults,
   paginate, routeFor, useDebounced)
 - `ui_kits/grepthink/search.html` — the palette open over the app shell (states + phone)
+- `components/schedule/` — schedule layer (2026-10 feature design, see `design_handoff_schedule/`):
+  ScheduleList (compact Today's Schedule card body · agenda week), ScheduleItem (+ScheduleIcon), ScheduleDivider (sprint rule),
+  ScheduleDayHeader, ScheduleModel (+SCHEDULE_KINDS, statusOf, isJoinable, groupByDay, findOverlaps, nowIndex, todayOrPeek,
+  formatters, useNow); kind palette tokens `--gt-sched-*` in `tokens/colors.css`
+- `ui_kits/grepthink/schedule.html` — Student Home with the Today's Schedule card, the /app/schedule agenda, every state, the
+  three lenses, another time zone, phone
+- `components/domain/TeamMeetings*` — team meetings (2026-10 feature design, see `design_handoff_team_meetings/`):
+  TeamMeetingsList (`variant="manage"` = the Edit Project → Meetings tab · `variant="card"` = the project-page card body on
+  ScheduleItem rows), TeamMeetingForm (inline add / edit on the viewer's clock), TeamMeetingsModel (+TEAM_MEETING_* constants:
+  split, validation, zone conversion); styles at the end of `domain.css`, gallery `teammeetings.card.html`
+- `ui_kits/grepthink/team-meetings.html` — project page with the Team meetings card, the Edit Project modal's Meetings tab,
+  every state, another time zone, phone
+- `guidelines/motion-system.html` — proposed motion system (nine previews; tokens local to the card) · `assets/slug.svg` — the
+  original banana-slug mark (gold fill, UCSC-blue line) used by panel 8
 - `components/scrum/` — scrum-board layer (2026-08 feature design, not in fig/codebase yet):
   ScrumBoard, TaskCard, StoryCard, TagBadge (10 work tags), PointsChip (+EstimateChip,
   PRLinkChip, UserPair), BurnupChart, ScalePicker (+PointPicker, ESTIMATE_SCALES), MentionListbox (async
@@ -185,6 +199,10 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   chart rules, §9 answers in `NOTES.md`, sample payloads)
 - `design_handoff_search/` — implementation handoff for the ⌘K global search (ranking, routes, data
   contract, PR-link research pointer, open gaps in `NOTES.md`)
+- `design_handoff_schedule/` — implementation handoff for the Schedule family (kind palette, component specs, time-zone
+  rule, data contract + source tables, open questions in `NOTES.md`)
+- `design_handoff_team_meetings/` — implementation handoff for Team meetings (Meetings tab + project card: specs, validation,
+  data contract, PO gating and table questions in `NOTES.md`)
 - `frontend/` — reference copies from the real codebase (read-only): `src/styles/**` (token CSS + SCSS bridge),
   `src/index.css`, app-shell SCSS, the ported `features/analytics/analytics.scss` + `features/scrum/scrum.scss`
   (the `lint:design` script stays in the repo at `frontend/scripts/design-adherence.mjs`)
@@ -192,7 +210,7 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 - `SKILL.md` — agent skill entry point
 
 ### Intentional additions
-Every component outside `components/figma-reference/` (131 of 147 exports) is an intentional addition —
+Every component outside `components/figma-reference/` (148 of 164 exports) is an intentional addition —
 confirmed, not a naming slip. The Figma file's own component sets are generic UI-kit library artifacts (Scrollbar, Monitor,
 Thumb, Grid…), so the product component inventory comes from the maintainer's written spec and
 the codebase's screens instead. Every `gt-*` component below is an **intentional addition**
@@ -319,3 +337,17 @@ additions; replaces the header's pseudo search input and standardizes every loca
 - `MatchText` — match highlight (semibold + accent underline)
 - `Kbd` / `modKey` (+`ModKey`, the namespace-visible alias) — keycap hint; ⌘ vs Ctrl
 - `SearchModel` (+`SEARCH_ENTITIES`, `rankResults`, `countByType`, `paginate`, `routeFor`, `useDebounced`) — pure ranking / routing / paging model
+
+Schedule layer (`components/schedule/`, 2026-10 — designed from the maintainer's Schedule brief; all intentional
+additions; one component for the Student, TA and Instructor lenses):
+- `ScheduleList` — `variant="compact"` (the Today's Schedule card body: today + Now line, or a peek at the next day) and `variant="agenda"` (the /app/schedule week: ‹ This week ›, class + kind filters, sticky day headers)
+- `ScheduleItem` / `ScheduleIcon` — one row per event (time cell, kind tile, title / context / people, actions; expands into `MeetingCard`); the family's lucide-shaped glyph
+- `ScheduleDivider` — sprint start/end rule with an inline muted label (never a row)
+- `ScheduleDayHeader` — "Today · Tue, Oct 20" heading, sticky in the agenda
+- `ScheduleModel` (+`SCHEDULE_KINDS`, `SCHOOL_ZONE`, `JOIN_WINDOW_MS`, `COUNTDOWN_DAYS`) — pure status / Join-window / grouping / overlap / formatting model
+
+Team meetings (`components/domain/TeamMeetings*`, 2026-10 — designed from the maintainer's "Team meetings" brief; all intentional
+additions; the project's own one-off meetings, kind `meeting` in the schedule layer):
+- `TeamMeetingsList` — `variant="manage"` (Edit Project → Meetings tab, Product Owner only: upcoming / Past (n), inline add · edit · delete confirm) and `variant="card"` (project-page card body: compact `ScheduleItem` rows by day, Past meetings (n), quiet "Add one" for the PO)
+- `TeamMeetingForm` — inline add / edit (title ≤ 80 · date · start · duration · room · Zoom · note ≤ 500) on the viewer's clock with the campus time under the time field
+- `TeamMeetingsModel` (+`TEAM_MEETING_TITLE_MAX`, `TEAM_MEETING_NOTE_MAX`, `TEAM_MEETING_DEFAULT_DURATION`, `TEAM_MEETING_DURATIONS`) — pure split / validation / zone-conversion / ScheduleItem-conversion model

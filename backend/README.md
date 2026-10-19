@@ -72,6 +72,7 @@ backend/
 │   ├── staffing/            # Interest forms, assign / unassign / auto-assign
 │   ├── tas/                 # TA roles and final reviews
 │   ├── attendance/          # TA meetings and attendance
+│   ├── team_meetings/       # A team's one-off meetings (its Product Owner writes them)
 │   ├── messages/            # Direct and group messaging
 │   └── notifications/       # In-app notifications
 │

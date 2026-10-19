@@ -56,6 +56,15 @@ ROUTES = [
         id="class-tasks-link",
     ),
     pytest.param(
+        "patch",
+        f"/api/classes/{CLASS}/end-date",
+        {"json": {"end_date": "2026-12-04"}},
+        f"{CLASSES}.update_class_end_date",
+        {"id": CLASS},
+        ("instructor_id", "class_id"),
+        id="class-end-date",
+    ),
+    pytest.param(
         "post",
         f"/api/classes/{CLASS}/invite",
         {"json": {"student_email": "ann@ucsc.edu"}},

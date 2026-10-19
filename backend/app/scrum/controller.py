@@ -36,7 +36,9 @@ from app.utils.profiles import profile_display_name
 
 logger = logging.getLogger(__name__)
 
-_LA_TZ = ZoneInfo("America/Los_Angeles")  # same rule as attendance
+# Pacific is hard-coded here, pending the school-zone follow-up. TA Meetings (attendance) already
+# works out "today" in each class's school zone, so the two differ for a school outside Pacific.
+_LA_TZ = ZoneInfo("America/Los_Angeles")
 PR_REFRESH_MAX = 20
 PR_STALE_AFTER = timedelta(minutes=10)
 AI_DAILY_LIMIT = 10
@@ -125,7 +127,10 @@ def _require_writer(client, *, project_id: str, user_id: str) -> None:
 
 
 def _today_la() -> date:
-    """Calendar day in America/Los_Angeles (attendance uses the same rule)."""
+    """Calendar day in America/Los_Angeles.
+
+    Pacific is hard-coded here, pending the school-zone follow-up (TA Meetings uses the school's).
+    """
     return datetime.now(_LA_TZ).date()
 
 

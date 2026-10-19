@@ -39,7 +39,7 @@
     {
       "id": "create_class", "title": "Create a class", "role": "instructor",
       "method": "POST", "endpoint": "/api/classes",
-      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "tsr_count": "int", "institution_id": "uuid", "external_tasks_url": "string (a full http(s) URL; the class sidebar's Tasks - External link)"},
+      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "end_date": "date (the last day of classes, before finals; from start_date to 370 days after it, else 422)", "tsr_count": "int", "institution_id": "uuid", "external_tasks_url": "string (a full http(s) URL; the class sidebar's Tasks - External link)"},
       "uiRoute": "/app → Create Class"
     },
     {
@@ -87,6 +87,12 @@
       "id": "set_class_tasks_link", "title": "Set, change or remove a class's Tasks - External link", "role": "instructor",
       "method": "PATCH", "endpoint": "/api/classes/{class_id}/external-tasks-url",
       "params": {"external_tasks_url": "string! (a full http(s) URL; explicit null or blank removes the link)"},
+      "uiRoute": "/app/my-classes → Class Settings"
+    },
+    {
+      "id": "set_class_end_date", "title": "Set or change a class's last day of classes", "role": "instructor",
+      "method": "PATCH", "endpoint": "/api/classes/{class_id}/end-date",
+      "params": {"end_date": "date! (the last day of classes, before finals; from the class's start_date to 370 days after it, else 400; 409 when a week after the new last day already has attendance)"},
       "uiRoute": "/app/my-classes → Class Settings"
     },
 
@@ -148,6 +154,30 @@
     {
       "id": "assign_admin", "title": "Assign admin", "role": "instructor|ta",
       "method": "POST", "endpoint": "/api/projects/{project_id}/assign-admin", "params": {"user_id": "uuid!"}
+    },
+    {
+      "id": "list_project_meetings", "title": "List a team's own meetings", "role": "project-member|instructor|meeting-ta",
+      "method": "GET", "endpoint": "/api/projects/{project_id}/meetings", "uiRoute": "/app/projects/{projectId}",
+      "note": "Returns {meetings, can_manage}: the team's one-off meetings, soonest first, and whether the caller is its Product Owner. Every member reads them (one with no project role too), as do the class instructor and the team's meeting TA; anyone else gets 403."
+    },
+    {
+      "id": "create_project_meeting", "title": "Add a team meeting", "role": "product owner",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/meetings",
+      "params": {"title": "string! (1-80)", "starts_at": "datetime! (ISO 8601 with an offset)", "duration_minutes": "enum(15|30|45|60|75|90|105|120|150|180|240) (default 60)", "location": "string (room, <= 120)", "zoom_url": "string (http(s) link, <= 500)", "note": "string (<= 500)"},
+      "uiRoute": "/app/projects/{projectId} → Edit Project → Meetings", "multiStep": true,
+      "note": "Only the team's Product Owner (project role 'product owner'). 400 'That time has already passed.' for a start in the past. Answers the meeting row."
+    },
+    {
+      "id": "update_project_meeting", "title": "Change a team meeting", "role": "product owner",
+      "method": "PATCH", "endpoint": "/api/projects/{project_id}/meetings/{meeting_id}",
+      "params": {"title": "string (1-80)", "starts_at": "datetime (ISO 8601 with an offset)", "duration_minutes": "enum(15|30|45|60|75|90|105|120|150|180|240)", "location": "string (null or blank clears)", "zoom_url": "string (null or blank clears)", "note": "string (null or blank clears)"},
+      "uiRoute": "/app/projects/{projectId} → Edit Project → Meetings", "multiStep": true,
+      "note": "Send only what changes; a start that has passed may stay. A meeting of another team, or a TA meeting slot, is 404."
+    },
+    {
+      "id": "delete_project_meeting", "title": "Delete a team meeting", "role": "product owner",
+      "method": "DELETE", "endpoint": "/api/projects/{project_id}/meetings/{meeting_id}", "uiRoute": "/app/projects/{projectId} → Edit Project → Meetings",
+      "note": "Answers 204. A meeting of another team, or a TA meeting slot, is 404."
     },
 
     {
