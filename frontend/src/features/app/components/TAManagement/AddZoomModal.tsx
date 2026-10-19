@@ -115,6 +115,7 @@ const AddZoomModal: React.FC<AddZoomModalProps> = ({ isOpen, team, meetingInWeek
             type="url"
             className="zoom-modal__input"
             placeholder="https://zoom.us/j/…"
+            maxLength={500} // the API's cap on a Zoom link (meetings_zoom_url_length)
             value={zoomUrl}
             onChange={(e) => setZoomUrl(e.target.value)}
           />

@@ -33,7 +33,7 @@ self-create / self-join projects in any class. Treat it as a goal, not a guarant
 ```
 backend/app/<feature>/{url,views,controller,models}.py   # one module per feature
   health auth classes institutions projects assignments tsr staffing
-  messages profiles contact issues notifications tas attendance stats outbox scrum analytics search
+  messages profiles contact issues notifications tas attendance team_meetings stats outbox scrum analytics search
   core/db.py         # get_client() (database failures raise DatabaseError), fan_out()
   core/authz.py      # class and project access checks shared by controllers
   core/errors.py     # DatabaseError types and handlers; error bodies carry "detail" and "code"
@@ -162,7 +162,8 @@ Routers are registered in `app/main.py` under these prefixes: `/api` (auth: `log
 `/api/tsrs`, `/api/staffing`, `/api/messages`, `/api/profiles`, `/api/contact`,
 `/api/issues` (public issue form → GitHub issue), `/api/notifications`, `/api/tas`, `/api/stats`, `/api/analytics` (scope, dashboard), `/api/email`
 (outbox dispatch, Maileroo webhook, unsubscribe, email preferences), `/api/scrum` +
-`/api/projects/{id}/scrum` (scrum board), `/api/search` (`index`), plus attendance routes under `/api`.
+`/api/projects/{id}/scrum` (scrum board), `/api/projects/{project_id}/meetings` (a team's one-off
+meetings), `/api/search` (`index`), plus attendance routes under `/api`.
 The full agent-facing action catalog (method, params, role) lives at
 `frontend/public/.well-known/grepthink-actions.json`.
 
@@ -177,6 +178,12 @@ The full agent-facing action catalog (method, params, role) lives at
   from the one class-TA pool (`enrollment_role`). **Class-TA designation is unified** —
   designating via TA Management or TA Meetings writes the same `enrollment_role`
   (the legacy `class_tas` table was removed).
+- **`meetings` holds two kinds of row.** `kind = 'ta_meeting'` is a TA's weekly slot
+  (`app/attendance`); `kind = 'team_meeting'` is a team's one-off meeting (`app/team_meetings`,
+  written by the team's Product Owner). TA code filters `cadence = 'weekly'`, team-meeting code
+  filters `kind = 'team_meeting'`, and a CHECK (`meetings_team_meeting_shape`) ties `team_meeting`
+  to `cadence = 'once'`, so the weekly filter never sees a team row. TA code must never read team
+  rows: keep `cadence = 'weekly'` on every new TA query.
 - **The browser gets no table access, by grant as well as by policy.** `anon` holds nothing in
   `public`; `authenticated` holds `SELECT` on the Realtime tables only, and new tables start with
   no client privileges (`2026-09-21_lock_down_direct_table_access.sql`). Never add a write policy

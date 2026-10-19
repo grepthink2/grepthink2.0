@@ -96,6 +96,10 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     renderManage({ onCreate });
 
     expect(screen.getByText('No team meetings yet')).toBeInTheDocument();
+    // Until the schedule and the calendar feed ship, the project page is where the team sees them.
+    expect(
+      screen.getByText('A design review, sprint planning, a sponsor demo — everyone on the team sees them on the project page.'),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
 
     expect(screen.getByRole('heading', { name: 'New meeting' })).toBeInTheDocument();
@@ -418,6 +422,9 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     const user = userEvent.setup();
     renderManage({ meetings: [meeting({ zoomUrl: 'https://ucsc.zoom.us/j/9', location: 'E2 room 180', note: 'Bring estimates' }), past, live] });
 
+    expect(
+      screen.getByText(/^One-off meetings for the whole team\. Everyone on the team sees them on the project page\./),
+    ).toBeInTheDocument();
     expect(screen.getByText('2 upcoming · 1 past')).toBeInTheDocument();
     const [first, second] = within(screen.getAllByRole('list')[0]).getAllByRole('listitem');
     expect(first).toHaveTextContent('Standup');

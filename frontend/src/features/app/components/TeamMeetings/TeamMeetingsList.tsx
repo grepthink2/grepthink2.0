@@ -403,7 +403,7 @@ export function TeamMeetingsList({
       <div className="gt-tm__empty">
         <span className="gt-tm__empty-icon"><ScheduleIcon name="calendar-days" size={18} /></span>
         <p className="gt-tm__empty-title">No team meetings yet</p>
-        <p className="gt-tm__empty-hint">A design review, sprint planning, a sponsor demo — everyone on the team sees them in their schedule.</p>
+        <p className="gt-tm__empty-hint">A design review, sprint planning, a sponsor demo — everyone on the team sees them on the project page.</p>
         {canManage && (
           <button type="button" className="gt-button gt-button--primary gt-button--sm" onClick={() => startEdit('new')} data-focus-key="add">
             <span className="gt-button__icon"><ScheduleIcon name="calendar-plus" size={15} /></span>
@@ -441,7 +441,7 @@ export function TeamMeetingsList({
     <section ref={root} className={cls} aria-label="Team meetings">
       <div className="gt-tm__head">
         <p className="gt-tm__hint">
-          One-off meetings for the whole team. They show up in everyone’s schedule and calendar feed.
+          One-off meetings for the whole team. Everyone on the team sees them on the project page.
           {count && <span className="gt-tm__count">{count}</span>}
         </p>
         {canManage && status === 'ready' && meetings.length > 0 && (

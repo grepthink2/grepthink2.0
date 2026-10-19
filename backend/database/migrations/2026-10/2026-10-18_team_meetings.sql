@@ -33,6 +33,14 @@
 -- back as a whole):
 --
 --   SELECT count(*) FROM public.meetings WHERE char_length(location) > 120 OR char_length(zoom_url) > 500;
+--
+-- and the foreign key on meetings.created_by (expect exactly one row, meetings_created_by_fkey; under
+-- any other name DROP CONSTRAINT IF EXISTS below does nothing, and the old key, with no delete rule,
+-- stays next to the new one):
+--
+--   SELECT c.conname FROM pg_constraint c
+--     JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
+--    WHERE c.conrelid = 'public.meetings'::regclass AND c.contype = 'f' AND a.attname = 'created_by';
 
 BEGIN;
 
