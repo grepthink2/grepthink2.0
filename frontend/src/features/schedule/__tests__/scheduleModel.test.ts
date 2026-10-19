@@ -270,8 +270,11 @@ describe('time zones', () => {
     const winter = new Date('2026-12-20T22:00:00Z');
     expect(zoneDiffers(LA, LA, summer)).toBe(false);
     expect(zoneDiffers(LA, IST, summer)).toBe(true);
-    expect(zoneDiffers(LA, 'America/Vancouver', summer)).toBe(false);
-    expect(zoneDiffers(LA, 'America/Vancouver', winter)).toBe(false);
+    // Fixed-offset zones only: a real zone's daylight-time rules can change, and then the
+    // answer depends on the runner's time-zone data (America/Vancouver failed on CI this way).
+    // UTC-7 all year: the same clock as Santa Cruz in summer, an hour ahead of it in winter.
+    expect(zoneDiffers(LA, 'Etc/GMT+7', summer)).toBe(false);
+    expect(zoneDiffers(LA, 'Etc/GMT+7', winter)).toBe(true);
     // UTC-8 all year: the same clock as Santa Cruz in winter, an hour behind it in summer.
     expect(zoneDiffers(LA, 'Etc/GMT+8', winter)).toBe(false);
     expect(zoneDiffers(LA, 'Etc/GMT+8', summer)).toBe(true);
