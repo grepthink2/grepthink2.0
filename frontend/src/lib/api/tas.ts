@@ -196,7 +196,11 @@ export const tasApi = {
     return apiRequest<ApiReviewSlots>(`/api/tas/classes/${classId}/review-slots`);
   },
 
-  /** Instructor: post 60-minute slots at these ISO start times; times that already have one are skipped. */
+  /**
+   * Instructor: post 60-minute slots; times that already have one are skipped. Each start is an
+   * ISO 8601 instant with an offset, on a whole minute, built in the school's time zone
+   * (`institutions.timezone`), not the browser's.
+   */
   createReviewSlots: async (classId: string, startsAt: string[]) => {
     return apiRequest<{ created: number }>(
       `/api/tas/classes/${classId}/review-slots`,
@@ -225,7 +229,7 @@ export const tasApi = {
     );
   },
 
-  /** Claim a team's Review-TA slot: TA self-appoints (omit userId); instructor appoints anyone. */
+  /** Claim a team's Review TA seat: TA self-appoints (omit userId); instructor appoints anyone. */
   setReviewTA: async (projectId: string, userId?: string) => {
     return apiRequest<{ message: string; project_id: string; user_id: string }>(
       `/api/tas/projects/${projectId}/review-tas`,
@@ -233,7 +237,7 @@ export const tasApi = {
     );
   },
 
-  /** Release a team's Review-TA slot (the reviewer themselves, or the instructor). */
+  /** Release a team's Review TA seat (the reviewer themselves, or the instructor). */
   releaseReviewTA: async (projectId: string, userId: string) => {
     return apiRequest<{ message: string; project_id: string; user_id: string }>(
       `/api/tas/projects/${projectId}/review-tas/${userId}`,

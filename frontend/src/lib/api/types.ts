@@ -124,7 +124,7 @@ export interface ApiFinalReviewTeam {
   /** ISO timestamptz of the team's review slot; null = unscheduled. */
   final_review_at: string | null;
   home_ta: ApiFinalReviewTa | null;
-  /** The additional reviewer; null = open slot. */
+  /** The additional reviewer; null = open seat. */
   review_ta: ApiFinalReviewTa | null;
 }
 

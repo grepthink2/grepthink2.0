@@ -397,7 +397,7 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
 # ``project_review_tas`` (<=1 row per team, enforced by UNIQUE(project_id)). The
 # additional reviewer is self-appointed by a TA while the class review window is
 # open and the team has booked a review slot, or set by the instructor at any time
-# (override); only that TA or the instructor can release the slot.
+# (override); only that TA or the instructor can release the Review TA seat.
 
 REVIEW_TA_TABLE = "project_review_tas"
 #: 403: a TA signing up to review a team that has no review slot yet.
@@ -572,7 +572,7 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
             status_code=409, detail="This team already has an additional reviewer"
         )
         if is_instructor:
-            # Override: replace whoever holds the slot; a new claim gets a new timestamp.
+            # Override: replace whoever holds the seat; a new claim gets a new timestamp.
             client.table(REVIEW_TA_TABLE).upsert(
                 {**row, "claimed_at": datetime.now(UTC).isoformat()}, on_conflict="project_id"
             ).execute()
@@ -645,7 +645,7 @@ def get_final_review_schedule(user_id: str, class_id: UUID) -> dict:
     """The class's full final-review schedule (instructor or any class TA).
 
     Per team: name, review slot, Home TA (assigned_ta_id) and Review TA
-    (additional reviewer, null = open slot) — ordered by slot time with
+    (additional reviewer, null = open seat) — ordered by slot time with
     unscheduled teams last. Class-level: the shared Zoom room, the review-window
     state, and how many teams the viewer reviews (their Review-TA claims).
 
@@ -1147,7 +1147,7 @@ def release_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID) ->
         if not _owns_class(project, caller_id) and target != str(caller_id):
             raise HTTPException(
                 status_code=403,
-                detail="Only the reviewer themselves or the instructor can remove this review slot",
+                detail="Only the reviewer themselves or the instructor can remove this Review TA",
             )
 
         client.table(REVIEW_TA_TABLE).delete().eq("project_id", str(project_id)).eq(

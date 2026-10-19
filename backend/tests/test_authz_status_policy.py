@@ -449,6 +449,12 @@ CASES = {
         403,
         "You are not a TA in this class",
     ),
+    # A team's Review TA is removed by that TA or the instructor, not by a team member.
+    "tas.release_review_ta/enrolled-student": (
+        lambda db: tas.release_review_ta(S1, P1, TA1),
+        403,
+        "Only the reviewer themselves or the instructor can remove this Review TA",
+    ),
     # app.tas.review_slots: the class reads the slots, the instructor posts and deletes them, and
     # only a team's Product Owner (while sign-ups are open) or the instructor books and releases.
     "review_slots.list/missing-class": (

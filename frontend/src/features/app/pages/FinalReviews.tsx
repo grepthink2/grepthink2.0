@@ -117,7 +117,7 @@ const FinalReviews: React.FC = () => {
       return true;
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Something went wrong');
-      // The slot may have been taken/changed by someone else — resync.
+      // The Review TA seat may have been taken/changed by someone else — resync.
       await loadSchedule().catch(() => undefined);
       return false;
     } finally {
@@ -202,7 +202,7 @@ const FinalReviews: React.FC = () => {
       );
     }
 
-    // Open slot.
+    // Open Review TA seat.
     if (!isTa) return <span className="fr-row__open">Open</span>;
     if (viewerIsHomeTa) {
       return <span className="fr-row__hint">You&rsquo;re the Home TA</span>;

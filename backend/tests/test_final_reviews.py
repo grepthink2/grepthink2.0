@@ -160,7 +160,7 @@ def test_schedule_includes_tas_zoom_and_window(db):
     assert by_id[P1]["review_ta"]["user_id"] == TA2
     assert by_id[P1]["review_ta"]["email"] == f"{TA2}@ucsc.edu"
     assert by_id[P2]["home_ta"] is None  # no assigned TA
-    assert by_id[P2]["review_ta"] is None  # open slot
+    assert by_id[P2]["review_ta"] is None  # open seat
     assert by_id[P1]["final_review_at"] == T_2200.isoformat()
     assert by_id[P3]["final_review_at"] is None
 
