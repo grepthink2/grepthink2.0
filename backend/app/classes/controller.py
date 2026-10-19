@@ -14,6 +14,7 @@ from fastapi import HTTPException
 
 from app.assignments import deadlines
 from app.classes import terms
+from app.classes.models import END_BEFORE_START
 from app.config import settings
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
@@ -557,6 +558,7 @@ def create_class(
     tsr_count: int | None = None,
     institution_id: UUID | str | None = None,
     external_tasks_url: str | None = None,
+    end_date: datetime.date | None = None,
 ) -> dict:
     """
     Create a new class with a unique course code and auto-generate TSR assignments.
@@ -566,7 +568,9 @@ def create_class(
     term-based default (5 for Fall/Winter/Spring, 3 for Summer). ``institution_id`` must name
     an existing institution (400 otherwise); omitted, the class has none.
     ``external_tasks_url`` (validated by the request model) is the class's "Tasks - External"
-    sidebar link; omitted, the class has none.
+    sidebar link; omitted, the class has none. ``end_date`` (the request model refuses one before
+    ``start_date``) is the class's last day of classes; omitted, none is stored and the class
+    keeps its term's fixed length.
     """
     try:
         if institution_id is not None and not is_known_institution(institution_id):
@@ -596,6 +600,8 @@ def create_class(
             class_data["institution_id"] = str(institution_id)
         if external_tasks_url is not None:
             class_data["external_tasks_url"] = external_tasks_url
+        if end_date is not None:
+            class_data["end_date"] = end_date.isoformat()
 
         result = client.table("classes").insert(class_data).execute()
         new_class = result.data[0]
@@ -661,10 +667,11 @@ def _attach_enrolled_counts(classes: list[dict], count_by_class: dict[str, int])
 
 
 #: The class columns an enrolled student or TA may see (no review Zoom room, no settings). The
-#: "Tasks - External" link is for everyone in the class: it is their sidebar's item.
+#: "Tasks - External" link is for everyone in the class: it is their sidebar's item. So is the last
+#: day of classes: TA Meetings run through it, for the team's students as much as for its TA.
 _ENROLLED_CLASS_COLUMNS = (
     "id, name, description, created_by, created_at, course_code, status, term, start_date, "
-    "year, image_url, external_tasks_url"
+    "end_date, year, image_url, external_tasks_url"
 )
 
 
@@ -815,6 +822,46 @@ def update_class_external_tasks_url(
     except Exception:
         logger.exception("Error updating class tasks link | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to update the tasks link")
+
+
+def update_class_end_date(class_id: UUID, end_date: datetime.date, instructor_id: str) -> dict:
+    """Set or change the class's last day of classes (before finals).
+
+    Only the class instructor may (404 for a missing class, 403 for anyone else), and the day
+    can't be before the class's first week of term (400, nothing written; a class with no
+    ``start_date`` has nothing to fall before). The owner check reads ``start_date`` with the
+    class, so the comparison costs no round trip. Returns the updated class row.
+    """
+    try:
+        client = get_client()
+        cid = str(class_id)
+
+        class_row = _require_owner(client, instructor_id, cid, columns="id, created_by, start_date")
+        start_date = class_row.get("start_date")
+        if start_date is not None and end_date < datetime.date.fromisoformat(start_date):
+            raise HTTPException(status_code=400, detail=END_BEFORE_START)
+
+        update_result = (
+            client.table("classes")
+            .update({"end_date": end_date.isoformat()})
+            .eq("id", cid)
+            .execute()
+        )
+        if not update_result.data:
+            raise HTTPException(status_code=500, detail="Failed to update the last day of classes")
+
+        logger.info(
+            "Class end date set | class_id=%s end_date=%s updated_by=%s",
+            class_id,
+            end_date,
+            instructor_id,
+        )
+        return update_result.data[0]
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error updating class end date | class_id=%s", class_id)
+        raise HTTPException(status_code=500, detail="Failed to update the last day of classes")
 
 
 def join_class_by_code(course_code: str, user_id: str) -> dict:

@@ -148,6 +148,27 @@ def test_create_class_without_a_tasks_link_leaves_the_column_out(create_db, monk
     assert "external_tasks_url" not in created
 
 
+def test_create_class_records_its_last_day(create_db, monkeypatch):
+    _codes(monkeypatch, ["FREE0001"] * 5)
+    created = classes.create_class(
+        "CSE 115A",
+        None,
+        "Fall",
+        datetime.date(2026, 9, 24),
+        INSTR,
+        end_date=datetime.date(2026, 12, 4),
+    )
+    assert created["end_date"] == "2026-12-04"
+    assert create_db.executes <= 4, _trace(create_db)
+
+
+def test_create_class_without_a_last_day_leaves_the_column_out(create_db, monkeypatch):
+    # Not written at all, so a client that names no last day never depends on the column.
+    _codes(monkeypatch, ["FREE0001"] * 5)
+    created = classes.create_class("SE 301", None, "Fall", datetime.date(2026, 9, 24), INSTR)
+    assert "end_date" not in created
+
+
 def test_auto_created_tsrs_carry_their_deadline_in_the_schools_zone(
     create_db, monkeypatch, with_istinye
 ):
@@ -241,6 +262,24 @@ def test_create_class_route_passes_the_tasks_link_through(client, instructor_rou
     assert captured["external_tasks_url"] == "https://tasks.grepthink2.com/cse115a"
 
 
+def test_create_class_route_passes_the_last_day_through(client, instructor_route_db, monkeypatch):
+    captured: dict = {}
+    monkeypatch.setattr(
+        classes,
+        "create_class",
+        lambda *args, **kwargs: captured.update(kwargs) or {"id": "new-class"},
+    )
+
+    res = client.post(
+        "/api/classes",
+        headers=_route_header(),
+        json={**ROUTE_BODY, "end_date": "2026-12-04"},
+    )
+
+    assert res.status_code == 200, res.text
+    assert captured["end_date"] == datetime.date(2026, 12, 4)
+
+
 def test_create_class_route_rejects_a_non_uuid_institution_id(client, instructor_route_db):
     res = client.post(
         "/api/classes",
@@ -270,6 +309,7 @@ def _class(cid, owner, name, code, **extra):
         "review_period_open": False,
         "review_zoom_url": None,
         "external_tasks_url": None,
+        "end_date": None,
         **extra,
     }
 
@@ -277,6 +317,8 @@ def _class(cid, owner, name, code, **extra):
 C_IST = "class-ist"
 #: C1's "Tasks - External" link, which everyone in the class sees in its sidebar.
 C1_TASKS = "https://tasks.grepthink2.com/cse115c"
+#: C1's last day of classes, which everyone in the class sees (TA Meetings stop there).
+C1_END = "2026-12-04"
 
 
 @pytest.fixture
@@ -300,6 +342,7 @@ def list_db(monkeypatch):
                 "AAAA1111",
                 institution_id=UCSC_ID,
                 external_tasks_url=C1_TASKS,
+                end_date=C1_END,
             ),
             _class(C2, OTHER_INSTR, "CSE 110", "BBBB2222"),
             _class(C3, INSTR, "CSE 130", "CCCC3333", status="complete"),
@@ -334,6 +377,7 @@ STUDENT_KEYS = {
     "status",
     "term",
     "start_date",
+    "end_date",
     "year",
     "image_url",
     "external_tasks_url",
@@ -356,6 +400,8 @@ def test_students_see_their_classes_with_the_teacher_email(list_db):
     assert [c["institution"] for c in out] == [UCSC_SUMMARY, None]
     # The sidebar's "Tasks - External" item: shown for C1, hidden for C2.
     assert [c["external_tasks_url"] for c in out] == [C1_TASKS, None]
+    # The last day of classes, which a student's TA Meetings view runs to: set for C1, none for C2.
+    assert [c["end_date"] for c in out] == [C1_END, None]
     # created and enrolled classes in one wave, then the counts
     assert list_db.executes <= 3, _trace(list_db)
 
@@ -377,7 +423,13 @@ def test_instructors_see_the_classes_they_created(list_db):
     assert set(by_id) == {C1, C3}
     assert by_id[C1] == {
         **_class(
-            C1, INSTR, "CSE 115C", "AAAA1111", institution_id=UCSC_ID, external_tasks_url=C1_TASKS
+            C1,
+            INSTR,
+            "CSE 115C",
+            "AAAA1111",
+            institution_id=UCSC_ID,
+            external_tasks_url=C1_TASKS,
+            end_date=C1_END,
         ),
         "enrolled_count": 2,
         "my_role": "instructor",
