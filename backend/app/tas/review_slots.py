@@ -15,7 +15,9 @@ Who can call what:
     * list the slots                       → the class instructor or anyone enrolled.
     * create slots / delete a free slot    → the class instructor.
     * book, move or release a team's slot  → the team's Product Owner while sign-ups are open,
-                                             or the class instructor at any time.
+                                             before the team's review time, and onto a slot
+                                             that hasn't started; or the class instructor at
+                                             any time, onto a slot that has started too.
 """
 
 import logging
@@ -24,6 +26,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
+from app.assignments import deadlines
 from app.core import authz
 from app.core.db import fan_out, get_client
 from app.core.errors import DatabaseConflictError
@@ -47,11 +50,17 @@ ONLY_PRODUCT_OWNER_BOOKS = "Only the team's Product Owner can book a slot."
 ONLY_PRODUCT_OWNER_RELEASES = "Only the team's Product Owner can release a slot."
 #: 403: the team's Product Owner while sign-ups are closed.
 SIGNUPS_CLOSED = "Sign-ups aren't open."
+#: 403: the team's Product Owner, moving or releasing once the team's review time has come.
+REVIEW_TIME_PASSED = "Your team's review time has passed."
+#: 409: the team's Product Owner, booking a slot whose start has come.
+SLOT_STARTED = "That slot has already started."
 
 _CLASS_COLUMNS = "id, created_by, review_period_open, review_zoom_url"
-# A team with what a slot change is decided on: its class's owner and switch, and its members.
+# A team with what a slot change is decided on: its review time, its class's owner and switch,
+# and its members.
 _TEAM_COLUMNS = (
-    "id, class_id, classes(created_by, review_period_open), project_members(user_id, role)"
+    "id, class_id, final_review_at, classes(created_by, review_period_open), "
+    "project_members(user_id, role)"
 )
 
 
@@ -77,10 +86,20 @@ def _product_owner_id(team: dict) -> str | None:
     return min(owners) if owners else None
 
 
-def _require_slot_change(team: dict, user_id: str, *, denied_detail: str) -> None:
-    """Let the class instructor change the team's slot at any time, and the team's Product Owner
-    while sign-ups are open. Anyone else, a member with no role included, gets 403
-    ``denied_detail``."""
+def _has_come(at: str | None, now: datetime) -> bool:
+    """Whether the ``timestamptz`` string ``at`` is set and at or before ``now``."""
+    instant = deadlines.parse_ts(at)
+    return instant is not None and instant <= now
+
+
+def _require_slot_change(
+    team: dict, user_id: str, *, denied_detail: str, slot_starts_at: str | None = None
+) -> None:
+    """Let the class instructor change the team's slot at any time, onto a slot that has started
+    too: that is how a review already held gets recorded. The team's Product Owner may change it
+    while sign-ups are open and before the team's review time (403 from then on), and may book
+    only a slot that hasn't started (``slot_starts_at``; 409). Anyone else, a member with no role
+    included, gets 403 ``denied_detail``."""
     cls = team.get("classes") or {}
     if str(cls.get("created_by")) == str(user_id):
         return
@@ -88,6 +107,12 @@ def _require_slot_change(team: dict, user_id: str, *, denied_detail: str) -> Non
         raise HTTPException(status_code=403, detail=denied_detail)
     if not cls.get("review_period_open"):
         raise HTTPException(status_code=403, detail=SIGNUPS_CLOSED)
+    now = deadlines.now_utc()
+    # A review already held stays put: a move or a release drops the Review TA who scored it.
+    if _has_come(team.get("final_review_at"), now):
+        raise HTTPException(status_code=403, detail=REVIEW_TIME_PASSED)
+    if _has_come(slot_starts_at, now):
+        raise HTTPException(status_code=409, detail=SLOT_STARTED)
 
 
 def _display_names(client, user_ids) -> dict[str, str]:
@@ -304,8 +329,9 @@ def delete_review_slot(instructor_id: str, slot_id: UUID) -> None:
 def book_review_slot(user_id: str, slot_id: UUID, project_id: UUID) -> dict:
     """Book ``slot_id`` for team ``project_id``, or move the team to it.
 
-    The team's Product Owner books for their own team while sign-ups are open; the class
-    instructor places any team at any time. ``book_final_review_slot`` then decides atomically: a
+    The team's Product Owner books for their own team while sign-ups are open, before the team's
+    review time, and only a slot that hasn't started; the class instructor places any team at any
+    time, on a slot that has started too. ``book_final_review_slot`` then decides atomically: a
     slot another team holds is 409, and a move frees the team's old slot and drops its Review TA
     (a first booking keeps it). Booking the slot the team already holds changes nothing and
     answers ``booked``.
@@ -337,7 +363,9 @@ def book_review_slot(user_id: str, slot_id: UUID, project_id: UUID) -> dict:
             raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
         if str(slot["class_id"]) != str(team["class_id"]):
             raise HTTPException(status_code=404, detail=SLOT_NOT_FOUND)
-        _require_slot_change(team, user_id, denied_detail=ONLY_PRODUCT_OWNER_BOOKS)
+        _require_slot_change(
+            team, user_id, denied_detail=ONLY_PRODUCT_OWNER_BOOKS, slot_starts_at=slot["starts_at"]
+        )
 
         try:
             res = client.rpc(
@@ -373,8 +401,9 @@ def book_review_slot(user_id: str, slot_id: UUID, project_id: UUID) -> dict:
 def release_review_slot(user_id: str, project_id: UUID) -> dict:
     """Free the team's slot; its review time is cleared and its Review TA dropped.
 
-    The same rule as booking: the team's Product Owner while sign-ups are open, or the class
-    instructor at any time. ``released`` is false when the team held no slot (nothing changes).
+    The same rule as booking: the team's Product Owner while sign-ups are open and before the
+    team's review time, or the class instructor at any time. ``released`` is false when the team
+    held no slot (nothing changes).
 
     Round trips: the team, then the function. At most 3.
     """

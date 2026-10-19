@@ -17,6 +17,7 @@ import pytest
 from fastapi import HTTPException
 from postgrest.exceptions import APIError
 
+from app.assignments import deadlines
 from app.tas import controller as tas
 from app.tas import review_slots
 from tests.conftest import make_token
@@ -41,14 +42,20 @@ SLOT_B = "e0000000-0000-4000-8000-00000000000b"
 SLOT_ELSEWHERE = "e0000000-0000-4000-8000-0000000000c2"  # in OTHER_CLASS
 
 ZOOM = "https://ucsc.zoom.us/j/555"
+SLOT_A_AT = datetime(2026, 12, 7, 17, 0, tzinfo=UTC)
+SLOT_B_AT = SLOT_A_AT + timedelta(hours=1)
 # Stored the way the controller writes them: UTC ISO strings.
-SLOT_A_START = datetime(2026, 12, 7, 17, 0, tzinfo=UTC).isoformat()
-SLOT_B_START = datetime(2026, 12, 7, 18, 0, tzinfo=UTC).isoformat()
+SLOT_A_START = SLOT_A_AT.isoformat()
+SLOT_B_START = SLOT_B_AT.isoformat()
 PACIFIC = timezone(timedelta(hours=-8))
+#: The clock until a test moves it: the week before the reviews, when no slot has started.
+BEFORE_THE_REVIEWS = datetime(2026, 12, 1, 12, 0, tzinfo=UTC)
 
 SLOT_TAKEN = "That slot was just taken."
 SLOT_NOT_FOUND = "Slot not found"
 RELEASE_FIRST = "Release the team before deleting its slot."
+TIME_PASSED = "Your team's review time has passed."
+SLOT_STARTED = "That slot has already started."
 
 
 def _profile(uid: str, first: str) -> dict:
@@ -78,7 +85,9 @@ def _slot(slot_id: str, class_id: str, starts_at: str) -> dict:
 def db(monkeypatch):
     """CLASS (INSTR's, sign-ups open, a shared Zoom room) has teams P1 (Product Owner PO1, Home
     TA TA1) and P2 (Product Owner PO2 and M2, whose role is NULL), class TAs TA1 and TA2, and free
-    slots SLOT_A and SLOT_B. SLOT_ELSEWHERE is a free slot in OTHER_CLASS."""
+    slots SLOT_A and SLOT_B. SLOT_ELSEWHERE is a free slot in OTHER_CLASS. The clock reads
+    BEFORE_THE_REVIEWS."""
+    monkeypatch.setattr(deadlines, "now_utc", lambda: BEFORE_THE_REVIEWS)
     fake = FakeSupabase(
         relations={
             ("projects", "classes"): ("class_id", "id", False),
@@ -153,6 +162,16 @@ def db(monkeypatch):
     return fake
 
 
+@pytest.fixture
+def clock(monkeypatch):
+    """Move the clock the slot rules read (``deadlines.now_utc``)."""
+
+    def set_now(value: datetime) -> None:
+        monkeypatch.setattr(deadlines, "now_utc", lambda: value)
+
+    return set_now
+
+
 def _trace(db) -> list[str]:
     return [f"{q['table']}:{q['op']}" for q in db.queries]
 
@@ -208,10 +227,11 @@ def test_moving_frees_the_old_slot_and_drops_the_review_ta(db):
 
 
 @pytest.mark.parametrize(
-    "old_time", [None, "2026-07-22T20:00:00+00:00"], ids=["no-time", "time-without-a-slot"]
+    "old_time", [None, "2026-12-04T20:00:00+00:00"], ids=["no-time", "time-without-a-slot"]
 )
 def test_a_first_booking_keeps_the_review_ta(db, old_time):
     # No slot row yet, so a first booking either way: a time set before slots existed is not one.
+    # That time is still ahead; once it has passed, see the past-times tests below.
     _project(db, P1)["final_review_at"] = old_time
     db.rows("project_review_tas").append({"project_id": P1, "user_id": TA2, "class_id": CLASS})
 
@@ -341,6 +361,80 @@ def test_releasing_a_team_that_holds_no_slot_releases_nothing(db):
     assert out == {"released": False}
     assert db.queries[-1]["table"] == "rpc:release_final_review_slot"
     assert db.executes <= 3, _trace(db)
+
+
+# -------------------------------------------------------------- past times
+
+
+@pytest.mark.parametrize(
+    "now", [SLOT_A_AT, SLOT_A_AT + timedelta(minutes=30)], ids=["at-the-time", "after-it"]
+)
+@pytest.mark.parametrize(
+    "change",
+    [
+        pytest.param(lambda: review_slots.book_review_slot(PO1, SLOT_B, P1), id="move"),
+        pytest.param(lambda: review_slots.release_review_slot(PO1, P1), id="release"),
+    ],
+)
+def test_a_product_owner_cannot_move_or_release_once_the_team_time_has_passed(
+    db, clock, change, now
+):
+    review_slots.book_review_slot(PO1, SLOT_A, P1)
+    db.rows("project_review_tas").append({"project_id": P1, "user_id": TA2, "class_id": CLASS})
+    clock(now)  # SLOT_B hasn't started: only the team's own time is in the way
+    db.reset_counter()
+
+    with pytest.raises(HTTPException) as exc:
+        change()
+
+    assert (exc.value.status_code, exc.value.detail) == (403, TIME_PASSED)
+    # Refused before the booking functions: the team keeps its slot, its time and its Review TA.
+    assert {q["op"] for q in db.queries} == {"select"}, _trace(db)
+    assert _held(db) == {SLOT_A: P1, SLOT_B: None, SLOT_ELSEWHERE: None}
+    assert _project(db, P1)["final_review_at"] == SLOT_A_START
+    assert _review_tas(db) == [(P1, TA2)]
+
+
+@pytest.mark.parametrize(
+    "now", [SLOT_A_AT, SLOT_A_AT + timedelta(minutes=30)], ids=["at-its-start", "after-it"]
+)
+def test_a_product_owner_cannot_book_a_slot_that_has_started(db, clock, now):
+    clock(now)
+
+    with pytest.raises(HTTPException) as exc:
+        review_slots.book_review_slot(PO2, SLOT_A, P2)
+
+    assert (exc.value.status_code, exc.value.detail) == (409, SLOT_STARTED)
+    assert {q["op"] for q in db.queries} == {"select"}, _trace(db)
+    assert _held(db)[SLOT_A] is None and _project(db, P2)["final_review_at"] is None
+    # A slot that hasn't started is still theirs to book.
+    assert review_slots.book_review_slot(PO2, SLOT_B, P2)["status"] == "booked"
+
+
+def test_a_time_set_before_slots_existed_also_counts_once_it_has_passed(db):
+    # P1 has a time but no slot (C-R4); that time is behind the clock, so its review was held.
+    _project(db, P1)["final_review_at"] = "2026-07-22T20:00:00+00:00"
+
+    with pytest.raises(HTTPException) as exc:
+        review_slots.book_review_slot(PO1, SLOT_A, P1)
+
+    assert (exc.value.status_code, exc.value.detail) == (403, TIME_PASSED)
+    assert {q["op"] for q in db.queries} == {"select"}, _trace(db)
+    assert _project(db, P1)["final_review_at"] == "2026-07-22T20:00:00+00:00"
+
+
+def test_the_instructor_places_and_releases_teams_after_their_time(db, clock):
+    review_slots.book_review_slot(PO1, SLOT_A, P1)
+    clock(SLOT_B_AT + timedelta(minutes=30))  # both slots have started: P1's review is over
+
+    # Moving P1 and releasing it, then putting P2 on a slot that has started: that is how a
+    # review already held gets recorded.
+    assert review_slots.book_review_slot(INSTR, SLOT_B, P1)["status"] == "moved"
+    assert review_slots.release_review_slot(INSTR, P1) == {"released": True}
+    assert review_slots.book_review_slot(INSTR, SLOT_A, P2)["status"] == "booked"
+    assert _held(db) == {SLOT_A: P2, SLOT_B: None, SLOT_ELSEWHERE: None}
+    assert _project(db, P1)["final_review_at"] is None
+    assert _project(db, P2)["final_review_at"] == SLOT_A_START
 
 
 # ------------------------------------------------------ creating, deleting
@@ -624,3 +718,23 @@ def test_creating_slots_takes_1_to_200_distinct_times_with_a_zone(
 
     assert res.status_code == status, res.text
     assert len(calls) == (1 if status == 200 else 0)
+
+
+@pytest.mark.parametrize(
+    "start",
+    [
+        pytest.param("0001-01-01T00:00:00+05:00", id="before-year-1-in-utc"),
+        pytest.param("9999-12-31T23:30:00-05:00", id="after-year-9999-in-utc"),
+        pytest.param("2026-12-07T17:00:00.123Z", id="milliseconds"),
+        pytest.param("2026-12-07T17:00:30Z", id="seconds"),
+    ],
+)
+def test_a_start_time_must_be_a_whole_minute_that_utc_can_hold(client, db, start):
+    res = client.post(
+        f"/api/tas/classes/{CLASS}/review-slots", json={"starts_at": [start]}, headers=_as(INSTR)
+    )
+
+    assert res.status_code == 422, res.text
+    # Refused by the request model: the controller never runs, so nothing is read or written.
+    assert db.queries == [], _trace(db)
+    assert len(db.rows("final_review_slots")) == 3
