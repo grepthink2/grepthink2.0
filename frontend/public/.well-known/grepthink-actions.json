@@ -2,14 +2,14 @@
   "$schema": "https://grepthink.com/schemas/agent-actions-v1.json",
   "version": "1",
   "name": "GrepThink 2.0",
-  "description": "Agent-facing catalog of user actions. All actions require a Supabase-authenticated session and are role-gated. Param syntax: 'type!' = required, 'type' = optional. The 'instructor' role tag means the class instructor (the class's creator) except on create_class, which is gated by the account's own instructor role (profiles.role) instead.",
+  "description": "Agent-facing catalog of user actions. All actions require a Supabase-authenticated session and are role-gated. Param syntax: 'type!' = required, 'type' = optional. The 'instructor' role tag means the class instructor (the class's creator) except on create_class, which is gated by the account's own instructor role (profiles.role) instead. 'any' = any signed-in user; 'ta' = a TA of the class; 'meeting-ta' = the team's meeting TA; 'project-member', 'owner', 'product owner' and 'admin' are roles on the project; 'a|b' = either.",
   "apiBase": "/api",
   "auth": {
     "type": "supabase-jwt",
     "header": "Authorization: Bearer <access_token>",
     "note": "Sign-up, login, password reset, and OAuth are performed client-side via Supabase Auth, not these endpoints. POST /api/create-user provisions the profile row after sign-up."
   },
-  "roles": ["public", "student", "ta", "instructor", "project-member", "project-owner"],
+  "roles": ["public", "any", "student", "ta", "meeting-ta", "instructor", "project-member", "owner", "product owner", "admin"],
   "actions": [
     {
       "id": "create_user_profile", "title": "Provision profile after sign-up", "role": "public",

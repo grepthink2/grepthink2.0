@@ -51,6 +51,7 @@ src/
 - "View class as student" preview (offered only in a class you teach) is read-only: `apiRequest` refuses writes (`lib/previewGuard.ts`).
 - Prefer one request per screen to one request per row. Batch endpoints exist for the common cases, for example `GET /api/assignments/my-submissions`, `GET /api/projects/incoming-join-requests` and `GET /api/classes/attention-summary`. A loop of `api.*` calls is a sign a batch endpoint is missing.
 - Read the caller's class role with `useSelectedClassRole()` or `useClassRole(classId)` from `lib/classContext.tsx`; it comes with the class list, so it costs no request. The account role only decides who may create a class (`useAuth().canCreateClasses`).
+- Times arrive as instants. Show them in the viewer's zone, with the campus time beside them when the two differ (`features/schedule/scheduleModel.ts` `zoneDiffers` / `viewerZone`); the full rule is in AGENTS.md ("Times").
 
 ## Performance
 

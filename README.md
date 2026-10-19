@@ -34,7 +34,7 @@ series, the v2 rebuild of [grepthink.com](https://www.grepthink.com), and it is 
 | Path | What | Docs |
 |---|---|---|
 | `frontend/` | React 19, TypeScript and Vite, styled with SCSS | [frontend/README.md](frontend/README.md) |
-| `backend/` | FastAPI on Supabase (Postgres), through the service role | [backend/README.md](backend/README.md) · [style guide](backend/STYLE_GUIDE.md) · [API for the frontend](backend/docs/FRONTEND_API.md) |
+| `backend/` | FastAPI on Supabase (Postgres), through the service role | [backend/README.md](backend/README.md) · [style guide](backend/STYLE_GUIDE.md) · routes: each feature's `url.py` and `/docs` |
 | `backend/database/migrations/` | SQL applied by hand, one folder per month | [DEPLOY.md](DEPLOY.md), "Database migrations" |
 | `supabase/` | schema snapshot, auth and storage setup for a fresh database | [supabase/README.md](supabase/README.md) |
 | `design/` | the Claude Design export (the design system), ported into `frontend/` by hand | [design/PORTING.md](design/PORTING.md) |

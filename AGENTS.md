@@ -113,6 +113,22 @@ design/               # Claude Design export (design system); replace it wholesa
   (`classes.institution_id`). Its `email_domains`, plus any `.edu`, decide what counts as a school
   email (`app/institutions/controller.py` `is_school_email`, mirrored by `lib/schoolEmail.ts`).
 
+## Vocabulary
+Use these words in code, copy, comments and the agent catalog:
+- **Slot**: a scheduled time. It means a final-review slot (`final_review_slots`, posted by the
+  instructor and booked by a team) or a TA's weekly meeting slot (`meetings`, `kind = 'ta_meeting'`).
+  A team's review time is `projects.final_review_at`.
+- **Meeting TA** (`projects.assigned_ta_id`, runs the weekly meeting) and **Review TA**
+  (`project_review_tas`, the team's second final reviewer). Never call the Review TA's place a
+  "slot": say "Review TA", or "seat" in comments.
+- **TA meeting** (weekly, `kind = 'ta_meeting'`) and **team meeting** (one-off,
+  `kind = 'team_meeting'`, scheduled by the team's Product Owner).
+- **Product Owner** in prose and copy; `product owner` is the stored `project_members.role` value.
+- **Catalog roles** (`frontend/public/.well-known/grepthink-actions.json`, each action's `role`; join
+  alternatives with `|`): `public` (no sign-in), `any` (any signed-in user), `student`, `ta` (a class
+  TA), `meeting-ta` (the team's meeting TA), `instructor` (the class instructor), `project-member`,
+  `owner`, `product owner`, `admin`.
+
 ## Run / test
 ```bash
 # Backend (Python 3.12 venv at backend/.venv; CI runs 3.12)
@@ -204,9 +220,11 @@ The full agent-facing action catalog (method, params, role) lives at
   and `GET /api/profiles/me` re-mirrors the token's email afterwards. See `AUTH.md`.
 - **Match identifiers with `eq`, not `ilike`.** `%` and `_` are wildcards: an `ilike` on a join
   code once let `%` join any class. Validate the shape first, then match exactly.
-- **`lib/api/*.ts` can drift from routes** — the client is hand-maintained, no codegen.
-  Confirm a route exists before adding or calling a client method, and add the method to
-  the matching domain file (`lib/api.ts` spreads them all into `api`).
+- **Routes are defined by each feature's `url.py`** (and the OpenAPI pages it produces at `/docs`).
+  The web client (`lib/api/<domain>.ts`) and the agent catalog follow it, and both are
+  hand-maintained, so they can drift. Confirm a route exists before adding or calling a client
+  method, and add the method to the matching domain file (`lib/api.ts` spreads them all into
+  `api`; `apiFacade.test.ts` fails if two domains share a method name).
 - **Never depend on unapplied SQL.** Migrations in `backend/database/migrations/` are
   applied by hand, dev first and then prod; merging does not apply them. Code must work on
   the schema that is live, and an upsert needs a unique constraint that already exists.
@@ -247,6 +265,16 @@ The full agent-facing action catalog (method, params, role) lives at
   `submit_feedback` enforce the window (403 `"This assignment is not open yet"` / `"This assignment
   is closed"`). `app.assignments.deadlines` holds the arithmetic and the clock (`now_utc`, patched in
   tests).
+- **Times: store instants, compute in the school's zone, show in the viewer's.**
+  - The database holds `timestamptz` instants.
+  - Calendar boundaries (a day, a term week, a deadline's `due_at`) are computed in the school's zone:
+    `institutions.timezone`, read through `app.institutions.controller.institution_timezone()`.
+  - The web client shows times in the viewer's zone, with the campus time beside them when the two
+    differ (`features/schedule/scheduleModel.ts` `zoneDiffers` / `viewerZone`,
+    `TeamMeetings/teamMeetingsModel.ts` `campusTimeOf`).
+  - Known exceptions, still to fix: the scrum board's day boundary is hard-coded to Pacific
+    (`app/scrum/controller.py`), the Final Reviews page shows the browser's zone with no campus time,
+    and the web client's fallback `SCHOOL_ZONE` is a Pacific constant.
 - **Product events** go through `app.core.events.record(kind, ...)` (one insert; a database failure
   is logged at WARNING and never raised, an unregistered kind raises `ValueError`; kinds live in
   `KINDS`; `meta` holds ids and short enums only — never names, emails, grades or text). Pass ids
@@ -263,15 +291,31 @@ The full agent-facing action catalog (method, params, role) lives at
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,
 `@assets/`→`src/assets/`, `@styles/`→`src/styles/`.
 
+## How to work in this repo
+- **Size the process to the change.**
+  - A small, well-understood change (a fix in a file or two, copy, config) goes straight to code, the
+    gates and a pull request.
+  - A feature gets a spec, a plan, one implementer and one whole-branch review before the pull request.
+    The spec is committed under `docs/superpowers/specs/`; the plan stays local, because
+    `docs/superpowers/plans/` is gitignored.
+  - Review each task separately only for SQL functions, authorization and anything that can lose data.
+- **Plans, ledgers and review notes stay out of the repo.** Code, comments and commit messages never
+  cite them (no ruling or task ids): say what the code does.
+- **Old response shapes move on touch.** When you change an endpoint that still answers
+  `{"message": …, "<resource>": …}`, move it to the current shape (`backend/STYLE_GUIDE.md`, "Response
+  Format") in the same pull request, with its client method and tests.
+
 ## Before you commit
 - Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest --cov` (all green,
   coverage above `.coveragerc`'s `fail_under`).
 - Frontend: `npm run lint && npm run lint:design && npm run build && npm run test:coverage` (no lint findings,
   all green, thresholds met).
-- New backend route → add the matching method to `frontend/src/lib/api/<domain>.ts`.
+- New backend route → add the matching method to `frontend/src/lib/api/<domain>.ts`, and an entry in the
+  agent catalog.
 - New migration → `backend/database/migrations/<YYYY-MM>/<YYYY-MM-DD>_<name>.sql`, in the folder for its
   month; update `supabase/schema.sql` once it is applied (CI warns on a pull request that adds a
-  migration without touching the snapshot).
+  migration without touching the snapshot). Label the pull request `needs-prod-sql`, and remove the
+  label once the SQL is applied on PROD.
 - CI (`.github/workflows/test.yml`) runs the same gates with coverage on every pull request into
   `beta` or `main`. The thresholds (`backend/.coveragerc` `fail_under`, `frontend/vite.config.ts`
   `coverage.thresholds`) only ever go up.
