@@ -4,15 +4,18 @@ Every ``.execute()`` on the Supabase client is one HTTP round trip to
 PostgREST. Controllers therefore batch related reads (``.in_()``, embedded
 selects over foreign keys, bulk ``insert``/``upsert``) and fan independent
 reads out through ``query_pool``. This module is the single place that decides
-which client a controller talks through, and the boundary where a failed
-database request becomes a typed ``app.core.errors.DatabaseError``.
+which client a controller talks through, the boundary where a failed
+database request becomes a typed ``app.core.errors.DatabaseError``, and the
+place where ids and instants become values supabase-py can send as JSON.
 """
 
 from __future__ import annotations
 
 import threading
 from collections.abc import Callable, Mapping
+from datetime import date, time
 from typing import Any, TypeVar
+from uuid import UUID
 
 import httpx
 from postgrest.exceptions import APIError
@@ -139,6 +142,24 @@ def _translated(
         raise error from exc
 
 
+def _jsonable(value: Any) -> Any:
+    """``value`` with every UUID as text and every date, datetime or time in ISO form.
+
+    supabase-py encodes request bodies and rpc params with ``json.dumps``, which refuses
+    those types, so controllers can pass the ids and instants they hold. Lists and tuples
+    keep their type; anything else is returned as it is.
+    """
+    if isinstance(value, UUID):
+        return str(value)
+    if isinstance(value, date | time):  # datetime is a date
+        return value.isoformat()
+    if isinstance(value, Mapping):
+        return {key: _jsonable(item) for key, item in value.items()}
+    if isinstance(value, list | tuple):
+        return type(value)(_jsonable(item) for item in value)
+    return value
+
+
 def _is_request_builder(value: object) -> bool:
     return callable(getattr(value, "execute", None)) or callable(getattr(value, "eq", None))
 
@@ -163,7 +184,11 @@ class _Request:
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         result = _translated(
-            self._operation or "read", self._target, self._builder, *args, **kwargs
+            self._operation or "read",
+            self._target,
+            self._builder,
+            *_jsonable(args),
+            **_jsonable(kwargs),
         )
         return self._wrap(result, self._operation)
 
@@ -176,7 +201,9 @@ class _Request:
             return attr
 
         def call(*args: Any, **kwargs: Any) -> Any:
-            result = _translated(operation or "read", self._target, attr, *args, **kwargs)
+            result = _translated(
+                operation or "read", self._target, attr, *_jsonable(args), **_jsonable(kwargs)
+            )
             return self._wrap(result, operation)
 
         return call
@@ -191,8 +218,10 @@ class DatabaseClient:
     """The Supabase client controllers talk through. Database failures raise ``DatabaseError``.
 
     ``table()``, ``from_()`` and ``rpc()`` return request builders whose failures
-    are translated by ``to_database_error``. Every other attribute (``auth``,
-    ``storage`` and so on) is the wrapped client's own.
+    are translated by ``to_database_error``. Every argument passed to a builder
+    method or to ``rpc()`` goes through ``_jsonable`` first, so a UUID or a datetime
+    in a body, a filter or rpc params is sent as text. Every other attribute
+    (``auth``, ``storage`` and so on) is the wrapped client's own.
     """
 
     __slots__ = ("_client",)
@@ -215,7 +244,15 @@ class DatabaseClient:
         **kwargs: Any,
     ) -> Any:
         """Call a Postgres function. Its failures count as reads unless ``operation="write"``."""
-        builder = _translated(operation, fn, self._client.rpc, fn, params, *args, **kwargs)
+        builder = _translated(
+            operation,
+            fn,
+            self._client.rpc,
+            fn,
+            _jsonable(params),
+            *_jsonable(args),
+            **_jsonable(kwargs),
+        )
         return _Request(builder, fn, operation)
 
     def schema(self, name: str) -> DatabaseClient:
