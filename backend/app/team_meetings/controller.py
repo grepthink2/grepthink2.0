@@ -23,7 +23,6 @@ one more, fanned out with the meetings for the list; a write is one request. Thr
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -45,6 +44,9 @@ ONLY_PRODUCT_OWNER = "Only the team's Product Owner can change meetings."
 MEETING_NOT_FOUND = "Meeting not found"
 #: 400: a new meeting can't start in the past. An edit may keep, or move to, a time that has passed.
 START_IN_PAST = "That time has already passed."
+#: 400: an edit that names no field the API knows (an empty body, or unknown keys only) would only
+#: move ``updated_at``. The same answer as the other PATCH endpoints that take optional fields.
+NOTHING_TO_UPDATE = "Provide at least one field to update"
 
 _MEETING_COLUMNS = (
     "id, project_id, title, scheduled_at, duration_minutes, location, zoom_url, note, "
@@ -106,11 +108,6 @@ def _require_product_owner(project: dict, user_id: str, membership: dict | None)
 # --------------------------------------------------------------------- rows ----
 
 
-def _instant(value: datetime) -> str:
-    """An aware datetime as the UTC ISO string PostgREST stores and returns."""
-    return value.astimezone(UTC).isoformat()
-
-
 def _team_meetings(client, project_id) -> list[dict]:
     """The team's meetings, soonest first."""
     return (
@@ -144,7 +141,8 @@ def _changes(data: TeamMeetingUpdate) -> dict:
     """The columns an edit names. A field left out of the request is not touched."""
     changes = data.model_dump(exclude_unset=True)
     if "starts_at" in changes:
-        changes["scheduled_at"] = _instant(changes.pop("starts_at"))
+        # Already in UTC (the request model moves it there), as PostgREST stores and returns it.
+        changes["scheduled_at"] = changes.pop("starts_at").isoformat()
     return changes
 
 
@@ -197,7 +195,7 @@ def create_team_meeting(project_id: UUID, user_id: str, data: TeamMeetingCreate)
                 "kind": KIND,
                 "cadence": CADENCE,
                 "title": data.title,
-                "scheduled_at": _instant(data.starts_at),
+                "scheduled_at": data.starts_at.isoformat(),  # in UTC, from the request model
                 "duration_minutes": data.duration_minutes,
                 "location": data.location,
                 "zoom_url": data.zoom_url,
@@ -225,15 +223,19 @@ def update_team_meeting(
 
     Who can call: the team's Product Owner.
     Returns: the meeting as it is now.
-    Raises: 404 no such project, or no such team meeting on it (a TA slot or another team's
-    meeting is none); 403 not the Product Owner.
+    Raises: 400 when the request names no field (before anything is read); 404 no such project,
+    or no such team meeting on it (a TA slot or another team's meeting is none); 403 not the
+    Product Owner.
     """
+    changes = _changes(data)
+    if not changes:
+        raise HTTPException(status_code=400, detail=NOTHING_TO_UPDATE)
     client = get_client()
     project = _load_project(client, project_id)
     _require_product_owner(project, user_id, _membership(client, project_id, user_id))
     res = (
         client.table("meetings")
-        .update({**_changes(data), "updated_at": deadlines.now_utc().isoformat()})
+        .update({**changes, "updated_at": deadlines.now_utc().isoformat()})
         .eq("id", str(meeting_id))
         .eq("project_id", str(project_id))
         .eq("kind", KIND)

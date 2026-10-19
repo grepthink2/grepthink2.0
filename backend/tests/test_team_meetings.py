@@ -278,6 +278,24 @@ def test_null_or_blank_clears_an_optional_field(db):
 
 
 @pytest.mark.parametrize(
+    "body",
+    [{}, {"colour": "teal", "starts": "soon"}],
+    ids=["an empty body", "only fields the API does not know"],
+)
+def test_an_edit_that_names_no_field_is_400_and_writes_nothing(client: TestClient, db, body):
+    before = copy.deepcopy(db.rows("meetings"))
+
+    response = client.patch(f"/api/projects/{P1}/meetings/{TM1}", json=body, headers=_as(PO))
+
+    assert (response.status_code, response.json()["detail"]) == (
+        400,
+        "Provide at least one field to update",
+    )
+    assert db.executes == 0  # refused before anything was read or written
+    assert db.rows("meetings") == before  # updated_at included
+
+
+@pytest.mark.parametrize(
     "meeting_id",
     [TM_P2, SLOT, ONE_OFF_TA_ROW, NO_SUCH_MEETING],
     ids=[
@@ -397,7 +415,7 @@ ZOOM_REFUSED = [
     "mailto:someone@ucsc.edu",
     "https://ucsc.zoom.us/j/1 and more",
     "https://ucsc.zoom.us/j/1\r\nBEGIN:VEVENT",
-    "https://ucsc.zoom.us/‮j/1",  # a right-to-left override
+    "https://ucsc.zoom.us/\u202ej/1",  # a right-to-left override
     "https://ucsc.zoom.us:99999/j/1",
     "https://ucsc.zoom.us:abc/j/1",
     "https://[::1/j/1",
@@ -481,6 +499,45 @@ def test_invalid_fields_are_422(client: TestClient, db, method, field, value):
     assert response.status_code == 422
     assert [error["loc"] for error in response.json()["detail"]] == [["body", field]]
     assert db.executes == 0  # refused before anything was read or written
+
+
+def test_a_start_is_kept_as_the_same_instant_in_utc():
+    pacific = timezone(timedelta(hours=-7))
+    start = datetime(2026, 10, 20, 15, 0, tzinfo=pacific)
+
+    for model in (_new(starts_at=start), TeamMeetingUpdate(starts_at=start)):
+        assert model.starts_at == start
+        assert model.starts_at.utcoffset() == timedelta(0)
+
+
+#: Starts an offset carries past the calendar's ends (years 1 and 9999) once they are moved to UTC.
+OUT_OF_RANGE_STARTS = [
+    ("post", "9999-12-31T23:59:59-05:00"),
+    ("patch", "9999-12-31T23:59:59-05:00"),
+    ("patch", "0001-01-01T00:00:00+05:00"),
+    ("post", "0001-01-01T00:00:00+05:00"),  # 422 before the past-start check could answer 400
+]
+
+
+@pytest.mark.parametrize(("method", "starts_at"), OUT_OF_RANGE_STARTS)
+def test_a_start_with_no_utc_instant_is_422_and_writes_nothing(
+    client: TestClient, db, method, starts_at
+):
+    before = copy.deepcopy(db.rows("meetings"))
+
+    if method == "post":
+        response = client.post(
+            f"/api/projects/{P1}/meetings", json={**BODY, "starts_at": starts_at}, headers=_as(PO)
+        )
+    else:
+        response = client.patch(
+            f"/api/projects/{P1}/meetings/{TM1}", json={"starts_at": starts_at}, headers=_as(PO)
+        )
+
+    assert response.status_code == 422
+    assert [error["loc"] for error in response.json()["detail"]] == [["body", "starts_at"]]
+    assert db.executes == 0
+    assert db.rows("meetings") == before
 
 
 def test_the_body_cannot_choose_whose_meeting_it_is_or_what_kind(client: TestClient, db):

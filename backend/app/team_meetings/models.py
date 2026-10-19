@@ -3,12 +3,14 @@
 The limits are the ones the database holds a team meeting to (``meetings_team_meeting_shape``,
 ``meetings_note_length``, ``meetings_location_length`` and ``meetings_zoom_url_length`` in
 2026-10-18_team_meetings.sql), so a request these models accept satisfies those CHECKs. Text is
-stripped before it is measured and stored, and a blank optional field means none.
+stripped before it is measured and stored, and a blank optional field means none. A start is kept
+as the same instant in UTC, the way it is stored.
 """
 
 from __future__ import annotations
 
 import unicodedata
+from datetime import UTC, datetime
 from typing import Annotated, Literal
 from urllib.parse import urlsplit
 
@@ -52,6 +54,16 @@ def _zoom_url(url: str | None) -> str | None:
     return url
 
 
+def _utc(value: datetime) -> datetime:
+    """The same instant in UTC. An offset can carry a time at either end of the calendar (years 1
+    and 9999) past what a datetime holds once it is moved there: that is a 422, not a crash."""
+    try:
+        return value.astimezone(UTC)
+    except OverflowError:
+        raise ValueError("That time is out of range") from None
+
+
+StartsAt = Annotated[AwareDatetime, AfterValidator(_utc)]
 Title = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=TITLE_MAX_LENGTH)
 ]
@@ -76,7 +88,7 @@ class TeamMeetingCreate(BaseModel):
     """A new team meeting. ``starts_at`` needs a time zone; the API keeps the instant."""
 
     title: Title
-    starts_at: AwareDatetime
+    starts_at: StartsAt
     duration_minutes: Duration = DEFAULT_DURATION_MINUTES
     location: Location = None
     zoom_url: ZoomUrl = None
@@ -92,7 +104,7 @@ class TeamMeetingUpdate(BaseModel):
     """
 
     title: Title | None = None
-    starts_at: AwareDatetime | None = None
+    starts_at: StartsAt | None = None
     duration_minutes: Duration | None = None
     location: Location = None
     zoom_url: ZoomUrl = None
