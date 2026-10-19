@@ -55,6 +55,57 @@ CREATE TYPE "public"."user_role" AS ENUM (
 ALTER TYPE "public"."user_role" OWNER TO "postgres";
 
 
+-- From 2026-10-18_final_review_slots.sql, with release_final_review_slot and the final_review_slots table.
+CREATE OR REPLACE FUNCTION "public"."book_final_review_slot"("p_slot" "uuid", "p_project" "uuid", "p_actor" "uuid") RETURNS "text"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_starts_at timestamptz;
+  v_holder    uuid;
+  v_freed     integer;
+BEGIN
+  SELECT s.starts_at, s.project_id
+    INTO v_starts_at, v_holder
+    FROM final_review_slots s
+    JOIN projects p ON p.id = p_project AND p.class_id = s.class_id
+   WHERE s.id = p_slot
+     FOR UPDATE OF s;
+  IF NOT FOUND THEN
+    RETURN 'not_found';
+  END IF;
+  IF v_holder = p_project THEN
+    RETURN 'booked';
+  END IF;
+  IF v_holder IS NOT NULL THEN
+    RETURN 'slot_taken';
+  END IF;
+
+  -- Free the team's other slot first: while that row still names the team,
+  -- final_review_slots_project_uniq would refuse the claim below.
+  UPDATE final_review_slots
+     SET project_id = NULL, booked_by = NULL, booked_at = NULL
+   WHERE project_id = p_project;
+  GET DIAGNOSTICS v_freed = ROW_COUNT;
+
+  UPDATE final_review_slots
+     SET project_id = p_project, booked_by = p_actor, booked_at = now()
+   WHERE id = p_slot;
+
+  UPDATE projects SET final_review_at = v_starts_at WHERE id = p_project;
+
+  IF v_freed = 0 THEN
+    RETURN 'booked';
+  END IF;
+  DELETE FROM project_review_tas WHERE project_id = p_project;
+  RETURN 'moved';
+END;
+$$;
+
+
+ALTER FUNCTION "public"."book_final_review_slot"("p_slot" "uuid", "p_project" "uuid", "p_actor" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."bump_conversation_last_message"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     AS $$
@@ -180,6 +231,32 @@ $$;
 
 
 ALTER FUNCTION "public"."profiles_role_sanitizer"() OWNER TO "postgres";
+
+
+-- From 2026-10-18_final_review_slots.sql, with book_final_review_slot and the final_review_slots table.
+CREATE OR REPLACE FUNCTION "public"."release_final_review_slot"("p_project" "uuid") RETURNS boolean
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_freed integer;
+BEGIN
+  UPDATE final_review_slots
+     SET project_id = NULL, booked_by = NULL, booked_at = NULL
+   WHERE project_id = p_project;
+  GET DIAGNOSTICS v_freed = ROW_COUNT;
+  IF v_freed = 0 THEN
+    RETURN false;
+  END IF;
+
+  UPDATE projects SET final_review_at = NULL WHERE id = p_project;
+  DELETE FROM project_review_tas WHERE project_id = p_project;
+  RETURN true;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."release_final_review_slot"("p_project" "uuid") OWNER TO "postgres";
 
 SET default_tablespace = '';
 
@@ -533,6 +610,26 @@ CREATE TABLE IF NOT EXISTS "public"."final_review_notes" (
 ALTER TABLE "public"."final_review_notes" OWNER TO "postgres";
 
 
+-- final_review_slots: 2026-10-18_final_review_slots.sql (Applied: DEV pending, PROD pending), with the
+-- functions book_final_review_slot and release_final_review_slot (in the functions section above). Its
+-- primary key, unique key, indexes, foreign keys, RLS and grant follow in the sections below, as in a dump.
+CREATE TABLE IF NOT EXISTS "public"."final_review_slots" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "class_id" "uuid" NOT NULL,
+    "starts_at" timestamp with time zone NOT NULL,
+    "duration_minutes" integer DEFAULT 60 NOT NULL,
+    "project_id" "uuid",
+    "booked_by" "uuid",
+    "booked_at" timestamp with time zone,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "final_review_slots_duration_valid" CHECK (("duration_minutes" = 60))
+);
+
+
+ALTER TABLE "public"."final_review_slots" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."projects" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "class_id" "uuid" NOT NULL,
@@ -653,6 +750,16 @@ ALTER TABLE ONLY "public"."feedback_submissions"
 
 ALTER TABLE ONLY "public"."feedback_submissions"
     ADD CONSTRAINT "feedback_submissions_unique" UNIQUE ("assignment_id", "student_id");
+
+
+
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_class_start_uniq" UNIQUE ("class_id", "starts_at");
+
+
+
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_pkey" PRIMARY KEY ("id");
 
 
 
@@ -777,6 +884,10 @@ CREATE INDEX "conversations_user_b_idx" ON "public"."conversations" USING "btree
 
 
 
+CREATE UNIQUE INDEX "final_review_slots_project_uniq" ON "public"."final_review_slots" USING "btree" ("project_id") WHERE ("project_id" IS NOT NULL);
+
+
+
 CREATE INDEX "idx_class_enrollments_class_id" ON "public"."class_enrollments" USING "btree" ("class_id");
 
 
@@ -810,6 +921,14 @@ CREATE INDEX "idx_final_review_scores_project" ON "public"."final_review_scores"
 
 
 CREATE INDEX "idx_final_review_scores_student" ON "public"."final_review_scores" USING "btree" ("student_id");
+
+
+
+CREATE INDEX "idx_final_review_slots_booked_by" ON "public"."final_review_slots" USING "btree" ("booked_by");
+
+
+
+CREATE INDEX "idx_final_review_slots_created_by" ON "public"."final_review_slots" USING "btree" ("created_by");
 
 
 
@@ -973,6 +1092,26 @@ ALTER TABLE ONLY "public"."feedback_submissions"
 
 ALTER TABLE ONLY "public"."feedback_submissions"
     ADD CONSTRAINT "feedback_submissions_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_booked_by_fkey" FOREIGN KEY ("booked_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."classes"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."final_review_slots"
+    ADD CONSTRAINT "final_review_slots_project_id_fkey" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE SET NULL;
 
 
 
@@ -1205,6 +1344,9 @@ ALTER TABLE "public"."final_review_notes" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."final_review_scores" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."final_review_slots" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."project_review_tas" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1222,6 +1364,11 @@ GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
 GRANT USAGE ON SCHEMA "public" TO "service_role";
 GRANT USAGE ON SCHEMA "public" TO "supabase_auth_admin";
+
+
+
+REVOKE ALL ON FUNCTION "public"."book_final_review_slot"("p_slot" "uuid", "p_project" "uuid", "p_actor" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."book_final_review_slot"("p_slot" "uuid", "p_project" "uuid", "p_actor" "uuid") TO "service_role";
 
 
 
@@ -1252,6 +1399,11 @@ GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."profiles_role_sanitizer"() TO "anon";
 GRANT ALL ON FUNCTION "public"."profiles_role_sanitizer"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."profiles_role_sanitizer"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."release_final_review_slot"("p_project" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."release_final_review_slot"("p_project" "uuid") TO "service_role";
 
 
 
@@ -1365,6 +1517,11 @@ GRANT ALL ON TABLE "public"."final_review_notes" TO "service_role";
 GRANT ALL ON TABLE "public"."final_review_scores" TO "anon";
 GRANT ALL ON TABLE "public"."final_review_scores" TO "authenticated";
 GRANT ALL ON TABLE "public"."final_review_scores" TO "service_role";
+
+
+
+-- final_review_slots is service_role only: the browser roles hold nothing on it (2026-09-21_lock_down_direct_table_access.sql).
+GRANT ALL ON TABLE "public"."final_review_slots" TO "service_role";
 
 
 
