@@ -412,7 +412,7 @@ def test_a_product_owner_cannot_book_a_slot_that_has_started(db, clock, now):
 
 
 def test_a_time_set_before_slots_existed_also_counts_once_it_has_passed(db):
-    # P1 has a time but no slot (C-R4); that time is behind the clock, so its review was held.
+    # P1 has a legacy time but no slot row; that time is behind the clock, so its review was held.
     _project(db, P1)["final_review_at"] = "2026-07-22T20:00:00+00:00"
 
     with pytest.raises(HTTPException) as exc:
