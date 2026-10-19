@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useClass } from '@/lib/classContext';
 import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
 import { useInstitutionsWithRetry } from '@/lib/institutions';
+import { isPastLatestLastDay } from '@/lib/lastDayOfClasses';
 import DatePickerField from '@/features/app/components/Fields/DatePickerField';
 import './CreateClassModal.scss';
 
@@ -134,6 +135,12 @@ const CreateClassModal: React.FC<CreateClassModalProps> = ({ isOpen, onClose }) 
     // Both are yyyy-MM-dd, which sort as dates do. The same day is fine.
     if (termEndDate < termStartDate) {
       setError("The last day of classes can't be before the first week of term");
+      return;
+    }
+    // The API refuses a last day over a year after the first week (lib/lastDayOfClasses); a
+    // mistyped year stops here instead of coming back as a bare 422.
+    if (isPastLatestLastDay(termStartDate, termEndDate)) {
+      setError('The last day of classes must be within a year of the first week of term');
       return;
     }
     if ('error' in parsedTasksUrl) {

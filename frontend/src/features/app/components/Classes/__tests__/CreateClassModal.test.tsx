@@ -194,6 +194,28 @@ describe('CreateClassModal — last day of classes', () => {
     expect(screen.queryByText(/can't be before the first week of term/)).not.toBeInTheDocument();
   });
 
+  it("refuses a day more than a year after the first week of term, says why, and creates nothing until it's fixed", async () => {
+    const user = userEvent.setup();
+    // The first week is Sep 28, 2026. Oct 4, 2027 is 371 days on: past week 53, so a mistyped year.
+    picks.end = '2027-10-04';
+    renderModal();
+    await fillCourse(user);
+    await user.click(submit());
+    expect(
+      await screen.findByText('The last day of classes must be within a year of the first week of term'),
+    ).toBeInTheDocument();
+    expect(api.createClass).not.toHaveBeenCalled();
+
+    // Oct 3, 2027 is 370 days on, the end of week 53: the latest day the API takes.
+    picks.end = '2027-10-03';
+    await user.click(screen.getByRole('button', { name: 'Last Day of Classes' }));
+    await user.click(submit());
+    expect(api.createClass).toHaveBeenCalledWith(
+      expect.objectContaining({ start_date: '2026-09-28', end_date: '2027-10-03' }),
+    );
+    expect(screen.queryByText(/within a year of the first week of term/)).not.toBeInTheDocument();
+  });
+
   it('asks for the day again for the next class', async () => {
     const user = userEvent.setup();
     renderModal();
