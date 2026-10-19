@@ -4,7 +4,8 @@
 
 - **[STYLE_GUIDE.md](STYLE_GUIDE.md)** — layers, auth, database access and batching rules, errors, small examples.
 - **[../AGENTS.md](../AGENTS.md)** — architecture, roles, gotchas and the commit gates.
-- **[docs/FRONTEND_API.md](docs/FRONTEND_API.md)** — API notes for the web client.
+- **Routes** — each feature's `url.py`, and the OpenAPI pages at `/docs` and `/redoc` while the
+  server runs.
 
 ## Table of Contents
 
@@ -78,7 +79,6 @@ backend/
 │
 ├── database/migrations/     # SQL by month (<YYYY-MM>/, PROD-only in prod/<YYYY-MM>/), applied by hand
 │                            # (dev, then prod); merging does not apply it
-├── docs/FRONTEND_API.md
 ├── tests/
 │   ├── conftest.py          # Env stubs, HS256 test tokens
 │   ├── fake_supabase.py     # In-memory PostgREST double with a round-trip counter

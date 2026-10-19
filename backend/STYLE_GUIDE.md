@@ -25,8 +25,7 @@ router.patch("/{project_id}")(views.update_project)
 
 ```python
 def create_project(data: CreateProjectRequest, user_id: str = Depends(require_user)):
-    project = controller.create_project(user_id=user_id, ...)
-    return {"message": "Project created", "project": project}
+    return controller.create_project(user_id=user_id, ...)  # the created row (see Response Format)
 ```
 
 **`controller.py`** — Pure business logic. Receives typed args, returns dicts or raises `HTTPException`.
@@ -184,7 +183,9 @@ Every endpoint answers these two conditions the same way:
 
 - Use type hints for function parameters and return values
 - Use `T | None` for optional parameters (ruff's `UP` rules rewrite `Optional[T]`); `list`, `dict` for collections
-- Use `UUID` from `uuid` for ID parameters
+- Use `UUID` from `uuid` for ID parameters. The client from `get_client()` sends `UUID`, `date`,
+  `datetime` and `time` values as text, so pass them to `.eq()`, `.in_()`, `.insert()`, `.rpc()` and
+  the rest as they are. (`app.core.events.record` still wants plain strings: its `meta` stays JSON.)
 - Use `Literal["draft", "publish"]` for fixed string enums in Pydantic
 
 ---
@@ -207,8 +208,14 @@ def assign_user(user_id: str, class_id: UUID, target_user_id: UUID, project_id: 
 
 ## Response Format
 
-- Success: `{"message": "...", "<resource>": <data>}` (e.g. `{"message": "Project created", "project": {...}}`)
-- List endpoints: `{"<plural>": [...]}` (e.g. `{"assignments": [...]}`)
+- Success answers with the resource itself: the created or updated row, or a small result object
+  such as `{"released": true}`.
+- List endpoints answer `{"<plural>": [...]}` (e.g. `{"assignments": [...]}`).
+- A delete with nothing to return answers 204 with no body.
+- A refusal is an `HTTPException`: its `detail` is the message the client shows (see Error Handling).
+- Older endpoints still answer `{"message": "...", "<resource>": <data>}`. When you change one, move
+  it to the shape above in the same pull request, together with its client method in
+  `frontend/src/lib/api/<domain>.ts` and the tests that pin its response.
 - Keep response shapes consistent within a feature
 
 ---
