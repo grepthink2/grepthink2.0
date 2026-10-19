@@ -21,11 +21,13 @@ from fastapi import HTTPException
 
 from app import dependencies
 from app.assignments import controller as assignments
+from app.assignments import deadlines
 from app.attendance import controller as attendance
 from app.core import authz
 from app.projects import controller as projects
 from app.staffing import controller as staffing
 from app.tas import controller as tas
+from app.tas import review_slots
 from app.team_meetings import controller as team_meetings
 from app.team_meetings.models import TeamMeetingCreate, TeamMeetingUpdate
 from app.tsr import controller as tsr
@@ -69,6 +71,31 @@ ROLES = {
 }
 WRITE_OPS = {"insert", "update", "upsert", "delete"}
 OCT_1, OCT_8 = datetime.date(2026, 10, 1), datetime.date(2026, 10, 8)
+
+# Final-review slots (app.tas.review_slots), in a block of their own. CLASS has sign-ups closed;
+# a row wrapped in _signups_open() opens them first. The clock reads SLOT_NOW: SLOT_A has started
+# and SLOT_TEAM's review is over, and SLOT_LATER is the next day.
+SLOT_PO = "51000000-0000-0000-0000-000000000001"  # SLOT_TEAM's Product Owner
+SLOT_MEMBER = "51000000-0000-0000-0000-000000000002"  # on SLOT_TEAM with no role (NULL)
+SLOT_UNBOOKED_PO = "51000000-0000-0000-0000-000000000003"  # SLOT_UNBOOKED_TEAM's Product Owner
+SLOT_TEAM = "d1000000-0000-0000-0000-000000000001"  # in CLASS; holds SLOT_BOOKED
+SLOT_UNBOOKED_TEAM = "d1000000-0000-0000-0000-000000000002"  # in CLASS; holds no slot
+SLOT_A = "f1000000-0000-0000-0000-00000000000a"  # a free slot in CLASS
+SLOT_BOOKED = "f1000000-0000-0000-0000-00000000000b"
+SLOT_LATER = "f1000000-0000-0000-0000-00000000000c"  # a free slot in CLASS, the next day
+SLOT_ELSEWHERE = "f1000000-0000-0000-0000-0000000000c2"  # a free slot in TA1_CLASS
+SLOT_MISSING = "f1000000-0000-0000-0000-00000000dead"
+SLOT_START = datetime.datetime(2026, 12, 7, 17, tzinfo=datetime.UTC)
+SLOT_BOOKED_AT = (SLOT_START + datetime.timedelta(hours=1)).isoformat()
+SLOT_NOW = SLOT_START + datetime.timedelta(hours=2)
+SLOT_NOT_FOUND = "Slot not found"
+SLOT_ONLY_PO_BOOKS = "Only the team's Product Owner can book a slot."
+SLOT_ONLY_PO_RELEASES = "Only the team's Product Owner can release a slot."
+SLOT_SIGNUPS_CLOSED = "Sign-ups aren't open."
+SLOT_RELEASE_FIRST = "Release the team before deleting its slot."
+SLOT_TIME_PASSED = "Your team's review time has passed."
+SLOT_STARTED = "That slot has already started."
+SLOT_NOT_BOOKED = "This team hasn't booked a review slot yet."
 
 
 def _feedback_assignment(aid: str, class_id: str) -> dict:
@@ -158,8 +185,86 @@ def db(monkeypatch):
             ("classes", "profiles!classes_created_by_fkey"): ("created_by", "id", False),
         },
     )
+    # Final-review slots: SLOT_TEAM, with a Product Owner and a member whose role is NULL, holds
+    # SLOT_BOOKED; SLOT_UNBOOKED_TEAM, with a Product Owner, holds none. SLOT_A and SLOT_LATER are
+    # free, and SLOT_ELSEWHERE is free in another class.
+    fake.relations[("final_review_slots", "classes")] = ("class_id", "id", False)
+    fake.rows("projects").extend(
+        [
+            {
+                "id": SLOT_TEAM,
+                "class_id": CLASS,
+                "name": "Gamma",
+                "assigned_ta_id": None,
+                "final_review_at": SLOT_BOOKED_AT,
+            },
+            {
+                "id": SLOT_UNBOOKED_TEAM,
+                "class_id": CLASS,
+                "name": "Delta",
+                "assigned_ta_id": None,
+                "final_review_at": None,
+            },
+        ]
+    )
+    fake.rows("project_members").extend(
+        [
+            {
+                "id": "m-slot-po",
+                "project_id": SLOT_TEAM,
+                "user_id": SLOT_PO,
+                "role": "product owner",
+            },
+            {"id": "m-slot-member", "project_id": SLOT_TEAM, "user_id": SLOT_MEMBER, "role": None},
+            {
+                "id": "m-slot-unbooked-po",
+                "project_id": SLOT_UNBOOKED_TEAM,
+                "user_id": SLOT_UNBOOKED_PO,
+                "role": "product owner",
+            },
+        ]
+    )
+    fake.rows("final_review_slots").extend(
+        [
+            {
+                "id": SLOT_A,
+                "class_id": CLASS,
+                "starts_at": SLOT_START.isoformat(),
+                "project_id": None,
+            },
+            {
+                "id": SLOT_BOOKED,
+                "class_id": CLASS,
+                "starts_at": SLOT_BOOKED_AT,
+                "project_id": SLOT_TEAM,
+            },
+            {
+                "id": SLOT_LATER,
+                "class_id": CLASS,
+                "starts_at": (SLOT_START + datetime.timedelta(days=1)).isoformat(),
+                "project_id": None,
+            },
+            {
+                "id": SLOT_ELSEWHERE,
+                "class_id": TA1_CLASS,
+                "starts_at": SLOT_START.isoformat(),
+                "project_id": None,
+            },
+        ]
+    )
+    monkeypatch.setattr(deadlines, "now_utc", lambda: SLOT_NOW)
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
+
+
+def _signups_open(call):
+    """``call`` with CLASS's sign-ups open, for the slot refusals that come after that check."""
+
+    def run(db):
+        next(c for c in db.rows("classes") if c["id"] == CLASS)["review_period_open"] = True
+        return call(db)
+
+    return run
 
 
 def _tsr(project_id: str) -> CreateTSRRequest:
@@ -319,11 +424,6 @@ CASES = {
         403,
         NOT_CLASS_INSTRUCTOR,
     ),
-    "tas.set_final_review_time/enrolled-ta": (
-        lambda db: tas.set_final_review_time(TA1, P1, None),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
     "tas.promote/enrolled-ta": (
         lambda db: tas.promote_to_ta(TA1, CLASS, S1),
         403,
@@ -364,13 +464,6 @@ CASES = {
         403,
         NOT_CLASS_INSTRUCTOR,
     ),
-    "tas.set_final_review_time/enrolled-student": (
-        lambda db: tas.set_final_review_time(
-            S1, P1, datetime.datetime(2026, 12, 1, 20, tzinfo=datetime.UTC)
-        ),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
     "tas.review_targets/missing-class": (
         lambda db: tas.get_ta_review_targets(TA1, MISSING_CLASS),
         404,
@@ -380,6 +473,121 @@ CASES = {
         lambda db: tas.get_ta_review_targets(S1, CLASS),
         403,
         "You are not a TA in this class",
+    ),
+    # A team's Review TA is removed by that TA or the instructor, not by a team member.
+    "tas.release_review_ta/enrolled-student": (
+        lambda db: tas.release_review_ta(S1, P1, TA1),
+        403,
+        "Only the reviewer themselves or the instructor can remove this Review TA",
+    ),
+    # app.tas.review_slots: the class reads the slots, the instructor posts and deletes them, and
+    # only a team's Product Owner (while sign-ups are open) or the instructor books and releases.
+    "review_slots.list/missing-class": (
+        lambda db: review_slots.get_review_slots(S1, MISSING_CLASS),
+        404,
+        CLASS_NOT_FOUND,
+    ),
+    "review_slots.list/outsider": (
+        lambda db: review_slots.get_review_slots(OUTSIDER, CLASS),
+        403,
+        NOT_CLASS_MEMBER,
+    ),
+    "review_slots.create/enrolled-ta": (
+        lambda db: review_slots.create_review_slots(TA1, CLASS, [SLOT_START]),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "review_slots.delete/missing-slot": (
+        lambda db: review_slots.delete_review_slot(INSTR, SLOT_MISSING),
+        404,
+        SLOT_NOT_FOUND,
+    ),
+    "review_slots.delete/enrolled-ta": (
+        lambda db: review_slots.delete_review_slot(TA1, SLOT_A),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "review_slots.delete/other-instructor": (
+        lambda db: review_slots.delete_review_slot(OTHER_INSTR, SLOT_A),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "review_slots.delete/booked-slot": (
+        lambda db: review_slots.delete_review_slot(INSTR, SLOT_BOOKED),
+        409,
+        SLOT_RELEASE_FIRST,
+    ),
+    "review_slots.book/missing-slot": (
+        lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_MISSING, SLOT_TEAM),
+        404,
+        SLOT_NOT_FOUND,
+    ),
+    "review_slots.book/missing-project": (
+        lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_A, MISSING_PROJECT),
+        404,
+        PROJECT_NOT_FOUND,
+    ),
+    "review_slots.book/member-without-a-role": (
+        lambda db: review_slots.book_review_slot(SLOT_MEMBER, SLOT_A, SLOT_TEAM),
+        403,
+        SLOT_ONLY_PO_BOOKS,
+    ),
+    # A role is a role on one team: SLOT_PO cannot book for P1.
+    "review_slots.book/product-owner-of-another-team": (
+        lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_A, P1),
+        403,
+        SLOT_ONLY_PO_BOOKS,
+    ),
+    "review_slots.book/product-owner-while-closed": (
+        lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_A, SLOT_TEAM),
+        403,
+        SLOT_SIGNUPS_CLOSED,
+    ),
+    # A slot is booked only for a team in its own class.
+    "review_slots.book/slot-in-another-class": (
+        lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_ELSEWHERE, SLOT_TEAM),
+        404,
+        SLOT_NOT_FOUND,
+    ),
+    # With sign-ups open, a Product Owner still can't move or release once the team's review
+    # time has come, or book a slot that has started.
+    "review_slots.book/product-owner-after-the-review": (
+        _signups_open(lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_LATER, SLOT_TEAM)),
+        403,
+        SLOT_TIME_PASSED,
+    ),
+    "review_slots.book/product-owner-on-a-started-slot": (
+        _signups_open(
+            lambda db: review_slots.book_review_slot(SLOT_UNBOOKED_PO, SLOT_A, SLOT_UNBOOKED_TEAM)
+        ),
+        409,
+        SLOT_STARTED,
+    ),
+    "review_slots.release/missing-project": (
+        lambda db: review_slots.release_review_slot(SLOT_PO, MISSING_PROJECT),
+        404,
+        PROJECT_NOT_FOUND,
+    ),
+    "review_slots.release/member": (
+        lambda db: review_slots.release_review_slot(S1, P1),
+        403,
+        SLOT_ONLY_PO_RELEASES,
+    ),
+    "review_slots.release/product-owner-while-closed": (
+        lambda db: review_slots.release_review_slot(SLOT_PO, SLOT_TEAM),
+        403,
+        SLOT_SIGNUPS_CLOSED,
+    ),
+    "review_slots.release/product-owner-after-the-review": (
+        _signups_open(lambda db: review_slots.release_review_slot(SLOT_PO, SLOT_TEAM)),
+        403,
+        SLOT_TIME_PASSED,
+    ),
+    # A TA signs up to review a team only once it holds a slot, even with sign-ups open.
+    "tas.set_review_ta/enrolled-ta-before-the-team-books": (
+        _signups_open(lambda db: tas.set_review_ta(TA1, SLOT_UNBOOKED_TEAM)),
+        403,
+        SLOT_NOT_BOOKED,
     ),
     # app.projects
     "projects.create/missing-class": (

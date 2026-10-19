@@ -184,6 +184,11 @@ The full agent-facing action catalog (method, params, role) lives at
   filters `kind = 'team_meeting'`, and a CHECK (`meetings_team_meeting_shape`) ties `team_meeting`
   to `cadence = 'once'`, so the weekly filter never sees a team row. TA code must never read team
   rows: keep `cadence = 'weekly'` on every new TA query.
+- **`projects.final_review_at` has one writer.** Only the SQL functions `book_final_review_slot`
+  and `release_final_review_slot` set it, called over `.rpc()` from `app/tas/review_slots.py`, so
+  a team's time moves with its slot in one transaction. Never update it directly.
+  `classes.review_period_open` ("Sign-ups open") is the one switch for team booking and TA
+  reviewer sign-up, and a TA self-appoints as Review TA only once the team holds a slot.
 - **The browser gets no table access, by grant as well as by policy.** `anon` holds nothing in
   `public`; `authenticated` holds `SELECT` on the Realtime tables only, and new tables start with
   no client privileges (`2026-09-21_lock_down_direct_table_access.sql`). Never add a write policy
