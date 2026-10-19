@@ -27,6 +27,8 @@ export interface ApiClass {
   teacher_email?: string;
   term?: string;
   start_date?: string;
+  /** The last day of classes, before finals (YYYY-MM-DD); null until the class has one. */
+  end_date?: string | null;
   year?: number;
   image_url?: string;
   status?: 'active' | 'complete';

@@ -17,6 +17,8 @@ const state = vi.hoisted(() => ({
   currentSchool: null as School | null,
   classes: [] as ClassRow[],
 }));
+// The day each mocked picker picks when clicked: the first week of term, and the last day of classes.
+const picks = vi.hoisted(() => ({ start: '', end: '' }));
 
 vi.mock('@/lib/institutions', () => ({
   useInstitutionsWithRetry: () => ({ institutions: state.institutions, retry: vi.fn() }),
@@ -32,7 +34,7 @@ vi.mock('@/lib/api', () => ({ api: { createClass: vi.fn(), uploadClassRoster: vi
 // The real picker is a calendar popover; a button that picks a date is enough here.
 vi.mock('@/features/app/components/Fields/DatePickerField', () => ({
   default: ({ label, onChange }: { label: string; onChange: (value: string) => void }) => (
-    <button type="button" onClick={() => onChange('2026-09-28')}>
+    <button type="button" onClick={() => onChange(label === 'Last Day of Classes' ? picks.end : picks.start)}>
       {label}
     </button>
   ),
@@ -52,6 +54,7 @@ function renderModal() {
 async function fillCourse(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByPlaceholderText('e.g., CSE 115A'), 'SE 301');
   await user.click(screen.getByRole('button', { name: 'First Week of Term' }));
+  await user.click(screen.getByRole('button', { name: 'Last Day of Classes' }));
 }
 
 const submit = () => screen.getByRole('button', { name: 'Create Class' });
@@ -62,6 +65,8 @@ beforeEach(() => {
   state.institutions = undefined;
   state.currentSchool = null;
   state.classes = [];
+  picks.start = '2026-09-28';
+  picks.end = '2026-09-28'; // the last day may be the first day: a one-day course is still valid
 });
 
 describe('CreateClassModal — school', () => {
@@ -141,6 +146,86 @@ describe('CreateClassModal — school', () => {
     await user.click(submit());
     expect(api.createClass).toHaveBeenCalledTimes(1);
     expect(vi.mocked(api.createClass).mock.calls[0][0].institution_id).toBeUndefined();
+  });
+});
+
+describe('CreateClassModal — last day of classes', () => {
+  const nameBox = () => screen.getByPlaceholderText('e.g., CSE 115A');
+
+  beforeEach(() => {
+    state.institutions = []; // no school to pick
+  });
+
+  it('asks for it with a hint, and creates the class with the day picked', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    expect(screen.getByText('Before finals week')).toBeInTheDocument();
+    await fillCourse(user);
+    await user.click(submit());
+    expect(api.createClass).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'SE 301', start_date: '2026-09-28', end_date: '2026-09-28' }),
+    );
+  });
+
+  it('keeps Create Class disabled until the day is set', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await user.type(nameBox(), 'SE 301');
+    await user.click(screen.getByRole('button', { name: 'First Week of Term' }));
+    expect(submit()).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Last Day of Classes' }));
+    expect(submit()).toBeEnabled();
+  });
+
+  it("refuses a day before the first week of term, says why, and creates nothing until it's fixed", async () => {
+    const user = userEvent.setup();
+    picks.end = '2026-09-21';
+    renderModal();
+    await fillCourse(user);
+    await user.click(submit());
+    expect(await screen.findByText("The last day of classes can't be before the first week of term")).toBeInTheDocument();
+    expect(api.createClass).not.toHaveBeenCalled();
+
+    picks.end = '2026-12-04';
+    await user.click(screen.getByRole('button', { name: 'Last Day of Classes' }));
+    await user.click(submit());
+    expect(api.createClass).toHaveBeenCalledWith(expect.objectContaining({ start_date: '2026-09-28', end_date: '2026-12-04' }));
+    expect(screen.queryByText(/can't be before the first week of term/)).not.toBeInTheDocument();
+  });
+
+  it("refuses a day more than a year after the first week of term, says why, and creates nothing until it's fixed", async () => {
+    const user = userEvent.setup();
+    // The first week is Sep 28, 2026. Oct 4, 2027 is 371 days on: past week 53, so a mistyped year.
+    picks.end = '2027-10-04';
+    renderModal();
+    await fillCourse(user);
+    await user.click(submit());
+    expect(
+      await screen.findByText('The last day of classes must be within a year of the first week of term'),
+    ).toBeInTheDocument();
+    expect(api.createClass).not.toHaveBeenCalled();
+
+    // Oct 3, 2027 is 370 days on, the end of week 53: the latest day the API takes.
+    picks.end = '2027-10-03';
+    await user.click(screen.getByRole('button', { name: 'Last Day of Classes' }));
+    await user.click(submit());
+    expect(api.createClass).toHaveBeenCalledWith(
+      expect.objectContaining({ start_date: '2026-09-28', end_date: '2027-10-03' }),
+    );
+    expect(screen.queryByText(/within a year of the first week of term/)).not.toBeInTheDocument();
+  });
+
+  it('asks for the day again for the next class', async () => {
+    const user = userEvent.setup();
+    renderModal();
+    await fillCourse(user);
+    await user.click(submit());
+    await waitFor(() => expect(nameBox()).toHaveValue('')); // the form reset after the class was created
+
+    await user.type(nameBox(), 'SE 302');
+    await user.click(screen.getByRole('button', { name: 'First Week of Term' }));
+    expect(submit()).toBeDisabled();
   });
 });
 

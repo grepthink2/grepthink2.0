@@ -21,6 +21,7 @@ signed-in caller. Nothing called it, so it was removed rather than gated.
 
 from __future__ import annotations
 
+import datetime
 import logging
 import threading
 import uuid
@@ -187,6 +188,9 @@ INSTRUCTOR_ONLY = {
     "update_class_status": lambda caller, cid: classes.update_class_status(cid, "complete", caller),
     "update_class_external_tasks_url": lambda caller, cid: classes.update_class_external_tasks_url(
         cid, "https://tasks.example.org/", caller
+    ),
+    "update_class_end_date": lambda caller, cid: classes.update_class_end_date(
+        cid, datetime.date(2026, 12, 4), caller
     ),
     "invite_student_to_class": lambda caller, cid: classes.invite_student_to_class(
         cid, "s1@ucsc.edu", caller

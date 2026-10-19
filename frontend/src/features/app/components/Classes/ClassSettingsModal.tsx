@@ -5,6 +5,7 @@ import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
+import DatePickerField from '@features/app/components/Fields/DatePickerField';
 import ConfirmModal from '@features/app/components/Overlays/ConfirmModal';
 import {
   buildClassExportCsv,
@@ -21,7 +22,8 @@ interface ClassSettingsModalProps {
 }
 
 const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose, classItem }) => {
-  const { getClassStatus, setClassLifecycleStatus, setClassExternalTasksUrl, hideClassFromUI } = useClass();
+  const { getClassStatus, setClassLifecycleStatus, setClassExternalTasksUrl, setClassEndDate, hideClassFromUI } =
+    useClass();
   const [isClosing, setIsClosing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [lifecycleStatus, setLifecycleStatus] = useState<ClassLifecycleStatus>('active');
@@ -38,9 +40,16 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
   const [tasksUrlSaveError, setTasksUrlSaveError] = useState<string | null>(null);
   const [tasksUrlNotice, setTasksUrlNotice] = useState<string | null>(null);
   const tasksUrlInput = useRef<HTMLInputElement>(null);
+  // The class's last day of classes: the day the picker holds, and the day last saved (the row
+  // this dialog opened with still has the old one).
+  const [endDate, setEndDate] = useState('');
+  const [savedEndDate, setSavedEndDate] = useState('');
+  const [isSavingEndDate, setIsSavingEndDate] = useState(false);
+  const [endDateSaveError, setEndDateSaveError] = useState<string | null>(null);
+  const [endDateNotice, setEndDateNotice] = useState<string | null>(null);
 
   // Each open (or a switch to another class while open) starts from that
-  // class's saved status and link with no errors showing. Adjusted during render when
+  // class's saved status, link and last day with no errors showing. Adjusted during render when
   // the open class changes, instead of in an effect afterwards.
   const openClass = isOpen ? classItem : null;
   const [prevOpenClass, setPrevOpenClass] = useState<Class | null>(null);
@@ -56,6 +65,11 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       setIsSavingTasksUrl(false);
       setTasksUrlSaveError(null);
       setTasksUrlNotice(null);
+      setEndDate(openClass.end_date ?? '');
+      setSavedEndDate(openClass.end_date ?? '');
+      setIsSavingEndDate(false);
+      setEndDateSaveError(null);
+      setEndDateNotice(null);
     }
   }
 
@@ -69,6 +83,8 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
   const tasksUrlProblem = tasksUrlChecked && 'error' in parsedTasksUrl ? parsedTasksUrl.error : null;
   // A box that can't be saved counts as changed, so Save is there to say why.
   const tasksUrlChanged = 'error' in parsedTasksUrl || parsedTasksUrl.url !== savedTasksUrl;
+  // The API takes a day and never clears it, so Save waits for a day other than the saved one.
+  const endDateChanged = endDate !== '' && endDate !== savedEndDate;
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -158,6 +174,27 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
       return;
     }
     void saveTasksUrl(parsedTasksUrl.url);
+  };
+
+  const saveEndDate = async () => {
+    if (!classItem || isSavingEndDate) return;
+    const classId = classItem.id;
+    const day = endDate;
+    setIsSavingEndDate(true);
+    setEndDateSaveError(null);
+    setEndDateNotice(null);
+    try {
+      await setClassEndDate(classId, day);
+      if (openClassId.current !== classId) return; // the dialog shows another class now
+      setSavedEndDate(day);
+      setEndDate(day);
+      setEndDateNotice('Last day of classes saved.');
+    } catch (err) {
+      if (openClassId.current !== classId) return;
+      setEndDateSaveError(err instanceof Error ? err.message : 'Failed to update the last day of classes');
+    } finally {
+      if (openClassId.current === classId) setIsSavingEndDate(false);
+    }
   };
 
   const handleDeleteConfirm = () => {
@@ -254,6 +291,41 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
               {statusError && (
                 <p className="class-settings-modal__export-error" role="alert">
                   {statusError}
+                </p>
+              )}
+            </section>
+
+            <section className="class-settings-modal__section">
+              <DatePickerField
+                label="Last Day of Classes"
+                value={endDate}
+                onChange={(next) => {
+                  setEndDate(next);
+                  setEndDateSaveError(null);
+                  setEndDateNotice(null);
+                }}
+                labelClassName="class-settings-modal__label"
+                // A day picked while the save is in flight would be written over by the day being saved.
+                disabled={isSavingEndDate}
+              />
+              <p className="class-settings-modal__hint">Before finals week</p>
+              <div className="class-settings-modal__link-actions">
+                <button
+                  type="button"
+                  className="class-settings-modal__export-button class-settings-modal__save-button"
+                  onClick={() => void saveEndDate()}
+                  disabled={!endDateChanged || isSavingEndDate}
+                >
+                  {isSavingEndDate ? 'Saving…' : 'Save last day'}
+                </button>
+                {/* Always on the page, so a screen reader announces the text when it appears */}
+                <span className="class-settings-modal__link-notice" role="status">
+                  {endDateNotice}
+                </span>
+              </div>
+              {endDateSaveError && (
+                <p className="class-settings-modal__export-error" role="alert">
+                  {endDateSaveError}
                 </p>
               )}
             </section>

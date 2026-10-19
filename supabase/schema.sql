@@ -281,6 +281,8 @@ CREATE TABLE IF NOT EXISTS "public"."classes" (
     "review_period_open" boolean DEFAULT false NOT NULL,
     "review_zoom_url" "text",
     "external_tasks_url" "text",
+    "end_date" "date",
+    CONSTRAINT "classes_end_date_after_start" CHECK ((("end_date" IS NULL) OR ("start_date" IS NULL) OR (("end_date" >= "start_date") AND ("end_date" <= ("start_date" + 370))))),
     CONSTRAINT "classes_external_tasks_url_valid" CHECK ((("external_tasks_url" IS NULL) OR (("length"("external_tasks_url") <= 2048) AND ("external_tasks_url" ~* '^https?://[^/?#[:space:]]+[^[:space:]]*$'::"text"))))
 );
 

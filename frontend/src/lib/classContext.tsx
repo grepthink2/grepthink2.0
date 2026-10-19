@@ -105,6 +105,8 @@ interface ClassContextValue {
   setClassLifecycleStatus: (classId: string, status: ClassLifecycleStatus) => Promise<void>;
   /** Save (null removes) the class's "Tasks - External" link; the sidebar shows it at once. */
   setClassExternalTasksUrl: (classId: string, externalTasksUrl: string | null) => Promise<void>;
+  /** Save the class's last day of classes (a YYYY-MM-DD day); the class list shows it at once. */
+  setClassEndDate: (classId: string, endDate: string) => Promise<void>;
   hideClassFromUI: (classId: string) => void;
 }
 
@@ -291,6 +293,14 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     [applyUpdatedClass],
   );
 
+  const setClassEndDate = useCallback(
+    async (classId: string, endDate: string) => {
+      const { class: updated } = await api.updateClassEndDate(classId, endDate);
+      applyUpdatedClass(classId, updated);
+    },
+    [applyUpdatedClass],
+  );
+
   const hideClassFromUI = useCallback(
     (classId: string) => {
       const next = patchClassPreference(classId, { hidden: true });
@@ -418,6 +428,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       getClassStatus,
       setClassLifecycleStatus,
       setClassExternalTasksUrl,
+      setClassEndDate,
       hideClassFromUI,
     }),
     [
@@ -437,6 +448,7 @@ export const ClassProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       getClassStatus,
       setClassLifecycleStatus,
       setClassExternalTasksUrl,
+      setClassEndDate,
       hideClassFromUI,
     ],
   );

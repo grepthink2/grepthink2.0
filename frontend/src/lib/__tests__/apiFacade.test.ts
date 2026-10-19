@@ -131,6 +131,7 @@ const METHODS = [
   'submitInterestForm',
   'updateAssignment',
   'updateAssignmentTsr',
+  'updateClassEndDate',
   'updateClassExternalTasksUrl',
   'updateClassStatus',
   'updateEmailPreferences',
