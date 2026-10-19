@@ -1,8 +1,6 @@
 """
 Tests for the Final Reviews schedule layer on top of the review model:
   * classes.review_zoom_url — ONE shared Zoom room per class (instructor-set).
-  * projects.final_review_at — a team's single end-of-quarter review slot
-    (instructor set/clear; no attendance).
   * The per-class schedule read (instructor + class TAs only): teams ordered by
     review time (unscheduled last), each with its Home TA and Review TA, plus
     the class Zoom/window state and the viewer's review count.
@@ -106,10 +104,6 @@ def _class_row(db):
     return next(c for c in db.rows("classes") if c["id"] == CLASS)
 
 
-def _project(db, pid):
-    return next(p for p in db.rows("projects") if p["id"] == pid)
-
-
 # --------------------------------------------------------------------------
 # Shared Zoom (classes.review_zoom_url)
 # --------------------------------------------------------------------------
@@ -132,28 +126,6 @@ def test_set_review_zoom_instructor_only(db):
         tas.set_review_zoom(TA1, CLASS, ZOOM)
     assert exc.value.status_code == 403
     assert _class_row(db)["review_zoom_url"] is None
-
-
-# --------------------------------------------------------------------------
-# Per-team review slot (projects.final_review_at)
-# --------------------------------------------------------------------------
-
-
-def test_set_final_review_time_sets_and_clears(db):
-    when = datetime.datetime(2026, 7, 24, 18, 0, tzinfo=datetime.UTC)
-    out = tas.set_final_review_time(INSTR, P3, when)
-    assert out["final_review_at"] == when.isoformat()
-    assert _project(db, P3)["final_review_at"] == when.isoformat()
-
-    out = tas.set_final_review_time(INSTR, P3, None)
-    assert out["final_review_at"] is None
-    assert _project(db, P3)["final_review_at"] is None
-
-
-def test_set_final_review_time_unknown_project_404(db):
-    with pytest.raises(HTTPException) as exc:
-        tas.set_final_review_time(INSTR, "proj-missing", T_2000)
-    assert exc.value.status_code == 404
 
 
 # --------------------------------------------------------------------------

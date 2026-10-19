@@ -25,11 +25,18 @@ router.get("/projects/{project_id}/review-tas")(views.list_project_review_tas)
 router.post("/projects/{project_id}/review-tas")(views.set_review_ta)
 router.delete("/projects/{project_id}/review-tas/{target_user_id}")(views.release_review_ta)
 
-# Final Reviews schedule: the class-wide shared Zoom room + one review slot per
-# team (both instructor-set); the schedule read is for the instructor + class TAs.
+# Final Reviews schedule: the class-wide shared Zoom room (instructor-set) and each
+# team's booked review time; the schedule read is for the instructor + class TAs.
 router.get("/classes/{class_id}/final-reviews")(views.get_final_review_schedule)
 router.post("/classes/{class_id}/review-zoom")(views.set_review_zoom)
-router.post("/projects/{project_id}/review-time")(views.set_final_review_time)
+
+# Final-review slots: the instructor posts and deletes them; a team's Product Owner
+# books, moves or releases one while sign-ups are open (the instructor at any time).
+router.get("/classes/{class_id}/review-slots")(views.get_review_slots)
+router.post("/classes/{class_id}/review-slots")(views.create_review_slots)
+router.delete("/review-slots/{slot_id}")(views.delete_review_slot)
+router.post("/review-slots/{slot_id}/book")(views.book_review_slot)
+router.post("/projects/{project_id}/review-slot/release")(views.release_review_slot)
 
 # Final Reviews workspace: per-team scores (Home TA categories, Review TA +
 # instructor overalls) and the Review-TA structured notes form.

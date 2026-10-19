@@ -2,14 +2,15 @@
 
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, Response, status
 
 from app.dependencies import require_user
-from app.tas import controller
+from app.tas import controller, review_slots
 from app.tas.models import (
+    BookReviewSlotRequest,
+    CreateReviewSlotsRequest,
     SaveFinalReviewNotesRequest,
     SaveFinalReviewScoresRequest,
-    SetFinalReviewTimeRequest,
     SetReviewTaRequest,
     SetReviewWindowRequest,
     SetReviewZoomRequest,
@@ -106,19 +107,54 @@ def set_review_zoom(
     return controller.set_review_zoom(user_id, class_id, data.zoom_url)
 
 
-def set_final_review_time(
-    project_id: UUID,
-    data: SetFinalReviewTimeRequest,
-    user_id: str = Depends(require_user),
-):
-    return controller.set_final_review_time(user_id, project_id, data.scheduled_at)
-
-
 def get_final_review_schedule(
     class_id: UUID,
     user_id: str = Depends(require_user),
 ):
     return controller.get_final_review_schedule(user_id, class_id)
+
+
+# ----- Final Reviews: review slots ------------------------------------------
+# Who may post, book, move or release is decided in review_slots (class
+# instructor, or the team's Product Owner while sign-ups are open).
+
+
+def get_review_slots(
+    class_id: UUID,
+    user_id: str = Depends(require_user),
+):
+    return review_slots.get_review_slots(user_id, class_id)
+
+
+def create_review_slots(
+    class_id: UUID,
+    data: CreateReviewSlotsRequest,
+    user_id: str = Depends(require_user),
+):
+    return review_slots.create_review_slots(user_id, class_id, data.starts_at)
+
+
+def delete_review_slot(
+    slot_id: UUID,
+    user_id: str = Depends(require_user),
+) -> Response:
+    review_slots.delete_review_slot(user_id, slot_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def book_review_slot(
+    slot_id: UUID,
+    data: BookReviewSlotRequest,
+    user_id: str = Depends(require_user),
+):
+    return review_slots.book_review_slot(user_id, slot_id, data.project_id)
+
+
+def release_review_slot(
+    project_id: UUID,
+    user_id: str = Depends(require_user),
+):
+    return review_slots.release_review_slot(user_id, project_id)
 
 
 # ----- Final Reviews: per-team scoring + Review-TA notes ---------------------

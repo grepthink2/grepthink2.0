@@ -12,20 +12,21 @@ TA Review page and the project-TA list.
 
 Separately, the end-of-quarter review activity gives each team a second reviewer
 (``project_review_tas`` — self-appointed by a TA while the class review window is
-open, or set by the instructor; owner-or-instructor release). Reviewer #1 is
-always the assigned TA above and is not stored in that table.
+open and the team has booked a review slot, or set by the instructor;
+owner-or-instructor release). Reviewer #1 is always the assigned TA above and is
+not stored in that table.
 
-The final-review schedule layers WHEN/WHERE onto that model: each team gets one
-review slot (``projects.final_review_at``) and the class shares one Zoom room
-(``classes.review_zoom_url``) — both instructor-set, no attendance taken.
+The final-review schedule layers WHEN/WHERE onto that model: each team books one
+review slot (``final_review_slots``, whose time ``projects.final_review_at``
+mirrors; see ``app.tas.review_slots``) and the class shares one Zoom room
+(``classes.review_zoom_url``, instructor-set). No attendance is taken.
 
 Who can call what:
     * Promote / demote / list-class-TAs        → class instructor.
     * my-role / review targets                 → the TA themselves.
     * list-project-TAs / list-review-TAs       → instructor or any class member.
     * claim / release additional reviewer      → the TA (self) or instructor.
-    * toggle review window / set review Zoom /
-      set per-team review time                 → class instructor.
+    * toggle review window / set review Zoom   → class instructor.
     * final-review schedule (read)             → instructor or any class TA.
 """
 
@@ -395,10 +396,12 @@ def get_ta_review_targets(user_id: str, class_id: UUID) -> dict:
 # implicit reviewer #1) plus one additional reviewer stored in
 # ``project_review_tas`` (<=1 row per team, enforced by UNIQUE(project_id)). The
 # additional reviewer is self-appointed by a TA while the class review window is
-# open, or set by the instructor at any time (override); only that TA or the
-# instructor can release the slot.
+# open and the team has booked a review slot, or set by the instructor at any time
+# (override); only that TA or the instructor can release the slot.
 
 REVIEW_TA_TABLE = "project_review_tas"
+#: 403: a TA signing up to review a team that has no review slot yet.
+NO_REVIEW_SLOT = "This team hasn't booked a review slot yet."
 
 
 def set_review_window(instructor_id: str, class_id: UUID, is_open: bool) -> dict:
@@ -492,9 +495,10 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
     """Set a team's additional (2nd) end-of-quarter reviewer.
 
     A TA self-appoints (``target_user_id`` omitted or == caller) while the class
-    review window is open; the instructor may appoint any class TA at any time
-    (override, which also replaces an existing additional reviewer). The
-    additional reviewer must be a class TA other than the team's assigned TA.
+    review window is open and the team holds a review slot (``final_review_at``);
+    the instructor may appoint any class TA at any time (override, which also
+    replaces an existing additional reviewer). The additional reviewer must be a
+    class TA other than the team's assigned TA.
 
     Writes lean on ``UNIQUE (project_id)``: the instructor override is one upsert
     on that key (it used to be delete + insert); a TA's self-appointment stays a
@@ -504,7 +508,9 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
     try:
         client = get_client()
         pid = str(project_id)
-        project = _load_project(client, project_id)
+        project = _load_project(
+            client, project_id, columns="id, class_id, name, assigned_ta_id, final_review_at"
+        )
         class_id = project["class_id"]
         main_id = project.get("assigned_ta_id")
         is_instructor = _owns_class(project, caller_id)
@@ -544,6 +550,9 @@ def set_review_ta(caller_id: str, project_id: UUID, target_user_id: UUID | None 
             raise HTTPException(
                 status_code=400, detail="The reviewer must be a designated TA of this class"
             )
+        # Only once the caller is known to be a TA, so nobody else learns whether a team booked.
+        if not is_instructor and not project.get("final_review_at"):
+            raise HTTPException(status_code=403, detail=NO_REVIEW_SLOT)
         if main_id and str(main_id) == target:
             raise HTTPException(
                 status_code=400,
@@ -619,43 +628,6 @@ def set_review_zoom(instructor_id: str, class_id: UUID, zoom_url: str | None) ->
     except Exception:
         logger.exception("Error setting review Zoom | class_id=%s", class_id)
         raise HTTPException(status_code=500, detail="Failed to update review Zoom")
-
-
-def set_final_review_time(
-    instructor_id: str, project_id: UUID, scheduled_at: datetime | None
-) -> dict:
-    """Set or clear a team's single final-review slot (class instructor only).
-
-    One timestamptz per team (``projects.final_review_at``); no attendance is
-    taken for final reviews, so this deliberately does not create a ``meetings``
-    row.
-    """
-    try:
-        client = get_client()
-        project = _load_project(client, project_id)
-        if not _owns_class(project, instructor_id):
-            raise HTTPException(status_code=403, detail=authz.NOT_CLASS_INSTRUCTOR)
-        value = scheduled_at.isoformat() if scheduled_at else None
-        client.table("projects").update({"final_review_at": value}).eq(
-            "id", str(project_id)
-        ).execute()
-        logger.info(
-            "Final review time %s | project_id=%s at=%s by=%s",
-            "set" if value else "cleared",
-            project_id,
-            value,
-            instructor_id,
-        )
-        return {
-            "message": "Final review time updated",
-            "project_id": str(project_id),
-            "final_review_at": value,
-        }
-    except HTTPException:
-        raise
-    except Exception:
-        logger.exception("Error setting final review time | project_id=%s", project_id)
-        raise HTTPException(status_code=500, detail="Failed to update final review time")
 
 
 def _parse_review_ts(value) -> datetime | None:

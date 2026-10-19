@@ -61,7 +61,14 @@ def db(monkeypatch):
             for u in (TA1, TA2, TA3, S1)
         ],
         projects=[
-            {"id": P1, "class_id": CLASS, "name": "Alpha", "assigned_ta_id": TA1},
+            # P1 has booked a review slot, so TAs may sign up to review it.
+            {
+                "id": P1,
+                "class_id": CLASS,
+                "name": "Alpha",
+                "assigned_ta_id": TA1,
+                "final_review_at": "2026-12-07T17:00:00+00:00",
+            },
             {"id": P2, "class_id": CLASS, "name": "Beta", "assigned_ta_id": None},
         ],
         assignments=[

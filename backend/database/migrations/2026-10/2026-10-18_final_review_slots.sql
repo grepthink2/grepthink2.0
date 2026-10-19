@@ -10,7 +10,7 @@
 --
 -- EXPAND, idempotent, one transaction.
 --
--- Applied: DEV — pending   PROD — pending (apply before the release that ships the slot API)
+-- Applied: DEV 2026-10-19 (by Claude, via the Supabase connector)   PROD — pending (apply before the release that ships the slot API)
 
 BEGIN;
 

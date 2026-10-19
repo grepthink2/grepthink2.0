@@ -1,9 +1,8 @@
 """Teaching Assistant (TA) request models."""
 
-from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import AwareDatetime, BaseModel, Field, field_validator
 
 
 class TaUserRequest(BaseModel):
@@ -63,7 +62,25 @@ class SaveFinalReviewNotesRequest(BaseModel):
     template_version: int = 1
 
 
-class SetFinalReviewTimeRequest(BaseModel):
-    """Set (null clears) a team's single final-review slot."""
+class CreateReviewSlotsRequest(BaseModel):
+    """Post final-review slots: 1 to 200 distinct start times, each with its time zone.
 
-    scheduled_at: datetime | None = None
+    Every slot lasts 60 minutes. Times that already have a slot in the class are skipped.
+    """
+
+    starts_at: list[AwareDatetime] = Field(min_length=1, max_length=200)
+
+    @field_validator("starts_at")
+    @classmethod
+    def start_times_are_distinct(cls, starts_at: list[AwareDatetime]) -> list[AwareDatetime]:
+        """Refuse (422) a time listed twice. Aware times compare as instants, so 17:00Z and
+        09:00-08:00 are the same time."""
+        if len(set(starts_at)) != len(starts_at):
+            raise ValueError("Each start time can be listed only once")
+        return starts_at
+
+
+class BookReviewSlotRequest(BaseModel):
+    """Book a slot for a team: a Product Owner names their own team, the instructor any team."""
+
+    project_id: UUID

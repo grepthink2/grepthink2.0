@@ -26,6 +26,7 @@ from app.core import authz
 from app.projects import controller as projects
 from app.staffing import controller as staffing
 from app.tas import controller as tas
+from app.tas import review_slots
 from app.tsr import controller as tsr
 from app.tsr.models import CreateTSRRequest
 from tests.fake_supabase import FakeSupabase
@@ -63,6 +64,20 @@ ROLES = {
 }
 WRITE_OPS = {"insert", "update", "upsert", "delete"}
 OCT_1, OCT_8 = datetime.date(2026, 10, 1), datetime.date(2026, 10, 8)
+
+# Final-review slots (app.tas.review_slots), in a block of their own. CLASS has sign-ups closed.
+SLOT_PO = "51000000-0000-0000-0000-000000000001"  # SLOT_TEAM's Product Owner
+SLOT_MEMBER = "51000000-0000-0000-0000-000000000002"  # on SLOT_TEAM with no role (NULL)
+SLOT_TEAM = "d1000000-0000-0000-0000-000000000001"  # in CLASS; holds SLOT_BOOKED
+SLOT_A = "f1000000-0000-0000-0000-00000000000a"  # a free slot in CLASS
+SLOT_BOOKED = "f1000000-0000-0000-0000-00000000000b"
+SLOT_MISSING = "f1000000-0000-0000-0000-00000000dead"
+SLOT_START = datetime.datetime(2026, 12, 7, 17, tzinfo=datetime.UTC)
+SLOT_BOOKED_AT = (SLOT_START + datetime.timedelta(hours=1)).isoformat()
+SLOT_NOT_FOUND = "Slot not found"
+SLOT_PO_ONLY = "Only the team's Product Owner can book a slot."
+SLOT_SIGNUPS_CLOSED = "Sign-ups aren't open."
+SLOT_RELEASE_FIRST = "Release the team before deleting its slot."
 
 
 def _feedback_assignment(aid: str, class_id: str) -> dict:
@@ -140,6 +155,45 @@ def db(monkeypatch):
             # Invites load the instructor's profile with the class.
             ("classes", "profiles!classes_created_by_fkey"): ("created_by", "id", False),
         },
+    )
+    # Final-review slots: SLOT_TEAM, with a Product Owner and a member whose role is NULL, holds
+    # SLOT_BOOKED; SLOT_A is free.
+    fake.relations[("final_review_slots", "classes")] = ("class_id", "id", False)
+    fake.rows("projects").append(
+        {
+            "id": SLOT_TEAM,
+            "class_id": CLASS,
+            "name": "Gamma",
+            "assigned_ta_id": None,
+            "final_review_at": SLOT_BOOKED_AT,
+        }
+    )
+    fake.rows("project_members").extend(
+        [
+            {
+                "id": "m-slot-po",
+                "project_id": SLOT_TEAM,
+                "user_id": SLOT_PO,
+                "role": "product owner",
+            },
+            {"id": "m-slot-member", "project_id": SLOT_TEAM, "user_id": SLOT_MEMBER, "role": None},
+        ]
+    )
+    fake.rows("final_review_slots").extend(
+        [
+            {
+                "id": SLOT_A,
+                "class_id": CLASS,
+                "starts_at": SLOT_START.isoformat(),
+                "project_id": None,
+            },
+            {
+                "id": SLOT_BOOKED,
+                "class_id": CLASS,
+                "starts_at": SLOT_BOOKED_AT,
+                "project_id": SLOT_TEAM,
+            },
+        ]
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     return fake
@@ -294,11 +348,6 @@ CASES = {
         403,
         NOT_CLASS_INSTRUCTOR,
     ),
-    "tas.set_final_review_time/enrolled-ta": (
-        lambda db: tas.set_final_review_time(TA1, P1, None),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
     "tas.promote/enrolled-ta": (
         lambda db: tas.promote_to_ta(TA1, CLASS, S1),
         403,
@@ -339,13 +388,6 @@ CASES = {
         403,
         NOT_CLASS_INSTRUCTOR,
     ),
-    "tas.set_final_review_time/enrolled-student": (
-        lambda db: tas.set_final_review_time(
-            S1, P1, datetime.datetime(2026, 12, 1, 20, tzinfo=datetime.UTC)
-        ),
-        403,
-        NOT_CLASS_INSTRUCTOR,
-    ),
     "tas.review_targets/missing-class": (
         lambda db: tas.get_ta_review_targets(TA1, MISSING_CLASS),
         404,
@@ -355,6 +397,84 @@ CASES = {
         lambda db: tas.get_ta_review_targets(S1, CLASS),
         403,
         "You are not a TA in this class",
+    ),
+    # app.tas.review_slots: the class reads the slots, the instructor posts and deletes them, and
+    # only a team's Product Owner (while sign-ups are open) or the instructor books and releases.
+    "review_slots.list/missing-class": (
+        lambda db: review_slots.get_review_slots(S1, MISSING_CLASS),
+        404,
+        CLASS_NOT_FOUND,
+    ),
+    "review_slots.list/outsider": (
+        lambda db: review_slots.get_review_slots(OUTSIDER, CLASS),
+        403,
+        NOT_CLASS_MEMBER,
+    ),
+    "review_slots.create/enrolled-ta": (
+        lambda db: review_slots.create_review_slots(TA1, CLASS, [SLOT_START]),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "review_slots.delete/missing-slot": (
+        lambda db: review_slots.delete_review_slot(INSTR, SLOT_MISSING),
+        404,
+        SLOT_NOT_FOUND,
+    ),
+    "review_slots.delete/enrolled-ta": (
+        lambda db: review_slots.delete_review_slot(TA1, SLOT_A),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "review_slots.delete/other-instructor": (
+        lambda db: review_slots.delete_review_slot(OTHER_INSTR, SLOT_A),
+        403,
+        NOT_CLASS_INSTRUCTOR,
+    ),
+    "review_slots.delete/booked-slot": (
+        lambda db: review_slots.delete_review_slot(INSTR, SLOT_BOOKED),
+        409,
+        SLOT_RELEASE_FIRST,
+    ),
+    "review_slots.book/missing-slot": (
+        lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_MISSING, SLOT_TEAM),
+        404,
+        SLOT_NOT_FOUND,
+    ),
+    "review_slots.book/missing-project": (
+        lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_A, MISSING_PROJECT),
+        404,
+        PROJECT_NOT_FOUND,
+    ),
+    "review_slots.book/member-without-a-role": (
+        lambda db: review_slots.book_review_slot(SLOT_MEMBER, SLOT_A, SLOT_TEAM),
+        403,
+        SLOT_PO_ONLY,
+    ),
+    # A role is a role on one team: SLOT_PO cannot book for P1.
+    "review_slots.book/product-owner-of-another-team": (
+        lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_A, P1),
+        403,
+        SLOT_PO_ONLY,
+    ),
+    "review_slots.book/product-owner-while-closed": (
+        lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_A, SLOT_TEAM),
+        403,
+        SLOT_SIGNUPS_CLOSED,
+    ),
+    "review_slots.release/missing-project": (
+        lambda db: review_slots.release_review_slot(SLOT_PO, MISSING_PROJECT),
+        404,
+        PROJECT_NOT_FOUND,
+    ),
+    "review_slots.release/member": (
+        lambda db: review_slots.release_review_slot(S1, P1),
+        403,
+        SLOT_PO_ONLY,
+    ),
+    "review_slots.release/product-owner-while-closed": (
+        lambda db: review_slots.release_review_slot(SLOT_PO, SLOT_TEAM),
+        403,
+        SLOT_SIGNUPS_CLOSED,
     ),
     # app.projects
     "projects.create/missing-class": (
