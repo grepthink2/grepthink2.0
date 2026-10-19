@@ -12,6 +12,65 @@ professor creates teams and assigns students.
 on `classes`, `can_students_make_project` is unused, and students can
 self-create / self-join projects in any class. Treat it as a goal, not a guarantee.
 
+## How to work in this repo (read this first)
+
+These rules come from the maintainer. They take precedence over the defaults of any process skill
+or plugin, such as superpowers' brainstorming, writing-plans, subagent-driven-development and
+test-driven-development. Use a skill when the size of the change calls for one, but follow the
+review shape below, not the skill's own.
+
+**Size the process to the change.**
+- **Small, well-understood change** (a fix or edit in a file or two, copy or style tweaks, config or
+  dependency bumps, git chores): no spec and no plan. Make the change, run the gates for the side you
+  touched, and open a pull request.
+- **Feature, or a change across several files or layers:**
+  1. Agree a spec with the maintainer, committed under `docs/superpowers/specs/`.
+  2. Write a plan. It stays local: `docs/superpowers/plans/` is gitignored.
+  3. Implement it with one implementer, yourself or one subagent.
+  4. Run one whole-branch review, and fix what it finds before the pull request. Don't review after
+     every task.
+- **Review a single task on its own** only for SQL functions and migrations, authorization checks,
+  and anything that can lose or corrupt data.
+- **A failure whose cause you don't know:** reproduce it before changing code.
+- **What to ask about:** ask the maintainer before anything that touches PROD and before merging.
+  Decide everything else yourself, and say what you decided in the pull request.
+
+**Verify before you claim.**
+- The gates are the coverage variants under "Before you commit". CI runs the same ones on every pull
+  request into `beta` or `main`.
+- A frontend test that times out on a busy machine proves nothing. Rerun the failing files alone,
+  and let CI decide.
+- Tests that depend on the clock or a time zone:
+  - pin the clock (`app.assignments.deadlines.now_utc` in the backend, fake timers in the frontend);
+  - use fixed-offset zones (`Etc/GMT+8`), never a real zone whose daylight-time rules can change.
+- The backend's test double (`backend/tests/fake_supabase.py`) enforces no constraints and serializes
+  nothing. A change to SQL, constraints or PostgREST behaviour needs a check against DEV, inside a
+  transaction that rolls back or with the test data cleaned up. Never use PROD for this.
+
+**Traps that have caught agents here.**
+- **Shared working directory:** batched shell calls share one, so a `cd` in one call leaks into the
+  next. Use absolute paths, `git -C`, `npm --prefix` or a subshell.
+- **zsh:** the shell does not split an unquoted `$VAR` into words, and `${VAR}` needs its braces
+  before a `:`.
+- **Stale worktrees:** a new worktree can start far behind `beta`. Check
+  `git merge-base HEAD origin/beta`, and start new work from `origin/beta`
+  (`git switch --no-track -c <branch> origin/beta`).
+- **Escape sequences:** a tool that writes files can turn a typed backslash-u escape (a backslash,
+  `u`, four hex digits) into the raw character. Build such escapes in code, and scan the branch's diff
+  for invisible characters (Unicode categories Cf and Cc) before a pull request.
+- **`git stash`** is shared by every worktree of this repo. Set work aside with a commit instead.
+- **Local preview pages** (`frontend/<name>-mock.html` and their entry file in `frontend/src/`) stay
+  local:
+  - list them in `.git/info/exclude`;
+  - never commit them;
+  - move them out before switching to a branch that lacks what they import, or lint and build fail
+    there.
+- **Plans, ledgers and review notes** stay out of the repo. Code, comments and commit messages never
+  cite them (no plan, task or ruling ids): say what the code does.
+- **Old response shapes move on touch.** When you change an endpoint that still answers
+  `{"message": …, "<resource>": …}`, move it to the current shape (`backend/STYLE_GUIDE.md`,
+  "Response Format") in the same pull request, with its client method and tests.
+
 ## Tech stack
 
 | Layer     | Technology                                  |
@@ -290,20 +349,6 @@ The full agent-facing action catalog (method, params, role) lives at
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,
 `@assets/`→`src/assets/`, `@styles/`→`src/styles/`.
-
-## How to work in this repo
-- **Size the process to the change.**
-  - A small, well-understood change (a fix in a file or two, copy, config) goes straight to code, the
-    gates and a pull request.
-  - A feature gets a spec, a plan, one implementer and one whole-branch review before the pull request.
-    The spec is committed under `docs/superpowers/specs/`; the plan stays local, because
-    `docs/superpowers/plans/` is gitignored.
-  - Review each task separately only for SQL functions, authorization and anything that can lose data.
-- **Plans, ledgers and review notes stay out of the repo.** Code, comments and commit messages never
-  cite them (no ruling or task ids): say what the code does.
-- **Old response shapes move on touch.** When you change an endpoint that still answers
-  `{"message": …, "<resource>": …}`, move it to the current shape (`backend/STYLE_GUIDE.md`, "Response
-  Format") in the same pull request, with its client method and tests.
 
 ## Before you commit
 - Backend: `.venv/bin/ruff format . && .venv/bin/ruff check . && .venv/bin/python -m pytest --cov` (all green,
