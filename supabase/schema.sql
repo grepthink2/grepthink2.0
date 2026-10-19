@@ -65,6 +65,9 @@ DECLARE
   v_holder    uuid;
   v_freed     integer;
 BEGIN
+  -- Lock order: the project row before any slot row, as a project delete does (no deadlock).
+  PERFORM 1 FROM projects WHERE id = p_project FOR KEY SHARE;
+
   SELECT s.starts_at, s.project_id
     INTO v_starts_at, v_holder
     FROM final_review_slots s
@@ -241,6 +244,9 @@ CREATE OR REPLACE FUNCTION "public"."release_final_review_slot"("p_project" "uui
 DECLARE
   v_freed integer;
 BEGIN
+  -- Lock order: the project row before any slot row, as a project delete does (no deadlock).
+  PERFORM 1 FROM projects WHERE id = p_project FOR KEY SHARE;
+
   UPDATE final_review_slots
      SET project_id = NULL, booked_by = NULL, booked_at = NULL
    WHERE project_id = p_project;

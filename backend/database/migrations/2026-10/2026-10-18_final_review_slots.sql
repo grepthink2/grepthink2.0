@@ -6,7 +6,7 @@
 --
 -- Booking rules: one team per slot and one slot per team. A team moves only to a free slot: its old slot
 -- is freed and its Review TA (project_review_tas) is dropped. A first booking keeps the Review TA; a
--- release drops it.
+-- release that frees a slot drops it.
 --
 -- EXPAND, idempotent, one transaction.
 --
@@ -54,7 +54,9 @@ REVOKE ALL ON public.final_review_slots FROM anon, authenticated;
 --   'booked'      the team now holds the slot, or already did (then nothing changes)
 --   'moved'       the team gave up its other slot for this one
 -- The row lock queues two teams racing for one slot, and the second gets 'slot_taken'. One team booking
--- two slots at once trips final_review_slots_project_uniq: one call fails with 23505 (the API's 409).
+-- two slots at once can trip the partial unique index (final_review_slots_project_uniq): one call then
+-- fails with 23505, the API's 409. If the first commits before the second frees its old slot, the second
+-- is simply a move.
 CREATE OR REPLACE FUNCTION public.book_final_review_slot(p_slot uuid, p_project uuid, p_actor uuid)
 RETURNS text
 LANGUAGE plpgsql
@@ -65,6 +67,9 @@ DECLARE
   v_holder    uuid;
   v_freed     integer;
 BEGIN
+  -- Lock order: the project row before any slot row, as a project delete does (no deadlock).
+  PERFORM 1 FROM projects WHERE id = p_project FOR KEY SHARE;
+
   SELECT s.starts_at, s.project_id
     INTO v_starts_at, v_holder
     FROM final_review_slots s
@@ -115,6 +120,9 @@ AS $$
 DECLARE
   v_freed integer;
 BEGIN
+  -- Lock order: the project row before any slot row, as a project delete does (no deadlock).
+  PERFORM 1 FROM projects WHERE id = p_project FOR KEY SHARE;
+
   UPDATE final_review_slots
      SET project_id = NULL, booked_by = NULL, booked_at = NULL
    WHERE project_id = p_project;
