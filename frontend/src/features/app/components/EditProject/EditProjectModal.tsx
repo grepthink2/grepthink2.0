@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, Trash2, Users, X } from 'lucide-react';
+import { CalendarDays, Settings, Trash2, Users, X } from 'lucide-react';
 import ConfirmModal from '../Overlays/ConfirmModal';
 import DetailsTab from './DetailsTab';
 import TeamTab from './TeamTab';
+import { TeamMeetingsList, type TeamMeetingsListProps } from '../TeamMeetings/TeamMeetingsList';
 import { emailToDisplayName } from '@/features/app/utils/memberUtils';
 import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabaseClient';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
 import type { MemberOption } from './types';
 import './EditProjectModal.scss';
+
+export type EditProjectTab = 'details' | 'team' | 'meetings';
 
 export interface EditProjectModalProps {
   isOpen: boolean;
@@ -19,12 +22,28 @@ export interface EditProjectModalProps {
   canManageAdmins?: boolean;
   /** When false, only the admin-assignment section is editable (for class TAs). */
   canEditProjectDetails?: boolean;
+  /** The team's Product Owner also gets the Meetings tab; nobody else sees it. */
+  viewerIsProductOwner?: boolean;
+  /**
+   * The Meetings tab's list: the team's meetings and their handlers, which the project page shares
+   * with its card. The tab adds `variant="manage"` and `canManage`.
+   */
+  meetingsList?: Omit<TeamMeetingsListProps, 'variant' | 'canManage'>;
+  /** The tab to open on (the project page's "Manage" and "Add one" open Meetings). @default 'details' */
+  initialTab?: EditProjectTab;
   /** Called after a successful save so the parent can refetch project data. */
   onProjectChange?: () => void;
   onDelete?: () => void;
 }
 
-type TabId = 'details' | 'team';
+type TabId = EditProjectTab;
+
+/** Someone who may only manage admins sees the Team tab alone, and only the Product Owner has Meetings. */
+function openingTab(initialTab: TabId | undefined, canEditProjectDetails: boolean, viewerIsProductOwner: boolean): TabId {
+  if (!canEditProjectDetails) return 'team';
+  if (initialTab === 'meetings' && !viewerIsProductOwner) return 'details';
+  return initialTab ?? 'details';
+}
 
 /** Who holds each project role according to a member list. */
 interface RoleHolders {
@@ -52,10 +71,13 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   projectMembers,
   canManageAdmins = false,
   canEditProjectDetails = true,
+  viewerIsProductOwner = false,
+  meetingsList,
+  initialTab,
   onProjectChange,
   onDelete,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabId>(canEditProjectDetails ? 'details' : 'team');
+  const [activeTab, setActiveTab] = useState<TabId>(() => openingTab(initialTab, canEditProjectDetails, viewerIsProductOwner));
 
   // ── Details fields ────────────────────────────────
   const [name, setName] = useState(project.name ?? '');
@@ -105,7 +127,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
       setTeamSizeError(null);
       setApiError(null);
       setSaving(false);
-      setActiveTab(canEditProjectDetails ? 'details' : 'team');
+      setActiveTab(openingTab(initialTab, canEditProjectDetails, viewerIsProductOwner));
       setShowDeleteConfirm(false);
 
       const roles = roleHoldersOf(projectMembers);
@@ -328,6 +350,16 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
                 <Users size={16} />
                 <span>Team</span>
               </button>
+              {viewerIsProductOwner && (
+                <button
+                  type="button"
+                  className={`edit-project__tab ${activeTab === 'meetings' ? 'edit-project__tab--active' : ''}`}
+                  onClick={() => setActiveTab('meetings')}
+                >
+                  <CalendarDays size={16} />
+                  <span>Meetings</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -366,6 +398,9 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
                 canEditProjectDetails={canEditProjectDetails}
               />
             )}
+            {activeTab === 'meetings' && canEditProjectDetails && viewerIsProductOwner && (
+              <TeamMeetingsList variant="manage" canManage {...meetingsList} />
+            )}
           </div>
 
           {/* ── Footer ── */}
@@ -382,22 +417,36 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
               </button>
             )}
             <div className="edit-project__footer-right">
-              <button
-                type="button"
-                className="edit-project__btn edit-project__btn--secondary"
-                onClick={onClose}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="edit-project__btn edit-project__btn--save"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+              {activeTab === 'meetings' ? (
+                // Each meeting saves on its own, so this tab has nothing left to save: Done closes.
+                <button
+                  type="button"
+                  className="edit-project__btn edit-project__btn--save"
+                  onClick={onClose}
+                  disabled={saving}
+                >
+                  Done
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="edit-project__btn edit-project__btn--secondary"
+                    onClick={onClose}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="edit-project__btn edit-project__btn--save"
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              )}
             </div>
           </footer>
         </div>

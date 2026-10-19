@@ -74,7 +74,7 @@ const AddZoomModal: React.FC<AddZoomModalProps> = ({ isOpen, team, meetingInWeek
         meeting_day: meetingDay || null,
         meeting_time: meetingTime.trim() || null,
       };
-      await api.updateProjectMeeting(team.projectId, payload);
+      await api.updateProjectMeetingSlot(team.projectId, payload);
       onSaved(team.projectId, {
         zoomUrl: payload.zoom_url,
         meetingDay: payload.meeting_day,

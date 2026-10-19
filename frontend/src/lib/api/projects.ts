@@ -5,11 +5,13 @@ import type {
   ApiIncomingJoinRequest,
   ApiProject,
   ApiProjectJoinRequest,
+  ApiProjectMeeting,
   ApiProjectMember,
   ApiProjectPendingInvite,
   ApiTSR,
   CreateProjectPayload,
   CreateTsrPayload,
+  ProjectMeetingPayload,
 } from './types';
 
 export const projectsApi = {
@@ -213,5 +215,31 @@ export const projectsApi = {
       method: 'POST',
       body: JSON.stringify({ user_id: userId }),
     });
+  },
+
+  /** A team's own meetings, and whether the caller may change them (GET /api/projects/:id/meetings). */
+  getProjectMeetings: async (projectId: string) => {
+    return apiRequest<{ meetings: ApiProjectMeeting[]; can_manage: boolean }>(`/api/projects/${projectId}/meetings`);
+  },
+
+  /** Add a team meeting, Product Owner only (POST /api/projects/:id/meetings). */
+  createProjectMeeting: async (projectId: string, payload: ProjectMeetingPayload) => {
+    return apiRequest<ApiProjectMeeting>(`/api/projects/${projectId}/meetings`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Change a team meeting, Product Owner only (PATCH /api/projects/:id/meetings/:meetingId). */
+  updateProjectMeeting: async (projectId: string, meetingId: string, payload: Partial<ProjectMeetingPayload>) => {
+    return apiRequest<ApiProjectMeeting>(`/api/projects/${projectId}/meetings/${meetingId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Delete a team meeting, Product Owner only (DELETE /api/projects/:id/meetings/:meetingId). */
+  deleteProjectMeeting: async (projectId: string, meetingId: string): Promise<void> => {
+    await apiRequest<void>(`/api/projects/${projectId}/meetings/${meetingId}`, { method: 'DELETE' });
   },
 };

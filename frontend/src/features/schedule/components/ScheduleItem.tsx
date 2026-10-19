@@ -62,7 +62,8 @@ function Face({ person, title }: { person: SchedulePerson; title: string }) {
       aria-label={person.name || 'avatar'}
       title={title}
     >
-      {getInitials(person.name, '')}
+      {/* getInitials throws on a name of spaces; the design's initialsOf draws "?" for it. */}
+      {person.name.trim() ? getInitials(person.name, '') : '?'}
     </span>
   );
 }

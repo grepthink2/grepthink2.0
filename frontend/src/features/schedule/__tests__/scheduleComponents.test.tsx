@@ -343,6 +343,11 @@ describe('ScheduleItem (compact row)', () => {
     expect(AVATAR_COLORS.map((c) => c.toLowerCase())).toContain(rgbToHex(initials.style.backgroundColor));
   });
 
+  it('draws "?" for a person whose name is blank', () => {
+    renderRow(<ScheduleItem item={meeting({ host: { name: '   ' } })} now={NOW} zone={LA} />);
+    expect(row().querySelector('.gt-avatar')).toHaveTextContent('?');
+  });
+
   it('adds a class of its own', () => {
     renderRow(<ScheduleItem item={meeting()} now={NOW} zone={LA} className="extra" />);
     expect(row()).toHaveClass('extra');

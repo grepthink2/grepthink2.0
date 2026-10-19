@@ -11,6 +11,9 @@ const api = vi.hoisted(() => ({
   getMyJoinRequests: vi.fn(),
   // The sprint summary never arrives, so the sprint card stays in its skeleton.
   getScrumSummary: vi.fn(() => new Promise(() => {})),
+  // Nor do the team's meetings or the schools list.
+  getProjectMeetings: vi.fn(() => new Promise(() => {})),
+  getInstitutions: vi.fn(() => new Promise(() => {})),
 }));
 // The project belongs to CSE 115B while the sidebar has CSE 115C selected.
 const classContext = vi.hoisted(() => ({
