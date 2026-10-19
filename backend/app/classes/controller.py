@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException
 
 from app.assignments import deadlines
+from app.classes import terms
 from app.config import settings
 from app.core import authz
 from app.core.db import fan_out, get_client, retry_on_disconnect
@@ -31,12 +32,6 @@ from app.utils.profiles import profile_display_name
 logger = logging.getLogger(__name__)
 
 _ROSTER_INSERT_BATCH = 200
-
-
-# Default TSR counts per term. Instructors may override at class creation.
-_FULL_TERM_NAMES = {"fall", "winter", "spring"}
-_SUMMER_TSR_COUNT = 3
-_FULL_TSR_COUNT = 5
 
 
 def normalize_roster_status(raw: str) -> str:
@@ -483,13 +478,11 @@ def _generate_tsr_assignments(
     One whose `due_at` has already passed (a back-dated start) is created as a draft: published,
     it would be frozen the moment it exists. The instructor publishes it if wanted.
 
-    Default counts (overridable via tsr_count):
+    Default counts (overridable via tsr_count; see ``terms.default_tsr_count``):
       Fall / Winter / Spring  →  5 TSR assignments
       Summer                  →  3 TSR assignments
     """
-    term_lower = (term or "").strip().lower()
-    default_count = _FULL_TSR_COUNT if term_lower in _FULL_TERM_NAMES else _SUMMER_TSR_COUNT
-    count = tsr_count if tsr_count is not None else default_count
+    count = tsr_count if tsr_count is not None else terms.default_tsr_count(term)
     count = max(1, min(count, 20))  # safety clamp
 
     first_open = start_date + datetime.timedelta(days=14)

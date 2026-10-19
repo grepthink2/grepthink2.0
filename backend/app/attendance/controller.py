@@ -34,16 +34,11 @@ from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 
-# Reuse the term -> week-count convention used for TSR auto-creation so
-# attendance weeks line up with the rest of the app.
-from app.classes.controller import (
-    _FULL_TERM_NAMES,
-    _FULL_TSR_COUNT,
-    _SUMMER_TSR_COUNT,
-)
+from app.classes import terms
 from app.core import authz
 from app.core.db import fan_out, get_client
 from app.core.errors import DatabaseConflictError
+from app.institutions.controller import DEFAULT_TIMEZONE, institution_timezone
 
 # Class-TA designation writes are shared with the tas module so both designation
 # UIs (TA Management and TA Meetings) stay in lockstep.
@@ -61,41 +56,22 @@ _WEEKDAY_ORDER = {
     "saturday": 5,
     "sunday": 6,
 }
-# UCSC class meeting times are Pacific. `tzdata` is a runtime dependency, so this
-# resolves even on slim images that ship no system time-zone database.
-_CLASS_TZ = ZoneInfo("America/Los_Angeles")
+# `_pick_current_meeting` reads the clock in this zone unless its caller names the school's: the
+# zone `institution_timezone` answers for a class with no known school. `tzdata` is a runtime
+# dependency, so this resolves even on slim images that ship no system time-zone database.
+_DEFAULT_ZONE = ZoneInfo(DEFAULT_TIMEZONE)
 
 _PROJECT_COLUMNS = "id, class_id, name, assigned_ta_id, num_members"
-_CLASS_COLUMNS = "id, created_by, term, start_date, meetings_per_week, meeting_duration_minutes"
+_CLASS_COLUMNS = (
+    "id, created_by, term, start_date, end_date, institution_id, "
+    "meetings_per_week, meeting_duration_minutes"
+)
 _PROFILE_COLUMNS = "id, email, first_name, last_name, image_url"
 
 
 # ---------------------------------------------------------------------------
-# Week helpers (term -> number of weeks; start_date -> current/labelled week)
+# Week helpers (class dates -> number of weeks; start_date -> current/labelled week)
 # ---------------------------------------------------------------------------
-
-
-def _term_max_weeks(term: str | None) -> int:
-    """TSR week count for a term (kept for parity with the TSR convention)."""
-    return (
-        _FULL_TSR_COUNT if (term or "").strip().lower() in _FULL_TERM_NAMES else _SUMMER_TSR_COUNT
-    )
-
-
-# TA meetings run across the working term, which is wider than the TSR window:
-# ~10 weeks for a full quarter, ~6 for a summer session (e.g. CSE115A, late
-# June -> end of July). Total TA meets = meeting_weeks * meetings_per_week.
-_MEETING_WEEKS_FULL = 10
-_MEETING_WEEKS_SUMMER = 6
-
-
-def _meeting_weeks(term: str | None) -> int:
-    """Number of TA-meeting weeks in a term."""
-    return (
-        _MEETING_WEEKS_FULL
-        if (term or "").strip().lower() in _FULL_TERM_NAMES
-        else _MEETING_WEEKS_SUMMER
-    )
 
 
 def _parse_date(value) -> datetime.date | None:
@@ -109,24 +85,39 @@ def _parse_date(value) -> datetime.date | None:
         return None
 
 
-def _class_today(now: datetime.datetime | None = None) -> datetime.date:
-    """Today's date where the class meets (Pacific), whatever the server's zone.
+def _class_zone(class_row: dict) -> ZoneInfo:
+    """The time zone the class's school keeps (the default zone when the school is unknown)."""
+    return institution_timezone(class_row.get("institution_id"))
+
+
+def _class_today(zone: ZoneInfo, now: datetime.datetime | None = None) -> datetime.date:
+    """Today's date in the school's ``zone``, whatever the server's zone.
 
     A UTC host used to roll to "tomorrow" at 5 pm Pacific, shifting the current
-    term week for the evening while the meeting picker still used Pacific time.
+    term week for the evening; a school's day ends at its own midnight.
+    ``now`` (timezone-aware) is injectable for tests.
     """
-    return (now or datetime.datetime.now(datetime.UTC)).astimezone(_CLASS_TZ).date()
+    return (now or datetime.datetime.now(datetime.UTC)).astimezone(zone).date()
 
 
-def _current_term_week(start_date, term: str | None, today: datetime.date | None = None) -> int:
-    """Week index (1..max) for ``today`` (default: the class's today), relative to the start date."""
-    max_weeks = _meeting_weeks(term)
-    start = _parse_date(start_date)
+def _class_weeks(class_row: dict) -> int:
+    """Weeks the class's TA meetings run: up to its end date, else the term's fixed length."""
+    return terms.term_week_count(
+        class_row.get("term"),
+        _parse_date(class_row.get("start_date")),
+        _parse_date(class_row.get("end_date")),
+    )
+
+
+def _current_term_week(class_row: dict, today: datetime.date | None = None) -> int:
+    """Week index (1..weeks) of ``today`` (default: today at the school) in the class's term."""
+    start = _parse_date(class_row.get("start_date"))
     if start is None:
         return 1
-    delta_days = ((today or _class_today()) - start).days
-    week = delta_days // 7 + 1
-    return max(1, min(week, max_weeks))
+    if today is None:
+        today = _class_today(_class_zone(class_row))
+    week = (today - start).days // 7 + 1
+    return max(1, min(week, _class_weeks(class_row)))
 
 
 def _week_of_iso(start_date, week_number: int) -> str | None:
@@ -563,14 +554,23 @@ def set_meeting_cadence(
 # ---------------------------------------------------------------------------
 
 
-def _pick_current_meeting(rows: list[dict], meetings_per_week: int, now=None) -> int:
+def _pick_current_meeting(
+    rows: list[dict],
+    meetings_per_week: int,
+    now: datetime.datetime | None = None,
+    zone: ZoneInfo = _DEFAULT_ZONE,
+) -> int:
     """Sequence (1..N) of the weekly meeting happening now or coming up soonest
     among these slot rows, so the schedule advances M1 -> M2 -> … through the week
-    instead of always showing the first slot. Falls back to meeting 1."""
+    instead of always showing the first slot. Falls back to meeting 1.
+
+    Slot times are wall-clock times at the school, so the current time is read in
+    its ``zone``. A supplied ``now`` is used as given.
+    """
     if meetings_per_week <= 1 or not rows:
         return 1
     if now is None:
-        now = datetime.datetime.now(_CLASS_TZ)
+        now = datetime.datetime.now(zone)
     best_seq, best_delta = None, None
     for r in rows:
         dow = _WEEKDAY_ORDER.get((r.get("day_of_week") or "").lower())
@@ -597,7 +597,8 @@ def _pick_current_meeting(rows: list[dict], meetings_per_week: int, now=None) ->
 def _current_meeting_in_week(client, project_ids, meetings_per_week, now=None) -> int:
     """:func:`_pick_current_meeting` over the teams' weekly slots (reads them first).
 
-    ``now`` is injectable for tests; it defaults to the current Pacific time.
+    ``now`` is injectable for tests and used as given; it defaults to the current time
+    in the default school zone.
     """
     if meetings_per_week <= 1 or not project_ids:
         return 1
@@ -627,6 +628,8 @@ def get_ta_schedule(
     projects with their member ids embedded; wave 2 the weekly meeting slots
     (reused for the current-meeting pick) and the assigned TAs' profiles; then
     one attendance read. At most 6 queries in 3 waves (was 9-11 sequential).
+    The school's time zone comes from the institutions cache that every request
+    shares, so it adds no query per request.
     """
     try:
         client = get_client()
@@ -665,10 +668,11 @@ def get_ta_schedule(
         else:
             raise HTTPException(status_code=400, detail="Invalid scope")
 
-        total_weeks = _meeting_weeks(class_row.get("term"))
+        zone = _class_zone(class_row)
+        total_weeks = _class_weeks(class_row)
         meetings_per_week = int(class_row.get("meetings_per_week") or 1)
         if week_number is None:
-            week_number = _current_term_week(class_row.get("start_date"), class_row.get("term"))
+            week_number = _current_term_week(class_row, _class_today(zone))
         week_number = max(1, min(int(week_number), total_weeks))
 
         def member_ids(project: dict) -> set[str]:
@@ -710,7 +714,7 @@ def get_ta_schedule(
         # meeting-in-week: an explicit ?meeting= query wins; otherwise default to
         # the meeting happening now / coming up soonest.
         if meeting_in_week is None:
-            meeting_in_week = _pick_current_meeting(weekly, meetings_per_week)
+            meeting_in_week = _pick_current_meeting(weekly, meetings_per_week, zone=zone)
         meeting_in_week = max(1, min(int(meeting_in_week), meetings_per_week))
         meeting_map = {
             m["project_id"]: m for m in weekly if int(m.get("sequence") or 1) == meeting_in_week
@@ -877,7 +881,7 @@ def get_team_attendance(
 
 def _validate_slot(cls: dict, week_number: int, meeting_in_week: int) -> None:
     """Reject a week outside the term or a meeting outside the weekly cadence."""
-    if week_number < 1 or week_number > _meeting_weeks(cls.get("term")):
+    if week_number < 1 or week_number > _class_weeks(cls):
         raise HTTPException(status_code=400, detail="week_number is outside the term")
     if meeting_in_week < 1 or meeting_in_week > int(cls.get("meetings_per_week") or 1):
         raise HTTPException(

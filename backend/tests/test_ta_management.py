@@ -7,6 +7,7 @@ Runs the real controller logic against an in-memory FakeSupabase (the repo's
 """
 
 import datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi import HTTPException
@@ -14,6 +15,7 @@ from fastapi import HTTPException
 import app.projects.controller as projects_controller
 import app.tas.controller as tas_controller
 from app.attendance import controller
+from tests.conftest import ISTINYE_INSTITUTION
 from tests.fake_supabase import FakeSupabase
 
 INSTR = "instructor-1"
@@ -114,44 +116,51 @@ def db(monkeypatch):
     return fake
 
 
+def _set_class(db, **fields):
+    """Change the fixture class row (dates as ISO strings, the way PostgREST returns them)."""
+    next(c for c in db.rows("classes") if c["id"] == CLASS).update(fields)
+
+
+@pytest.fixture
+def todays_zones(monkeypatch):
+    """Pin "today at the school" to 2026-10-05; the list records the zone each lookup asked for."""
+    zones = []
+
+    def todays_date(zone, now=None):
+        zones.append(zone)
+        return datetime.date(2026, 10, 5)
+
+    monkeypatch.setattr(controller, "_class_today", todays_date)
+    return zones
+
+
 # --------------------------------------------------------------------------
 # Week helpers
 # --------------------------------------------------------------------------
 
 
-def test_term_max_weeks():
-    # Meeting weeks follow the class's TSR convention (app.classes.controller):
-    # full terms => _FULL_TSR_COUNT, summer/unknown => _SUMMER_TSR_COUNT.
-    assert controller._term_max_weeks("fall") == 5
-    assert controller._term_max_weeks("Winter") == 5
-    assert controller._term_max_weeks("summer") == 3
-    assert controller._term_max_weeks(None) == 3
-
-
-def test_meeting_weeks():
-    # TA meetings span the working term (wider than the TSR window).
-    assert controller._meeting_weeks("fall") == 10
-    assert controller._meeting_weeks("Spring") == 10
-    assert controller._meeting_weeks("summer") == 6
-    assert controller._meeting_weeks(None) == 6
-
-
 def test_current_term_week_clamps():
     today = datetime.date(2026, 10, 15)
-    assert controller._current_term_week(today.isoformat(), "fall", today=today) == 1
-    assert (
-        controller._current_term_week(
-            (today - datetime.timedelta(days=7)).isoformat(), "fall", today=today
-        )
-        == 2
-    )
-    # Far in the past clamps to the meeting-week count (10 for a full term).
-    assert (
-        controller._current_term_week(
-            (today - datetime.timedelta(days=400)).isoformat(), "fall", today=today
-        )
-        == 10
-    )
+
+    def week(start, on=today, **fields):
+        row = {"term": "fall", "start_date": start.isoformat(), **fields}
+        return controller._current_term_week(row, today=on)
+
+    assert week(today) == 1
+    assert week(today - datetime.timedelta(days=7)) == 2
+    # Far in the past clamps to the meeting-week count (10 for a full term without an end date).
+    assert week(today - datetime.timedelta(days=400)) == 10
+    # With an end date the count is the weeks up to it: 11 for Sep 24 - Dec 4.
+    start = datetime.date(2026, 9, 24)
+    assert week(start, on=datetime.date(2026, 12, 4), end_date="2026-12-04") == 11
+    assert week(start, on=datetime.date(2027, 1, 11), end_date="2026-12-04") == 11
+    assert week(start, on=datetime.date(2026, 9, 1), end_date="2026-12-04") == 1  # before the start
+
+
+def test_current_term_week_defaults_to_today_at_the_school(with_istinye, todays_zones):
+    row = {"term": "fall", "start_date": "2026-09-21", "institution_id": ISTINYE_INSTITUTION["id"]}
+    assert controller._current_term_week(row) == 3  # Sep 21 + two weeks
+    assert todays_zones == [ZoneInfo("Europe/Istanbul")]
 
 
 # --------------------------------------------------------------------------
@@ -310,6 +319,15 @@ def test_mark_attendance_rejects_out_of_range_week(db):
     assert exc.value.status_code == 400
 
 
+def test_attendance_is_accepted_in_the_last_week_and_refused_after(db):
+    _set_class(db, start_date="2026-09-24", end_date="2026-12-04")  # 11 weeks
+    controller.upsert_attendance(P1, INSTR, S1, 11, "present")
+    assert [a["week_number"] for a in db.rows("attendance")] == [11]
+    with pytest.raises(HTTPException) as exc:
+        controller.upsert_attendance(P1, INSTR, S1, 12, "present")
+    assert (exc.value.status_code, exc.value.detail) == (400, "week_number is outside the term")
+
+
 # --------------------------------------------------------------------------
 # Schedule + attendance reads
 # --------------------------------------------------------------------------
@@ -327,6 +345,34 @@ def test_schedule_all_for_instructor_with_summary(db):
     assert teams[P1]["attendance_present"] == 1
     assert teams[P1]["attendance_total"] == 2
     assert teams[P1]["assigned_ta"]["id"] == TA1
+
+
+def test_schedule_counts_weeks_to_the_end_date(db):
+    _set_class(db, start_date="2026-09-24", end_date="2026-12-04")
+    sched = controller.get_ta_schedule(CLASS, INSTR, week_number=3, scope="all")
+    assert sched["total_weeks"] == 11
+    assert sched["total_meetings"] == 22  # 11 weeks x 2 meetings
+
+
+def test_the_schedule_takes_today_from_the_schools_zone(db, with_istinye, todays_zones):
+    _set_class(db, institution_id=ISTINYE_INSTITUTION["id"], start_date="2026-09-21")
+    sched = controller.get_ta_schedule(CLASS, INSTR, scope="all")
+    assert sched["week_number"] == 3  # Sep 21 + two weeks
+    assert todays_zones == [ZoneInfo("Europe/Istanbul")]
+
+
+def test_the_schedule_picks_the_current_meeting_in_the_schools_zone(db, with_istinye, monkeypatch):
+    _set_class(db, institution_id=ISTINYE_INSTITUTION["id"])
+    zones = []
+    pick = controller._pick_current_meeting
+
+    def recording_pick(rows, meetings_per_week, now=None, zone=None):
+        zones.append(zone)
+        return pick(rows, meetings_per_week, now, zone)
+
+    monkeypatch.setattr(controller, "_pick_current_meeting", recording_pick)
+    controller.get_ta_schedule(CLASS, INSTR, week_number=3, scope="all")
+    assert zones == [ZoneInfo("Europe/Istanbul")]
 
 
 def test_schedule_all_denied_for_student(db):
