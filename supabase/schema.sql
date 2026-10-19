@@ -390,7 +390,7 @@ ALTER TABLE "public"."interest_team_preferences" OWNER TO "postgres";
 
 -- meetings: 2026-06-26_meetings.sql, plus kind, note, meetings_kind_valid, meetings_team_meeting_shape, the
 -- three length caps, ON DELETE SET NULL on meetings_created_by_fkey and meetings_project_once_idx from
--- 2026-10-18_team_meetings.sql (Applied: DEV pending, PROD pending). Its primary key, indexes, foreign keys,
+-- 2026-10-18_team_meetings.sql (Applied: DEV 2026-10-18, PROD pending). Its primary key, indexes, foreign keys,
 -- RLS and grant follow in the sections below, as in a dump.
 CREATE TABLE IF NOT EXISTS "public"."meetings" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,

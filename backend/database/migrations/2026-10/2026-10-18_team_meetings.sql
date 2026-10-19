@@ -10,7 +10,7 @@
 -- them (a TA slot takes kind = 'ta_meeting' from the DEFAULT) and every `meetings` read in
 -- app/attendance filters `cadence = 'weekly'`, so applying this early is safe.
 --
--- Applied: DEV — pending   PROD — pending
+-- Applied: DEV 2026-10-18 (by Claude, via the Supabase connector)   PROD — pending
 --
 --   * kind: 'ta_meeting' (every row that exists today) | 'team_meeting'.
 --   * note: free text, at most 500 characters.
