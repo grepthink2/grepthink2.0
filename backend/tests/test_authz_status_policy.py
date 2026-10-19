@@ -75,7 +75,8 @@ SLOT_MISSING = "f1000000-0000-0000-0000-00000000dead"
 SLOT_START = datetime.datetime(2026, 12, 7, 17, tzinfo=datetime.UTC)
 SLOT_BOOKED_AT = (SLOT_START + datetime.timedelta(hours=1)).isoformat()
 SLOT_NOT_FOUND = "Slot not found"
-SLOT_PO_ONLY = "Only the team's Product Owner can book a slot."
+SLOT_ONLY_PO_BOOKS = "Only the team's Product Owner can book a slot."
+SLOT_ONLY_PO_RELEASES = "Only the team's Product Owner can release a slot."
 SLOT_SIGNUPS_CLOSED = "Sign-ups aren't open."
 SLOT_RELEASE_FIRST = "Release the team before deleting its slot."
 
@@ -448,13 +449,13 @@ CASES = {
     "review_slots.book/member-without-a-role": (
         lambda db: review_slots.book_review_slot(SLOT_MEMBER, SLOT_A, SLOT_TEAM),
         403,
-        SLOT_PO_ONLY,
+        SLOT_ONLY_PO_BOOKS,
     ),
     # A role is a role on one team: SLOT_PO cannot book for P1.
     "review_slots.book/product-owner-of-another-team": (
         lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_A, P1),
         403,
-        SLOT_PO_ONLY,
+        SLOT_ONLY_PO_BOOKS,
     ),
     "review_slots.book/product-owner-while-closed": (
         lambda db: review_slots.book_review_slot(SLOT_PO, SLOT_A, SLOT_TEAM),
@@ -469,7 +470,7 @@ CASES = {
     "review_slots.release/member": (
         lambda db: review_slots.release_review_slot(S1, P1),
         403,
-        SLOT_PO_ONLY,
+        SLOT_ONLY_PO_RELEASES,
     ),
     "review_slots.release/product-owner-while-closed": (
         lambda db: review_slots.release_review_slot(SLOT_PO, SLOT_TEAM),

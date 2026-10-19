@@ -41,8 +41,10 @@ SLOT_NOT_FOUND = "Slot not found"
 SLOT_TAKEN = "That slot was just taken."
 #: 409: the slot is booked, and deleting it would take the team's time away.
 RELEASE_FIRST = "Release the team before deleting its slot."
-#: 403: the caller is neither the team's Product Owner nor the class instructor.
-ONLY_PRODUCT_OWNER = "Only the team's Product Owner can book a slot."
+#: 403: the caller is neither the team's Product Owner nor the class instructor, booking a slot
+#: or releasing one.
+ONLY_PRODUCT_OWNER_BOOKS = "Only the team's Product Owner can book a slot."
+ONLY_PRODUCT_OWNER_RELEASES = "Only the team's Product Owner can release a slot."
 #: 403: the team's Product Owner while sign-ups are closed.
 SIGNUPS_CLOSED = "Sign-ups aren't open."
 
@@ -75,14 +77,15 @@ def _product_owner_id(team: dict) -> str | None:
     return min(owners) if owners else None
 
 
-def _require_slot_change(team: dict, user_id: str) -> None:
+def _require_slot_change(team: dict, user_id: str, *, denied_detail: str) -> None:
     """Let the class instructor change the team's slot at any time, and the team's Product Owner
-    while sign-ups are open. Anyone else, a member with no role included, is refused."""
+    while sign-ups are open. Anyone else, a member with no role included, gets 403
+    ``denied_detail``."""
     cls = team.get("classes") or {}
     if str(cls.get("created_by")) == str(user_id):
         return
     if (_membership(team, user_id) or {}).get("role") != ROLE_PRODUCT_OWNER:
-        raise HTTPException(status_code=403, detail=ONLY_PRODUCT_OWNER)
+        raise HTTPException(status_code=403, detail=denied_detail)
     if not cls.get("review_period_open"):
         raise HTTPException(status_code=403, detail=SIGNUPS_CLOSED)
 
@@ -334,7 +337,7 @@ def book_review_slot(user_id: str, slot_id: UUID, project_id: UUID) -> dict:
             raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
         if str(slot["class_id"]) != str(team["class_id"]):
             raise HTTPException(status_code=404, detail=SLOT_NOT_FOUND)
-        _require_slot_change(team, user_id)
+        _require_slot_change(team, user_id, denied_detail=ONLY_PRODUCT_OWNER_BOOKS)
 
         try:
             res = client.rpc(
@@ -381,7 +384,7 @@ def release_review_slot(user_id: str, project_id: UUID) -> dict:
         team = _load_team(client, pid)
         if team is None:
             raise HTTPException(status_code=404, detail=authz.PROJECT_NOT_FOUND)
-        _require_slot_change(team, user_id)
+        _require_slot_change(team, user_id, denied_detail=ONLY_PRODUCT_OWNER_RELEASES)
 
         res = client.rpc(
             "release_final_review_slot", {"p_project": pid}, operation="write"

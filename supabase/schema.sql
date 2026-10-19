@@ -616,7 +616,7 @@ CREATE TABLE IF NOT EXISTS "public"."final_review_notes" (
 ALTER TABLE "public"."final_review_notes" OWNER TO "postgres";
 
 
--- final_review_slots: 2026-10-18_final_review_slots.sql (Applied: DEV pending, PROD pending), with the
+-- final_review_slots: 2026-10-18_final_review_slots.sql (Applied: DEV 2026-10-19, PROD pending), with the
 -- functions book_final_review_slot and release_final_review_slot (in the functions section above). Its
 -- primary key, unique key, indexes, foreign keys, RLS and grant follow in the sections below, as in a dump.
 CREATE TABLE IF NOT EXISTS "public"."final_review_slots" (
