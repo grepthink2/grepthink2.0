@@ -1,14 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { Settings, Trash2, Users, X } from 'lucide-react';
+import React, { useEffect, useId, useState } from 'react';
+import { CalendarDays, Settings, Trash2, Users, X } from 'lucide-react';
 import ConfirmModal from '../Overlays/ConfirmModal';
 import DetailsTab from './DetailsTab';
 import TeamTab from './TeamTab';
+import {
+  TeamMeetingsList,
+  type TeamMeetingsEditorState,
+  type TeamMeetingsListProps,
+} from '../TeamMeetings/TeamMeetingsList';
 import { emailToDisplayName } from '@/features/app/utils/memberUtils';
 import { api } from '@/lib/api';
 import { supabase } from '@/lib/supabaseClient';
 import type { ApiProject, ApiProjectMember } from '@/lib/api';
 import type { MemberOption } from './types';
 import './EditProjectModal.scss';
+
+export type EditProjectTab = 'details' | 'team' | 'meetings';
 
 export interface EditProjectModalProps {
   isOpen: boolean;
@@ -19,12 +26,28 @@ export interface EditProjectModalProps {
   canManageAdmins?: boolean;
   /** When false, only the admin-assignment section is editable (for class TAs). */
   canEditProjectDetails?: boolean;
+  /** The team's Product Owner also gets the Meetings tab; nobody else sees it. */
+  viewerIsProductOwner?: boolean;
+  /**
+   * The Meetings tab's list: the team's meetings and their handlers, which the project page shares
+   * with its card. The tab adds `variant="manage"`, `canManage` and `onEditorChange`.
+   */
+  meetingsList?: Omit<TeamMeetingsListProps, 'variant' | 'canManage' | 'onEditorChange'>;
+  /** The tab to open on (the project page's "Manage" and "Add one" open Meetings). @default 'details' */
+  initialTab?: EditProjectTab;
   /** Called after a successful save so the parent can refetch project data. */
   onProjectChange?: () => void;
   onDelete?: () => void;
 }
 
-type TabId = 'details' | 'team';
+type TabId = EditProjectTab;
+
+/** Someone who may only manage admins sees the Team tab alone, and only the Product Owner has Meetings. */
+function openingTab(initialTab: TabId | undefined, canEditProjectDetails: boolean, viewerIsProductOwner: boolean): TabId {
+  if (!canEditProjectDetails) return 'team';
+  if (initialTab === 'meetings' && !viewerIsProductOwner) return 'details';
+  return initialTab ?? 'details';
+}
 
 /** Who holds each project role according to a member list. */
 interface RoleHolders {
@@ -52,10 +75,13 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   projectMembers,
   canManageAdmins = false,
   canEditProjectDetails = true,
+  viewerIsProductOwner = false,
+  meetingsList,
+  initialTab,
   onProjectChange,
   onDelete,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabId>(canEditProjectDetails ? 'details' : 'team');
+  const [activeTab, setActiveTab] = useState<TabId>(() => openingTab(initialTab, canEditProjectDetails, viewerIsProductOwner));
 
   // ── Details fields ────────────────────────────────
   const [name, setName] = useState(project.name ?? '');
@@ -82,6 +108,9 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   const [apiError, setApiError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  /** The Meetings tab's editor: a meeting with unsaved input, or a meeting request in flight. */
+  const [meetingEditor, setMeetingEditor] = useState<TeamMeetingsEditorState>({ dirty: false, busy: false });
+  const meetingHintId = useId();
 
   // The modal stays mounted while closed, so reseed the form each time it opens,
   // and again if the project, its members or the caller's rights change while open.
@@ -105,7 +134,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
       setTeamSizeError(null);
       setApiError(null);
       setSaving(false);
-      setActiveTab(canEditProjectDetails ? 'details' : 'team');
+      setActiveTab(openingTab(initialTab, canEditProjectDetails, viewerIsProductOwner));
       setShowDeleteConfirm(false);
 
       const roles = roleHoldersOf(projectMembers);
@@ -278,6 +307,25 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Edits on Details or Team that only Save Changes sends: the fields against what they were seeded
+  // with. While there are any, the Meetings tab keeps Cancel / Save Changes, so they are never dropped
+  // by a Done that looks like it saves everything.
+  const hasStagedEdits =
+    name !== (project.name ?? '') ||
+    description !== (project.description ?? '') ||
+    teamSize !== String(project.team_size ?? '') ||
+    pendingLogoFile !== null ||
+    logoRemoved ||
+    productOwnerId !== initialRoles.productOwnerId ||
+    scrumMasterId !== initialRoles.scrumMasterId ||
+    adminIds.size !== initialRoles.adminIds.size ||
+    [...adminIds].some((id) => !initialRoles.adminIds.has(id));
+  // Done and Save Changes would close the modal on a meeting that is unsaved, or still saving (its
+  // error would have nowhere to show), so they wait for it. The X, the backdrop, Cancel and Escape
+  // still dismiss.
+  const meetingHolds = meetingEditor.dirty || meetingEditor.busy;
+  const meetingHint = meetingEditor.dirty ? meetingHintId : undefined;
+
   const memberOptions: MemberOption[] = projectMembers.map((m) => ({
     userId: m.user_id,
     displayName: emailToDisplayName(m.email),
@@ -328,6 +376,16 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
                 <Users size={16} />
                 <span>Team</span>
               </button>
+              {viewerIsProductOwner && (
+                <button
+                  type="button"
+                  className={`edit-project__tab ${activeTab === 'meetings' ? 'edit-project__tab--active' : ''}`}
+                  onClick={() => setActiveTab('meetings')}
+                >
+                  <CalendarDays size={16} />
+                  <span>Meetings</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -366,10 +424,17 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
                 canEditProjectDetails={canEditProjectDetails}
               />
             )}
+            {canEditProjectDetails && viewerIsProductOwner && (
+              // Mounted behind the other tabs, so a meeting draft survives a tab switch as Details and
+              // Team edits do.
+              <div hidden={activeTab !== 'meetings'}>
+                <TeamMeetingsList variant="manage" canManage {...meetingsList} onEditorChange={setMeetingEditor} />
+              </div>
+            )}
           </div>
 
           {/* ── Footer ── */}
-          <footer className="edit-project__footer">
+          <footer className={`edit-project__footer ${meetingEditor.dirty ? 'edit-project__footer--hint' : ''}`}>
             {canEditProjectDetails && (
               <button
                 type="button"
@@ -382,22 +447,43 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
               </button>
             )}
             <div className="edit-project__footer-right">
-              <button
-                type="button"
-                className="edit-project__btn edit-project__btn--secondary"
-                onClick={onClose}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="edit-project__btn edit-project__btn--save"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
+              {meetingEditor.dirty && (
+                <p id={meetingHintId} className="edit-project__footer-hint">
+                  Save or cancel the meeting you're editing first.
+                </p>
+              )}
+              {activeTab === 'meetings' && !hasStagedEdits ? (
+                // Each meeting saves on its own, so with nothing staged elsewhere Done just closes.
+                <button
+                  type="button"
+                  className="edit-project__btn edit-project__btn--save"
+                  onClick={onClose}
+                  disabled={saving || meetingHolds}
+                  aria-describedby={meetingHint}
+                >
+                  Done
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="edit-project__btn edit-project__btn--secondary"
+                    onClick={onClose}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="edit-project__btn edit-project__btn--save"
+                    onClick={handleSave}
+                    disabled={saving || meetingHolds}
+                    aria-describedby={meetingHint}
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              )}
             </div>
           </footer>
         </div>

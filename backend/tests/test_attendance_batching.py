@@ -15,6 +15,7 @@ from __future__ import annotations
 import datetime
 from unittest.mock import patch
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi import HTTPException
@@ -323,17 +324,24 @@ def test_assign_ta_and_meeting_edit_skip_the_extra_class_read(db):
 
 def test_current_term_week_is_deterministic_with_an_injected_date():
     today = datetime.date(2026, 10, 15)
-    assert controller._current_term_week("2026-10-15", "fall", today=today) == 1
-    assert controller._current_term_week("2026-10-08", "fall", today=today) == 2
-    assert controller._current_term_week("2025-01-01", "fall", today=today) == 10
-    assert controller._current_term_week("2025-01-01", "summer", today=today) == 6
-    assert controller._current_term_week(None, "fall", today=today) == 1
+
+    def week(start_date, term="fall", end_date=None):
+        row = {"term": term, "start_date": start_date, "end_date": end_date}
+        return controller._current_term_week(row, today=today)
+
+    assert week("2026-10-15") == 1
+    assert week("2026-10-08") == 2
+    assert week("2025-01-01") == 10
+    assert week("2025-01-01", term="summer") == 6
+    assert week(None) == 1
 
 
-def test_class_today_uses_pacific_time():
-    # 03:00 UTC on Oct 16 is still Oct 15 in Santa Cruz (PDT = UTC-7).
-    late_evening = datetime.datetime(2026, 10, 16, 3, 0, tzinfo=datetime.UTC)
-    assert controller._class_today(now=late_evening) == datetime.date(2026, 10, 15)
+def test_class_today_is_the_schools_date():
+    # The same instant is still the 19th in Santa Cruz and already the 20th in Istanbul.
+    instant = datetime.datetime(2026, 10, 19, 22, 30, tzinfo=datetime.UTC)
+    santa_cruz = controller._class_today(ZoneInfo("America/Los_Angeles"), instant)
+    istanbul = controller._class_today(ZoneInfo("Europe/Istanbul"), instant)
+    assert (santa_cruz, istanbul) == (datetime.date(2026, 10, 19), datetime.date(2026, 10, 20))
 
 
 # ------------------------------------------------------------ view wiring

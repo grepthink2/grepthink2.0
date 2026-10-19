@@ -1,0 +1,157 @@
+<!-- @dsCard group="Motion (proposed)" viewport="980x860" name="Motion system — preview" subtitle="Slug settle · Huffman stagger · fold · track draw-in · CRUSH reorder · real-time Now line · one beat · Fiat Slug · reduced-motion tiers. Tokens are declared inside this card only until approved." -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>
+body{margin:0;padding:18px;font-family:var(--gt-font-sans);color:var(--gt-text-primary);background:var(--gt-gray-0);--slow:1;
+--gt-dur-instant:calc(80ms*var(--slow));--gt-dur-fast:calc(160ms*var(--slow));--gt-dur-base:calc(240ms*var(--slow));--gt-dur-slow:calc(400ms*var(--slow));--gt-dur-ambient:calc(1600ms*var(--slow));--gt-stagger-base:calc(60ms*var(--slow));
+--gt-ease-settle:cubic-bezier(.2,.8,.2,1);--gt-ease-leave:cubic-bezier(.4,0,1,1);--gt-ease-glide:cubic-bezier(.4,0,.2,1)}
+a{color:var(--gt-accent)}a:hover{color:var(--gt-primary-hover)}
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.hd h1{margin:0;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.hd p{margin:3px 0 0;font-size:11px;color:var(--gt-text-tertiary);line-height:1.5;max-width:560px}
+.tok{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tok span{font-family:var(--gt-font-mono);font-size:9.5px;color:var(--gt-text-secondary);background:var(--gt-surface-muted);border-radius:7px;padding:3px 7px}
+.ctl{display:flex;gap:10px;align-items:center;flex-shrink:0;padding-top:2px}
+.btn{height:30px;padding:0 12px;border:1px solid var(--gt-border);border-radius:7px;background:var(--gt-surface);color:var(--gt-text-primary);font:inherit;font-size:11.5px;font-weight:500;cursor:pointer;transition:background-color var(--gt-dur-instant) var(--gt-ease-glide),border-color var(--gt-dur-instant) var(--gt-ease-glide)}
+.btn:hover{background:var(--gt-surface-muted)}
+.btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--gt-gray-0),0 0 0 4px var(--gt-accent)}
+.btn--primary{background:var(--gt-primary);border-color:var(--gt-primary);color:var(--gt-text-inverse)}.btn--primary:hover{background:var(--gt-primary-hover);border-color:var(--gt-primary-hover)}
+.sw{display:inline-flex;gap:6px;align-items:center;font-size:11.5px;cursor:pointer;color:var(--gt-text-secondary)}
+.sw input{accent-color:var(--gt-primary);margin:0}
+.g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.p{position:relative;border:1px solid var(--gt-border-subtle);border-radius:10px;padding:12px 12px 10px;min-height:200px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.p h4{margin:0;font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+.p h4 em{font-style:normal;font-weight:500;font-size:9.5px;color:var(--gt-text-tertiary)}
+.re{margin-left:auto;height:22px;padding:0 8px;font-size:10px;border-radius:7px;flex-shrink:0}
+.p p{margin:auto 0 0;font-size:10px;line-height:1.45;color:var(--gt-text-tertiary)}
+.stage{flex:1;position:relative;display:flex;flex-direction:column}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lbl{display:block;font-family:var(--gt-font-mono);font-size:9px;color:var(--gt-text-tertiary);margin-bottom:8px}
+.toast{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--gt-border-subtle);border-radius:7px;background:var(--gt-surface);font-size:11px;font-weight:500;align-self:flex-start}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gt-success);display:inline-block;flex-shrink:0}
+@keyframes in{to{opacity:1;transform:none}}
+@keyframes out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(6px)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes grow{to{transform:none}}
+@keyframes fadeOut{to{opacity:0}}@keyframes fadeIn{to{opacity:1}}
+/* 1 arrive & leave */
+.pop{opacity:0;transform:translateY(8px)}
+.play .pop{animation:in var(--gt-dur-base) var(--gt-ease-settle) forwards,out var(--gt-dur-fast) var(--gt-ease-leave) calc(1800ms*var(--slow)) forwards}
+.play .pop--today{animation:in calc(200ms*var(--slow)) ease forwards,out calc(200ms*var(--slow)) ease calc(1800ms*var(--slow)) forwards}
+/* 2 stagger */
+.rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.rows li{display:flex;align-items:center;gap:6px;font-family:var(--gt-font-mono);font-size:8.5px;color:var(--gt-text-tertiary);opacity:0;transform:translateY(6px)}
+.rows li b{flex:1;height:10px;border-radius:4px;background:var(--gt-surface-sunken)}
+.play .rows li{animation:in var(--gt-dur-base) var(--gt-ease-settle) calc(var(--d)*var(--slow)) forwards}
+/* 3 fold */
+.row{display:flex;gap:8px;align-items:baseline;font-size:11px;padding:6px 0;border-bottom:1px solid var(--gt-border-subtle)}
+.time{font-family:var(--gt-font-mono);font-size:9.5px;color:var(--gt-text-tertiary)}
+.ttl{font-weight:500}
+.fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--gt-dur-fast) var(--gt-ease-leave)}
+.fold__in{min-height:0;overflow:hidden}
+.mc{display:flex;align-items:center;gap:8px;padding:9px 8px;margin-top:6px;border:1px solid var(--gt-border-subtle);border-radius:7px;font-size:10.5px;opacity:0;transform:translateY(-6px);transition:opacity var(--gt-dur-fast) var(--gt-ease-leave),transform var(--gt-dur-fast) var(--gt-ease-leave)}
+.mc b{font-weight:600;display:block}.mc small{display:block;font-size:9px;color:var(--gt-text-tertiary)}
+.mc .btn{margin-left:auto;height:26px;font-size:10.5px;padding:0 10px}
+.av{width:22px;height:22px;border-radius:50%;background:var(--gt-gray-300);flex-shrink:0}
+.open .fold{grid-template-rows:1fr;transition:grid-template-rows var(--gt-dur-base) var(--gt-ease-settle)}
+.open .mc{opacity:1;transform:none;transition:opacity var(--gt-dur-base) var(--gt-ease-settle),transform var(--gt-dur-base) var(--gt-ease-settle)}
+/* 4 draw-in */
+.line{width:100%;height:44px;display:block}
+.line polyline{fill:none;stroke:var(--gt-primary);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1}
+.play .line polyline{animation:draw var(--gt-dur-slow) var(--gt-ease-glide) forwards}
+.bars{display:flex;gap:6px;align-items:flex-end;height:44px;margin-top:8px}
+.bars i{flex:1;height:var(--h);border-radius:3px 3px 0 0;background:var(--gt-gray-300);transform:scaleY(0);transform-origin:bottom}
+.play .bars i{animation:grow var(--gt-dur-slow) var(--gt-ease-glide) calc(var(--d)*var(--slow)) forwards}
+.axis{display:flex;justify-content:space-between;font-family:var(--gt-font-mono);font-size:8.5px;color:var(--gt-text-tertiary);border-top:1px solid var(--gt-border-subtle);padding-top:3px;margin-top:2px}
+/* 5 reorder */
+.board{display:flex;flex-direction:column;gap:6px}
+.tc{display:flex;gap:7px;align-items:center;padding:8px 9px;border:1px solid var(--gt-border-subtle);border-radius:7px;background:var(--gt-surface);font-size:10.5px;font-weight:500;will-change:transform}
+.key{font-family:var(--gt-font-mono);font-size:9px;color:var(--gt-text-tertiary)}
+.tc.lift{box-shadow:0 0 0 1.5px var(--gt-accent)}
+/* 6 real time */
+.track{position:relative;height:30px;border-radius:7px;background:repeating-linear-gradient(90deg,var(--gt-border-subtle) 0 1px,var(--gt-surface-sunken) 1px 8.333%);overflow:hidden}
+.ev{position:absolute;top:6px;height:18px;border-radius:5px;background:var(--gt-surface);border:1px solid var(--gt-border-subtle);font-size:9px;padding:0 6px;line-height:16px;font-weight:500;white-space:nowrap}
+.now{position:absolute;top:0;bottom:0;width:2px;background:var(--gt-accent);animation:sweep calc(12s*var(--slow)) infinite}
+.now.smooth{animation-timing-function:linear}.now.step{animation-timing-function:steps(12,end)}
+@keyframes sweep{from{left:0}to{left:100%}}
+/* 7 one beat */
+.chk{width:14px;height:14px;flex-shrink:0}.chk path{fill:none;stroke:var(--gt-success);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
+.beat{opacity:0;transform:translateY(8px)}
+.play .beat{animation:in var(--gt-dur-base) var(--gt-ease-settle) forwards}
+.play .chk path{animation:draw var(--gt-dur-base) var(--gt-ease-settle) calc(160ms*var(--slow)) forwards}
+.att{margin-top:14px}
+.xf{position:relative;height:22px;font-size:11px;font-weight:500}
+.xf span{position:absolute;left:0;top:0;display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:7px;background:var(--gt-surface-sunken);color:var(--gt-text-secondary)}
+.xf .b{background:var(--gt-success-soft);color:var(--gt-success-text);opacity:0}
+.play .xf .a{animation:fadeOut var(--gt-dur-fast) var(--gt-ease-leave) calc(700ms*var(--slow)) forwards}
+.play .xf .b{animation:fadeIn var(--gt-dur-fast) var(--gt-ease-settle) calc(700ms*var(--slow)) forwards}
+/* 8 slug */
+.empty{text-align:center;padding:14px 0 10px;font-size:11px}.empty b{display:block;font-weight:600}.empty span{display:block;font-size:10px;color:var(--gt-text-tertiary);margin-top:2px}
+.foot{position:relative;height:28px;border-top:1px solid var(--gt-border-subtle);margin-top:auto;overflow:hidden}
+.slug{position:absolute;bottom:2px;left:-52px;width:48px;height:24px;color:var(--gt-text-tertiary);animation:cross calc(12s*var(--slow)) linear infinite}
+@keyframes cross{to{left:100%}}
+/* 9 reduced */
+.live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500}
+.pulse{animation:pulse var(--gt-dur-ambient) ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--gt-success-soft)}100%{box-shadow:0 0 0 6px transparent}}
+.tiers{margin:8px 0 0;padding:0;list-style:none;font-size:10px;line-height:1.45;color:var(--gt-text-tertiary);display:flex;flex-direction:column;gap:3px}.tiers b{color:var(--gt-text-primary);font-weight:600}
+@media(prefers-reduced-motion:reduce){
+.play .pop,.play .rows li,.play .beat,.play .xf span,.play .line polyline,.play .bars i,.play .chk path{animation-duration:1ms!important;animation-delay:0ms!important}
+.pop,.rows li,.beat{transform:none}
+.fold,.open .fold{transition:none}.mc,.open .mc{transform:none;transition:opacity var(--gt-dur-fast) linear}
+.now,.pulse{animation:none}.now{left:35%}
+.slug{display:none}
+}
+</style></head><body>
+<div class="hd"><div><h1>Motion system · proposed</h1><p>Nine previews, one per suggestion. The tokens below are declared inside this card only; nothing in tokens/ or components/ has changed.</p>
+<div class="tok"><span>--gt-dur-instant 80ms</span><span>--gt-dur-fast 160ms</span><span>--gt-dur-base 240ms</span><span>--gt-dur-slow 400ms</span><span>--gt-dur-ambient 1600ms</span><span>--gt-stagger-base 60ms</span><span>--gt-ease-settle .2,.8,.2,1</span><span>--gt-ease-leave .4,0,1,1</span><span>--gt-ease-glide .4,0,.2,1</span></div></div>
+<div class="ctl"><label class="sw"><input type="checkbox" id="slow">Slow motion ×3</label><button class="btn btn--primary" id="all">Replay all</button></div></div>
+<div class="g">
+<div class="p" id="p1"><h4>1 · Arrive &amp; leave <em>banana slug</em><button class="btn re" data-replay="p1">Replay</button></h4>
+<div class="stage two"><div><span class="lbl">proposed · settle 240 / leave 160</span><div class="toast pop"><i class="dot"></i>TSR 4 submitted</div></div><div><span class="lbl">today · 0.2s ease both ways</span><div class="toast pop pop--today"><i class="dot"></i>TSR 4 submitted</div></div></div>
+<p>One arrive curve with a long decelerating tail; exits shorter and plain. No spring, no overshoot, 8px travel max. Toasts, popovers, the ⌘K palette, agenda rows.</p></div>
+<div class="p" id="p2"><h4>2 · Stagger <em>Huffman, 1967</em><button class="btn re" data-replay="p2">Replay</button></h4>
+<div class="stage two"><div><span class="lbl">halving · last row at 118ms</span><ol class="rows"><li style="--d:0ms"><b></b>0</li><li style="--d:60ms"><b></b>60</li><li style="--d:90ms"><b></b>90</li><li style="--d:105ms"><b></b>105</li><li style="--d:112ms"><b></b>112</li><li style="--d:116ms"><b></b>116</li><li style="--d:118ms"><b></b>118</li></ol></div><div><span class="lbl">linear 60ms · last row at 360ms</span><ol class="rows"><li style="--d:0ms"><b></b>0</li><li style="--d:60ms"><b></b>60</li><li style="--d:120ms"><b></b>120</li><li style="--d:180ms"><b></b>180</li><li style="--d:240ms"><b></b>240</li><li style="--d:300ms"><b></b>300</li><li style="--d:360ms"><b></b>360</li></ol></div></div>
+<p>Delays halve like a prefix code, so the total converges: 3 items and 30 finish together. Dashboard tiles, roster, search results, schedule days.</p></div>
+<div class="p" id="p3"><h4>3 · Disclose <em>Huffman's curved creases</em><button class="btn re" id="foldBtn">Expand</button></h4>
+<div class="stage"><div class="row"><span class="time">3:00–3:45 PM</span><span class="ttl">Team Redwood · TA meeting</span></div><div class="fold"><div class="fold__in"><div class="mc"><span class="av"></span><div><b>Priya N.</b><small>Weekly · Tue · Meeting 2 of 2</small></div><button class="btn btn--primary">Join Zoom</button></div></div></div></div>
+<p>Expansion unfolds from the hinge: height 0fr→1fr plus a 6px fade from the crease. Nothing slides in from off-screen; motion starts where you clicked.</p></div>
+<div class="p" id="p4"><h4>4 · Charts <em>UCSC Genome Browser</em><button class="btn re" data-replay="p4">Replay</button></h4>
+<div class="stage"><span class="lbl">tracks load left → right, once, on first data</span><svg class="line" viewBox="0 0 260 44" preserveAspectRatio="none" aria-hidden="true"><polyline pathLength="1" points="0,34 30,30 60,32 90,22 120,24 150,16 180,18 210,10 240,12 260,6"/></svg><div class="bars"><i style="--d:0ms;--h:40%"></i><i style="--d:60ms;--h:55%"></i><i style="--d:90ms;--h:48%"></i><i style="--d:105ms;--h:70%"></i><i style="--d:112ms;--h:62%"></i><i style="--d:116ms;--h:88%"></i></div><div class="axis"><span>Wk 1</span><span>Wk 10</span></div></div>
+<p>Sparklines trace along the time axis via dash offset; bars grow from the baseline with the Huffman stagger. Never replays on re-render.</p></div>
+<div class="p" id="p5"><h4>5 · Reorder <em>Ceph / CRUSH</em><button class="btn re" id="flipBtn">Drop GT-12 at top</button></h4>
+<div class="stage"><div class="board" id="board"><div class="tc"><span class="key">GT-9</span>Roster import</div><div class="tc"><span class="key">GT-10</span>Sprint 3 board</div><div class="tc"><span class="key">GT-11</span>TSR reminders</div><div class="tc moved"><span class="key">GT-12</span>Search palette</div></div></div>
+<p>Siblings glide to their new slots (FLIP, 320ms glide); the dropped card settles last on the slug curve, outlined in accent while it moves. The list never re-renders into place.</p></div>
+<div class="p" id="p6"><h4>6 · Real time <em>Lick Observatory</em></h4>
+<div class="stage"><span class="lbl">proposed · 60s linear transition per minute</span><div class="track"><span class="ev" style="left:22%;width:28%">TA meeting</span><b class="now smooth"></b></div><span class="lbl" style="margin-top:12px">today · jumps once a minute</span><div class="track"><span class="ev" style="left:22%;width:28%">TA meeting</span><b class="now step"></b></div></div>
+<p>The Now line and countdowns advance at real time instead of jumping each minute (demo: 12 s stands for 12 min). Nothing on a calm page jumps.</p></div>
+<div class="p" id="p7"><h4>7 · Confirm <em>game-design program</em><button class="btn re" data-replay="p7">Replay</button></h4>
+<div class="stage"><div class="toast beat"><svg class="chk" viewBox="0 0 16 16" aria-hidden="true"><path pathLength="1" d="M3 8.5l3.2 3L13 4.5"/></svg>Attendance saved</div><div class="att"><span class="lbl">attendance label crossfade · 160ms</span><div class="xf"><span class="a">Not marked</span><span class="b">Present</span></div></div></div>
+<p>Each completed action earns exactly one confirming moment: the check draws its stroke, the label crossfades. Then quiet.</p></div>
+<div class="p" id="p8"><h4>8 · Whimsy, once <em>Fiat Slug · 1986</em></h4>
+<div class="stage"><div class="empty"><b>Nothing scheduled today</b><span>Class events and deadlines will show up here.</span></div><div class="foot"><svg class="slug" viewBox="0 0 96 48" fill="none" stroke="var(--gt-ucsc-blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 40C10 37 22 27 38 24C50 20.5 64 21 74 25C80 27 86 28 90 31C91 34 88 36.5 84 37C80 37.5 78 39 74 40Z" fill="var(--gt-gold)" vector-effect="non-scaling-stroke"/><path d="M74 25C68 30 54 31 40 26.5" vector-effect="non-scaling-stroke"/><circle cx="67" cy="27.5" r="1.4" vector-effect="non-scaling-stroke"/><path d="M80 26.5C81.5 22.5 83.5 18.5 86 15M84 27.5C86.5 24 89 21 91 20" vector-effect="non-scaling-stroke"/><circle cx="86.3" cy="14.6" r="1.5" fill="var(--gt-ucsc-blue)" stroke="none"/><circle cx="91.3" cy="19.6" r="1.5" fill="var(--gt-ucsc-blue)" stroke="none"/><path d="M90.5 32.5l3-.5M89.5 34.5l2.5 1" vector-effect="non-scaling-stroke"/><path d="M86.5 34.5c1 1.2 2.3 1.2 3.3.3" vector-effect="non-scaling-stroke"/><g fill="var(--gt-ucsc-blue)" stroke="none"><circle cx="26" cy="33.5" r=".9"/><circle cx="48" cy="34" r=".9"/><circle cx="58" cy="36" r=".9"/></g></svg></div></div>
+<p>The one place for a wink: a flat line slug crosses the footer of 404 and empty landing states over ~45 s (demo: 12 s). Off under reduced motion. Mark: assets/slug.svg (--gt-gold fill, --gt-ucsc-blue line).</p></div>
+<div class="p" id="p9"><h4>9 · Reduced motion <em>one rule, three tiers</em></h4>
+<div class="stage two"><div><span class="lbl">motion</span><div class="live"><i class="dot pulse"></i>Live</div></div><div><span class="lbl">prefers-reduced-motion</span><div class="live"><i class="dot"></i>Live now</div></div></div>
+<ul class="tiers"><li><b>Essential</b> · live dots, progress → static, labelled in text</li><li><b>Transitions</b> · opacity only, same durations</li><li><b>Ambient</b> · floats, pulse, slug → off</li></ul>
+<p>Replaces today's per-family patches with one media block in the token layer.</p></div>
+</div>
+<script>
+const play=id=>{const p=document.getElementById(id);p.classList.remove('play');void p.offsetWidth;p.classList.add('play')};
+document.querySelectorAll('[data-replay]').forEach(b=>b.onclick=()=>play(b.dataset.replay));
+const all=()=>['p1','p2','p4','p7'].forEach(play);
+document.getElementById('all').onclick=all;
+document.getElementById('slow').onchange=e=>document.body.style.setProperty('--slow',e.target.checked?3:1);
+document.getElementById('foldBtn').onclick=e=>{const o=document.getElementById('p3').classList.toggle('open');e.target.textContent=o?'Collapse':'Expand'};
+const board=document.getElementById('board');let up=true;
+document.getElementById('flipBtn').onclick=e=>{
+const kids=[...board.children],first=kids.map(k=>k.getBoundingClientRect().top),m=board.querySelector('.moved');
+up?board.prepend(m):board.append(m);up=!up;e.target.textContent=up?'Drop GT-12 at top':'Drop GT-12 at bottom';
+if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+const cs=getComputedStyle(document.body),slow=parseFloat(cs.getPropertyValue('--slow'))||1,settle=cs.getPropertyValue('--gt-ease-settle').trim(),glide=cs.getPropertyValue('--gt-ease-glide').trim();
+kids.forEach((k,i)=>{const dy=first[i]-k.getBoundingClientRect().top;k.style.transition='none';k.style.transform=dy?`translateY(${dy}px)`:'';if(k===m)k.classList.add('lift')});
+board.getBoundingClientRect();
+kids.forEach(k=>{const mv=k===m;k.style.transition=`transform ${(mv?400:320)*slow}ms ${mv?settle:glide} ${mv?60*slow:0}ms`;k.style.transform=''});
+setTimeout(()=>m.classList.remove('lift'),560*slow)};
+addEventListener('load',all);
+</script>
+</body></html>

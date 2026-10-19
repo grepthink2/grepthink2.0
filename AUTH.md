@@ -59,7 +59,7 @@ export const supabase = createClient(url, anon, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false,  // we handle /auth/callback ourselves
+    // detectSessionInUrl: left at the SDK default (true); see below
     flowType: 'pkce',
     storage: window.localStorage,
   },
@@ -70,8 +70,11 @@ export const supabase = createClient(url, anon, {
   clients. It adds a per-request `code_verifier` that only the browser
   tab that started the flow knows, which defeats auth-code interception.
 - **localStorage** is the Supabase default. It's visible to any script
-  that runs on our origin, which is acceptable because our CSP blocks
-  third-party scripts. A previous iteration used a custom `cookieStorage`
+  that runs on our origin, and the frontend ships no Content-Security-Policy
+  today (Vercel serves it without one; `frontend/nginx.conf` is only the
+  Docker fallback), so keeping third-party scripts out of the bundle is
+  what protects it. A CSP via `vercel.json` headers is an open item. A
+  previous iteration used a custom `cookieStorage`
   adapter stuffed into a single `__Host-session` cookie; it had two
   unfixable bugs (sessions >4KB silently dropped, and
   `__Host-`/`Secure` attributes behave inconsistently on `http://localhost`),
@@ -79,10 +82,11 @@ export const supabase = createClient(url, anon, {
   `supabaseClient.ts`. If we ever adopt a real backend-for-frontend
   pattern we'll reintroduce cookie-based storage via HttpOnly
   server-set cookies.
-- **`detectSessionInUrl: false`** disables the SDK's opportunistic URL
-  scan for `?code=`. We handle the exchange in `/auth/callback`
-  ourselves so we can show a loading state and route first-time
-  OAuth users to the role-selection page.
+- **`detectSessionInUrl`** stays at the SDK default (`true`): when
+  `/auth/callback` loads, the SDK exchanges the `?code=` itself and
+  `AuthCallback.tsx` waits for the `SIGNED_IN` event before it routes
+  first-time OAuth users to the role-selection page
+  (`frontend/src/lib/supabaseClient.ts`, `AuthCallback.tsx`).
 
 ### Session lifecycle
 
@@ -122,15 +126,17 @@ this is a student or an instructor. The flow is:
 1. `SignUp.tsx` kicks off OAuth with
    `redirectTo: ${origin}/auth/callback`.
 2. Google redirects back with `?code=...`.
-3. `AuthCallback.tsx` exchanges the code via
-   `supabase.auth.exchangeCodeForSession(window.location.href)`.
+3. The SDK exchanges the code itself (`detectSessionInUrl` is on) and
+   `AuthCallback.tsx` waits for the `SIGNED_IN` event.
 4. It then calls `api.loginCheck()`. `loginCheck` returns `role: null`
    when the profile has no role yet. The `handle_new_user` trigger creates
    the `profiles` row at signup with the role from the signup form's
    metadata; a Google signup carries none, so its role stays `NULL`
    (`2026-09-21_role_chosen_by_its_owner.sql` — before it,
    `profiles_role_sanitizer` turned that `NULL` into `'student'`, which made
-   this chooser unreachable after Google sign-in).
+   this chooser unreachable after Google sign-in). On PROD that migration is
+   still pending (DEPLOY.md, "Due on PROD"), so a Google signup there still
+   lands as a student.
 5. If `role` is null → navigate to `/select` (or, when the flow started from
    the login page, back to `/login` with "please sign up first"). If non-null
    → navigate to `/app/home`.
@@ -214,7 +220,8 @@ error instead of a runtime silent pass.
 `verify_supabase_token` handles both HS256 (symmetric, shared secret)
 and RS256/ES256 (asymmetric, fetched via JWKS). The JWKS client is
 initialised lazily once per process and points at
-`{SUPABASE_URL}/auth/v1/keys`. If the JWKS lookup fails *and*
+`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`, sending the anon key as
+`apikey` (the old `/auth/v1/keys` path 404s). If the JWKS lookup fails *and*
 `SUPABASE_JWK_JSON` is set (a static inline JWK for air-gapped envs),
 it falls back to that. HS256 requires `SUPABASE_JWT_SECRET` to be set.
 
@@ -357,28 +364,34 @@ These don't do much for JSON payloads on their own, but they matter if
 the API is ever served from the same origin as the SPA (e.g. behind
 nginx) because they also apply to error pages the API itself renders
 and to any HTML surface (docs, `/redoc`) the host exposes. The CSP here
-is intentionally minimal — the frontend SPA ships its own CSP via
-nginx. Do **not** relax this CSP to allow scripts; the FastAPI host
+is intentionally minimal and covers the API host only; the frontend has
+no CSP of its own yet (see localStorage above). Do **not** relax this CSP
+to allow scripts; the FastAPI host
 should never serve executable JS.
 
 ### Middleware order
 
 Starlette runs middleware in **reverse registration order** — the last
-`add_middleware` call is the outermost. In `backend/app/main.py`:
+`add_middleware` call is the outermost. In `backend/app/main.py` the order is:
 
 ```python
-app.add_middleware(SecurityHeadersMiddleware)  # inner (registered first)
-app.add_middleware(CORSMiddleware, ...)        # outer (registered last)
+app.add_middleware(CORSMiddleware, ...)        # registered first: innermost
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(SentryFlushMiddleware)      # only with SENTRY_DSN; outermost
 ```
 
-CORS must be outermost so it can handle `OPTIONS` preflight before the
-request touches any other layer. Security headers run inside CORS,
-which is fine — they apply to the eventual response body, and CORS
-doesn't strip them on the way out.
+So a preflight `OPTIONS` passes through the Sentry flush, rate-limit and
+security-header layers before CORS answers it, and the security headers
+are added to CORS's responses on the way out. Whether CORS should move
+outermost, so preflights skip the other layers, is an open code question;
+this paragraph describes what ships.
 
 ---
 
 ## Automated tests
+
+> ⚠️ **Scheduled for removal** (proposed 2026-10-17 in the docs-cleanup PR): it describes the April 2026 test layout (an `/api/test-auth` probe, `TestCorsAllowlist`, test dependencies in `requirements.txt`), none of which is current. `backend/README.md`, "Testing", is the maintained description. Say so on that PR if anything here is still needed.
 
 **Files:** `backend/pytest.ini`, `backend/tests/conftest.py`,
 `backend/tests/test_auth_dependencies.py`
@@ -433,7 +446,7 @@ Required at runtime:
 | `CORS_ORIGINS` | Comma-separated allowlist. Required in prod — must not contain `*`. |
 | `ENVIRONMENT` | `development` or `production`. Used for logging context. |
 
-Frontend (`frontend/.env` or inherited from the monorepo root):
+Frontend (read from the repo-root `.env`; a `frontend/.env` is ignored):
 
 | Variable | Purpose |
 |---|---|
@@ -443,6 +456,8 @@ Frontend (`frontend/.env` or inherited from the monorepo root):
 ---
 
 ## Phase commit map
+
+> ⚠️ **Scheduled for removal** (proposed 2026-10-17 in the docs-cleanup PR): a record of the April 2026 refactor's commits; git history holds it. Say so on that PR if anything here is still needed.
 
 | Phase | Commit | What it did |
 |---|---|---|
@@ -535,11 +550,6 @@ that joined the first class PostgREST returned, and `Q%` a way to aim.
 
 These are documented as known gaps so no one re-discovers them:
 
-- **`/api/projects/test-create` still ships.** It requires a valid JWT
-  (`require_user`) but skips the instructor role check. It exists to
-  back the `TestProjects.tsx` demo pages (`/test-115a-projects`,
-  `/test-115b-projects`) and should be deleted along with those pages.
-  See CODE_REVIEW.md #7.
 - **Service role key is still used for most reads.** The dependency
   refactor addressed how *authentication* is enforced, but authorisation
   is still hand-coded in Python controllers rather than delegated to
@@ -554,5 +564,3 @@ These are documented as known gaps so no one re-discovers them:
   maintainer flips `student → instructor` with the SQL in `supabase/README.md`
   ("Letting an existing account create classes"). The account role only gates
   class creation, so the flip changes nothing else.
-- **No rate limiting.** `slowapi` or an equivalent should wrap at least
-  `/api/create-user` and the auth endpoints. CODE_REVIEW.md #5.

@@ -1,6 +1,7 @@
 {
   "name": "grepthink",
   "private": true,
+  "license": "AGPL-3.0-only",
   "description": "Monorepo root — orchestrates the frontend (Vitest) and backend (pytest) test suites.",
   "scripts": {
     "test": "npm run test:frontend && npm run test:backend",

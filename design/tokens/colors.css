@@ -91,6 +91,21 @@
   --gt-chart-hover: rgba(255, 255, 255, 0.08);/* hovered mark lightens 8% */
   --gt-opacity-refetch: 0.6; /* @kind other */   /* card content while new data loads */
 
+  /* ---- Schedule kind palette (schedule handoff, 2026-10) — the icon + text label always travel with the color ---- */
+  --gt-sched-ta-soft:       var(--gt-primary-soft);     /* weekly TA meeting tile */
+  --gt-sched-ta-text:       var(--gt-green-700);
+  --gt-sched-review-soft:   rgba(125, 60, 152, 0.12);   /* final review — the purple slot, same tint as the search story disc */
+  --gt-sched-review-text:   var(--gt-purple);
+  --gt-sched-meeting-soft:  var(--gt-info-soft);        /* one-off meeting */
+  --gt-sched-meeting-text:  var(--gt-info-text);
+  --gt-sched-lecture-soft:  var(--gt-gray-100);         /* lecture — quiet background structure */
+  --gt-sched-lecture-text:  var(--gt-gray-700);
+  --gt-sched-oh-soft:       var(--gt-surface);          /* office hours — optional drop-in: white tile, dashed outline */
+  --gt-sched-oh-text:       var(--gt-gray-700);
+  --gt-sched-oh-border:     var(--gt-border-strong);
+  --gt-sched-deadline-text: var(--gt-warning-text);     /* deadline marker glyph (matches the search assignment disc) */
+  --gt-sched-now:           var(--gt-primary);          /* the Now line */
+
   /* ---- UCSC institutional accents (reserved use) ---- */
   --gt-gold:      #FDC700;   /* achievements, stars, "team set" only */
   --gt-gold-text: #8A6D00;   /* readable text on the gold-soft tag background (codebase tokens/colors.css) */

@@ -576,4 +576,30 @@
     align-items: center;
     gap: $spacing-sm;
   }
+
+  // Why Done or Save Changes is waiting: a meeting on the Meetings tab is unsaved.
+  &__footer-hint {
+    margin: 0;
+    font-size: var(--gt-text-caption);
+    line-height: var(--gt-leading-snug);
+    color: var(--gt-text-secondary);
+    text-align: right;
+  }
+
+  // With the hint, it sits beside the buttons when it fits (Done) and takes a line of its own above
+  // them when it doesn't (Cancel and Save Changes). Delete Project keeps to the buttons' line.
+  &__footer--hint {
+    align-items: flex-end;
+    column-gap: var(--gt-space-md);
+
+    .edit-project__btn--delete {
+      flex-shrink: 0;
+    }
+
+    .edit-project__footer-right {
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      row-gap: var(--gt-space-xs);
+    }
+  }
 }

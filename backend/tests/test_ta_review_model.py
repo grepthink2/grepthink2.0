@@ -61,7 +61,14 @@ def db(monkeypatch):
             for u in (TA1, TA2, TA3, S1)
         ],
         projects=[
-            {"id": P1, "class_id": CLASS, "name": "Alpha", "assigned_ta_id": TA1},
+            # P1 has booked a review slot, so TAs may sign up to review it.
+            {
+                "id": P1,
+                "class_id": CLASS,
+                "name": "Alpha",
+                "assigned_ta_id": TA1,
+                "final_review_at": "2026-12-07T17:00:00+00:00",
+            },
             {"id": P2, "class_id": CLASS, "name": "Beta", "assigned_ta_id": None},
         ],
         assignments=[
@@ -159,7 +166,7 @@ def test_cap_one_additional_reviewer(db):
     tas.set_review_window(INSTR, CLASS, True)
     tas.set_review_ta(TA2, P1)
     with pytest.raises(HTTPException) as exc:
-        tas.set_review_ta(TA3, P1)  # slot already taken
+        tas.set_review_ta(TA3, P1)  # seat already taken
     assert exc.value.status_code == 409
     # Re-appointing the same TA is idempotent (no error, no duplicate row).
     tas.set_review_ta(TA2, P1)
@@ -169,7 +176,7 @@ def test_cap_one_additional_reviewer(db):
 def test_owner_only_release(db):
     tas.set_review_window(INSTR, CLASS, True)
     tas.set_review_ta(TA2, P1)
-    # A different TA cannot release TA2's slot.
+    # A different TA cannot release TA2's seat.
     with pytest.raises(HTTPException) as exc:
         tas.release_review_ta(TA3, P1, TA2)
     assert exc.value.status_code == 403

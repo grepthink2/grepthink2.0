@@ -1,21 +1,16 @@
-# supabase/ — schema as code (fresh-build, no migrations)
+# supabase/ — schema snapshot and setup for a fresh database
 
-> **Read this first (2026-09-21).** Two statements below have drifted. *RLS posture:* most
-> tables still have RLS on with no policies, but `profiles`, `notifications` and the five
-> messaging tables carry SELECT policies, because the browser subscribes to `messages` and
-> `notifications` over Realtime. RLS is no longer the only line of defence:
-> `2026-09-21_lock_down_direct_table_access.sql` drops the early *write* policies on `profiles`,
-> `classes` and `projects` and revokes every client privilege except `SELECT` on the Realtime
-> tables (see `AUTH.md`, "The browser has no table access"). *Keeping dev and
-> prod in sync:* the "re-run the dump and re-apply by hand" model is what let PROD fall three
-> migrations behind; changes now live in `backend/database/migrations/` and the plan to automate
-> them is tracked in [#192](https://github.com/grepthink2/grepthink2.0/issues/192). The table and
-> function inventory further down is from June — trust `list_migrations` and the database, not
-> this page. `schema.sql` has not been regenerated since 2026-09-08.
+> **Read this first.** This page mixes two kinds of content. The maintainer steps from
+> "Institutions and class creation" down are current. The three sections marked *scheduled for
+> removal* below describe the June 2026 database and the old "re-dump and re-apply" model:
+> migrations now live in `backend/database/migrations/` (DEPLOY.md, "Database migrations"), the
+> browser's table access is described in `AUTH.md` ("The browser has no table access"), and
+> `schema.sql` is updated by hand after each migration is applied. Trust the database and
+> `list_migrations`, not the inventory here.
 
-GrepThink uses **two separate Supabase projects**: DEV (`jfbagjjvryqcwxsyeyeg`,
-the only project that exists today) and a PROD project you create. These files
-build a fresh PROD database from scratch; production never touches the dev DB.
+GrepThink uses **two separate Supabase projects**: DEV (`jfbagjjvryqcwxsyeyeg`) and PROD
+(`yfezwtoeoexfksvbpxmi`); `scripts/supabase.sh dev|prod` targets each one. These files build a
+fresh database from scratch; production never touches the dev DB.
 
 | File | Purpose |
 |------|---------|
@@ -24,6 +19,8 @@ build a fresh PROD database from scratch; production never touches the dev DB.
 | `storage.sql` | Storage buckets (`class`/`profile`/`project`) + their policies (the storage schema isn't in a public dump). |
 
 ## RLS posture (important)
+
+> ⚠️ **Scheduled for removal** (proposed 2026-10-17 in the docs-cleanup PR): written before the Realtime `SELECT` policies and the 2026-09-21 lock-down; `AUTH.md`, "The browser has no table access", is the current description. Say so on that PR if anything here is still needed.
 
 RLS is **enabled on every table, with no policies** — and for this app that is
 **correct, not a gap**. All table access goes through the FastAPI backend using
@@ -49,6 +46,8 @@ scripts/supabase.sh dev db dump --linked --schema public -f supabase/schema.sql
 
 ## Live inventory (verified 2026-06-18 via Supabase MCP — sanity-check the dump)
 
+> ⚠️ **Scheduled for removal** (proposed 2026-10-17 in the docs-cleanup PR): a June 2026 snapshot (22 tables, `class_tas`, `project_ta_assignments`); `schema.sql` now has 35 tables and neither of those. Trust the dump and `list_migrations`. Say so on that PR if anything here is still needed.
+
 **22 tables:** `profiles`, `classes`, `class_enrollments`, `class_tas`,
 `roster_entries`, `projects`, `project_members`, `project_join_requests`,
 `project_ta_assignments`, `assignments`, `TSRs`, `feedback_submissions`,
@@ -72,6 +71,8 @@ for the known inconsistencies before mirroring.
 > fresh prod will be subtly broken (most visibly: signups won't create profiles).
 
 ## Keeping dev → prod in sync
+
+> ⚠️ **Scheduled for removal** (proposed 2026-10-17 in the docs-cleanup PR): superseded by DEPLOY.md, "Database migrations" (hand-applied SQL under `backend/database/migrations/`). Say so on that PR if anything here is still needed.
 
 Fresh-build model, no auto-migrate: when the dev schema changes, re-run the
 `db dump`, re-apply the changed DDL to prod, and update `auth_glue.sql` if any

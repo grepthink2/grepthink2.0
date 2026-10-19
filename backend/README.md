@@ -4,7 +4,8 @@
 
 - **[STYLE_GUIDE.md](STYLE_GUIDE.md)** — layers, auth, database access and batching rules, errors, small examples.
 - **[../AGENTS.md](../AGENTS.md)** — architecture, roles, gotchas and the commit gates.
-- **[docs/FRONTEND_API.md](docs/FRONTEND_API.md)** — API notes for the web client.
+- **Routes** — each feature's `url.py`, and the OpenAPI pages at `/docs` and `/redoc` while the
+  server runs.
 
 ## Table of Contents
 
@@ -72,12 +73,12 @@ backend/
 │   ├── staffing/            # Interest forms, assign / unassign / auto-assign
 │   ├── tas/                 # TA roles and final reviews
 │   ├── attendance/          # TA meetings and attendance
+│   ├── team_meetings/       # A team's one-off meetings (its Product Owner writes them)
 │   ├── messages/            # Direct and group messaging
 │   └── notifications/       # In-app notifications
 │
 ├── database/migrations/     # SQL by month (<YYYY-MM>/, PROD-only in prod/<YYYY-MM>/), applied by hand
 │                            # (dev, then prod); merging does not apply it
-├── docs/FRONTEND_API.md
 ├── tests/
 │   ├── conftest.py          # Env stubs, HS256 test tokens
 │   ├── fake_supabase.py     # In-memory PostgREST double with a round-trip counter
@@ -105,13 +106,16 @@ To add a new feature, create a folder under `app/` with `url.py`, `views.py`, `c
 | Prefix | Description |
 |--------|-------------|
 | `/health` | Health check |
-| `/api` | Auth helpers and `profiles` upsert (`test-auth`, `login-check`, `create-user`) |
+| `/api` | Auth helpers (`login-check`, `check-email`, `check-user-exists`, `create-user`, which inserts the `profiles` row or fills a missing role) |
 | `/api/classes` | Classes, enrollments, invites, class students and projects |
-| `/api/projects` | Projects, members, roles, join requests, `test-create` |
+| `/api/projects` | Projects, members, roles, join requests |
 | `/api/assignments` | Assignments; TSR listing/editing under assignment scope (`class_id` query on list) |
 | `/api/tsrs` | Submit and list TSRs by project |
 | `/api/staffing` | Interest forms, instructor preference views, assign / unassign / auto-assign |
-| `/api/messages` | Direct messaging — inbox, send message, conversation messages, mark read |
+| `/api/messages` | Direct and team messaging: inbox, send message, conversation messages, mark read |
+
+This table covers the oldest prefixes. AGENTS.md, "API surface", lists all of them, and each feature's
+`url.py` is the source of truth.
 
 ## Testing
 

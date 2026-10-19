@@ -17,6 +17,7 @@ from app.classes.models import (
     JoinClassRequest,
     QueueInviteRequest,
     QueueInviteResponse,
+    UpdateClassEndDateRequest,
     UpdateClassExternalTasksUrlRequest,
     UpdateClassStatusRequest,
 )
@@ -33,6 +34,7 @@ def create_class(data: CreateClassRequest, user_id: str = Depends(require_instru
         tsr_count=data.tsr_count,
         institution_id=data.institution_id,
         external_tasks_url=data.external_tasks_url,
+        end_date=data.end_date,
     )
     return {"message": "Class created successfully", "class": result}
 
@@ -62,6 +64,17 @@ def update_class_external_tasks_url(
     class instructor; checked in the controller)."""
     updated = controller.update_class_external_tasks_url(class_id, data.external_tasks_url, user_id)
     return {"message": "Tasks link updated", "class": updated}
+
+
+def update_class_end_date(
+    class_id: UUID,
+    data: UpdateClassEndDateRequest,
+    user_id: str = Depends(require_user),
+):
+    """Set or change the class's last day of classes (the class instructor; checked in the
+    controller)."""
+    updated = controller.update_class_end_date(class_id, data.end_date, user_id)
+    return {"message": "Last day of classes updated", "class": updated}
 
 
 def join_class(data: JoinClassRequest, user_id: str = Depends(require_user)):

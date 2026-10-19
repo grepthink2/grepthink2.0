@@ -79,7 +79,8 @@ def db(monkeypatch):
                 "class_id": CLASS,
                 "name": "Beta",
                 "assigned_ta_id": None,
-                "final_review_at": None,
+                # Booked, so a TA may sign up to review it.
+                "final_review_at": "2026-12-07T17:00:00+00:00",
             },
         ],
         project_members=[
@@ -238,13 +239,9 @@ def test_project_ta_lists_are_bounded(db):
     assert db.executes <= 4, _trace(db)
 
 
-def test_release_and_review_time_are_two_round_trips(db):
+def test_release_is_two_round_trips(db):
     tas.release_review_ta(TA2, P1, TA2)
     assert not [r for r in db.rows("project_review_tas") if r["project_id"] == P1]
-    assert db.executes <= 2, _trace(db)
-
-    db.reset_counter()
-    tas.set_final_review_time(INSTR, P1, None)
     assert db.executes <= 2, _trace(db)
 
 

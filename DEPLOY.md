@@ -155,7 +155,8 @@ scripts/supabase.sh prod db dump --linked --data-only --use-copy -f "$D/data.sql
 The data dump covers `public`, `auth` (users, identities) and `storage` metadata, not the stored
 files. To restore, load roles, then schema, then data, as in Supabase's "Backup and restore
 using the CLI" guide. [#192](https://github.com/grepthink2/grepthink2.0/issues/192) covers the
-free plan and the rest of the deployment gaps (no CI or branch protection on `main`, no staging).
+free plan and the rest of the deployment gaps (no staging; CI on `main` and the branch rulesets
+landed in October 2026).
 
 ## Email delivery
 

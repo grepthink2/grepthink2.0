@@ -2,14 +2,14 @@
   "$schema": "https://grepthink.com/schemas/agent-actions-v1.json",
   "version": "1",
   "name": "GrepThink 2.0",
-  "description": "Agent-facing catalog of user actions. All actions require a Supabase-authenticated session and are role-gated. Param syntax: 'type!' = required, 'type' = optional. The 'instructor' role tag means the class instructor (the class's creator) except on create_class, which is gated by the account's own instructor role (profiles.role) instead.",
+  "description": "Agent-facing catalog of user actions. All actions require a Supabase-authenticated session and are role-gated. Param syntax: 'type!' = required, 'type' = optional. The 'instructor' role tag means the class instructor (the class's creator) except on create_class, which is gated by the account's own instructor role (profiles.role) instead. 'any' = any signed-in user; 'ta' = a TA of the class; 'meeting-ta' = the team's meeting TA; 'project-member', 'owner', 'product owner' and 'admin' are roles on the project; 'a|b' = either.",
   "apiBase": "/api",
   "auth": {
     "type": "supabase-jwt",
     "header": "Authorization: Bearer <access_token>",
     "note": "Sign-up, login, password reset, and OAuth are performed client-side via Supabase Auth, not these endpoints. POST /api/create-user provisions the profile row after sign-up."
   },
-  "roles": ["public", "student", "ta", "instructor", "project-member", "project-owner"],
+  "roles": ["public", "any", "student", "ta", "meeting-ta", "instructor", "project-member", "owner", "product owner", "admin"],
   "actions": [
     {
       "id": "create_user_profile", "title": "Provision profile after sign-up", "role": "public",
@@ -39,7 +39,7 @@
     {
       "id": "create_class", "title": "Create a class", "role": "instructor",
       "method": "POST", "endpoint": "/api/classes",
-      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "tsr_count": "int", "institution_id": "uuid", "external_tasks_url": "string (a full http(s) URL; the class sidebar's Tasks - External link)"},
+      "params": {"name": "string!", "description": "string", "term": "string", "start_date": "date", "end_date": "date (the last day of classes, before finals; from start_date to 370 days after it, else 422)", "tsr_count": "int", "institution_id": "uuid", "external_tasks_url": "string (a full http(s) URL; the class sidebar's Tasks - External link)"},
       "uiRoute": "/app → Create Class"
     },
     {
@@ -87,6 +87,12 @@
       "id": "set_class_tasks_link", "title": "Set, change or remove a class's Tasks - External link", "role": "instructor",
       "method": "PATCH", "endpoint": "/api/classes/{class_id}/external-tasks-url",
       "params": {"external_tasks_url": "string! (a full http(s) URL; explicit null or blank removes the link)"},
+      "uiRoute": "/app/my-classes → Class Settings"
+    },
+    {
+      "id": "set_class_end_date", "title": "Set or change a class's last day of classes", "role": "instructor",
+      "method": "PATCH", "endpoint": "/api/classes/{class_id}/end-date",
+      "params": {"end_date": "date! (the last day of classes, before finals; from the class's start_date to 370 days after it, else 400; 409 when a week after the new last day already has attendance)"},
       "uiRoute": "/app/my-classes → Class Settings"
     },
 
@@ -148,6 +154,30 @@
     {
       "id": "assign_admin", "title": "Assign admin", "role": "instructor|ta",
       "method": "POST", "endpoint": "/api/projects/{project_id}/assign-admin", "params": {"user_id": "uuid!"}
+    },
+    {
+      "id": "list_project_meetings", "title": "List a team's own meetings", "role": "project-member|instructor|meeting-ta",
+      "method": "GET", "endpoint": "/api/projects/{project_id}/meetings", "uiRoute": "/app/projects/{projectId}",
+      "note": "Returns {meetings, can_manage}: the team's one-off meetings, soonest first, and whether the caller is its Product Owner. Every member reads them (one with no project role too), as do the class instructor and the team's meeting TA; anyone else gets 403."
+    },
+    {
+      "id": "create_project_meeting", "title": "Add a team meeting", "role": "product owner",
+      "method": "POST", "endpoint": "/api/projects/{project_id}/meetings",
+      "params": {"title": "string! (1-80)", "starts_at": "datetime! (ISO 8601 with an offset)", "duration_minutes": "enum(15|30|45|60|75|90|105|120|150|180|240) (default 60)", "location": "string (room, <= 120)", "zoom_url": "string (http(s) link, <= 500)", "note": "string (<= 500)"},
+      "uiRoute": "/app/projects/{projectId} → Edit Project → Meetings", "multiStep": true,
+      "note": "Only the team's Product Owner (project role 'product owner'). 400 'That time has already passed.' for a start in the past. Answers the meeting row."
+    },
+    {
+      "id": "update_project_meeting", "title": "Change a team meeting", "role": "product owner",
+      "method": "PATCH", "endpoint": "/api/projects/{project_id}/meetings/{meeting_id}",
+      "params": {"title": "string (1-80)", "starts_at": "datetime (ISO 8601 with an offset)", "duration_minutes": "enum(15|30|45|60|75|90|105|120|150|180|240)", "location": "string (null or blank clears)", "zoom_url": "string (null or blank clears)", "note": "string (null or blank clears)"},
+      "uiRoute": "/app/projects/{projectId} → Edit Project → Meetings", "multiStep": true,
+      "note": "Send only what changes; a start that has passed may stay. A meeting of another team, or a TA meeting slot, is 404."
+    },
+    {
+      "id": "delete_project_meeting", "title": "Delete a team meeting", "role": "product owner",
+      "method": "DELETE", "endpoint": "/api/projects/{project_id}/meetings/{meeting_id}", "uiRoute": "/app/projects/{projectId} → Edit Project → Meetings",
+      "note": "Answers 204. A meeting of another team, or a TA meeting slot, is 404."
     },
 
     {
@@ -232,6 +262,32 @@
     {
       "id": "assign_review_ta", "title": "Assign a TA to review a project's TSRs", "role": "instructor",
       "method": "POST", "endpoint": "/api/tas/projects/{project_id}/assign", "params": {"user_id": "uuid!"}
+    },
+    {
+      "id": "list_review_slots", "title": "List a class's final-review slots and the teams that booked them", "role": "instructor|ta|student",
+      "method": "GET", "endpoint": "/api/tas/classes/{class_id}/review-slots",
+      "note": "Every slot in time order with its team (null = free), signups_open, and my_team: the caller's team (null when on none), with its time, the shared Zoom room and both reviewers once it holds a slot. The instructor and class TAs also get unbooked_teams (each with its Product Owner) and review_zoom_url. 403 outside the class."
+    },
+    {
+      "id": "create_review_slots", "title": "Post final-review slots", "role": "instructor",
+      "method": "POST", "endpoint": "/api/tas/classes/{class_id}/review-slots",
+      "params": {"starts_at": "datetime[]! (ISO 8601 with an offset, on a whole minute; 1-200, all different)"},
+      "note": "Each slot lasts 60 minutes; a time that already has a slot in the class is skipped. Answers {created: n}."
+    },
+    {
+      "id": "delete_review_slot", "title": "Delete a free final-review slot", "role": "instructor",
+      "method": "DELETE", "endpoint": "/api/tas/review-slots/{slot_id}",
+      "note": "204 on success; 409 'Release the team before deleting its slot.' while a team holds it."
+    },
+    {
+      "id": "book_review_slot", "title": "Book a final-review slot for a team, or move the team to it", "role": "product owner|instructor",
+      "method": "POST", "endpoint": "/api/tas/review-slots/{slot_id}/book", "params": {"project_id": "uuid!"},
+      "note": "Answers {status: booked|moved, slot_id, starts_at}; a move frees the team's old slot and drops its Review TA. The team's Product Owner only while sign-ups are open (403 'Sign-ups aren't open.'), before the team's review time (403 'Your team's review time has passed.') and onto a slot that hasn't started (409 'That slot has already started.'); the instructor at any time, onto a started slot too. 409 'That slot was just taken.' when another team holds it."
+    },
+    {
+      "id": "release_review_slot", "title": "Release a team's final-review slot", "role": "product owner|instructor",
+      "method": "POST", "endpoint": "/api/tas/projects/{project_id}/review-slot/release",
+      "note": "Clears the team's review time and drops its Review TA; answers {released: false} when it held no slot. Same rules as book_review_slot."
     },
     {
       "id": "assign_meeting_ta", "title": "Assign the meeting TA for a project", "role": "instructor",

@@ -211,6 +211,20 @@
     margin: 0 0 var(--gt-space-md);
   }
 
+  // A card title with an action on its right (the team meetings card's Manage). The card's list
+  // opens on a day heading with its own top padding, so the gap below stays small.
+  &__card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--gt-space-sm);
+    margin: 0 0 var(--gt-space-xs);
+
+    .project-view__section-title {
+      margin: 0;
+    }
+  }
+
   &__roles-list {
     list-style: none;
     margin: 0;
