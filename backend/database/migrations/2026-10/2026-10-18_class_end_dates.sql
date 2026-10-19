@@ -21,7 +21,7 @@
 -- when its last day is changed, so a bad day never reaches the CHECK as a 500. Every existing row
 -- passes: the new column is NULL.
 --
--- Applied: DEV — pending   PROD — pending
+-- Applied: DEV 2026-10-18 (by Claude, via the Supabase connector)   PROD — pending
 
 ALTER TABLE public.classes ADD COLUMN IF NOT EXISTS end_date date;
 
