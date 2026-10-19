@@ -362,6 +362,8 @@ describe('ProjectView — the team meetings card', () => {
     );
     expect(createProjectMeeting.mock.calls[0][1].starts_at).toMatch(/^2099-01-1[45]T/);
     expect(await within(card()!).findByText('Retro')).toBeInTheDocument();
-    expect(screen.getByText('Meeting added.')).toBeInTheDocument();
+    expect(await screen.findByText('Meeting added.')).toBeInTheDocument();
+    // The page answers the tab with the new meeting, so focus lands on its row.
+    expect(screen.getByRole('button', { name: 'Edit Retro' })).toHaveFocus();
   });
 });

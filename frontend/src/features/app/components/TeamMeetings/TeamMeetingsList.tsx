@@ -30,6 +30,16 @@ import './teamMeetings.scss';
 
 const SAVE_ERROR = 'Couldn’t save this meeting. Your changes are still here — try again.';
 const DELETE_ERROR = 'Couldn’t delete. Try again.';
+/** How long the live region stays empty before a message: long enough for a screen reader to see the change. */
+const ANNOUNCE_DELAY_MS = 100;
+
+/** What the Meetings tab tells the Edit Project footer about its editor. */
+export interface TeamMeetingsEditorState {
+  /** An add or edit form is open and its draft differs from what it opened with. */
+  dirty: boolean;
+  /** A meeting create, update or delete request is in flight. */
+  busy: boolean;
+}
 
 export interface TeamMeetingsListProps {
   /** manage = Edit Project → Meetings tab (Product Owner); card = the project-page "Team meetings" card body. @default 'manage' */
@@ -50,10 +60,18 @@ export interface TeamMeetingsListProps {
   /** createdBy id → person, for the organizer avatar (card). */
   people?: Record<string, SchedulePerson>;
 
-  /** Resolve on success, reject on failure: the list shows the inline error and keeps the draft. */
-  onCreate?: (value: TeamMeetingPayload) => Promise<unknown> | void;
+  /**
+   * Resolve on success, reject on failure: the list shows the inline error and keeps the draft.
+   * onCreate resolves with the new meeting, so focus can land on its row (Add meeting otherwise).
+   */
+  onCreate?: (value: TeamMeetingPayload) => Promise<TeamMeeting | void> | void;
   onUpdate?: (id: string, value: TeamMeetingPayload) => Promise<unknown> | void;
   onDelete?: (id: string) => Promise<unknown> | void;
+  /**
+   * manage: told when a meeting becomes, or stops being, unsaved or saving, and told it is neither once
+   * the list goes. The Edit Project footer holds Done and Save Changes meanwhile.
+   */
+  onEditorChange?: (state: TeamMeetingsEditorState) => void;
   onRetry?: () => void;
   /** card: "Add one", which opens the Edit Project modal on the Meetings tab. */
   onManage?: () => void;
@@ -82,8 +100,9 @@ export interface TeamMeetingsListProps {
  */
 export function TeamMeetingsList({
   variant = 'manage', meetings = [], status = 'ready', now: nowProp, zone, schoolZone = SCHOOL_ZONE, canManage = false,
-  teamName, people = {}, onCreate, onUpdate, onDelete, onRetry, onManage, onJoin, scheduleHref = '/app/schedule',
-  maxUpcoming = 5, defaultEditingId = null, defaultConfirmId = null, defaultPastOpen = false, className = '',
+  teamName, people = {}, onCreate, onUpdate, onDelete, onRetry, onManage, onJoin, onEditorChange,
+  scheduleHref = '/app/schedule', maxUpcoming = 5, defaultEditingId = null, defaultConfirmId = null, defaultPastOpen = false,
+  className = '',
 }: TeamMeetingsListProps) {
   const now = useNow(30000, nowProp);
   const vz = zone || viewerZone();
@@ -97,8 +116,44 @@ export function TeamMeetingsList({
   const [busy, setBusy] = useState<string | null>(null);
   /** Which of those keys failed last time. */
   const [failed, setFailed] = useState<Record<string, boolean>>({});
+  /** The open form's draft differs from what it opened with (the form says so as it changes). */
+  const [formDirty, setFormDirty] = useState(false);
+  /** The live region's text, and the message on its way in (see say()). */
   const [announce, setAnnounce] = useState('');
+  const [message, setMessage] = useState<{ text: string } | null>(null);
+  /** Where focus goes once an editor or a delete confirm closes and takes the focused control with it. */
+  const [refocus, setRefocus] = useState<Refocus | null>(null);
+  /** The tab. Its Edit, Delete and Add meeting buttons carry `data-focus-key`: `edit:<id>`, `delete:<id>`, `add`. */
+  const root = useRef<HTMLElement>(null);
   const uid = useId();
+
+  // The Edit Project footer holds Done and Save Changes while a meeting is unsaved or saving, and
+  // hears that nothing is once the list goes (the modal closing).
+  const editorDirty = editing !== null && formDirty;
+  const inFlight = busy !== null;
+  useEffect(() => {
+    onEditorChange?.({ dirty: editorDirty, busy: inFlight });
+  }, [editorDirty, inFlight, onEditorChange]);
+  useEffect(() => () => onEditorChange?.({ dirty: false, busy: false }), [onEditorChange]);
+
+  // The region empties first and the message lands a moment later, so the same message twice
+  // ("Meeting added." for a second meeting) is still a change, and is read out again.
+  useEffect(() => {
+    if (!message) return undefined;
+    const timer = window.setTimeout(() => setAnnounce(message.text), ANNOUNCE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+  const say = (text: string) => {
+    setAnnounce('');
+    setMessage({ text });
+  };
+
+  useEffect(() => {
+    if (!refocus) return;
+    const buttons = [...(root.current?.querySelectorAll<HTMLButtonElement>('button[data-focus-key]') ?? [])];
+    const onScreen = (key: string) => buttons.find((button) => button.dataset.focusKey === key);
+    [...refocus.to, 'add'].map(onScreen).find((button) => button)?.focus();
+  }, [refocus]);
 
   const split = splitMeetings(meetings, now);
   const inPastNow = (id: string): boolean => split.past.some((m) => m.id === id);
@@ -115,32 +170,52 @@ export function TeamMeetingsList({
   const campusRange = (m: TeamMeeting): string | undefined =>
     differs ? `${fmtTimeRange({ startsAt: m.startsAt, endsAt: endsAtOf(m) }, schoolZone)} ${zoneLabel(schoolZone, m.startsAt)}` : undefined;
 
-  const run = async (key: string, action: () => Promise<unknown> | void, done: () => void) => {
+  const run = async <T,>(key: string, action: () => Promise<T> | T, done: (result: T) => void) => {
     setBusy(key);
     setFailed((f) => ({ ...f, [key]: false }));
     try {
-      await action();
-      done();
+      done(await action());
     } catch {
       setFailed((f) => ({ ...f, [key]: true }));
     } finally {
       setBusy(null);
     }
   };
+  // Closing an editor or a confirm unmounts the button that had focus: it moves to the first of `to`
+  // that is on screen, else to Add meeting.
+  const closeForm = (...to: string[]) => {
+    setEditing(null);
+    setRefocus({ to });
+  };
+  const closeConfirm = (...to: string[]) => {
+    setConfirmId(null);
+    setRefocus({ to });
+  };
   const save = (key: string, value: TeamMeetingPayload) =>
-    run(key, () => (key === 'new' ? onCreate?.(value) : onUpdate?.(key, value)), () => {
-      setEditing(null);
-      setAnnounce(key === 'new' ? 'Meeting added.' : 'Meeting saved.');
+    key === 'new'
+      ? run(key, () => onCreate?.(value), (created) => {
+          closeForm(...(created ? [`edit:${created.id}`] : []));
+          say('Meeting added.');
+        })
+      : run(key, () => onUpdate?.(key, value), () => {
+          closeForm(`edit:${key}`);
+          say('Meeting saved.');
+        });
+  const remove = (m: TeamMeeting) => {
+    // Once it is gone, focus goes to the row after it on screen, else the one before it.
+    const shown = [...upcoming, ...(showPast ? past : [])];
+    const at = shown.findIndex((x) => x.id === m.id);
+    const near = [shown[at + 1], shown[at - 1]].flatMap((x) => (x ? [`edit:${x.id}`] : []));
+    return run(`del:${m.id}`, () => onDelete?.(m.id), () => {
+      closeConfirm(...near);
+      say('Meeting deleted.');
     });
-  const remove = (m: TeamMeeting) =>
-    run(`del:${m.id}`, () => onDelete?.(m.id), () => {
-      setConfirmId(null);
-      setAnnounce('Meeting deleted.');
-    });
+  };
   // An editor or a confirm opens without the error its last attempt left behind, and holds its row.
   const startEdit = (key: string) => {
     setConfirmId(null);
     setFailed((f) => ({ ...f, [key]: false }));
+    setFormDirty(false);
     if (key !== 'new') setHeld({ id: key, inPast: inPastNow(key) });
     setEditing(key);
   };
@@ -233,7 +308,8 @@ export function TeamMeetingsList({
             saving={busy === m.id}
             error={failed[m.id] ? SAVE_ERROR : null}
             onSubmit={(value) => void save(m.id, value)}
-            onCancel={() => setEditing(null)}
+            onCancel={() => closeForm(`edit:${m.id}`)}
+            onDirtyChange={setFormDirty}
           />
         </li>
       );
@@ -246,7 +322,7 @@ export function TeamMeetingsList({
           busy={busy === `del:${m.id}`}
           error={failed[`del:${m.id}`] ? DELETE_ERROR : null}
           onConfirm={() => void remove(m)}
-          onCancel={() => setConfirmId(null)}
+          onCancel={() => closeConfirm(`delete:${m.id}`)}
         />
       );
     }
@@ -282,7 +358,14 @@ export function TeamMeetingsList({
         </div>
         {canManage && (
           <div className="gt-tm-row__actions">
-            <button type="button" className="gt-tm__btn" onClick={() => startEdit(m.id)} disabled={!!editing} aria-label={`Edit ${m.title}`}>
+            <button
+              type="button"
+              className="gt-tm__btn"
+              onClick={() => startEdit(m.id)}
+              disabled={!!editing}
+              aria-label={`Edit ${m.title}`}
+              data-focus-key={`edit:${m.id}`}
+            >
               Edit
             </button>
             <button
@@ -291,6 +374,7 @@ export function TeamMeetingsList({
               onClick={() => startDelete(m.id)}
               disabled={!!editing}
               aria-label={`Delete ${m.title}`}
+              data-focus-key={`delete:${m.id}`}
             >
               Delete
             </button>
@@ -321,7 +405,7 @@ export function TeamMeetingsList({
         <p className="gt-tm__empty-title">No team meetings yet</p>
         <p className="gt-tm__empty-hint">A design review, sprint planning, a sponsor demo — everyone on the team sees them in their schedule.</p>
         {canManage && (
-          <button type="button" className="gt-button gt-button--primary gt-button--sm" onClick={() => startEdit('new')}>
+          <button type="button" className="gt-button gt-button--primary gt-button--sm" onClick={() => startEdit('new')} data-focus-key="add">
             <span className="gt-button__icon"><ScheduleIcon name="calendar-plus" size={15} /></span>
             <span className="gt-button__label">Add meeting</span>
           </button>
@@ -354,14 +438,20 @@ export function TeamMeetingsList({
 
   const count = status === 'ready' && meetings.length ? `${upcoming.length} upcoming${past.length ? ` · ${past.length} past` : ''}` : null;
   return (
-    <section className={cls} aria-label="Team meetings">
+    <section ref={root} className={cls} aria-label="Team meetings">
       <div className="gt-tm__head">
         <p className="gt-tm__hint">
           One-off meetings for the whole team. They show up in everyone’s schedule and calendar feed.
           {count && <span className="gt-tm__count">{count}</span>}
         </p>
         {canManage && status === 'ready' && meetings.length > 0 && (
-          <button type="button" className="gt-button gt-button--secondary gt-button--sm" onClick={() => startEdit('new')} disabled={!!editing}>
+          <button
+            type="button"
+            className="gt-button gt-button--secondary gt-button--sm"
+            onClick={() => startEdit('new')}
+            disabled={!!editing}
+            data-focus-key="add"
+          >
             <span className="gt-button__icon"><ScheduleIcon name="calendar-plus" size={15} /></span>
             <span className="gt-button__label">Add meeting</span>
           </button>
@@ -378,7 +468,8 @@ export function TeamMeetingsList({
             saving={busy === 'new'}
             error={failed.new ? SAVE_ERROR : null}
             onSubmit={(value) => void save('new', value)}
-            onCancel={() => setEditing(null)}
+            onCancel={() => closeForm()}
+            onDirtyChange={setFormDirty}
           />
         </div>
       )}
@@ -392,6 +483,12 @@ interface HeldRow {
   id: string;
   /** The row was in Past when its editor or confirm opened. */
   inPast: boolean;
+}
+
+/** A focus move, asked for once per close (a new object each time, so the same target can recur). */
+interface Refocus {
+  /** Buttons to try in turn (`edit:<id>`, `delete:<id>`); Add meeting when none of them is on screen. */
+  to: string[];
 }
 
 /** The meetings split, with a held row put back in the list it was held in if the clock has moved it. */

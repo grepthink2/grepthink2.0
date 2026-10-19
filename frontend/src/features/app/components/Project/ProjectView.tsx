@@ -142,10 +142,12 @@ function useTeamMeetings(projectId: string | undefined) {
     meetings: current?.meetings ?? [],
     canManage: current?.canManage ?? false,
     retry: () => setAttempt((n) => n + 1),
+    /** Resolves with the new meeting, so the Meetings tab can put focus on its row. */
     create: async (value: TeamMeetingPayload) => {
-      if (!projectId) return;
-      const row = await api.createProjectMeeting(projectId, toProjectMeetingPayload(value));
-      edit((meetings) => [...meetings, toTeamMeeting(row)]);
+      if (!projectId) return undefined;
+      const meeting = toTeamMeeting(await api.createProjectMeeting(projectId, toProjectMeetingPayload(value)));
+      edit((meetings) => [...meetings, meeting]);
+      return meeting;
     },
     update: async (meetingId: string, value: TeamMeetingPayload) => {
       if (!projectId) return;

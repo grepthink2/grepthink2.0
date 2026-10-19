@@ -61,6 +61,8 @@ export interface TeamMeetingFormProps {
   onSubmit?: (value: TeamMeetingPayload, draft: TeamMeetingDraft) => void;
   /** The Cancel button and Escape. */
   onCancel?: () => void;
+  /** Told, as each field changes, whether the draft now differs from what the form opened with. */
+  onDirtyChange?: (dirty: boolean) => void;
   className?: string;
 }
 
@@ -74,10 +76,12 @@ export interface TeamMeetingFormProps {
  */
 export function TeamMeetingForm({
   mode = 'create', meeting = null, now, zone, schoolZone = SCHOOL_ZONE, saving = false, error = null, onSubmit, onCancel,
-  className = '',
+  onDirtyChange, className = '',
 }: TeamMeetingFormProps) {
   const vz = zone || viewerZone();
-  const [draft, setDraft] = useState<TeamMeetingDraft>(() => draftFrom(meeting, vz));
+  /** What the form opened with: a draft that matches it again is not unsaved input. */
+  const [opened] = useState<TeamMeetingDraft>(() => draftFrom(meeting, vz));
+  const [draft, setDraft] = useState<TeamMeetingDraft>(opened);
   const [errors, setErrors] = useState<FieldErrors>({});
   const uid = useId();
   const formRef = useRef<HTMLFormElement>(null);
@@ -93,9 +97,13 @@ export function TeamMeetingForm({
   const timeHelp = campus ? `${campus} on campus` : null;
   const id = (key: string): string => `${uid}-${key}`;
 
+  const edit = (next: TeamMeetingDraft) => {
+    setDraft(next);
+    onDirtyChange?.((Object.keys(next) as (keyof TeamMeetingDraft)[]).some((key) => next[key] !== opened[key]));
+  };
+
   const change = (key: FieldKey) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { value } = e.target;
-    setDraft((d) => ({ ...d, [key]: value }));
+    edit({ ...draft, [key]: e.target.value });
     if (errors[key]) {
       setErrors((current) => {
         const next = { ...current };
@@ -205,10 +213,7 @@ export function TeamMeetingForm({
               name="durationMinutes"
               className="gt-select__control"
               value={String(draft.durationMinutes)}
-              onChange={(e) => {
-                const minutes = Number(e.target.value);
-                setDraft((d) => ({ ...d, durationMinutes: minutes }));
-              }}
+              onChange={(e) => edit({ ...draft, durationMinutes: Number(e.target.value) })}
               disabled={saving}
             >
               {TEAM_MEETING_DURATIONS.map((minutes) => (

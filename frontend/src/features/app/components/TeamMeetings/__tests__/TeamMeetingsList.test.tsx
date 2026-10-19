@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -47,6 +48,46 @@ function renderManage(props: Partial<TeamMeetingsListProps> = {}) {
 const titleBox = () => screen.getByRole('textbox', { name: 'Title' });
 const dateInput = () => screen.getByLabelText(/^Date/);
 const timeInput = () => screen.getByLabelText(/^Start time/);
+
+/**
+ * The Meetings tab over meetings kept in state, as the project page keeps them: a create adds the
+ * meeting and resolves with it (`created` changes what comes back), an edit replaces the row's
+ * fields, a delete drops the row.
+ */
+function StatefulList({ initial = [], created = {} }: { initial?: TeamMeeting[]; created?: Partial<TeamMeeting> }) {
+  const [meetings, setMeetings] = useState(initial);
+  return (
+    <TeamMeetingsList
+      variant="manage"
+      canManage
+      now={NOW}
+      zone={LA}
+      schoolZone={LA}
+      meetings={meetings}
+      onCreate={async (value) => {
+        const added: TeamMeeting = { id: `new-${value.title}`, projectId: 'p1', ...value, ...created };
+        setMeetings((current) => [...current, added]);
+        return added;
+      }}
+      onUpdate={async (id, value) => {
+        setMeetings((current) => current.map((m) => (m.id === id ? { ...m, ...value } : m)));
+      }}
+      onDelete={async (id) => {
+        setMeetings((current) => current.filter((m) => m.id !== id));
+      }}
+    />
+  );
+}
+
+/** Opens the New meeting form, fills in a title for Fri Oct 23 at `time`, and submits it. */
+async function addMeeting(user: ReturnType<typeof userEvent.setup>, title: string, time = '10:00') {
+  await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+  const form = screen.getByRole('form', { name: 'New meeting' });
+  await user.type(titleBox(), title);
+  fireEvent.change(dateInput(), { target: { value: '2026-10-23' } });
+  fireEvent.change(timeInput(), { target: { value: time } });
+  await user.click(within(form).getByRole('button', { name: 'Add meeting' }));
+}
 
 describe('TeamMeetingsList — the Meetings tab', () => {
   it('adds a meeting from the inline form', async () => {
@@ -435,6 +476,111 @@ describe('TeamMeetingsList — the Meetings tab', () => {
   });
 });
 
+describe('TeamMeetingsList — focus when an editor or a delete confirm closes', () => {
+  it('goes back to Add meeting when the new-meeting form is cancelled or escaped', async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderManage({ meetings: [meeting()] });
+
+    await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('button', { name: 'Add meeting' })).toHaveFocus();
+
+    await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: 'Add meeting' })).toHaveFocus();
+    unmount();
+
+    // With no meetings, the form opened from the empty state, and its Add meeting comes back.
+    renderManage();
+    await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+    await user.keyboard('{Escape}');
+    expect(screen.getByText('No team meetings yet')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add meeting' })).toHaveFocus();
+  });
+
+  it('goes back to the row’s Edit or Delete when its editor or delete confirm is cancelled or escaped', async () => {
+    const user = userEvent.setup();
+    renderManage({ meetings: [meeting(), meeting({ id: 'm2', title: 'Demo', startsAt: '2026-10-23T22:00:00Z' })] });
+    const edit = () => screen.getByRole('button', { name: 'Edit Demo' });
+    const remove = () => screen.getByRole('button', { name: 'Delete Demo' });
+
+    await user.click(edit());
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(edit()).toHaveFocus();
+    await user.click(edit());
+    await user.keyboard('{Escape}');
+    expect(edit()).toHaveFocus();
+
+    await user.click(remove());
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(remove()).toHaveFocus();
+    await user.click(remove());
+    await user.keyboard('{Escape}');
+    expect(remove()).toHaveFocus();
+  });
+
+  it('lands on the row’s Edit once its edit is saved', async () => {
+    const user = userEvent.setup();
+    render(<StatefulList initial={[meeting(), meeting({ id: 'm2', title: 'Demo', startsAt: '2026-10-23T22:00:00Z' })]} />);
+
+    await user.click(screen.getByRole('button', { name: 'Edit Demo' }));
+    await user.type(titleBox(), ' day');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Edit Demo day' })).toHaveFocus());
+  });
+
+  it('lands on the new row’s Edit after a create, or on Add meeting when the row is folded under Past', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<StatefulList initial={[meeting()]} />);
+
+    await addMeeting(user, 'Retro');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Edit Retro' })).toHaveFocus());
+    unmount();
+
+    // The meeting comes back as one that has already ended: it lands in Past, which stays folded.
+    render(<StatefulList initial={[meeting()]} created={{ startsAt: '2026-10-13T18:00:00Z' }} />);
+    await addMeeting(user, 'Retro');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add meeting' })).toHaveFocus());
+    expect(screen.getByRole('button', { name: 'Past (1)' })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('after a delete, lands on the next row’s Edit, else the previous row’s, else Add meeting', async () => {
+    const user = userEvent.setup();
+    const at = (id: string, title: string, day: number) => meeting({ id, title, startsAt: `2026-10-${day}T18:00:00Z` });
+    render(<StatefulList initial={[at('a', 'Alpha', 21), at('b', 'Bravo', 22), at('c', 'Charlie', 23)]} />);
+    const remove = async (title: string) => {
+      await user.click(screen.getByRole('button', { name: `Delete ${title}` }));
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
+    };
+
+    await remove('Bravo');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Edit Charlie' })).toHaveFocus());
+    await remove('Charlie');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Edit Alpha' })).toHaveFocus());
+    await remove('Alpha');
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Add meeting' })).toHaveFocus());
+    expect(screen.getByText('No team meetings yet')).toBeInTheDocument();
+  });
+
+  it('announces the same message again when it repeats', async () => {
+    const user = userEvent.setup();
+    render(<StatefulList />);
+    const region = screen.getByRole('status');
+    const heard: string[] = [];
+    const observer = new MutationObserver(() => heard.push(region.textContent ?? ''));
+    observer.observe(region, { childList: true, characterData: true, subtree: true });
+
+    await addMeeting(user, 'Retro');
+    await waitFor(() => expect(region).toHaveTextContent('Meeting added.'));
+    await addMeeting(user, 'Demo', '11:00');
+
+    // The region empties before the second "Meeting added.", so it is a change a screen reader reads.
+    await waitFor(() => expect(heard.filter((text) => text === 'Meeting added.')).toHaveLength(2));
+    observer.disconnect();
+  });
+});
+
 describe('TeamMeetingsList — the project-page card', () => {
   const card = (props: Partial<TeamMeetingsListProps> = {}) =>
     render(<TeamMeetingsList variant="card" now={NOW} zone={LA} schoolZone={LA} meetings={[]} {...props} />);
@@ -671,5 +817,98 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
     expect(screen.queryByText(/It disappears from your team's calendars/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Delete Sprint 3 planning' })).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  describe('with a meeting unsaved or saving', () => {
+    const HINT = "Save or cancel the meeting you're editing first.";
+    const done = () => screen.getByRole('button', { name: 'Done' });
+
+    it('holds Done, with a hint, while a meeting form has unsaved input', async () => {
+      const user = userEvent.setup();
+      const { onClose } = renderModal();
+
+      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+      await user.type(titleBox(), 'Retro');
+
+      expect(done()).toBeDisabled();
+      expect(screen.getByText(HINT)).toBeInTheDocument();
+      expect(done()).toHaveAccessibleDescription(HINT);
+
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+      await user.click(done());
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps a meeting draft through a trip to Details and back', async () => {
+      const user = userEvent.setup();
+      renderModal();
+
+      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+      await user.type(titleBox(), 'Retro');
+      await user.click(screen.getByRole('button', { name: 'Details' }));
+
+      expect(screen.getByRole('textbox', { name: 'Project name' })).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: 'Team meetings', hidden: true })).not.toBeVisible();
+      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      expect(screen.getByRole('heading', { name: 'New meeting' })).toBeVisible();
+      expect(titleBox()).toHaveValue('Retro');
+    });
+
+    it('holds Done while a meeting is saving, and lets it go once the save settles', async () => {
+      const user = userEvent.setup();
+      let finish: () => void = () => {};
+      const onUpdate = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+      renderModal({ meetingsList: { meetings: [meeting()], now: NOW, zone: LA, schoolZone: LA, onUpdate } });
+
+      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('button', { name: 'Edit Sprint 3 planning' }));
+      // Saved as it was: nothing is unsaved, only the request in flight holds Done, so no hint.
+      await user.click(screen.getByRole('button', { name: 'Save changes' }));
+      expect(onUpdate).toHaveBeenCalledTimes(1);
+      expect(done()).toBeDisabled();
+      expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+
+      finish();
+      await waitFor(() => expect(done()).toBeEnabled());
+    });
+
+    it('holds Save Changes on Details while the Meetings tab has an unsaved meeting', async () => {
+      const user = userEvent.setup();
+      renderModal();
+
+      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+      await user.type(titleBox(), 'Retro');
+      await user.click(screen.getByRole('button', { name: 'Details' }));
+
+      const save = screen.getByRole('button', { name: 'Save Changes' });
+      expect(save).toBeDisabled();
+      expect(save).toHaveAccessibleDescription(HINT);
+      // Cancel is still a way out, as the X, the backdrop and Escape are.
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+    });
+
+    it('leaves Done alone while an open meeting form is untouched', async () => {
+      const user = userEvent.setup();
+      renderModal();
+
+      await user.click(screen.getByRole('button', { name: 'Meetings' }));
+      await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+      expect(done()).toBeEnabled();
+      expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+
+      // Typed and taken back out: the draft is what the form opened with again.
+      await user.type(titleBox(), 'R');
+      expect(done()).toBeDisabled();
+      await user.type(titleBox(), '{Backspace}');
+      expect(done()).toBeEnabled();
+
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      await user.click(screen.getByRole('button', { name: 'Edit Sprint 3 planning' }));
+      expect(done()).toBeEnabled();
+    });
   });
 });
