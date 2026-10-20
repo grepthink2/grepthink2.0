@@ -14,8 +14,9 @@
  *     are not read.
  *   - Markup. A string or template literal that holds an owned class as a whole
  *     whitespace-separated token (`className="gt-button gt-button--sm"`) renders the component by
- *     hand. A token built around an interpolation (`gt-button--${size}`) is not a class name, and
- *     comments are not read.
+ *     hand. A token glued to an interpolation counts by its text before the `${`
+ *     (`gt-popover${open ? ' is-open' : ''}` writes gt-popover; `gt-button--${size}` names no
+ *     class), and comments are not read.
  *
  * Deliberate exceptions go in OWNERSHIP_ALLOWLIST, each with its reason.
  */
@@ -432,11 +433,13 @@ export function checkMarkup(file, source, owned, allowlist = OWNERSHIP_ALLOWLIST
   const violations = [];
   for (const { start, text } of splitCodeAndComments(source, { script: true }).literals) {
     for (const match of text.matchAll(/\S+/g)) {
-      const token = match[0];
-      if (token.includes('${')) continue;
-      const owner = owned.get(token);
-      if (owner && !isAllowed(file, token, allowlist)) {
-        violations.push({ file, line: lineAt(source, start + match.index), cls: token, owner });
+      // A token glued to an interpolation counts by its text before the `${`: `gt-button${x}`
+      // writes gt-button, while `gt-button--${size}` names no class.
+      const glued = match[0].indexOf('${');
+      const cls = glued === -1 ? match[0] : match[0].slice(0, glued);
+      const owner = owned.get(cls);
+      if (owner && !isAllowed(file, cls, allowlist)) {
+        violations.push({ file, line: lineAt(source, start + match.index), cls, owner });
       }
     }
   }

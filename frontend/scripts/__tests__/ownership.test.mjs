@@ -131,6 +131,15 @@ describe('checkMarkup', () => {
     expect(checkMarkup('f.tsx', 'className={`gt-button gt-button--${size}`}', owned)).toHaveLength(1);
   });
 
+  it('flags an owned class glued to an interpolation by the text before the interpolation', () => {
+    expect(checkMarkup('f.tsx', "className={`gt-button${busy ? ' is-busy' : ''}`}", owned)).toEqual([
+      { file: 'f.tsx', line: 1, cls: 'gt-button', owner: 'Button' },
+    ]);
+    expect(checkMarkup('f.tsx', 'className={`gt-button${x}`}', owned)).toHaveLength(1);
+    expect(checkMarkup('f.tsx', 'className={`gt-button--${size}`}', owned)).toEqual([]);
+    expect(checkMarkup('f.tsx', 'className={`${prefix}gt-button`}', owned)).toEqual([]);
+  });
+
   it('reports the line of each class', () => {
     const source = ['const a = 1;', '<button className="gt-button gt-button--sm">Save</button>'].join('\n');
     expect(checkMarkup('f.tsx', source, owned)).toEqual([
