@@ -345,6 +345,11 @@ The full agent-facing action catalog (method, params, role) lives at
   created). A missing or failing function is a card in `failures[]`, never a 500. The nightly
   `analytics_daily` rollup runs under pg_cron (`prod/2026-10/2026-10-07_analytics_cron.sql`); its
   `class_id` has no foreign key on purpose, so deleted classes keep their history.
+- **Shared UI components.** Basic elements (buttons, fields, dialogs, alerts, badges, avatars, cards,
+  tabs) come from `frontend/src/components/`, ported from `design/components/` (see
+  `design/PORTING.md`). A feature stylesheet never re-declares a shared component's classes, and
+  feature markup never renders them by hand. `npm run lint:design` fails if either happens. Adjust a
+  shared component from your feature's own class (`.my-feature__head .gt-button`).
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,
