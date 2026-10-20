@@ -3,7 +3,7 @@
 Status: approved by the maintainer on 2026-10-19.
 Appendix: [inventory of hand-rolled elements](2026-10-19-shared-ui-components-inventory.md) (beta `b6fff628`).
 Companion: the Claude Design alignment brief in
-`docs/superpowers/handoffs/2026-10-19-design-system-alignment/` (approved and sent on 2026-10-19).
+`docs/superpowers/handoffs/2026-10-19-design-system-alignment/` (approved by the maintainer on 2026-10-19).
 
 ## Intent
 
@@ -77,7 +77,7 @@ In this session:
 
 1. **Migrated screens take the design system's look**, even where that visibly changes them.
 2. **The design system is aligned first.** A Claude Design round, its own pass before the Settings and C2
-   rounds, adds what the app needs. Its brief (approved and sent) decides:
+   rounds, adds what the app needs. Its brief (approved) decides:
    - Button gets an `outline` variant and a pressed state;
    - a shared Combobox;
    - one status colour rule (green done or positive, blue in progress or info, amber needs attention soon, red a
