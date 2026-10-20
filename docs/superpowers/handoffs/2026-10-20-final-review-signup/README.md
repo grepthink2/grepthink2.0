@@ -298,6 +298,8 @@ Show each in the screen file, in every lens where it applies:
 - A live review (the Join window); a past review; past days on the board.
 - Every slot taken while teams still have none; a team without a Product Owner; a student on no team.
 - A TA who is the team's Home TA; another TA signing up as the team's Review TA a moment earlier (409).
+- A TA signing up for a team that moved after the TA loaded the board: the sign-up succeeds at the team's new time,
+  so the success message names that time and says it changed (§7).
 - A finished class from before slots existed: its teams have review times but the class has no slots (§8).
 - The instructor's actions on a slot that has started (placing a team to record a review; releasing one).
 - An overlapping time and a past time in the posting form.
@@ -321,8 +323,14 @@ written for people, so the copy can stay close to them; adjust it where the scre
 | Sign up as Review TA | TA (self); instructor (appoints, `user_id`) | `POST /api/tas/projects/{project_id}/review-tas` `{user_id?}` | 403: "The end-of-quarter review window is not open" · 403: "This team hasn't booked a review slot yet." · 400: "The additional reviewer must be a different TA than the team's assigned TA" · 400: "The reviewer must be a designated TA of this class" (a TA removed in the meantime) · 409: "This team already has an additional reviewer" |
 | Step down, or remove a Review TA | the Review TA; instructor | `DELETE /api/tas/projects/{project_id}/review-tas/{user_id}` | 403 only for anyone else, which these screens never offer |
 
-A repeated sign-up by the team's current Review TA succeeds and changes nothing. Confirmations: moving and
-releasing always confirm, because both can drop a Review TA and a release leaves the team with no time. Whether a first booking confirms is your call (§12). Destructive confirmations follow the kit:
+A repeated sign-up by the team's current Review TA succeeds and changes nothing. A TA's sign-up is checked against
+the team's slot when it arrives, not against the time the TA saw: if the team moved in between, the TA becomes its
+Review TA at the new time. The success message always names the team's current time, and says when it differs
+from what the board showed. (The C2 implementation may also have the server refuse a changed time; design the
+message either way.)
+
+Confirmations: moving and releasing always confirm, because both can drop a Review TA and a release leaves the team
+with no time. Whether a first booking confirms is your call (§12). Destructive confirmations follow the kit:
 ConfirmDialog, or InlineConfirm inside a row or a dialog.
 
 ## 8. Data contract
@@ -390,8 +398,9 @@ interface ApiFinalReviewSchedule {
   lens has no place for them. (Another endpoint, `GET /api/tas/projects/{project_id}/review-tas`, lists any team's
   reviewers to members of the class; the board does not use it.)
 - Classes from before slots existed (the finished summer 2026 class) have review times with no slots: the staff
-  read lists each team's `final_review_at` while the slots read lists no slots. Show staff those times read-only,
-  as history; students see the no-slots state.
+  read lists each team's `final_review_at`, while the slots read lists no slots and counts every team among
+  `unbooked_teams`. Show staff those times read-only, as history, not as teams without a slot; students see the
+  no-slots state. A class marked complete shows its board read-only: no posting, no sign-ups switch, no booking.
 - `sample-data.json` holds one class (CSE 115A, Fall 2026, UC Santa Cruz) with 12 slots over two days, 10 teams and
   4 TAs: the staff payload, the `my_team` of each student case, the staff schedule, the class's TAs, an empty
   class, three clocks (booking week, review day, after the reviews) and two viewer zones.
@@ -446,6 +455,14 @@ Changed:
 - Only if this round changes the schedule layer: `frontend/src/features/schedule/components/ScheduleItem.tsx`,
   `features/schedule/schedule.scss` and `features/schedule/scheduleModel.ts`.
 - `backend/app/tas/review_slots.py` and `backend/tests/test_tas_review_slots.py`: `my_team.product_owner`.
+- Comments that still describe the Product Owner's rights as "while sign-ups are open" alone, to name the refusals
+  once the team's time or the slot's start has passed: `backend/app/tas/review_slots.py` (the constants and
+  `book_review_slot`'s docstring), `backend/app/tas/url.py`, `backend/app/tas/views.py`, and the slot block and
+  `bookReviewSlot` comments in `frontend/src/lib/api/tas.ts`.
+- If the server is to refuse a TA's sign-up when the team's time changed (§7), or the "This team hasn't booked a
+  review slot yet." copy changes: `backend/app/tas/controller.py` (`set_review_ta`, `NO_REVIEW_SLOT`),
+  `backend/app/tas/models.py`, their tests, and `NO_SLOT_HINT` in `FinalReviews.tsx`, which repeats that copy word
+  for word.
 - `AGENTS.md`: the times rule loses its Final Reviews exception, and the Vocabulary says that Home TA is the
   final-review name for the Meeting TA.
 
