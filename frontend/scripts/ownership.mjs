@@ -8,13 +8,16 @@
  * blocks its single-compound rules style), so a rule written from an outer context
  * (`.app-view--previewing .gt-toast-stack`) claims none of that context's classes. Outside
  * src/components/:
- *   - Styles. A rule fails when its selector's first compound begins with an owned class
- *     (`.gt-button`, `.gt-button--sm:hover`, `.gt-button.feature`, `button.gt-button`): it copies
- *     the component, or overrides it for one screen. A rule that starts from the feature's own
+ *   - Styles. The first compound selector that has a class decides a rule; one with none
+ *     (`body`, `*`, `:root`) is the page around the feature, not the feature. The rule fails when
+ *     that compound begins with an owned class (`.gt-button`, `.gt-button--sm:hover`,
+ *     `.gt-button.feature`, `button.gt-button`, `body .gt-button`): it copies the component, or
+ *     overrides it for one screen or for every screen. A rule that starts from the feature's own
  *     class (`.feature .gt-button`, `.feature.gt-button`) adjusts the component in context and
  *     passes; its extra specificity makes the result independent of the order the bundle loads
- *     stylesheets in. Classes inside `:not(...)`, `:is(...)` and other parenthesised arguments
- *     are not read.
+ *     stylesheets in. Classes inside `:not(...)` and `:has(...)` are not read; inside a
+ *     top-level `:is(...)` or `:where(...)` they count only when the compound has no class of its
+ *     own (`:where(.gt-button)` fails).
  *   - Markup. A string or template literal that holds an owned class as a whole
  *     whitespace-separated token (`className="gt-button gt-button--sm"`) renders the component by
  *     hand. A token glued to an interpolation counts by its text before the `${`
@@ -291,9 +294,57 @@ function isAllowed(file, cls, allowlist) {
   return allowlist.some((entry) => entry.file === file && entry.cls === cls);
 }
 
+// The index of the `)` that closes the parenthesis opening at `open`.
+function closingParen(text, open) {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    const c = text[i];
+    if (c === '\\') i++;
+    else if (c === '"' || c === "'") i = endOfString(text, i) - 1;
+    else if (c === '(') depth++;
+    else if (c === ')' && --depth === 0) return i;
+  }
+  return text.length;
+}
+
+// The first class inside a top-level `:is(...)` or `:where(...)` of a compound selector.
+function firstClassInIsOrWhere(compound) {
+  let depth = 0;
+  for (let i = 0; i < compound.length; i++) {
+    const c = compound[i];
+    if (c === '\\') {
+      i++;
+    } else if (c === '"' || c === "'") {
+      i = endOfString(compound, i) - 1;
+    } else if (c === '(' && depth === 0 && /:(?:is|where)$/i.test(compound.slice(0, i))) {
+      const close = closingParen(compound, i);
+      const [cls] = classesOf(compound.slice(i + 1, close));
+      if (cls !== undefined) return cls;
+      i = close;
+    } else if (c === '(' || c === '[') {
+      depth++;
+    } else if (c === ')' || c === ']') {
+      depth--;
+    }
+  }
+  return undefined;
+}
+
+// The class that decides a rule: the first class of the first compound that has one. A compound
+// with no class (`body`, `*`, `:root`) is the page, not the feature. Classes inside `:not(...)`
+// and `:has(...)` never count; in a compound with no class of its own, the first class inside a
+// top-level `:is(...)` or `:where(...)` does.
+function decidingClass(selector) {
+  for (const compound of compoundsOf(selector.trim())) {
+    const cls = classesOf(compound)[0] ?? firstClassInIsOrWhere(compound);
+    if (cls !== undefined) return cls;
+  }
+  return undefined;
+}
+
 /**
- * The rules of a stylesheet outside src/components/ whose first compound begins with an owned
- * class: the first class selector of the first compound is owned.
+ * The rules of a stylesheet outside src/components/ that copy or override a shared component:
+ * the first class of the first compound that has a class is owned.
  * @param {string} file
  * @param {string} css compiled CSS
  * @param {Map<string, string>} owned
@@ -303,7 +354,7 @@ function isAllowed(file, cls, allowlist) {
 export function checkStylesheet(file, css, owned, allowlist = OWNERSHIP_ALLOWLIST) {
   const violations = [];
   for (const selector of selectorsOf(css)) {
-    const [cls] = firstCompoundClasses(selector);
+    const cls = decidingClass(selector);
     const owner = cls === undefined ? undefined : owned.get(cls);
     if (owner && !isAllowed(file, cls, allowlist)) violations.push({ file, selector, cls, owner });
   }

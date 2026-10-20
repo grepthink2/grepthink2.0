@@ -115,6 +115,27 @@ describe('checkStylesheet', () => {
     expect(checkStylesheet('f.scss', '.feature:not(.gt-button) { margin: 0 }', owned)).toEqual([]);
   });
 
+  it.each([
+    'body .gt-button',
+    ':root .gt-button',
+    '* > .gt-button',
+    ':where(.gt-button)',
+    ':not(.feature) .gt-button',
+  ])('flags %s: a context with no class of its own is the whole page, not the feature', (selector) => {
+    expect(checkStylesheet('f.scss', `${selector} { margin: 0 }`, owned)).toEqual([
+      { file: 'f.scss', selector, cls: 'gt-button', owner: 'Button' },
+    ]);
+  });
+
+  it.each([
+    '.feature .gt-button',
+    'body .feature .gt-button',
+    '.feature:not(.gt-button)',
+    ':is(.feature) .gt-button',
+  ])("passes %s: the rule starts from the feature's own class", (selector) => {
+    expect(checkStylesheet('f.scss', `${selector} { margin: 0 }`, owned)).toEqual([]);
+  });
+
   it('reports the file, the selector, the class and its owner', () => {
     expect(checkStylesheet('f.scss', '.x, .gt-button--sm:hover { color: red }', owned)).toEqual([
       { file: 'f.scss', selector: '.gt-button--sm:hover', cls: 'gt-button--sm', owner: 'Button' },
