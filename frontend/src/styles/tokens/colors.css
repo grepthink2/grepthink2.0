@@ -108,5 +108,6 @@
   --gt-sched-now:           var(--gt-primary);          /* the Now line */
 
   /* ---- Alignment round (2026-10-19): literals the component CSS used to carry ---- */
+  --gt-skeleton-shine: #F5F5F5;                /* skeleton shimmer highlight (_skeleton.scss) */
   --gt-opacity-disabled: 0.45; /* @kind other */ /* the one disabled opacity for buttons, chips, tabs, checks */
 }

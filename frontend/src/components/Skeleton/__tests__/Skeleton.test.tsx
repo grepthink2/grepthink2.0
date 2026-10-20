@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react';
+import { cssRules } from '@/test/cssRules';
 import { Skeleton } from '../Skeleton';
 
 const skeleton = (ui: React.ReactElement) =>
@@ -19,5 +20,11 @@ describe('Skeleton', () => {
     // circle uses `height` for the width too, so the box is square.
     const avatar = skeleton(<Skeleton circle height="40px" />);
     expect([avatar.style.width, avatar.style.borderRadius]).toEqual(['40px', '50%']);
+  });
+
+  it('sweeps the shimmer highlight in the skeleton-shine token, not a literal colour', () => {
+    skeleton(<Skeleton />);
+    const [block] = cssRules('.gt-skeleton');
+    expect(block.getPropertyValue('background-image')).toContain('var(--gt-skeleton-shine) 37%');
   });
 });
