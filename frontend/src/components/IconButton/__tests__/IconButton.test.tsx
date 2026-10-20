@@ -1,9 +1,11 @@
-import { createRef } from 'react';
+import { createRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Eye, X } from 'lucide-react';
+import { Eye, MoreHorizontal, X } from 'lucide-react';
 import { cssRules } from '@/test/cssRules';
+import { Menu, MenuItem } from '@/components/Menu/Menu';
+import { Popover } from '@/components/Popover/Popover';
 import { IconButton } from '../IconButton';
 
 describe('IconButton', () => {
@@ -99,6 +101,50 @@ describe('IconButton', () => {
     await user.keyboard('{Escape}');
     expect(dialogEsc).toHaveBeenCalledTimes(1);
     document.removeEventListener('keydown', onDocumentKey);
+  });
+
+  it('hides its label once pressed, so the first Esc closes the menu it opened', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    function MoreActions() {
+      const [open, setOpen] = useState(false);
+      return (
+        <Popover
+          open={open}
+          onClose={() => {
+            onClose();
+            setOpen(false);
+          }}
+          padded={false}
+          anchor={(
+            <IconButton ariaLabel="More actions" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+              <MoreHorizontal />
+            </IconButton>
+          )}
+        >
+          <Menu ariaLabel="Project actions"><MenuItem>Rename</MenuItem></Menu>
+        </Popover>
+      );
+    }
+    const { container } = render(<MoreActions />);
+
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    expect(screen.getByRole('menu', { name: 'Project actions' })).toBeInTheDocument();
+    // The pointer still rests on the button, but its label went with the press.
+    expect(container.querySelector('.gt-icon-tip')).toHaveClass('gt-tooltip--dismissed');
+
+    await user.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('hides its label when pressed with Space', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<IconButton ariaLabel="Bold" pressed={false}><X /></IconButton>);
+    await user.tab();
+    expect(container.firstElementChild).not.toHaveClass('gt-tooltip--dismissed');
+    await user.keyboard(' ');
+    expect(container.firstElementChild).toHaveClass('gt-tooltip--dismissed');
   });
 
   it('is at least 44px square on phones', () => {

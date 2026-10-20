@@ -1,6 +1,6 @@
 // Tooltip — ported from design/components/display/display.css so the two stay diffable: the Tooltip
 // block, then its line from the file's reduced-motion block. IconButton's label uses these classes
-// too. One addition, marked below: the state Esc leaves a bubble in (useTooltipDismiss.ts).
+// too. One addition, marked below: the state Esc or a press leaves a bubble in (useTooltipDismiss.ts).
 
 /* ── Tooltip (hover + keyboard focus; the IconButton label uses it too) ── */
 .gt-tooltip { position: relative; display: inline-flex; }
@@ -12,8 +12,8 @@
   line-height: var(--gt-leading-snug); white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity var(--gt-transition-fast);
 }
 .gt-tooltip:hover .gt-tooltip__bubble, .gt-tooltip__trigger:focus-visible + .gt-tooltip__bubble, .gt-tooltip:has(:focus-visible) .gt-tooltip__bubble { opacity: 1; }
-// Codebase addition: after Esc, the bubble stays hidden until the next hover or focus. Same
-// specificity as the rule above and after it, so it wins.
+// Codebase addition: after Esc or a press, the bubble stays hidden until the pointer enters again
+// or focus arrives by keyboard. Same specificity as the rule above and after it, so it wins.
 .gt-tooltip.gt-tooltip--dismissed .gt-tooltip__bubble { opacity: 0; }
 .gt-tooltip__bubble--top    { bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); }
 .gt-tooltip__bubble--bottom { top: calc(100% + 6px); left: 50%; transform: translateX(-50%); }

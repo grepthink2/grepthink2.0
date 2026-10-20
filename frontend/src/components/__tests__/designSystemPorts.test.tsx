@@ -218,14 +218,32 @@ describe('Tooltip', () => {
       await user.keyboard('{Escape}');
       expect(modalEsc).toHaveBeenCalledTimes(1);
 
-      // A click focuses the trigger without showing the bubble once the pointer leaves.
+      // A click on the trigger hides its bubble, and the focus it brings shows none.
       const trigger = screen.getByText('TW').parentElement!;
       await user.click(trigger);
+      expect(tooltipOf('TW')).toHaveClass('gt-tooltip--dismissed');
       await user.unhover(trigger);
       expect(trigger).toHaveFocus();
       await user.keyboard('{Escape}');
       expect(modalEsc).toHaveBeenCalledTimes(2);
+    });
+
+    it('hides the bubble when its control is activated from the keyboard', async () => {
+      const user = userEvent.setup();
+      render(<Tooltip content="x"><span>TW</span></Tooltip>);
+      await user.tab();
       expect(tooltipOf('TW')).not.toHaveClass('gt-tooltip--dismissed');
+      await user.keyboard('{Enter}');
+      expect(tooltipOf('TW')).toHaveClass('gt-tooltip--dismissed');
+      expect(modalEsc).not.toHaveBeenCalled();
+    });
+
+    it('keeps the bubble for a touch press: a tap is how a phone shows it', () => {
+      render(<Tooltip content="x"><span>TW</span></Tooltip>);
+      fireEvent.pointerDown(screen.getByText('TW'), { pointerType: 'touch' });
+      expect(tooltipOf('TW')).not.toHaveClass('gt-tooltip--dismissed');
+      fireEvent.pointerDown(screen.getByText('TW'), { pointerType: 'mouse' });
+      expect(tooltipOf('TW')).toHaveClass('gt-tooltip--dismissed');
     });
 
     it('hides the bubble a key turned on for a trigger focused without the keyboard', async () => {

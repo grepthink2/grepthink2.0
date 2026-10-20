@@ -27,7 +27,8 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
  *
  * By default `ariaLabel` also shows as the shared Tooltip's bubble on hover and keyboard focus,
  * composed as the design does it: the Tooltip's classes around the button, and a bubble that is
- * `aria-hidden`, since the label is already the button's name. Esc hides it as it does a Tooltip's
+ * `aria-hidden`, since the label is already the button's name. Esc hides it as it does a Tooltip's,
+ * and so does pressing the button, so the first Esc after it opens a menu closes the menu
  * (useTooltipDismiss). There is no bubble while disabled, or with `tooltip={false}`: inside
  * something that shows a tooltip already, or for an absolutely positioned × (the bubble wraps the
  * button in an inline span).

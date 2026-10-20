@@ -22,8 +22,10 @@ export interface TooltipProps {
  * small and quiet, shown instantly by CSS instead of after the browser's `title` delay, while
  * the tooltip is hovered or anything inside it has keyboard focus.
  *
- * Codebase addition: Esc hides an open bubble until the next hover or focus, without closing a
- * dialog or popover around it (useTooltipDismiss).
+ * Codebase addition (useTooltipDismiss): Esc hides an open bubble without closing a dialog or
+ * popover around it, and pressing the trigger (a click, Enter or Space; not a touch, which is how a
+ * phone shows the bubble) hides it too. It comes back when the pointer enters again or focus
+ * arrives by keyboard.
  */
 export function Tooltip({ content, side = 'top', focusable = true, children, className = '' }: TooltipProps) {
   const id = useId();
