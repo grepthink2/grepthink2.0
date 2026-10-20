@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Tag } from 'lucide-react';
 import { cssRules } from '@/test/cssRules';
 import { Popover } from '../Popover/Popover';
 import { Menu, MenuItem } from '../Menu/Menu';
@@ -90,6 +91,31 @@ describe('Menu', () => {
       </Menu>,
     );
     expect(screen.getByRole('menuitemradio', { name: 'Sprint 2' })).toHaveFocus();
+  });
+
+  it('marks a checkable row without an icon in a check slot, so its state is not colour alone', () => {
+    render(
+      <Menu ariaLabel="Labels">
+        <MenuItem checked>backend</MenuItem>
+        <MenuItem checked={false}>bug</MenuItem>
+        <MenuItem checked icon={<Tag size={16} aria-hidden="true" />}>design</MenuItem>
+        <MenuItem>Rename</MenuItem>
+      </Menu>,
+    );
+    const slotOf = (row: HTMLElement) => row.querySelector('.gt-menu__check');
+    const checked = screen.getByRole('menuitemcheckbox', { name: 'backend' });
+    expect(slotOf(checked)?.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    // An unchecked row keeps the empty slot, so the labels stay aligned.
+    expect(slotOf(screen.getByRole('menuitemcheckbox', { name: 'bug' }))).toBeEmptyDOMElement();
+    // A row with an icon shows its state on the icon, and an action row has no state.
+    expect(slotOf(screen.getByRole('menuitemcheckbox', { name: 'design' }))).toBeNull();
+    expect(slotOf(screen.getByRole('menuitem', { name: 'Rename' }))).toBeNull();
+  });
+
+  it('gives each row 44px on phones', () => {
+    render(<Menu ariaLabel="Actions"><MenuItem>One</MenuItem></Menu>);
+    const [phone] = cssRules('.gt-menu__item', 'max-width: 767px');
+    expect(phone.getPropertyValue('min-height')).toBe('44px');
   });
 
   it('opens on the first item with autoFocus="checked" when no row is checked', () => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type HTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
+import { Check } from 'lucide-react';
 import './Menu.scss';
 
 const ITEMS = [
@@ -13,14 +14,14 @@ export interface MenuProps extends Omit<HTMLAttributes<HTMLDivElement>, 'autoFoc
   /**
    * Focus the first item on mount: right for a menu opened from a button. `'checked'` focuses
    * the checked row instead (the first item when none is): a single-choice menu opens on the
-   * current choice. `'checked'` is an addition to the design's Menu, like `checked` below.
+   * current choice. The design took `'checked'`, like `checked` below, from the codebase.
    */
   autoFocus?: boolean | 'checked';
 }
 
 /**
  * Action list inside a Popover, ported from design/components/feedback/Menu.jsx. Dense
- * ~32px rows, arrow-key navigation, Enter activates, Esc closes.
+ * 32px rows (44 on phones), arrow-key navigation, Enter activates, Esc closes.
  */
 export function Menu({ children, onClose, ariaLabel, autoFocus = false, className = '', ...rest }: MenuProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -66,19 +67,20 @@ export interface MenuItemProps extends Omit<HTMLAttributes<HTMLButtonElement>, '
   destructive?: boolean;
   disabled?: boolean;
   /**
-   * Makes the row a `menuitemcheckbox` for multi-select lists (labels). Not in the
-   * design's Menu, which only has actions; recorded as an intentional addition.
+   * Makes the row a `menuitemcheckbox` for multi-select lists (labels). Without an `icon`, the
+   * row shows a 16px check slot, so its state is not colour alone. The design took this from
+   * the codebase.
    */
   checked?: boolean;
   /**
    * With `checked`, makes the row a `menuitemradio` instead: one choice in the menu (the
-   * scrum board's sprint picker). Also not in the design's Menu; the same recorded addition.
+   * scrum board's sprint picker). Also taken by the design from the codebase.
    */
   radio?: boolean;
   onSelect?: () => void;
 }
 
-/** Single action row. */
+/** Single row: an action, or with `checked` a checkbox or radio row. */
 export function MenuItem({
   icon, children, shortcut, destructive = false, disabled = false, checked, radio = false, onSelect,
   className = '', ...rest
@@ -100,7 +102,11 @@ export function MenuItem({
       onClick={onSelect}
       {...rest}
     >
-      {icon && <span className="gt-menu__icon">{icon}</span>}
+      {icon ? (
+        <span className="gt-menu__icon">{icon}</span>
+      ) : (
+        checkable && <span className="gt-menu__check">{checked ? <Check size={14} strokeWidth={2.4} aria-hidden="true" /> : null}</span>
+      )}
       <span className="gt-menu__label">{children}</span>
       {shortcut && <span className="gt-menu__shortcut">{shortcut}</span>}
     </button>
