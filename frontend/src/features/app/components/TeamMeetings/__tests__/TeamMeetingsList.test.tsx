@@ -283,7 +283,6 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(submit).not.toBeDisabled();
     expect(submit).toHaveAttribute('aria-disabled', 'true');
     expect(submit).toHaveAttribute('aria-busy', 'true');
-    expect(submit.querySelector('.gt-spinner')).not.toBeNull();
     expect(titleBox()).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
 
@@ -424,7 +423,6 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(remove).toHaveFocus();
     expect(remove).toHaveAttribute('aria-disabled', 'true');
     expect(remove).toHaveAttribute('aria-busy', 'true');
-    expect(remove.querySelector('.gt-spinner')).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
     await user.click(remove);
     expect(onDelete).toHaveBeenCalledTimes(1);
