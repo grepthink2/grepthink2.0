@@ -3,64 +3,65 @@
    .gt-popover, .gt-menu, .gt-empty)
    ============================================================ */
 
-/* ── Modal (mirrors .join-class-modal) ──────────────────── */
+/* ── Modal — one dialog shell: z --gt-z-modal (100), above the sidebar (99) and header,
+   below toasts (1000) and the date picker (1100). Header and footer pinned, body scrolls. ── */
 .gt-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background-color: var(--gt-scrim);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  backdrop-filter: blur(4px);
+  position: fixed; inset: 0; z-index: var(--gt-z-modal); display: flex; align-items: center; justify-content: center;
+  padding: 16px; box-sizing: border-box; background-color: var(--gt-scrim); backdrop-filter: blur(4px);
+  animation: gt-fade-in 0.15s ease-out;
 }
+.gt-modal-backdrop--closing { animation: gt-fade-out 0.15s ease-out forwards; pointer-events: none; }
+.gt-modal-backdrop--inline { position: relative; inset: auto; z-index: auto; min-height: 100%; animation: none; }
 .gt-modal {
-  position: relative;
-  background: var(--gt-gray-0);
-  border-radius: 12px;
-  padding: 2rem;
-  width: 90%;
-  box-shadow: var(--gt-shadow-modal);
-  font-family: var(--gt-font-sans);
-  box-sizing: border-box;
+  position: relative; display: flex; flex-direction: column; width: 100%; max-height: 88vh; box-sizing: border-box;
+  background: var(--gt-surface); border-radius: 12px; box-shadow: var(--gt-shadow-modal);
+  font-family: var(--gt-font-sans); color: var(--gt-text-primary); outline: none;
 }
-.gt-modal__close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: transparent;
-  border: none;
-  color: var(--gt-text-secondary);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color var(--gt-transition-fast);
-}
-.gt-modal__close:hover:not(:disabled) { background-color: var(--gt-gray-100); }
-.gt-modal__close:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
-.gt-modal__close:disabled { opacity: 0.5; cursor: not-allowed; }
-.gt-modal__head { text-align: center; margin-bottom: var(--gt-space-md); }
-.gt-modal__title {
-  font-size: 1.75rem;
-  font-weight: var(--gt-weight-semibold);
-  color: var(--gt-text-primary);
-  margin: 0 0 4px;
-}
-.gt-modal__subtitle {
-  font-size: 0.875rem;
-  color: var(--gt-text-secondary);
-  margin: 0;
-}
-.gt-modal__body { color: var(--gt-text-primary); font-size: var(--gt-text-body); }
-.gt-modal__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--gt-space-sm);
-  margin-top: var(--gt-space-lg);
-}
+.gt-modal--sm { max-width: 400px; }
+.gt-modal--md { max-width: 560px; }
+.gt-modal--lg { max-width: 760px; }
+.gt-modal__head { position: relative; flex-shrink: 0; padding: 20px 56px 0 24px; }
+.gt-modal__title { margin: 0; font-size: 18px; font-weight: var(--gt-weight-semibold); line-height: 1.3; color: var(--gt-text-primary); }
+.gt-modal__subtitle { margin: 4px 0 0; font-size: 13px; color: var(--gt-text-secondary); }
+.gt-modal__close { position: absolute; top: 12px; right: 12px; }
+.gt-modal__tabs { margin-top: 16px; }
+.gt-modal__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px 24px 20px; font-size: var(--gt-text-body); }
+.gt-modal__footer { display: flex; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; gap: var(--gt-space-sm); padding: 14px 24px; border-top: 1px solid var(--gt-border-subtle); }
+.gt-modal--message .gt-modal__head { padding: 32px 48px 0; text-align: center; }
+.gt-modal--message .gt-modal__title { font-size: 1.75rem; }
+.gt-modal--message .gt-modal__subtitle { font-size: 0.875rem; }
+.gt-modal--message .gt-modal__body { padding: 16px 32px 8px; }
+.gt-modal--message .gt-modal__footer { padding: 16px 32px 28px; border-top: none; }
+
+/* Inline confirm row — a row-level delete inside a dialog (never a dialog over a dialog) */
+.gt-inline-confirm { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin: 4px 0; padding: 10px 12px; border-radius: var(--gt-radius-sm); background: var(--gt-surface-muted); font-family: var(--gt-font-sans); }
+.gt-inline-confirm__icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--gt-error-soft); color: var(--gt-error); }
+.gt-inline-confirm__text { flex: 1 1 220px; min-width: 0; margin: 0; font-size: 13px; color: var(--gt-text-primary); }
+.gt-inline-confirm__actions { display: flex; gap: 8px; margin-left: auto; }
+
+/* ── ConfirmDialog (alertdialog on the Modal shell, sm) ──── */
+.gt-confirm__message { margin: 0; font-size: var(--gt-text-body); line-height: var(--gt-leading-normal); color: var(--gt-text-secondary); }
+.gt-confirm__error { margin-top: 12px; }
+
+/* ── Drawer — side sheet with the Modal's behaviour ──────── */
+.gt-drawer-backdrop { position: fixed; inset: 0; z-index: var(--gt-z-modal); display: flex; justify-content: flex-end; background-color: var(--gt-scrim); animation: gt-fade-in 0.2s ease-out; }
+.gt-drawer-backdrop--left { justify-content: flex-start; }
+.gt-drawer-backdrop--closing { animation: gt-fade-out 0.2s ease-out forwards; pointer-events: none; }
+.gt-drawer-backdrop--inline { position: relative; inset: auto; z-index: auto; height: 100%; animation: none; }
+.gt-drawer { display: flex; flex-direction: column; width: 420px; max-width: 100%; height: 100%; box-sizing: border-box; background: var(--gt-surface); box-shadow: var(--gt-shadow-modal); font-family: var(--gt-font-sans); color: var(--gt-text-primary); outline: none; animation: gt-drawer-in-right 0.2s ease-out; }
+.gt-drawer--left { animation-name: gt-drawer-in-left; }
+.gt-drawer-backdrop--closing .gt-drawer { animation: gt-drawer-out-right 0.2s ease-in forwards; }
+.gt-drawer-backdrop--closing .gt-drawer--left { animation-name: gt-drawer-out-left; }
+.gt-drawer__head { position: relative; display: flex; flex-direction: column; flex-shrink: 0; padding: 18px 56px 14px 20px; border-bottom: 1px solid var(--gt-border-subtle); }
+.gt-drawer__title { margin: 0; font-size: 16px; font-weight: var(--gt-weight-semibold); line-height: 1.35; }
+.gt-drawer__subtitle { margin: 2px 0 0; font-size: 12.5px; color: var(--gt-text-secondary); }
+.gt-drawer__close { position: absolute; top: 10px; right: 10px; }
+.gt-drawer__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px 20px; }
+.gt-drawer__footer { display: flex; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; gap: var(--gt-space-sm); padding: 12px 20px; border-top: 1px solid var(--gt-border-subtle); }
+@keyframes gt-drawer-in-right { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes gt-drawer-in-left { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes gt-drawer-out-right { to { transform: translateX(24px); opacity: 0; } }
+@keyframes gt-drawer-out-left { to { transform: translateX(-24px); opacity: 0; } }
 
 /* ── Alert (inline) ──────────────────────────────────────── */
 .gt-alert {
@@ -76,6 +77,9 @@
 .gt-alert__content { flex: 1; min-width: 0; }
 .gt-alert__title { margin: 0; font-weight: var(--gt-weight-semibold); font-size: var(--gt-text-body); }
 .gt-alert__text { margin: 0; font-size: var(--gt-text-caption); line-height: var(--gt-leading-normal); }
+.gt-alert__text p { margin: 0; }
+.gt-alert__text p + p { margin-top: 4px; }
+.gt-alert__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .gt-alert__title + .gt-alert__text { margin-top: 2px; }
 .gt-alert__dismiss {
   border: none;
@@ -176,6 +180,7 @@
   box-shadow: var(--gt-shadow-pop);
   padding: var(--gt-space-md);
   font-family: var(--gt-font-sans);
+  color: var(--gt-text-primary);
   z-index: var(--gt-z-dropdown);
   box-sizing: border-box;
 }
@@ -224,6 +229,8 @@
 .gt-menu__item--destructive { color: var(--gt-error-text); }
 .gt-menu__item--destructive .gt-menu__icon { color: var(--gt-error); }
 .gt-menu__item--destructive:hover:not(:disabled) { background: var(--gt-error-soft); }
+.gt-menu__item--checked .gt-menu__icon { color: var(--gt-primary); }
+.gt-menu__check { display: inline-flex; width: 16px; flex-shrink: 0; color: var(--gt-primary); }
 .gt-menu__sep { height: 1px; margin: 4px 6px; background: var(--gt-border-subtle); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -233,38 +240,52 @@
   .gt-toast--leaving { animation: gt-fade-out 0.15s ease-out forwards; }
 }
 
-/* ── EmptyState ─────────────────────────────────────────── */
-.gt-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--gt-space-sm);
-  padding: var(--gt-space-xxl) var(--gt-space-lg);
-  text-align: center;
-  font-family: var(--gt-font-sans);
-}
+/* ── EmptyState — page · card · quiet · error ─────────── */
+.gt-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gt-space-sm); padding: var(--gt-space-xxl) var(--gt-space-lg); text-align: center; font-family: var(--gt-font-sans); }
 .gt-empty--compact { padding: var(--gt-space-lg); }
-.gt-empty__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background-color: rgba(1, 129, 86, 0.12);
-  color: var(--gt-primary);
-  margin-bottom: var(--gt-space-xs);
+.gt-empty__icon { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; margin-bottom: var(--gt-space-xs); border-radius: 50%; background-color: var(--gt-primary-soft); color: var(--gt-primary); }
+.gt-empty__title { margin: 0; font-size: 1.25rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
+.gt-empty__desc { max-width: 400px; margin: 0; font-size: var(--gt-text-body); color: var(--gt-text-secondary); }
+.gt-empty__action { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--gt-space-sm); margin-top: var(--gt-space-md); }
+.gt-empty--card { min-height: 120px; padding: 28px 16px; gap: 6px; }
+.gt-empty--card .gt-empty__icon { width: 36px; height: 36px; margin-bottom: 4px; background: var(--gt-surface-sunken); color: var(--gt-text-tertiary); }
+.gt-empty--card .gt-empty__title { font-size: 13px; }
+.gt-empty--card .gt-empty__desc, .gt-empty__hint { max-width: 320px; margin: 0; font-size: var(--gt-text-caption); line-height: var(--gt-leading-snug); color: var(--gt-text-tertiary); }
+.gt-empty--card .gt-empty__action { margin-top: 6px; }
+.gt-empty--quiet, .gt-empty--error { align-items: flex-start; gap: 4px; padding: 12px 0; text-align: left; }
+.gt-empty--quiet .gt-empty__title, .gt-empty--error .gt-empty__title { font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); }
+.gt-empty--quiet .gt-empty__desc, .gt-empty--error .gt-empty__desc { font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
+.gt-empty--quiet .gt-empty__action, .gt-empty--error .gt-empty__action { justify-content: flex-start; margin-top: 2px; }
+.gt-empty__retry { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: none; border-radius: 4px; background: none; font-family: var(--gt-font-sans); font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-link); cursor: pointer; }
+.gt-empty__retry:hover { text-decoration: underline; }
+.gt-empty__retry:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+
+/* ── Spinner — the one loading indicator ─────────────────── */
+.gt-spinner-wrap { display: inline-flex; align-items: center; justify-content: center; }
+.gt-spinner { display: inline-block; flex-shrink: 0; box-sizing: border-box; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: gt-spin 0.7s linear infinite; }
+.gt-spinner--14 { width: 14px; height: 14px; }
+.gt-spinner--16 { width: 16px; height: 16px; }
+.gt-spinner--20 { width: 20px; height: 20px; }
+.gt-spinner--24 { width: 24px; height: 24px; border-width: 2.5px; }
+@keyframes gt-spin { to { transform: rotate(360deg); } }
+
+/* ── Phones + reduced motion ──────────────────────────────── */
+@media (max-width: 767px) {
+  .gt-modal-backdrop { padding: 12px; }
+  .gt-modal { max-height: calc(100vh - 24px); }
+  .gt-modal__head { padding: 16px 56px 0 16px; }
+  .gt-modal__body { padding: 14px 16px 16px; }
+  .gt-modal__footer { padding: 12px 16px; }
+  .gt-modal__footer .gt-button, .gt-drawer__footer .gt-button { flex: 1 1 auto; }
+  .gt-drawer { width: 100%; }
+  .gt-menu__item { min-height: 44px; }
+  .gt-alert__dismiss, .gt-toast__dismiss { min-width: 44px; min-height: 44px; justify-content: center; align-items: center; }
+  .gt-inline-confirm__actions { width: 100%; }
+  .gt-inline-confirm__actions .gt-button { flex: 1 1 auto; }
 }
-.gt-empty__title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: var(--gt-weight-semibold);
-  color: var(--gt-text-primary);
+@media (prefers-reduced-motion: reduce) {
+  .gt-modal-backdrop, .gt-modal-backdrop--closing, .gt-drawer-backdrop, .gt-drawer-backdrop--closing, .gt-drawer, .gt-drawer-backdrop--closing .gt-drawer { animation: gt-fade-in 0.15s ease-out; }
+  .gt-modal-backdrop--closing, .gt-drawer-backdrop--closing { animation: none; opacity: 0; }
+  /* the spinner keeps turning, slower — !important beats the app's global kill switch (codebase gt-spinner mixin) */
+  .gt-spinner { animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }
 }
-.gt-empty__desc {
-  margin: 0;
-  font-size: var(--gt-text-body);
-  color: var(--gt-text-secondary);
-  max-width: 400px;
-}
-.gt-empty__action { margin-top: var(--gt-space-md); display: flex; gap: var(--gt-space-sm); }

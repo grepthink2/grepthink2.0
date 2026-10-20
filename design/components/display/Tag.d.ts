@@ -2,8 +2,10 @@ import * as React from 'react';
 
 export interface TagProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: React.ReactNode;
-  /** Shows an × button and makes the tag removable. */
+  /** Shows a real × button (Tab-reachable) and makes the tag removable. */
   onRemove?: () => void;
+  /** Accessible name of the × . @default `Remove ${children}` */
+  removeLabel?: string;
   /** @default 'neutral' */
   tone?: 'neutral' | 'green' | 'blue';
 }

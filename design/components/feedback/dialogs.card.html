@@ -1,0 +1,139 @@
+<!-- @dsCard group="Components" viewport="760x1500" name="Feedback — Dialogs" subtitle="Modal (form header + tabs, message), ConfirmDialog (default, busy, error), Drawer (right editor, left nav), InlineConfirm; live triggers; phone" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../gallery.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Modal, ConfirmDialog, Drawer, InlineConfirm, Button, Input, Select, Tabs, TabPanel, CodeInput, Textarea } = window.GrepThinkDesignSystem_36e7e3;
+const PHONE = new URLSearchParams(location.search).has('phone');
+const I = ({ d }) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
+const TABS = [
+  { value: 'details', label: 'Details', icon: <I d={<><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /></>} /> },
+  { value: 'team', label: 'Team', icon: <I d={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></>} />, count: 5 },
+  { value: 'meetings', label: 'Meetings', icon: <I d={<><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></>} /> },
+];
+const fail = () => new Promise((_, rej) => setTimeout(() => rej(new Error('500')), 900));
+const ok = () => new Promise((res) => setTimeout(res, 900));
+
+function EditProject({ portal = true, open = true, onClose = () => {} }) {
+  const [tab, setTab] = React.useState('details');
+  return (
+    <Modal open={open} onClose={onClose} portal={portal} size="lg" title="Edit project" subtitle="Bike Share Map · Team 4"
+      tabs={<Tabs idBase={portal ? 'ep-live' : 'ep'} ariaLabel="Edit project" value={tab} onChange={setTab} tabs={TABS} collapseOnPhone />}
+      footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button loadingLabel="Saving…">Save changes</Button></>}>
+      <TabPanel idBase={portal ? 'ep-live' : 'ep'} value="details" active={tab === 'details'} focusable={false}>
+        <div className="col"><Input label="Project name" defaultValue="Bike Share Map" /><Textarea label="Description" optional rows={2} defaultValue="Live dock availability for campus." maxLength={500} /></div>
+      </TabPanel>
+      <TabPanel idBase={portal ? 'ep-live' : 'ep'} value="team" active={tab === 'team'}>Five members. The Product Owner edits meetings.</TabPanel>
+      <TabPanel idBase={portal ? 'ep-live' : 'ep'} value="meetings" active={tab === 'meetings'}>
+        <InlineConfirm message="Delete ‘Sprint 3 planning’? It disappears from your team’s calendars." onCancel={() => {}} onConfirm={() => {}} />
+      </TabPanel>
+    </Modal>
+  );
+}
+
+function Phone() {
+  return (
+    <div className="stage" style={{ height: 620 }}>
+      <EditProject portal={false} />
+    </div>
+  );
+}
+
+function Demo() {
+  const [live, setLive] = React.useState('');
+  const [code, setCode] = React.useState('');
+  const close = () => setLive('');
+  return (
+    <div>
+      <div className="sec">
+        <p className="lbl">Live — real portal, focus moves in, Tab is trapped, Esc / scrim close the topmost only, focus returns to the trigger</p>
+        <div className="row">
+          <Button variant="outline" onClick={() => setLive('edit')}>Edit project (form + tabs)</Button>
+          <Button variant="outline" onClick={() => setLive('join')}>Join a class (message)</Button>
+          <Button variant="danger-ghost" onClick={() => setLive('confirm')}>Remove member (succeeds)</Button>
+          <Button variant="danger-ghost" onClick={() => setLive('confirm-fail')}>Delete sprint (fails)</Button>
+          <Button variant="outline" onClick={() => setLive('drawer')}>Edit assignment (drawer)</Button>
+          <Button variant="outline" onClick={() => setLive('nav')}>Phone nav (left drawer)</Button>
+        </div>
+      </div>
+      <EditProject open={live === 'edit'} onClose={close} />
+      <Modal open={live === 'join'} onClose={close} variant="message" size="sm" title="Join a class" subtitle="Enter the code from your instructor"
+        footer={<><Button variant="outline" onClick={close}>Cancel</Button><Button disabled={code.length < 8}>Join class</Button></>}>
+        <CodeInput label="Class code" length={8} groupSize={4} value={code} onChange={setCode} autoFocus />
+      </Modal>
+      <ConfirmDialog open={live === 'confirm'} destructive title="Remove Ben Okafor?" message="He loses access to Team 4's board and chat. You can invite him again later."
+        confirmLabel="Remove" busyLabel="Removing…" onCancel={close} onConfirm={async () => { await ok(); close(); }} />
+      <ConfirmDialog open={live === 'confirm-fail'} destructive title="Delete Sprint 3?" message="Its 14 stories move back to the backlog."
+        confirmLabel="Delete sprint" busyLabel="Deleting…" onCancel={close} onConfirm={fail} />
+      <Drawer open={live === 'drawer'} onClose={close} title="Edit assignment" subtitle="TSR 4 · due Oct 24"
+        footer={<><Button variant="outline" onClick={close}>Cancel</Button><Button onClick={close}>Save</Button></>}>
+        <div className="col"><Input label="Title" defaultValue="TSR 4" /><Select label="Sprint" defaultValue="s3" options={[{ value: 's3', label: 'Sprint 3' }]} /></div>
+      </Drawer>
+      <Drawer open={live === 'nav'} onClose={close} side="left" width={280} ariaLabel="Main menu"><p style={{ margin: 0 }}>Navigation items</p></Drawer>
+
+      <div className="sec">
+        <p className="lbl">Modal · form header — title left, tabs under it, pinned footer (lg 760; md 560 default)</p>
+        <div className="stage" style={{ height: 470 }}><EditProject portal={false} /></div>
+      </div>
+
+      <div className="sec grid2">
+        <div>
+          <p className="lbl">Modal · message — centred title (sm 400)</p>
+          <div className="stage" style={{ height: 330 }}>
+            <Modal open portal={false} variant="message" size="sm" title="Join a class" subtitle="Enter the code from your instructor" onClose={() => {}}
+              footer={<><Button variant="outline">Cancel</Button><Button disabled>Join class</Button></>}>
+              <CodeInput label="Class code" length={8} groupSize={4} value="ABCD" onChange={() => {}} />
+            </Modal>
+          </div>
+        </div>
+        <div>
+          <p className="lbl">ConfirmDialog — default · busy (Esc / scrim blocked) · failed (Alert inside)</p>
+          <div className="col">
+            <div className="stage" style={{ height: 200 }}><ConfirmDialog open portal={false} destructive title="Remove Ben Okafor?" message="He loses access to Team 4's board and chat." confirmLabel="Remove" onCancel={() => {}} /></div>
+            <div className="stage" style={{ height: 200 }}><ConfirmDialog open portal={false} destructive busy title="Remove Ben Okafor?" message="He loses access to Team 4's board and chat." confirmLabel="Remove" busyLabel="Removing…" onCancel={() => {}} /></div>
+            <div className="stage" style={{ height: 250 }}><ConfirmDialog open portal={false} destructive error="That didn’t work. Try again." title="Delete Sprint 3?" message="Its 14 stories move back to the backlog." confirmLabel="Delete sprint" onCancel={() => {}} /></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="sec grid2">
+        <div>
+          <p className="lbl">Drawer · right 420 (editor)</p>
+          <div className="stage" style={{ height: 380 }}>
+            <Drawer open portal={false} onClose={() => {}} title="Edit assignment" subtitle="TSR 4 · due Oct 24" width={330}
+              footer={<><Button variant="outline">Cancel</Button><Button>Save</Button></>}>
+              <div className="col"><Input label="Title" defaultValue="TSR 4" /><Select label="Sprint" defaultValue="s3" options={[{ value: 's3', label: 'Sprint 3' }]} /></div>
+            </Drawer>
+          </div>
+        </div>
+        <div>
+          <p className="lbl">InlineConfirm — the row-level delete inside a dialog · busy</p>
+          <div className="panel col">
+            <InlineConfirm autoFocus={false} message="Delete ‘Sprint 3 planning’? It disappears from your team’s calendars." onCancel={() => {}} onConfirm={() => {}} />
+            <InlineConfirm autoFocus={false} message="Remove Ana Ruiz from the team?" confirmLabel="Remove" busy busyLabel="Removing…" onCancel={() => {}} />
+          </div>
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Phone width — 12px margins, icon-only tabs (labels stay in the name), stretched footer buttons</p>
+        <iframe className="phone" src="dialogs.card.html?phone" height="640" title="Dialogs at phone width" />
+      </div>
+    </div>
+  );
+}
+if (PHONE) document.body.classList.add('is-phone');
+ReactDOM.createRoot(document.getElementById('root')).render(PHONE ? <Phone /> : <Demo />);
+</script>
+</body>
+</html>

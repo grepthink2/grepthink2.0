@@ -1,0 +1,112 @@
+<!-- @dsCard group="Components" viewport="760x1260" name="Display — Cards, metrics, tables" subtitle="Card (card, hairline, bordered, interactive hover / focus / selected, actions), StatCard (dashboard + compact, delta, trend, info, loading, failed, clickable), Table (sort, open row, dense, sticky, loading, empty); phone" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../gallery.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Card, StatCard, Table, Badge, Button, IconButton, AvatarGroup } = window.GrepThinkDesignSystem_36e7e3;
+const PHONE = new URLSearchParams(location.search).has('phone');
+const I = ({ d }) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
+const Users = () => <I d={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>} />;
+const Check = () => <I d={<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>} />;
+const Msg = () => <I d={<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />} />;
+const Gear = () => <I d={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-2.82-1.17l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3 12.6H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 6.6l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9H21a2 2 0 0 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15z" /></>} />;
+const ROWS = [
+  { id: 1, name: 'Ana Ruiz', team: 'Team 4', status: 'roster.enrolled', tsr: '4 / 4' },
+  { id: 2, name: 'Ben Okafor', team: 'Team 4', status: 'roster.waitlisted', tsr: '3 / 4' },
+  { id: 3, name: 'Cho Park', team: 'Team 2', status: 'roster.not_on_roster', tsr: '—' },
+  { id: 4, name: 'Dev Shah', team: 'Team 7', status: 'roster.dropped', tsr: '1 / 4' },
+];
+const COLS = [
+  { key: 'name', label: 'Name', sortable: true },
+  { key: 'team', label: 'Team', sortable: true },
+  { key: 'status', label: 'Roster', render: (r) => <Badge status={r.status} /> },
+  { key: 'tsr', label: 'TSRs' },
+];
+
+function Phone() {
+  return (
+    <div className="col">
+      <p className="lbl">Phone — tables scroll inside their card (focusable region when they overflow)</p>
+      <StatCard label="TSRs submitted" value="24/31" hint="7 outstanding" icon={<Check />} info={{ body: 'Reports submitted this sprint out of everyone enrolled.' }} />
+      <Card shadow="hairline" padded={false}><Table caption="Class roster" columns={[...COLS, { key: 'x', label: 'Last active' }, { key: 'y', label: 'Email' }]} rows={ROWS.map((r) => ({ ...r, x: 'Today', y: `${r.name.split(' ')[0].toLowerCase()}@ucsc.edu` }))} rowHref={(r) => `#s${r.id}`} /></Card>
+    </div>
+  );
+}
+
+function Demo() {
+  const [picked, setPicked] = React.useState('115a');
+  const [sort, setSort] = React.useState({ key: 'name', dir: 'asc' });
+  const rows = [...ROWS].sort((a, b) => (a[sort.key] > b[sort.key] ? 1 : -1) * (sort.dir === 'asc' ? 1 : -1));
+  return (
+    <div className="st">
+      <div className="sec">
+        <p className="lbl">Card — card · hairline · bordered (nested) · header actions</p>
+        <div className="grid3">
+          <Card title="Team" subtitle="5 members" actions={<IconButton ariaLabel="Manage team" size="sm"><Gear /></IconButton>}><AvatarGroup names={['Ana Ruiz', 'Ben Okafor', 'Cho Park', 'Dev Shah', 'Eli Moreno']} /></Card>
+          <Card shadow="hairline" title="Hairline" subtitle="Metric and chart surfaces">Body</Card>
+          <div className="canvas col">
+            <Card bordered title="Ana Ruiz" subtitle="Product Owner">Nested in a list</Card>
+            <Card bordered title="Join request" subtitle="Ben Okafor · 2 days ago" footer={<><Button size="sm" variant="danger-ghost">Deny</Button><Button size="sm">Accept</Button></>}>Wants to join Team 4.</Card>
+          </div>
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Interactive cards — default · hover · focus · selected (class picker, button) · link (project card)</p>
+        <div className="grid3">
+          {['115a', '115b', '115c'].map((c) => (
+            <Card key={c} onClick={() => setPicked(c)} selected={picked === c} title={`CSE ${c.toUpperCase()}`} subtitle="Fall 2026 · 62 students"><Badge status="class.active" /></Card>
+          ))}
+          <Card href="#p1" title="Bike Share Map" subtitle="Team 4" className="is-hover" actions={<IconButton ariaLabel="Project actions" size="sm"><Gear /></IconButton>}>Hover (forced). The ⋯ stays its own button.</Card>
+          <Card href="#p2" title="SlugEats" subtitle="Team 2" className="is-focus">Focus (forced).</Card>
+          <Card href="#p3" bordered title="Lab Scheduler" subtitle="Team 7">Bordered link card.</Card>
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">StatCard — dashboard (info ⓘ, clickable) · compact analytics tiles (delta good / bad / flat, trend) · loading · failed · null</p>
+        <div className="grid3">
+          <StatCard label="TSRs submitted" value="24/31" hint="7 outstanding" icon={<Check />} info={{ body: 'Reports submitted this sprint out of everyone enrolled. Late submissions count.' }} />
+          <StatCard label="Teams formed" value={8} hint="2 pending requests" icon={<Users />} accent="blue" onClick={() => {}} />
+          <StatCard label="Unread messages" value={12} hint="3 conversations" icon={<Msg />} accent="amber" />
+          <StatCard compact format="compact" label="Messages" value={12900} icon={<Msg />} delta={{ value: 0.18, vsLabel: 'vs the 7 days before' }} trend={[40, 52, 47, 61, 58, 72, 80]} />
+          <StatCard compact format="percent" label="On time" value={0.82} icon={<Check />} accent="blue" delta={{ value: -0.06, vsLabel: 'vs last term' }} />
+          <StatCard compact label="Signed in (7d)" value={41} icon={<Users />} accent="purple" delta={{ value: 0, vsLabel: 'vs the 7 days before' }} />
+          <StatCard compact label="Students" value={62} icon={<Users />} loading />
+          <StatCard compact label="Teams" value={null} icon={<Users />} failed />
+          <StatCard compact label="Signed in (7d)" value={null} hint="Appears once sign-ins are recorded" icon={<Users />} accent="amber" />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Table — sortable headers (aria-sort) · first-cell link opens the row · loading · empty · dense + sticky</p>
+        <div className="grid2">
+          <Card shadow="hairline" padded={false}><Table caption="Class roster" columns={COLS} rows={rows} sort={sort} onSort={setSort} rowHref={(r) => `#s${r.id}`} /></Card>
+          <Card shadow="hairline" padded={false}><Table caption="Loading roster" columns={COLS} rows={[]} loading skeletonRows={4} /></Card>
+          <Card shadow="hairline" padded={false}><Table caption="Filtered roster" columns={COLS} rows={[]} emptyText="No students match these filters." /></Card>
+          <Card shadow="hairline" padded={false}><div style={{ maxHeight: 170, overflow: 'auto' }}><Table dense stickyHeader caption="Breakdown" columns={COLS} rows={[...rows, ...rows.map((r) => ({ ...r, id: r.id + 10 }))]} onRowClick={() => {}} /></div></Card>
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Phone width</p>
+        <iframe className="phone" src="cards.card.html?phone" height="460" title="Cards and tables at phone width" />
+      </div>
+    </div>
+  );
+}
+if (PHONE) document.body.classList.add('is-phone');
+ReactDOM.createRoot(document.getElementById('root')).render(PHONE ? <Phone /> : <Demo />);
+</script>
+</body>
+</html>

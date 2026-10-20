@@ -1,14 +1,16 @@
 import * as React from 'react';
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLElement> {
-  /** Full name or email — initials and color are derived from it. */
+  /** Full name or email — initials, colour and the accessible name come from it. */
   name?: string;
-  /** Optional image; falls back to initials. */
+  /** Photo; when it fails to load the initials show instead. */
   src?: string;
-  /** @default 'md' */
+  /** 20 / 28 / 36 / 48 / 64. @default 'md' */
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   /** Rounded-square instead of circle (project avatars). @default false */
   square?: boolean;
+  /** Beside a visible name: `aria-hidden` and an empty alt, so the initials are not read twice. @default false */
+  decorative?: boolean;
 }
 
 export interface AvatarGroupProps {
@@ -20,11 +22,12 @@ export interface AvatarGroupProps {
   className?: string;
 }
 
-/** Initials-avatar palette — all six pass 4.5:1 with white text. */
+/** The one palette: 'var(--gt-avatar-1)' … 'var(--gt-avatar-6)', each ≥ 4.5:1 behind white. */
 export const AVATAR_COLORS: string[];
-/** Deterministic palette color for a name/email. */
+/** The one hash: a deterministic palette slot for a name / email. */
 export function hashColor(name?: string): string;
 /** "Ashton Liu" → "AL", "aliu@ucsc.edu" → "AL". */
 export function initialsOf(name?: string): string;
 export function Avatar(props: AvatarProps): React.JSX.Element;
+/** Overlapping avatars + "+n", announced as one image. */
 export function AvatarGroup(props: AvatarGroupProps): React.JSX.Element;

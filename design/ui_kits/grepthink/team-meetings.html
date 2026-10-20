@@ -102,7 +102,8 @@
   .tm-stage--phone .tm-card, .tm-stage--phone .tm-pv__header { padding: 16px; }
   .tm-stage--phone .tm-pv__title { font-size: 19px; }
   .tm-stage--phone .tm-ep { width: calc(100% - 24px); max-height: calc(100% - 24px); padding: 16px; }
-  .tm-stage--phone .tm-ep__tab span { display: none; }
+  /* icon-only tabs on phones: the label leaves the screen, not the accessible name (alignment round) */
+  .tm-stage--phone .tm-ep__tab span { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
   .tm-stage--phone .gt-tm__head { flex-direction: column; align-items: stretch; }
   .tm-stage--phone .gt-tm__head .gt-button, .tm-stage--phone .gt-tm__past-toggle { min-height: 44px; }
   .tm-stage--phone .gt-tm-row { grid-template-columns: 24px minmax(0, 1fr); row-gap: 8px; }

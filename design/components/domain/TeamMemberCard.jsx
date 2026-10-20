@@ -22,7 +22,7 @@ export function TeamMemberCard({
           <span className="gt-member-card__name">{name}</span>
           {email && <span className="gt-member-card__email">{email}</span>}
         </div>
-        <Badge role={role}>{role.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</Badge>
+        <Badge projectRole={role} />
       </div>
       {skills.length > 0 && (
         <div className="gt-member-card__skills">

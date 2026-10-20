@@ -1,11 +1,10 @@
 import React from 'react';
 
 /**
- * Shared initials-avatar palette. Every color passes 4.5:1 with white
- * initials (2026-09 contrast fix: #2771FF → #1B57D6 6.2:1, #B26A00 → #8A5200 6.4:1).
- * The landing page's decorative avatars use this same set — one palette everywhere.
+ * One avatar palette everywhere: six token slots (--gt-avatar-1…6), each ≥ 4.5:1 behind white
+ * initials. The app's seven schemes (one failing behind white) all port to this list + hashColor.
  */
-export const AVATAR_COLORS = ['#018156', '#1B57D6', '#8A5200', '#7D3C98', '#016547', '#1543A8'];
+export const AVATAR_COLORS = ['var(--gt-avatar-1)', 'var(--gt-avatar-2)', 'var(--gt-avatar-3)', 'var(--gt-avatar-4)', 'var(--gt-avatar-5)', 'var(--gt-avatar-6)'];
 
 export function initialsOf(name = '') {
   const clean = name.includes('@') ? name.split('@')[0].replace(/[._-]+/g, ' ') : name;
@@ -15,6 +14,7 @@ export function initialsOf(name = '') {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+/** Deterministic palette slot for a name (the one hash). */
 export function hashColor(name = '') {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
@@ -22,29 +22,32 @@ export function hashColor(name = '') {
 }
 
 /**
- * Avatar with initials derived from a name or email.
- * Deterministic background color per name; optional image src.
+ * Avatar: photo, or initials on the hashed palette colour. When `src` fails to load it falls back
+ * to the initials. `decorative` (beside a visible name) hides it from screen readers.
  */
-export function Avatar({ name = '', src, size = 'md', square = false, className = '', ...rest }) {
+export function Avatar({ name = '', src, size = 'md', square = false, decorative = false, className = '', ...rest }) {
+  const [failed, setFailed] = React.useState(false);
+  React.useEffect(() => { setFailed(false); }, [src]);
   const cls = ['gt-avatar', `gt-avatar--${size}`, square ? 'gt-avatar--square' : '', className].filter(Boolean).join(' ');
-  if (src) {
-    return <img className={cls} src={src} alt={name} {...rest} />;
+  if (src && !failed) {
+    return <img className={cls} src={src} alt={decorative ? '' : name} aria-hidden={decorative || undefined} onError={() => setFailed(true)} {...rest} />;
   }
   return (
-    <span className={cls} style={{ backgroundColor: hashColor(name) }} role="img" aria-label={name || 'avatar'} {...rest}>
+    <span className={cls} style={{ backgroundColor: hashColor(name) }} role={decorative ? undefined : 'img'}
+      aria-label={decorative ? undefined : (name || 'Avatar')} aria-hidden={decorative || undefined} {...rest}>
       {initialsOf(name)}
     </span>
   );
 }
 
-/** Overlapping row of avatars with a "+n" overflow chip. */
+/** Overlapping row of avatars with a "+n" chip; read as one image ("Ana Ruiz, Ben Ko and 3 more"). */
 export function AvatarGroup({ names = [], max = 4, size = 'sm', className = '' }) {
   const shown = names.slice(0, max);
   const extra = names.length - shown.length;
   return (
-    <span className={['gt-avatar-group', className].filter(Boolean).join(' ')}>
-      {shown.map((n) => <Avatar key={n} name={n} size={size} />)}
-      {extra > 0 && <span className={`gt-avatar gt-avatar--${size} gt-avatar--extra`}>+{extra}</span>}
+    <span className={['gt-avatar-group', className].filter(Boolean).join(' ')} role="img" aria-label={`${shown.join(', ')}${extra > 0 ? ` and ${extra} more` : ''}`}>
+      {shown.map((n) => <Avatar key={n} name={n} size={size} decorative />)}
+      {extra > 0 && <span className={`gt-avatar gt-avatar--${size} gt-avatar--extra`} aria-hidden="true">+{extra}</span>}
     </span>
   );
 }

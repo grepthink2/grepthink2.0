@@ -1,0 +1,125 @@
+<!-- @dsCard group="Components" viewport="760x1180" name="Primitives — Choices & Combobox" subtitle="Checkbox, RadioGroup (list + card), Toggle in every state; Combobox single / multi / async / creatable / grouped / empty / loading / error; phone" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../gallery.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Checkbox, RadioGroup, Toggle, Combobox } = window.GrepThinkDesignSystem_36e7e3;
+const PHONE = new URLSearchParams(location.search).has('phone');
+const PEOPLE = [
+  { value: 'ana', label: 'Ana Ruiz', description: 'aruiz@ucsc.edu · Team 4', avatar: 'Ana Ruiz', group: 'Your team' },
+  { value: 'ben', label: 'Ben Okafor', description: 'bokafor@ucsc.edu · Team 4', avatar: 'Ben Okafor', group: 'Your team' },
+  { value: 'cho', label: 'Cho Park', description: 'cpark@ucsc.edu · Team 2', avatar: 'Cho Park', group: 'Class' },
+  { value: 'dev', label: 'Dev Shah', description: 'dshah@ucsc.edu · Team 7', avatar: 'Dev Shah', group: 'Class' },
+  { value: 'eli', label: 'Eli Moreno', description: 'TA · CSE 115A', avatar: 'Eli Moreno', group: 'Staff' },
+];
+const PROJECTS = ['GrepThink 2.0', 'SlugEats', 'Bike Share Map', 'Lab Scheduler', 'Course Planner', 'Study Buddy'].map((p, i) => ({ value: `p${i}`, label: p, description: `Team ${i + 1}` }));
+const SKILLS = ['React', 'TypeScript', 'Python', 'Django', 'Figma', 'PostgreSQL', 'Swift'].map((s) => ({ value: s, label: s }));
+const search = (q) => new Promise((res) => setTimeout(() => res(PEOPLE.filter((p) => p.label.toLowerCase().includes(q.toLowerCase()))), 500));
+const isEmail = (q) => (/^\S+@\S+\.\S+$/.test(q) ? null : 'Enter a full email address.');
+
+function Phone() {
+  const [on, setOn] = React.useState(true);
+  const [ids, setIds] = React.useState(['ana']);
+  return (
+    <div className="col">
+      <p className="lbl">Phone — 44px rows and controls</p>
+      <Checkbox label="Notify my team" checked onChange={() => {}} />
+      <Toggle label="Email me before TSRs are due" checked={on} onChange={(e) => setOn(e.target.checked)} />
+      <RadioGroup variant="card" legend="Status" value="draft" onChange={() => {}} options={[{ value: 'draft', label: 'Draft', description: 'Only staff can see it' }, { value: 'pub', label: 'Published', description: 'Students see it' }]} />
+      <Combobox label="Add people" multiple options={PEOPLE} value={ids} onChange={setIds} placeholder="Search by name" />
+    </div>
+  );
+}
+
+function Demo() {
+  const [a, setA] = React.useState(true);
+  const [vis, setVis] = React.useState('open');
+  const [status, setStatus] = React.useState('draft');
+  const [pref, setPref] = React.useState(true);
+  const [proj, setProj] = React.useState('p0');
+  const [skills, setSkills] = React.useState(['React', 'Figma']);
+  const [ids, setIds] = React.useState(['ana']);
+  const [emails, setEmails] = React.useState(['ana@ucsc.edu']);
+  const [ranked, setRanked] = React.useState(['p1', 'p2', 'p3']);
+  return (
+    <div className="st">
+      <div className="sec">
+        <p className="lbl">Checkbox — unchecked · checked · indeterminate · focus · disabled · with description</p>
+        <div className="row" style={{ gap: 18 }}>
+          <Checkbox label="Unchecked" checked={false} onChange={() => {}} />
+          <Checkbox label="Checked" checked={a} onChange={(e) => setA(e.target.checked)} />
+          <Checkbox label="Select all" indeterminate checked={false} onChange={() => {}} />
+          <span className="gt-check"><input type="checkbox" className="gt-check__input" defaultChecked aria-label="Focus" /><span className="gt-check__box is-focus" aria-hidden="true" style={{ background: 'var(--gt-primary)', borderColor: 'var(--gt-primary)' }}><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></span><span className="gt-check__label">Focus</span></span>
+          <Checkbox label="Disabled" disabled checked onChange={() => {}} />
+          <Checkbox label="Notify my team" description="Members get an email when this posts" checked onChange={() => {}} />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Toggle — off · on · disabled · with description (Settings → email preferences)</p>
+        <div className="row" style={{ gap: 18 }}>
+          <Toggle label="Off" checked={false} onChange={() => {}} />
+          <Toggle label="On" checked={pref} onChange={(e) => setPref(e.target.checked)} />
+          <Toggle label="Disabled" checked disabled onChange={() => {}} />
+          <Toggle label="Email me when a TSR is due" description="Sent the day before, at 9 AM" checked onChange={() => {}} />
+        </div>
+      </div>
+
+      <div className="sec grid2">
+        <div>
+          <p className="lbl">RadioGroup — list (one disabled)</p>
+          <RadioGroup legend="Project visibility" value={vis} onChange={setVis} options={[{ value: 'open', label: 'Open', description: 'Anyone in the class can request to join' }, { value: 'invite', label: 'Invite only' }, { value: 'closed', label: 'Closed', disabled: true }]} />
+        </div>
+        <div>
+          <p className="lbl">RadioGroup — card (assignment status, template picker)</p>
+          <RadioGroup variant="card" legend="Status" value={status} onChange={setStatus} options={[{ value: 'draft', label: 'Draft', description: 'Only staff can see it' }, { value: 'published', label: 'Published', description: 'Students see it on their home page' }]} />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Combobox — single with filter · multi chips (max 3, ranked picks) · creatable skills · validated email chips · async people · disabled · error</p>
+        <div className="grid2">
+          <Combobox label="Project" options={PROJECTS} value={proj} onChange={setProj} />
+          <Combobox label="Top 3 projects" multiple max={3} options={PROJECTS} value={ranked} onChange={setRanked} helperText="In order of preference" />
+          <Combobox label="Skills" multiple creatable options={SKILLS} value={skills} onChange={setSkills} placeholder="Add a skill" />
+          <Combobox label="To" multiple creatable validateCreate={isEmail} value={emails} onChange={setEmails} placeholder="name@ucsc.edu" createLabel={(q) => `Invite “${q}”`} />
+          <Combobox label="Add people" multiple loadOptions={search} value={ids} onChange={setIds} placeholder="Search by name or email" />
+          <Combobox label="Reviewer" options={PEOPLE} value="" onChange={() => {}} error="Pick a reviewer." />
+          <Combobox label="Locked" options={PROJECTS} value="p2" onChange={() => {}} disabled />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Popup states (open for the gallery) — grouped rows with avatars · empty · loading · error</p>
+        <div className="grid2" style={{ minHeight: 330 }}>
+          <Combobox label="Grouped" defaultOpen options={PEOPLE} value="cho" onChange={() => {}} />
+          <div className="col" style={{ gap: 150 }}>
+            <Combobox label="Loading" defaultOpen minQueryLength={0} loadOptions={() => new Promise(() => {})} value="" onChange={() => {}} />
+            <Combobox label="Error" defaultOpen minQueryLength={0} loadOptions={() => Promise.reject(new Error('x'))} value="" onChange={() => {}} />
+          </div>
+        </div>
+        <div style={{ height: 120 }}><Combobox label="Empty" defaultOpen options={[]} value="" onChange={() => {}} emptyText="No projects yet" /></div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Phone width</p>
+        <iframe className="phone" src="choice.card.html?phone" height="520" title="Choices at phone width" />
+      </div>
+    </div>
+  );
+}
+if (PHONE) document.body.classList.add('is-phone');
+ReactDOM.createRoot(document.getElementById('root')).render(PHONE ? <Phone /> : <Demo />);
+</script>
+</body>
+</html>
