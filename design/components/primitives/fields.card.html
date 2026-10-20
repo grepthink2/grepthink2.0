@@ -1,0 +1,153 @@
+<!-- @dsCard group="Components" viewport="760x1320" name="Primitives — Fields & forms" subtitle="FieldShell, Input (prefix, compact, counter), Textarea, Select, PasswordField, SearchField, CodeInput, DatePickerField; the form pattern; phone" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../gallery.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Input, Textarea, Select, PasswordField, SearchField, CodeInput, DatePickerField, Button, Alert } = window.GrepThinkDesignSystem_36e7e3;
+const PHONE = new URLSearchParams(location.search).has('phone');
+const Mail = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 5L2 7" /></svg>;
+const DURATIONS = [15, 30, 45, 60, 90, 120].map((m) => ({ value: String(m), label: m < 60 ? `${m} min` : `${m / 60} hr${m > 60 ? 's' : ''}` }));
+const LONG = 'Weekly sync with our sponsor to demo the sprint board, walk through the burnup and agree the next sprint goal. '.repeat(5);
+
+function FormPattern() {
+  const [title, setTitle] = React.useState('');
+  const [date, setDate] = React.useState('');
+  const [note, setNote] = React.useState('');
+  const [errors, setErrors] = React.useState({});
+  const [saveError, setSaveError] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const submit = (e) => {
+    e.preventDefault();
+    const next = {};
+    if (!title.trim()) next.title = 'Give the meeting a title.';
+    if (!date) next.date = 'Pick a date.';
+    setErrors(next);
+    if (Object.keys(next).length) { const id = next.title ? 'f-title' : 'f-date'; const el = document.getElementById(id); if (el) el.focus(); return; }
+    setSaving(true);
+    setTimeout(() => { setSaving(false); setSaveError(true); }, 1200);
+  };
+  return (
+    <form className="panel col" noValidate onSubmit={submit}>
+      <Input id="f-title" label="Title" required value={title} onChange={(e) => setTitle(e.target.value)} error={errors.title} maxLength={80} disabled={saving} />
+      <div className="grid2">
+        <DatePickerField id="f-date" label="Date" required value={date} onChange={setDate} error={errors.date} disabledBefore={new Date()} disabled={saving} />
+        <Select label="Duration" defaultValue="60" options={DURATIONS} disabled={saving} />
+      </div>
+      <Textarea label="Note" optional rows={2} value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} disabled={saving} />
+      {saveError && <Alert tone="error" title="Couldn't save this meeting.">Your changes are still here — try again.</Alert>}
+      <div className="row" style={{ justifyContent: 'flex-end' }}>
+        <Button variant="outline" disabled={saving}>Cancel</Button>
+        <Button type="submit" loading={saving} loadingLabel="Saving…">Add meeting</Button>
+      </div>
+    </form>
+  );
+}
+
+function Phone() {
+  const [code, setCode] = React.useState('ABCD12');
+  return (
+    <div className="col">
+      <p className="lbl">Phone — 44px fields, 8-box code fits 358px</p>
+      <Input label="Email" type="email" defaultValue="slug@ucsc.edu" />
+      <PasswordField defaultValue="hunter22" />
+      <CodeInput label="Class code" length={8} groupSize={4} value={code} onChange={setCode} />
+      <Select label="Term" defaultValue="f26" options={[{ value: 'f26', label: 'Fall 2026' }, { value: 'w27', label: 'Winter 2027' }]} />
+      <DatePickerField label="Due date" value="2026-10-24" onChange={() => {}} />
+    </div>
+  );
+}
+
+function Demo() {
+  const [li, setLi] = React.useState('ashton-liu');
+  const [q, setQ] = React.useState('ana');
+  const [code, setCode] = React.useState('');
+  const [otp, setOtp] = React.useState('4821');
+  const [due, setDue] = React.useState('2026-10-24');
+  const [slot, setSlot] = React.useState('2026-11-02 15:00');
+  const [over, setOver] = React.useState(LONG.slice(0, 520));
+  return (
+    <div className="st">
+      <div className="sec">
+        <p className="lbl">Input — default · hover · focus · error · disabled · optional · prefix · icon + compact</p>
+        <div className="grid3">
+          <Input label="Project name" placeholder="e.g. GrepThink 2.0" />
+          <div className="is-hover-field"><Input label="Hover" defaultValue="Hovered field" /></div>
+          <div className="is-focus-field"><Input label="Focus" defaultValue="Focused field" /></div>
+          <Input label="Email" defaultValue="slug@gmail.com" error="Use your @ucsc.edu address." />
+          <Input label="Team" defaultValue="Team 4" disabled helperText="Set by your instructor" />
+          <Input label="Pronouns" optional placeholder="she / her" />
+          <Input label="LinkedIn" optional prefixText="linkedin.com/in/" value={li} onChange={(e) => setLi(e.target.value)} />
+          <Input label="Filter" hideLabel compact iconLeft={<Mail />} placeholder="Compact 32px, hidden label" />
+          <Input label="Hours" type="number" defaultValue="6" suffix="hrs" />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Textarea counter — under the limit · over the limit (kept, flagged) · disabled</p>
+        <div className="grid3">
+          <Textarea label="What went well?" rows={3} value="Ana unblocked the API tests on Tuesday." onChange={() => {}} maxLength={500} />
+          <Textarea label="Note" optional rows={3} value={over} onChange={(e) => setOver(e.target.value)} maxLength={500} error={over.length > 500 ? `Shorten this by ${over.length - 500} characters.` : undefined} />
+          <Textarea label="Feedback" rows={3} defaultValue="Locked after the deadline." disabled />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Select (native, optgroups, compact) · PasswordField · SearchField</p>
+        <div className="grid3">
+          <Select label="Duration" defaultValue="60" options={DURATIONS} />
+          <Select label="Sprint" compact defaultValue="s3" options={[{ label: 'Current', options: [{ value: 's3', label: 'Sprint 3' }] }, { label: 'Past', options: [{ value: 's2', label: 'Sprint 2' }, { value: 's1', label: 'Sprint 1' }] }]} />
+          <Select label="Role" placeholder="Choose a role" defaultValue="" error="Pick a role." options={[{ value: 'po', label: 'Product Owner' }, { value: 'sm', label: 'Scrum Master' }]} />
+          <PasswordField defaultValue="correct-horse" />
+          <PasswordField label="New password" autoComplete="new-password" defaultValue="short" error="Use at least 8 characters." />
+          <div className="col"><SearchField label="Search classmates" value={q} onChange={setQ} placeholder="Search by name or email…" /><SearchField label="Search projects" compact value="" onChange={() => {}} /><SearchField label="Search" disabled value="" onChange={() => {}} /></div>
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">CodeInput — empty · partly filled · error · disabled</p>
+        <div className="grid2">
+          <CodeInput label="Class code" length={8} groupSize={4} value={code} onChange={setCode} helperText="8 characters from your instructor" />
+          <CodeInput label="Verification code" numeric length={6} value={otp} onChange={setOtp} />
+          <CodeInput label="Class code" length={8} groupSize={4} value="QWERTY12" onChange={() => {}} error="That code doesn't match a class. Check it with your instructor." />
+          <CodeInput label="Verification code" numeric length={6} value="123456" onChange={() => {}} disabled />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">DatePickerField — empty · filled · date + time · error · disabled (click a trigger: calendar portals above everything)</p>
+        <div className="grid3">
+          <DatePickerField label="Start date" value="" onChange={() => {}} />
+          <DatePickerField label="Due date" value={due} onChange={setDue} disabledBefore={new Date()} />
+          <DatePickerField label="Review slot" showTime value={slot} onChange={setSlot} helperText="Your time (PT)" />
+          <DatePickerField label="Ends" required value="" onChange={() => {}} error="Pick an end date." />
+          <DatePickerField label="Locked" value="2026-09-24" onChange={() => {}} disabled />
+        </div>
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Form pattern — field grid, "(optional)", errors under fields, focus to the first invalid field, save error above right-aligned actions (submit empty, then fill and submit)</p>
+        <FormPattern />
+      </div>
+
+      <div className="sec">
+        <p className="lbl">Phone width</p>
+        <iframe className="phone" src="fields.card.html?phone" height="560" title="Fields at phone width" />
+      </div>
+    </div>
+  );
+}
+if (PHONE) document.body.classList.add('is-phone');
+ReactDOM.createRoot(document.getElementById('root')).render(PHONE ? <Phone /> : <Demo />);
+</script>
+</body>
+</html>

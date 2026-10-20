@@ -20,30 +20,5 @@ export function SearchTrigger({ label = 'Search', onOpen, iconOnly = false, clas
   );
 }
 
-/**
- * The one local filter input (roster, member manager, project assign,
- * conversation list…). Debounce in the caller; this is presentational.
- */
-export function SearchField({ value = '', onChange, placeholder = 'Search…', ariaLabel, size = 'md', fullWidth = false, disabled = false, onClear, className = '', ...rest }) {
-  const cls = ['gt-search-field', size === 'sm' ? 'gt-search-field--sm' : '', fullWidth ? 'gt-search-field--full' : '', className].filter(Boolean).join(' ');
-  return (
-    <div className={cls}>
-      <span className="gt-search-field__icon"><SearchGlyph size={15} /></span>
-      <input
-        type="search"
-        className="gt-search-field__input"
-        value={value}
-        onChange={(e) => onChange && onChange(e.target.value)}
-        placeholder={placeholder}
-        aria-label={ariaLabel || placeholder}
-        disabled={disabled}
-        {...rest}
-      />
-      {value && !disabled && (
-        <button type="button" className="gt-search-field__clear" aria-label="Clear search" onClick={() => { onChange && onChange(''); onClear && onClear(); }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>
-      )}
-    </div>
-  );
-}
+/* SearchField — the inline filter input — moved to components/primitives/SearchField.jsx
+   in the alignment round (2026-10-19); import it from there. */

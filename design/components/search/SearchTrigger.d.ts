@@ -9,26 +9,8 @@ export interface SearchTriggerProps extends Omit<React.ButtonHTMLAttributes<HTML
   iconOnly?: boolean;
 }
 
-export interface SearchFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value' | 'size'> {
-  value?: string;
-  /** Receives the new string (not the event). */
-  onChange?: (value: string) => void;
-  /** @default 'Search…' */
-  placeholder?: string;
-  /** Falls back to placeholder. */
-  ariaLabel?: string;
-  /** @default 'md' (36px); 'sm' = 32px */
-  size?: 'sm' | 'md';
-  /** Remove the 320px max-width. @default false */
-  fullWidth?: boolean;
-  disabled?: boolean;
-  onClear?: () => void;
-}
-
 /**
  * Header button that opens the global ⌘K search.
  * @startingPoint section="Search" subtitle="Header trigger for the ⌘K palette" viewport="700x120"
  */
 export function SearchTrigger(props: SearchTriggerProps): React.JSX.Element;
-/** The standard inline filter input for lists and tables. */
-export function SearchField(props: SearchFieldProps): React.JSX.Element;

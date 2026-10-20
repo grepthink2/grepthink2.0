@@ -91,7 +91,7 @@ export function AnalyticsFilterRow({
               <button
                 key={p.value}
                 type="button"
-                className={['gt-filter__chip', active ? 'gt-filter__chip--active' : ''].filter(Boolean).join(' ')}
+                className={['gt-filter-chip', active ? 'gt-filter-chip--selected' : ''].filter(Boolean).join(' ')}
                 aria-pressed={active}
                 disabled={disabled || needsClass}
                 title={needsClass ? 'Select a class first' : undefined}
@@ -104,7 +104,7 @@ export function AnalyticsFilterRow({
           <span className="gt-filter__custom" ref={popRef}>
             <button
               type="button"
-              className={['gt-filter__chip', range.preset === 'custom' ? 'gt-filter__chip--active' : ''].filter(Boolean).join(' ')}
+              className={['gt-filter-chip', range.preset === 'custom' ? 'gt-filter-chip--selected' : ''].filter(Boolean).join(' ')}
               aria-pressed={range.preset === 'custom'}
               aria-haspopup="dialog"
               aria-expanded={open}

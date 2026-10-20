@@ -45,12 +45,12 @@ function Demo() {
   const failSearch = React.useCallback(() => Promise.reject(new Error('offline')), []);
   return (
     <div>
-      <p className="lbl">SearchTrigger (header) · icon-only (phone) · SearchField (local filter, md / sm / disabled)</p>
+      <p className="lbl">SearchTrigger (header) · icon-only (phone) · SearchField (primitive: 36 / compact 32 / disabled)</p>
       <div className="row">
         <SearchTrigger onOpen={() => setOpen(true)} />
         <SearchTrigger iconOnly onOpen={() => setOpen(true)} />
         <SearchField value={q} onChange={setQ} placeholder="Search by name or email…" />
-        <SearchField size="sm" value="" onChange={() => {}} placeholder="Search classmates…" />
+        <SearchField compact label="Search classmates" value="" onChange={() => {}} placeholder="Search classmates…" />
         <SearchField value="" onChange={() => {}} placeholder="Search…" disabled />
       </div>
       <CommandPalette open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)} items={items} recent={recent} onSelect={(it, route) => console.log('open', route)} />

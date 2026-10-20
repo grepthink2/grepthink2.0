@@ -34,7 +34,9 @@
   --gt-z-base:     1;    /* @kind other */
   --gt-z-dropdown: 10;   /* @kind other */
   --gt-z-modal:    100;  /* @kind other */
-  --gt-z-tooltip:  1000; /* @kind other */
+  --gt-z-sidebar:  99;   /* @kind other */ /* app sidebar + header; modals sit above */
+  --gt-z-tooltip:  1000; /* @kind other */ /* tooltips and the toast stack */
+  --gt-z-picker:   1100; /* @kind other */ /* DatePickerField calendar, portaled above modals */
 
   /* Layout */
   --gt-container:  543px;

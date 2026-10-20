@@ -135,17 +135,21 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 - `assets/` — `grepthink-logo.svg`, `google.svg`
 - `guidelines/` — foundation specimen cards (colors, type, spacing, brand) + `marketing-*.html`
   (scope, gradient & backdrops, card shell, band layout, badges, dark chrome, motion, responsive)
-- `components/primitives/` — Button, IconButton, Input, Textarea, Select, Checkbox, RadioGroup,
-  Toggle, DatePickerField
-- `components/display/` — Badge, Tag, Avatar (+AvatarGroup), Card, Table, StatCard, ProgressBar,
-  Tooltip
-- `components/feedback/` — Modal, Alert, Toast (+ToastStack), Popover, Menu (+MenuItem,
-  MenuSeparator), EmptyState (+Skeleton)
-- `components/navigation/` — Tabs, Pagination, SegmentedControl, SidebarNavItem
-  (+SidebarSectionTitle)
+- `components/primitives/` — Button, IconButton, FieldShell, Input, Textarea, Select, SearchField, PasswordField, CodeInput,
+  Combobox (+comboFilter), Checkbox, RadioGroup (list + card), Toggle, DatePickerField (+parseDateValue), FileUpload
+  (+formatFileSize), MarkdownEditor (+renderMarkdownLite); galleries `primitives` (buttons), `fields`, `choice`, `upload`
+- `components/display/` — Badge (+BADGE_STATUS, BADGE_CATEGORY, PROJECT_ROLES), CountBadge, UnreadBadge, Tag, Avatar
+  (+AvatarGroup, AVATAR_COLORS, hashColor, initialsOf), Card, Table, StatCard, ProgressBar, Tooltip, InfoPopover; galleries
+  `display`, `cards`
+- `components/feedback/` — Modal (+useDialog), ConfirmDialog (+InlineConfirm), Drawer, Alert, Toast (+ToastStack), Popover,
+  Menu (+MenuItem, MenuSeparator), Spinner, EmptyState (+NoClassSelected, Skeleton); galleries `feedback`, `dialogs`,
+  `toast`, `popover`
+- `components/navigation/` — Tabs (+TabPanel), SegmentedControl, FilterChip (+FilterChipGroup), Stepper, Pagination,
+  SidebarNavItem (+SidebarSectionTitle)
+- `components/gallery.css` — chrome for the component cards (forced hover / focus, phone frame); not ported
 - `components/domain/` — RosterRow, ProjectCard, TeamMemberCard (+RoleSelect), JoinRequestCard,
   AssignmentCard, TSRForm, TSRSummaryCard, RankedProjectSlot, ConversationListItem
-  (+MessageBubble, MessageComposer, UnreadBadge), TypingIndicator, MeetingCard, PieChartCard (+BarChartCard,
+  (+MessageBubble, MessageComposer; UnreadBadge moved to `display/`), TypingIndicator, MeetingCard, PieChartCard (+BarChartCard,
   CHART_COLORS)
 - `components/figma-reference/` — raw materialized Figma-file components (library artifacts kept
   for fidelity, **not** part of the product API): Arrow, ButtonContentArea, Grid, Icons, Monitor,
@@ -160,7 +164,7 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   WeeklyLine, SplitBar, StackedBars (+BOARD_STATUSES), TimelinessBars (+TIMELINESS_BUCKETS), OnTimeMeter,
   BarsBySprint, TrendLines, BreakdownTable (+BREAKDOWN_COLUMNS, TEAM_BREAKDOWN_COLUMNS, TIMELINESS_COLUMNS)
 - `components/search/` — global ⌘K search layer (2026-10 feature design, see `design_handoff_search/`):
-  CommandPalette (+usePaletteHotkey), SearchTrigger (+SearchField), ResultRow (+ResultGroup),
+  CommandPalette (+usePaletteHotkey), SearchTrigger (SearchField moved to `primitives/`), ResultRow (+ResultGroup),
   SearchPagination, EntityIcon, MatchText, Kbd (+modKey), SearchModel (+SEARCH_ENTITIES, rankResults,
   paginate, routeFor, useDebounced)
 - `ui_kits/grepthink/search.html` — the palette open over the app shell (states + phone)
@@ -201,6 +205,8 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
   contract, PR-link research pointer, open gaps in `NOTES.md`)
 - `design_handoff_schedule/` — implementation handoff for the Schedule family (kind palette, component specs, time-zone
   rule, data contract + source tables, open questions in `NOTES.md`)
+- `design_handoff_ui_alignment/` — the 2026-10-19 alignment round: shared-component specs, decisions, status colour map,
+  answers and port questions in `NOTES.md`
 - `design_handoff_team_meetings/` — implementation handoff for Team meetings (Meetings tab + project card: specs, validation,
   data contract, PO gating and table questions in `NOTES.md`)
 - `frontend/` — reference copies from the real codebase (read-only): `src/styles/**` (token CSS + SCSS bridge),
@@ -210,7 +216,7 @@ if you need self-hosted files, drop them in `assets/fonts/` and swap the `@impor
 - `SKILL.md` — agent skill entry point
 
 ### Intentional additions
-Every component outside `components/figma-reference/` (148 of 164 exports) is an intentional addition —
+Every component outside `components/figma-reference/` (168 of 184 exports) is an intentional addition —
 confirmed, not a naming slip. The Figma file's own component sets are generic UI-kit library artifacts (Scrollbar, Monitor,
 Thumb, Grid…), so the product component inventory comes from the maintainer's written spec and
 the codebase's screens instead. Every `gt-*` component below is an **intentional addition**
@@ -351,3 +357,26 @@ additions; the project's own one-off meetings, kind `meeting` in the schedule la
 - `TeamMeetingsList` — `variant="manage"` (Edit Project → Meetings tab, Product Owner only: upcoming / Past (n), inline add · edit · delete confirm) and `variant="card"` (project-page card body: compact `ScheduleItem` rows by day, Past meetings (n), quiet "Add one" for the PO)
 - `TeamMeetingForm` — inline add / edit (title ≤ 80 · date · start · duration · room · Zoom · note ≤ 500) on the viewer's clock with the campus time under the time field
 - `TeamMeetingsModel` (+`TEAM_MEETING_TITLE_MAX`, `TEAM_MEETING_NOTE_MAX`, `TEAM_MEETING_DEFAULT_DURATION`, `TEAM_MEETING_DURATIONS`) — pure split / validation / zone-conversion / ScheduleItem-conversion model
+
+**Alignment round (2026-10-19)** — shared components the codebase ports once into `frontend/src/components/<Name>/`:
+- `FieldShell` — intentional addition; the `.gt-field` shell (label / hideLabel / "(optional)", error, counter, describedby wiring) every field shares
+- `SearchField` — intentional addition; promoted from the search layer: the app's inline filter input (roster, member manager, conversation list)
+- `PasswordField` — intentional addition; the sign-in / sign-up / reset password inputs with the show / hide toggle
+- `CodeInput` — intentional addition; class join code (8) and email verification code (6) boxes
+- `Combobox` (+`comboFilter`) — intentional addition; replaces the TSR searchable dropdown, interest-form pickers, staffing search, people search, skills input, invite email chips
+- `FileUpload` (+`formatFileSize`) — intentional addition; avatar / project-logo picker and the roster CSV drop area
+- `MarkdownEditor` (+`renderMarkdownLite`) — intentional addition; project descriptions and the public issue form (Write / Preview)
+- `parseDateValue` — intentional addition; helper for the DatePickerField string contract
+- `CountBadge` — intentional addition; the neutral count pill (tab counts, list totals)
+- `UnreadBadge` — intentional addition; moved from `domain/ConversationListItem` to `display/` as the one red unread pill
+- `InfoPopover` — intentional addition; promoted from analytics' DefinitionPopover; replaces StatTooltip and GroupTooltip
+- `BADGE_STATUS`, `BADGE_CATEGORY`, `PROJECT_ROLES` — intentional additions; the status colour rule and category / role presets behind Badge
+- `ConfirmDialog` — intentional addition; replaces ConfirmModal, `window.confirm` and `alert()`
+- `InlineConfirm` — intentional addition; the row-level delete inside a dialog (team meetings' confirm row)
+- `Drawer` — intentional addition; the assignment editor's side sheet and the phone navigation
+- `useDialog` — intentional addition; the shared dialog behaviour (stack, focus, scroll lock) for Modal / ConfirmDialog / Drawer
+- `Spinner` — intentional addition; the one loading indicator (replaces 20 spinners on 9 keyframes)
+- `NoClassSelected` — intentional addition; the one "No class selected" state for 14 pages
+- `TabPanel` — intentional addition; the tab panel paired with Tabs (aria-controls / aria-labelledby)
+- `FilterChip` (+`FilterChipGroup`) — intentional addition; promoted from the search scope chip, analytics range chip and schedule kind chip
+- `Stepper` — intentional addition; the TSR form's steps

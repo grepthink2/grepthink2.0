@@ -3,7 +3,7 @@
 ```jsx
 <SearchTrigger onOpen={() => setOpen(true)} />
 <SearchTrigger iconOnly onOpen={open} />            // phone header
-<SearchField value={q} onChange={setQ} placeholder="Search by name or email…" />
+// the inline filter input is the primitive SearchField (components/primitives/SearchField.jsx)
 ```
 
 Props: trigger `label`, `iconOnly`; field `size` (`sm`|`md`), `fullWidth`, `disabled`, `onClear`.

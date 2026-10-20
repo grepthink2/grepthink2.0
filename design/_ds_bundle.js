@@ -1,4 +1,4 @@
-/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardTool","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardCheck","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartEmptyState","sourcePath":"components/analytics/ChartEmptyState.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"DefinitionPopover","sourcePath":"components/analytics/DefinitionPopover.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StatTile","sourcePath":"components/analytics/StatTile.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"UnreadBadge","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMeetingForm","sourcePath":"components/domain/TeamMeetingForm.jsx"},{"name":"TeamMeetingsList","sourcePath":"components/domain/TeamMeetingsList.jsx"},{"name":"TEAM_MEETING_TITLE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_NOTE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DEFAULT_DURATION","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DURATIONS","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMeetingsModel","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"Arrow","sourcePath":"components/figma-reference/Arrow.jsx"},{"name":"ButtonContentArea","sourcePath":"components/figma-reference/ButtonContentArea.jsx"},{"name":"Calendar","sourcePath":"components/figma-reference/Calendar.jsx"},{"name":"DAvatars223","sourcePath":"components/figma-reference/DAvatars223.jsx"},{"name":"DAvatars63","sourcePath":"components/figma-reference/DAvatars63.jsx"},{"name":"DateActive","sourcePath":"components/figma-reference/DateActive.jsx"},{"name":"DateInactive","sourcePath":"components/figma-reference/DateInactive.jsx"},{"name":"Favorite","sourcePath":"components/figma-reference/Favorite.jsx"},{"name":"Grid","sourcePath":"components/figma-reference/Grid.jsx"},{"name":"Icons","sourcePath":"components/figma-reference/Icons.jsx"},{"name":"Monitor","sourcePath":"components/figma-reference/Monitor.jsx"},{"name":"Month","sourcePath":"components/figma-reference/Month.jsx"},{"name":"Navigation","sourcePath":"components/figma-reference/Navigation.jsx"},{"name":"Scrollbar","sourcePath":"components/figma-reference/Scrollbar.jsx"},{"name":"Thumb","sourcePath":"components/figma-reference/Thumb.jsx"},{"name":"ToggleSwitch","sourcePath":"components/figma-reference/ToggleSwitch.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"ScheduleDayHeader","sourcePath":"components/schedule/ScheduleDayHeader.jsx"},{"name":"ScheduleDivider","sourcePath":"components/schedule/ScheduleDivider.jsx"},{"name":"ScheduleIcon","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleItem","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleList","sourcePath":"components/schedule/ScheduleList.jsx"},{"name":"SCHOOL_ZONE","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"JOIN_WINDOW_MS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"COUNTDOWN_DAYS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"SCHEDULE_KINDS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"ScheduleModel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"},{"name":"SearchField","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"28ffe2b0b65c","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"bab9bbee64ce","components/analytics/ChartEmptyState.jsx":"97c8e5272c77","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/DefinitionPopover.jsx":"f65cc5200c24","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/StatTile.jsx":"86841d27a604","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"cc24daede726","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"e87694c0f32c","components/display/Badge.jsx":"180509dfc2c9","components/display/Card.jsx":"4ba0490439c9","components/display/ProgressBar.jsx":"0b4aaf2c1290","components/display/StatCard.jsx":"57f73bd82bca","components/display/Table.jsx":"ca3970dc13d3","components/display/Tag.jsx":"e3ab4e532516","components/display/Tooltip.jsx":"fdf93185ec4e","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"497141765f63","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"cee7f6e18f47","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMeetingForm.jsx":"d3569d566cf4","components/domain/TeamMeetingsList.jsx":"af2eb2deea8a","components/domain/TeamMeetingsModel.jsx":"0c0f093c5b00","components/domain/TeamMemberCard.jsx":"6df7ada471d5","components/domain/TypingIndicator.jsx":"87abba71cd36","components/domain/teamMeetingsData.js":"e0e94053f793","components/domain/teamMeetingsSrcLoader.js":"0d9182269148","components/feedback/Alert.jsx":"9fd839b8885b","components/feedback/EmptyState.jsx":"ade9686d1d6c","components/feedback/Menu.jsx":"f2803bde1913","components/feedback/Modal.jsx":"b3423627eb3e","components/feedback/Popover.jsx":"5c61a414f282","components/feedback/Toast.jsx":"7cea98a32e2b","components/figma-reference/Arrow.jsx":"b47fae3b397e","components/figma-reference/ButtonContentArea.jsx":"d04e8778b0cd","components/figma-reference/Calendar.jsx":"e9b4e8547380","components/figma-reference/DAvatars223.jsx":"f8a6724e71c1","components/figma-reference/DAvatars63.jsx":"eabe483d1087","components/figma-reference/DateActive.jsx":"98368642fc18","components/figma-reference/DateInactive.jsx":"aa5b005439e4","components/figma-reference/Favorite.jsx":"cf904bbc095e","components/figma-reference/Grid.jsx":"ffce96c170ef","components/figma-reference/Icons.jsx":"8c100167f4e4","components/figma-reference/Monitor.jsx":"fed77441cdb3","components/figma-reference/Month.jsx":"753bdc051edd","components/figma-reference/Navigation.jsx":"4ca43ce20a81","components/figma-reference/Scrollbar.jsx":"2c920accb1b9","components/figma-reference/Thumb.jsx":"fe01d87bb4eb","components/figma-reference/ToggleSwitch.jsx":"4eaaaf74364f","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"18c33813ee4c","components/navigation/SidebarNavItem.jsx":"da5237605ea2","components/navigation/Tabs.jsx":"a1cbfe065547","components/primitives/Button.jsx":"5eacee058949","components/primitives/Checkbox.jsx":"a9a0b92b227a","components/primitives/DatePickerField.jsx":"ad63bc301a8b","components/primitives/IconButton.jsx":"ab72be8fcc12","components/primitives/Input.jsx":"89d3caa5e496","components/primitives/RadioGroup.jsx":"b3bb3e033eb8","components/primitives/Select.jsx":"8dec7dc350d7","components/primitives/Textarea.jsx":"40b57e72e0b1","components/primitives/Toggle.jsx":"cbbe66982d51","components/schedule/ScheduleDayHeader.jsx":"90ffba22a0e8","components/schedule/ScheduleDivider.jsx":"b6e47ba7e0d5","components/schedule/ScheduleItem.jsx":"13adbe3e120c","components/schedule/ScheduleList.jsx":"4ba48a676d71","components/schedule/ScheduleModel.jsx":"6f175cb8c5b9","components/schedule/scheduleData.js":"487a52d77d86","components/schedule/scheduleSrcLoader.js":"ddd0381767b6","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","components/search/CommandPalette.jsx":"91b68465b97d","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"dbdea95a0d31","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"5fa718bd8651","ui_kits/grepthink/App.jsx":"b4731ebd95d5","ui_kits/grepthink/ScheduleScreen.jsx":"bbc70119a451","ui_kits/grepthink/Screens.jsx":"ee94282eb492","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/Shell.jsx":"c8070c465885","ui_kits/grepthink/TeamMeetingsScreen.jsx":"ee83a4b3e148","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"68373b119804"},"inlinedExternals":[],"unexposedExports":[{"name":"campusTimeOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"countdown","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dayKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"draftFrom","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"endsAtOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"findOverlaps","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDayLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtMeetingWhen","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtTime","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtTimeRange","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeekLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"groupByDay","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"instantToZoned","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isHttpUrl","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isJoinable","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isLive","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isPast","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isoDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isoMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"keyToDate","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"kindMeta","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"nextUp","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"nowIndex","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"shiftKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"showTeamMeetingsCard","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"sortItems","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"splitMeetings","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"statusOf","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"toScheduleItem","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"todayOrPeek","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useNow","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"},{"name":"validateTeamMeeting","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"viewerZone","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"weekKeys","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneDiffers","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zonedToInstant","sourcePath":"components/domain/TeamMeetingsModel.jsx"}]} */
+/* @ds-bundle: {"format":4,"namespace":"GrepThinkDesignSystem_36e7e3","components":[{"name":"RANGE_PRESETS","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"AnalyticsFilterRow","sourcePath":"components/analytics/AnalyticsFilterRow.jsx"},{"name":"BarsBySprint","sourcePath":"components/analytics/BarsBySprint.jsx"},{"name":"BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TEAM_BREAKDOWN_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"TIMELINESS_COLUMNS","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"BreakdownTable","sourcePath":"components/analytics/BreakdownTable.jsx"},{"name":"ChartCard","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardTool","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartCardCheck","sourcePath":"components/analytics/ChartCard.jsx"},{"name":"ChartEmptyState","sourcePath":"components/analytics/ChartEmptyState.jsx"},{"name":"AnalyticsIcon","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartLegend","sourcePath":"components/analytics/ChartLegend.jsx"},{"name":"ChartFormat","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"ChartTooltip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"DefinitionPopover","sourcePath":"components/analytics/DefinitionPopover.jsx"},{"name":"LivePill","sourcePath":"components/analytics/LivePill.jsx"},{"name":"OnTimeMeter","sourcePath":"components/analytics/OnTimeMeter.jsx"},{"name":"SplitBar","sourcePath":"components/analytics/SplitBar.jsx"},{"name":"BOARD_STATUSES","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StackedBars","sourcePath":"components/analytics/StackedBars.jsx"},{"name":"StatTile","sourcePath":"components/analytics/StatTile.jsx"},{"name":"TIMELINESS_BUCKETS","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TimelinessBars","sourcePath":"components/analytics/TimelinessBars.jsx"},{"name":"TrendLines","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"UnitToggle","sourcePath":"components/analytics/UnitToggle.jsx"},{"name":"WeeklyLine","sourcePath":"components/analytics/WeeklyLine.jsx"},{"name":"AssistantIcon","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantMark","sourcePath":"components/assistant/AssistantIcon.jsx"},{"name":"AssistantSuggestionCard","sourcePath":"components/assistant/AssistantSuggestionCard.jsx"},{"name":"ReportCheckCard","sourcePath":"components/assistant/ReportCheckCard.jsx"},{"name":"StalledFlag","sourcePath":"components/assistant/StalledFlag.jsx"},{"name":"UnlinkedPRChip","sourcePath":"components/assistant/UnlinkedPRChip.jsx"},{"name":"AVATAR_COLORS","sourcePath":"components/display/Avatar.jsx"},{"name":"Avatar","sourcePath":"components/display/Avatar.jsx"},{"name":"AvatarGroup","sourcePath":"components/display/Avatar.jsx"},{"name":"BADGE_STATUS","sourcePath":"components/display/Badge.jsx"},{"name":"BADGE_CATEGORY","sourcePath":"components/display/Badge.jsx"},{"name":"PROJECT_ROLES","sourcePath":"components/display/Badge.jsx"},{"name":"Badge","sourcePath":"components/display/Badge.jsx"},{"name":"Card","sourcePath":"components/display/Card.jsx"},{"name":"CountBadge","sourcePath":"components/display/CountBadge.jsx"},{"name":"InfoPopover","sourcePath":"components/display/InfoPopover.jsx"},{"name":"ProgressBar","sourcePath":"components/display/ProgressBar.jsx"},{"name":"StatCard","sourcePath":"components/display/StatCard.jsx"},{"name":"Table","sourcePath":"components/display/Table.jsx"},{"name":"Tag","sourcePath":"components/display/Tag.jsx"},{"name":"Tooltip","sourcePath":"components/display/Tooltip.jsx"},{"name":"UnreadBadge","sourcePath":"components/display/UnreadBadge.jsx"},{"name":"AssignmentCard","sourcePath":"components/domain/AssignmentCard.jsx"},{"name":"ConversationListItem","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageBubble","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"MessageComposer","sourcePath":"components/domain/ConversationListItem.jsx"},{"name":"JoinRequestCard","sourcePath":"components/domain/JoinRequestCard.jsx"},{"name":"MeetingCard","sourcePath":"components/domain/MeetingCard.jsx"},{"name":"CHART_COLORS","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"PieChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"BarChartCard","sourcePath":"components/domain/PieChartCard.jsx"},{"name":"ProjectCard","sourcePath":"components/domain/ProjectCard.jsx"},{"name":"RankedProjectSlot","sourcePath":"components/domain/RankedProjectSlot.jsx"},{"name":"RosterRow","sourcePath":"components/domain/RosterRow.jsx"},{"name":"TSRForm","sourcePath":"components/domain/TSRForm.jsx"},{"name":"TSRSummaryCard","sourcePath":"components/domain/TSRSummaryCard.jsx"},{"name":"TeamMeetingForm","sourcePath":"components/domain/TeamMeetingForm.jsx"},{"name":"TeamMeetingsList","sourcePath":"components/domain/TeamMeetingsList.jsx"},{"name":"TEAM_MEETING_TITLE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_NOTE_MAX","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DEFAULT_DURATION","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TEAM_MEETING_DURATIONS","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMeetingsModel","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"TeamMemberCard","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"RoleSelect","sourcePath":"components/domain/TeamMemberCard.jsx"},{"name":"TypingIndicator","sourcePath":"components/domain/TypingIndicator.jsx"},{"name":"Alert","sourcePath":"components/feedback/Alert.jsx"},{"name":"ConfirmDialog","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"InlineConfirm","sourcePath":"components/feedback/ConfirmDialog.jsx"},{"name":"Drawer","sourcePath":"components/feedback/Drawer.jsx"},{"name":"EmptyState","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"NoClassSelected","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Skeleton","sourcePath":"components/feedback/EmptyState.jsx"},{"name":"Menu","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuItem","sourcePath":"components/feedback/Menu.jsx"},{"name":"MenuSeparator","sourcePath":"components/feedback/Menu.jsx"},{"name":"Modal","sourcePath":"components/feedback/Modal.jsx"},{"name":"Popover","sourcePath":"components/feedback/Popover.jsx"},{"name":"Spinner","sourcePath":"components/feedback/Spinner.jsx"},{"name":"Toast","sourcePath":"components/feedback/Toast.jsx"},{"name":"ToastStack","sourcePath":"components/feedback/Toast.jsx"},{"name":"Arrow","sourcePath":"components/figma-reference/Arrow.jsx"},{"name":"ButtonContentArea","sourcePath":"components/figma-reference/ButtonContentArea.jsx"},{"name":"Calendar","sourcePath":"components/figma-reference/Calendar.jsx"},{"name":"DAvatars223","sourcePath":"components/figma-reference/DAvatars223.jsx"},{"name":"DAvatars63","sourcePath":"components/figma-reference/DAvatars63.jsx"},{"name":"DateActive","sourcePath":"components/figma-reference/DateActive.jsx"},{"name":"DateInactive","sourcePath":"components/figma-reference/DateInactive.jsx"},{"name":"Favorite","sourcePath":"components/figma-reference/Favorite.jsx"},{"name":"Grid","sourcePath":"components/figma-reference/Grid.jsx"},{"name":"Icons","sourcePath":"components/figma-reference/Icons.jsx"},{"name":"Monitor","sourcePath":"components/figma-reference/Monitor.jsx"},{"name":"Month","sourcePath":"components/figma-reference/Month.jsx"},{"name":"Navigation","sourcePath":"components/figma-reference/Navigation.jsx"},{"name":"Scrollbar","sourcePath":"components/figma-reference/Scrollbar.jsx"},{"name":"Thumb","sourcePath":"components/figma-reference/Thumb.jsx"},{"name":"ToggleSwitch","sourcePath":"components/figma-reference/ToggleSwitch.jsx"},{"name":"AnnouncementPill","sourcePath":"components/marketing/AnnouncementPill.jsx"},{"name":"ClosingBand","sourcePath":"components/marketing/ClosingBand.jsx"},{"name":"ContactCard","sourcePath":"components/marketing/ContactCard.jsx"},{"name":"Eyebrow","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"MarketingBadge","sourcePath":"components/marketing/Eyebrow.jsx"},{"name":"FeatureColumn","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"PreviewWindow","sourcePath":"components/marketing/FeatureColumn.jsx"},{"name":"FloatCard","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"FloatingCards","sourcePath":"components/marketing/FloatCard.jsx"},{"name":"Hero","sourcePath":"components/marketing/Hero.jsx"},{"name":"LandingFooter","sourcePath":"components/marketing/LandingFooter.jsx"},{"name":"LandingHeader","sourcePath":"components/marketing/LandingHeader.jsx"},{"name":"Spotlight","sourcePath":"components/marketing/Spotlight.jsx"},{"name":"StageCard","sourcePath":"components/marketing/StageCard.jsx"},{"name":"Stage","sourcePath":"components/marketing/StageCard.jsx"},{"name":"FilterChip","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"FilterChipGroup","sourcePath":"components/navigation/FilterChip.jsx"},{"name":"Pagination","sourcePath":"components/navigation/Pagination.jsx"},{"name":"SegmentedControl","sourcePath":"components/navigation/SegmentedControl.jsx"},{"name":"SidebarNavItem","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"SidebarSectionTitle","sourcePath":"components/navigation/SidebarNavItem.jsx"},{"name":"Stepper","sourcePath":"components/navigation/Stepper.jsx"},{"name":"Tabs","sourcePath":"components/navigation/Tabs.jsx"},{"name":"TabPanel","sourcePath":"components/navigation/Tabs.jsx"},{"name":"Button","sourcePath":"components/primitives/Button.jsx"},{"name":"Checkbox","sourcePath":"components/primitives/Checkbox.jsx"},{"name":"CodeInput","sourcePath":"components/primitives/CodeInput.jsx"},{"name":"Combobox","sourcePath":"components/primitives/Combobox.jsx"},{"name":"DatePickerField","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"FieldShell","sourcePath":"components/primitives/FieldShell.jsx"},{"name":"FileUpload","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"IconButton","sourcePath":"components/primitives/IconButton.jsx"},{"name":"Input","sourcePath":"components/primitives/Input.jsx"},{"name":"MarkdownEditor","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"PasswordField","sourcePath":"components/primitives/PasswordField.jsx"},{"name":"RadioGroup","sourcePath":"components/primitives/RadioGroup.jsx"},{"name":"SearchField","sourcePath":"components/primitives/SearchField.jsx"},{"name":"Select","sourcePath":"components/primitives/Select.jsx"},{"name":"Textarea","sourcePath":"components/primitives/Textarea.jsx"},{"name":"Toggle","sourcePath":"components/primitives/Toggle.jsx"},{"name":"ScheduleDayHeader","sourcePath":"components/schedule/ScheduleDayHeader.jsx"},{"name":"ScheduleDivider","sourcePath":"components/schedule/ScheduleDivider.jsx"},{"name":"ScheduleIcon","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleItem","sourcePath":"components/schedule/ScheduleItem.jsx"},{"name":"ScheduleList","sourcePath":"components/schedule/ScheduleList.jsx"},{"name":"SCHOOL_ZONE","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"JOIN_WINDOW_MS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"COUNTDOWN_DAYS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"SCHEDULE_KINDS","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"ScheduleModel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"AIDraftButton","sourcePath":"components/scrum/AIDraftButton.jsx"},{"name":"BacklogRow","sourcePath":"components/scrum/BacklogRow.jsx"},{"name":"BurnupChart","sourcePath":"components/scrum/BurnupChart.jsx"},{"name":"MarkdownText","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"CommentThread","sourcePath":"components/scrum/CommentThread.jsx"},{"name":"MentionListbox","sourcePath":"components/scrum/MentionListbox.jsx"},{"name":"PointsChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"EstimateChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"PRLinkChip","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"UserPair","sourcePath":"components/scrum/PointsChip.jsx"},{"name":"ESTIMATE_SCALES","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"ScalePicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"PointPicker","sourcePath":"components/scrum/ScalePicker.jsx"},{"name":"BOARD_COLUMNS","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"ScrumBoard","sourcePath":"components/scrum/ScrumBoard.jsx"},{"name":"StoryCard","sourcePath":"components/scrum/StoryCard.jsx"},{"name":"TASK_TAGS","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TagBadge","sourcePath":"components/scrum/TagBadge.jsx"},{"name":"TaskCard","sourcePath":"components/scrum/TaskCard.jsx"},{"name":"CommandPalette","sourcePath":"components/search/CommandPalette.jsx"},{"name":"EntityIcon","sourcePath":"components/search/EntityIcon.jsx"},{"name":"Kbd","sourcePath":"components/search/Kbd.jsx"},{"name":"ModKey","sourcePath":"components/search/Kbd.jsx"},{"name":"MatchText","sourcePath":"components/search/MatchText.jsx"},{"name":"ResultRow","sourcePath":"components/search/ResultRow.jsx"},{"name":"ResultGroup","sourcePath":"components/search/ResultRow.jsx"},{"name":"SEARCH_ENTITIES","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchModel","sourcePath":"components/search/SearchModel.jsx"},{"name":"SearchPagination","sourcePath":"components/search/SearchPagination.jsx"},{"name":"SearchTrigger","sourcePath":"components/search/SearchTrigger.jsx"}],"sourceHashes":{"components/analytics/AnalyticsFilterRow.jsx":"f99f13606536","components/analytics/BarsBySprint.jsx":"19f5e2236829","components/analytics/BreakdownTable.jsx":"237e90fd0e4a","components/analytics/ChartCard.jsx":"bab9bbee64ce","components/analytics/ChartEmptyState.jsx":"97c8e5272c77","components/analytics/ChartLegend.jsx":"ca867a8dcd62","components/analytics/ChartTooltip.jsx":"b78f80c5c8f4","components/analytics/DefinitionPopover.jsx":"68279de737d2","components/analytics/LivePill.jsx":"b2b4cdcc642e","components/analytics/OnTimeMeter.jsx":"5db361e0c8a4","components/analytics/SplitBar.jsx":"3bde57f581a3","components/analytics/StackedBars.jsx":"4c1733daa1be","components/analytics/StatTile.jsx":"ec2ba22cc62e","components/analytics/TimelinessBars.jsx":"d555d5701fa4","components/analytics/TrendLines.jsx":"cc24daede726","components/analytics/UnitToggle.jsx":"a5d0f53edda5","components/analytics/WeeklyLine.jsx":"918525a649d7","components/assistant/AssistantIcon.jsx":"7710662c54a4","components/assistant/AssistantSuggestionCard.jsx":"284a5f05878d","components/assistant/ReportCheckCard.jsx":"d81e06361c68","components/assistant/StalledFlag.jsx":"548b41e0339c","components/assistant/UnlinkedPRChip.jsx":"3afd2aa6fa72","components/display/Avatar.jsx":"1bd9c31bd783","components/display/Badge.jsx":"3406477885b9","components/display/Card.jsx":"20fccaca912d","components/display/CountBadge.jsx":"7d4e23291379","components/display/InfoPopover.jsx":"919332a852e5","components/display/ProgressBar.jsx":"96a9fb62d8d8","components/display/StatCard.jsx":"ff84e549fe3d","components/display/Table.jsx":"f196bd3798dc","components/display/Tag.jsx":"e5bd4a32dcf6","components/display/Tooltip.jsx":"7027c617b708","components/display/UnreadBadge.jsx":"adbdb52e264b","components/domain/AssignmentCard.jsx":"d5706f793f09","components/domain/ConversationListItem.jsx":"170052b69fe8","components/domain/JoinRequestCard.jsx":"90ed4b859596","components/domain/MeetingCard.jsx":"3d0d4f6e8648","components/domain/PieChartCard.jsx":"b54de2eb7533","components/domain/ProjectCard.jsx":"7524c88ed322","components/domain/RankedProjectSlot.jsx":"3917e91ddd21","components/domain/RosterRow.jsx":"77128d2c8556","components/domain/TSRForm.jsx":"dc81e0d0af9b","components/domain/TSRSummaryCard.jsx":"aa0f9b84a637","components/domain/TeamMeetingForm.jsx":"d3569d566cf4","components/domain/TeamMeetingsList.jsx":"af2eb2deea8a","components/domain/TeamMeetingsModel.jsx":"0c0f093c5b00","components/domain/TeamMemberCard.jsx":"88cf54fdcde7","components/domain/TypingIndicator.jsx":"87abba71cd36","components/domain/teamMeetingsData.js":"e0e94053f793","components/domain/teamMeetingsSrcLoader.js":"0d9182269148","components/feedback/Alert.jsx":"7cc962680bb2","components/feedback/ConfirmDialog.jsx":"cd685fcbac42","components/feedback/Drawer.jsx":"dcd2b324a5a2","components/feedback/EmptyState.jsx":"65fc48e103c1","components/feedback/Menu.jsx":"851500b560b2","components/feedback/Modal.jsx":"1f50042cf900","components/feedback/Popover.jsx":"a90b5c617fd0","components/feedback/Spinner.jsx":"edf845023503","components/feedback/Toast.jsx":"7cea98a32e2b","components/figma-reference/Arrow.jsx":"b47fae3b397e","components/figma-reference/ButtonContentArea.jsx":"d04e8778b0cd","components/figma-reference/Calendar.jsx":"e9b4e8547380","components/figma-reference/DAvatars223.jsx":"f8a6724e71c1","components/figma-reference/DAvatars63.jsx":"eabe483d1087","components/figma-reference/DateActive.jsx":"98368642fc18","components/figma-reference/DateInactive.jsx":"aa5b005439e4","components/figma-reference/Favorite.jsx":"cf904bbc095e","components/figma-reference/Grid.jsx":"ffce96c170ef","components/figma-reference/Icons.jsx":"8c100167f4e4","components/figma-reference/Monitor.jsx":"fed77441cdb3","components/figma-reference/Month.jsx":"753bdc051edd","components/figma-reference/Navigation.jsx":"4ca43ce20a81","components/figma-reference/Scrollbar.jsx":"2c920accb1b9","components/figma-reference/Thumb.jsx":"fe01d87bb4eb","components/figma-reference/ToggleSwitch.jsx":"4eaaaf74364f","components/marketing/AnnouncementPill.jsx":"3e85980842ad","components/marketing/ClosingBand.jsx":"277bcf8f8464","components/marketing/ContactCard.jsx":"340b0569f3c8","components/marketing/Eyebrow.jsx":"c7d994b4ac23","components/marketing/FeatureColumn.jsx":"9e81bf36e3fc","components/marketing/FloatCard.jsx":"9de110e3efcf","components/marketing/Hero.jsx":"5b8b18cdf760","components/marketing/LandingFooter.jsx":"de513741ab6e","components/marketing/LandingHeader.jsx":"7afda06d5ba3","components/marketing/Spotlight.jsx":"1e5c2c903e0f","components/marketing/StageCard.jsx":"620233afbcf4","components/navigation/FilterChip.jsx":"60ad184229da","components/navigation/Pagination.jsx":"bd890e5d42f5","components/navigation/SegmentedControl.jsx":"89d114172de6","components/navigation/SidebarNavItem.jsx":"12a09961e258","components/navigation/Stepper.jsx":"ecbecb1d3e05","components/navigation/Tabs.jsx":"cf036fdceb2d","components/primitives/Button.jsx":"ba6702d7ba2a","components/primitives/Checkbox.jsx":"9038dc03c41d","components/primitives/CodeInput.jsx":"d4f9be568d2d","components/primitives/Combobox.jsx":"236907d23227","components/primitives/DatePickerField.jsx":"07a0823811df","components/primitives/FieldShell.jsx":"f0ed60c486ad","components/primitives/FileUpload.jsx":"7abe4b4fb0d1","components/primitives/IconButton.jsx":"22e8f2143962","components/primitives/Input.jsx":"ace8edfbeab3","components/primitives/MarkdownEditor.jsx":"2bfbbf465976","components/primitives/PasswordField.jsx":"f4f499d484e8","components/primitives/RadioGroup.jsx":"aa56c3c18222","components/primitives/SearchField.jsx":"1dfbb269e46f","components/primitives/Select.jsx":"a905f9299783","components/primitives/Textarea.jsx":"6d2104bffc41","components/primitives/Toggle.jsx":"4c7f321cf149","components/schedule/ScheduleDayHeader.jsx":"90ffba22a0e8","components/schedule/ScheduleDivider.jsx":"b6e47ba7e0d5","components/schedule/ScheduleItem.jsx":"13adbe3e120c","components/schedule/ScheduleList.jsx":"253faf1ba577","components/schedule/ScheduleModel.jsx":"6f175cb8c5b9","components/schedule/scheduleData.js":"487a52d77d86","components/schedule/scheduleSrcLoader.js":"ddd0381767b6","components/scrum/AIDraftButton.jsx":"31d7d40e9aa0","components/scrum/BacklogRow.jsx":"625dd559318c","components/scrum/BurnupChart.jsx":"0bbc172bcf68","components/scrum/CommentThread.jsx":"f48832380ba2","components/scrum/MentionListbox.jsx":"01250b1d6bd3","components/scrum/PointsChip.jsx":"67e2afc870bf","components/scrum/ScalePicker.jsx":"94b082f45530","components/scrum/ScrumBoard.jsx":"cc918b95bf14","components/scrum/StoryCard.jsx":"f0e8a1cf0ced","components/scrum/TagBadge.jsx":"0bc0e88ba5f5","components/scrum/TaskCard.jsx":"ad222e549480","components/search/CommandPalette.jsx":"d093abac703d","components/search/EntityIcon.jsx":"6a99c2d09912","components/search/Kbd.jsx":"0602fd0b8b3e","components/search/MatchText.jsx":"f31149fe0a6c","components/search/ResultRow.jsx":"5c15a96c020c","components/search/SearchModel.jsx":"4f326a302b59","components/search/SearchPagination.jsx":"18bbf5896b68","components/search/SearchTrigger.jsx":"9cb4c82124bf","components/search/searchData.js":"6c2ff02a0581","ui_kits/grepthink-landing/Landing.jsx":"2b8c6779e544","ui_kits/grepthink-landing/Stages.jsx":"8fe8d62391ea","ui_kits/grepthink/AnalyticsScreen.jsx":"5fa718bd8651","ui_kits/grepthink/App.jsx":"b4731ebd95d5","ui_kits/grepthink/ScheduleScreen.jsx":"bbc70119a451","ui_kits/grepthink/Screens.jsx":"bcd8910fc7c4","ui_kits/grepthink/SearchScreen.jsx":"f76923cd730a","ui_kits/grepthink/Shell.jsx":"c8070c465885","ui_kits/grepthink/TeamMeetingsScreen.jsx":"ee83a4b3e148","ui_kits/grepthink/analyticsData.js":"7b7739e29242","ui_kits/grepthink/analyticsSrcLoader.js":"68373b119804"},"inlinedExternals":[],"unexposedExports":[{"name":"campusTimeOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"comboFilter","sourcePath":"components/primitives/Combobox.jsx"},{"name":"completeWeeks","sourcePath":"components/analytics/TrendLines.jsx"},{"name":"countByType","sourcePath":"components/search/SearchModel.jsx"},{"name":"countdown","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dayKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"dialogPortal","sourcePath":"components/feedback/Modal.jsx"},{"name":"draftFrom","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"endsAtOf","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"findOverlaps","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtCompact","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDayLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtDelta","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtMeetingWhen","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"fmtPct","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtRange","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtTime","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtTimeRange","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"fmtWeek","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"fmtWeekLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"formatFileSize","sourcePath":"components/primitives/FileUpload.jsx"},{"name":"groupByDay","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"hashColor","sourcePath":"components/display/Avatar.jsx"},{"name":"initialsOf","sourcePath":"components/display/Avatar.jsx"},{"name":"instantToZoned","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isHttpUrl","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isJoinable","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isLive","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isPast","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"isoDuration","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"isoMinutes","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"keyToDate","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"kindMeta","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"modKey","sourcePath":"components/search/Kbd.jsx"},{"name":"nextUp","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"niceScale","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"nowIndex","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"paginate","sourcePath":"components/search/SearchModel.jsx"},{"name":"parseDateValue","sourcePath":"components/primitives/DatePickerField.jsx"},{"name":"rankResults","sourcePath":"components/search/SearchModel.jsx"},{"name":"renderMarkdownLite","sourcePath":"components/primitives/MarkdownEditor.jsx"},{"name":"routeFor","sourcePath":"components/search/SearchModel.jsx"},{"name":"shiftKey","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"showTeamMeetingsCard","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"sortItems","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"splitMeetings","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"statusOf","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"toScheduleItem","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"todayOrPeek","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"useChartTip","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useDebounced","sourcePath":"components/search/SearchModel.jsx"},{"name":"useDialog","sourcePath":"components/feedback/Modal.jsx"},{"name":"useMeasure","sourcePath":"components/analytics/ChartTooltip.jsx"},{"name":"useNow","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"usePaletteHotkey","sourcePath":"components/search/CommandPalette.jsx"},{"name":"validateTeamMeeting","sourcePath":"components/domain/TeamMeetingsModel.jsx"},{"name":"viewerZone","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"weekKeys","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneDiffers","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zoneLabel","sourcePath":"components/schedule/ScheduleModel.jsx"},{"name":"zonedToInstant","sourcePath":"components/domain/TeamMeetingsModel.jsx"}]} */
 
 (() => {
 
@@ -570,7 +570,7 @@ function AnalyticsFilterRow({
     return /*#__PURE__*/React.createElement("button", {
       key: p.value,
       type: "button",
-      className: ['gt-filter__chip', active ? 'gt-filter__chip--active' : ''].filter(Boolean).join(' '),
+      className: ['gt-filter-chip', active ? 'gt-filter-chip--selected' : ''].filter(Boolean).join(' '),
       "aria-pressed": active,
       disabled: disabled || needsClass,
       title: needsClass ? 'Select a class first' : undefined,
@@ -581,7 +581,7 @@ function AnalyticsFilterRow({
     ref: popRef
   }, /*#__PURE__*/React.createElement("button", {
     type: "button",
-    className: ['gt-filter__chip', range.preset === 'custom' ? 'gt-filter__chip--active' : ''].filter(Boolean).join(' '),
+    className: ['gt-filter-chip', range.preset === 'custom' ? 'gt-filter-chip--selected' : ''].filter(Boolean).join(' '),
     "aria-pressed": range.preset === 'custom',
     "aria-haspopup": "dialog",
     "aria-expanded": open,
@@ -1012,97 +1012,6 @@ function BreakdownTable({
 Object.assign(__ds_scope, { BREAKDOWN_COLUMNS, TEAM_BREAKDOWN_COLUMNS, TIMELINESS_COLUMNS, BreakdownTable });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/BreakdownTable.jsx", error: String((e && e.message) || e) }); }
 
-// components/analytics/DefinitionPopover.jsx
-try { (() => {
-/**
- * "How this is counted" (.gt-definition) — an ⓘ trigger opening the shared popover
- * below it, aligned to the ⓘ: 16px padding around a text column ≤ 320px (or the
- * viewport less 48px when narrower). Where the panel would run off the screen it
- * moves left just enough to keep 8px from the viewport edge; it is centred when the
- * viewport is less than 16px wider than the panel. Closes on Esc / outside click;
- * never traps focus.
- */
-function DefinitionPopover({
-  title = 'How this is counted',
-  body,
-  learnMoreHref,
-  placement = 'bottom',
-  align = 'start',
-  className = ''
-}) {
-  const [open, setOpen] = React.useState(false);
-  const [shift, setShift] = React.useState(0);
-  const ref = React.useRef(null);
-  const panelRef = React.useRef(null);
-  const id = React.useId();
-  React.useEffect(() => {
-    if (!open) return undefined;
-    const key = e => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    const down = e => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener('keydown', key);
-    document.addEventListener('mousedown', down);
-    return () => {
-      document.removeEventListener('keydown', key);
-      document.removeEventListener('mousedown', down);
-    };
-  }, [open]);
-  React.useLayoutEffect(() => {
-    if (!open) return undefined;
-    const place = () => {
-      if (!ref.current || !panelRef.current) return;
-      const vw = document.documentElement.clientWidth;
-      const trig = ref.current.getBoundingClientRect();
-      const pw = panelRef.current.offsetWidth;
-      if (vw < pw + 16) {
-        setShift((vw - pw) / 2 - trig.left);
-        return;
-      } // centred
-      const right = trig.left + pw;
-      setShift(right > vw - 8 ? vw - 8 - right : 0); // keep 8px from the edge
-    };
-    place();
-    window.addEventListener('resize', place);
-    return () => window.removeEventListener('resize', place);
-  }, [open]);
-  return /*#__PURE__*/React.createElement("span", {
-    className: ['gt-definition', className].filter(Boolean).join(' '),
-    ref: ref
-  }, /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gt-definition__trigger",
-    "aria-label": title,
-    "aria-haspopup": "dialog",
-    "aria-expanded": open,
-    "aria-controls": open ? id : undefined,
-    onClick: () => setOpen(o => !o)
-  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
-    name: "info",
-    size: 15
-  })), open && /*#__PURE__*/React.createElement("div", {
-    id: id,
-    ref: panelRef,
-    role: "dialog",
-    "aria-label": title,
-    className: `gt-popover gt-popover--${placement} gt-popover--${align} gt-definition__panel`,
-    style: {
-      left: shift
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gt-definition__title"
-  }, title), /*#__PURE__*/React.createElement("p", {
-    className: "gt-definition__body"
-  }, body), learnMoreHref && /*#__PURE__*/React.createElement("a", {
-    className: "gt-definition__more",
-    href: learnMoreHref
-  }, "Learn more")));
-}
-Object.assign(__ds_scope, { DefinitionPopover });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/DefinitionPopover.jsx", error: String((e && e.message) || e) }); }
-
 // components/analytics/LivePill.jsx
 try { (() => {
 /** Marks a card that ignores the date range — the board as it is right now. No pulsing. */
@@ -1121,139 +1030,6 @@ function LivePill({
 }
 Object.assign(__ds_scope, { LivePill });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/LivePill.jsx", error: String((e && e.message) || e) }); }
-
-// components/analytics/ChartCard.jsx
-try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-/**
- * Container for every analytics chart (.gt-chart-card). White, 1px border,
- * radius 10, hairline shadow, padding 16; header divided by a 1px rule.
- * `data-state`: loading (skeleton, first load only) · refetching (body at 60%
- * opacity, frame held) · ready · empty (ChartEmptyState) · error (inline
- * error-soft strip "This card could not load." + Retry; the page is unaffected).
- */
-function ChartCard({
-  title,
-  subtitle,
-  definition,
-  live = false,
-  actions = null,
-  state = 'ready',
-  emptyMessage,
-  errorMessage = 'This card could not load.',
-  onRetry,
-  footnote,
-  hero,
-  heroMeta,
-  wide = false,
-  skeletonRows = 4,
-  className = '',
-  children,
-  ...rest
-}) {
-  const def = typeof definition === 'string' ? {
-    body: definition
-  } : definition;
-  const empty = emptyMessage || {
-    title: 'Nothing to list'
-  };
-  return /*#__PURE__*/React.createElement("section", _extends({
-    className: ['gt-chart-card', wide ? 'gt-chart-card--wide' : '', className].filter(Boolean).join(' '),
-    "data-state": state,
-    "aria-busy": state === 'loading' || state === 'refetching' || undefined
-  }, rest), /*#__PURE__*/React.createElement("header", {
-    className: "gt-chart-card__head"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__titles"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__title-row"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "gt-chart-card__title"
-  }, title), live && /*#__PURE__*/React.createElement(__ds_scope.LivePill, null), def && /*#__PURE__*/React.createElement(__ds_scope.DefinitionPopover, {
-    title: def.title,
-    body: def.body,
-    learnMoreHref: def.learnMoreHref
-  })), subtitle && /*#__PURE__*/React.createElement("span", {
-    className: "gt-chart-card__subtitle"
-  }, subtitle)), actions && /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__actions"
-  }, actions)), /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__body"
-  }, state === 'loading' ? /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__skeleton",
-    "aria-label": "Loading"
-  }, Array.from({
-    length: skeletonRows
-  }).map((_, i) => /*#__PURE__*/React.createElement("span", {
-    key: i,
-    className: "gt-skeleton",
-    style: {
-      width: `${92 - i * 14}%`
-    }
-  }))) : state === 'error' ? /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__error",
-    role: "alert"
-  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
-    name: "alert-circle",
-    size: 15
-  }), /*#__PURE__*/React.createElement("span", null, errorMessage), onRetry && /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gt-chart-card__retry",
-    onClick: onRetry
-  }, "Retry")) : state === 'empty' ? /*#__PURE__*/React.createElement(__ds_scope.ChartEmptyState, {
-    icon: empty.icon,
-    title: empty.title,
-    hint: empty.hint
-  }) : /*#__PURE__*/React.createElement(React.Fragment, null, hero !== undefined && /*#__PURE__*/React.createElement("div", {
-    className: "gt-chart-card__hero"
-  }, hero, heroMeta && /*#__PURE__*/React.createElement("span", {
-    className: "gt-chart-card__hero-meta"
-  }, heroMeta)), children)), footnote && /*#__PURE__*/React.createElement("footer", {
-    className: "gt-chart-card__foot"
-  }, footnote));
-}
-
-/** Header tool button (Table / Export) — `pressed` renders the toggled state. */
-function ChartCardTool({
-  icon,
-  label,
-  pressed,
-  onClick,
-  disabled = false,
-  className = '',
-  ...rest
-}) {
-  return /*#__PURE__*/React.createElement("button", _extends({
-    type: "button",
-    className: ['gt-chart-card__tool', className].filter(Boolean).join(' '),
-    "aria-pressed": pressed === undefined ? undefined : pressed,
-    onClick: onClick,
-    disabled: disabled
-  }, rest), icon && /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
-    name: icon,
-    size: 13
-  }), label);
-}
-
-/** Header checkbox (e.g. "Compare with previous range"). */
-function ChartCardCheck({
-  label,
-  checked,
-  onChange,
-  disabled = false,
-  className = ''
-}) {
-  return /*#__PURE__*/React.createElement("label", {
-    className: ['gt-chart-card__check', className].filter(Boolean).join(' ')
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "checkbox",
-    checked: checked,
-    onChange: e => onChange && onChange(e.target.checked),
-    disabled: disabled
-  }), label);
-}
-Object.assign(__ds_scope, { ChartCard, ChartCardTool, ChartCardCheck });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartCard.jsx", error: String((e && e.message) || e) }); }
 
 // components/analytics/OnTimeMeter.jsx
 try { (() => {
@@ -1562,110 +1338,6 @@ function StackedBars({
 }
 Object.assign(__ds_scope, { BOARD_STATUSES, StackedBars });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/StackedBars.jsx", error: String((e && e.message) || e) }); }
-
-// components/analytics/StatTile.jsx
-try { (() => {
-function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
-/**
- * KPI tile — the app's DashboardMetricCard (.metric-card ≙ .gt-stat-card) with two
- * optional slots: `delta` (__delta --good/--bad/--flat, __delta-value, __delta-vs)
- * and `trend` (__spark: gray history line, green last point with a white ring).
- * Sparklines may hold 2–12 points; fewer than 2 renders no sparkline.
- * Proportional figures; a null value renders "—" with the hint explaining why;
- * `failed` (the tile's source is listed in `failures`) renders "—" + "Could not load".
- */
-function StatTile({
-  label,
-  value,
-  format = 'compact',
-  icon = null,
-  accent = 'primary',
-  delta,
-  trend,
-  hint,
-  failed = false,
-  loading = false,
-  onClick,
-  className = '',
-  ...rest
-}) {
-  const El = onClick ? 'button' : 'div';
-  const isNull = failed || value === null || value === undefined;
-  const shownHint = failed ? hint || 'Could not load' : hint;
-  const shown = isNull ? '—' : format === 'percent' ? __ds_scope.fmtPct(value) : format === 'raw' ? value : __ds_scope.fmtCompact(value);
-  let deltaNode = null;
-  if (!failed && delta && delta.value !== null && delta.value !== undefined) {
-    const up = delta.value > 0,
-      flat = delta.value === 0;
-    const good = flat ? null : delta.goodWhenUp !== false ? up : !up;
-    const tone = flat ? 'flat' : good ? 'good' : 'bad';
-    deltaNode = /*#__PURE__*/React.createElement("span", {
-      className: `gt-stat-card__delta gt-stat-card__delta--${tone}`
-    }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
-      name: flat ? 'minus' : up ? 'trending-up' : 'trending-down',
-      size: 12
-    }), /*#__PURE__*/React.createElement("span", {
-      className: "gt-stat-card__delta-value"
-    }, __ds_scope.fmtDelta(delta.value)), delta.vsLabel && /*#__PURE__*/React.createElement("span", {
-      className: "gt-stat-card__delta-vs"
-    }, delta.vsLabel));
-  }
-  let trendNode = null;
-  if (!failed && Array.isArray(trend) && trend.length > 1) {
-    const W = 84,
-      H = 24,
-      pad = 3;
-    const max = Math.max(...trend, 1),
-      min = Math.min(...trend, 0);
-    const x = i => pad + i / (trend.length - 1) * (W - pad * 2);
-    const y = v => H - pad - (v - min) / (max - min || 1) * (H - pad * 2);
-    const d = trend.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-    const last = trend.length - 1;
-    trendNode = /*#__PURE__*/React.createElement("svg", {
-      className: "gt-stat-card__spark",
-      viewBox: `0 0 ${W} ${H}`,
-      role: "img",
-      "aria-label": `${trend.length}-week trend, latest ${__ds_scope.fmtCompact(trend[last])}`
-    }, /*#__PURE__*/React.createElement("path", {
-      d: d,
-      className: "gt-stat-card__spark-line"
-    }), /*#__PURE__*/React.createElement("circle", {
-      cx: x(last),
-      cy: y(trend[last]),
-      r: "3.5",
-      className: "gt-stat-card__spark-dot"
-    }));
-  }
-  return /*#__PURE__*/React.createElement(El, _extends({
-    className: ['gt-stat-card', 'gt-stat-card--tile', `gt-stat-card--${accent}`, onClick ? 'gt-stat-card--clickable' : '', className].filter(Boolean).join(' '),
-    onClick: onClick,
-    type: onClick ? 'button' : undefined,
-    "aria-busy": loading || undefined
-  }, rest), /*#__PURE__*/React.createElement("div", {
-    className: "gt-stat-card__top"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-stat-card__label"
-  }, label), icon && /*#__PURE__*/React.createElement("span", {
-    className: "gt-stat-card__icon"
-  }, icon)), /*#__PURE__*/React.createElement("span", {
-    className: ['gt-stat-card__value', isNull ? 'gt-stat-card__null' : ''].filter(Boolean).join(' ')
-  }, loading ? /*#__PURE__*/React.createElement("span", {
-    className: "gt-skeleton"
-  }) : shown), (deltaNode || trendNode || shownHint) && /*#__PURE__*/React.createElement("div", {
-    className: "gt-stat-card__bottom"
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 2,
-      minWidth: 0
-    }
-  }, !loading && deltaNode, shownHint && /*#__PURE__*/React.createElement("span", {
-    className: "gt-stat-card__hint"
-  }, shownHint)), !loading && trendNode));
-}
-Object.assign(__ds_scope, { StatTile });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/StatTile.jsx", error: String((e && e.message) || e) }); }
 
 // components/analytics/TimelinessBars.jsx
 try { (() => {
@@ -2696,11 +2368,10 @@ Object.assign(__ds_scope, { UnlinkedPRChip });
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /**
- * Shared initials-avatar palette. Every color passes 4.5:1 with white
- * initials (2026-09 contrast fix: #2771FF → #1B57D6 6.2:1, #B26A00 → #8A5200 6.4:1).
- * The landing page's decorative avatars use this same set — one palette everywhere.
+ * One avatar palette everywhere: six token slots (--gt-avatar-1…6), each ≥ 4.5:1 behind white
+ * initials. The app's seven schemes (one failing behind white) all port to this list + hashColor.
  */
-const AVATAR_COLORS = ['#018156', '#1B57D6', '#8A5200', '#7D3C98', '#016547', '#1543A8'];
+const AVATAR_COLORS = ['var(--gt-avatar-1)', 'var(--gt-avatar-2)', 'var(--gt-avatar-3)', 'var(--gt-avatar-4)', 'var(--gt-avatar-5)', 'var(--gt-avatar-6)'];
 function initialsOf(name = '') {
   const clean = name.includes('@') ? name.split('@')[0].replace(/[._-]+/g, ' ') : name;
   const parts = clean.trim().split(/\s+/).filter(Boolean);
@@ -2708,6 +2379,8 @@ function initialsOf(name = '') {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+
+/** Deterministic palette slot for a name (the one hash). */
 function hashColor(name = '') {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = h * 31 + name.charCodeAt(i) | 0;
@@ -2715,23 +2388,30 @@ function hashColor(name = '') {
 }
 
 /**
- * Avatar with initials derived from a name or email.
- * Deterministic background color per name; optional image src.
+ * Avatar: photo, or initials on the hashed palette colour. When `src` fails to load it falls back
+ * to the initials. `decorative` (beside a visible name) hides it from screen readers.
  */
 function Avatar({
   name = '',
   src,
   size = 'md',
   square = false,
+  decorative = false,
   className = '',
   ...rest
 }) {
+  const [failed, setFailed] = React.useState(false);
+  React.useEffect(() => {
+    setFailed(false);
+  }, [src]);
   const cls = ['gt-avatar', `gt-avatar--${size}`, square ? 'gt-avatar--square' : '', className].filter(Boolean).join(' ');
-  if (src) {
+  if (src && !failed) {
     return /*#__PURE__*/React.createElement("img", _extends({
       className: cls,
       src: src,
-      alt: name
+      alt: decorative ? '' : name,
+      "aria-hidden": decorative || undefined,
+      onError: () => setFailed(true)
     }, rest));
   }
   return /*#__PURE__*/React.createElement("span", _extends({
@@ -2739,12 +2419,13 @@ function Avatar({
     style: {
       backgroundColor: hashColor(name)
     },
-    role: "img",
-    "aria-label": name || 'avatar'
+    role: decorative ? undefined : 'img',
+    "aria-label": decorative ? undefined : name || 'Avatar',
+    "aria-hidden": decorative || undefined
   }, rest), initialsOf(name));
 }
 
-/** Overlapping row of avatars with a "+n" overflow chip. */
+/** Overlapping row of avatars with a "+n" chip; read as one image ("Ana Ruiz, Ben Ko and 3 more"). */
 function AvatarGroup({
   names = [],
   max = 4,
@@ -2754,13 +2435,17 @@ function AvatarGroup({
   const shown = names.slice(0, max);
   const extra = names.length - shown.length;
   return /*#__PURE__*/React.createElement("span", {
-    className: ['gt-avatar-group', className].filter(Boolean).join(' ')
+    className: ['gt-avatar-group', className].filter(Boolean).join(' '),
+    role: "img",
+    "aria-label": `${shown.join(', ')}${extra > 0 ? ` and ${extra} more` : ''}`
   }, shown.map(n => /*#__PURE__*/React.createElement(Avatar, {
     key: n,
     name: n,
-    size: size
+    size: size,
+    decorative: true
   })), extra > 0 && /*#__PURE__*/React.createElement("span", {
-    className: `gt-avatar gt-avatar--${size} gt-avatar--extra`
+    className: `gt-avatar gt-avatar--${size} gt-avatar--extra`,
+    "aria-hidden": "true"
   }, "+", extra));
 }
 Object.assign(__ds_scope, { AVATAR_COLORS, initialsOf, hashColor, Avatar, AvatarGroup });
@@ -2769,39 +2454,224 @@ Object.assign(__ds_scope, { AVATAR_COLORS, initialsOf, hashColor, Avatar, Avatar
 // components/display/Badge.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const I = ({
+  d
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: "12",
+  height: "12",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, d);
+const ICONS = {
+  crown: /*#__PURE__*/React.createElement(I, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M5 20h14"
+    }))
+  }),
+  star: /*#__PURE__*/React.createElement(I, {
+    d: /*#__PURE__*/React.createElement("path", {
+      d: "m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"
+    })
+  }),
+  shield: /*#__PURE__*/React.createElement(I, {
+    d: /*#__PURE__*/React.createElement("path", {
+      d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+    })
+  }),
+  key: /*#__PURE__*/React.createElement(I, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
+      cx: "7.5",
+      cy: "15.5",
+      r: "5.5"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"
+    }))
+  }),
+  graduation: /*#__PURE__*/React.createElement(I, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M22 10v6M6 12.5V16a6 3 0 0 0 12 0v-3.5"
+    }))
+  }),
+  presentation: /*#__PURE__*/React.createElement(I, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M2 3h20M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3M7 21l5-5 5 5"
+    }))
+  }),
+  users: /*#__PURE__*/React.createElement(I, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: "9",
+      cy: "7",
+      r: "4"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+    }))
+  }),
+  building: /*#__PURE__*/React.createElement(I, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2M10 6h4M10 10h4M10 14h4M10 18h4"
+    }))
+  }),
+  userPlus: /*#__PURE__*/React.createElement(I, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: "9",
+      cy: "7",
+      r: "4"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M19 8v6M22 11h-6"
+    }))
+  })
+};
+const TONES = ['neutral', 'success', 'warning', 'error', 'info', 'gold', 'merged'];
+
 /**
- * Status/role pill. Soft background + colored text, fully rounded —
- * matches the app's .status-badge idiom.
- * `tone` presets cover statuses; `role` presets cover project roles.
+ * The status colour rule (decided 2026-10-19): green = done or positive · blue = in progress or
+ * informational · amber = needs attention soon · red = a problem · grey = not started or inactive.
+ * Pull requests keep GitHub's colours (Merged purple is the documented exception).
+ * A feature picks a status key, never a colour: <Badge status="task.blocked" />.
  */
-const TONES = ['neutral', 'success', 'warning', 'error', 'info', 'gold'];
-const ROLES = ['owner', 'product_owner', 'scrum_master', 'admin', 'member'];
+const BADGE_STATUS = {
+  'assignment.active': ['info', 'Active'],
+  'assignment.draft': ['neutral', 'Draft'],
+  'assignment.closed': ['neutral', 'Closed'],
+  'assignment.not_started': ['neutral', 'Not started'],
+  'assignment.in_progress': ['info', 'In progress'],
+  'assignment.submitted': ['success', 'Submitted'],
+  'assignment.due_soon': ['warning', 'Due soon'],
+  'assignment.opens_later': ['neutral', 'Opens later'],
+  'assignment.missed': ['error', 'Missed'],
+  'class.active': ['info', 'Active'],
+  'class.complete': ['success', 'Complete'],
+  'project.open': ['success', 'Open'],
+  'project.closed': ['neutral', 'Closed'],
+  'project.member': ['info', 'Member'],
+  'sprint.active': ['info', 'Active'],
+  'sprint.planned': ['neutral', 'Planned'],
+  'sprint.completed': ['success', 'Completed'],
+  'task.todo': ['neutral', 'To do'],
+  'task.in_progress': ['info', 'In progress'],
+  'task.done': ['success', 'Done'],
+  'task.blocked': ['error', 'Blocked'],
+  'pr.open': ['success', 'Open'],
+  'pr.merged': ['merged', 'Merged'],
+  'pr.closed': ['error', 'Closed'],
+  'pr.draft': ['neutral', 'Draft'],
+  'attendance.present': ['success', 'Present'],
+  'attendance.late': ['warning', 'Late'],
+  'attendance.absent': ['error', 'Absent'],
+  'attendance.unmarked': ['neutral', 'Not marked'],
+  'meeting.weekly': ['info', 'Meets weekly'],
+  'meeting.no_zoom': ['warning', 'No Zoom link yet'],
+  'roster.enrolled': ['success', 'Enrolled'],
+  'roster.waitlisted': ['warning', 'Waitlisted'],
+  'roster.dropped': ['error', 'Dropped'],
+  'roster.not_on_roster': ['warning', 'Not on roster'],
+  'roster.registered': ['success', 'Registered'],
+  'roster.not_registered': ['neutral', 'Not registered'],
+  'request.incoming': ['warning', 'Incoming'],
+  'request.invitation': ['warning', 'Invitation'],
+  'request.pending': ['info', 'Pending'],
+  'request.denied': ['error', 'Denied'],
+  'health.excellent': ['success', 'Excellent'],
+  'health.warning': ['warning', 'Warning'],
+  'health.poor': ['error', 'Poor'],
+  'sentiment.positive': ['success', 'Positive'],
+  'sentiment.neutral': ['neutral', 'Neutral'],
+  'sentiment.negative': ['error', 'Negative'],
+  live: ['info', 'Live']
+};
+
+/** Category labels are not statuses: outlined neutral + an icon, never a status colour. */
+const BADGE_CATEGORY = {
+  ta: ['graduation', 'TA'],
+  instructor: ['presentation', 'Instructor'],
+  team: ['users', 'Team'],
+  sponsored: ['building', 'Company Sponsored'],
+  manual: ['userPlus', 'Manual'],
+  members: ['users', 'Members']
+};
+
+/** Project roles render as categories with the app's icons (Crown / Star / Shield); no role is amber. */
+const PROJECT_ROLES = {
+  owner: ['crown', 'Owner'],
+  product_owner: ['star', 'Product Owner'],
+  scrum_master: ['shield', 'Scrum Master'],
+  admin: ['key', 'Admin'],
+  member: [null, 'Member']
+};
+
+/** Status / category / role pill. `projectRole` replaces the old `role` prop, which shadowed the ARIA attribute. */
 function Badge({
   children,
   tone = 'neutral',
-  role,
+  status,
+  category,
+  projectRole,
+  icon,
   solid = false,
   className = '',
   ...rest
 }) {
-  const kind = role ? `role-${role}` : tone;
-  const cls = ['gt-badge', `gt-badge--${kind}`, solid ? 'gt-badge--solid' : '', className].filter(Boolean).join(' ');
+  let kind = tone;
+  let label = children;
+  let glyph = icon;
+  let cat = false;
+  let roleCls = '';
+  if (status && BADGE_STATUS[status]) {
+    [kind] = BADGE_STATUS[status];
+    if (label == null) label = BADGE_STATUS[status][1];
+  } else if (projectRole) {
+    const key = String(projectRole).trim().toLowerCase().replace(/[\s-]+/g, '_');
+    const [ic, l] = PROJECT_ROLES[key] || [null, projectRole];
+    cat = true;
+    roleCls = `gt-badge--role-${key}`;
+    if (glyph === undefined && ic) glyph = ICONS[ic];
+    if (label == null) label = l;
+  } else if (category) {
+    const [ic, l] = BADGE_CATEGORY[category] || [null, category];
+    cat = true;
+    if (glyph === undefined && ic) glyph = ICONS[ic];
+    if (label == null) label = l;
+  }
+  const cls = ['gt-badge', cat ? 'gt-badge--category' : `gt-badge--${kind}`, solid && !cat ? 'gt-badge--solid' : '', roleCls, className].filter(Boolean).join(' ');
   return /*#__PURE__*/React.createElement("span", _extends({
     className: cls
-  }, rest), children);
+  }, rest), glyph && /*#__PURE__*/React.createElement("span", {
+    className: "gt-badge__icon",
+    "aria-hidden": "true"
+  }, glyph), label);
 }
 Badge.tones = TONES;
-Badge.roles = ROLES;
-Object.assign(__ds_scope, { Badge });
+Badge.statuses = Object.keys(BADGE_STATUS);
+Badge.categories = Object.keys(BADGE_CATEGORY);
+Badge.roles = Object.keys(PROJECT_ROLES);
+Object.assign(__ds_scope, { BADGE_STATUS, BADGE_CATEGORY, PROJECT_ROLES, Badge });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Badge.jsx", error: String((e && e.message) || e) }); }
 
 // components/display/Card.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /**
- * White surface card — the app's standard container.
- * `shadow="card"` uses the signature 2.61px shadow; `shadow="hairline"`
- * pairs a 1px border with a 4px whisper shadow (metric cards).
+ * White surface card. `shadow`: card (2.61px signature) · hairline (1px border + whisper) · none.
+ * `bordered`: 1px border, no shadow, radius 7 — for cards nested in a card or a list.
+ * Interactive (`href` or `onClick`): the title becomes a stretched link / button, so the whole
+ * card is the target while header actions and the footer stay clickable above it; hover lifts the
+ * shadow, keyboard focus rings the card, `selected` draws the green selected border.
+ * `actions` sit right of the title (as ChartCard's tools do).
  */
 function Card({
   children,
@@ -2809,20 +2679,41 @@ function Card({
   footer,
   title,
   subtitle,
+  actions,
+  titleAs = 'h3',
   shadow = 'card',
+  bordered = false,
+  href,
+  onClick,
+  selected,
   padded = true,
   className = '',
   ...rest
 }) {
-  return /*#__PURE__*/React.createElement("div", _extends({
-    className: ['gt-card', `gt-card--${shadow}`, className].filter(Boolean).join(' ')
-  }, rest), (header || title) && /*#__PURE__*/React.createElement("div", {
-    className: "gt-card__header"
-  }, header || /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", {
+  const interactive = !!(href || onClick) && title != null;
+  const T = titleAs;
+  const titleNode = title != null && /*#__PURE__*/React.createElement(T, {
     className: "gt-card__title"
-  }, title), subtitle && /*#__PURE__*/React.createElement("p", {
+  }, !interactive ? title : href ? /*#__PURE__*/React.createElement("a", {
+    className: "gt-card__link",
+    href: href
+  }, title) : /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-card__link",
+    onClick: onClick,
+    "aria-pressed": selected === undefined ? undefined : !!selected
+  }, title));
+  return /*#__PURE__*/React.createElement("div", _extends({
+    className: ['gt-card', bordered ? 'gt-card--bordered' : `gt-card--${shadow}`, interactive ? 'gt-card--interactive' : '', selected ? 'gt-card--selected' : '', className].filter(Boolean).join(' ')
+  }, rest), (header || title != null || actions) && /*#__PURE__*/React.createElement("div", {
+    className: "gt-card__header"
+  }, header || /*#__PURE__*/React.createElement("div", {
+    className: "gt-card__heading"
+  }, titleNode, subtitle && /*#__PURE__*/React.createElement("p", {
     className: "gt-card__subtitle"
-  }, subtitle))), /*#__PURE__*/React.createElement("div", {
+  }, subtitle)), actions && /*#__PURE__*/React.createElement("div", {
+    className: "gt-card__actions"
+  }, actions)), /*#__PURE__*/React.createElement("div", {
     className: padded ? 'gt-card__body' : 'gt-card__body gt-card__body--flush'
   }, children), footer && /*#__PURE__*/React.createElement("div", {
     className: "gt-card__footer"
@@ -2831,11 +2722,301 @@ function Card({
 Object.assign(__ds_scope, { Card });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Card.jsx", error: String((e && e.message) || e) }); }
 
+// components/display/CountBadge.jsx
+try { (() => {
+/** Neutral count pill — tab counts, list totals. Unread items use UnreadBadge. */
+function CountBadge({
+  count = 0,
+  max = 99,
+  label,
+  showZero = true,
+  className = ''
+}) {
+  if (!showZero && !count) return null;
+  const shown = count > max ? `${max}+` : count;
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-count', className].filter(Boolean).join(' ')
+  }, label ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true"
+  }, shown), /*#__PURE__*/React.createElement("span", {
+    className: "gt-visually-hidden"
+  }, label)) : shown);
+}
+Object.assign(__ds_scope, { CountBadge });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/CountBadge.jsx", error: String((e && e.message) || e) }); }
+
+// components/display/InfoPopover.jsx
+try { (() => {
+const InfoGlyph = () => /*#__PURE__*/React.createElement("svg", {
+  width: "15",
+  height: "15",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("circle", {
+  cx: "12",
+  cy: "12",
+  r: "10"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M12 16v-4M12 8h.01"
+}));
+
+/**
+ * ⓘ trigger + explanation panel on the Popover surface — the shared InfoPopover, promoted from
+ * analytics' DefinitionPopover. Opens on click / Enter / Space, closes on Esc (captured, so an
+ * enclosing modal stays open; focus returns to the ⓘ) or an outside click; never traps focus.
+ * The panel is a ≤ 320px text column in 16px padding, nudged to stay 8px inside the viewport.
+ * Use it for explanations, and beside a disabled control to say why it is disabled.
+ */
+function InfoPopover({
+  title,
+  body,
+  learnMoreHref,
+  label,
+  placement = 'bottom',
+  align = 'start',
+  className = ''
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [shift, setShift] = React.useState(0);
+  const ref = React.useRef(null);
+  const trigRef = React.useRef(null);
+  const panelRef = React.useRef(null);
+  const id = React.useId();
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const key = e => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      setOpen(false);
+      if (trigRef.current) trigRef.current.focus();
+    };
+    const down = e => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('keydown', key, true);
+    document.addEventListener('mousedown', down);
+    return () => {
+      document.removeEventListener('keydown', key, true);
+      document.removeEventListener('mousedown', down);
+    };
+  }, [open]);
+  React.useLayoutEffect(() => {
+    if (!open || align !== 'start') return undefined;
+    const place = () => {
+      if (!ref.current || !panelRef.current) return;
+      const vw = document.documentElement.clientWidth;
+      const trig = ref.current.getBoundingClientRect();
+      const pw = panelRef.current.offsetWidth;
+      if (vw < pw + 16) {
+        setShift((vw - pw) / 2 - trig.left);
+        return;
+      }
+      const right = trig.left + pw;
+      setShift(right > vw - 8 ? vw - 8 - right : 0);
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [open, align]);
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-infopop', className].filter(Boolean).join(' '),
+    ref: ref
+  }, /*#__PURE__*/React.createElement("button", {
+    ref: trigRef,
+    type: "button",
+    className: "gt-infopop__trigger",
+    "aria-label": label || title,
+    "aria-haspopup": "dialog",
+    "aria-expanded": open,
+    "aria-controls": open ? id : undefined,
+    onClick: () => setOpen(o => !o)
+  }, /*#__PURE__*/React.createElement(InfoGlyph, null)), open && /*#__PURE__*/React.createElement("div", {
+    id: id,
+    ref: panelRef,
+    role: "dialog",
+    "aria-labelledby": `${id}-title`,
+    className: `gt-popover gt-popover--${placement} gt-popover--${align} gt-infopop__panel`,
+    style: align === 'start' ? {
+      left: shift
+    } : undefined
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "gt-infopop__title",
+    id: `${id}-title`
+  }, title), /*#__PURE__*/React.createElement("div", {
+    className: "gt-infopop__body"
+  }, body), learnMoreHref && /*#__PURE__*/React.createElement("a", {
+    className: "gt-infopop__more",
+    href: learnMoreHref
+  }, "Learn more")));
+}
+Object.assign(__ds_scope, { InfoPopover });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/InfoPopover.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/DefinitionPopover.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/**
+ * "How this is counted" — analytics' name for the shared InfoPopover (promoted to
+ * components/display/InfoPopover.jsx in the alignment round, 2026-10-19). Same props.
+ */
+function DefinitionPopover({
+  title = 'How this is counted',
+  className = '',
+  ...props
+}) {
+  return /*#__PURE__*/React.createElement(__ds_scope.InfoPopover, _extends({
+    title: title,
+    className: ['gt-definition', className].filter(Boolean).join(' ')
+  }, props));
+}
+Object.assign(__ds_scope, { DefinitionPopover });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/DefinitionPopover.jsx", error: String((e && e.message) || e) }); }
+
+// components/analytics/ChartCard.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+/**
+ * Container for every analytics chart (.gt-chart-card). White, 1px border,
+ * radius 10, hairline shadow, padding 16; header divided by a 1px rule.
+ * `data-state`: loading (skeleton, first load only) · refetching (body at 60%
+ * opacity, frame held) · ready · empty (ChartEmptyState) · error (inline
+ * error-soft strip "This card could not load." + Retry; the page is unaffected).
+ */
+function ChartCard({
+  title,
+  subtitle,
+  definition,
+  live = false,
+  actions = null,
+  state = 'ready',
+  emptyMessage,
+  errorMessage = 'This card could not load.',
+  onRetry,
+  footnote,
+  hero,
+  heroMeta,
+  wide = false,
+  skeletonRows = 4,
+  className = '',
+  children,
+  ...rest
+}) {
+  const def = typeof definition === 'string' ? {
+    body: definition
+  } : definition;
+  const empty = emptyMessage || {
+    title: 'Nothing to list'
+  };
+  return /*#__PURE__*/React.createElement("section", _extends({
+    className: ['gt-chart-card', wide ? 'gt-chart-card--wide' : '', className].filter(Boolean).join(' '),
+    "data-state": state,
+    "aria-busy": state === 'loading' || state === 'refetching' || undefined
+  }, rest), /*#__PURE__*/React.createElement("header", {
+    className: "gt-chart-card__head"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__titles"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__title-row"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "gt-chart-card__title"
+  }, title), live && /*#__PURE__*/React.createElement(__ds_scope.LivePill, null), def && /*#__PURE__*/React.createElement(__ds_scope.DefinitionPopover, {
+    title: def.title,
+    body: def.body,
+    learnMoreHref: def.learnMoreHref
+  })), subtitle && /*#__PURE__*/React.createElement("span", {
+    className: "gt-chart-card__subtitle"
+  }, subtitle)), actions && /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__actions"
+  }, actions)), /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__body"
+  }, state === 'loading' ? /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__skeleton",
+    "aria-label": "Loading"
+  }, Array.from({
+    length: skeletonRows
+  }).map((_, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "gt-skeleton",
+    style: {
+      width: `${92 - i * 14}%`
+    }
+  }))) : state === 'error' ? /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__error",
+    role: "alert"
+  }, /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+    name: "alert-circle",
+    size: 15
+  }), /*#__PURE__*/React.createElement("span", null, errorMessage), onRetry && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-chart-card__retry",
+    onClick: onRetry
+  }, "Retry")) : state === 'empty' ? /*#__PURE__*/React.createElement(__ds_scope.ChartEmptyState, {
+    icon: empty.icon,
+    title: empty.title,
+    hint: empty.hint
+  }) : /*#__PURE__*/React.createElement(React.Fragment, null, hero !== undefined && /*#__PURE__*/React.createElement("div", {
+    className: "gt-chart-card__hero"
+  }, hero, heroMeta && /*#__PURE__*/React.createElement("span", {
+    className: "gt-chart-card__hero-meta"
+  }, heroMeta)), children)), footnote && /*#__PURE__*/React.createElement("footer", {
+    className: "gt-chart-card__foot"
+  }, footnote));
+}
+
+/** Header tool button (Table / Export) — `pressed` renders the toggled state. */
+function ChartCardTool({
+  icon,
+  label,
+  pressed,
+  onClick,
+  disabled = false,
+  className = '',
+  ...rest
+}) {
+  return /*#__PURE__*/React.createElement("button", _extends({
+    type: "button",
+    className: ['gt-chart-card__tool', className].filter(Boolean).join(' '),
+    "aria-pressed": pressed === undefined ? undefined : pressed,
+    onClick: onClick,
+    disabled: disabled
+  }, rest), icon && /*#__PURE__*/React.createElement(__ds_scope.AnalyticsIcon, {
+    name: icon,
+    size: 13
+  }), label);
+}
+
+/** Header checkbox (e.g. "Compare with previous range"). */
+function ChartCardCheck({
+  label,
+  checked,
+  onChange,
+  disabled = false,
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement("label", {
+    className: ['gt-chart-card__check', className].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: checked,
+    onChange: e => onChange && onChange(e.target.checked),
+    disabled: disabled
+  }), label);
+}
+Object.assign(__ds_scope, { ChartCard, ChartCardTool, ChartCardCheck });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/ChartCard.jsx", error: String((e && e.message) || e) }); }
+
 // components/display/ProgressBar.jsx
 try { (() => {
 /**
- * Progress bar. Green fill by default; `showLabel` adds a % readout.
- * Used for contribution percentages and completion meters.
+ * Progress / meter bar. Green fill by default; `showLabel` adds a % readout.
+ * `inline`: the 4px bar for table cells, story cards and the sprint picker — mark it
+ * `decorative` when the number is printed beside it. `meter` for a measurement
+ * (contribution share) rather than progress toward done.
  */
 function ProgressBar({
   value = 0,
@@ -2844,30 +3025,41 @@ function ProgressBar({
   size = 'md',
   showLabel = false,
   label,
+  valueText,
+  inline = false,
+  decorative = false,
+  meter = false,
   className = ''
 }) {
-  const pct = Math.max(0, Math.min(100, value / max * 100));
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-progress', `gt-progress--${size}`, className].filter(Boolean).join(' ')
-  }, (label || showLabel) && /*#__PURE__*/React.createElement("div", {
-    className: "gt-progress__head"
-  }, label && /*#__PURE__*/React.createElement("span", {
-    className: "gt-progress__label"
-  }, label), showLabel && /*#__PURE__*/React.createElement("span", {
-    className: "gt-progress__pct"
-  }, Math.round(pct), "%")), /*#__PURE__*/React.createElement("div", {
+  const pct = Math.max(0, Math.min(100, value / (max || 1) * 100));
+  const track = /*#__PURE__*/React.createElement("div", {
     className: "gt-progress__track",
-    role: "progressbar",
-    "aria-valuenow": Math.round(value),
-    "aria-valuemin": 0,
-    "aria-valuemax": max,
-    "aria-label": label || 'progress'
+    role: decorative ? undefined : meter ? 'meter' : 'progressbar',
+    "aria-valuenow": decorative ? undefined : Math.round(value),
+    "aria-valuemin": decorative ? undefined : 0,
+    "aria-valuemax": decorative ? undefined : max,
+    "aria-valuetext": decorative ? undefined : valueText,
+    "aria-label": decorative ? undefined : label || 'Progress',
+    "aria-hidden": decorative || undefined
   }, /*#__PURE__*/React.createElement("div", {
     className: `gt-progress__fill gt-progress__fill--${tone}`,
     style: {
       width: `${pct}%`
     }
-  })));
+  }));
+  if (inline) return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-progress', 'gt-progress--inline', className].filter(Boolean).join(' ')
+  }, track);
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-progress', `gt-progress--${size}`, className].filter(Boolean).join(' ')
+  }, (label || showLabel) && /*#__PURE__*/React.createElement("div", {
+    className: "gt-progress__head",
+    "aria-hidden": "true"
+  }, label && /*#__PURE__*/React.createElement("span", {
+    className: "gt-progress__label"
+  }, label), showLabel && /*#__PURE__*/React.createElement("span", {
+    className: "gt-progress__pct"
+  }, Math.round(pct), "%")), track);
 }
 Object.assign(__ds_scope, { ProgressBar });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/ProgressBar.jsx", error: String((e && e.message) || e) }); }
@@ -2875,9 +3067,43 @@ Object.assign(__ds_scope, { ProgressBar });
 // components/display/StatCard.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const fmtCompact = n => {
+  const abs = Math.abs(n);
+  if (abs >= 1e6) return `${(n / 1e6).toFixed(1).replace(/\.0$/, '')}M`;
+  if (abs >= 1e4) return `${(n / 1e3).toFixed(1).replace(/\.0$/, '')}K`;
+  return n.toLocaleString('en-US');
+};
+const fmtValue = (v, format) => format === 'percent' ? `${Math.round(v * 100)}%` : format === 'compact' && typeof v === 'number' ? fmtCompact(v) : v;
+const Trend = ({
+  dir
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: "12",
+  height: "12",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, dir === 'flat' ? /*#__PURE__*/React.createElement("path", {
+  d: "M5 12h14"
+}) : dir === 'up' ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+  d: "m22 7-8.5 8.5-5-5L2 17"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M16 7h6v6"
+})) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+  d: "m22 17-8.5-8.5-5 5L2 7"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M16 17h6v-6"
+})));
+
 /**
- * Dashboard metric card — uppercase label, big value, tinted icon chip.
- * Mirrors the app's DashboardMetricCard.
+ * Metric card — one component for the Dashboard (DashboardMetricCard) and Analytics (StatTile,
+ * now `compact`). Uppercase label (+ an InfoPopover ⓘ via `info`), big value, tinted icon chip,
+ * hint; optional `delta` (good / bad / flat against `goodWhenUp`) and a 2–12 point `trend`
+ * sparkline. `failed` or a null value shows "—"; `loading` a skeleton. A clickable card is a
+ * stretched button under the content, so the ⓘ stays its own control.
  */
 function StatCard({
   label,
@@ -2885,135 +3111,142 @@ function StatCard({
   hint,
   icon = null,
   accent = 'primary',
+  format = 'raw',
+  delta,
+  trend,
+  info,
+  failed = false,
+  loading = false,
+  compact = false,
   onClick,
   className = '',
   ...rest
 }) {
-  const El = onClick ? 'button' : 'div';
-  return /*#__PURE__*/React.createElement(El, _extends({
-    className: ['gt-stat-card', `gt-stat-card--${accent}`, onClick ? 'gt-stat-card--clickable' : '', className].filter(Boolean).join(' '),
+  const isNull = failed || value === null || value === undefined;
+  const shownHint = failed ? hint || 'Could not load' : hint;
+  const shown = isNull ? '—' : fmtValue(value, format);
+  let deltaNode = null;
+  if (!failed && !loading && delta && delta.value !== null && delta.value !== undefined) {
+    const up = delta.value > 0;
+    const flat = delta.value === 0;
+    const good = flat ? null : delta.goodWhenUp !== false ? up : !up;
+    const pct = Math.round(delta.value * 100);
+    deltaNode = /*#__PURE__*/React.createElement("span", {
+      className: `gt-stat-card__delta gt-stat-card__delta--${flat ? 'flat' : good ? 'good' : 'bad'}`
+    }, /*#__PURE__*/React.createElement(Trend, {
+      dir: flat ? 'flat' : up ? 'up' : 'down'
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "gt-stat-card__delta-value"
+    }, `${pct > 0 ? '+' : ''}${pct}%`), delta.vsLabel && /*#__PURE__*/React.createElement("span", {
+      className: "gt-stat-card__delta-vs"
+    }, delta.vsLabel));
+  }
+  let trendNode = null;
+  if (!failed && !loading && Array.isArray(trend) && trend.length > 1) {
+    const W = 84;
+    const H = 24;
+    const pad = 3;
+    const max = Math.max(...trend, 1);
+    const min = Math.min(...trend, 0);
+    const x = i => pad + i / (trend.length - 1) * (W - pad * 2);
+    const y = v => H - pad - (v - min) / (max - min || 1) * (H - pad * 2);
+    const last = trend.length - 1;
+    trendNode = /*#__PURE__*/React.createElement("svg", {
+      className: "gt-stat-card__spark",
+      viewBox: `0 0 ${W} ${H}`,
+      role: "img",
+      "aria-label": `${trend.length}-week trend, latest ${fmtCompact(trend[last])}`
+    }, /*#__PURE__*/React.createElement("path", {
+      d: trend.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' '),
+      className: "gt-stat-card__spark-line"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: x(last),
+      cy: y(trend[last]),
+      r: "3.5",
+      className: "gt-stat-card__spark-dot"
+    }));
+  }
+  return /*#__PURE__*/React.createElement("div", _extends({
+    className: ['gt-stat-card', `gt-stat-card--${accent}`, compact ? 'gt-stat-card--compact' : '', onClick ? 'gt-stat-card--clickable' : '', className].filter(Boolean).join(' '),
+    "aria-busy": loading || undefined
+  }, rest), onClick && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-stat-card__hit",
     onClick: onClick,
-    type: onClick ? 'button' : undefined
-  }, rest), /*#__PURE__*/React.createElement("div", {
+    "aria-label": `${label}: ${shown}`
+  }), /*#__PURE__*/React.createElement("div", {
     className: "gt-stat-card__top"
   }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-stat-card__label-row"
+  }, /*#__PURE__*/React.createElement("span", {
     className: "gt-stat-card__label"
-  }, label), icon && /*#__PURE__*/React.createElement("span", {
-    className: "gt-stat-card__icon"
+  }, label), info && /*#__PURE__*/React.createElement(__ds_scope.InfoPopover, {
+    title: info.title || label,
+    body: info.body,
+    learnMoreHref: info.learnMoreHref,
+    label: `About ${typeof label === 'string' ? label.toLowerCase() : 'this metric'}`
+  })), icon && /*#__PURE__*/React.createElement("span", {
+    className: "gt-stat-card__icon",
+    "aria-hidden": "true"
   }, icon)), /*#__PURE__*/React.createElement("span", {
-    className: "gt-stat-card__value"
-  }, value), /*#__PURE__*/React.createElement("span", {
+    className: ['gt-stat-card__value', isNull && !loading ? 'gt-stat-card__null' : ''].filter(Boolean).join(' ')
+  }, loading ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-skeleton"
+  }) : shown), (deltaNode || trendNode || shownHint) && /*#__PURE__*/React.createElement("div", {
+    className: "gt-stat-card__bottom"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-stat-card__meta"
+  }, deltaNode, shownHint && /*#__PURE__*/React.createElement("span", {
     className: "gt-stat-card__hint"
-  }, hint));
+  }, shownHint)), trendNode));
 }
 Object.assign(__ds_scope, { StatCard });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/StatCard.jsx", error: String((e && e.message) || e) }); }
 
-// components/display/Table.jsx
+// components/analytics/StatTile.jsx
 try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /**
- * Data table with sortable headers, skeleton loading and empty state.
- * Matches the app's table idiom: #EEEEEE head row, 1px row borders,
- * #FAFAFA row hover, white card wrapper handled by parent Card.
+ * Analytics KPI tile = the shared StatCard, `compact` with compact number formatting.
+ * StatTile's delta / trend / failed / loading / format moved into StatCard in the alignment
+ * round (2026-10-19); this name stays so analytics call sites and the port's map are stable.
  */
-function Table({
-  columns = [],
-  rows = [],
-  sort,
-  onSort,
-  loading = false,
-  skeletonRows = 4,
-  emptyState = null,
-  rowKey = (row, i) => row.id ?? i,
-  onRowClick,
-  className = ''
+function StatTile({
+  format = 'compact',
+  ...props
 }) {
-  const handleSort = col => {
-    if (!col.sortable || !onSort) return;
-    const dir = sort && sort.key === col.key && sort.dir === 'asc' ? 'desc' : 'asc';
-    onSort({
-      key: col.key,
-      dir
-    });
-  };
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-table-wrapper', className].filter(Boolean).join(' ')
-  }, /*#__PURE__*/React.createElement("table", {
-    className: "gt-table"
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, columns.map(col => /*#__PURE__*/React.createElement("th", {
-    key: col.key,
-    style: col.width ? {
-      width: col.width
-    } : undefined,
-    "aria-sort": sort && sort.key === col.key ? sort.dir === 'asc' ? 'ascending' : 'descending' : undefined
-  }, col.sortable ? /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: ['gt-table__sort', sort && sort.key === col.key ? 'gt-table__sort--active' : ''].filter(Boolean).join(' '),
-    onClick: () => handleSort(col)
-  }, col.label, /*#__PURE__*/React.createElement("svg", {
-    className: "gt-table__sort-icon",
-    width: "12",
-    height: "12",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    "aria-hidden": "true"
-  }, sort && sort.key === col.key && sort.dir === 'desc' ? /*#__PURE__*/React.createElement("path", {
-    d: "M6 9l6 6 6-6",
-    stroke: "currentColor",
-    strokeWidth: "2.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }) : /*#__PURE__*/React.createElement("path", {
-    d: "M18 15l-6-6-6 6",
-    stroke: "currentColor",
-    strokeWidth: "2.5",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  }))) : col.label)))), /*#__PURE__*/React.createElement("tbody", null, loading ? Array.from({
-    length: skeletonRows
-  }).map((_, r) => /*#__PURE__*/React.createElement("tr", {
-    key: `s${r}`,
-    "aria-hidden": "true"
-  }, columns.map(col => /*#__PURE__*/React.createElement("td", {
-    key: col.key
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-skeleton",
-    style: {
-      width: `${55 + (r * 17 + col.key.length * 13) % 40}%`
-    }
-  }))))) : rows.map((row, i) => /*#__PURE__*/React.createElement("tr", {
-    key: rowKey(row, i),
-    className: onRowClick ? 'gt-table__row--clickable' : undefined,
-    onClick: onRowClick ? () => onRowClick(row) : undefined
-  }, columns.map(col => /*#__PURE__*/React.createElement("td", {
-    key: col.key
-  }, col.render ? col.render(row) : row[col.key])))), !loading && rows.length === 0 && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
-    colSpan: columns.length,
-    className: "gt-table__empty-cell"
-  }, emptyState || 'Nothing here yet.')))));
+  return /*#__PURE__*/React.createElement(__ds_scope.StatCard, _extends({
+    compact: true,
+    format: format
+  }, props));
 }
-Object.assign(__ds_scope, { Table });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Table.jsx", error: String((e && e.message) || e) }); }
+Object.assign(__ds_scope, { StatTile });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/analytics/StatTile.jsx", error: String((e && e.message) || e) }); }
 
 // components/display/Tag.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /**
- * Removable tag chip (skills, filters). Square-ish corners vs Badge's pill.
+ * Chip for a picked value (skills, Combobox chips). Square-ish corners vs Badge's pill.
+ * The remove × is a real button ("Remove {name}"), reachable by Tab.
  */
 function Tag({
   children,
   onRemove,
+  removeLabel,
   tone = 'neutral',
   className = '',
   ...rest
 }) {
+  const name = removeLabel || `Remove ${typeof children === 'string' ? children : 'tag'}`;
   return /*#__PURE__*/React.createElement("span", _extends({
-    className: ['gt-tag', `gt-tag--${tone}`, className].filter(Boolean).join(' ')
-  }, rest), children, onRemove && /*#__PURE__*/React.createElement("button", {
+    className: ['gt-tag', `gt-tag--${tone}`, onRemove ? 'gt-tag--removable' : '', className].filter(Boolean).join(' ')
+  }, rest), /*#__PURE__*/React.createElement("span", {
+    className: "gt-tag__text"
+  }, children), onRemove && /*#__PURE__*/React.createElement("button", {
     type: "button",
     className: "gt-tag__remove",
-    "aria-label": `Remove ${typeof children === 'string' ? children : 'tag'}`,
+    "aria-label": name,
     onClick: onRemove
   }, /*#__PURE__*/React.createElement("svg", {
     width: "10",
@@ -3034,12 +3267,15 @@ Object.assign(__ds_scope, { Tag });
 // components/display/Tooltip.jsx
 try { (() => {
 /**
- * Tooltip on hover/focus. Dark bubble, small and quiet.
- * Wraps its child in a span trigger; position via `side`.
+ * Hover / focus tooltip: a dark bubble, small and quiet, shown at once by CSS instead of after
+ * the browser's `title` delay. `focusable={false}` when the trigger sits inside another control
+ * (the codebase's addition) — the bubble then shows when that control has keyboard focus.
+ * Short one-line labels only; explanations are InfoPopovers.
  */
 function Tooltip({
   content,
   side = 'top',
+  focusable = true,
   children,
   className = ''
 }) {
@@ -3048,7 +3284,7 @@ function Tooltip({
     className: ['gt-tooltip', className].filter(Boolean).join(' ')
   }, /*#__PURE__*/React.createElement("span", {
     className: "gt-tooltip__trigger",
-    tabIndex: 0,
+    tabIndex: focusable ? 0 : undefined,
     "aria-describedby": id
   }, children), /*#__PURE__*/React.createElement("span", {
     className: `gt-tooltip__bubble gt-tooltip__bubble--${side}`,
@@ -3058,6 +3294,32 @@ function Tooltip({
 }
 Object.assign(__ds_scope, { Tooltip });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Tooltip.jsx", error: String((e && e.message) || e) }); }
+
+// components/display/UnreadBadge.jsx
+try { (() => {
+/**
+ * The one unread pill (sidebar, header bell, conversation list, message widget): solid red,
+ * white bold count, accessible text built in ("3 unread"). Promoted from domain/ConversationListItem.
+ */
+function UnreadBadge({
+  count = 0,
+  max = 99,
+  label,
+  dot = false,
+  className = ''
+}) {
+  if (!count) return null;
+  const shown = count > max ? `${max}+` : count;
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-unread', dot ? 'gt-unread--dot' : '', className].filter(Boolean).join(' ')
+  }, !dot && /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true"
+  }, shown), /*#__PURE__*/React.createElement("span", {
+    className: "gt-visually-hidden"
+  }, label || `${count} unread`));
+}
+Object.assign(__ds_scope, { UnreadBadge });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/UnreadBadge.jsx", error: String((e && e.message) || e) }); }
 
 // components/domain/ConversationListItem.jsx
 try { (() => {
@@ -3177,18 +3439,8 @@ function MessageComposer({
   }))));
 }
 
-/** Standalone red unread-count pill (sidebar, tabs). */
-function UnreadBadge({
-  count = 0,
-  max = 99,
-  className = ''
-}) {
-  if (!count) return null;
-  return /*#__PURE__*/React.createElement("span", {
-    className: ['gt-unread', className].filter(Boolean).join(' ')
-  }, count > max ? `${max}+` : count);
-}
-Object.assign(__ds_scope, { ConversationListItem, MessageBubble, MessageComposer, UnreadBadge });
+/* UnreadBadge moved to components/display/UnreadBadge.jsx (alignment round, 2026-10-19). */
+Object.assign(__ds_scope, { ConversationListItem, MessageBubble, MessageComposer });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/ConversationListItem.jsx", error: String((e && e.message) || e) }); }
 
 // components/domain/PieChartCard.jsx
@@ -3538,8 +3790,8 @@ function RosterRow({
   }, team), status && /*#__PURE__*/React.createElement(__ds_scope.Badge, {
     tone: statusTone
   }, status), /*#__PURE__*/React.createElement(__ds_scope.Badge, {
-    role: role
-  }, role.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()))), actions && /*#__PURE__*/React.createElement("div", {
+    projectRole: role
+  })), actions && /*#__PURE__*/React.createElement("div", {
     className: "gt-roster-row__actions"
   }, actions));
 }
@@ -3638,8 +3890,8 @@ function TeamMemberCard({
   }, name), email && /*#__PURE__*/React.createElement("span", {
     className: "gt-member-card__email"
   }, email)), /*#__PURE__*/React.createElement(__ds_scope.Badge, {
-    role: role
-  }, role.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()))), skills.length > 0 && /*#__PURE__*/React.createElement("div", {
+    projectRole: role
+  })), skills.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "gt-member-card__skills"
   }, skills.map(s => /*#__PURE__*/React.createElement("span", {
     key: s,
@@ -3867,84 +4119,56 @@ window.runDeferredBabel = window.runDeferredBabel || function runDeferredBabel()
 
 // components/feedback/Alert.jsx
 try { (() => {
+const G = ({
+  children
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: "16",
+  height: "16",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, children);
 const ICONS = {
-  success: /*#__PURE__*/React.createElement("svg", {
-    width: "16",
-    height: "16",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M22 11.08V12a10 10 0 11-5.93-9.14",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round"
+  success: /*#__PURE__*/React.createElement(G, null, /*#__PURE__*/React.createElement("path", {
+    d: "M22 11.08V12a10 10 0 1 1-5.93-9.14"
   }), /*#__PURE__*/React.createElement("path", {
-    d: "M22 4L12 14.01l-3-3",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
+    d: "M22 4 12 14.01l-3-3"
   })),
-  warning: /*#__PURE__*/React.createElement("svg", {
-    width: "16",
-    height: "16",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
+  warning: /*#__PURE__*/React.createElement(G, null, /*#__PURE__*/React.createElement("path", {
+    d: "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"
   })),
-  error: /*#__PURE__*/React.createElement("svg", {
-    width: "16",
-    height: "16",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("circle", {
+  error: /*#__PURE__*/React.createElement(G, null, /*#__PURE__*/React.createElement("circle", {
     cx: "12",
     cy: "12",
-    r: "10",
-    stroke: "currentColor",
-    strokeWidth: "2"
+    r: "10"
   }), /*#__PURE__*/React.createElement("path", {
-    d: "M15 9l-6 6M9 9l6 6",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round"
+    d: "m15 9-6 6M9 9l6 6"
   })),
-  info: /*#__PURE__*/React.createElement("svg", {
-    width: "16",
-    height: "16",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("circle", {
+  info: /*#__PURE__*/React.createElement(G, null, /*#__PURE__*/React.createElement("circle", {
     cx: "12",
     cy: "12",
-    r: "10",
-    stroke: "currentColor",
-    strokeWidth: "2"
+    r: "10"
   }), /*#__PURE__*/React.createElement("path", {
-    d: "M12 16v-4M12 8h.01",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round"
+    d: "M12 16v-4M12 8h.01"
   }))
 };
 
 /**
- * Inline alert using the semantic soft/text color pairs.
- * For floating notifications use Toast (Toast.jsx) instead.
+ * Inline alert for a persistent condition, on the semantic soft / text pairs. Error alerts are
+ * announced at once (`role="alert"`); other tones are status messages (`role="status"`).
+ * `actions` holds buttons (Try again, Restore draft, Discard, Unsend) — children are a <div> now,
+ * so buttons and paragraphs both fit. Passing confirmations are Toasts; field errors sit under
+ * their field; a save error is an Alert above the form's actions.
  */
 function Alert({
   tone = 'info',
   title,
   children,
+  actions,
   onDismiss,
   className = ''
 }) {
@@ -3957,9 +4181,11 @@ function Alert({
     className: "gt-alert__content"
   }, title && /*#__PURE__*/React.createElement("p", {
     className: "gt-alert__title"
-  }, title), children && /*#__PURE__*/React.createElement("p", {
+  }, title), children && /*#__PURE__*/React.createElement("div", {
     className: "gt-alert__text"
-  }, children)), onDismiss && /*#__PURE__*/React.createElement("button", {
+  }, children), actions && /*#__PURE__*/React.createElement("div", {
+    className: "gt-alert__actions"
+  }, actions)), onDismiss && /*#__PURE__*/React.createElement("button", {
     type: "button",
     className: "gt-alert__dismiss",
     "aria-label": "Dismiss",
@@ -3969,74 +4195,40 @@ function Alert({
     height: "14",
     viewBox: "0 0 24 24",
     fill: "none",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M18 6L6 18M6 6l12 12",
     stroke: "currentColor",
     strokeWidth: "2",
-    strokeLinecap: "round"
+    strokeLinecap: "round",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M18 6 6 18M6 6l12 12"
   }))));
 }
 Object.assign(__ds_scope, { Alert });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Alert.jsx", error: String((e && e.message) || e) }); }
 
-// components/feedback/EmptyState.jsx
-try { (() => {
-/**
- * Empty state — round tinted icon well, title, sub-line, optional action.
- * Mirrors the app's "submitted" screens and empty lists.
- */
-function EmptyState({
-  icon = null,
-  title,
-  description,
-  action = null,
-  compact = false,
-  className = ''
-}) {
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-empty', compact ? 'gt-empty--compact' : '', className].filter(Boolean).join(' ')
-  }, icon && /*#__PURE__*/React.createElement("div", {
-    className: "gt-empty__icon"
-  }, icon), /*#__PURE__*/React.createElement("h3", {
-    className: "gt-empty__title"
-  }, title), description && /*#__PURE__*/React.createElement("p", {
-    className: "gt-empty__desc"
-  }, description), action && /*#__PURE__*/React.createElement("div", {
-    className: "gt-empty__action"
-  }, action));
-}
-
-/** Loading placeholder block with shimmer (mirrors _skeleton.scss). */
-function Skeleton({
-  width = '100%',
-  height = 14,
-  radius,
-  circle = false,
-  className = '',
-  style
-}) {
-  return /*#__PURE__*/React.createElement("span", {
-    className: ['gt-skeleton', className].filter(Boolean).join(' '),
-    style: {
-      width,
-      height,
-      borderRadius: circle ? '50%' : radius,
-      display: 'block',
-      ...style
-    },
-    "aria-hidden": "true"
-  });
-}
-Object.assign(__ds_scope, { EmptyState, Skeleton });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/EmptyState.jsx", error: String((e && e.message) || e) }); }
-
 // components/feedback/Menu.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const ITEMS = '[role="menuitem"]:not(:disabled), [role="menuitemcheckbox"]:not(:disabled), [role="menuitemradio"]:not(:disabled)';
+const Check = () => /*#__PURE__*/React.createElement("svg", {
+  width: "14",
+  height: "14",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.4",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M20 6 9 17l-5-5"
+}));
+
 /**
- * Action list inside a Popover. Dense ~32px rows, arrow-key navigation,
- * Enter activates, Esc closes.
+ * Action list inside a Popover. Dense 32px rows (44 on phones), ↑ ↓ Home End move, Enter
+ * activates, Esc closes. `autoFocus` focuses the first item on mount; `autoFocus="checked"`
+ * focuses the checked row (a single-choice menu opens on the current choice) — adopted from the
+ * codebase, as are the `checked` / `radio` rows.
  */
 function Menu({
   children,
@@ -4048,14 +4240,15 @@ function Menu({
 }) {
   const ref = React.useRef(null);
   React.useEffect(() => {
-    if (autoFocus && ref.current) {
-      const first = ref.current.querySelector('[role="menuitem"]:not(:disabled)');
-      if (first) first.focus();
-    }
+    if (!autoFocus || !ref.current) return;
+    const items = Array.from(ref.current.querySelectorAll(ITEMS));
+    const checked = autoFocus === 'checked' ? items.find(el => el.getAttribute('aria-checked') === 'true') : undefined;
+    const target = checked || items[0];
+    if (target) target.focus();
   }, [autoFocus]);
   const onKeyDown = e => {
     if (!ref.current) return;
-    const items = Array.from(ref.current.querySelectorAll('[role="menuitem"]:not(:disabled)'));
+    const items = Array.from(ref.current.querySelectorAll(ITEMS));
     if (!items.length) return;
     const i = items.indexOf(document.activeElement);
     if (e.key === 'ArrowDown') {
@@ -4070,9 +4263,7 @@ function Menu({
     } else if (e.key === 'End') {
       e.preventDefault();
       items[items.length - 1].focus();
-    } else if (e.key === 'Escape') {
-      onClose && onClose();
-    }
+    } else if (e.key === 'Escape' && onClose) onClose();
   };
   return /*#__PURE__*/React.createElement("div", _extends({
     ref: ref,
@@ -4083,26 +4274,36 @@ function Menu({
   }, rest), children);
 }
 
-/** Single action row. */
+/**
+ * One row. `checked` makes it a `menuitemcheckbox` (multi-select lists: labels); with `radio`
+ * a `menuitemradio` (one choice: the scrum board's sprint picker). Checkable rows without an
+ * icon show a check slot, so the state is not colour alone.
+ */
 function MenuItem({
   icon,
   children,
   shortcut,
   destructive = false,
   disabled = false,
+  checked,
+  radio = false,
   onSelect,
   className = '',
   ...rest
 }) {
+  const checkable = checked !== undefined;
   return /*#__PURE__*/React.createElement("button", _extends({
     type: "button",
-    role: "menuitem",
-    className: ['gt-menu__item', destructive ? 'gt-menu__item--destructive' : '', className].filter(Boolean).join(' '),
+    role: checkable ? radio ? 'menuitemradio' : 'menuitemcheckbox' : 'menuitem',
+    "aria-checked": checkable ? !!checked : undefined,
+    className: ['gt-menu__item', destructive ? 'gt-menu__item--destructive' : '', checkable && checked ? 'gt-menu__item--checked' : '', className].filter(Boolean).join(' '),
     disabled: disabled,
     onClick: onSelect
-  }, rest), icon && /*#__PURE__*/React.createElement("span", {
+  }, rest), icon ? /*#__PURE__*/React.createElement("span", {
     className: "gt-menu__icon"
-  }, icon), /*#__PURE__*/React.createElement("span", {
+  }, icon) : checkable && /*#__PURE__*/React.createElement("span", {
+    className: "gt-menu__check"
+  }, checked ? /*#__PURE__*/React.createElement(Check, null) : null), /*#__PURE__*/React.createElement("span", {
     className: "gt-menu__label"
   }, children), shortcut && /*#__PURE__*/React.createElement("span", {
     className: "gt-menu__shortcut"
@@ -4119,76 +4320,6 @@ function MenuSeparator() {
 Object.assign(__ds_scope, { Menu, MenuItem, MenuSeparator });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Menu.jsx", error: String((e && e.message) || e) }); }
 
-// components/feedback/Modal.jsx
-try { (() => {
-/**
- * Modal dialog — blurred scrim, white 12px-radius sheet, close ×.
- * Mirrors the app's JoinClassModal shell.
- */
-function Modal({
-  open = false,
-  onClose,
-  title,
-  subtitle,
-  children,
-  footer,
-  width = 500,
-  closeDisabled = false
-}) {
-  React.useEffect(() => {
-    if (!open) return;
-    const onKey = e => {
-      if (e.key === 'Escape' && !closeDisabled) onClose && onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open, closeDisabled, onClose]);
-  if (!open) return null;
-  return /*#__PURE__*/React.createElement("div", {
-    className: "gt-modal-backdrop",
-    onMouseDown: e => {
-      if (e.target === e.currentTarget && !closeDisabled) onClose && onClose();
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "gt-modal",
-    role: "dialog",
-    "aria-modal": "true",
-    "aria-label": typeof title === 'string' ? title : undefined,
-    style: {
-      maxWidth: width
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gt-modal__close",
-    "aria-label": "Close",
-    onClick: onClose,
-    disabled: closeDisabled
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: "18",
-    height: "18",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M18 6L6 18M6 6l12 12",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round"
-  }))), (title || subtitle) && /*#__PURE__*/React.createElement("div", {
-    className: "gt-modal__head"
-  }, title && /*#__PURE__*/React.createElement("h2", {
-    className: "gt-modal__title"
-  }, title), subtitle && /*#__PURE__*/React.createElement("p", {
-    className: "gt-modal__subtitle"
-  }, subtitle)), /*#__PURE__*/React.createElement("div", {
-    className: "gt-modal__body"
-  }, children), footer && /*#__PURE__*/React.createElement("div", {
-    className: "gt-modal__footer"
-  }, footer)));
-}
-Object.assign(__ds_scope, { Modal });
-})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Modal.jsx", error: String((e && e.message) || e) }); }
-
 // components/feedback/Popover.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
@@ -4196,7 +4327,9 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
  * Anchored floating surface — the primitive Menu, MentionListbox and
  * the board-settings panel compose on. Positions above/below its
  * anchor with a 6px offset, closes on Esc / outside click, never
- * traps focus.
+ * traps focus. Esc is taken in the capture phase and stopped, so a
+ * popover inside a Modal closes on its own; the surface sets its own
+ * text colour (both adopted from the codebase).
  */
 function Popover({
   open = false,
@@ -4213,16 +4346,20 @@ function Popover({
   const ref = React.useRef(null);
   React.useEffect(() => {
     if (!open) return;
+    // capture + stop: a popover inside a modal closes alone (adopted from the codebase)
     const key = e => {
-      if (e.key === 'Escape') onClose && onClose();
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        if (onClose) onClose();
+      }
     };
     const down = e => {
-      if (ref.current && !ref.current.contains(e.target)) onClose && onClose();
+      if (ref.current && !ref.current.contains(e.target) && onClose) onClose();
     };
-    document.addEventListener('keydown', key);
+    document.addEventListener('keydown', key, true);
     document.addEventListener('mousedown', down);
     return () => {
-      document.removeEventListener('keydown', key);
+      document.removeEventListener('keydown', key, true);
       document.removeEventListener('mousedown', down);
     };
   }, [open, onClose]);
@@ -4235,6 +4372,30 @@ function Popover({
 }
 Object.assign(__ds_scope, { Popover });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Popover.jsx", error: String((e && e.message) || e) }); }
+
+// components/feedback/Spinner.jsx
+try { (() => {
+/** Spinning ring — the one loading indicator (14 / 16 / 20 / 24). */
+function Spinner({
+  size = 16,
+  label = 'Loading',
+  decorative = false,
+  className = ''
+}) {
+  const ring = /*#__PURE__*/React.createElement("span", {
+    className: ['gt-spinner', `gt-spinner--${size}`, decorative ? className : ''].filter(Boolean).join(' '),
+    "aria-hidden": "true"
+  });
+  if (decorative) return ring;
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-spinner-wrap', className].filter(Boolean).join(' '),
+    role: "status"
+  }, ring, /*#__PURE__*/React.createElement("span", {
+    className: "gt-visually-hidden"
+  }, label));
+}
+Object.assign(__ds_scope, { Spinner });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Spinner.jsx", error: String((e && e.message) || e) }); }
 
 // components/feedback/Toast.jsx
 try { (() => {
@@ -12358,6 +12519,116 @@ function Stage({
 Object.assign(__ds_scope, { StageCard, Stage });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/marketing/StageCard.jsx", error: String((e && e.message) || e) }); }
 
+// components/navigation/FilterChip.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const Check = () => /*#__PURE__*/React.createElement("svg", {
+  width: "13",
+  height: "13",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.6",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M20 6 9 17l-5-5"
+}));
+
+/**
+ * Filter chip — narrows a list. sm 26px (palette scopes, schedule kinds), md 32px (analytics
+ * range). Alone it is a pressed toggle (`aria-pressed`); inside a single-choice FilterChipGroup
+ * it is a radio. Selected = solid green, white text (multi-choice chips also show a check).
+ */
+function FilterChip({
+  children,
+  selected = false,
+  onClick,
+  count,
+  icon,
+  size = 'md',
+  kind = 'toggle',
+  disabled = false,
+  className = '',
+  ...rest
+}) {
+  const radio = kind === 'radio';
+  return /*#__PURE__*/React.createElement("button", _extends({
+    type: "button",
+    role: radio ? 'radio' : undefined,
+    "aria-checked": radio ? selected : undefined,
+    "aria-pressed": radio ? undefined : selected,
+    className: ['gt-filter-chip', size === 'sm' ? 'gt-filter-chip--sm' : '', selected ? 'gt-filter-chip--selected' : '', className].filter(Boolean).join(' '),
+    onClick: onClick,
+    disabled: disabled
+  }, rest), selected && !radio ? /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter-chip__icon"
+  }, /*#__PURE__*/React.createElement(Check, null)) : icon && /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter-chip__icon",
+    "aria-hidden": "true"
+  }, icon), children, count != null && /*#__PURE__*/React.createElement("span", {
+    className: "gt-filter-chip__count"
+  }, count));
+}
+
+/**
+ * A row of FilterChips. `type="single"`: a radio group (one choice, arrow keys move and select,
+ * one tab stop). `type="multi"`: a group of pressed toggles, each in the tab order.
+ */
+function FilterChipGroup({
+  type = 'multi',
+  ariaLabel,
+  options = [],
+  value,
+  onChange,
+  size = 'md',
+  className = ''
+}) {
+  const rootRef = React.useRef(null);
+  const single = type === 'single';
+  const selected = single ? [value] : Array.isArray(value) ? value : [];
+  const enabled = options.filter(o => !o.disabled);
+  const onKeyDown = (e, opt) => {
+    if (!single) return;
+    const i = enabled.findIndex(o => o.value === opt.value);
+    let next = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = enabled[(i + 1) % enabled.length];else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = enabled[(i - 1 + enabled.length) % enabled.length];else if (e.key === 'Home') next = enabled[0];else if (e.key === 'End') next = enabled[enabled.length - 1];
+    if (!next) return;
+    e.preventDefault();
+    const el = rootRef.current && rootRef.current.querySelector(`[data-value="${String(next.value).replace(/"/g, '\\"')}"]`);
+    if (el) el.focus();
+    if (onChange) onChange(next.value);
+  };
+  const hasSel = options.some(o => selected.includes(o.value) && !o.disabled);
+  return /*#__PURE__*/React.createElement("div", {
+    ref: rootRef,
+    className: ['gt-filter-chips', className].filter(Boolean).join(' '),
+    role: single ? 'radiogroup' : 'group',
+    "aria-label": ariaLabel
+  }, options.map(opt => {
+    const on = selected.includes(opt.value);
+    return /*#__PURE__*/React.createElement(FilterChip, {
+      key: opt.value,
+      "data-value": opt.value,
+      kind: single ? 'radio' : 'toggle',
+      size: size,
+      selected: on,
+      count: opt.count,
+      icon: opt.icon,
+      disabled: opt.disabled,
+      tabIndex: single ? on || !hasSel && opt === enabled[0] ? 0 : -1 : undefined,
+      onKeyDown: e => onKeyDown(e, opt),
+      onClick: () => {
+        if (!onChange) return;
+        if (single) onChange(opt.value);else onChange(on ? selected.filter(v => v !== opt.value) : [...selected, opt.value]);
+      }
+    }, opt.label);
+  }));
+}
+Object.assign(__ds_scope, { FilterChip, FilterChipGroup });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/FilterChip.jsx", error: String((e && e.message) || e) }); }
+
 // components/navigation/Pagination.jsx
 try { (() => {
 /**
@@ -12440,32 +12711,57 @@ Object.assign(__ds_scope, { Pagination });
 // components/navigation/SegmentedControl.jsx
 try { (() => {
 /**
- * Segmented control — pill container with sliding selected segment.
- * For small view switches (e.g. Table/Cards, Week/Month).
+ * Segmented control — switches the view or unit of the same content (Table / Cards,
+ * Tasks / Points, Week / Month). WAI-ARIA radio group: roving tabindex, arrow keys (and Home /
+ * End) move and select. Sizes to its options; full width on phones or with `fullWidth`.
  */
 function SegmentedControl({
   options = [],
   value,
   onChange,
+  ariaLabel,
   size = 'md',
+  fullWidth = false,
   className = ''
 }) {
+  const refs = React.useRef({});
+  const enabled = options.filter(o => !o.disabled);
+  const hasSelection = options.some(o => o.value === value && !o.disabled);
+  const onKeyDown = (e, opt) => {
+    const i = enabled.findIndex(o => o.value === opt.value);
+    let next = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = enabled[(i + 1) % enabled.length];else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = enabled[(i - 1 + enabled.length) % enabled.length];else if (e.key === 'Home') next = enabled[0];else if (e.key === 'End') next = enabled[enabled.length - 1];
+    if (!next) return;
+    e.preventDefault();
+    if (refs.current[next.value]) refs.current[next.value].focus();
+    if (onChange) onChange(next.value);
+  };
   return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-segmented', `gt-segmented--${size}`, className].filter(Boolean).join(' '),
-    role: "radiogroup"
+    className: ['gt-segmented', `gt-segmented--${size}`, fullWidth ? 'gt-segmented--full' : '', className].filter(Boolean).join(' '),
+    role: "radiogroup",
+    "aria-label": ariaLabel
   }, options.map(opt => {
     const active = value === opt.value;
     return /*#__PURE__*/React.createElement("button", {
       key: opt.value,
+      ref: el => {
+        refs.current[opt.value] = el;
+      },
       type: "button",
       role: "radio",
       "aria-checked": active,
+      "aria-label": opt.ariaLabel,
+      tabIndex: active || !hasSelection && opt === enabled[0] ? 0 : -1,
       className: ['gt-segmented__option', active ? 'gt-segmented__option--active' : ''].filter(Boolean).join(' '),
       onClick: () => onChange && onChange(opt.value),
+      onKeyDown: e => onKeyDown(e, opt),
       disabled: opt.disabled
     }, opt.icon && /*#__PURE__*/React.createElement("span", {
-      className: "gt-segmented__icon"
-    }, opt.icon), opt.label);
+      className: "gt-segmented__icon",
+      "aria-hidden": "true"
+    }, opt.icon), opt.label, opt.count != null && /*#__PURE__*/React.createElement("span", {
+      className: "gt-segmented__count"
+    }, opt.count));
   }));
 }
 Object.assign(__ds_scope, { SegmentedControl });
@@ -12474,9 +12770,9 @@ Object.assign(__ds_scope, { SegmentedControl });
 // components/navigation/SidebarNavItem.jsx
 try { (() => {
 /**
- * Sidebar navigation item — white text on the green sidebar; active
- * state is the light chip with the left half-pill indicator.
- * Must be rendered inside a green (.gt-sidebar-demo or app sidebar) container.
+ * Sidebar navigation item — white text on the green sidebar; active state is the light chip with
+ * the left half-pill indicator. The unread count is the shared UnreadBadge (red, "3 unread").
+ * Rendered inside the app sidebar (layout code), its one consumer.
  */
 function SidebarNavItem({
   icon = null,
@@ -12491,14 +12787,17 @@ function SidebarNavItem({
     type: "button",
     className: ['gt-sidebar-item', active ? 'gt-sidebar-item--active' : '', collapsed ? 'gt-sidebar-item--collapsed' : '', className].filter(Boolean).join(' '),
     "aria-current": active ? 'page' : undefined,
+    "aria-label": collapsed ? label : undefined,
     onClick: onClick
   }, icon && /*#__PURE__*/React.createElement("span", {
-    className: "gt-sidebar-item__icon"
+    className: "gt-sidebar-item__icon",
+    "aria-hidden": "true"
   }, icon), !collapsed && /*#__PURE__*/React.createElement("span", {
     className: "gt-sidebar-item__label"
-  }, label), !collapsed && badge != null && badge !== 0 && /*#__PURE__*/React.createElement("span", {
+  }, label), !collapsed && badge != null && badge !== 0 && /*#__PURE__*/React.createElement(__ds_scope.UnreadBadge, {
+    count: badge,
     className: "gt-sidebar-item__badge"
-  }, badge));
+  }));
 }
 
 /** Uppercase section title used between sidebar groups. */
@@ -12512,56 +12811,223 @@ function SidebarSectionTitle({
 Object.assign(__ds_scope, { SidebarNavItem, SidebarSectionTitle });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/SidebarNavItem.jsx", error: String((e && e.message) || e) }); }
 
+// components/navigation/Stepper.jsx
+try { (() => {
+const Check = () => /*#__PURE__*/React.createElement("svg", {
+  width: "14",
+  height: "14",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.6",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M20 6 9 17l-5-5"
+}));
+const Alert = () => /*#__PURE__*/React.createElement("svg", {
+  width: "14",
+  height: "14",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.6",
+  strokeLinecap: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M12 7v6M12 17h.01"
+}));
+const STATE_TEXT = {
+  done: 'completed',
+  error: 'has errors',
+  current: 'current step',
+  upcoming: 'not started'
+};
+
+/**
+ * Stepper — the TSR form's steps as an ordered list inside a <nav>. Each step is done, current,
+ * upcoming or error; done steps show a check and error steps an alert mark (plus visually hidden
+ * text), so state is never colour alone. Done and error steps are buttons back to that step when
+ * `onStepClick` is set; upcoming steps are not interactive. Under 768px it collapses to
+ * "Step 2 of 4 · Rate teammates" with an inline meter.
+ */
+function Stepper({
+  steps = [],
+  current = 0,
+  onStepClick,
+  ariaLabel = 'Progress',
+  className = ''
+}) {
+  const stateOf = (s, i) => s.state || (i < current ? 'done' : i === current ? 'current' : 'upcoming');
+  const cur = steps[current];
+  const pct = steps.length ? Math.round((current + 1) / steps.length * 100) : 0;
+  return /*#__PURE__*/React.createElement("nav", {
+    className: ['gt-stepper', className].filter(Boolean).join(' '),
+    "aria-label": ariaLabel
+  }, /*#__PURE__*/React.createElement("ol", {
+    className: "gt-stepper__list"
+  }, steps.map((s, i) => {
+    const st = stateOf(s, i);
+    const clickable = onStepClick && (st === 'done' || st === 'error');
+    const inner = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+      className: "gt-stepper__marker",
+      "aria-hidden": "true"
+    }, st === 'done' ? /*#__PURE__*/React.createElement(Check, null) : st === 'error' ? /*#__PURE__*/React.createElement(Alert, null) : i + 1), /*#__PURE__*/React.createElement("span", {
+      className: "gt-stepper__label"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-visually-hidden"
+    }, "Step ", i + 1, ": "), s.label, /*#__PURE__*/React.createElement("span", {
+      className: "gt-visually-hidden"
+    }, ", ", STATE_TEXT[st])));
+    return /*#__PURE__*/React.createElement("li", {
+      key: s.id ?? i,
+      className: `gt-stepper__step gt-stepper__step--${st}`,
+      "aria-current": st === 'current' ? 'step' : undefined
+    }, clickable ? /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-stepper__hit",
+      onClick: () => onStepClick(s.id ?? i, i)
+    }, inner) : /*#__PURE__*/React.createElement("span", {
+      className: "gt-stepper__static"
+    }, inner));
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-stepper__compact"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "gt-stepper__compact-text"
+  }, "Step ", /*#__PURE__*/React.createElement("b", null, current + 1), " of ", steps.length, cur ? /*#__PURE__*/React.createElement(React.Fragment, null, " \xB7 ", /*#__PURE__*/React.createElement("b", null, cur.label)) : null), /*#__PURE__*/React.createElement("div", {
+    className: "gt-progress gt-progress--inline",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-progress__track"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-progress__fill gt-progress__fill--primary",
+    style: {
+      width: `${pct}%`
+    }
+  })))));
+}
+Object.assign(__ds_scope, { Stepper });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/Stepper.jsx", error: String((e && e.message) || e) }); }
+
 // components/navigation/Tabs.jsx
 try { (() => {
 /**
- * Underline tabs (Details / Team pattern from EditProjectModal).
- * Controlled: pass `value` + `onChange`.
+ * Tabs on the grey segmented track (Edit Project's Details / Team / Meetings, Requests, the
+ * scrum board's Board / Backlog / Burnup, TA meeting tabs, the member manager). WAI-ARIA Tabs:
+ * roving tabindex, ← → / Home / End; `activation="automatic"` selects on focus (panels that
+ * render at once), `"manual"` waits for Enter / Space (panels that load). Pair each tab with a
+ * `<TabPanel>` that shares `idBase`. `collapseOnPhone` shows icon-only tabs under 768px while the
+ * label stays in the accessible name.
  */
 function Tabs({
   tabs = [],
   value,
   onChange,
+  ariaLabel,
+  idBase,
+  activation = 'automatic',
+  size = 'md',
+  collapseOnPhone = false,
   className = ''
 }) {
+  const reactId = React.useId();
+  const base = idBase || reactId;
+  const refs = React.useRef({});
+  const enabled = tabs.filter(t => !t.disabled);
+  const hasSelection = tabs.some(t => t.value === value && !t.disabled);
+  const onKeyDown = (e, tab) => {
+    const i = enabled.findIndex(t => t.value === tab.value);
+    let next = null;
+    if (e.key === 'ArrowRight') next = enabled[(i + 1) % enabled.length];else if (e.key === 'ArrowLeft') next = enabled[(i - 1 + enabled.length) % enabled.length];else if (e.key === 'Home') next = enabled[0];else if (e.key === 'End') next = enabled[enabled.length - 1];else if (activation === 'manual' && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      if (onChange) onChange(tab.value);
+      return;
+    }
+    if (!next) return;
+    e.preventDefault();
+    if (refs.current[next.value]) refs.current[next.value].focus();
+    if (activation === 'automatic' && onChange) onChange(next.value);
+  };
   return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-tabs', className].filter(Boolean).join(' '),
-    role: "tablist"
+    className: ['gt-tabs', size === 'sm' ? 'gt-tabs--sm' : '', collapseOnPhone ? 'gt-tabs--collapse' : '', className].filter(Boolean).join(' '),
+    role: "tablist",
+    "aria-label": ariaLabel
   }, tabs.map(tab => {
     const active = value === tab.value;
     return /*#__PURE__*/React.createElement("button", {
       key: tab.value,
+      ref: el => {
+        refs.current[tab.value] = el;
+      },
       type: "button",
       role: "tab",
+      id: `${base}-tab-${tab.value}`,
+      "aria-controls": `${base}-panel-${tab.value}`,
       "aria-selected": active,
-      className: ['gt-tabs__tab', active ? 'gt-tabs__tab--active' : ''].filter(Boolean).join(' '),
+      tabIndex: active || !hasSelection && tab === enabled[0] ? 0 : -1,
+      className: ['gt-tabs__tab', active ? 'gt-tabs__tab--active' : '', tab.icon ? 'gt-tabs__tab--has-icon' : ''].filter(Boolean).join(' '),
       onClick: () => onChange && onChange(tab.value),
+      onKeyDown: e => onKeyDown(e, tab),
       disabled: tab.disabled
     }, tab.icon && /*#__PURE__*/React.createElement("span", {
-      className: "gt-tabs__icon"
-    }, tab.icon), tab.label, tab.count != null && /*#__PURE__*/React.createElement("span", {
-      className: "gt-tabs__count"
-    }, tab.count));
+      className: "gt-tabs__icon",
+      "aria-hidden": "true"
+    }, tab.icon), /*#__PURE__*/React.createElement("span", {
+      className: "gt-tabs__label"
+    }, tab.label), tab.count != null && /*#__PURE__*/React.createElement(__ds_scope.CountBadge, {
+      count: tab.count,
+      label: tab.countLabel
+    }));
   }));
 }
-Object.assign(__ds_scope, { Tabs });
+
+/**
+ * The panel a tab controls: `role="tabpanel"`, labelled by its tab, focusable when its content
+ * starts with no focusable element. Inactive panels stay in the DOM, empty and `hidden`
+ * (`keepMounted` keeps their content).
+ */
+function TabPanel({
+  value,
+  active = false,
+  idBase,
+  keepMounted = false,
+  focusable = true,
+  className = '',
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    role: "tabpanel",
+    id: `${idBase}-panel-${value}`,
+    "aria-labelledby": `${idBase}-tab-${value}`,
+    hidden: !active,
+    tabIndex: active && focusable ? 0 : undefined,
+    className: ['gt-tabs__panel', className].filter(Boolean).join(' ')
+  }, active || keepMounted ? children : null);
+}
+Object.assign(__ds_scope, { Tabs, TabPanel });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/navigation/Tabs.jsx", error: String((e && e.message) || e) }); }
 
 // components/primitives/Button.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /**
- * GrepThink primary action button.
- * Variants: primary (green CTA), secondary (grey), ghost (transparent), danger (destructive).
- * Sizes: sm / md / lg. Supports loading spinner, disabled, and left/right icon slots.
+ * GrepThink button. Variants: primary · secondary · outline · ghost · danger · danger-ghost.
+ * Sizes sm 32 / md 40 / lg 48 (44 minimum on phones). `href` renders an <a> with the same classes.
+ * Busy: a spinner and the "-ing…" label (`loadingLabel`) replace the idle face in the same grid
+ * cell, so the width never changes; the button stays focusable (`aria-disabled`) and ignores clicks.
+ * `pressed` makes it a toggle button (`aria-pressed`).
  */
 function Button({
   children,
   variant = 'primary',
   size = 'md',
   type = 'button',
+  href,
   loading = false,
+  loadingLabel,
   disabled = false,
+  pressed,
   fullWidth = false,
   iconLeft = null,
   iconRight = null,
@@ -12569,23 +13035,54 @@ function Button({
   className = '',
   ...rest
 }) {
+  const inert = disabled || loading;
   const cls = ['gt-button', `gt-button--${variant}`, `gt-button--${size}`, fullWidth ? 'gt-button--full' : '', loading ? 'gt-button--loading' : '', className].filter(Boolean).join(' ');
+  const handleClick = e => {
+    if (inert) {
+      e.preventDefault();
+      return;
+    }
+    if (onClick) onClick(e);
+  };
+  const faces = /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__faces"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__face gt-button__face--idle"
+  }, iconLeft && /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__icon",
+    "aria-hidden": "true"
+  }, iconLeft), /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__label"
+  }, children), iconRight && /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__icon",
+    "aria-hidden": "true"
+  }, iconRight)), (loading || loadingLabel != null) && /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__face gt-button__face--busy"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Spinner, {
+    size: size === 'sm' ? 14 : 16,
+    decorative: true
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "gt-button__label"
+  }, loadingLabel ?? children)));
+  if (href) {
+    return /*#__PURE__*/React.createElement("a", _extends({
+      className: cls,
+      href: inert ? undefined : href,
+      role: inert ? 'link' : undefined,
+      "aria-disabled": inert || undefined,
+      "aria-busy": loading || undefined,
+      onClick: handleClick
+    }, rest), faces);
+  }
   return /*#__PURE__*/React.createElement("button", _extends({
     type: type,
     className: cls,
-    disabled: disabled || loading,
+    disabled: disabled,
+    "aria-disabled": loading || undefined,
     "aria-busy": loading || undefined,
-    onClick: onClick
-  }, rest), loading && /*#__PURE__*/React.createElement("span", {
-    className: "gt-button__spinner",
-    "aria-hidden": "true"
-  }), !loading && iconLeft && /*#__PURE__*/React.createElement("span", {
-    className: "gt-button__icon"
-  }, iconLeft), /*#__PURE__*/React.createElement("span", {
-    className: "gt-button__label"
-  }, children), !loading && iconRight && /*#__PURE__*/React.createElement("span", {
-    className: "gt-button__icon"
-  }, iconRight));
+    "aria-pressed": pressed === undefined ? undefined : !!pressed,
+    onClick: handleClick
+  }, rest), faces);
 }
 Object.assign(__ds_scope, { Button });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Button.jsx", error: String((e && e.message) || e) }); }
@@ -12777,12 +13274,262 @@ function MeetingCard({
 Object.assign(__ds_scope, { MeetingCard });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/domain/MeetingCard.jsx", error: String((e && e.message) || e) }); }
 
+// components/feedback/EmptyState.jsx
+try { (() => {
+const G = ({
+  children,
+  size = 16
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, children);
+
+/**
+ * Empty state. Variants: `page` (64px tinted icon well, 20px title) · `card` (inside a card or
+ * table: 36px sunken disc, 13px title — analytics' `.gt-empty--card`) · `quiet` (left-aligned
+ * text, no icon well — the schedule's) · `error` (quiet text + a "Try again" link; never a red
+ * panel). The heading level comes from the context (`titleAs`).
+ */
+function EmptyState({
+  icon = null,
+  title,
+  description,
+  action = null,
+  variant = 'page',
+  compact = false,
+  titleAs = 'h3',
+  onRetry,
+  retryLabel = 'Try again',
+  className = ''
+}) {
+  const T = titleAs;
+  const quiet = variant === 'quiet' || variant === 'error';
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-empty', variant !== 'page' ? `gt-empty--${variant}` : '', compact ? 'gt-empty--compact' : '', className].filter(Boolean).join(' '),
+    role: variant === 'error' ? 'status' : undefined
+  }, icon && !quiet && /*#__PURE__*/React.createElement("div", {
+    className: "gt-empty__icon",
+    "aria-hidden": "true"
+  }, icon), /*#__PURE__*/React.createElement(T, {
+    className: "gt-empty__title"
+  }, title), description && /*#__PURE__*/React.createElement("p", {
+    className: "gt-empty__desc"
+  }, description), (action || onRetry) && /*#__PURE__*/React.createElement("div", {
+    className: "gt-empty__action"
+  }, action, onRetry && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-empty__retry",
+    onClick: onRetry
+  }, /*#__PURE__*/React.createElement(G, {
+    size: 13
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 16H3v5"
+  })), retryLabel)));
+}
+
+/** "No class selected" — written once for the 14 pages that need a class. The action opens the class selector. */
+function NoClassSelected({
+  onSelectClass,
+  variant = 'page',
+  titleAs = 'h2',
+  className = ''
+}) {
+  return /*#__PURE__*/React.createElement(EmptyState, {
+    variant: variant,
+    titleAs: titleAs,
+    className: className,
+    icon: /*#__PURE__*/React.createElement(G, {
+      size: 28
+    }, /*#__PURE__*/React.createElement("path", {
+      d: "M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M22 10v6M6 12.5V16a6 3 0 0 0 12 0v-3.5"
+    })),
+    title: "No class selected",
+    description: "Choose a class to see this page. You can switch classes any time from the class selector.",
+    action: onSelectClass && /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      variant: "outline",
+      onClick: onSelectClass
+    }, "Choose a class")
+  });
+}
+
+/** Loading placeholder block with shimmer (mirrors _skeleton.scss). */
+function Skeleton({
+  width = '100%',
+  height = 14,
+  radius,
+  circle = false,
+  className = '',
+  style
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    className: ['gt-skeleton', className].filter(Boolean).join(' '),
+    style: {
+      width,
+      height,
+      borderRadius: circle ? '50%' : radius,
+      display: 'block',
+      ...style
+    },
+    "aria-hidden": "true"
+  });
+}
+Object.assign(__ds_scope, { EmptyState, NoClassSelected, Skeleton });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/EmptyState.jsx", error: String((e && e.message) || e) }); }
+
+// components/display/Table.jsx
+try { (() => {
+const SortGlyph = ({
+  dir
+}) => /*#__PURE__*/React.createElement("svg", {
+  className: "gt-table__sort-icon",
+  width: "12",
+  height: "12",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.5",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, dir === 'desc' ? /*#__PURE__*/React.createElement("path", {
+  d: "M6 9l6 6 6-6"
+}) : /*#__PURE__*/React.createElement("path", {
+  d: "M18 15l-6-6-6 6"
+}));
+
+/**
+ * Data table: `scope="col"` headers, sortable headers as buttons with `aria-sort`, a visually
+ * hidden caption, Skeleton loading rows, a compact EmptyState row, `dense` rows, a sticky header,
+ * and horizontal scrolling inside its card on phones (the scroll region is focusable only when it
+ * overflows). Rows that open something put a link (`rowHref`) or button (`onRowClick`) in the
+ * first cell; the row itself only shows hover — no `<tr onClick>`.
+ */
+function Table({
+  columns = [],
+  rows = [],
+  caption,
+  sort,
+  onSort,
+  loading = false,
+  skeletonRows = 4,
+  emptyState = null,
+  emptyText = 'Nothing here yet.',
+  rowKey = (row, i) => row.id ?? i,
+  onRowClick,
+  rowHref,
+  dense = false,
+  stickyHeader = false,
+  className = ''
+}) {
+  const wrapRef = React.useRef(null);
+  const [scrolls, setScrolls] = React.useState(false);
+  React.useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return undefined;
+    const check = () => setScrolls(el.scrollWidth > el.clientWidth + 1);
+    check();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(check) : null;
+    if (ro) ro.observe(el);
+    return () => {
+      if (ro) ro.disconnect();
+    };
+  }, [rows.length, columns.length]);
+  const handleSort = col => {
+    if (!col.sortable || !onSort) return;
+    onSort({
+      key: col.key,
+      dir: sort && sort.key === col.key && sort.dir === 'asc' ? 'desc' : 'asc'
+    });
+  };
+  const opens = onRowClick || rowHref;
+  return /*#__PURE__*/React.createElement("div", {
+    ref: wrapRef,
+    className: ['gt-table-wrapper', className].filter(Boolean).join(' '),
+    role: scrolls ? 'region' : undefined,
+    "aria-label": scrolls && typeof caption === 'string' ? caption : undefined,
+    tabIndex: scrolls ? 0 : undefined
+  }, /*#__PURE__*/React.createElement("table", {
+    className: ['gt-table', dense ? 'gt-table--dense' : '', stickyHeader ? 'gt-table--sticky' : ''].filter(Boolean).join(' '),
+    "aria-busy": loading || undefined
+  }, caption && /*#__PURE__*/React.createElement("caption", {
+    className: "gt-visually-hidden"
+  }, caption), /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, columns.map(col => {
+    const active = sort && sort.key === col.key;
+    return /*#__PURE__*/React.createElement("th", {
+      key: col.key,
+      scope: "col",
+      style: col.width ? {
+        width: col.width
+      } : undefined,
+      "aria-sort": col.sortable ? active ? sort.dir === 'asc' ? 'ascending' : 'descending' : 'none' : undefined
+    }, col.sortable ? /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: ['gt-table__sort', active ? 'gt-table__sort--active' : ''].filter(Boolean).join(' '),
+      onClick: () => handleSort(col)
+    }, col.label, /*#__PURE__*/React.createElement(SortGlyph, {
+      dir: active ? sort.dir : 'asc'
+    })) : col.label);
+  }))), /*#__PURE__*/React.createElement("tbody", null, loading ? Array.from({
+    length: skeletonRows
+  }).map((_, r) => /*#__PURE__*/React.createElement("tr", {
+    key: `s${r}`,
+    "aria-hidden": "true"
+  }, columns.map(col => /*#__PURE__*/React.createElement("td", {
+    key: col.key
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-skeleton",
+    style: {
+      width: `${55 + (r * 17 + col.key.length * 13) % 40}%`
+    }
+  }))))) : rows.map((row, i) => /*#__PURE__*/React.createElement("tr", {
+    key: rowKey(row, i)
+  }, columns.map((col, ci) => {
+    const content = col.render ? col.render(row) : row[col.key];
+    if (!opens || ci !== 0) return /*#__PURE__*/React.createElement("td", {
+      key: col.key
+    }, content);
+    return /*#__PURE__*/React.createElement("td", {
+      key: col.key
+    }, rowHref ? /*#__PURE__*/React.createElement("a", {
+      className: "gt-table__open",
+      href: rowHref(row)
+    }, content) : /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "gt-table__open",
+      onClick: () => onRowClick(row)
+    }, content));
+  }))), !loading && rows.length === 0 && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+    colSpan: columns.length,
+    className: "gt-table__empty-cell"
+  }, emptyState || /*#__PURE__*/React.createElement(__ds_scope.EmptyState, {
+    variant: "card",
+    title: emptyText,
+    titleAs: "p"
+  }))))));
+}
+Object.assign(__ds_scope, { Table });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/display/Table.jsx", error: String((e && e.message) || e) }); }
+
 // components/primitives/Checkbox.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /**
- * Checkbox with label. Custom-drawn box, green when checked,
- * accent-blue focus ring, indeterminate support.
+ * Checkbox with label. Custom-drawn box (green when checked), accent focus ring, indeterminate.
+ * The native input covers the whole row, so clicks, taps and the screen-reader cursor all land
+ * on it. The description is linked with `aria-describedby`, not folded into the name.
  */
 function Checkbox({
   id,
@@ -12811,7 +13558,9 @@ function Checkbox({
     className: "gt-check__input",
     checked: checked,
     onChange: onChange,
-    disabled: disabled
+    disabled: disabled,
+    "aria-labelledby": label ? `${inputId}-label` : undefined,
+    "aria-describedby": description ? `${inputId}-desc` : undefined
   }, rest)), /*#__PURE__*/React.createElement("span", {
     className: "gt-check__box",
     "aria-hidden": "true"
@@ -12832,135 +13581,972 @@ function Checkbox({
   })), (label || description) && /*#__PURE__*/React.createElement("span", {
     className: "gt-check__text"
   }, label && /*#__PURE__*/React.createElement("span", {
-    className: "gt-check__label"
+    className: "gt-check__label",
+    id: `${inputId}-label`
   }, label), description && /*#__PURE__*/React.createElement("span", {
-    className: "gt-check__desc"
+    className: "gt-check__desc",
+    id: `${inputId}-desc`
   }, description)));
 }
 Object.assign(__ds_scope, { Checkbox });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Checkbox.jsx", error: String((e && e.message) || e) }); }
 
+// components/primitives/FieldShell.jsx
+try { (() => {
+const ErrorGlyph = () => /*#__PURE__*/React.createElement("svg", {
+  width: "13",
+  height: "13",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("circle", {
+  cx: "12",
+  cy: "12",
+  r: "10"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M12 8v4M12 16h.01"
+}));
+const bucketOf = remaining => remaining === null ? 'none' : remaining < 0 ? 'over' : remaining === 0 ? 'limit' : remaining <= 20 ? 'low' : 'ok';
+
+/**
+ * The field shell every form control shares: label (visible or visually hidden), "(optional)"
+ * marker, the control, then the error (replacing the help line) and the character counter.
+ * Wires `aria-describedby` / `aria-invalid` for the control through a render prop:
+ * `children({ id, labelId, describedBy, invalid })`.
+ * Counter: "128 / 500"; past the limit the text is kept and flagged (`--over`), never cut.
+ * A polite live region speaks only when the remaining count crosses 20, 0 and the limit.
+ */
+function FieldShell({
+  id,
+  label,
+  hideLabel = false,
+  optional = false,
+  helperText,
+  error,
+  count,
+  max,
+  disabled = false,
+  group = false,
+  className = '',
+  children
+}) {
+  const reactId = React.useId();
+  const fieldId = id || reactId;
+  const labelId = `${fieldId}-label`;
+  const errId = error ? `${fieldId}-err` : null;
+  const helpId = !error && helperText ? `${fieldId}-help` : null;
+  const hasMax = max != null;
+  const countId = hasMax ? `${fieldId}-count` : null;
+  const n = count || 0;
+  const over = hasMax && n > max;
+  const remaining = hasMax ? max - n : null;
+  const bucket = bucketOf(remaining);
+  const last = React.useRef(bucket);
+  const [live, setLive] = React.useState('');
+  React.useEffect(() => {
+    if (bucket === last.current) return;
+    last.current = bucket;
+    setLive(bucket === 'low' ? `${remaining} characters left` : bucket === 'limit' ? 'Character limit reached' : bucket === 'over' ? `${-remaining} characters over the limit` : '');
+  }, [bucket, remaining]);
+  const ctx = {
+    id: fieldId,
+    labelId,
+    describedBy: [errId, helpId, countId].filter(Boolean).join(' ') || undefined,
+    invalid: !!error || over
+  };
+  const Label = group ? 'span' : 'label';
+  return /*#__PURE__*/React.createElement("div", {
+    className: ['gt-field', error ? 'gt-field--error' : '', over ? 'gt-field--over' : '', disabled ? 'gt-field--disabled' : '', className].filter(Boolean).join(' ')
+  }, label && /*#__PURE__*/React.createElement(Label, {
+    id: labelId,
+    className: hideLabel ? 'gt-visually-hidden' : 'gt-field__label',
+    htmlFor: group ? undefined : fieldId
+  }, label, optional && /*#__PURE__*/React.createElement("span", {
+    className: "gt-field__optional"
+  }, "(optional)")), typeof children === 'function' ? children(ctx) : children, (errId || helpId || hasMax) && /*#__PURE__*/React.createElement("div", {
+    className: "gt-field__footer"
+  }, errId && /*#__PURE__*/React.createElement("p", {
+    className: "gt-field__error",
+    id: errId
+  }, /*#__PURE__*/React.createElement(ErrorGlyph, null), error), helpId && /*#__PURE__*/React.createElement("p", {
+    className: "gt-field__help",
+    id: helpId
+  }, helperText), hasMax && /*#__PURE__*/React.createElement("span", {
+    className: ['gt-field__count', over ? 'gt-field__count--over' : ''].filter(Boolean).join(' '),
+    id: countId
+  }, /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true"
+  }, n, " / ", max), /*#__PURE__*/React.createElement("span", {
+    className: "gt-visually-hidden"
+  }, n, " of ", max, " characters"))), hasMax && /*#__PURE__*/React.createElement("span", {
+    className: "gt-visually-hidden",
+    "aria-live": "polite"
+  }, live));
+}
+Object.assign(__ds_scope, { FieldShell });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/FieldShell.jsx", error: String((e && e.message) || e) }); }
+
+// components/primitives/CodeInput.jsx
+try { (() => {
+/**
+ * One-time code boxes: 8 characters for a class join code, 6 digits for email verification.
+ * One label for the group (`role="group"`); typing advances, Backspace steps back, pasting
+ * (or the phone's one-time-code autofill) fills every box. The value is contiguous: a tap on any
+ * box lands on the first empty one, so the whole row is one target.
+ */
+function CodeInput({
+  id,
+  label,
+  length = 6,
+  value = '',
+  onChange,
+  onComplete,
+  numeric = false,
+  groupSize,
+  helperText,
+  error,
+  disabled = false,
+  autoFocus = false,
+  className = ''
+}) {
+  const refs = React.useRef([]);
+  const clean = s => numeric ? s.replace(/\D/g, '') : s.replace(/[^a-z0-9]/gi, '').toUpperCase();
+  const v = clean(value).slice(0, length);
+  const focusBox = i => {
+    const el = refs.current[Math.max(0, Math.min(length - 1, i))];
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  };
+  const commit = next => {
+    next = next.slice(0, length);
+    if (onChange) onChange(next);
+    if (next.length === length && onComplete) onComplete(next);
+  };
+  React.useEffect(() => {
+    if (autoFocus) focusBox(v.length);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onInput = (i, e) => {
+    const typed = clean(e.target.value);
+    if (!typed) return;
+    const at = Math.min(i, v.length);
+    commit(v.slice(0, at) + typed + v.slice(at + typed.length));
+    focusBox(at + typed.length);
+  };
+  const onKeyDown = (i, e) => {
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      if (v[i]) {
+        commit(v.slice(0, i) + v.slice(i + 1));
+        focusBox(i);
+      } else if (i > 0) {
+        commit(v.slice(0, i - 1) + v.slice(i));
+        focusBox(i - 1);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      focusBox(i - 1);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      focusBox(Math.min(i + 1, v.length));
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      focusBox(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      focusBox(v.length);
+    }
+  };
+  const onFocus = (i, e) => {
+    if (i > v.length) {
+      focusBox(v.length);
+      return;
+    }
+    e.target.select();
+  };
+  const noun = numeric ? 'Digit' : 'Character';
+  return /*#__PURE__*/React.createElement(__ds_scope.FieldShell, {
+    id: id,
+    label: label,
+    group: true,
+    helperText: helperText,
+    error: error,
+    disabled: disabled,
+    className: className
+  }, ({
+    id: fid,
+    labelId,
+    describedBy,
+    invalid
+  }) => /*#__PURE__*/React.createElement("div", {
+    className: "gt-code",
+    role: "group",
+    "aria-labelledby": labelId,
+    "aria-describedby": describedBy
+  }, Array.from({
+    length
+  }, (_, i) => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: i
+  }, groupSize && i > 0 && i % groupSize === 0 && /*#__PURE__*/React.createElement("span", {
+    className: "gt-code__sep",
+    "aria-hidden": "true"
+  }), /*#__PURE__*/React.createElement("input", {
+    ref: el => {
+      refs.current[i] = el;
+    },
+    id: i === 0 ? fid : undefined,
+    className: "gt-code__box",
+    value: v[i] || '',
+    onChange: e => onInput(i, e),
+    onKeyDown: e => onKeyDown(i, e),
+    onFocus: e => onFocus(i, e),
+    inputMode: numeric ? 'numeric' : 'text',
+    autoComplete: i === 0 ? 'one-time-code' : 'off',
+    autoCapitalize: "characters",
+    spellCheck: false,
+    "aria-label": `${noun} ${i + 1} of ${length}`,
+    "aria-invalid": invalid || undefined,
+    disabled: disabled
+  })))));
+}
+Object.assign(__ds_scope, { CodeInput });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/CodeInput.jsx", error: String((e && e.message) || e) }); }
+
+// components/primitives/Combobox.jsx
+try { (() => {
+const Chevron = () => /*#__PURE__*/React.createElement("svg", {
+  width: "16",
+  height: "16",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "m6 9 6 6 6-6"
+}));
+const Check = () => /*#__PURE__*/React.createElement("svg", {
+  width: "15",
+  height: "15",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.4",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M20 6 9 17l-5-5"
+}));
+const Plus = () => /*#__PURE__*/React.createElement("svg", {
+  width: "15",
+  height: "15",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.2",
+  strokeLinecap: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M12 5v14M5 12h14"
+}));
+
+/** Default client-side filter: case-insensitive match on label or description. */
+const comboFilter = (opt, q) => {
+  if (!q) return true;
+  const s = q.toLowerCase();
+  return opt.label.toLowerCase().includes(s) || String(opt.description || '').toLowerCase().includes(s);
+};
+
+/**
+ * Shared combobox — WAI-ARIA combobox with a listbox popup and aria-activedescendant.
+ * Single select with type-to-filter · multi-select with Tag chips and an optional `max` ·
+ * async `loadOptions` (debounced; loading / empty / error rows) · `creatable` entries
+ * ("Add “React”", validated emails) · grouped options · rows with an avatar or icon and a
+ * second line (the MentionListbox row). Not for the ⌘K palette or the class / school switchers.
+ */
+function Combobox({
+  id,
+  label,
+  hideLabel = false,
+  helperText,
+  error,
+  required = false,
+  optional = false,
+  disabled = false,
+  placeholder,
+  compact = false,
+  options = [],
+  value,
+  onChange,
+  multiple = false,
+  max,
+  loadOptions,
+  debounceMs = 250,
+  minQueryLength = 1,
+  creatable = false,
+  validateCreate,
+  onCreate,
+  createLabel = q => `Add “${q}”`,
+  emptyText = 'No matches',
+  loadingText = 'Searching…',
+  errorText = 'Couldn’t load results. Keep typing to try again.',
+  minQueryText = 'Type to search',
+  filter = comboFilter,
+  defaultOpen = false,
+  className = ''
+}) {
+  const reactId = React.useId();
+  const listId = `${id || reactId}-list`;
+  const [query, setQuery] = React.useState(multiple ? '' : null);
+  const [open, setOpen] = React.useState(!!defaultOpen);
+  const [active, setActive] = React.useState(-1);
+  const [remote, setRemote] = React.useState({
+    status: 'idle',
+    options: []
+  });
+  const [createError, setCreateError] = React.useState('');
+  const [live, setLive] = React.useState('');
+  const inputRef = React.useRef(null);
+  const popupRef = React.useRef(null);
+  const known = React.useRef(new Map());
+  const loader = React.useRef(loadOptions);
+  loader.current = loadOptions;
+  const reqId = React.useRef(0);
+  const selected = multiple ? Array.isArray(value) ? value : [] : value != null && value !== '' ? [value] : [];
+  const q = (query || '').trim();
+  options.forEach(o => known.current.set(o.value, o));
+  remote.options.forEach(o => known.current.set(o.value, o));
+  const optionFor = v => known.current.get(v) || {
+    value: v,
+    label: String(v)
+  };
+  React.useEffect(() => {
+    if (!loader.current || !open) return undefined;
+    if (q.length < minQueryLength) {
+      setRemote({
+        status: 'idle',
+        options: []
+      });
+      return undefined;
+    }
+    const my = ++reqId.current;
+    setRemote(r => ({
+      status: 'loading',
+      options: r.options
+    }));
+    const t = setTimeout(() => {
+      Promise.resolve(loader.current(q)).then(res => {
+        if (my === reqId.current) setRemote({
+          status: 'done',
+          options: res || []
+        });
+      }).catch(() => {
+        if (my === reqId.current) setRemote({
+          status: 'error',
+          options: []
+        });
+      });
+    }, debounceMs);
+    return () => clearTimeout(t);
+  }, [q, open, debounceMs, minQueryLength]);
+  const source = loadOptions ? remote.options : options.filter(o => filter(o, q));
+  const atMax = multiple && max != null && selected.length >= max;
+  const lower = q.toLowerCase();
+  const exact = source.some(o => o.label.toLowerCase() === lower) || selected.some(v => optionFor(v).label.toLowerCase() === lower);
+  const showCreate = creatable && !!q && !exact && remote.status !== 'loading';
+  const createInvalid = showCreate && validateCreate ? validateCreate(q) : null;
+  const rows = source.map(o => ({
+    kind: 'option',
+    o,
+    disabled: !!o.disabled || atMax && !selected.includes(o.value)
+  }));
+  if (showCreate) rows.push({
+    kind: 'create',
+    o: {
+      value: q,
+      label: q
+    },
+    disabled: !!createInvalid || atMax
+  });
+  const enabled = rows.map((r, i) => r.disabled ? -1 : i).filter(i => i >= 0);
+  const status = loadOptions && remote.status === 'loading' ? loadingText : loadOptions && remote.status === 'error' ? errorText : loadOptions && q.length < minQueryLength ? minQueryText : rows.length === 0 ? emptyText : null;
+  React.useEffect(() => {
+    if (!open) {
+      setLive('');
+      return undefined;
+    }
+    const t = setTimeout(() => setLive(status && status !== loadingText ? status : `${source.length} result${source.length === 1 ? '' : 's'} available`), 500);
+    return () => clearTimeout(t);
+  }, [open, status, source.length, loadingText]);
+  React.useEffect(() => {
+    const p = popupRef.current;
+    if (!open || active < 0 || !p) return;
+    const el = p.querySelector(`[data-index="${active}"]`);
+    if (!el) return;
+    const top = el.offsetTop;
+    const bottom = top + el.offsetHeight;
+    if (top < p.scrollTop) p.scrollTop = top - 4;else if (bottom > p.scrollTop + p.clientHeight) p.scrollTop = bottom - p.clientHeight + 4;
+  }, [active, open]);
+  const move = dir => {
+    if (!enabled.length) return;
+    const pos = enabled.indexOf(active);
+    setActive(pos < 0 ? enabled[dir > 0 ? 0 : enabled.length - 1] : enabled[(pos + dir + enabled.length) % enabled.length]);
+  };
+  const choose = row => {
+    if (!row) return;
+    if (row.disabled) {
+      if (row.kind === 'create' && createInvalid) setCreateError(createInvalid);
+      return;
+    }
+    if (row.kind === 'create') {
+      known.current.set(q, {
+        value: q,
+        label: q
+      });
+      if (onCreate) onCreate(q);
+      if (onChange) onChange(multiple ? [...selected, q] : q);
+    } else if (multiple) {
+      const v = row.o.value;
+      if (onChange) onChange(selected.includes(v) ? selected.filter(x => x !== v) : [...selected, v]);
+    } else if (onChange) onChange(row.o.value);
+    setCreateError('');
+    setActive(-1);
+    if (multiple) setQuery('');else {
+      setQuery(null);
+      setOpen(false);
+    }
+  };
+  const removeValue = v => {
+    if (onChange) onChange(selected.filter(x => x !== v));
+    if (inputRef.current) inputRef.current.focus();
+  };
+  const onKeyDown = e => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!open) {
+        setOpen(true);
+        if (!e.altKey) setActive(enabled.length ? enabled[0] : -1);
+      } else move(1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) {
+        setOpen(true);
+        setActive(enabled.length ? enabled[enabled.length - 1] : -1);
+      } else move(-1);
+    } else if (e.key === 'Enter') {
+      if (open && active >= 0) {
+        e.preventDefault();
+        choose(rows[active]);
+      } else if (open && showCreate) {
+        e.preventDefault();
+        choose(rows[rows.length - 1]);
+      }
+    } else if (e.key === 'Escape') {
+      if (open) {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+        setActive(-1);
+      } else if (query) {
+        e.preventDefault();
+        e.stopPropagation();
+        setQuery(multiple ? '' : null);
+      }
+    } else if (e.key === 'Backspace') {
+      if (multiple && !query && selected.length) {
+        e.preventDefault();
+        removeValue(selected[selected.length - 1]);
+      }
+    } else if (e.key === 'Tab') {
+      setOpen(false);
+      setActive(-1);
+    }
+  };
+  const onBlur = e => {
+    const root = e.currentTarget.closest('.gt-combobox');
+    if (e.relatedTarget && root && root.contains(e.relatedTarget)) return;
+    setOpen(false);
+    setActive(-1);
+    setQuery(multiple ? '' : null);
+  };
+  const groups = [];
+  const gIndex = new Map();
+  rows.forEach((r, i) => {
+    const g = r.kind === 'create' ? '' : r.o.group || '';
+    if (!gIndex.has(g)) {
+      gIndex.set(g, groups.length);
+      groups.push({
+        name: g,
+        items: []
+      });
+    }
+    groups[gIndex.get(g)].items.push([r, i]);
+  });
+  const inputValue = multiple ? query || '' : query !== null ? query : selected[0] != null ? optionFor(selected[0]).label : '';
+  const renderRow = ([r, i]) => {
+    const isSel = r.kind === 'option' && selected.includes(r.o.value);
+    const av = r.o.avatar;
+    return /*#__PURE__*/React.createElement("div", {
+      key: `${r.kind}-${r.o.value}`,
+      id: `${listId}-${i}`,
+      "data-index": i,
+      role: "option",
+      "aria-selected": isSel,
+      "aria-disabled": r.disabled || undefined,
+      className: ['gt-combobox__option', i === active ? 'gt-combobox__option--active' : '', r.kind === 'create' ? 'gt-combobox__option--create' : ''].filter(Boolean).join(' '),
+      onMouseDown: e => {
+        e.preventDefault();
+        choose(r);
+      },
+      onMouseMove: () => {
+        if (!r.disabled && active !== i) setActive(i);
+      }
+    }, r.kind === 'create' ? /*#__PURE__*/React.createElement("span", {
+      className: "gt-combobox__option-media"
+    }, /*#__PURE__*/React.createElement(Plus, null)) : av ? /*#__PURE__*/React.createElement("span", {
+      className: "gt-combobox__option-media"
+    }, /*#__PURE__*/React.createElement(__ds_scope.Avatar, {
+      name: typeof av === 'string' ? av : av.name,
+      src: typeof av === 'string' ? undefined : av.src,
+      size: "sm",
+      decorative: true
+    })) : r.o.icon ? /*#__PURE__*/React.createElement("span", {
+      className: "gt-combobox__option-media",
+      "aria-hidden": "true"
+    }, r.o.icon) : null, /*#__PURE__*/React.createElement("span", {
+      className: "gt-combobox__option-text"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "gt-combobox__option-label"
+    }, r.kind === 'create' ? createLabel(q) : r.o.label), r.kind === 'create' && createInvalid ? /*#__PURE__*/React.createElement("span", {
+      className: "gt-combobox__option-desc"
+    }, createInvalid) : r.o.description && /*#__PURE__*/React.createElement("span", {
+      className: "gt-combobox__option-desc"
+    }, r.o.description)), isSel && /*#__PURE__*/React.createElement("span", {
+      className: "gt-combobox__check"
+    }, /*#__PURE__*/React.createElement(Check, null)));
+  };
+  return /*#__PURE__*/React.createElement(__ds_scope.FieldShell, {
+    id: id,
+    label: label,
+    hideLabel: hideLabel,
+    optional: optional,
+    helperText: helperText,
+    error: error || createError || undefined,
+    disabled: disabled,
+    className: className
+  }, ({
+    id: inputId,
+    labelId,
+    describedBy,
+    invalid
+  }) => /*#__PURE__*/React.createElement("div", {
+    className: ['gt-combobox', compact ? 'gt-combobox--compact' : '', disabled ? 'gt-combobox--disabled' : ''].filter(Boolean).join(' ')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-combobox__control",
+    onMouseDown: e => {
+      if (disabled || e.target !== e.currentTarget) return;
+      e.preventDefault();
+      if (inputRef.current) inputRef.current.focus();
+      setOpen(true);
+    }
+  }, multiple && selected.map(v => {
+    const o = optionFor(v);
+    return /*#__PURE__*/React.createElement(__ds_scope.Tag, {
+      key: v,
+      onRemove: disabled ? undefined : () => removeValue(v),
+      removeLabel: `Remove ${o.label}`
+    }, o.label);
+  }), /*#__PURE__*/React.createElement("input", {
+    ref: inputRef,
+    id: inputId,
+    className: "gt-combobox__input",
+    role: "combobox",
+    "aria-expanded": open,
+    "aria-controls": open ? listId : undefined,
+    "aria-autocomplete": "list",
+    "aria-activedescendant": open && active >= 0 ? `${listId}-${active}` : undefined,
+    "aria-describedby": describedBy,
+    "aria-invalid": invalid || undefined,
+    "aria-required": required || undefined,
+    value: inputValue,
+    placeholder: multiple && selected.length ? '' : placeholder,
+    disabled: disabled,
+    autoComplete: "off",
+    spellCheck: false,
+    onChange: e => {
+      setQuery(e.target.value);
+      setOpen(true);
+      setActive(-1);
+      setCreateError('');
+    },
+    onKeyDown: onKeyDown,
+    onFocus: e => {
+      if (!multiple) e.target.select();
+    },
+    onClick: () => {
+      if (!disabled) setOpen(true);
+    },
+    onBlur: onBlur
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "gt-combobox__chevron"
+  }, /*#__PURE__*/React.createElement(Chevron, null)), open && !disabled && /*#__PURE__*/React.createElement("div", {
+    className: "gt-combobox__popup",
+    ref: popupRef
+  }, atMax && /*#__PURE__*/React.createElement("div", {
+    className: "gt-combobox__status"
+  }, "You can choose up to ", max, ". Remove one to pick another."), status && /*#__PURE__*/React.createElement("div", {
+    className: ['gt-combobox__status', remote.status === 'error' && loadOptions ? 'gt-combobox__status--error' : ''].filter(Boolean).join(' ')
+  }, loadOptions && remote.status === 'loading' && /*#__PURE__*/React.createElement(__ds_scope.Spinner, {
+    size: 14,
+    decorative: true
+  }), status), /*#__PURE__*/React.createElement("div", {
+    role: "listbox",
+    id: listId,
+    "aria-labelledby": labelId,
+    "aria-multiselectable": multiple || undefined
+  }, groups.map((g, gi) => g.name ? /*#__PURE__*/React.createElement("div", {
+    key: g.name,
+    role: "group",
+    "aria-labelledby": `${listId}-g${gi}`,
+    className: "gt-combobox__group"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-combobox__group-label",
+    id: `${listId}-g${gi}`,
+    role: "presentation"
+  }, g.name), g.items.map(renderRow)) : /*#__PURE__*/React.createElement(React.Fragment, {
+    key: `_${gi}`
+  }, g.items.map(renderRow))))), /*#__PURE__*/React.createElement("span", {
+    className: "gt-visually-hidden",
+    "aria-live": "polite"
+  }, live)));
+}
+Object.assign(__ds_scope, { comboFilter, Combobox });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Combobox.jsx", error: String((e && e.message) || e) }); }
+
 // components/primitives/DatePickerField.jsx
 try { (() => {
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-function fmt(date) {
-  if (!date) return '';
-  return `${MONTHS[date.getMonth()].slice(0, 3)} ${date.getDate()}, ${date.getFullYear()}`;
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const pad = n => String(n).padStart(2, '0');
+const toKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const dayOf = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const same = (a, b) => !!a && !!b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+const fmtDate = d => `${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}, ${d.getFullYear()}`;
+const fmtTime = t => {
+  const [h, m] = t.split(':').map(Number);
+  return `${(h + 11) % 12 + 1}:${pad(m)} ${h >= 12 ? 'PM' : 'AM'}`;
+};
+const portal = node => typeof window !== 'undefined' && window.ReactDOM && window.ReactDOM.createPortal ? window.ReactDOM.createPortal(node, document.body) : node;
+
+/** 'yyyy-MM-dd' or 'yyyy-MM-dd HH:mm' → { date, time } (local; date-only strings never shift across zones). */
+function parseDateValue(value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}))?$/.exec(value || '');
+  return m ? {
+    date: new Date(+m[1], +m[2] - 1, +m[3]),
+    time: m[4] ? `${m[4]}:${m[5]}` : ''
+  } : null;
 }
+const CalendarGlyph = () => /*#__PURE__*/React.createElement("svg", {
+  className: "dpf__trigger-icon",
+  width: "16",
+  height: "16",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("rect", {
+  x: "3",
+  y: "5",
+  width: "18",
+  height: "16",
+  rx: "2"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M3 9h18M8 3v4M16 3v4"
+}));
 
 /**
- * Date picker field — trigger button + calendar popover, mirroring the
- * app's DatePickerField (react-day-picker themed to the tokens).
- * `value` is a Date or null; `onChange` receives the picked Date.
+ * Date (and optional time) picker — the codebase's DatePickerField API (string values).
+ * Trigger: a button named by the label + the chosen value, `aria-haspopup="dialog"`, `aria-expanded`.
+ * Calendar: a modal dialog portaled to <body> (z 1100, above modals), placed below the trigger or
+ * flipped above when it does not fit. Arrow keys move by day / week, Home / End to the week's ends,
+ * PageUp / PageDown by month (Shift: year), Enter picks, Esc closes and returns focus to the trigger.
+ * `showTime` adds a labelled time input and Cancel / Done.
  */
 function DatePickerField({
+  id,
   label,
-  value = null,
+  value = '',
   onChange,
-  placeholder = 'Select date',
+  showTime = false,
+  disabledBefore,
+  disabledAfter,
   disabled = false,
+  required = false,
+  optional = false,
+  error,
+  helperText,
+  placeholder,
   className = ''
 }) {
+  const parsed = parseDateValue(value);
+  const today = dayOf(new Date());
   const [open, setOpen] = React.useState(false);
-  const today = new Date();
-  const [view, setView] = React.useState(() => value || today);
-  const rootRef = React.useRef(null);
-  React.useEffect(() => {
-    if (!open) return;
-    const onDoc = e => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+  const [focusDay, setFocusDay] = React.useState(parsed ? parsed.date : today);
+  const [draftDate, setDraftDate] = React.useState(null);
+  const [draftTime, setDraftTime] = React.useState('09:00');
+  const [pos, setPos] = React.useState({
+    top: 0,
+    left: 0,
+    up: false
+  });
+  const triggerRef = React.useRef(null);
+  const popRef = React.useRef(null);
+  const toGrid = React.useRef(true);
+  const reactId = React.useId();
+  const off = d => disabledBefore && d < dayOf(disabledBefore) || disabledAfter && d > dayOf(disabledAfter);
+  const openPicker = () => {
+    if (disabled) return;
+    setFocusDay(parsed ? parsed.date : today);
+    setDraftDate(parsed ? parsed.date : null);
+    setDraftTime(parsed && parsed.time ? parsed.time : '09:00');
+    toGrid.current = true;
+    setOpen(true);
+  };
+  const close = (refocus = true) => {
+    setOpen(false);
+    if (refocus && triggerRef.current) triggerRef.current.focus();
+  };
+  React.useLayoutEffect(() => {
+    if (!open) return undefined;
+    const place = () => {
+      const t = triggerRef.current;
+      const p = popRef.current;
+      if (!t || !p) return;
+      const r = t.getBoundingClientRect();
+      const h = p.offsetHeight;
+      const w = p.offsetWidth;
+      const vh = window.innerHeight;
+      const vw = document.documentElement.clientWidth;
+      const up = vh - r.bottom < h + 12 && r.top > vh - r.bottom;
+      setPos({
+        up,
+        top: up ? Math.max(8, r.top - h - 6) : Math.min(r.bottom + 6, vh - h - 8),
+        left: Math.max(8, Math.min(r.left, vw - w - 8))
+      });
     };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [open]);
-  const y = view.getFullYear();
-  const m = view.getMonth();
-  const firstDow = new Date(y, m, 1).getDay();
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const cells = [];
-  for (let i = 0; i < firstDow; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  const isSame = (d, date) => date && d && date.getFullYear() === y && date.getMonth() === m && date.getDate() === d;
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['dpf', className].filter(Boolean).join(' '),
-    ref: rootRef
-  }, label && /*#__PURE__*/React.createElement("span", {
-    className: "dpf__label"
-  }, label), /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: ['dpf__trigger', open ? 'dpf__trigger--open' : '', value ? 'dpf__trigger--filled' : ''].filter(Boolean).join(' '),
-    onClick: () => !disabled && setOpen(!open),
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open, showTime]);
+  React.useEffect(() => {
+    if (!open || !toGrid.current || !popRef.current) return;
+    const el = popRef.current.querySelector('[data-focus="true"]');
+    if (el) el.focus();
+  }, [open, focusDay]);
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const onKey = e => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        close();
+        return;
+      }
+      if (e.key !== 'Tab' || !popRef.current) return;
+      const list = Array.from(popRef.current.querySelectorAll('button, input')).filter(el => !el.disabled && el.tabIndex !== -1);
+      if (!list.length) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    const onDown = e => {
+      if (popRef.current && !popRef.current.contains(e.target) && triggerRef.current && !triggerRef.current.contains(e.target)) close(false);
+    };
+    document.addEventListener('keydown', onKey, true);
+    document.addEventListener('mousedown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('mousedown', onDown);
+    };
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onDayKey = e => {
+    const d = new Date(focusDay);
+    const k = e.key;
+    if (k === 'ArrowLeft') d.setDate(d.getDate() - 1);else if (k === 'ArrowRight') d.setDate(d.getDate() + 1);else if (k === 'ArrowUp') d.setDate(d.getDate() - 7);else if (k === 'ArrowDown') d.setDate(d.getDate() + 7);else if (k === 'Home') d.setDate(d.getDate() - d.getDay());else if (k === 'End') d.setDate(d.getDate() + (6 - d.getDay()));else if (k === 'PageUp') d.setMonth(d.getMonth() - (e.shiftKey ? 12 : 1));else if (k === 'PageDown') d.setMonth(d.getMonth() + (e.shiftKey ? 12 : 1));else return;
+    e.preventDefault();
+    toGrid.current = true;
+    setFocusDay(d);
+  };
+  const pick = d => {
+    if (off(d)) return;
+    if (showTime) {
+      setDraftDate(d);
+      setFocusDay(d);
+      return;
+    }
+    if (onChange) onChange(toKey(d));
+    close();
+  };
+  const done = () => {
+    if (!draftDate) return;
+    if (onChange) onChange(`${toKey(draftDate)} ${draftTime || '09:00'}`);
+    close();
+  };
+  const shiftMonth = n => {
+    toGrid.current = false;
+    setFocusDay(f => new Date(f.getFullYear(), f.getMonth() + n, 1));
+  };
+  const y = focusDay.getFullYear();
+  const m = focusDay.getMonth();
+  const cells = Array(new Date(y, m, 1).getDay()).fill(null);
+  for (let d = 1; d <= new Date(y, m + 1, 0).getDate(); d++) cells.push(new Date(y, m, d));
+  while (cells.length % 7) cells.push(null);
+  const weeks = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  const chosen = showTime ? draftDate : parsed && parsed.date;
+  const valueText = parsed ? `${fmtDate(parsed.date)}${showTime && parsed.time ? ` · ${fmtTime(parsed.time)}` : ''}` : placeholder || (showTime ? 'Select date & time' : 'Select a date');
+  const titleId = `${reactId}-title`;
+  return /*#__PURE__*/React.createElement(__ds_scope.FieldShell, {
+    id: id,
+    label: label,
+    optional: optional,
+    helperText: helperText,
+    error: error,
     disabled: disabled,
+    className: ['dpf', error ? 'dpf--error' : '', className].filter(Boolean).join(' ')
+  }, ({
+    id: triggerId,
+    labelId,
+    describedBy
+  }) => /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    ref: triggerRef,
+    id: triggerId,
+    type: "button",
+    className: ['dpf__trigger', open ? 'dpf__trigger--open' : '', parsed ? 'dpf__trigger--filled' : ''].filter(Boolean).join(' '),
     "aria-haspopup": "dialog",
-    "aria-expanded": open
+    "aria-expanded": open,
+    "aria-labelledby": [labelId, `${triggerId}-value`, required ? `${triggerId}-req` : ''].filter(Boolean).join(' '),
+    "aria-describedby": describedBy,
+    disabled: disabled,
+    onClick: () => open ? close() : openPicker()
   }, /*#__PURE__*/React.createElement("span", {
-    className: "dpf__trigger-text"
-  }, value ? fmt(value) : placeholder), /*#__PURE__*/React.createElement("svg", {
-    className: "dpf__trigger-icon",
-    width: "16",
-    height: "16",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("rect", {
-    x: "3",
-    y: "5",
-    width: "18",
-    height: "16",
-    rx: "2",
-    stroke: "currentColor",
-    strokeWidth: "2"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M3 9h18M8 3v4M16 3v4",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round"
-  }))), open && /*#__PURE__*/React.createElement("div", {
-    className: "dpf__popover dpf__popover--inline",
+    className: "dpf__trigger-text",
+    id: `${triggerId}-value`
+  }, valueText), required && /*#__PURE__*/React.createElement("span", {
+    className: "gt-visually-hidden",
+    id: `${triggerId}-req`
+  }, "required"), /*#__PURE__*/React.createElement(CalendarGlyph, null)), open && portal(/*#__PURE__*/React.createElement("div", {
+    ref: popRef,
+    className: ['dpf__popover', pos.up ? 'dpf__popover--up' : ''].filter(Boolean).join(' '),
     role: "dialog",
-    "aria-label": "Choose date"
+    "aria-modal": "true",
+    "aria-labelledby": titleId,
+    style: {
+      top: pos.top,
+      left: pos.left
+    }
   }, /*#__PURE__*/React.createElement("div", {
     className: "dpf__cal-head"
   }, /*#__PURE__*/React.createElement("button", {
     type: "button",
     className: "dpf__cal-nav",
     "aria-label": "Previous month",
-    onClick: () => setView(new Date(y, m - 1, 1))
+    onClick: () => shiftMonth(-1)
   }, "\u2039"), /*#__PURE__*/React.createElement("span", {
-    className: "dpf__cal-title"
+    className: "dpf__cal-title",
+    id: titleId,
+    "aria-live": "polite"
   }, MONTHS[m], " ", y), /*#__PURE__*/React.createElement("button", {
     type: "button",
     className: "dpf__cal-nav",
     "aria-label": "Next month",
-    onClick: () => setView(new Date(y, m + 1, 1))
-  }, "\u203A")), /*#__PURE__*/React.createElement("div", {
+    onClick: () => shiftMonth(1)
+  }, "\u203A")), /*#__PURE__*/React.createElement("table", {
     className: "dpf__cal-grid",
-    role: "grid"
-  }, WEEKDAYS.map(w => /*#__PURE__*/React.createElement("span", {
-    key: w,
-    className: "dpf__cal-weekday"
-  }, w)), cells.map((d, i) => d === null ? /*#__PURE__*/React.createElement("span", {
-    key: `e${i}`
-  }) : /*#__PURE__*/React.createElement("button", {
+    role: "grid",
+    "aria-labelledby": titleId
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, DAYS.map(d => /*#__PURE__*/React.createElement("th", {
     key: d,
+    scope: "col",
+    abbr: d,
+    className: "dpf__cal-weekday"
+  }, d.slice(0, 2))))), /*#__PURE__*/React.createElement("tbody", null, weeks.map((wk, r) => /*#__PURE__*/React.createElement("tr", {
+    key: r
+  }, wk.map((d, c) => d ? /*#__PURE__*/React.createElement("td", {
+    key: c,
+    "aria-selected": same(d, chosen)
+  }, /*#__PURE__*/React.createElement("button", {
     type: "button",
-    className: ['dpf__cal-day', isSame(d, value) ? 'dpf__cal-day--selected' : '', isSame(d, today) && !isSame(d, value) ? 'dpf__cal-day--today' : ''].filter(Boolean).join(' '),
-    onClick: () => {
-      onChange && onChange(new Date(y, m, d));
-      setOpen(false);
-    }
-  }, d)))));
+    className: ['dpf__cal-day', same(d, chosen) ? 'dpf__cal-day--selected' : '', same(d, today) && !same(d, chosen) ? 'dpf__cal-day--today' : ''].filter(Boolean).join(' '),
+    tabIndex: same(d, focusDay) ? 0 : -1,
+    "data-focus": same(d, focusDay) ? 'true' : undefined,
+    "aria-label": `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`,
+    "aria-current": same(d, today) ? 'date' : undefined,
+    "aria-disabled": off(d) || undefined,
+    onKeyDown: onDayKey,
+    onClick: () => pick(d)
+  }, d.getDate())) : /*#__PURE__*/React.createElement("td", {
+    key: c
+  })))))), showTime && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "dpf__time"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-field"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "gt-field__label",
+    htmlFor: `${reactId}-time`
+  }, "Time"), /*#__PURE__*/React.createElement("input", {
+    id: `${reactId}-time`,
+    type: "time",
+    step: 900,
+    className: "gt-input gt-input--compact",
+    value: draftTime,
+    onChange: e => setDraftTime(e.target.value)
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "dpf__footer"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    variant: "outline",
+    size: "sm",
+    onClick: () => close()
+  }, "Cancel"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    size: "sm",
+    onClick: done,
+    disabled: !draftDate
+  }, "Done")))))));
 }
-Object.assign(__ds_scope, { DatePickerField });
+Object.assign(__ds_scope, { parseDateValue, DatePickerField });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/DatePickerField.jsx", error: String((e && e.message) || e) }); }
 
 // components/primitives/IconButton.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /**
- * Icon-only button (toolbar actions, close, overflow menus).
- * Always pass `ariaLabel` for accessibility.
+ * Icon-only button (toolbar actions, close, overflow menus). `ariaLabel` is required and, by
+ * default, also shows as a Tooltip on hover and keyboard focus (the bubble is aria-hidden: the
+ * label is already the name). `pressed` makes it a toggle (`aria-pressed`).
+ * The × of a modal or drawer is `<IconButton ariaLabel="Close">`; dismissing an alert, toast or
+ * banner is "Dismiss"; removing a chip is "Remove {name}".
  */
 function IconButton({
   children,
@@ -12968,32 +14554,707 @@ function IconButton({
   variant = 'ghost',
   size = 'md',
   disabled = false,
+  pressed,
+  tooltip = true,
+  tooltipSide = 'top',
   onClick,
   className = '',
   ...rest
 }) {
   const cls = ['gt-icon-button', `gt-icon-button--${variant}`, `gt-icon-button--${size}`, className].filter(Boolean).join(' ');
-  return /*#__PURE__*/React.createElement("button", _extends({
+  const btn = /*#__PURE__*/React.createElement("button", _extends({
     type: "button",
     className: cls,
     "aria-label": ariaLabel,
+    "aria-pressed": pressed === undefined ? undefined : !!pressed,
     disabled: disabled,
     onClick: onClick
   }, rest), children);
+  const tip = tooltip === true ? ariaLabel : tooltip;
+  if (!tip || disabled) return btn;
+  return /*#__PURE__*/React.createElement("span", {
+    className: "gt-icon-tip gt-tooltip"
+  }, btn, /*#__PURE__*/React.createElement("span", {
+    className: `gt-tooltip__bubble gt-tooltip__bubble--${tooltipSide}`,
+    "aria-hidden": "true"
+  }, tip));
 }
 Object.assign(__ds_scope, { IconButton });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/IconButton.jsx", error: String((e && e.message) || e) }); }
+
+// components/feedback/Modal.jsx
+try { (() => {
+const FOCUSABLE = 'a[href], button:not(:disabled), input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
+const FIELDS = 'input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled)';
+const openStack = [];
+const reduceMotion = () => typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const dialogPortal = (node, inPlace) => !inPlace && typeof window !== 'undefined' && window.ReactDOM && window.ReactDOM.createPortal ? window.ReactDOM.createPortal(node, document.body) : node;
+
+/**
+ * The shared dialog behaviour (Modal, ConfirmDialog, Drawer): a stack so Esc and the scrim close
+ * only the topmost dialog; focus moves in (initialFocusRef → [data-autofocus] → first field → the
+ * sheet), Tab stays inside, focus returns to the trigger on close; body scroll locks; the sheet
+ * stays mounted `exitMs` for the closing fade (instant under reduced motion).
+ */
+function useDialog({
+  open,
+  onClose,
+  closeDisabled = false,
+  initialFocusRef,
+  sheetRef,
+  exitMs = 150,
+  inPlace = false
+}) {
+  const me = React.useRef({});
+  const onCloseRef = React.useRef(onClose);
+  const disabledRef = React.useRef(closeDisabled);
+  onCloseRef.current = onClose;
+  disabledRef.current = closeDisabled;
+  const [mounted, setMounted] = React.useState(open);
+  const [closing, setClosing] = React.useState(false);
+  React.useEffect(() => {
+    if (open) {
+      setMounted(true);
+      setClosing(false);
+      return undefined;
+    }
+    if (!mounted) return undefined;
+    if (reduceMotion()) {
+      setMounted(false);
+      return undefined;
+    }
+    setClosing(true);
+    const t = setTimeout(() => {
+      setMounted(false);
+      setClosing(false);
+    }, exitMs);
+    return () => clearTimeout(t);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  React.useEffect(() => {
+    if (!open || inPlace) return undefined; // in-place renders (galleries) never trap, lock or take focus
+    const self = me.current;
+    openStack.push(self);
+    const returnTo = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const t = setTimeout(() => {
+      const s = sheetRef.current;
+      if (!s) return;
+      const target = initialFocusRef && initialFocusRef.current || s.querySelector('[data-autofocus]') || s.querySelector(FIELDS) || s;
+      target.focus();
+    }, 0);
+    const onKey = e => {
+      if (openStack[openStack.length - 1] !== self || e.defaultPrevented) return;
+      if (e.key === 'Escape') {
+        if (!disabledRef.current && onCloseRef.current) {
+          e.preventDefault();
+          onCloseRef.current();
+        }
+      } else if (e.key === 'Tab' && sheetRef.current) {
+        const list = Array.from(sheetRef.current.querySelectorAll(FOCUSABLE)).filter(el => el.getClientRects().length);
+        if (!list.length) {
+          e.preventDefault();
+          return;
+        }
+        const first = list[0];
+        const last = list[list.length - 1];
+        const a = document.activeElement;
+        if (e.shiftKey && (a === first || a === sheetRef.current)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && a === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('keydown', onKey);
+      const i = openStack.indexOf(self);
+      if (i >= 0) openStack.splice(i, 1);
+      if (!openStack.length) document.body.style.overflow = prevOverflow;
+      if (returnTo && returnTo.focus && document.contains(returnTo)) returnTo.focus();
+    };
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onScrimDown = e => {
+    if (e.target !== e.currentTarget || disabledRef.current) return;
+    if (openStack[openStack.length - 1] === me.current && onCloseRef.current) onCloseRef.current();
+  };
+  return {
+    mounted,
+    closing,
+    onScrimDown
+  };
+}
+const XGlyph = () => /*#__PURE__*/React.createElement("svg", {
+  width: "18",
+  height: "18",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M18 6 6 18M6 6l12 12"
+}));
+
+/**
+ * Modal dialog. `variant="form"` (default): title left, optional `tabs` under it, pinned footer —
+ * Edit Project's header. `variant="message"`: centred title (JoinClassModal). Sizes sm 400 · md 560 ·
+ * lg 760. `role="dialog"` + `aria-modal` on the sheet, labelled by its title; `closeDisabled` holds it
+ * open while saving. Portaled to <body> at --gt-z-modal; closes with a 0.15s fade.
+ */
+function Modal({
+  open = false,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+  tabs,
+  size = 'md',
+  width,
+  variant = 'form',
+  closeDisabled = false,
+  initialFocusRef,
+  hideClose = false,
+  role = 'dialog',
+  portal = true,
+  className = ''
+}) {
+  const sheetRef = React.useRef(null);
+  const id = React.useId();
+  const {
+    mounted,
+    closing,
+    onScrimDown
+  } = useDialog({
+    open,
+    onClose,
+    closeDisabled,
+    initialFocusRef,
+    sheetRef,
+    inPlace: !portal
+  });
+  if (!mounted) return null;
+  return dialogPortal(/*#__PURE__*/React.createElement("div", {
+    className: ['gt-modal-backdrop', closing ? 'gt-modal-backdrop--closing' : '', portal ? '' : 'gt-modal-backdrop--inline'].filter(Boolean).join(' '),
+    onMouseDown: onScrimDown
+  }, /*#__PURE__*/React.createElement("div", {
+    ref: sheetRef,
+    className: ['gt-modal', `gt-modal--${size}`, `gt-modal--${variant}`, className].filter(Boolean).join(' '),
+    role: role,
+    "aria-modal": "true",
+    "aria-labelledby": title ? `${id}-title` : undefined,
+    "aria-describedby": subtitle ? `${id}-sub` : undefined,
+    tabIndex: -1,
+    style: width ? {
+      maxWidth: width
+    } : undefined
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-modal__head"
+  }, title && /*#__PURE__*/React.createElement("h2", {
+    className: "gt-modal__title",
+    id: `${id}-title`
+  }, title), subtitle && /*#__PURE__*/React.createElement("p", {
+    className: "gt-modal__subtitle",
+    id: `${id}-sub`
+  }, subtitle), !hideClose && /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+    className: "gt-modal__close",
+    ariaLabel: "Close",
+    tooltip: false,
+    onClick: onClose,
+    disabled: closeDisabled
+  }, /*#__PURE__*/React.createElement(XGlyph, null)), tabs && /*#__PURE__*/React.createElement("div", {
+    className: "gt-modal__tabs"
+  }, tabs)), /*#__PURE__*/React.createElement("div", {
+    className: "gt-modal__body"
+  }, children), footer && /*#__PURE__*/React.createElement("div", {
+    className: "gt-modal__footer"
+  }, footer))), !portal);
+}
+Object.assign(__ds_scope, { dialogPortal, useDialog, Modal });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Modal.jsx", error: String((e && e.message) || e) }); }
+
+// components/feedback/ConfirmDialog.jsx
+try { (() => {
+/**
+ * Confirmation dialog — `role="alertdialog"` on the Modal shell (sm). The message names the thing
+ * and the consequence. Cancel (outline) takes focus first; Confirm is primary, or danger when the
+ * action destroys something. While `onConfirm`'s promise runs, Confirm is busy, Cancel waits, and
+ * Esc / the scrim are blocked; a rejection shows `errorText` inside the dialog as an Alert.
+ * Replaces ConfirmModal (5 callers), 5 window.confirm and 3 alert() calls.
+ */
+function ConfirmDialog({
+  open = false,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  busyLabel,
+  cancelLabel = 'Cancel',
+  destructive = false,
+  onConfirm,
+  onCancel,
+  busy: busyProp,
+  error: errorProp,
+  errorText = 'That didn’t work. Try again.',
+  portal = true
+}) {
+  const [busyState, setBusy] = React.useState(false);
+  const [errState, setErr] = React.useState('');
+  const busy = busyProp ?? busyState;
+  const error = errorProp ?? errState;
+  React.useEffect(() => {
+    if (open) {
+      setBusy(false);
+      setErr('');
+    }
+  }, [open]);
+  const confirm = async () => {
+    if (busy || !onConfirm) return;
+    setErr('');
+    try {
+      const r = onConfirm();
+      if (r && typeof r.then === 'function') {
+        setBusy(true);
+        await r;
+      }
+    } catch (e) {
+      setErr(errorText);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return /*#__PURE__*/React.createElement(__ds_scope.Modal, {
+    open: open,
+    onClose: onCancel,
+    title: title,
+    size: "sm",
+    role: "alertdialog",
+    closeDisabled: busy,
+    portal: portal,
+    footer: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      variant: "outline",
+      onClick: onCancel,
+      disabled: busy,
+      "data-autofocus": true
+    }, cancelLabel), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+      variant: destructive ? 'danger' : 'primary',
+      onClick: confirm,
+      loading: busy,
+      loadingLabel: busyLabel
+    }, confirmLabel))
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "gt-confirm__message"
+  }, message), error && /*#__PURE__*/React.createElement(__ds_scope.Alert, {
+    tone: "error",
+    className: "gt-confirm__error"
+  }, error));
+}
+const AlertGlyph = () => /*#__PURE__*/React.createElement("svg", {
+  width: "14",
+  height: "14",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.2",
+  strokeLinecap: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("circle", {
+  cx: "12",
+  cy: "12",
+  r: "10"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M12 8v4M12 16h.01"
+}));
+
+/**
+ * Inline confirm row — the row-level delete inside a dialog (never a dialog over a dialog).
+ * `role="group"` labelled by its sentence; Cancel takes focus; Esc cancels without closing the
+ * enclosing dialog; Delete shows its busy state.
+ */
+function InlineConfirm({
+  message,
+  confirmLabel = 'Delete',
+  busyLabel = 'Deleting…',
+  cancelLabel = 'Cancel',
+  busy = false,
+  autoFocus = true,
+  onConfirm,
+  onCancel,
+  className = ''
+}) {
+  const id = React.useId();
+  const rootRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!autoFocus) return;
+    const b = rootRef.current && rootRef.current.querySelector('[data-cancel]');
+    if (b) b.focus();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return /*#__PURE__*/React.createElement("div", {
+    ref: rootRef,
+    className: ['gt-inline-confirm', className].filter(Boolean).join(' '),
+    role: "group",
+    "aria-labelledby": `${id}-msg`,
+    onKeyDown: e => {
+      if (e.key === 'Escape' && !busy) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (onCancel) onCancel();
+      }
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-inline-confirm__icon"
+  }, /*#__PURE__*/React.createElement(AlertGlyph, null)), /*#__PURE__*/React.createElement("p", {
+    className: "gt-inline-confirm__text",
+    id: `${id}-msg`
+  }, message), /*#__PURE__*/React.createElement("span", {
+    className: "gt-inline-confirm__actions"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    variant: "outline",
+    size: "sm",
+    onClick: onCancel,
+    disabled: busy,
+    "data-cancel": true
+  }, cancelLabel), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    variant: "danger",
+    size: "sm",
+    onClick: onConfirm,
+    loading: busy,
+    loadingLabel: busyLabel
+  }, confirmLabel)));
+}
+Object.assign(__ds_scope, { ConfirmDialog, InlineConfirm });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/ConfirmDialog.jsx", error: String((e && e.message) || e) }); }
+
+// components/feedback/Drawer.jsx
+try { (() => {
+const XGlyph = () => /*#__PURE__*/React.createElement("svg", {
+  width: "18",
+  height: "18",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("path", {
+  d: "M18 6 6 18M6 6l12 12"
+}));
+
+/**
+ * Side sheet with the Modal's behaviour (useDialog): 420px from the right for editors (the
+ * assignment editor), from the left for the phone navigation; header, scrolling body, pinned
+ * footer. Slides 24px in over 0.2s (a fade under reduced motion); full width on phones.
+ */
+function Drawer({
+  open = false,
+  onClose,
+  title,
+  subtitle,
+  children,
+  footer,
+  side = 'right',
+  width,
+  closeDisabled = false,
+  initialFocusRef,
+  ariaLabel,
+  portal = true,
+  className = ''
+}) {
+  const sheetRef = React.useRef(null);
+  const id = React.useId();
+  const {
+    mounted,
+    closing,
+    onScrimDown
+  } = __ds_scope.useDialog({
+    open,
+    onClose,
+    closeDisabled,
+    initialFocusRef,
+    sheetRef,
+    exitMs: 200,
+    inPlace: !portal
+  });
+  if (!mounted) return null;
+  return __ds_scope.dialogPortal(/*#__PURE__*/React.createElement("div", {
+    className: ['gt-drawer-backdrop', side === 'left' ? 'gt-drawer-backdrop--left' : '', closing ? 'gt-drawer-backdrop--closing' : '', portal ? '' : 'gt-drawer-backdrop--inline'].filter(Boolean).join(' '),
+    onMouseDown: onScrimDown
+  }, /*#__PURE__*/React.createElement("aside", {
+    ref: sheetRef,
+    className: ['gt-drawer', side === 'left' ? 'gt-drawer--left' : '', className].filter(Boolean).join(' '),
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-labelledby": title ? `${id}-title` : undefined,
+    "aria-label": title ? undefined : ariaLabel,
+    "aria-describedby": subtitle ? `${id}-sub` : undefined,
+    tabIndex: -1,
+    style: width ? {
+      width
+    } : undefined
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-drawer__head"
+  }, title && /*#__PURE__*/React.createElement("h2", {
+    className: "gt-drawer__title",
+    id: `${id}-title`
+  }, title), subtitle && /*#__PURE__*/React.createElement("p", {
+    className: "gt-drawer__subtitle",
+    id: `${id}-sub`
+  }, subtitle), /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+    className: "gt-drawer__close",
+    ariaLabel: "Close",
+    tooltip: false,
+    onClick: onClose,
+    disabled: closeDisabled
+  }, /*#__PURE__*/React.createElement(XGlyph, null))), /*#__PURE__*/React.createElement("div", {
+    className: "gt-drawer__body"
+  }, children), footer && /*#__PURE__*/React.createElement("div", {
+    className: "gt-drawer__footer"
+  }, footer))), !portal);
+}
+Object.assign(__ds_scope, { Drawer });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/feedback/Drawer.jsx", error: String((e && e.message) || e) }); }
+
+// components/primitives/FileUpload.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const Glyph = ({
+  d,
+  size = 18
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, d);
+const UploadGlyph = p => /*#__PURE__*/React.createElement(Glyph, _extends({}, p, {
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m17 8-5-5-5 5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M12 3v12"
+  }))
+}));
+const ImageGlyph = p => /*#__PURE__*/React.createElement(Glyph, _extends({}, p, {
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("rect", {
+    x: "3",
+    y: "3",
+    width: "18",
+    height: "18",
+    rx: "2"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "9",
+    cy: "9",
+    r: "2"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"
+  }))
+}));
+const FileGlyph = p => /*#__PURE__*/React.createElement(Glyph, _extends({}, p, {
+  d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+    d: "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M14 2v4a2 2 0 0 0 2 2h4"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M8 13h8M8 17h8"
+  }))
+}));
+const XGlyph = () => /*#__PURE__*/React.createElement(Glyph, {
+  size: 14,
+  d: /*#__PURE__*/React.createElement("path", {
+    d: "M18 6 6 18M6 6l12 12"
+  })
+});
+const formatFileSize = b => b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`;
+const accepts = (f, accept) => !accept || accept.split(',').map(s => s.trim().toLowerCase()).some(a => a.startsWith('.') ? f.name.toLowerCase().endsWith(a) : a.endsWith('/*') ? (f.type || '').startsWith(a.slice(0, -1)) : f.type === a);
+
+/**
+ * File picker in two forms. `variant="image"`: a 72px preview (circle for avatars, `shape="square"`
+ * for project logos) with Upload / Change and Remove. `variant="drop"`: a dashed drop area with a
+ * Choose file button (roster CSV import); once chosen, a file row with Replace and Remove.
+ * Type and size are checked before `onSelect`; failures show as the field error.
+ */
+function FileUpload({
+  id,
+  variant = 'drop',
+  label,
+  hideLabel = false,
+  helperText,
+  error,
+  optional = false,
+  accept,
+  maxSize,
+  typeHint,
+  disabled = false,
+  file = null,
+  fileMeta,
+  previewUrl,
+  shape = 'circle',
+  onSelect,
+  onRemove,
+  chooseLabel,
+  dropTitle = 'Drag a file here',
+  className = ''
+}) {
+  const inputRef = React.useRef(null);
+  const [over, setOver] = React.useState(false);
+  const [localError, setLocalError] = React.useState('');
+  const [live, setLive] = React.useState('');
+  const take = f => {
+    if (!f) return;
+    const err = !accepts(f, accept) ? `Choose ${typeHint || 'a supported file type'}.` : maxSize && f.size > maxSize ? `That file is ${formatFileSize(f.size)}. The limit is ${formatFileSize(maxSize)}.` : '';
+    setLocalError(err);
+    if (!err) {
+      setLive(`${f.name} selected`);
+      if (onSelect) onSelect(f);
+    }
+  };
+  const pickFile = () => {
+    if (disabled || !inputRef.current) return;
+    inputRef.current.value = '';
+    inputRef.current.click();
+  };
+  const hidden = /*#__PURE__*/React.createElement("input", {
+    ref: inputRef,
+    type: "file",
+    accept: accept,
+    className: "gt-visually-hidden",
+    tabIndex: -1,
+    "aria-hidden": "true",
+    onChange: e => take(e.target.files && e.target.files[0])
+  });
+  return /*#__PURE__*/React.createElement(__ds_scope.FieldShell, {
+    id: id,
+    label: label,
+    hideLabel: hideLabel,
+    optional: optional,
+    helperText: helperText,
+    error: error || localError || undefined,
+    disabled: disabled,
+    group: true,
+    className: className
+  }, ({
+    labelId,
+    describedBy
+  }) => variant === 'image' ? /*#__PURE__*/React.createElement("div", {
+    className: "gt-upload-image",
+    role: "group",
+    "aria-labelledby": labelId,
+    "aria-describedby": describedBy
+  }, /*#__PURE__*/React.createElement("span", {
+    className: ['gt-upload-image__preview', shape === 'square' ? 'gt-upload-image__preview--square' : ''].filter(Boolean).join(' ')
+  }, previewUrl ? /*#__PURE__*/React.createElement("img", {
+    src: previewUrl,
+    alt: ""
+  }) : /*#__PURE__*/React.createElement(ImageGlyph, {
+    size: 24
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "gt-upload-image__body"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-upload-image__actions"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    variant: "outline",
+    size: "sm",
+    iconLeft: /*#__PURE__*/React.createElement(UploadGlyph, {
+      size: 14
+    }),
+    onClick: pickFile,
+    disabled: disabled
+  }, previewUrl ? 'Change' : chooseLabel || 'Upload image'), previewUrl && onRemove && /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    variant: "danger-ghost",
+    size: "sm",
+    onClick: onRemove,
+    disabled: disabled
+  }, "Remove"))), hidden, /*#__PURE__*/React.createElement("span", {
+    className: "gt-visually-hidden",
+    "aria-live": "polite"
+  }, live)) : /*#__PURE__*/React.createElement("div", {
+    role: "group",
+    "aria-labelledby": labelId,
+    "aria-describedby": describedBy
+  }, file ? /*#__PURE__*/React.createElement("div", {
+    className: "gt-upload-file"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-upload-file__icon"
+  }, /*#__PURE__*/React.createElement(FileGlyph, null)), /*#__PURE__*/React.createElement("span", {
+    className: "gt-upload-file__text"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-upload-file__name"
+  }, file.name), /*#__PURE__*/React.createElement("span", {
+    className: "gt-upload-file__meta"
+  }, file.size != null ? formatFileSize(file.size) : '', fileMeta ? ` · ${fileMeta}` : '')), /*#__PURE__*/React.createElement("span", {
+    className: "gt-upload-file__actions"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    variant: "outline",
+    size: "sm",
+    onClick: pickFile,
+    disabled: disabled
+  }, "Replace"), onRemove && /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+    variant: "danger",
+    size: "sm",
+    ariaLabel: `Remove ${file.name}`,
+    onClick: onRemove,
+    disabled: disabled
+  }, /*#__PURE__*/React.createElement(XGlyph, null)))) : /*#__PURE__*/React.createElement("div", {
+    className: ['gt-upload-drop', over ? 'gt-upload-drop--over' : '', disabled ? 'gt-upload-drop--disabled' : ''].filter(Boolean).join(' '),
+    onDragEnter: e => {
+      e.preventDefault();
+      if (!disabled) setOver(true);
+    },
+    onDragOver: e => {
+      e.preventDefault();
+    },
+    onDragLeave: e => {
+      if (!e.currentTarget.contains(e.relatedTarget)) setOver(false);
+    },
+    onDrop: e => {
+      e.preventDefault();
+      setOver(false);
+      if (!disabled) take(e.dataTransfer.files && e.dataTransfer.files[0]);
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "gt-upload-drop__icon"
+  }, /*#__PURE__*/React.createElement(UploadGlyph, null)), /*#__PURE__*/React.createElement("p", {
+    className: "gt-upload-drop__title"
+  }, dropTitle), /*#__PURE__*/React.createElement("p", {
+    className: "gt-upload-drop__hint"
+  }, "or"), /*#__PURE__*/React.createElement(__ds_scope.Button, {
+    variant: "outline",
+    size: "sm",
+    onClick: pickFile,
+    disabled: disabled
+  }, chooseLabel || 'Choose file')), hidden, /*#__PURE__*/React.createElement("span", {
+    className: "gt-visually-hidden",
+    "aria-live": "polite"
+  }, live)));
+}
+Object.assign(__ds_scope, { formatFileSize, FileUpload });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/FileUpload.jsx", error: String((e && e.message) || e) }); }
 
 // components/primitives/Input.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /**
- * Text input field with label, helper/error text, and optional icon/prefix slots.
- * Focus shows the accent-blue ring; `error` swaps to the error treatment.
+ * Text input in the field shell. Adornments (iconLeft, prefixText, suffix, action) sit inside one
+ * bordered input group. `maxLength` is a soft limit: the counter appears at 80% (or always with
+ * `showCount`), and past the limit the field is flagged, not truncated.
  */
 function Input({
   id,
   label,
+  hideLabel = false,
   value,
   onChange,
   placeholder,
@@ -13002,110 +15263,606 @@ function Input({
   error,
   disabled = false,
   required = false,
+  optional = false,
   iconLeft = null,
+  prefixText,
   suffix = null,
+  action = null,
+  compact = false,
+  maxLength,
+  showCount = false,
   className = '',
+  inputClassName = '',
   ...rest
 }) {
-  const reactId = React.useId();
-  const inputId = id || reactId;
-  const describedBy = error ? `${inputId}-err` : helperText ? `${inputId}-help` : undefined;
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-field', error ? 'gt-field--error' : '', disabled ? 'gt-field--disabled' : '', className].filter(Boolean).join(' ')
-  }, label && /*#__PURE__*/React.createElement("label", {
-    className: "gt-field__label",
-    htmlFor: inputId
-  }, label, required && /*#__PURE__*/React.createElement("span", {
-    className: "gt-field__required",
-    "aria-hidden": "true"
-  }, " *")), /*#__PURE__*/React.createElement("div", {
-    className: "gt-field__control"
-  }, iconLeft && /*#__PURE__*/React.createElement("span", {
-    className: "gt-field__icon"
-  }, iconLeft), /*#__PURE__*/React.createElement("input", _extends({
-    id: inputId,
-    className: ['gt-input', iconLeft ? 'gt-input--has-icon' : ''].filter(Boolean).join(' '),
-    type: type,
-    value: value,
-    onChange: onChange,
-    placeholder: placeholder,
+  const count = typeof value === 'string' ? value.length : 0;
+  const counter = maxLength != null && (showCount || count >= maxLength * 0.8);
+  const grouped = iconLeft || prefixText || suffix || action;
+  return /*#__PURE__*/React.createElement(__ds_scope.FieldShell, {
+    id: id,
+    label: label,
+    hideLabel: hideLabel,
+    optional: optional,
+    helperText: helperText,
+    error: error,
+    count: counter ? count : undefined,
+    max: counter ? maxLength : undefined,
     disabled: disabled,
-    required: required,
-    "aria-invalid": error ? true : undefined,
-    "aria-describedby": describedBy
-  }, rest)), suffix && /*#__PURE__*/React.createElement("span", {
-    className: "gt-field__suffix"
-  }, suffix)), error ? /*#__PURE__*/React.createElement("p", {
-    className: "gt-field__error",
-    id: `${inputId}-err`
-  }, error) : helperText ? /*#__PURE__*/React.createElement("p", {
-    className: "gt-field__help",
-    id: `${inputId}-help`
-  }, helperText) : null);
+    className: className
+  }, ({
+    id: inputId,
+    describedBy,
+    invalid
+  }) => {
+    const prefixId = prefixText ? `${inputId}-prefix` : null;
+    const input = /*#__PURE__*/React.createElement("input", _extends({
+      id: inputId,
+      className: ['gt-input', compact ? 'gt-input--compact' : '', inputClassName].filter(Boolean).join(' '),
+      type: type,
+      value: value,
+      onChange: onChange,
+      placeholder: placeholder,
+      disabled: disabled,
+      required: required,
+      "aria-invalid": invalid || undefined,
+      "aria-describedby": [prefixId, describedBy].filter(Boolean).join(' ') || undefined
+    }, rest));
+    if (!grouped) return input;
+    return /*#__PURE__*/React.createElement("div", {
+      className: ['gt-input-group', compact ? 'gt-input-group--compact' : '', disabled ? 'gt-input-group--disabled' : ''].filter(Boolean).join(' ')
+    }, iconLeft && /*#__PURE__*/React.createElement("span", {
+      className: "gt-input-group__icon",
+      "aria-hidden": "true"
+    }, iconLeft), prefixText && /*#__PURE__*/React.createElement("span", {
+      className: "gt-input-group__prefix",
+      id: prefixId
+    }, prefixText), input, suffix && /*#__PURE__*/React.createElement("span", {
+      className: "gt-input-group__suffix"
+    }, suffix), action && /*#__PURE__*/React.createElement("span", {
+      className: "gt-input-group__action"
+    }, action));
+  });
 }
 Object.assign(__ds_scope, { Input });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Input.jsx", error: String((e && e.message) || e) }); }
 
+// components/primitives/MarkdownEditor.jsx
+try { (() => {
+const G = ({
+  d
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: "15",
+  height: "15",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2.2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, d);
+const TOOLS = [{
+  id: 'bold',
+  label: 'Bold',
+  keys: 'b',
+  icon: /*#__PURE__*/React.createElement(G, {
+    d: /*#__PURE__*/React.createElement("path", {
+      d: "M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"
+    })
+  })
+}, {
+  id: 'italic',
+  label: 'Italic',
+  keys: 'i',
+  icon: /*#__PURE__*/React.createElement(G, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M19 4h-9M14 20H5M15 4 9 20"
+    }))
+  })
+}, {
+  id: 'link',
+  label: 'Link',
+  keys: 'k',
+  icon: /*#__PURE__*/React.createElement(G, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+    }))
+  })
+}, {
+  id: 'list',
+  label: 'Bulleted list',
+  icon: /*#__PURE__*/React.createElement(G, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+    }))
+  })
+}, {
+  id: 'code',
+  label: 'Code',
+  icon: /*#__PURE__*/React.createElement(G, {
+    d: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+      d: "m16 18 6-6-6-6M8 6l-6 6 6 6"
+    }))
+  })
+}];
+const INLINE = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\)|\*[^*\s][^*]*\*|_[^_\s][^_]*_)/g;
+function inline(text, key) {
+  const out = [];
+  let last = 0;
+  let m;
+  let k = 0;
+  INLINE.lastIndex = 0;
+  while (m = INLINE.exec(text)) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const t = m[0];
+    const kk = `${key}-${k++}`;
+    if (t.startsWith('**')) out.push(/*#__PURE__*/React.createElement("strong", {
+      key: kk
+    }, t.slice(2, -2)));else if (t.startsWith('`')) out.push(/*#__PURE__*/React.createElement("code", {
+      key: kk
+    }, t.slice(1, -1)));else if (t.startsWith('[')) {
+      const mm = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(t);
+      out.push(/*#__PURE__*/React.createElement("a", {
+        key: kk,
+        href: /^(https?:|mailto:)/i.test(mm[2]) ? mm[2] : undefined,
+        target: "_blank",
+        rel: "noreferrer noopener"
+      }, mm[1]));
+    } else out.push(/*#__PURE__*/React.createElement("em", {
+      key: kk
+    }, t.slice(1, -1)));
+    last = m.index + t.length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+/** Design-side preview: paragraphs, lists, bold, italic, code, links. The port renders MarkdownText (GFM). */
+function renderMarkdownLite(src = '') {
+  const lines = String(src).replace(/\r/g, '').split('\n');
+  const blocks = [];
+  let i = 0;
+  const isUl = l => /^\s*[-*]\s+/.test(l);
+  const isOl = l => /^\s*\d+\.\s+/.test(l);
+  while (i < lines.length) {
+    if (!lines[i].trim()) {
+      i++;
+      continue;
+    }
+    if (isUl(lines[i]) || isOl(lines[i])) {
+      const ordered = isOl(lines[i]);
+      const items = [];
+      while (i < lines.length && (ordered ? isOl(lines[i]) : isUl(lines[i]))) {
+        items.push(lines[i].replace(/^\s*([-*]|\d+\.)\s+/, ''));
+        i++;
+      }
+      const L = ordered ? 'ol' : 'ul';
+      blocks.push(/*#__PURE__*/React.createElement(L, {
+        key: blocks.length
+      }, items.map((t, j) => /*#__PURE__*/React.createElement("li", {
+        key: j
+      }, inline(t, `${blocks.length}-${j}`)))));
+      continue;
+    }
+    const para = [];
+    while (i < lines.length && lines[i].trim() && !isUl(lines[i]) && !isOl(lines[i])) {
+      para.push(lines[i]);
+      i++;
+    }
+    const n = blocks.length;
+    blocks.push(/*#__PURE__*/React.createElement("p", {
+      key: n
+    }, para.map((l, j) => /*#__PURE__*/React.createElement(React.Fragment, {
+      key: j
+    }, j > 0 && /*#__PURE__*/React.createElement("br", null), inline(l, `${n}-${j}`)))));
+  }
+  return blocks;
+}
+function edit(tool, value, s, e) {
+  const sel = value.slice(s, e);
+  const wrap = (a, b, ph) => {
+    const t = sel || ph;
+    return {
+      next: value.slice(0, s) + a + t + b + value.slice(e),
+      from: s + a.length,
+      to: s + a.length + t.length
+    };
+  };
+  if (tool === 'bold') return wrap('**', '**', 'bold text');
+  if (tool === 'italic') return wrap('_', '_', 'italic text');
+  if (tool === 'code') return sel.includes('\n') ? wrap('```\n', '\n```', '') : wrap('`', '`', 'code');
+  if (tool === 'link') {
+    const t = sel || 'link text';
+    const url = 'https://';
+    const before = `${value.slice(0, s)}[${t}](`;
+    return {
+      next: `${before}${url})${value.slice(e)}`,
+      from: before.length,
+      to: before.length + url.length
+    };
+  }
+  const start = value.lastIndexOf('\n', s - 1) + 1;
+  const block = (value.slice(start, e) || 'List item').split('\n').map(l => /^\s*[-*]\s/.test(l) ? l : `- ${l}`).join('\n');
+  return {
+    next: value.slice(0, start) + block + value.slice(e),
+    from: start,
+    to: start + block.length
+  };
+}
+
+/**
+ * Markdown editor: Write / Preview tabs, a small formatting toolbar (WAI-ARIA toolbar, roving
+ * tabindex), the textarea with its counter, and a preview. Ctrl/⌘ + B / I / K format.
+ * `renderPreview(value)` plugs in the codebase's MarkdownText; the design side uses a small
+ * safe renderer. Project descriptions, the public issue form, and (chrome only) the invite email.
+ */
+function MarkdownEditor({
+  id,
+  label,
+  hideLabel = false,
+  value = '',
+  onChange,
+  placeholder,
+  helperText,
+  error,
+  required = false,
+  optional = false,
+  maxLength,
+  rows = 6,
+  disabled = false,
+  renderPreview,
+  toolbar = true,
+  className = ''
+}) {
+  const [mode, setMode] = React.useState('write');
+  const [tool, setTool] = React.useState(0);
+  const taRef = React.useRef(null);
+  const barRef = React.useRef(null);
+  const reactId = React.useId();
+  const base = `${id || reactId}-mde`;
+  const apply = toolId => {
+    const ta = taRef.current;
+    if (!ta || disabled) return;
+    const r = edit(toolId, value, ta.selectionStart, ta.selectionEnd);
+    if (onChange) onChange(r.next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(r.from, r.to);
+    });
+  };
+  const onToolKey = (e, i) => {
+    let n = null;
+    if (e.key === 'ArrowRight') n = (i + 1) % TOOLS.length;else if (e.key === 'ArrowLeft') n = (i - 1 + TOOLS.length) % TOOLS.length;else if (e.key === 'Home') n = 0;else if (e.key === 'End') n = TOOLS.length - 1;
+    if (n === null) return;
+    e.preventDefault();
+    setTool(n);
+    const el = barRef.current && barRef.current.querySelectorAll('[data-tool]')[n];
+    if (el) el.focus();
+  };
+  const onTextKey = e => {
+    if (!(e.metaKey || e.ctrlKey)) return;
+    const t = TOOLS.find(x => x.keys === e.key.toLowerCase());
+    if (t) {
+      e.preventDefault();
+      apply(t.id);
+    }
+  };
+  return /*#__PURE__*/React.createElement(__ds_scope.FieldShell, {
+    id: id,
+    label: label,
+    hideLabel: hideLabel,
+    optional: optional,
+    helperText: helperText,
+    error: error,
+    count: maxLength != null ? value.length : undefined,
+    max: maxLength,
+    disabled: disabled,
+    className: ['gt-mde', className].filter(Boolean).join(' ')
+  }, ({
+    id: taId,
+    describedBy,
+    invalid
+  }) => /*#__PURE__*/React.createElement("div", {
+    className: "gt-mde__frame"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-mde__bar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "gt-mde__tabs"
+  }, /*#__PURE__*/React.createElement(__ds_scope.Tabs, {
+    idBase: base,
+    size: "sm",
+    ariaLabel: "Editor mode",
+    value: mode,
+    onChange: setMode,
+    tabs: [{
+      value: 'write',
+      label: 'Write'
+    }, {
+      value: 'preview',
+      label: 'Preview'
+    }]
+  })), toolbar && mode === 'write' && /*#__PURE__*/React.createElement("div", {
+    className: "gt-mde__toolbar",
+    role: "toolbar",
+    "aria-label": "Formatting",
+    "aria-controls": taId,
+    ref: barRef
+  }, TOOLS.map((t, i) => /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+    key: t.id,
+    size: "sm",
+    ariaLabel: t.label,
+    tooltip: t.keys ? `${t.label} (Ctrl+${t.keys.toUpperCase()})` : t.label,
+    tooltipSide: "bottom",
+    tabIndex: i === tool ? 0 : -1,
+    disabled: disabled,
+    onFocus: () => setTool(i),
+    onKeyDown: e => onToolKey(e, i),
+    onClick: () => apply(t.id),
+    "data-tool": t.id,
+    onMouseDown: e => e.preventDefault()
+  }, t.icon)))), /*#__PURE__*/React.createElement(__ds_scope.TabPanel, {
+    idBase: base,
+    value: "write",
+    active: mode === 'write',
+    focusable: false,
+    keepMounted: true
+  }, /*#__PURE__*/React.createElement("textarea", {
+    ref: taRef,
+    id: taId,
+    className: "gt-textarea",
+    value: value,
+    onChange: e => onChange && onChange(e.target.value),
+    onKeyDown: onTextKey,
+    placeholder: placeholder,
+    rows: rows,
+    disabled: disabled,
+    required: required,
+    "aria-invalid": invalid || undefined,
+    "aria-describedby": describedBy
+  })), /*#__PURE__*/React.createElement(__ds_scope.TabPanel, {
+    idBase: base,
+    value: "preview",
+    active: mode === 'preview',
+    className: "gt-mde__preview"
+  }, value.trim() ? renderPreview ? renderPreview(value) : renderMarkdownLite(value) : /*#__PURE__*/React.createElement("p", {
+    className: "gt-mde__empty"
+  }, "Nothing to preview yet."))));
+}
+Object.assign(__ds_scope, { renderMarkdownLite, MarkdownEditor });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/MarkdownEditor.jsx", error: String((e && e.message) || e) }); }
+
+// components/primitives/PasswordField.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const Eye = ({
+  off
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: "16",
+  height: "16",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, off ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+  d: "M9.88 9.88a3 3 0 1 0 4.24 4.24"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "m2 2 20 20"
+})) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
+  d: "M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"
+}), /*#__PURE__*/React.createElement("circle", {
+  cx: "12",
+  cy: "12",
+  r: "3"
+})));
+
+/**
+ * Password input with a show / hide eye in the trailing slot. The eye is a toggle button: its
+ * name stays "Show password" and `aria-pressed` carries the state (the tooltip says Show / Hide).
+ */
+function PasswordField({
+  label = 'Password',
+  autoComplete = 'current-password',
+  ...rest
+}) {
+  const [shown, setShown] = React.useState(false);
+  return /*#__PURE__*/React.createElement(__ds_scope.Input, _extends({}, rest, {
+    label: label,
+    type: shown ? 'text' : 'password',
+    autoComplete: autoComplete,
+    autoCapitalize: "none",
+    spellCheck: false,
+    action: /*#__PURE__*/React.createElement(__ds_scope.IconButton, {
+      size: "sm",
+      ariaLabel: "Show password",
+      pressed: shown,
+      tooltip: shown ? 'Hide password' : 'Show password',
+      disabled: rest.disabled,
+      onClick: () => setShown(s => !s)
+    }, /*#__PURE__*/React.createElement(Eye, {
+      off: shown
+    }))
+  }));
+}
+Object.assign(__ds_scope, { PasswordField });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/PasswordField.jsx", error: String((e && e.message) || e) }); }
+
 // components/primitives/RadioGroup.jsx
 try { (() => {
 /**
- * Radio group. Renders a fieldset of custom radios;
- * pass `options` and control via `value`/`onChange`.
+ * Radio group — a fieldset of native radios (arrow keys move and select, as the browser does).
+ * `variant="card"` turns each option into a bordered card with a title, description and a
+ * green selected border: the Draft / Published status cards and the template picker.
  */
 function RadioGroup({
   name,
   legend,
+  ariaLabel,
   options = [],
   value,
   onChange,
   disabled = false,
   inline = false,
+  variant = 'list',
   className = ''
 }) {
   const reactId = React.useId();
   const groupName = name || reactId;
+  const card = variant === 'card';
   return /*#__PURE__*/React.createElement("fieldset", {
-    className: ['gt-radio-group', inline ? 'gt-radio-group--inline' : '', className].filter(Boolean).join(' ')
+    className: ['gt-radio-group', inline && !card ? 'gt-radio-group--inline' : '', card ? 'gt-radio-group--card' : '', className].filter(Boolean).join(' '),
+    "aria-label": !legend ? ariaLabel : undefined
   }, legend && /*#__PURE__*/React.createElement("legend", {
     className: "gt-radio-group__legend"
   }, legend), options.map(opt => {
     const isDisabled = disabled || opt.disabled;
+    const checked = value === opt.value;
+    const base = `${groupName}-${opt.value}`;
     return /*#__PURE__*/React.createElement("label", {
       key: opt.value,
-      className: ['gt-radio', isDisabled ? 'gt-radio--disabled' : ''].filter(Boolean).join(' ')
+      className: ['gt-radio', card ? 'gt-radio--card' : '', checked ? 'gt-radio--checked' : '', isDisabled ? 'gt-radio--disabled' : ''].filter(Boolean).join(' ')
     }, /*#__PURE__*/React.createElement("input", {
       type: "radio",
       className: "gt-radio__input",
       name: groupName,
       value: opt.value,
-      checked: value === opt.value,
+      checked: checked,
       onChange: () => onChange && onChange(opt.value),
-      disabled: isDisabled
+      disabled: isDisabled,
+      "aria-labelledby": `${base}-label`,
+      "aria-describedby": opt.description ? `${base}-desc` : undefined
     }), /*#__PURE__*/React.createElement("span", {
       className: "gt-radio__dot",
       "aria-hidden": "true"
     }), /*#__PURE__*/React.createElement("span", {
       className: "gt-radio__text"
     }, /*#__PURE__*/React.createElement("span", {
-      className: "gt-radio__label"
+      className: "gt-radio__label",
+      id: `${base}-label`
     }, opt.label), opt.description && /*#__PURE__*/React.createElement("span", {
-      className: "gt-radio__desc"
+      className: "gt-radio__desc",
+      id: `${base}-desc`
     }, opt.description)));
   }));
 }
 Object.assign(__ds_scope, { RadioGroup });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/RadioGroup.jsx", error: String((e && e.message) || e) }); }
 
+// components/primitives/SearchField.jsx
+try { (() => {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const SearchGlyph = ({
+  size = 15
+}) => /*#__PURE__*/React.createElement("svg", {
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": "true"
+}, /*#__PURE__*/React.createElement("circle", {
+  cx: "11",
+  cy: "11",
+  r: "8"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "m21 21-4.3-4.3"
+}));
+
+/**
+ * The one local filter input (roster, member manager, project assign, conversation list…),
+ * promoted from the search layer. A visually hidden label names it — never the placeholder.
+ * Debounce in the caller; this is presentational.
+ */
+function SearchField({
+  id,
+  value = '',
+  onChange,
+  label = 'Search',
+  placeholder = 'Search…',
+  compact = false,
+  fullWidth = false,
+  disabled = false,
+  onClear,
+  className = '',
+  ...rest
+}) {
+  const reactId = React.useId();
+  const inputId = id || reactId;
+  const ref = React.useRef(null);
+  const cls = ['gt-search-field', compact ? 'gt-search-field--compact' : '', fullWidth ? 'gt-search-field--full' : '', className].filter(Boolean).join(' ');
+  return /*#__PURE__*/React.createElement("div", {
+    className: cls,
+    role: "search"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "gt-visually-hidden",
+    htmlFor: inputId
+  }, label), /*#__PURE__*/React.createElement("span", {
+    className: "gt-search-field__icon"
+  }, /*#__PURE__*/React.createElement(SearchGlyph, null)), /*#__PURE__*/React.createElement("input", _extends({
+    ref: ref,
+    id: inputId,
+    type: "search",
+    className: "gt-search-field__input",
+    value: value,
+    onChange: e => onChange && onChange(e.target.value),
+    placeholder: placeholder,
+    disabled: disabled
+  }, rest)), value && !disabled && /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "gt-search-field__clear",
+    "aria-label": "Clear search",
+    onClick: () => {
+      if (onClear) onClear();else if (onChange) onChange('');
+      if (ref.current) ref.current.focus();
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "14",
+    height: "14",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    "aria-hidden": "true"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M18 6 6 18M6 6l12 12"
+  }))));
+}
+Object.assign(__ds_scope, { SearchField });
+})(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/SearchField.jsx", error: String((e && e.message) || e) }); }
+
 // components/primitives/Select.jsx
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const renderOptions = options => options.map(o => o.options ? /*#__PURE__*/React.createElement("optgroup", {
+  key: o.label,
+  label: o.label
+}, renderOptions(o.options)) : /*#__PURE__*/React.createElement("option", {
+  key: o.value,
+  value: o.value,
+  disabled: o.disabled
+}, o.label));
+
 /**
- * Native-select dropdown styled to match GrepThink fields.
- * Pass `options` as {value,label} or use children for full control.
+ * Native select in the field shell — for short, fixed lists (role, term, sprint, duration).
+ * `options` take { value, label } or { label, options: [...] } groups. Searchable or
+ * multi-select lists are the Combobox.
  */
 function Select({
   id,
   label,
+  hideLabel = false,
   value,
   onChange,
   options = [],
@@ -13114,37 +15871,40 @@ function Select({
   error,
   disabled = false,
   required = false,
+  optional = false,
+  compact = false,
   children,
   className = '',
   ...rest
 }) {
-  const reactId = React.useId();
-  const inputId = id || reactId;
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-field', error ? 'gt-field--error' : '', disabled ? 'gt-field--disabled' : '', className].filter(Boolean).join(' ')
-  }, label && /*#__PURE__*/React.createElement("label", {
-    className: "gt-field__label",
-    htmlFor: inputId
-  }, label, required && /*#__PURE__*/React.createElement("span", {
-    className: "gt-field__required",
-    "aria-hidden": "true"
-  }, " *")), /*#__PURE__*/React.createElement("div", {
-    className: "gt-select"
+  return /*#__PURE__*/React.createElement(__ds_scope.FieldShell, {
+    id: id,
+    label: label,
+    hideLabel: hideLabel,
+    optional: optional,
+    helperText: helperText,
+    error: error,
+    disabled: disabled,
+    className: className
+  }, ({
+    id: selectId,
+    describedBy,
+    invalid
+  }) => /*#__PURE__*/React.createElement("div", {
+    className: ['gt-select', compact ? 'gt-select--compact' : ''].filter(Boolean).join(' ')
   }, /*#__PURE__*/React.createElement("select", _extends({
-    id: inputId,
+    id: selectId,
     className: "gt-select__control",
     value: value,
     onChange: onChange,
     disabled: disabled,
     required: required,
-    "aria-invalid": error ? true : undefined
+    "aria-invalid": invalid || undefined,
+    "aria-describedby": describedBy
   }, rest), placeholder && /*#__PURE__*/React.createElement("option", {
     value: "",
     disabled: true
-  }, placeholder), children || options.map(o => /*#__PURE__*/React.createElement("option", {
-    key: o.value,
-    value: o.value
-  }, o.label))), /*#__PURE__*/React.createElement("svg", {
+  }, placeholder), children || renderOptions(options)), /*#__PURE__*/React.createElement("svg", {
     className: "gt-select__chevron",
     width: "16",
     height: "16",
@@ -13157,11 +15917,7 @@ function Select({
     strokeWidth: "2",
     strokeLinecap: "round",
     strokeLinejoin: "round"
-  }))), error ? /*#__PURE__*/React.createElement("p", {
-    className: "gt-field__error"
-  }, error) : helperText ? /*#__PURE__*/React.createElement("p", {
-    className: "gt-field__help"
-  }, helperText) : null);
+  }))));
 }
 Object.assign(__ds_scope, { Select });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Select.jsx", error: String((e && e.message) || e) }); }
@@ -13170,12 +15926,14 @@ Object.assign(__ds_scope, { Select });
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /**
- * Multi-line text field. Shares the field chrome with Input.
- * Used across TSR feedback, project descriptions, and scrum-master notes.
+ * Multi-line text field in the field shell (TSR feedback, descriptions, notes).
+ * With `maxLength` the counter always shows ("128 / 500"); past the limit the text is kept,
+ * the counter and border turn red, and the form's validation blocks the save.
  */
 function Textarea({
   id,
   label,
+  hideLabel = false,
   value,
   onChange,
   placeholder,
@@ -13184,23 +15942,30 @@ function Textarea({
   error,
   disabled = false,
   required = false,
+  optional = false,
   maxLength,
-  showCount = false,
+  showCount = true,
   className = '',
   ...rest
 }) {
-  const reactId = React.useId();
-  const inputId = id || reactId;
   const count = typeof value === 'string' ? value.length : 0;
-  return /*#__PURE__*/React.createElement("div", {
-    className: ['gt-field', error ? 'gt-field--error' : '', disabled ? 'gt-field--disabled' : '', className].filter(Boolean).join(' ')
-  }, label && /*#__PURE__*/React.createElement("label", {
-    className: "gt-field__label",
-    htmlFor: inputId
-  }, label, required && /*#__PURE__*/React.createElement("span", {
-    className: "gt-field__required",
-    "aria-hidden": "true"
-  }, " *")), /*#__PURE__*/React.createElement("textarea", _extends({
+  const counter = maxLength != null && showCount;
+  return /*#__PURE__*/React.createElement(__ds_scope.FieldShell, {
+    id: id,
+    label: label,
+    hideLabel: hideLabel,
+    optional: optional,
+    helperText: helperText,
+    error: error,
+    count: counter ? count : undefined,
+    max: counter ? maxLength : undefined,
+    disabled: disabled,
+    className: className
+  }, ({
+    id: inputId,
+    describedBy,
+    invalid
+  }) => /*#__PURE__*/React.createElement("textarea", _extends({
     id: inputId,
     className: "gt-textarea",
     value: value,
@@ -13209,17 +15974,9 @@ function Textarea({
     rows: rows,
     disabled: disabled,
     required: required,
-    maxLength: maxLength,
-    "aria-invalid": error ? true : undefined
-  }, rest)), /*#__PURE__*/React.createElement("div", {
-    className: "gt-field__footer"
-  }, error ? /*#__PURE__*/React.createElement("p", {
-    className: "gt-field__error"
-  }, error) : helperText ? /*#__PURE__*/React.createElement("p", {
-    className: "gt-field__help"
-  }, helperText) : /*#__PURE__*/React.createElement("span", null), showCount && maxLength && /*#__PURE__*/React.createElement("span", {
-    className: "gt-field__count"
-  }, count, "/", maxLength)));
+    "aria-invalid": invalid || undefined,
+    "aria-describedby": describedBy
+  }, rest)));
 }
 Object.assign(__ds_scope, { Textarea });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/primitives/Textarea.jsx", error: String((e && e.message) || e) }); }
@@ -13319,8 +16076,9 @@ Object.assign(__ds_scope, { TSRForm });
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /**
- * On/off toggle switch (settings, dark mode, notification prefs).
- * Green track when on, matching the app's Toggle-Switch component.
+ * On/off switch (`role="switch"`) for settings that apply at once — email preferences,
+ * notification prefs. Green track when on. The native input covers the row; a description is
+ * linked with `aria-describedby`.
  */
 function Toggle({
   id,
@@ -13335,7 +16093,7 @@ function Toggle({
   const reactId = React.useId();
   const inputId = id || reactId;
   return /*#__PURE__*/React.createElement("label", {
-    className: ['gt-toggle', disabled ? 'gt-toggle--disabled' : '', className].filter(Boolean).join(' '),
+    className: ['gt-toggle', description ? 'gt-toggle--with-desc' : '', disabled ? 'gt-toggle--disabled' : '', className].filter(Boolean).join(' '),
     htmlFor: inputId
   }, /*#__PURE__*/React.createElement("input", _extends({
     id: inputId,
@@ -13344,7 +16102,9 @@ function Toggle({
     className: "gt-toggle__input",
     checked: checked,
     onChange: onChange,
-    disabled: disabled
+    disabled: disabled,
+    "aria-labelledby": label ? `${inputId}-label` : undefined,
+    "aria-describedby": description ? `${inputId}-desc` : undefined
   }, rest)), /*#__PURE__*/React.createElement("span", {
     className: "gt-toggle__track",
     "aria-hidden": "true"
@@ -13353,9 +16113,11 @@ function Toggle({
   })), (label || description) && /*#__PURE__*/React.createElement("span", {
     className: "gt-toggle__text"
   }, label && /*#__PURE__*/React.createElement("span", {
-    className: "gt-toggle__label"
+    className: "gt-toggle__label",
+    id: `${inputId}-label`
   }, label), description && /*#__PURE__*/React.createElement("span", {
-    className: "gt-toggle__desc"
+    className: "gt-toggle__desc",
+    id: `${inputId}-desc`
   }, description)));
 }
 Object.assign(__ds_scope, { Toggle });
@@ -15475,7 +18237,7 @@ function ScheduleList({
     return /*#__PURE__*/React.createElement("button", {
       key: k.kind,
       type: "button",
-      className: "gt-sched__chip",
+      className: "gt-filter-chip gt-filter-chip--sm",
       "aria-pressed": on,
       onClick: () => setKinds(on ? activeKinds.filter(x => x !== k.kind) : [...activeKinds, k.kind])
     }, k.filterLabel);
@@ -17967,23 +20729,23 @@ function CommandPalette({
     "aria-label": "Filter by type"
   }, /*#__PURE__*/React.createElement("button", {
     type: "button",
-    className: ['gt-scope', scope === 'all' ? 'gt-scope--active' : ''].join(' '),
+    className: ['gt-filter-chip gt-filter-chip--sm', scope === 'all' ? 'gt-filter-chip--selected' : ''].join(' '),
     "aria-pressed": scope === 'all',
     onClick: () => setScope('all')
   }, "All ", /*#__PURE__*/React.createElement("span", {
-    className: "gt-scope__count"
+    className: "gt-filter-chip__count"
   }, unscoped.length)), scopeList.map(t => {
     const meta = __ds_scope.SEARCH_ENTITIES.find(e => e.type === t);
     const c = counts[t] || 0;
     return /*#__PURE__*/React.createElement("button", {
       key: t,
       type: "button",
-      className: ['gt-scope', scope === t ? 'gt-scope--active' : ''].join(' '),
+      className: ['gt-filter-chip gt-filter-chip--sm', scope === t ? 'gt-filter-chip--selected' : ''].join(' '),
       "aria-pressed": scope === t,
       disabled: !c && scope !== t,
       onClick: () => setScope(t)
     }, meta ? meta.label : t, " ", c > 0 && /*#__PURE__*/React.createElement("span", {
-      className: "gt-scope__count"
+      className: "gt-filter-chip__count"
     }, c));
   })), /*#__PURE__*/React.createElement("div", {
     className: "gt-palette__body"
@@ -18135,59 +20897,9 @@ function SearchTrigger({
   })));
 }
 
-/**
- * The one local filter input (roster, member manager, project assign,
- * conversation list…). Debounce in the caller; this is presentational.
- */
-function SearchField({
-  value = '',
-  onChange,
-  placeholder = 'Search…',
-  ariaLabel,
-  size = 'md',
-  fullWidth = false,
-  disabled = false,
-  onClear,
-  className = '',
-  ...rest
-}) {
-  const cls = ['gt-search-field', size === 'sm' ? 'gt-search-field--sm' : '', fullWidth ? 'gt-search-field--full' : '', className].filter(Boolean).join(' ');
-  return /*#__PURE__*/React.createElement("div", {
-    className: cls
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "gt-search-field__icon"
-  }, /*#__PURE__*/React.createElement(SearchGlyph, {
-    size: 15
-  })), /*#__PURE__*/React.createElement("input", _extends({
-    type: "search",
-    className: "gt-search-field__input",
-    value: value,
-    onChange: e => onChange && onChange(e.target.value),
-    placeholder: placeholder,
-    "aria-label": ariaLabel || placeholder,
-    disabled: disabled
-  }, rest)), value && !disabled && /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "gt-search-field__clear",
-    "aria-label": "Clear search",
-    onClick: () => {
-      onChange && onChange('');
-      onClear && onClear();
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
-    width: "13",
-    height: "13",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "2.2",
-    strokeLinecap: "round",
-    "aria-hidden": "true"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M18 6 6 18M6 6l12 12"
-  }))));
-}
-Object.assign(__ds_scope, { SearchTrigger, SearchField });
+/* SearchField — the inline filter input — moved to components/primitives/SearchField.jsx
+   in the alignment round (2026-10-19); import it from there. */
+Object.assign(__ds_scope, { SearchTrigger });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/search/SearchTrigger.jsx", error: String((e && e.message) || e) }); }
 
 // components/search/searchData.js
@@ -21091,6 +23803,7 @@ function ProjectsScreen() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "gtk-toolbar"
   }, /*#__PURE__*/React.createElement(SegmentedControl, {
+    ariaLabel: "View",
     value: view,
     onChange: setView,
     options: [{
@@ -21318,6 +24031,7 @@ function RosterScreen() {
   return /*#__PURE__*/React.createElement("div", {
     className: "gtk-stack"
   }, /*#__PURE__*/React.createElement(Tabs, {
+    ariaLabel: "Roster",
     value: tab,
     onChange: setTab,
     tabs: [{
@@ -23714,9 +26428,19 @@ __ds_ns.Avatar = __ds_scope.Avatar;
 
 __ds_ns.AvatarGroup = __ds_scope.AvatarGroup;
 
+__ds_ns.BADGE_STATUS = __ds_scope.BADGE_STATUS;
+
+__ds_ns.BADGE_CATEGORY = __ds_scope.BADGE_CATEGORY;
+
+__ds_ns.PROJECT_ROLES = __ds_scope.PROJECT_ROLES;
+
 __ds_ns.Badge = __ds_scope.Badge;
 
 __ds_ns.Card = __ds_scope.Card;
+
+__ds_ns.CountBadge = __ds_scope.CountBadge;
+
+__ds_ns.InfoPopover = __ds_scope.InfoPopover;
 
 __ds_ns.ProgressBar = __ds_scope.ProgressBar;
 
@@ -23728,6 +26452,8 @@ __ds_ns.Tag = __ds_scope.Tag;
 
 __ds_ns.Tooltip = __ds_scope.Tooltip;
 
+__ds_ns.UnreadBadge = __ds_scope.UnreadBadge;
+
 __ds_ns.AssignmentCard = __ds_scope.AssignmentCard;
 
 __ds_ns.ConversationListItem = __ds_scope.ConversationListItem;
@@ -23735,8 +26461,6 @@ __ds_ns.ConversationListItem = __ds_scope.ConversationListItem;
 __ds_ns.MessageBubble = __ds_scope.MessageBubble;
 
 __ds_ns.MessageComposer = __ds_scope.MessageComposer;
-
-__ds_ns.UnreadBadge = __ds_scope.UnreadBadge;
 
 __ds_ns.JoinRequestCard = __ds_scope.JoinRequestCard;
 
@@ -23780,7 +26504,15 @@ __ds_ns.TypingIndicator = __ds_scope.TypingIndicator;
 
 __ds_ns.Alert = __ds_scope.Alert;
 
+__ds_ns.ConfirmDialog = __ds_scope.ConfirmDialog;
+
+__ds_ns.InlineConfirm = __ds_scope.InlineConfirm;
+
+__ds_ns.Drawer = __ds_scope.Drawer;
+
 __ds_ns.EmptyState = __ds_scope.EmptyState;
+
+__ds_ns.NoClassSelected = __ds_scope.NoClassSelected;
 
 __ds_ns.Skeleton = __ds_scope.Skeleton;
 
@@ -23793,6 +26525,8 @@ __ds_ns.MenuSeparator = __ds_scope.MenuSeparator;
 __ds_ns.Modal = __ds_scope.Modal;
 
 __ds_ns.Popover = __ds_scope.Popover;
+
+__ds_ns.Spinner = __ds_scope.Spinner;
 
 __ds_ns.Toast = __ds_scope.Toast;
 
@@ -23860,6 +26594,10 @@ __ds_ns.StageCard = __ds_scope.StageCard;
 
 __ds_ns.Stage = __ds_scope.Stage;
 
+__ds_ns.FilterChip = __ds_scope.FilterChip;
+
+__ds_ns.FilterChipGroup = __ds_scope.FilterChipGroup;
+
 __ds_ns.Pagination = __ds_scope.Pagination;
 
 __ds_ns.SegmentedControl = __ds_scope.SegmentedControl;
@@ -23868,19 +26606,37 @@ __ds_ns.SidebarNavItem = __ds_scope.SidebarNavItem;
 
 __ds_ns.SidebarSectionTitle = __ds_scope.SidebarSectionTitle;
 
+__ds_ns.Stepper = __ds_scope.Stepper;
+
 __ds_ns.Tabs = __ds_scope.Tabs;
+
+__ds_ns.TabPanel = __ds_scope.TabPanel;
 
 __ds_ns.Button = __ds_scope.Button;
 
 __ds_ns.Checkbox = __ds_scope.Checkbox;
 
+__ds_ns.CodeInput = __ds_scope.CodeInput;
+
+__ds_ns.Combobox = __ds_scope.Combobox;
+
 __ds_ns.DatePickerField = __ds_scope.DatePickerField;
+
+__ds_ns.FieldShell = __ds_scope.FieldShell;
+
+__ds_ns.FileUpload = __ds_scope.FileUpload;
 
 __ds_ns.IconButton = __ds_scope.IconButton;
 
 __ds_ns.Input = __ds_scope.Input;
 
+__ds_ns.MarkdownEditor = __ds_scope.MarkdownEditor;
+
+__ds_ns.PasswordField = __ds_scope.PasswordField;
+
 __ds_ns.RadioGroup = __ds_scope.RadioGroup;
+
+__ds_ns.SearchField = __ds_scope.SearchField;
 
 __ds_ns.Select = __ds_scope.Select;
 
@@ -23967,7 +26723,5 @@ __ds_ns.SearchModel = __ds_scope.SearchModel;
 __ds_ns.SearchPagination = __ds_scope.SearchPagination;
 
 __ds_ns.SearchTrigger = __ds_scope.SearchTrigger;
-
-__ds_ns.SearchField = __ds_scope.SearchField;
 
 })();

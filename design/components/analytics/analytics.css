@@ -105,12 +105,7 @@
 .gt-filter__select { position: relative; display: inline-flex; align-items: center; }
 .gt-filter__select .gt-select__control { height: 32px; padding-top: 0; padding-bottom: 0; font-size: 12.5px; min-width: 200px; }
 .gt-filter__chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.gt-filter__chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: var(--gt-radius-lg); border: 1px solid var(--gt-border); background: var(--gt-surface); font-family: var(--gt-font-sans); font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); cursor: pointer; transition: background-color var(--gt-transition-fast), border-color var(--gt-transition-fast), color var(--gt-transition-fast); }
-.gt-filter__chip:hover:not(:disabled):not(.gt-filter__chip--active) { background: var(--gt-primary-soft); border-color: var(--gt-green-200); color: var(--gt-green-700); }
-.gt-filter__chip--active, .gt-filter__chip[aria-pressed="true"] { background: var(--gt-primary); border-color: var(--gt-primary); color: var(--gt-text-inverse); }
-.gt-filter__chip:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
-.gt-filter__chip:disabled { opacity: 0.45; cursor: not-allowed; }
-.gt-filter--disabled .gt-filter__chip, .gt-filter--disabled .gt-select__control { opacity: 0.55; pointer-events: none; }
+.gt-filter--disabled .gt-filter-chip, .gt-filter--disabled .gt-select__control { opacity: 0.55; pointer-events: none; }
 .gt-filter__custom { position: relative; display: inline-flex; }
 .gt-filter__pop { min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
 .gt-filter__pop-title { font-size: var(--gt-text-caption); font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
@@ -121,23 +116,8 @@
 .gt-filter__foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .gt-filter__reason { margin-right: auto; font-size: 11px; line-height: 1.4; color: var(--gt-text-tertiary); min-width: 0; }
 .gt-filter__apply { display: inline-flex; }
-@media (pointer: coarse) { .gt-filter__chip { height: 44px; } }
 
-/* ── StatTile = .metric-card (.gt-stat-card) + delta + spark ── */
-.gt-stat-card--tile { padding: 14px var(--gt-space-md); gap: 6px; }
-.gt-stat-card--tile .gt-stat-card__value { font-size: var(--gt-text-h2); font-variant-numeric: normal; }
-.gt-stat-card__bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; min-height: 18px; }
-.gt-stat-card__delta { display: inline-flex; align-items: center; gap: 3px; font-size: var(--gt-text-caption); font-weight: var(--gt-weight-semibold); white-space: nowrap; }
-.gt-stat-card__delta--good { color: var(--gt-success-text); }
-.gt-stat-card__delta--bad { color: var(--gt-error-text); }
-.gt-stat-card__delta--flat { color: var(--gt-text-tertiary); }
-.gt-stat-card__delta-value { font-variant-numeric: tabular-nums; }
-.gt-stat-card__delta-vs { font-weight: var(--gt-weight-regular); color: var(--gt-text-tertiary); margin-left: 3px; white-space: normal; }
-.gt-stat-card__spark { display: block; width: 84px; height: 24px; flex-shrink: 0; }
-.gt-stat-card__spark-line { fill: none; stroke: var(--gt-chart-context); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
-.gt-stat-card__spark-dot { fill: var(--gt-primary); stroke: var(--gt-surface); stroke-width: 2; }
-.gt-stat-card__null { color: var(--gt-text-tertiary); }
-.gt-stat-card__value .gt-skeleton { width: 64px; height: 22px; display: inline-block; }
+/* ── StatTile = StatCard compact (delta, spark, null, loading live in display.css) ── */
 
 /* ── ChartLegend ────────────────────────────────────────── */
 .gt-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; font-family: var(--gt-font-sans); }
@@ -168,25 +148,9 @@
 .gt-chart-tip__value { margin-left: auto; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); font-variant-numeric: tabular-nums; padding-left: 10px; }
 .gt-chart-tip__note { margin-top: 4px; font-size: 10.5px; color: var(--gt-text-tertiary); white-space: normal; }
 
-/* ── DefinitionPopover ──────────────────────────────────── */
-.gt-definition { position: relative; display: inline-flex; }
-.gt-definition__trigger { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; border: none; background: transparent; color: var(--gt-text-tertiary); cursor: pointer; transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast); }
-.gt-definition__trigger:hover, .gt-definition__trigger[aria-expanded="true"] { background: var(--gt-surface-sunken); color: var(--gt-text-primary); }
-.gt-definition__trigger:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
-/* Panel = the shared popover (16px padding) around a text column ≤ 320px, or the viewport less 48px when narrower.
-   DefinitionPopover.jsx shifts it left to keep 8px from the viewport edge and centres it when the viewport is < panel + 16px. */
-.gt-definition__panel { width: 352px; max-width: calc(100vw - 16px); padding: 16px; box-sizing: border-box; }
-.gt-definition__title { font-size: var(--gt-text-caption); font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); margin-bottom: 6px; }
-.gt-definition__body { font-size: 12.5px; line-height: var(--gt-leading-normal); color: var(--gt-text-secondary); margin: 0; }
-.gt-definition__more { display: inline-block; margin-top: 8px; font-size: var(--gt-text-caption); font-weight: var(--gt-weight-medium); color: var(--gt-text-link); text-decoration: none; }
-.gt-definition__more:hover { text-decoration: underline; }
-@media (pointer: coarse) { .gt-definition__trigger { width: 44px; height: 44px; } }
+/* ── DefinitionPopover = the shared InfoPopover (display.css .gt-infopop) ── */
 
-/* ── Per-card empty state (.gt-empty--card compacts the system EmptyState) ── */
-.gt-empty--card { padding: 28px 16px; min-height: 120px; gap: 6px; }
-.gt-empty--card .gt-empty__icon { width: 36px; height: 36px; border-radius: 50%; background: var(--gt-surface-sunken); color: var(--gt-text-tertiary); margin-bottom: 4px; }
-.gt-empty--card .gt-empty__title { font-size: 13px; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
-.gt-empty__hint { margin: 0; font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); max-width: 320px; line-height: var(--gt-leading-snug); }
+/* ── Per-card empty state = the shared EmptyState variant="card" (feedback.css) ── */
 
 /* ── Shared SVG scaffolding (grid, axis, ticks, hits) ──── */
 .gt-plot__grid, .gt-line__grid, .gt-cols__grid, .gt-trend__grid { stroke: var(--gt-chart-grid); stroke-width: 1; shape-rendering: crispEdges; }

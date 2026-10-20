@@ -2,8 +2,9 @@ import * as React from 'react';
 
 export interface RadioOption {
   value: string;
+  /** Title (bold in the card variant). */
   label: string;
-  /** Muted second line. */
+  /** Muted second line, linked with `aria-describedby`. */
   description?: string;
   disabled?: boolean;
 }
@@ -13,12 +14,16 @@ export interface RadioGroupProps {
   name?: string;
   /** Group label rendered as <legend>. */
   legend?: string;
+  /** Group name when there is no visible legend. */
+  ariaLabel?: string;
   options: RadioOption[];
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;
-  /** Lay options in a row instead of a column. @default false */
+  /** Options in a row (list variant only). @default false */
   inline?: boolean;
+  /** 'card': bordered option cards in an auto-fit grid (min 200px) with a green selected border. @default 'list' */
+  variant?: 'list' | 'card';
   className?: string;
 }
 

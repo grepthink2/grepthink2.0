@@ -1,72 +1,94 @@
 import React from 'react';
+import { EmptyState } from '../feedback/EmptyState.jsx';
+
+const SortGlyph = ({ dir }) => (
+  <svg className="gt-table__sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {dir === 'desc' ? <path d="M6 9l6 6 6-6" /> : <path d="M18 15l-6-6-6 6" />}
+  </svg>
+);
 
 /**
- * Data table with sortable headers, skeleton loading and empty state.
- * Matches the app's table idiom: #EEEEEE head row, 1px row borders,
- * #FAFAFA row hover, white card wrapper handled by parent Card.
+ * Data table: `scope="col"` headers, sortable headers as buttons with `aria-sort`, a visually
+ * hidden caption, Skeleton loading rows, a compact EmptyState row, `dense` rows, a sticky header,
+ * and horizontal scrolling inside its card on phones (the scroll region is focusable only when it
+ * overflows). Rows that open something put a link (`rowHref`) or button (`onRowClick`) in the
+ * first cell; the row itself only shows hover — no `<tr onClick>`.
  */
 export function Table({
-  columns = [],
-  rows = [],
-  sort,
-  onSort,
-  loading = false,
-  skeletonRows = 4,
-  emptyState = null,
-  rowKey = (row, i) => row.id ?? i,
-  onRowClick,
-  className = '',
+  columns = [], rows = [], caption, sort, onSort, loading = false, skeletonRows = 4,
+  emptyState = null, emptyText = 'Nothing here yet.', rowKey = (row, i) => row.id ?? i,
+  onRowClick, rowHref, dense = false, stickyHeader = false, className = '',
 }) {
+  const wrapRef = React.useRef(null);
+  const [scrolls, setScrolls] = React.useState(false);
+  React.useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return undefined;
+    const check = () => setScrolls(el.scrollWidth > el.clientWidth + 1);
+    check();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(check) : null;
+    if (ro) ro.observe(el);
+    return () => { if (ro) ro.disconnect(); };
+  }, [rows.length, columns.length]);
   const handleSort = (col) => {
     if (!col.sortable || !onSort) return;
-    const dir = sort && sort.key === col.key && sort.dir === 'asc' ? 'desc' : 'asc';
-    onSort({ key: col.key, dir });
+    onSort({ key: col.key, dir: sort && sort.key === col.key && sort.dir === 'asc' ? 'desc' : 'asc' });
   };
-
+  const opens = onRowClick || rowHref;
   return (
-    <div className={['gt-table-wrapper', className].filter(Boolean).join(' ')}>
-      <table className="gt-table">
+    <div
+      ref={wrapRef}
+      className={['gt-table-wrapper', className].filter(Boolean).join(' ')}
+      role={scrolls ? 'region' : undefined}
+      aria-label={scrolls && typeof caption === 'string' ? caption : undefined}
+      tabIndex={scrolls ? 0 : undefined}
+    >
+      <table className={['gt-table', dense ? 'gt-table--dense' : '', stickyHeader ? 'gt-table--sticky' : ''].filter(Boolean).join(' ')} aria-busy={loading || undefined}>
+        {caption && <caption className="gt-visually-hidden">{caption}</caption>}
         <thead>
           <tr>
-            {columns.map((col) => (
-              <th key={col.key} style={col.width ? { width: col.width } : undefined} aria-sort={sort && sort.key === col.key ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}>
-                {col.sortable ? (
-                  <button type="button" className={['gt-table__sort', sort && sort.key === col.key ? 'gt-table__sort--active' : ''].filter(Boolean).join(' ')} onClick={() => handleSort(col)}>
-                    {col.label}
-                    <svg className="gt-table__sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      {sort && sort.key === col.key && sort.dir === 'desc'
-                        ? <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        : <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
-                    </svg>
-                  </button>
-                ) : col.label}
-              </th>
-            ))}
+            {columns.map((col) => {
+              const active = sort && sort.key === col.key;
+              return (
+                <th key={col.key} scope="col" style={col.width ? { width: col.width } : undefined}
+                  aria-sort={col.sortable ? (active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none') : undefined}>
+                  {col.sortable ? (
+                    <button type="button" className={['gt-table__sort', active ? 'gt-table__sort--active' : ''].filter(Boolean).join(' ')} onClick={() => handleSort(col)}>
+                      {col.label}<SortGlyph dir={active ? sort.dir : 'asc'} />
+                    </button>
+                  ) : col.label}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
           {loading
             ? Array.from({ length: skeletonRows }).map((_, r) => (
-                <tr key={`s${r}`} aria-hidden="true">
-                  {columns.map((col) => (
-                    <td key={col.key}><span className="gt-skeleton" style={{ width: `${55 + ((r * 17 + col.key.length * 13) % 40)}%` }} /></td>
-                  ))}
-                </tr>
-              ))
+              <tr key={`s${r}`} aria-hidden="true">
+                {columns.map((col) => <td key={col.key}><span className="gt-skeleton" style={{ width: `${55 + ((r * 17 + col.key.length * 13) % 40)}%` }} /></td>)}
+              </tr>
+            ))
             : rows.map((row, i) => (
-                <tr
-                  key={rowKey(row, i)}
-                  className={onRowClick ? 'gt-table__row--clickable' : undefined}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                >
-                  {columns.map((col) => (
-                    <td key={col.key}>{col.render ? col.render(row) : row[col.key]}</td>
-                  ))}
-                </tr>
-              ))}
+              <tr key={rowKey(row, i)}>
+                {columns.map((col, ci) => {
+                  const content = col.render ? col.render(row) : row[col.key];
+                  if (!opens || ci !== 0) return <td key={col.key}>{content}</td>;
+                  return (
+                    <td key={col.key}>
+                      {rowHref
+                        ? <a className="gt-table__open" href={rowHref(row)}>{content}</a>
+                        : <button type="button" className="gt-table__open" onClick={() => onRowClick(row)}>{content}</button>}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           {!loading && rows.length === 0 && (
             <tr>
-              <td colSpan={columns.length} className="gt-table__empty-cell">{emptyState || 'Nothing here yet.'}</td>
+              <td colSpan={columns.length} className="gt-table__empty-cell">
+                {emptyState || <EmptyState variant="card" title={emptyText} titleAs="p" />}
+              </td>
             </tr>
           )}
         </tbody>

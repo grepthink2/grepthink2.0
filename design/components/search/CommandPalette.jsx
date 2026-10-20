@@ -149,15 +149,15 @@ export function CommandPalette({
 
         {!idle && (
           <div className="gt-palette__scopes" role="group" aria-label="Filter by type">
-            <button type="button" className={['gt-scope', scope === 'all' ? 'gt-scope--active' : ''].join(' ')} aria-pressed={scope === 'all'} onClick={() => setScope('all')}>
-              All <span className="gt-scope__count">{unscoped.length}</span>
+            <button type="button" className={['gt-filter-chip gt-filter-chip--sm', scope === 'all' ? 'gt-filter-chip--selected' : ''].join(' ')} aria-pressed={scope === 'all'} onClick={() => setScope('all')}>
+              All <span className="gt-filter-chip__count">{unscoped.length}</span>
             </button>
             {scopeList.map((t) => {
               const meta = SEARCH_ENTITIES.find((e) => e.type === t);
               const c = counts[t] || 0;
               return (
-                <button key={t} type="button" className={['gt-scope', scope === t ? 'gt-scope--active' : ''].join(' ')} aria-pressed={scope === t} disabled={!c && scope !== t} onClick={() => setScope(t)}>
-                  {meta ? meta.label : t} {c > 0 && <span className="gt-scope__count">{c}</span>}
+                <button key={t} type="button" className={['gt-filter-chip gt-filter-chip--sm', scope === t ? 'gt-filter-chip--selected' : ''].join(' ')} aria-pressed={scope === t} disabled={!c && scope !== t} onClick={() => setScope(t)}>
+                  {meta ? meta.label : t} {c > 0 && <span className="gt-filter-chip__count">{c}</span>}
                 </button>
               );
             })}

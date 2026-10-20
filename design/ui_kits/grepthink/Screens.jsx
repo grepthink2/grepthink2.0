@@ -83,7 +83,7 @@ function ProjectsScreen() {
   return (
     <div className="gtk-stack">
       <div className="gtk-toolbar">
-        <SegmentedControl value={view} onChange={setView} options={[{value:'cards',label:'Cards'},{value:'table',label:'Table'}]} />
+        <SegmentedControl ariaLabel="View" value={view} onChange={setView} options={[{value:'cards',label:'Cards'},{value:'table',label:'Table'}]} />
         <Button size="sm">Create Project</Button>
       </div>
       <div className="gtk-grid-cards">
@@ -165,7 +165,7 @@ function RosterScreen() {
   const More = <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>;
   return (
     <div className="gtk-stack">
-      <Tabs value={tab} onChange={setTab} tabs={[
+      <Tabs ariaLabel="Roster" value={tab} onChange={setTab} tabs={[
         { value: 'all', label: 'All students', count: 62 },
         { value: 'unteamed', label: 'Unteamed', count: 7 },
         { value: 'invited', label: 'Invited', count: 4 },

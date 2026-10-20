@@ -1,59 +1,51 @@
 import React from 'react';
+import { FieldShell } from './FieldShell.jsx';
 
 /**
- * Text input field with label, helper/error text, and optional icon/prefix slots.
- * Focus shows the accent-blue ring; `error` swaps to the error treatment.
+ * Text input in the field shell. Adornments (iconLeft, prefixText, suffix, action) sit inside one
+ * bordered input group. `maxLength` is a soft limit: the counter appears at 80% (or always with
+ * `showCount`), and past the limit the field is flagged, not truncated.
  */
 export function Input({
-  id,
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = 'text',
-  helperText,
-  error,
-  disabled = false,
-  required = false,
-  iconLeft = null,
-  suffix = null,
-  className = '',
-  ...rest
+  id, label, hideLabel = false, value, onChange, placeholder, type = 'text',
+  helperText, error, disabled = false, required = false, optional = false,
+  iconLeft = null, prefixText, suffix = null, action = null, compact = false,
+  maxLength, showCount = false, className = '', inputClassName = '', ...rest
 }) {
-  const reactId = React.useId();
-  const inputId = id || reactId;
-  const describedBy = error ? `${inputId}-err` : helperText ? `${inputId}-help` : undefined;
-
+  const count = typeof value === 'string' ? value.length : 0;
+  const counter = maxLength != null && (showCount || count >= maxLength * 0.8);
+  const grouped = iconLeft || prefixText || suffix || action;
   return (
-    <div className={['gt-field', error ? 'gt-field--error' : '', disabled ? 'gt-field--disabled' : '', className].filter(Boolean).join(' ')}>
-      {label && (
-        <label className="gt-field__label" htmlFor={inputId}>
-          {label}
-          {required && <span className="gt-field__required" aria-hidden="true"> *</span>}
-        </label>
-      )}
-      <div className="gt-field__control">
-        {iconLeft && <span className="gt-field__icon">{iconLeft}</span>}
-        <input
-          id={inputId}
-          className={['gt-input', iconLeft ? 'gt-input--has-icon' : ''].filter(Boolean).join(' ')}
-          type={type}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          disabled={disabled}
-          required={required}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
-          {...rest}
-        />
-        {suffix && <span className="gt-field__suffix">{suffix}</span>}
-      </div>
-      {error ? (
-        <p className="gt-field__error" id={`${inputId}-err`}>{error}</p>
-      ) : helperText ? (
-        <p className="gt-field__help" id={`${inputId}-help`}>{helperText}</p>
-      ) : null}
-    </div>
+    <FieldShell id={id} label={label} hideLabel={hideLabel} optional={optional} helperText={helperText} error={error}
+      count={counter ? count : undefined} max={counter ? maxLength : undefined} disabled={disabled} className={className}>
+      {({ id: inputId, describedBy, invalid }) => {
+        const prefixId = prefixText ? `${inputId}-prefix` : null;
+        const input = (
+          <input
+            id={inputId}
+            className={['gt-input', compact ? 'gt-input--compact' : '', inputClassName].filter(Boolean).join(' ')}
+            type={type}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            required={required}
+            aria-invalid={invalid || undefined}
+            aria-describedby={[prefixId, describedBy].filter(Boolean).join(' ') || undefined}
+            {...rest}
+          />
+        );
+        if (!grouped) return input;
+        return (
+          <div className={['gt-input-group', compact ? 'gt-input-group--compact' : '', disabled ? 'gt-input-group--disabled' : ''].filter(Boolean).join(' ')}>
+            {iconLeft && <span className="gt-input-group__icon" aria-hidden="true">{iconLeft}</span>}
+            {prefixText && <span className="gt-input-group__prefix" id={prefixId}>{prefixText}</span>}
+            {input}
+            {suffix && <span className="gt-input-group__suffix">{suffix}</span>}
+            {action && <span className="gt-input-group__action">{action}</span>}
+          </div>
+        );
+      }}
+    </FieldShell>
   );
 }

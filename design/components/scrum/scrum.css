@@ -78,7 +78,7 @@
 .gt-prchip:hover { filter: brightness(0.94); }
 .gt-prchip:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
 .gt-prchip--open   { background: var(--gt-success-soft); color: var(--gt-success-text); }
-.gt-prchip--merged { background: rgba(125, 60, 152, 0.12); color: #7D3C98; }
+.gt-prchip--merged { background: var(--gt-purple-soft); color: var(--gt-purple); }
 .gt-prchip--closed { background: var(--gt-error-soft); color: var(--gt-error-text); }
 .gt-prchip--draft  { background: var(--gt-gray-100); color: var(--gt-gray-600); }
 .gt-userpair {

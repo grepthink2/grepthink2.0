@@ -1,16 +1,18 @@
 import * as React from 'react';
 
 export interface AlertProps {
-  /** @default 'info' */
+  /** error → `role="alert"` (announced at once); others → `role="status"`. @default 'info' */
   tone?: 'success' | 'warning' | 'error' | 'info';
-  /** Bold first line. */
-  title?: string;
-  /** Body text. */
+  /** Bold first line. Visible heading text, never forwarded as the HTML title attribute. */
+  title?: React.ReactNode;
+  /** Body (a <div>: paragraphs, links). */
   children?: React.ReactNode;
-  /** Shows the × dismiss. */
+  /** Buttons under the body: `Button size="sm" variant="outline"` (Try again, Restore draft, Discard, Unsend). */
+  actions?: React.ReactNode;
+  /** Adds a "Dismiss" × for conditions the user may hide. */
   onDismiss?: () => void;
   className?: string;
 }
 
-/** Inline alert using the semantic soft/text pairs. Floating notices: see Toast. */
+/** Inline alert for a persistent condition. */
 export function Alert(props: AlertProps): React.JSX.Element;
