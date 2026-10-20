@@ -72,3 +72,8 @@
   z-index: var(--gt-z-tooltip);
 }
 
+/* ── Phones (< 768px): a 44px Dismiss, Toast's part of the design file's phone block ── */
+@media (max-width: 767px) {
+  .gt-toast__dismiss { min-width: 44px; min-height: 44px; justify-content: center; align-items: center; }
+}
+

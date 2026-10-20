@@ -1,0 +1,55 @@
+// Button — ported from design/components/primitives/primitives.css so the two stay diffable: the
+// Button block, then its lines from the file's phone and reduced-motion blocks. The busy spinner
+// is the Spinner component (components/Spinner).
+
+/* ── Button ─────────────────────────────────────────────── */
+.gt-button {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  box-sizing: border-box; border: 1px solid transparent; border-radius: var(--gt-radius-sm);
+  font-family: var(--gt-font-sans); font-weight: var(--gt-weight-medium); line-height: 1.25;
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: background-color var(--gt-transition-fast), border-color var(--gt-transition-fast), color var(--gt-transition-fast);
+}
+.gt-button:focus-visible { outline: none; box-shadow: var(--gt-focus-ring); }
+.gt-button:active:not(:disabled, [aria-disabled="true"]) { transform: translateY(0.5px); }
+.gt-button:disabled, .gt-button[aria-disabled="true"]:not(.gt-button--loading) { opacity: var(--gt-opacity-disabled); cursor: not-allowed; }
+.gt-button--loading { cursor: progress; }
+.gt-button--sm { min-height: 32px; padding: 0 14px; font-size: 13px; }
+.gt-button--md { min-height: 40px; padding: 0 28px; font-size: var(--gt-text-body); }
+.gt-button--lg { min-height: 48px; padding: 0 32px; font-size: var(--gt-text-body-lg); }
+.gt-button--full { width: 100%; }
+
+.gt-button--primary { background: var(--gt-primary); color: var(--gt-text-inverse); }
+.gt-button--primary:hover:not(:disabled, [aria-disabled="true"]) { background: var(--gt-primary-hover); }
+.gt-button--secondary { background: var(--gt-gray-100); color: var(--gt-text-secondary); }
+.gt-button--secondary:hover:not(:disabled, [aria-disabled="true"]) { background: var(--gt-border); }
+.gt-button--outline { background: var(--gt-surface); border-color: var(--gt-border); color: var(--gt-text-secondary); }
+.gt-button--outline:hover:not(:disabled, [aria-disabled="true"]) { background: var(--gt-surface-muted); border-color: var(--gt-border-strong); }
+.gt-button--ghost { background: transparent; color: var(--gt-primary); }
+.gt-button--ghost:hover:not(:disabled, [aria-disabled="true"]) { background: var(--gt-primary-soft); color: var(--gt-primary-hover); }
+.gt-button--danger { background: var(--gt-error); color: var(--gt-text-inverse); }
+.gt-button--danger:hover:not(:disabled, [aria-disabled="true"]) { background: var(--gt-error-text); }
+.gt-button--danger-ghost { background: transparent; color: var(--gt-error-text); }
+.gt-button--danger-ghost:hover:not(:disabled, [aria-disabled="true"]) { background: var(--gt-error-soft); }
+
+/* Pressed (aria-pressed toggles): the green border carries the state at 4.9:1, not the tint alone */
+.gt-button[aria-pressed="true"] { background: var(--gt-primary-soft); border-color: var(--gt-primary); color: var(--gt-primary-hover); }
+.gt-button[aria-pressed="true"]:hover:not(:disabled, [aria-disabled="true"]) { background: var(--gt-green-100); }
+
+/* Busy: idle and busy faces share one grid cell, so the width never changes */
+.gt-button__faces { display: inline-grid; }
+.gt-button__face { grid-area: 1 / 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.gt-button__face--busy { visibility: hidden; }
+.gt-button--loading .gt-button__face--idle { visibility: hidden; }
+.gt-button--loading .gt-button__face--busy { visibility: visible; }
+.gt-button__icon { display: inline-flex; align-items: center; }
+
+/* ── Phones (< 768px): 44px controls ─────────────────────── */
+@media (max-width: 767px) {
+  .gt-button { min-height: 44px; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-button { transition: none; }
+}

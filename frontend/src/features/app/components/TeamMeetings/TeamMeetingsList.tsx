@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { Button } from '@/components/Button/Button';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { ScheduleDayHeader } from '@features/schedule/components/ScheduleDayHeader';
 import { ScheduleIcon } from '@features/schedule/components/ScheduleIcon';
@@ -405,10 +406,14 @@ export function TeamMeetingsList({
         <p className="gt-tm__empty-title">No team meetings yet</p>
         <p className="gt-tm__empty-hint">A design review, sprint planning, a sponsor demo — everyone on the team sees them on the project page.</p>
         {canManage && (
-          <button type="button" className="gt-button gt-button--primary gt-button--sm" onClick={() => startEdit('new')} data-focus-key="add">
-            <span className="gt-button__icon"><ScheduleIcon name="calendar-plus" size={15} /></span>
-            <span className="gt-button__label">Add meeting</span>
-          </button>
+          <Button
+            size="sm"
+            iconLeft={<ScheduleIcon name="calendar-plus" size={15} />}
+            onClick={() => startEdit('new')}
+            data-focus-key="add"
+          >
+            Add meeting
+          </Button>
         )}
       </div>
     );
@@ -445,16 +450,16 @@ export function TeamMeetingsList({
           {count && <span className="gt-tm__count">{count}</span>}
         </p>
         {canManage && status === 'ready' && meetings.length > 0 && (
-          <button
-            type="button"
-            className="gt-button gt-button--secondary gt-button--sm"
+          <Button
+            variant="secondary"
+            size="sm"
+            iconLeft={<ScheduleIcon name="calendar-plus" size={15} />}
             onClick={() => startEdit('new')}
             disabled={!!editing}
             data-focus-key="add"
           >
-            <span className="gt-button__icon"><ScheduleIcon name="calendar-plus" size={15} /></span>
-            <span className="gt-button__label">Add meeting</span>
-          </button>
+            Add meeting
+          </Button>
         )}
       </div>
       {zoneNote && <p className="gt-tm__zone"><ScheduleIcon name="globe" size={13} />{zoneNote}</p>}
@@ -547,19 +552,8 @@ function ConfirmRow({ meeting, busy, error, onConfirm, onCancel }: ConfirmRowPro
         {error && <p className="gt-tm-row__error" role="alert">{error}</p>}
       </div>
       <div className="gt-tm-row__actions">
-        <button
-          type="button"
-          className={['gt-button', 'gt-button--danger', 'gt-button--sm', busy ? 'gt-button--loading' : ''].filter(Boolean).join(' ')}
-          disabled={busy}
-          aria-busy={busy || undefined}
-          onClick={onConfirm}
-        >
-          {busy && <span className="gt-button__spinner" aria-hidden="true" />}
-          <span className="gt-button__label">Delete</span>
-        </button>
-        <button ref={cancelRef} type="button" className="gt-button gt-button--secondary gt-button--sm" onClick={onCancel} disabled={busy}>
-          <span className="gt-button__label">Cancel</span>
-        </button>
+        <Button variant="danger" size="sm" loading={busy} loadingLabel="Deleting…" onClick={onConfirm}>Delete</Button>
+        <Button ref={cancelRef} variant="outline" size="sm" onClick={onCancel} disabled={busy}>Cancel</Button>
       </div>
     </li>
   );

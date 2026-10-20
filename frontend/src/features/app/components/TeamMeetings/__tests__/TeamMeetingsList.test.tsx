@@ -265,7 +265,7 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('disables the form and spins the button while saving', async () => {
+  it('disables the form and keeps the busy button focused while saving', async () => {
     const user = userEvent.setup();
     let finish: () => void = () => {};
     const onCreate = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
@@ -277,12 +277,18 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     fireEvent.change(timeInput(), { target: { value: '15:00' } });
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
 
-    const submit = screen.getByRole('button', { name: 'Add meeting' });
-    expect(submit).toBeDisabled();
+    // The submit says it is busy instead of turning disabled, so focus stays on it.
+    const submit = screen.getByRole('button', { name: 'Adding…' });
+    expect(submit).toHaveFocus();
+    expect(submit).not.toBeDisabled();
+    expect(submit).toHaveAttribute('aria-disabled', 'true');
     expect(submit).toHaveAttribute('aria-busy', 'true');
-    expect(submit.querySelector('.gt-button__spinner')).not.toBeNull();
     expect(titleBox()).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+
+    // A second click while it saves sends nothing more.
+    await user.click(submit);
+    expect(onCreate).toHaveBeenCalledTimes(1);
 
     finish();
     expect(await screen.findByText('Meeting added.')).toBeInTheDocument();
@@ -401,6 +407,27 @@ describe('TeamMeetingsList — the Meetings tab', () => {
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onDelete).toHaveBeenCalledWith('m1');
+    expect(await screen.findByText('Meeting deleted.')).toBeInTheDocument();
+  });
+
+  it('keeps Delete focused and busy while it deletes', async () => {
+    const user = userEvent.setup();
+    let finish: () => void = () => {};
+    const onDelete = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    renderManage({ meetings: [meeting()], onDelete });
+
+    await user.click(screen.getByRole('button', { name: 'Delete Sprint 3 planning' }));
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    const remove = screen.getByRole('button', { name: 'Deleting…' });
+    expect(remove).toHaveFocus();
+    expect(remove).toHaveAttribute('aria-disabled', 'true');
+    expect(remove).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    await user.click(remove);
+    expect(onDelete).toHaveBeenCalledTimes(1);
+
+    finish();
     expect(await screen.findByText('Meeting deleted.')).toBeInTheDocument();
   });
 
@@ -875,6 +902,7 @@ describe('TeamMeetingsList in the Edit Project modal', () => {
       // Saved as it was: nothing is unsaved, only the request in flight holds Done, so no hint.
       await user.click(screen.getByRole('button', { name: 'Save changes' }));
       expect(onUpdate).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Saving…' })).toHaveAttribute('aria-busy', 'true');
       expect(done()).toBeDisabled();
       expect(screen.queryByText(HINT)).not.toBeInTheDocument();
 

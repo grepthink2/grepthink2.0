@@ -1,5 +1,5 @@
-// Menu — ported from design/components/feedback/feedback.css so the two stay diffable.
-// The one addition, `.gt-menu__item--checked`, backs the `checked` prop (see Menu.tsx).
+// Menu — ported from design/components/feedback/feedback.css so the two stay diffable: the Menu
+// block, then its line from the file's phone block.
 
 .gt-menu { display: flex; flex-direction: column; padding: 4px; min-width: 180px; font-family: var(--gt-font-sans); }
 .gt-menu__item {
@@ -32,4 +32,10 @@
 .gt-menu__item--destructive .gt-menu__icon { color: var(--gt-error); }
 .gt-menu__item--destructive:hover:not(:disabled) { background: var(--gt-error-soft); }
 .gt-menu__item--checked .gt-menu__icon { color: var(--gt-primary); }
+.gt-menu__check { display: inline-flex; width: 16px; flex-shrink: 0; color: var(--gt-primary); }
 .gt-menu__sep { height: 1px; margin: 4px 6px; background: var(--gt-border-subtle); }
+
+/* ── Phones (< 768px) ── */
+@media (max-width: 767px) {
+  .gt-menu__item { min-height: 44px; }
+}
