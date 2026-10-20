@@ -8,6 +8,12 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   children: ReactNode;
   /** Required accessible name. Canonical names: "Close" (modal / drawer ×), "Dismiss" (alert, toast, banner), "Remove {name}" (chip). */
   ariaLabel: string;
+  /**
+   * Set from `ariaLabel`, and `aria-pressed` from `pressed`. JSX takes any hyphenated prop a type
+   * leaves out, so both are declared `never` rather than only omitted.
+   */
+  'aria-label'?: never;
+  'aria-pressed'?: never;
   /** @default 'ghost' */
   variant?: 'ghost' | 'solid' | 'danger';
   /** 28 / 36 / 44; 44 minimum under 768px. The modal × is `md`. @default 'md' */

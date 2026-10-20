@@ -50,6 +50,16 @@ describe('IconButton', () => {
     expect(button).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('keeps aria-label and aria-pressed to itself, since ariaLabel and pressed set them', () => {
+    // @ts-expect-error: a caller's aria-label would be overwritten by ariaLabel
+    const close = <IconButton ariaLabel="Close" aria-label="Shut"><X /></IconButton>;
+    // @ts-expect-error: a caller's aria-pressed would be overwritten; a toggle passes `pressed`
+    const bold = <IconButton ariaLabel="Bold" aria-pressed><X /></IconButton>;
+    render(<>{close}{bold}</>);
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bold' })).not.toHaveAttribute('aria-pressed');
+  });
+
   it('shows its label as a tooltip bubble that assistive tech does not hear twice', () => {
     const { container } = render(<IconButton ariaLabel="Close"><X /></IconButton>);
     const tip = container.firstElementChild;
