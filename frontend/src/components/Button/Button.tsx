@@ -47,7 +47,7 @@ type RouterButtonProps = Omit<LinkProps, 'className' | 'children' | 'to'> & {
   /** Renders a react-router `Link` with the button's look (Browse projects). */
   to: LinkProps['to'];
   href?: never;
-  /** As for `href`: rendered as an `<a>` without a destination, with `aria-disabled`. */
+  /** As for `href`: rendered as a plain `<a>` without a destination, with `aria-disabled`. */
   disabled?: boolean;
   pressed?: never;
   ref?: Ref<HTMLAnchorElement>;
@@ -87,8 +87,11 @@ function withoutRouterProps<T extends object>(props: T): Omit<T, keyof typeof RO
  * showing is `aria-hidden`, so the accessible name is the label you can see. `disabled` alone is
  * the native attribute. `type` defaults to `"button"`; `pressed` makes it a toggle (`aria-pressed`).
  *
- * `href` renders an `<a>`. Codebase addition: `to` renders a react-router `Link`. A disabled or
- * busy link renders without its destination, with `role="link"` and `aria-disabled`.
+ * `href` renders an `<a>`. Codebase addition: `to` renders a react-router `Link`. A link cannot be
+ * disabled, so a disabled one renders without its destination, with `role="link"` and
+ * `aria-disabled`, out of the tab order. A busy one keeps the focus it has, like a busy button, and
+ * ignores clicks: an `href` link loses its destination and takes `tabIndex={0}`, and a `to` link
+ * stays the Link it was (a plain `<a>` in its place would be a new element).
  */
 export function Button(props: ButtonProps) {
   const {
@@ -112,12 +115,13 @@ export function Button(props: ButtonProps) {
     </span>
   );
 
-  // What a link adds to the caller's props. A disabled or busy one keeps its look and loses its
-  // destination; a click on it does nothing.
+  // What a link adds to the caller's props. A disabled or busy one keeps its look, says it is
+  // unavailable, and does nothing when clicked. Busy, it also stays in the tab order: an <a> that
+  // has lost its href cannot take focus, and the browser would move the focus on it to the page.
   const linkLook = (inert: boolean, onClick?: MouseEventHandler<HTMLAnchorElement>) => ({
     className: cls,
     'aria-busy': loading || undefined,
-    ...(inert ? { role: 'link', 'aria-disabled': true } : {}),
+    ...(inert ? { role: 'link', 'aria-disabled': true, tabIndex: loading ? 0 : undefined } : {}),
     onClick: (e: MouseEvent<HTMLAnchorElement>) => {
       if (inert) e.preventDefault();
       else onClick?.(e);
@@ -126,8 +130,10 @@ export function Button(props: ButtonProps) {
 
   if (rest.to !== undefined) {
     const { to, disabled = false, onClick, ref, ...routed } = rest;
-    if (!disabled && !loading) {
-      return <Link {...routed} {...linkLook(false, onClick)} ref={ref} to={to}>{faces}</Link>;
+    // Busy, it stays the Link it was, destination and all: a plain <a> in its place would be a new
+    // element, and the focus on the old one would be lost.
+    if (!disabled || loading) {
+      return <Link {...routed} {...linkLook(disabled || loading, onClick)} ref={ref} to={to}>{faces}</Link>;
     }
     return <a {...withoutRouterProps(routed)} {...linkLook(true, onClick)} ref={ref}>{faces}</a>;
   }

@@ -1,6 +1,6 @@
 import { createRef, type FormEvent } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ArrowRight, Plus } from 'lucide-react';
@@ -179,10 +179,10 @@ describe('Button', () => {
     expect(screen.getByText('Projects')).toBeInTheDocument();
   });
 
-  it('renders a disabled or busy router link without href, and without the router-only props', async () => {
+  it('renders a disabled router link without href, and without the router-only props', async () => {
     const consoleError = vi.spyOn(console, 'error');
     const onClick = vi.fn();
-    const { rerender } = render(
+    render(
       <MemoryRouter>
         <Button to="/app/projects" disabled replace state={{ from: 'home' }} preventScrollReset mask="/projects" onClick={onClick}>
           Browse projects
@@ -197,10 +197,53 @@ describe('Button', () => {
     expect(link).toHaveClass('gt-button', 'gt-button--primary');
     await userEvent.click(link);
     expect(onClick).not.toHaveBeenCalled();
-
-    rerender(<MemoryRouter><Button to="/app/projects" loading>Browse projects</Button></MemoryRouter>);
-    expect(screen.getByRole('link', { name: 'Browse projects' })).toHaveAttribute('aria-busy', 'true');
+    expect(link).not.toHaveAttribute('tabindex');
     expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('keeps focus on a link while it is busy', () => {
+    const { rerender } = render(<Button href="/help">Help</Button>);
+    const link = screen.getByRole('link', { name: 'Help' });
+    act(() => link.focus());
+
+    // Without its href an <a> cannot take focus, so a busy one joins the tab order itself.
+    rerender(<Button href="/help" loading loadingLabel="Opening…">Help</Button>);
+    expect(screen.getByRole('link', { name: 'Opening…' })).toBe(link);
+    expect(link).not.toHaveAttribute('href');
+    expect(link).toHaveAttribute('tabindex', '0');
+    expect(link).toHaveFocus();
+
+    rerender(<Button href="/help">Help</Button>);
+    expect(link).toHaveAttribute('href', '/help');
+    expect(link).not.toHaveAttribute('tabindex');
+    expect(link).toHaveFocus();
+  });
+
+  it('keeps a router link, and its focus, while it is busy, and ignores clicks on it', async () => {
+    const onClick = vi.fn();
+    const at = (loading: boolean) => (
+      <MemoryRouter initialEntries={['/app']}>
+        <Routes>
+          <Route
+            path="/app"
+            element={<Button to="/app/projects" loading={loading} loadingLabel="Opening…" onClick={onClick}>Browse projects</Button>}
+          />
+          <Route path="/app/projects" element={<p>Projects</p>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const { rerender } = render(at(false));
+    const link = screen.getByRole('link', { name: 'Browse projects' });
+    act(() => link.focus());
+
+    rerender(at(true));
+    expect(screen.getByRole('link', { name: 'Opening…' })).toBe(link);
+    expect(link).toHaveFocus();
+    expect(link).toHaveAttribute('aria-busy', 'true');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(link);
+    expect(onClick).not.toHaveBeenCalled();
+    expect(screen.queryByText('Projects')).toBeNull();
   });
 
   it('passes ref to the element it renders', () => {
