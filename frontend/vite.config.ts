@@ -76,7 +76,15 @@ export default defineConfig(({ mode }) => {
         reporter: ['text-summary', 'html', 'lcov', 'json-summary'],
         // 54% lines, 50% branches on 2026-10-16. Raise these as coverage grows; never
         // lower them to get a build through.
-        thresholds: { lines: 52, statements: 52, branches: 48, functions: 48 },
+        thresholds: {
+          lines: 52,
+          statements: 52,
+          branches: 48,
+          functions: 48,
+          // The shared components (all of src/components/ together) keep their own floor, which
+          // only goes up too.
+          'src/components/**': { lines: 90, statements: 90, branches: 85, functions: 85 },
+        },
       },
     },
   };
