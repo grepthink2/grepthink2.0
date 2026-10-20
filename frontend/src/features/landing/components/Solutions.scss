@@ -1,4 +1,5 @@
 @use '@styles/index.scss' as *;
+@use '@features/landing/landing-tokens' as *;
 
 .solutions {
   background: $white;
@@ -118,9 +119,9 @@
       height: 10px;
       border-radius: 50%;
 
-      &:nth-child(1) { background: #fc5c65; }
-      &:nth-child(2) { background: #fed330; }
-      &:nth-child(3) { background: #26de81; }
+      &:nth-child(1) { background: $mkt-chrome-red; }
+      &:nth-child(2) { background: $mkt-chrome-yellow; }
+      &:nth-child(3) { background: $mkt-chrome-green; }
     }
   }
 
