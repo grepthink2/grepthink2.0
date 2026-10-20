@@ -71,7 +71,7 @@ describe('ownedClasses', () => {
     const map = ownedClasses(
       new Map([
         ['Button', '.gt-button { } .gt-button--sm:hover { } .gt-button .gt-button__icon { }'],
-        ['Menu', '.gt-menu__item.is-active { } @media print { .gt-menu { } }'],
+        ['Menu', '.gt-menu__item:hover { } @media print { .gt-menu { } }'],
       ]),
     );
     expect(map).toEqual(
@@ -79,10 +79,23 @@ describe('ownedClasses', () => {
         ['gt-button', 'Button'],
         ['gt-button--sm', 'Button'],
         ['gt-menu__item', 'Menu'],
-        ['is-active', 'Menu'],
         ['gt-menu', 'Menu'],
       ]),
     );
+  });
+
+  it("owns the classes of the component's own blocks, not those of an outer context", () => {
+    const map = ownedClasses(
+      new Map([
+        ['Toast', '.gt-toast-stack { } .app-view--previewing .gt-toast-stack { }'],
+        ['Field', '.gt-field { } .gt-field--error .gt-input { }'],
+        ['Markdown', '.gt-md { } .gt-md .sr-only { }'],
+      ]),
+    );
+    expect(map.has('app-view--previewing')).toBe(false);
+    expect(map.get('gt-toast-stack')).toBe('Toast');
+    expect(map.get('gt-field--error')).toBe('Field');
+    expect(map.has('sr-only')).toBe(false);
   });
 });
 

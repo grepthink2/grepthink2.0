@@ -4,7 +4,10 @@
  *
  * A shared component in src/components/<Name>/ owns the classes its stylesheet's selectors begin
  * with: the classes in the first compound selector of every rule, read from the CSS that Sass
- * compiles, so nesting is resolved. Outside src/components/:
+ * compiles, so nesting is resolved. Only the classes of the component's own BEM blocks count (the
+ * blocks its single-compound rules style), so a rule written from an outer context
+ * (`.app-view--previewing .gt-toast-stack`) claims none of that context's classes. Outside
+ * src/components/:
  *   - Styles. A rule fails when its selector's first compound begins with an owned class
  *     (`.gt-button`, `.gt-button--sm:hover`, `.gt-button.feature`, `button.gt-button`): it copies
  *     the component, or overrides it for one screen. A rule that starts from the feature's own
@@ -196,6 +199,52 @@ export function selectorsOf(css) {
   return selectors;
 }
 
+// The compound selectors of a selector, split at its combinators (whitespace, `>`, `+`, `~`)
+// outside parentheses, brackets and strings.
+function compoundsOf(selector) {
+  const compounds = [];
+  let start = 0;
+  let depth = 0;
+  for (let i = 0; i <= selector.length; i++) {
+    const c = selector[i];
+    if (c === '\\') {
+      i++;
+    } else if (c === '"' || c === "'") {
+      i = endOfString(selector, i) - 1;
+    } else if (c === '(' || c === '[') {
+      depth++;
+    } else if (c === ')' || c === ']') {
+      depth--;
+    } else if (i === selector.length || (depth === 0 && (/\s/.test(c) || '>+~'.includes(c)))) {
+      if (i > start) compounds.push(selector.slice(start, i));
+      start = i + 1;
+    }
+  }
+  return compounds;
+}
+
+// The classes of a compound selector outside its parenthesised arguments and attribute selectors.
+function classesOf(compound) {
+  let bare = '';
+  let depth = 0;
+  for (let i = 0; i < compound.length; i++) {
+    const c = compound[i];
+    if (c === '\\') {
+      if (depth === 0) bare += compound.slice(i, i + 2);
+      i++;
+    } else if (c === '"' || c === "'") {
+      i = endOfString(compound, i) - 1;
+    } else if (c === '(' || c === '[') {
+      depth++;
+    } else if (c === ')' || c === ']') {
+      depth--;
+    } else if (depth === 0) {
+      bare += c;
+    }
+  }
+  return [...bare.matchAll(/\.((?:[\w-]|\\.)+)/g)].map((m) => m[1].replace(/\\(.)/g, '$1'));
+}
+
 /**
  * The classes in a selector's first compound selector (up to its first combinator), leaving out
  * the classes inside parenthesised pseudo-class arguments and the contents of attribute selectors.
@@ -203,39 +252,35 @@ export function selectorsOf(css) {
  * @returns {string[]}
  */
 export function firstCompoundClasses(selector) {
-  const s = selector.trim();
-  let compound = '';
-  let depth = 0;
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (c === '\\') {
-      if (depth === 0) compound += s.slice(i, i + 2);
-      i++;
-    } else if (c === '"' || c === "'") {
-      i = endOfString(s, i) - 1;
-    } else if (c === '(' || c === '[') {
-      depth++;
-    } else if (c === ')' || c === ']') {
-      depth--;
-    } else if (depth === 0) {
-      if (/\s/.test(c) || c === '>' || c === '+' || c === '~') break;
-      compound += c;
-    }
-  }
-  return [...compound.matchAll(/\.((?:[\w-]|\\.)+)/g)].map((m) => m[1].replace(/\\(.)/g, '$1'));
+  return classesOf(compoundsOf(selector.trim())[0] ?? '');
+}
+
+// A class's BEM block: its name up to the first `__` or `--`.
+function blockOf(cls) {
+  const end = cls.search(/__|--/);
+  return end === -1 ? cls : cls.slice(0, end);
 }
 
 /**
- * Maps each class a component stylesheet's rules begin with to its component folder.
+ * Maps the classes a component's rules begin with to its component folder, keeping only the
+ * classes of the component's own BEM blocks: the blocks of the classes in its single-compound
+ * rules. A rule written from an outer context (`.app-view--previewing .gt-toast-stack`) styles
+ * the component there and claims none of the context's classes.
  * @param {Map<string, string>} componentCss compiled CSS by component folder
  * @returns {Map<string, string>} class → component folder
  */
 export function ownedClasses(componentCss) {
   const owned = new Map();
   for (const [owner, css] of componentCss) {
-    for (const selector of selectorsOf(css)) {
+    const selectors = selectorsOf(css);
+    const blocks = new Set();
+    for (const selector of selectors) {
+      const compounds = compoundsOf(selector);
+      if (compounds.length === 1) for (const cls of classesOf(compounds[0])) blocks.add(blockOf(cls));
+    }
+    for (const selector of selectors) {
       for (const cls of firstCompoundClasses(selector)) {
-        if (!owned.has(cls)) owned.set(cls, owner);
+        if (blocks.has(blockOf(cls)) && !owned.has(cls)) owned.set(cls, owner);
       }
     }
   }
