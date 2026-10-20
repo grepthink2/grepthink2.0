@@ -10,14 +10,7 @@
  * block stays, the motion stops.
  */
 
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
+// @keyframes skeleton-shimmer lives in keyframes.css, which main.tsx loads once.
 
 @mixin skeleton-block {
   background-color: $background;

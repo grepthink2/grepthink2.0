@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 /**
- * Design-system adherence check: non-token color literals.
+ * Design-system adherence checks, run by `npm run lint:design`. It fails (exit 1) when either
+ * check finds something:
+ *   1. Non-token color literals: raw hex outside the token files (this file; described below).
+ *   2. Shared component ownership: a stylesheet or markup outside src/components/ that copies a
+ *      shared component's classes instead of using the component (ownership.mjs, where the
+ *      rule is described).
  *
- * SCOPE (read before trusting a clean run): this scanner matches only bare
+ * SCOPE of the hex scan (read before trusting a clean run): this scanner matches only bare
  * `#hex`/`#rrggbb`/`#rrggbbaa` literals. It does NOT scan `rgba()`/`rgb()`/
  * `hsl()`/`hsla()` literals — as of this writing 51 files under src/ contain
  * at least one. Extending coverage to those is real, separate work: it needs
@@ -12,7 +17,7 @@
  * non-token color this script exists to catch) — tracked as a possible
  * follow-up, not attempted here.
  *
- * This script is the ENTIRE `lint:design` gate. An oxlint half was vendored
+ * These two checks are the whole `lint:design` gate. An oxlint half was vendored
  * briefly and removed by the final branch review: the only rules oxlint could
  * actually run (`no-restricted-imports` on DS-component paths, an empty
  * `forbid-elements`) matched zero files in this repo — the globs referenced a
@@ -68,8 +73,15 @@
  */
 
 import { readdirSync, statSync, readFileSync } from 'node:fs';
-import { extname, join, relative, sep } from 'node:path';
+import { basename, extname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  checkMarkup,
+  checkStylesheet,
+  compileScss,
+  ownedClasses,
+  splitCodeAndComments,
+} from './ownership.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const FRONTEND_ROOT = join(__dirname, '..');
@@ -142,62 +154,6 @@ function walk(dir, out) {
   return out;
 }
 
-/**
- * Splits source text into `code` (same length/layout as the input, with
- * comments and string/template contents blanked to spaces) and `comments`
- * (the concatenated raw text of every comment span). Hex literals inside
- * string/template literals are left in `code` — a chart-color constant like
- * `'#018156'` is a real usage, not commentary. A quick char-scanner is
- * enough here; this isn't trying to be a real parser.
- */
-function splitCodeAndComments(text) {
-  let code = '';
-  let comments = '';
-  let i = 0;
-  const n = text.length;
-  while (i < n) {
-    const c = text[i];
-    const c2 = text[i + 1];
-    // Line comment — guard against `://` (protocol-relative URLs).
-    if (c === '/' && c2 === '/' && text[i - 1] !== ':') {
-      let j = i;
-      while (j < n && text[j] !== '\n') j++;
-      // Leading space keeps this comment from gluing onto whatever
-      // (unrelated) comment text precedes it with no separator.
-      comments += ' ' + text.slice(i, j);
-      code += ' '.repeat(j - i);
-      i = j;
-      continue;
-    }
-    // Block comment.
-    if (c === '/' && c2 === '*') {
-      let j = i + 2;
-      while (j < n && !(text[j] === '*' && text[j + 1] === '/')) j++;
-      j = Math.min(j + 2, n);
-      comments += ' ' + text.slice(i, j);
-      code += text.slice(i, j).replace(/[^\n]/g, ' ');
-      i = j;
-      continue;
-    }
-    // String / template literal — copy through as code.
-    if (c === '"' || c === "'" || c === '`') {
-      const quote = c;
-      let j = i + 1;
-      while (j < n && text[j] !== quote) {
-        if (text[j] === '\\') j++;
-        j++;
-      }
-      j = Math.min(j + 1, n);
-      code += text.slice(i, j);
-      i = j;
-      continue;
-    }
-    code += c;
-    i++;
-  }
-  return { code, comments };
-}
-
 function lineNumberAt(text, index) {
   let line = 1;
   for (let k = 0; k < index; k++) if (text[k] === '\n') line++;
@@ -214,7 +170,9 @@ for (const abs of files) {
   if (DEFINITION_FILES.has(rel)) continue;
 
   const text = readFileSync(abs, 'utf8');
-  const { code, comments } = splitCodeAndComments(text);
+  // `code` blanks the comments and keeps string and template literals: a chart-color constant
+  // like `'#018156'` is a real usage, not commentary.
+  const { code, comments } = splitCodeAndComments(text, { script: /\.tsx?$/.test(rel) });
   const falsePositives = NON_COLOR_FALSE_POSITIVES.filter((fp) => fp.file === rel);
 
   // Normalize away line-wrapping before matching markers: a wrapped JSDoc/
@@ -247,22 +205,111 @@ for (const abs of files) {
   }
 }
 
+// ── Shared component ownership (rules in ownership.mjs) ─────────────────────
+const COMPONENTS_DIR = 'src/components/';
+const toRel = (abs) => relative(FRONTEND_ROOT, abs).split(sep).join('/');
+const isStylesheet = (rel) => rel.endsWith('.scss') || rel.endsWith('.css');
+const isTest = (rel) => rel.includes('/__tests__/') || basename(rel).includes('.test.');
+const compileErrors = [];
+
+function compileOrReport(abs, rel) {
+  try {
+    return compileScss(abs, SRC_DIR);
+  } catch (error) {
+    compileErrors.push(`  ${rel}  ${String(error.message).split('\n')[0]}`);
+    return '';
+  }
+}
+
+// The compiled stylesheets of each component folder (a stylesheet directly in src/components/
+// is a component of its own).
+const componentCss = new Map();
+for (const abs of files) {
+  const rel = toRel(abs);
+  if (!rel.startsWith(COMPONENTS_DIR) || extname(rel) !== '.scss') continue;
+  const parts = rel.slice(COMPONENTS_DIR.length).split('/');
+  const owner = parts.length > 1 ? parts[0] : basename(parts[0], '.scss');
+  componentCss.set(owner, `${componentCss.get(owner) ?? ''}${compileOrReport(abs, rel)}\n`);
+}
+const owned = ownedClasses(componentCss);
+
+// Every other stylesheet Vite compiles on its own (a partial is checked through the stylesheets
+// that @use it), and every source file that is not a test.
+const ownershipViolations = [];
+let stylesheetCount = 0;
+let sourceCount = 0;
+for (const abs of files) {
+  const rel = toRel(abs);
+  if (rel.startsWith(COMPONENTS_DIR)) continue;
+  if (isStylesheet(rel)) {
+    if (basename(rel).startsWith('_')) continue;
+    stylesheetCount++;
+    ownershipViolations.push(...checkStylesheet(rel, compileOrReport(abs, rel), owned));
+  } else if (!isTest(rel)) {
+    sourceCount++;
+    ownershipViolations.push(...checkMarkup(rel, readFileSync(abs, 'utf8'), owned));
+  }
+}
+
+// ── Report ──────────────────────────────────────────────────────────────────
+let failed = false;
+
 if (violations.length === 0) {
   console.log(
     `design-adherence: OK — 0 non-token color literals (${allowedCount} pre-cleared by ` +
       `in-file ledger comments/known false-positives across ${ledgerFileCount} ledger files, ` +
       `${DEFINITION_FILES.size} token-definition files exempted).`
   );
-  process.exit(0);
+} else {
+  failed = true;
+  console.error(`design-adherence: ${violations.length} non-token color literal(s) found:\n`);
+  for (const v of violations) {
+    console.error(`  ${v.file}:${v.line}  ${v.value}`);
+  }
+  console.error(
+    '\nUse a --gt-* design token via var(...) instead. If this is a deliberate, already-reviewed ' +
+      'exception, document it with a comment in the file (see existing "bespoke" / "legacy palette" ' +
+      '/ "left as raw hex" comments for the convention) rather than adding it here.'
+  );
 }
 
-console.error(`design-adherence: ${violations.length} non-token color literal(s) found:\n`);
-for (const v of violations) {
-  console.error(`  ${v.file}:${v.line}  ${v.value}`);
+// A partial that two stylesheets @use reports once for each; the same rule twice in one file, once.
+const ownershipLines = [
+  ...new Set(
+    ownershipViolations.map(
+      (v) =>
+        `  ${v.file}${v.line ? `:${v.line}` : ''}  ${v.selector ?? v.cls} belongs to ` +
+        `components/${v.owner}. Use the component; adjust it from your feature's own class.`
+    )
+  ),
+];
+if (compileErrors.length > 0) {
+  failed = true;
+  console.error(
+    `\ndesign-adherence: ${compileErrors.length} stylesheet(s) did not compile, so their ` +
+      `ownership was not checked:\n`
+  );
+  for (const line of compileErrors) console.error(line);
 }
-console.error(
-  '\nUse a --gt-* design token via var(...) instead. If this is a deliberate, already-reviewed ' +
-    'exception, document it with a comment in the file (see existing "bespoke" / "legacy palette" ' +
-    '/ "left as raw hex" comments for the convention) rather than adding it here.'
-);
-process.exit(1);
+if (ownershipLines.length > 0) {
+  failed = true;
+  console.error(
+    `\ndesign-adherence: ${ownershipLines.length} copy(ies) of a shared component's classes ` +
+      `outside src/components/:\n`
+  );
+  for (const line of ownershipLines) console.error(line);
+  console.error(
+    "\nA feature adjusts a shared component from its own class (`.my-feature__head .gt-button`). " +
+      'An exception the design itself defines goes in OWNERSHIP_ALLOWLIST (scripts/ownership.mjs) ' +
+      'with its reason.'
+  );
+}
+if (compileErrors.length === 0 && ownershipLines.length === 0) {
+  console.log(
+    `design-adherence: OK — no stylesheet or markup outside src/components/ copies a shared ` +
+      `component's classes (${owned.size} classes of ${componentCss.size} components; ` +
+      `${stylesheetCount} stylesheets and ${sourceCount} source files checked).`
+  );
+}
+
+process.exit(failed ? 1 : 0);

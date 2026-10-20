@@ -3,8 +3,9 @@
    classes and `--gt-*` tokens only (lint:design). Every rule below is copied unchanged from the design
    CSS; only these comments are new.
    Copied:
-     design/components/primitives/primitives.css — Button 7-23, 25, 30-31, 33-34, 39-40, 42-51
-       (sm size; primary, secondary and danger; icon slot; spinner), the field shell 76-83 and 97-101,
+     design/components/primitives/primitives.css — Button 7-23, 25, 30-31, 33-34, 39-40, 42-49, 51
+       (sm size; primary, secondary and danger; icon slot; spinner, whose gt-spin keyframe is the
+       shared one in src/styles/keyframes.css), the field shell 76-83 and 97-101,
        Input / Textarea 103-128 and 130-136, Select 138-162.
      design/components/feedback/feedback.css — Alert 65-76, 78 and 96 (the error tone, no title or
        dismiss).
@@ -48,7 +49,6 @@
   border-radius: 50%;
   animation: gt-spin 0.7s linear infinite;
 }
-@keyframes gt-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .gt-button__spinner { animation-duration: 1.6s; } }
 
 /* ── Field shell (Input / Textarea / Select share this) ─── */

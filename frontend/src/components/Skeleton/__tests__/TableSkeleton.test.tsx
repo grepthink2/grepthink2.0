@@ -24,7 +24,7 @@ describe('TableSkeleton', () => {
       <TableSkeleton block="roster-list" title="Roster" headers={headers} rows={4} />,
     );
     // 4 rows * 3 columns = 12 placeholder blocks.
-    expect(container.querySelectorAll('.skeleton')).toHaveLength(12);
+    expect(container.querySelectorAll('.gt-skeleton')).toHaveLength(12);
   });
 
   it('reuses the block name for BEM class hooks so layout matches the real table', () => {
