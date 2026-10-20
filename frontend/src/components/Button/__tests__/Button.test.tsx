@@ -262,6 +262,19 @@ describe('Button', () => {
     expect(routed.current).toBe(screen.getByRole('link', { name: 'Home' }));
   });
 
+  it('keeps aria-disabled and aria-busy to itself, since its states set them', () => {
+    // @ts-expect-error: a caller's aria-busy would be overwritten
+    const save = <Button aria-busy>Save</Button>;
+    // @ts-expect-error: a caller's aria-disabled would be overwritten
+    const help = <Button href="/help" aria-disabled>Help</Button>;
+    // @ts-expect-error: the same for a router link
+    const home = <Button to="/app" aria-busy>Home</Button>;
+    render(<MemoryRouter>{save}{help}{home}</MemoryRouter>);
+    expect(screen.getByRole('button', { name: 'Save' })).not.toHaveAttribute('aria-busy');
+    expect(screen.getByRole('link', { name: 'Help' })).not.toHaveAttribute('aria-disabled');
+    expect(screen.getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-busy');
+  });
+
   it('is at least 44px tall on phones', () => {
     render(<Button>Save</Button>);
     const [phone] = cssRules('.gt-button', 'max-width: 767px');

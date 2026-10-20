@@ -25,15 +25,26 @@ interface ButtonOwnProps {
   children: ReactNode;
 }
 
-type NativeButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'children' | 'aria-pressed'> & {
+/**
+ * The states Button sets from `loading` and `disabled`, which would overwrite a caller's value. JSX
+ * takes any hyphenated prop a type leaves out, so they are declared `never` rather than omitted.
+ */
+interface OwnAria {
+  'aria-disabled'?: never;
+  'aria-busy'?: never;
+}
+
+type NativeButtonProps = OwnAria & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'children' | 'aria-pressed' | keyof OwnAria> & {
   /** Makes the button a toggle, rendered as `aria-pressed`. Leave undefined for a plain button. */
   pressed?: boolean;
+  /** Set from `pressed`. */
+  'aria-pressed'?: never;
   href?: never;
   to?: never;
   ref?: Ref<HTMLButtonElement>;
 };
 
-type AnchorButtonProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'className' | 'children' | 'href'> & {
+type AnchorButtonProps = OwnAria & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'className' | 'children' | 'href' | keyof OwnAria> & {
   /** Renders an `<a>` with the button's look (Join Zoom). */
   href: string;
   to?: never;
@@ -43,7 +54,7 @@ type AnchorButtonProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'classNam
   ref?: Ref<HTMLAnchorElement>;
 };
 
-type RouterButtonProps = Omit<LinkProps, 'className' | 'children' | 'to'> & {
+type RouterButtonProps = OwnAria & Omit<LinkProps, 'className' | 'children' | 'to' | keyof OwnAria> & {
   /** Renders a react-router `Link` with the button's look (Browse projects). */
   to: LinkProps['to'];
   href?: never;
@@ -121,7 +132,8 @@ export function Button(props: ButtonProps) {
   const linkLook = (inert: boolean, onClick?: MouseEventHandler<HTMLAnchorElement>) => ({
     className: cls,
     'aria-busy': loading || undefined,
-    ...(inert ? { role: 'link', 'aria-disabled': true, tabIndex: loading ? 0 : undefined } : {}),
+    'aria-disabled': inert || undefined,
+    ...(inert ? { role: 'link', tabIndex: loading ? 0 : undefined } : {}),
     onClick: (e: MouseEvent<HTMLAnchorElement>) => {
       if (inert) e.preventDefault();
       else onClick?.(e);
