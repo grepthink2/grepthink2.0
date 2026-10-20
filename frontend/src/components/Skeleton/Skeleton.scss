@@ -1,6 +1,7 @@
 @use '@styles/index.scss' as *;
 
-.skeleton {
+// .gt-skeleton is the design system's name for this block (design/components/display/display.css).
+.gt-skeleton {
   @include skeleton-block;
   display: inline-block;
   vertical-align: middle;

@@ -30,7 +30,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   const resolvedRadius = circle ? '50%' : radius;
   return (
     <span
-      className={`skeleton${className ? ` ${className}` : ''}`}
+      className={`gt-skeleton${className ? ` ${className}` : ''}`}
       aria-hidden="true"
       style={{
         width: circle ? height : width,
