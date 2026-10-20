@@ -263,6 +263,19 @@ describe('Tooltip', () => {
       expect(modalEsc).toHaveBeenCalledTimes(1);
     });
 
+    it('does not count a Ctrl, Meta or Alt shortcut as keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(<><button>Elsewhere</button><Tooltip content="x"><span>TW</span></Tooltip></>);
+      await user.click(screen.getByRole('button', { name: 'Elsewhere' }));
+      act(() => screen.getByText('TW').parentElement!.focus());
+
+      // Browsers leave :focus-visible off for a shortcut, so no bubble came up and Esc is the dialog's.
+      await user.keyboard('{Control>}c{/Control}');
+      await user.keyboard('{Escape}');
+      expect(modalEsc).toHaveBeenCalledTimes(1);
+      expect(tooltipOf('TW')).not.toHaveClass('gt-tooltip--dismissed');
+    });
+
     it('leaves an Esc that ends text composition alone', async () => {
       const user = userEvent.setup();
       render(<Tooltip content="x"><span>TW</span></Tooltip>);
