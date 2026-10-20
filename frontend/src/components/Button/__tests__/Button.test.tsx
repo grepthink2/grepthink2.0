@@ -184,11 +184,15 @@ describe('Button', () => {
     const onClick = vi.fn();
     const { rerender } = render(
       <MemoryRouter>
-        <Button to="/app/projects" disabled replace state={{ from: 'home' }} preventScrollReset onClick={onClick}>Browse projects</Button>
+        <Button to="/app/projects" disabled replace state={{ from: 'home' }} preventScrollReset mask="/projects" onClick={onClick}>
+          Browse projects
+        </Button>
       </MemoryRouter>,
     );
     const link = screen.getByRole('link', { name: 'Browse projects' });
     expect(link).not.toHaveAttribute('href');
+    // `mask` is an SVG attribute too, so React would put it on the <a> without a word.
+    expect(link).not.toHaveAttribute('mask');
     expect(link).toHaveAttribute('aria-disabled', 'true');
     expect(link).toHaveClass('gt-button', 'gt-button--primary');
     await userEvent.click(link);

@@ -56,6 +56,28 @@ type RouterButtonProps = Omit<LinkProps, 'className' | 'children' | 'to'> & {
 export type ButtonProps = ButtonOwnProps & (NativeButtonProps | AnchorButtonProps | RouterButtonProps);
 
 /**
+ * The props a react-router Link takes and an <a> does not. A `to` link that renders without its
+ * destination is a plain <a>, which must not get them. Checked against LinkProps, so a router
+ * upgrade that adds one fails the build until it is listed here.
+ */
+const ROUTER_ONLY = {
+  discover: true,
+  prefetch: true,
+  reloadDocument: true,
+  replace: true,
+  state: true,
+  preventScrollReset: true,
+  relative: true,
+  viewTransition: true,
+  defaultShouldRevalidate: true,
+  mask: true,
+} satisfies Record<Exclude<keyof LinkProps, keyof AnchorHTMLAttributes<HTMLAnchorElement> | 'to'>, true>;
+
+function withoutRouterProps<T extends object>(props: T): Omit<T, keyof typeof ROUTER_ONLY> {
+  return Object.fromEntries(Object.entries(props).filter(([key]) => !(key in ROUTER_ONLY))) as Omit<T, keyof typeof ROUTER_ONLY>;
+}
+
+/**
  * GrepThink button, ported from design/components/primitives/Button.jsx. Six variants, three sizes.
  *
  * Busy (`loading`): a spinner and `loadingLabel` replace the idle face in the same grid cell, so the
@@ -107,12 +129,7 @@ export function Button(props: ButtonProps) {
     if (!disabled && !loading) {
       return <Link {...routed} {...linkLook(false, onClick)} ref={ref} to={to}>{faces}</Link>;
     }
-    // Without a destination it is a plain <a>, which must not get the router's own props.
-    const {
-      discover, prefetch, reloadDocument, replace, state, preventScrollReset, relative, viewTransition, defaultShouldRevalidate,
-      ...anchor
-    } = routed;
-    return <a {...anchor} {...linkLook(true, onClick)} ref={ref}>{faces}</a>;
+    return <a {...withoutRouterProps(routed)} {...linkLook(true, onClick)} ref={ref}>{faces}</a>;
   }
 
   if (rest.href !== undefined) {
