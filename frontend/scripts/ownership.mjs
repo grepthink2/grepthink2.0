@@ -365,9 +365,18 @@ export function checkStylesheet(file, css, owned, allowlist = OWNERSHIP_ALLOWLIS
 // a string there.
 const WORD_CHAR = /[\p{L}\p{N}_$]/u;
 
+// Whether the quote at `i` opens a string. Not right after a letter or digit; in a script, not
+// right after `}` or a `>` that ends no arrow either, where JSX text goes on ("{name}'s",
+// "</b>'s").
+function opensString(text, i, script) {
+  const prev = text[i - 1] ?? '';
+  if (WORD_CHAR.test(prev)) return false;
+  return !(script && (prev === '}' || (prev === '>' && text[i - 2] !== '=')));
+}
+
 // What a regular expression literal can follow: an operator, an opening bracket, a comma or
-// semicolon, or one of these keywords. After anything else a `/` divides.
-const BEFORE_REGEX_CHARS = '(,=:[!&|?{;+-%~^>';
+// semicolon, the `>` of an arrow, or one of these keywords. After anything else a `/` divides.
+const BEFORE_REGEX_CHARS = '(,=:[!&|?{;+-%~^';
 const BEFORE_REGEX_WORDS = new Set([
   'await',
   'case',
@@ -384,26 +393,51 @@ const BEFORE_REGEX_WORDS = new Set([
   'yield',
 ]);
 
+// Whether an expression can start at `i`: where a `/` opens a regular expression, and a backtick
+// a template literal. A JSX tag's `>` is followed by text, not by an expression.
 function startsRegex(text, i) {
   let k = i - 1;
   while (k >= 0 && /\s/.test(text[k])) k--;
   if (k < 0 || BEFORE_REGEX_CHARS.includes(text[k])) return true;
+  if (text[k] === '>') return text[k - 1] === '=';
   const word = /[\w$]+$/.exec(text.slice(Math.max(0, k - 9), k + 1));
   return word !== null && BEFORE_REGEX_WORDS.has(word[0]);
 }
 
-// The index just past the regular expression literal that opens at `i`, or -1 when no closing
-// slash ends it on its line.
+const REGEX_FLAGS = 'dgimsuvy';
+
+// The index just past the regular expression literal that opens at `i`, flags included, or -1
+// when no closing slash ends it on its line, or a letter that is no flag follows that slash
+// (`in/out <b>`).
 function endOfRegex(text, i) {
   let inClass = false;
   for (let j = i + 1; j < text.length && text[j] !== '\n'; j++) {
     const c = text[j];
-    if (c === '\\') j++;
-    else if (c === '[') inClass = true;
-    else if (c === ']') inClass = false;
-    else if (c === '/' && !inClass) return j + 1;
+    if (c === '\\') {
+      j++;
+    } else if (c === '[') {
+      inClass = true;
+    } else if (c === ']') {
+      inClass = false;
+    } else if (c === '/' && !inClass) {
+      let k = j + 1;
+      for (; k < text.length && /[\w$]/.test(text[k]); k++) {
+        if (!REGEX_FLAGS.includes(text[k])) return -1;
+      }
+      return k;
+    }
   }
   return -1;
+}
+
+// Whether the backtick at `i` opens a template literal in a script: where an expression can
+// start, or right after a tag (`css`, `styled.div`) that itself stands where code does.
+// Elsewhere it is a backtick in JSX text (`<kbd>`</kbd>`, "`code`").
+function opensTemplate(text, i) {
+  if (startsRegex(text, i)) return true;
+  let k = i;
+  while (k > 0 && /[\w$]/.test(text[k - 1])) k--;
+  return k < i && (text[k - 1] === '.' || startsRegex(text, k));
 }
 
 /**
@@ -413,8 +447,9 @@ function endOfRegex(text, i) {
  * the same length, with each interpolation's code blanked). An interpolation is scanned as code,
  * so a string inside one is a literal of its own. A quoted string ends at its closing quote or,
  * unclosed, at the end of its line, so an apostrophe the scan misreads costs one line at most.
- * With `script`, for TypeScript, a regular expression literal is code, and its quotes start no
- * string. A quick char-scanner, not a parser.
+ * With `script`, for TypeScript, a regular expression literal is code and its quotes start no
+ * string, and JSX text's quotes and backticks start nothing: a quote right after `}` or a tag's
+ * `>`, or a backtick where no expression can start. A quick char-scanner, not a parser.
  * @param {string} text
  * @param {{ script?: boolean }} [options]
  * @returns {{ code: string; comments: string; literals: { start: number; text: string }[] }}
@@ -477,7 +512,7 @@ export function splitCodeAndComments(text, { script = false } = {}) {
         continue;
       }
     }
-    if ((c === '"' || c === "'") && !WORD_CHAR.test(text[i - 1] ?? '')) {
+    if ((c === '"' || c === "'") && opensString(text, i, script)) {
       let j = i + 1;
       while (j < n && text[j] !== c && text[j] !== '\n') j += text[j] === '\\' ? 2 : 1;
       j = Math.min(j, n);
@@ -485,7 +520,7 @@ export function splitCodeAndComments(text, { script = false } = {}) {
       i = j < n && text[j] === c ? j + 1 : j;
       continue;
     }
-    if (c === '`') {
+    if (c === '`' && (!script || opensTemplate(text, i))) {
       i = readTemplate({ start: i + 1, parts: [] }, i + 1);
       continue;
     }

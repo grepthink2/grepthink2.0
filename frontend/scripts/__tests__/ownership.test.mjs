@@ -18,6 +18,10 @@ const owned = new Map([
   ['gt-button', 'Button'],
   ['gt-button--sm', 'Button'],
 ]);
+const kit = new Map([
+  ['gt-tooltip', 'Tooltip'],
+  ['gt-toast', 'Toast'],
+]);
 
 describe('firstCompoundClasses', () => {
   it('reads the classes of the first compound selector only', () => {
@@ -217,6 +221,34 @@ describe('checkMarkup', () => {
     expect(checkMarkup('f.tsx', source, owned)).toEqual([
       { file: 'f.tsx', line: 2, cls: 'gt-button', owner: 'Button' },
     ]);
+  });
+
+  it('reads a possessive after a JSX expression or tag as text, not as the start of a string', () => {
+    expect(checkMarkup('f.tsx', `<p>{user.name}'s team <span className="gt-tooltip">`, kit)).toEqual([
+      { file: 'f.tsx', line: 1, cls: 'gt-tooltip', owner: 'Tooltip' },
+    ]);
+    expect(checkMarkup('f.tsx', `<b>{name}</b>'s project <i className="gt-toast" />`, kit)).toEqual([
+      { file: 'f.tsx', line: 1, cls: 'gt-toast', owner: 'Toast' },
+    ]);
+    expect(checkMarkup('f.tsx', `const label = () =>'gt-toast';`, kit)).toHaveLength(1);
+  });
+
+  it('opens a template only where an expression can start, or right after its tag', () => {
+    const kbd = ['<p>Press <kbd>`</kbd> to open the console.</p>', '<i className="gt-toast" />'].join('\n');
+    expect(checkMarkup('f.tsx', kbd, kit)).toEqual([{ file: 'f.tsx', line: 2, cls: 'gt-toast', owner: 'Toast' }]);
+    const backticked = ['<p>**bold** · `code` · lists</p>', '<i className="gt-toast" />'].join('\n');
+    expect(checkMarkup('f.tsx', backticked, kit)).toEqual([
+      { file: 'f.tsx', line: 2, cls: 'gt-toast', owner: 'Toast' },
+    ]);
+    expect(checkMarkup('f.ts', "const s = css`a ${'gt-toast'}`;", kit)).toHaveLength(1);
+    expect(checkMarkup('f.ts', 'const s = styled.div`gt-toast`;', kit)).toHaveLength(1);
+  });
+
+  it('reads a slash whose closing slash is followed by a letter that is no flag as text', () => {
+    expect(checkMarkup('f.tsx', '<p>Log in/out <b className="gt-toast">x</b></p>', kit)).toEqual([
+      { file: 'f.tsx', line: 1, cls: 'gt-toast', owner: 'Toast' },
+    ]);
+    expect(checkMarkup('f.ts', "const ok = /in/gu.test(s) ? 'gt-toast' : '';", kit)).toHaveLength(1);
   });
 
   it("reads a regular expression's quotes as part of it, and a JSX slash as no regular expression", () => {
