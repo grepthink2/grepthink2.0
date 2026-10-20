@@ -14,7 +14,10 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   size?: 'sm' | 'md' | 'lg';
   /** Toggle state, rendered as `aria-pressed` (chart legend, editor toolbar, password eye). */
   pressed?: boolean;
-  /** Hover / focus tooltip: true shows `ariaLabel`, a string shows that text, false shows none. @default true */
+  /**
+   * Hover / focus tooltip: true shows `ariaLabel`, a string shows that text, false shows none.
+   * Switching it between false and a label while mounted remounts the button. @default true
+   */
   tooltip?: boolean | string;
   /** @default 'top' */
   tooltipSide?: 'top' | 'bottom' | 'left' | 'right';
@@ -29,17 +32,18 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
  * composed as the design does it: the Tooltip's classes around the button, and a bubble that is
  * `aria-hidden`, since the label is already the button's name. Esc hides it as it does a Tooltip's,
  * and so does pressing the button, so the first Esc after it opens a menu closes the menu
- * (useTooltipDismiss). There is no bubble while disabled, or with `tooltip={false}`: inside
- * something that shows a tooltip already, or for an absolutely positioned × (the bubble wraps the
- * button in an inline span).
+ * (useTooltipDismiss). There is no bubble while disabled: the wrapper stays, so the button is
+ * the same element when it turns disabled and back. `tooltip={false}` drops the wrapper too: for a
+ * button inside something that shows a tooltip already, or an absolutely positioned × (the
+ * wrapper is an inline span around the button).
  */
 export function IconButton({
   children, ariaLabel, variant = 'ghost', size = 'md', disabled = false, pressed, tooltip = true, tooltipSide = 'top',
   type = 'button', className = '', ref, ...rest
 }: IconButtonProps) {
   const tip = tooltip === true ? ariaLabel : tooltip;
-  const showTip = !!tip && !disabled;
-  const { dismissed, handlers } = useTooltipDismiss(showTip);
+  const showBubble = !!tip && !disabled;
+  const { dismissed, handlers } = useTooltipDismiss(showBubble);
   const button = (
     <button
       {...rest}
@@ -53,11 +57,14 @@ export function IconButton({
       {children}
     </button>
   );
-  if (!showTip) return button;
+  if (!tip) return button;
   return (
-    <span className={['gt-icon-tip', 'gt-tooltip', dismissed ? 'gt-tooltip--dismissed' : ''].filter(Boolean).join(' ')} {...handlers}>
+    <span
+      className={['gt-icon-tip', 'gt-tooltip', dismissed ? 'gt-tooltip--dismissed' : ''].filter(Boolean).join(' ')}
+      {...(showBubble ? handlers : {})}
+    >
       {button}
-      <span className={`gt-tooltip__bubble gt-tooltip__bubble--${tooltipSide}`} aria-hidden="true">{tip}</span>
+      {showBubble && <span className={`gt-tooltip__bubble gt-tooltip__bubble--${tooltipSide}`} aria-hidden="true">{tip}</span>}
     </span>
   );
 }

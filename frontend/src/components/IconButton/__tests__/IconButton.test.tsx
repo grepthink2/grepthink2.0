@@ -79,7 +79,20 @@ describe('IconButton', () => {
   it('shows no tooltip while disabled', () => {
     const { container } = render(<IconButton ariaLabel="Close" disabled><X /></IconButton>);
     expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled();
-    expect(container.querySelector('.gt-tooltip')).toBeNull();
+    expect(container.querySelector('.gt-tooltip__bubble')).toBeNull();
+  });
+
+  it('keeps the same button while it turns disabled and back', () => {
+    const { container, rerender } = render(<IconButton ariaLabel="Close"><X /></IconButton>);
+    const button = screen.getByRole('button', { name: 'Close' });
+
+    rerender(<IconButton ariaLabel="Close" disabled><X /></IconButton>);
+    expect(screen.getByRole('button', { name: 'Close' })).toBe(button);
+    expect(container.querySelector('.gt-tooltip__bubble')).toBeNull();
+
+    rerender(<IconButton ariaLabel="Close"><X /></IconButton>);
+    expect(screen.getByRole('button', { name: 'Close' })).toBe(button);
+    expect(container.querySelector('.gt-tooltip__bubble')).toHaveTextContent('Close');
   });
 
   it('hides its label on Esc without closing the dialog around it', async () => {
