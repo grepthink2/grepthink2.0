@@ -9,8 +9,8 @@ project.
 Design GrepThink's final-review slot sign-up screens (C2), with the kit from the alignment round. The attached
 `README.md` (2026-10-20) is the brief:
 
-- §2's decisions are binding. Calls 12–16 are the codebase's, made with the brief, and binding unless the
-  maintainer changes them.
+- §2's decisions are binding, calls 12–16 included: they were made with the brief and the maintainer confirmed
+  them.
 - §3's rules decide acceptance: the kit only, statuses from the kit's status map, and the time rule.
 - §4 says who sees what, §5 describes the screens, §6 lists the states, §7 the actions and their errors, and §8 the
   data contract.
@@ -51,6 +51,7 @@ brief and note the disagreement in `NOTES.md`.
   a picker is needed).
 - Times in the viewer's zone, with the campus time visible beside them when the zones differ; slot times typed on
   the campus clock.
+- No two slots overlap: the posting form refuses a start less than 60 minutes from another slot.
 - The student lens shows no other team's reviewers, and no Zoom link outside the student's own booked team.
 - Every state in brief §6 appears in the screen file, at desktop and phone width.
 - No raw hex in any CSS; new tokens go in `tokens/*.css`. Light mode only, flat and calm, no marketing tokens.

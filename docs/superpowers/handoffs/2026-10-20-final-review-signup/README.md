@@ -70,18 +70,20 @@ From the approved spec (2026-10-18) and the backend as built:
 11. **The kit only.** No copied CSS and no new hand-built basics; what the kit lacks becomes a kit addition first
     (§3.1).
 
-Calls this brief makes. The maintainer may override any of them on the pull request that adds this brief:
+Calls made with this brief, confirmed by the maintainer on 2026-10-20:
 
 12. **Where students reach the screens** (§5.7): a "Final Reviews" item in the student sidebar opens the board, and
-    a "Final review" card on the team's project page shows the team's booking. Not the Today's Schedule card yet.
+    a "Final review" card on the team's project page shows the team's booking. The Today's Schedule card is
+    redesigned later, and the review joins it then.
 13. **One page and one address for every role:** `/app/final-reviews`, with the scoring workspace under it at
     `/app/final-reviews/:projectId` (staff only). The old staff addresses under `/app/ta-review/final-reviews`
-    redirect.
+    redirect for now; they are retired once C2 is complete.
 14. **Slot times are typed on the campus clock** (§5.3). Team meetings are typed on the viewer's clock, but slots
     are class-wide and finals week runs on campus time.
-15. **Overlapping slots are allowed with a warning.** A start less than 60 minutes after another overlaps it, and
-    every review uses the one shared Zoom room, so the posting form warns. It does not block: the backend accepts
-    overlaps, and an instructor may run a second room.
+15. **Slots never overlap.** Reviews never run in parallel, and every review uses the one shared Zoom room. The
+    posting form refuses a start less than 60 minutes from another slot, whether that slot is already posted or in
+    the same list. Today the backend refuses only a repeated start; the C2 implementation makes it refuse overlaps
+    too.
 16. **The scoring workspace is not redesigned.** Only its header is designed here (§5.6). The C2 implementation
     moves the rest of that page onto the kit as it stands, the way the adoption pull requests move other screens.
 
@@ -229,7 +231,9 @@ Its states:
   hourly starts each, in one sitting, before sign-ups open. Picking a day, a first and a last start that fill in
   every hour between them, and adding or removing a single time cover the usual layouts.
 - Before posting, the form shows the list it will post and marks the times that already have a slot (the server
-  skips them) and the overlaps (§2, call 15).
+  skips them).
+- An overlapping time (§2, call 15) is an error on that time, naming the slot it overlaps. Nothing posts until
+  each overlap is removed or moved. Hourly starts from a first to a last never overlap; a single added time can.
 - Times in the past are allowed, with a note that teams cannot book them but the instructor can place a team on
   them.
 - At most 200 times per post (the API's limit).
@@ -302,7 +306,7 @@ Show each in the screen file, in every lens where it applies:
   so the success message names that time and says it changed (§7).
 - A finished class from before slots existed: its teams have review times but the class has no slots (§8).
 - The instructor's actions on a slot that has started (placing a team to record a review; releasing one).
-- An overlapping time and a past time in the posting form.
+- An overlapping time (refused) and a past time (allowed, with its note) in the posting form.
 - A viewer in another zone (India, GMT+5:30): campus times visible, days regrouped.
 - Phone width (375px); long team names; 40+ slots; many teams without a slot; the student-preview mode.
 
@@ -316,7 +320,7 @@ written for people, so the copy can stay close to them; adjust it where the scre
 |---|---|---|---|
 | Book, move, place | Product Owner (own team); instructor (any team) | `POST /api/tas/review-slots/{slot_id}/book` `{project_id}` → `{status: 'booked' or 'moved', slot_id, starts_at}` | 409: "That slot was just taken." · 409: "That slot has already started." · 403: "Sign-ups aren't open." · 403: "Your team's review time has passed." · 403: "Only the team's Product Owner can book a slot." · 404: "Slot not found" · 404: "Project not found" |
 | Release | Product Owner (own team); instructor | `POST /api/tas/projects/{project_id}/review-slot/release` → `{released}` (false when the team held none) | 403: "Sign-ups aren't open." · 403: "Your team's review time has passed." · 403: "Only the team's Product Owner can release a slot." · 404: "Project not found" |
-| Post slots | instructor | `POST /api/tas/classes/{class_id}/review-slots` `{starts_at: string[]}` → `{created}` | 422 when a time repeats in the list, lacks an offset, has seconds, or the list is empty or over 200 |
+| Post slots | instructor | `POST /api/tas/classes/{class_id}/review-slots` `{starts_at: string[]}` → `{created}` | 422 when a time repeats in the list, lacks an offset, has seconds, or the list is empty or over 200 · an error naming the overlapping time once C2 adds the overlap check (§2, call 15) |
 | Delete a free slot | instructor | `DELETE /api/tas/review-slots/{slot_id}` → 204 | 409: "Release the team before deleting its slot." (a team booked it in the meantime) · 404: "Slot not found" |
 | Open or close sign-ups | instructor | `POST /api/tas/classes/{class_id}/review-window` `{open}` | — |
 | Set the Zoom room | instructor | `POST /api/tas/classes/{class_id}/review-zoom` `{zoom_url}` (null clears) | — |
@@ -449,12 +453,14 @@ Changed:
 - `frontend/src/features/app/components/Project/ProjectView.tsx`: the team card in the aside, one element.
 - `frontend/src/lib/api/tas.ts`, `frontend/src/lib/api/types.ts` and `lib/api/__tests__/tas.reviewSlots.test.ts`:
   `my_team.product_owner`.
-- `frontend/public/.well-known/grepthink-actions.json`: the `list_review_slots` note.
+- `frontend/public/.well-known/grepthink-actions.json`: the `list_review_slots` and `create_review_slots` notes.
 - Any kit addition from this round: its `frontend/src/components/<Name>/**`, and the new keys in the Badge status
   map (`statusTones.ts`, which the badges kit pull request adds under `frontend/src/components/Badge/`).
 - Only if this round changes the schedule layer: `frontend/src/features/schedule/components/ScheduleItem.tsx`,
   `features/schedule/schedule.scss` and `features/schedule/scheduleModel.ts`.
-- `backend/app/tas/review_slots.py` and `backend/tests/test_tas_review_slots.py`: `my_team.product_owner`.
+- `backend/app/tas/review_slots.py` and `backend/tests/test_tas_review_slots.py`: `my_team.product_owner`, and
+  `create_review_slots` refusing a start less than 60 minutes from another slot in the request or already posted
+  (with `backend/app/tas/models.py` if the check within one request lives in the request model).
 - Comments that still describe the Product Owner's rights as "while sign-ups are open" alone, to name the refusals
   once the team's time or the slot's start has passed: `backend/app/tas/review_slots.py` (the constants and
   `book_review_slot`'s docstring), `backend/app/tas/url.py`, `backend/app/tas/views.py`, and the slot block and
