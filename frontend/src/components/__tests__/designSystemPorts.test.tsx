@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Tag } from 'lucide-react';
 import { cssRules } from '@/test/cssRules';
@@ -226,6 +226,23 @@ describe('Tooltip', () => {
       await user.keyboard('{Escape}');
       expect(modalEsc).toHaveBeenCalledTimes(2);
       expect(tooltipOf('TW')).not.toHaveClass('gt-tooltip--dismissed');
+    });
+
+    it('hides the bubble a key turned on for a trigger focused without the keyboard', async () => {
+      const user = userEvent.setup();
+      render(<><button>Elsewhere</button><Tooltip content="x"><span>TW</span></Tooltip></>);
+      // Focus that follows a click, as when a dialog places it: no bubble yet.
+      await user.click(screen.getByRole('button', { name: 'Elsewhere' }));
+      act(() => screen.getByText('TW').parentElement!.focus());
+
+      // The first Esc finds no bubble and is the dialog's; pressing a key on a focused element is
+      // what turns :focus-visible on, so the bubble is up from then on.
+      await user.keyboard('{Escape}');
+      expect(modalEsc).toHaveBeenCalledTimes(1);
+      expect(tooltipOf('TW')).not.toHaveClass('gt-tooltip--dismissed');
+      await user.keyboard('{Escape}');
+      expect(tooltipOf('TW')).toHaveClass('gt-tooltip--dismissed');
+      expect(modalEsc).toHaveBeenCalledTimes(1);
     });
 
     it('leaves an Esc that ends text composition alone', async () => {
