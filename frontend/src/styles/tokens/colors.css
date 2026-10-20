@@ -106,4 +106,7 @@
   --gt-sched-oh-border:     var(--gt-border-strong);
   --gt-sched-deadline-text: var(--gt-warning-text);     /* deadline marker glyph (matches the search assignment disc) */
   --gt-sched-now:           var(--gt-primary);          /* the Now line */
+
+  /* ---- Alignment round (2026-10-19): literals the component CSS used to carry ---- */
+  --gt-opacity-disabled: 0.45; /* @kind other */ /* the one disabled opacity for buttons, chips, tabs, checks */
 }
