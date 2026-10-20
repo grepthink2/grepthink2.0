@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { ChevronDown, CircleX } from 'lucide-react';
+import { Button } from '@/components/Button/Button';
 import { parseExternalTasksUrl } from '@/lib/externalTasksUrl';
 import { SCHOOL_ZONE, dayKey, viewerZone, zoneDiffers } from '@features/schedule/scheduleModel';
 import {
@@ -53,7 +54,7 @@ export interface TeamMeetingFormProps {
   zone?: string;
   /** When it differs from `zone`, "3:00 PM PT on campus" appears under the time field. @default 'America/Los_Angeles' */
   schoolZone?: string;
-  /** Disables the fields and spins the submit button. @default false */
+  /** Disables the fields and Cancel, and puts the submit button in its busy state. @default false */
   saving?: boolean;
   /** Inline save error, shown above the buttons; the draft is kept. */
   error?: string | null;
@@ -68,8 +69,9 @@ export interface TeamMeetingFormProps {
 
 /**
  * Add or edit one team meeting, inline in the Edit Project Meetings tab: above the list for a new
- * meeting, in place of the row it edits. Port of design/components/domain/TeamMeetingForm.jsx; the
- * Button, Select, Textarea and Alert it uses are plain elements with their design classes.
+ * meeting, in place of the row it edits. Port of design/components/domain/TeamMeetingForm.jsx; its
+ * buttons are the shared Button, and the Select, Textarea and Alert it uses are plain elements with
+ * their design classes.
  * Times are typed on the viewer's clock, with the campus time under the time field when the zones
  * differ. Validates on submit (the handoff's rules plus the API's limits) and focuses the first
  * problem. Escape cancels without closing the Edit Project modal around it.
@@ -271,18 +273,10 @@ export function TeamMeetingForm({
       )}
 
       <div className="gt-tmform__foot">
-        <button type="button" className="gt-button gt-button--secondary gt-button--sm" onClick={onCancel} disabled={saving}>
-          <span className="gt-button__label">Cancel</span>
-        </button>
-        <button
-          type="submit"
-          className={['gt-button', 'gt-button--primary', 'gt-button--sm', saving ? 'gt-button--loading' : ''].filter(Boolean).join(' ')}
-          disabled={saving}
-          aria-busy={saving || undefined}
-        >
-          {saving && <span className="gt-button__spinner" aria-hidden="true" />}
-          <span className="gt-button__label">{creating ? 'Add meeting' : 'Save changes'}</span>
-        </button>
+        <Button variant="outline" size="sm" onClick={onCancel} disabled={saving}>Cancel</Button>
+        <Button type="submit" size="sm" loading={saving} loadingLabel={creating ? 'Adding…' : 'Saving…'}>
+          {creating ? 'Add meeting' : 'Save changes'}
+        </Button>
       </div>
     </form>
   );
