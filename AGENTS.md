@@ -123,7 +123,7 @@ frontend/src/
   lib/institutions.ts   # useInstitutions(): the public schools list, fetched once
   lib/schoolEmail.ts   # isSchoolEmail(): .edu or an institution domain
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
-  components/         # shared UI (Skeleton, ErrorBoundary, Popover, Menu, Tooltip, Toast, Markdown)
+  components/         # shared UI (Button, IconButton, Spinner, Skeleton, ErrorBoundary, Popover, Menu, Tooltip, Toast, Markdown)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
@@ -351,11 +351,11 @@ The full agent-facing action catalog (method, params, role) lives at
   `class_id` has no foreign key on purpose, so deleted classes keep their history.
 - **Shared UI components.** Basic elements (buttons, fields, dialogs, alerts, badges, avatars, cards,
   tabs) come from `frontend/src/components/` as each one is ported from `design/components/`; today
-  the kit holds Popover, Menu, Tooltip, Toast, Skeleton and Markdown. A feature stylesheet never
-  re-declares a shared component's classes, and feature markup never renders them by hand:
-  `npm run lint:design` fails if either happens. Adjust a shared component from your feature's own
-  class (`.my-feature__head .gt-button`). Until an element has its shared component, build it with
-  your feature's own class names; never copy a design component's CSS block.
+  the kit holds Button, IconButton, Spinner, Popover, Menu, Tooltip, Toast, Skeleton and Markdown. A
+  feature stylesheet never re-declares a shared component's classes, and feature markup never renders
+  them by hand: `npm run lint:design` fails if either happens. Adjust a shared component from your
+  feature's own class (`.my-feature__head .gt-button`). Until an element has its shared component,
+  build it with your feature's own class names; never copy a design component's CSS block.
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,
