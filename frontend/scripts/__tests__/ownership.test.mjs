@@ -294,6 +294,7 @@ describe('compileScss', () => {
     const css = compileScss(featureScss, srcDir);
     expect(css).toContain('animation: gt-spin'); // @styles/motion
     expect(css).toContain('animation: skeleton-shimmer'); // @/styles/skeleton
+    expect(css).toContain('clip: rect(0, 0, 0, 0)'); // @styles, the bare alias
   });
 });
 

@@ -1,6 +1,7 @@
 // A feature stylesheet for the ownership tests. Two rules copy a shared component's classes;
 // the others adjust the component from the feature's own class. The check reads the CSS that
 // Sass compiles, so the nesting below is resolved first.
+@use '@styles' as styles;
 @use '@styles/motion' as *;
 @use '@/styles/skeleton' as skeleton;
 
@@ -20,3 +21,4 @@
 
 .feature__spinner { @include gt-spinner; }
 .feature__placeholder { @include skeleton.skeleton-block; }
+.feature__label { @include styles.gt-visually-hidden; }

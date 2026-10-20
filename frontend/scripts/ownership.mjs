@@ -25,6 +25,10 @@
  *     class), and comments are not read.
  *
  * Deliberate exceptions go in OWNERSHIP_ALLOWLIST, each with its reason.
+ *
+ * Known limit: native CSS nesting inside a plain .css file is not read. Sass passes it through
+ * as written, and only the top-level rules of each block are read, so a rule nested there is
+ * checked neither as a copy nor as a component's own.
  */
 
 import { join } from 'node:path';
@@ -44,18 +48,20 @@ import * as sass from 'sass';
  */
 export const OWNERSHIP_ALLOWLIST = [];
 
-// The path aliases vite.config.ts defines, as stylesheets write them, and their folders under src/.
+// The path aliases vite.config.ts defines and their folders under src/. A stylesheet names one
+// bare (`@styles`) or before a path (`@styles/motion`).
 const ALIASES = [
-  ['@styles/', 'styles/'],
-  ['@features/', 'features/'],
-  ['@components/', 'components/'],
-  ['@assets/', 'assets/'],
-  ['@/', ''],
+  ['@styles', 'styles'],
+  ['@features', 'features'],
+  ['@components', 'components'],
+  ['@assets', 'assets'],
+  ['@', ''],
 ];
 
 /**
- * Compiles a stylesheet to expanded CSS as the Vite build does, resolving the path aliases
- * against `srcDir`. Deprecation warnings are left to the build to report.
+ * Compiles a stylesheet to expanded CSS as the Vite build does: the path aliases resolve against
+ * `srcDir`, and any other load that is not relative against the node_modules beside it.
+ * Deprecation warnings are left to the build to report.
  * @param {string} path
  * @param {string} srcDir
  * @returns {string}
@@ -64,13 +70,18 @@ export function compileScss(path, srcDir) {
   const srcUrl = pathToFileURL(join(srcDir, '/'));
   const aliasImporter = {
     findFileUrl(url) {
-      const alias = ALIASES.find(([prefix]) => url.startsWith(prefix));
-      return alias ? new URL(alias[1] + url.slice(alias[0].length), srcUrl) : null;
+      for (const [alias, folder] of ALIASES) {
+        if (url !== alias && !url.startsWith(`${alias}/`)) continue;
+        const target = [folder, url.slice(alias.length + 1)].filter(Boolean).join('/');
+        return target ? new URL(target, srcUrl) : null;
+      }
+      return null;
     },
   };
   return sass.compile(path, {
     style: 'expanded',
     importers: [aliasImporter],
+    loadPaths: [join(srcDir, '..', 'node_modules')],
     logger: sass.Logger.silent,
   }).css;
 }

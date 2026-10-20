@@ -346,10 +346,12 @@ The full agent-facing action catalog (method, params, role) lives at
   `analytics_daily` rollup runs under pg_cron (`prod/2026-10/2026-10-07_analytics_cron.sql`); its
   `class_id` has no foreign key on purpose, so deleted classes keep their history.
 - **Shared UI components.** Basic elements (buttons, fields, dialogs, alerts, badges, avatars, cards,
-  tabs) come from `frontend/src/components/`, ported from `design/components/` (see
-  `design/PORTING.md`). A feature stylesheet never re-declares a shared component's classes, and
-  feature markup never renders them by hand. `npm run lint:design` fails if either happens. Adjust a
-  shared component from your feature's own class (`.my-feature__head .gt-button`).
+  tabs) come from `frontend/src/components/` as each one is ported from `design/components/`; today
+  the kit holds Popover, Menu, Tooltip, Toast, Skeleton and Markdown. A feature stylesheet never
+  re-declares a shared component's classes, and feature markup never renders them by hand:
+  `npm run lint:design` fails if either happens. Adjust a shared component from your feature's own
+  class (`.my-feature__head .gt-button`). Until an element has its shared component, build it with
+  your feature's own class names; never copy a design component's CSS block.
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,
