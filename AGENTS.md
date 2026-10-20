@@ -40,6 +40,10 @@ review shape below, not the skill's own.
   request into `beta` or `main`.
 - A frontend test that times out on a busy machine proves nothing. Rerun the failing files alone,
   and let CI decide.
+- Vitest keeps compiled modules on disk (`frontend/node_modules/.vitest-cache`), and that cache misses
+  a change to a Sass partial: a stylesheet that `@use`s the partial keeps its old CSS. After changing a
+  partial, run `npx vitest --clearCache` in `frontend/` before trusting a test that reads styles. CI
+  starts from a clean install.
 - Tests that depend on the clock or a time zone:
   - pin the clock (`app.assignments.deadlines.now_utc` in the backend, fake timers in the frontend);
   - use fixed-offset zones (`Etc/GMT+8`), never a real zone whose daylight-time rules can change.
