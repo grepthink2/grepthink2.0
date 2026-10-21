@@ -106,6 +106,13 @@ describe('Avatar', () => {
     expect(screen.getByRole('img', { name: 'E F' })).toBeInTheDocument();
   });
 
+  it('lets a caller’s style colour the initials over the hashed colour', () => {
+    render(<Avatar name="Tony Wu" style={{ backgroundColor: 'var(--gt-gray-200)', color: 'var(--gt-text-secondary)' }} />);
+    const avatar = screen.getByRole('img', { name: 'Tony Wu' });
+    expect(avatar.style.backgroundColor).toBe('var(--gt-gray-200)');
+    expect(avatar.style.color).toBe('var(--gt-text-secondary)');
+  });
+
   it('sizes each step as AVATAR_PX says, and resets the text styles of the row it sits in', () => {
     render(<Avatar name="Tony Wu" />);
     for (const size of SIZES) {
