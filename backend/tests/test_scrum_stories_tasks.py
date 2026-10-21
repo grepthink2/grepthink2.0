@@ -80,6 +80,26 @@ def test_create_task_inherits_the_story_project_and_gets_a_task_key(monkeypatch)
     assert (out["key"], out["project_id"], out["tags"]) == ("GT-1", PID, ["backend"])
 
 
+def test_creating_a_task_in_a_sprint_reads_the_burnup_totals_once(monkeypatch):
+    db = scrum_db(
+        monkeypatch,
+        sprints=[dict(SPRINT)],
+        user_stories=[dict(STORY, sprint_id="sp1", points=3)],
+        tasks=[dict(TASK, status="done", points=2)],
+    )
+    controller.create_task(story_id="st1", user_id=UID, fields={"title": "x", "points": 1})
+    [snap] = db.rows("sprint_burnup_days")
+    assert (snap["scope_points"], snap["completed_points"]) == (3, 2)
+    # The story, the writer check, the key, the insert, then the sprint's stories with their
+    # tasks embedded (one read) and the snapshot's upsert.
+    assert [q["table"] for q in db.queries if q["op"] == "select"] == [
+        "user_stories",
+        "project_members",
+        "user_stories",
+    ]
+    assert db.executes == 6
+
+
 def test_create_task_writes_estimate_hours_and_never_the_legacy_text(monkeypatch):
     db = scrum_db(monkeypatch, user_stories=[dict(STORY)])
     controller.create_task(
