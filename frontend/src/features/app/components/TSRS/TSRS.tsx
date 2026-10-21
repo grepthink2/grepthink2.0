@@ -306,7 +306,7 @@ const TSRS: React.FC<TSRSProps> = ({ assignment, zone }) => {
           const existingId = tsrIdByMemberId[member.id];
 
           if (existingId) {
-            const { tsr } = await api.updateAssignmentTsr(
+            const tsr = await api.updateAssignmentTsr(
               assignment.id,
               existingId,
               payload,

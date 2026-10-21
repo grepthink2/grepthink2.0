@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi import Depends, Response, status
 
 from app.dependencies import require_user
@@ -18,10 +20,10 @@ def list_notifications(user_id: str = Depends(require_user)) -> NotificationsLis
 
 
 def mark_notification_read(
-    notification_id: str,
+    notification_id: UUID,
     user_id: str = Depends(require_user),
 ) -> Response:
-    controller.mark_notification_read(notification_id, user_id)
+    controller.mark_notification_read(str(notification_id), user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

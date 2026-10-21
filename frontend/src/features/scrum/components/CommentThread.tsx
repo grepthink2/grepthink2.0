@@ -53,7 +53,7 @@ export default function CommentThread({ parent, members, onError, onPosted }: Pr
     if (!body || sending) return;
     setSending(true);
     try {
-      const { comment } = await api.createScrumComment(kind, id, body);
+      const comment = await api.createScrumComment(kind, id, body);
       setComments((prev) => [...(prev ?? []), comment]);
       setDraft('');
       onPosted?.();

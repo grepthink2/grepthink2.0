@@ -11,14 +11,12 @@ from tests.fake_supabase import FakeSupabase
 
 
 @patch("app.notifications.controller._upsert_unread_notification")
-@patch("app.notifications.controller.profile_display_name", return_value="Alice A")
-@patch("app.notifications.controller._get_profile", return_value={"id": "alice"})
-def test_notifies_non_students(_prof, _name, upsert):
+def test_notifies_non_students(upsert):
     from app.notifications.controller import notify_new_message
 
     notify_new_message(
         recipient_id="ta-1",
-        sender_id="alice",
+        sender_name="Alice A",
         conversation_id="conv-t",
         body="hello team",
     )
@@ -26,30 +24,30 @@ def test_notifies_non_students(_prof, _name, upsert):
     _, kwargs = upsert.call_args
     assert kwargs["user_id"] == "ta-1"
     assert kwargs["type"] == "message"
+    assert kwargs["title"] == "New message from Alice A"
+
+
+@pytest.mark.parametrize("sender_name", [None, ""])
+@patch("app.notifications.controller._upsert_unread_notification")
+def test_a_sender_without_a_name_is_someone(upsert, sender_name):
+    from app.notifications.controller import notify_new_message
+
+    notify_new_message(
+        recipient_id="ta-1", sender_name=sender_name, conversation_id="conv-t", body="hi"
+    )
+    assert upsert.call_args.kwargs["title"] == "New message from Someone"
 
 
 def test_message_notification_goes_through_the_core_db_client(monkeypatch):
     """notifications._client() reads the service client through app.core.db — the
     one point tests patch — so a client injected there receives the reads and writes."""
-    fake = FakeSupabase(
-        profiles=[
-            {
-                "id": "alice",
-                "email": "a@ucsc.edu",
-                "role": "student",
-                "first_name": "Alice",
-                "last_name": "A",
-                "edu_email": None,
-            }
-        ],
-        notifications=[],
-    )
+    fake = FakeSupabase(notifications=[])
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
     from app.notifications.controller import notify_new_message
 
     notify_new_message(
         recipient_id="ta-1",
-        sender_id="alice",
+        sender_name="Alice A",
         conversation_id="conv-t",
         body="hello team",
     )
