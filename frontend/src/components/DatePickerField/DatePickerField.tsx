@@ -312,7 +312,8 @@ export function DatePickerField({
                               ].filter(Boolean).join(' ')}
                               tabIndex={isSameDay(d, focusDay) ? 0 : -1}
                               data-focus={isSameDay(d, focusDay) ? 'true' : undefined}
-                              aria-label={format(d, 'PPPP')}
+                              // The cell is aria-selected, but focus is on the button: its name says it too.
+                              aria-label={`${format(d, 'PPPP')}${chosen && isSameDay(d, chosen) ? ', selected' : ''}`}
                               aria-current={isSameDay(d, today) ? 'date' : undefined}
                               aria-disabled={off(d) || undefined}
                               onKeyDown={onDayKey}

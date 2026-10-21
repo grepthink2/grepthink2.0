@@ -82,7 +82,7 @@ describe('DatePickerField', () => {
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(dialog.parentElement).toBe(document.body);
     expect(within(dialog).getByRole('grid', { name: 'October 2026' })).toBeInTheDocument();
-    const chosen = day('Saturday, October 24th, 2026');
+    const chosen = day('Saturday, October 24th, 2026, selected');
     expect(chosen).toHaveFocus();
     expect(chosen).toHaveClass('dpf__cal-day', 'dpf__cal-day--selected');
     expect(chosen.closest('td')).toHaveAttribute('aria-selected', 'true');
@@ -90,6 +90,8 @@ describe('DatePickerField', () => {
     expect(today).toHaveAttribute('aria-current', 'date');
     expect(today).toHaveClass('dpf__cal-day--today');
     expect(today).toHaveAttribute('tabindex', '-1');
+    // Only the chosen day says so: focus sits on the button, not on the cell that is aria-selected.
+    expect(within(dialog).getAllByRole('button', { name: /, selected$/ })).toEqual([chosen]);
     expect(within(dialog).getAllByRole('columnheader').map((th) => th.textContent)).toEqual(['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']);
   });
 
@@ -193,7 +195,7 @@ describe('DatePickerField', () => {
     await user.keyboard('{ArrowDown}');
     expect(day('Monday, October 26th, 2026')).toHaveFocus();
     await user.keyboard('{ArrowUp}{ArrowRight}');
-    expect(day('Tuesday, October 20th, 2026')).toHaveFocus();
+    expect(day('Tuesday, October 20th, 2026, selected')).toHaveFocus();
     await user.keyboard('{Home}');
     expect(day('Sunday, October 18th, 2026')).toHaveFocus();
     await user.keyboard('{End}');
@@ -332,7 +334,7 @@ describe('DatePickerField', () => {
       await user.click(day('Thursday, October 22nd, 2026'));
       expect(onChange).toHaveBeenLastCalledWith('2026-10-22 08:00');
       expect(calendar()).toBeInTheDocument();
-      expect(day('Thursday, October 22nd, 2026')).toHaveClass('dpf__cal-day--selected');
+      expect(day('Thursday, October 22nd, 2026, selected')).toHaveClass('dpf__cal-day--selected');
     });
 
     it('keeps a time set before the day for the day picked next', async () => {
