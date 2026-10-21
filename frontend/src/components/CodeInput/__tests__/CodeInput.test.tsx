@@ -1,6 +1,6 @@
 import { createRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { cssRules } from '@/test/cssRules';
 import { CodeInput, type CodeInputProps } from '../CodeInput';
@@ -11,7 +11,8 @@ function Code({ initial = '', ...props }: { initial?: string } & Partial<CodeInp
   return <CodeInput label="Class code" length={8} {...props} value={code} onChange={(next) => { props.onChange?.(next); setCode(next); }} />;
 }
 
-const box = (n: number, of = 8, noun = 'Character') => screen.getByRole('textbox', { name: `${noun} ${n} of ${of}` });
+const box = (n: number, of = 8, noun = 'Character') =>
+  screen.getByRole('textbox', { name: `${noun} ${n} of ${of}` }) as HTMLInputElement;
 const values = () => within(screen.getByRole('group')).getAllByRole('textbox').map((b) => (b as HTMLInputElement).value).join('|');
 
 describe('CodeInput', () => {
@@ -88,6 +89,76 @@ describe('CodeInput', () => {
     expect(values()).toBe('Q|W|E|R|1|2|3|4');
     expect(box(8)).toHaveFocus();
     expect(onComplete).toHaveBeenCalledWith('QWER1234');
+  });
+
+  describe('a filled box whose selection did not hold', () => {
+    // WebKit collapses the selection a box makes on focus, on the click that focused it: the caret
+    // lands before or after the box's character instead of over it.
+    it('replaces the character when the caret sits after it', async () => {
+      render(<Code initial="ABCDEFGH" />);
+      await userEvent.click(box(3));
+      box(3).setSelectionRange(1, 1);
+      await userEvent.keyboard('z');
+      expect(values()).toBe('A|B|Z|D|E|F|G|H');
+      expect(box(4)).toHaveFocus();
+    });
+
+    it('replaces the character when the caret sits before it', async () => {
+      render(<Code initial="ABCDEFGH" />);
+      await userEvent.click(box(3));
+      box(3).setSelectionRange(0, 0);
+      await userEvent.keyboard('z');
+      expect(values()).toBe('A|B|Z|D|E|F|G|H');
+    });
+
+    it('takes a code pasted over a wrong one from the first box, whichever side the caret is on', async () => {
+      const onComplete = vi.fn();
+      const { unmount } = render(<Code initial="XYZW9876" onComplete={onComplete} />);
+      await userEvent.click(box(1));
+      box(1).setSelectionRange(1, 1);
+      await userEvent.paste('ABCD1234');
+      expect(values()).toBe('A|B|C|D|1|2|3|4');
+      expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(onComplete).toHaveBeenCalledWith('ABCD1234');
+      unmount();
+
+      render(<Code initial="XYZW9876" onComplete={onComplete} />);
+      await userEvent.click(box(1));
+      box(1).setSelectionRange(0, 0);
+      await userEvent.paste('ABCD1234');
+      expect(values()).toBe('A|B|C|D|1|2|3|4');
+      expect(onComplete).toHaveBeenLastCalledWith('ABCD1234');
+    });
+  });
+
+  it('replaces the character for an input with no key or paste, such as autofill, after the selection moved', async () => {
+    render(<Code initial="XYZW9876" />);
+    await userEvent.click(box(1));
+    // WebKit's collapse comes after the click, and only the document's selectionchange reports it.
+    box(1).setSelectionRange(1, 1);
+    document.dispatchEvent(new Event('selectionchange'));
+    fireEvent.change(box(1), { target: { value: 'Xwxyz9876' } });
+    expect(values()).toBe('W|X|Y|Z|9|8|7|6');
+  });
+
+  it('keeps a pasted code that starts with the box\'s own character whole while the selection holds', async () => {
+    render(<Code initial="AXCD1234" />);
+    await userEvent.click(box(1));
+    await userEvent.paste('ABCD1234');
+    expect(values()).toBe('A|B|C|D|1|2|3|4');
+  });
+
+  it('calls onComplete only when a full code changes, not for an edit that leaves it the same', async () => {
+    const onComplete = vi.fn();
+    render(<Code initial="ABCDEFGH" onComplete={onComplete} />);
+    await userEvent.click(box(3));
+    await userEvent.keyboard('c');
+    expect(values()).toBe('A|B|C|D|E|F|G|H');
+    expect(onComplete).not.toHaveBeenCalled();
+    await userEvent.click(box(3));
+    await userEvent.keyboard('x');
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(onComplete).toHaveBeenCalledWith('ABXDEFGH');
   });
 
   it('calls onComplete once every box is filled', async () => {

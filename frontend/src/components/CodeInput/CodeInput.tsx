@@ -27,6 +27,9 @@ export interface CodeInputProps {
   ref?: Ref<HTMLInputElement>;
 }
 
+/** A box's caret or selection. */
+const selectionOf = (el: HTMLInputElement) => ({ start: el.selectionStart ?? 0, end: el.selectionEnd ?? 0 });
+
 /**
  * One-time code boxes, ported from design/components/primitives/CodeInput.jsx: 8 characters for a
  * class join code, 6 digits for an email verification code. One label names the group
@@ -53,6 +56,24 @@ export function CodeInput({
   useEffect(() => {
     current.current = v;
   }, [v]);
+  // Each box's caret or selection as a key or a paste in it began, or as it last moved: it tells an
+  // input that kept the box's character from one that replaced it.
+  const selections = useRef<{ start: number; end: number }[]>([]);
+  const track = (i: number, el: HTMLInputElement) => {
+    selections.current[i] = selectionOf(el);
+  };
+  // WebKit collapses the selection a box makes on focus only after the click that focused it, and
+  // only the document's selectionchange reports that (React's onSelect does not): an input with no
+  // key or paste before it, such as autofill, needs it.
+  useEffect(() => {
+    const onSelectionChange = () => {
+      const i = boxes.current.findIndex((box) => box !== null && box === document.activeElement);
+      const box = boxes.current[i];
+      if (box) selections.current[i] = selectionOf(box);
+    };
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => document.removeEventListener('selectionchange', onSelectionChange);
+  }, []);
 
   const focusBox = (i: number) => {
     const el = boxes.current[Math.max(0, Math.min(length - 1, i))];
@@ -63,20 +84,33 @@ export function CodeInput({
   };
   const commit = (raw: string) => {
     const next = raw.slice(0, length);
+    const before = current.current;
     current.current = next;
     if (value === undefined) setOwn(next);
     onChange?.(next);
-    if (next.length === length) onComplete?.(next);
+    // Once per new full code: an edit that leaves the code as it was verifies nothing again.
+    if (next.length === length && next !== before) onComplete?.(next);
   };
 
   const onInput = (i: number, e: ChangeEvent<HTMLInputElement>) => {
-    const typed = clean(e.target.value);
+    let raw = e.target.value;
+    const char = v[i];
+    const sel = selections.current[i];
+    // A box selects its character on focus, so what is typed or pasted replaces it. WebKit collapses
+    // that selection on the click that focused the box, and the character then stays in the value,
+    // before or after what came in: drop it, from the side the caret was not on.
+    if (char && sel && sel.start === sel.end && raw.length > char.length) {
+      if (sel.start === 0 && raw.endsWith(char)) raw = raw.slice(0, -char.length);
+      else if (sel.start > 0 && raw.startsWith(char)) raw = raw.slice(char.length);
+    }
+    const typed = clean(raw);
     if (!typed) return;
     const at = Math.min(i, v.length);
     commit(v.slice(0, at) + typed + v.slice(at + typed.length));
     focusBox(at + typed.length);
   };
   const onKeyDown = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
+    track(i, e.currentTarget);
     if (e.key === 'Backspace') {
       e.preventDefault();
       if (v[i]) {
@@ -107,6 +141,7 @@ export function CodeInput({
       return;
     }
     e.target.select();
+    track(i, e.target);
   };
   const noun = numeric ? 'Digit' : 'Character';
   const firstEmpty = Math.min(v.length, length - 1);
@@ -127,6 +162,7 @@ export function CodeInput({
                 value={v[i] ?? ''}
                 onChange={(e) => onInput(i, e)}
                 onKeyDown={(e) => onKeyDown(i, e)}
+                onPaste={(e) => track(i, e.currentTarget)}
                 onFocus={(e) => onFocus(i, e)}
                 inputMode={numeric ? 'numeric' : 'text'}
                 autoComplete={i === 0 ? 'one-time-code' : 'off'}
