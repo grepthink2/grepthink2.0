@@ -93,6 +93,8 @@ describe('EmptyState', () => {
 
   it('draws the card well small and sunken, and its Try again link without the global button padding', () => {
     render(<EmptyState title="Empty" variant="card" />);
+    // The design's 120px is content-box; the app's border-box adds the 28px top and bottom padding.
+    expect(cssRules('.gt-empty--card')[0].getPropertyValue('min-height')).toBe('176px');
     const [cardWell] = cssRules('.gt-empty--card .gt-empty__icon');
     expect(cardWell.getPropertyValue('width')).toBe('36px');
     expect(cardWell.getPropertyValue('background')).toBe('var(--gt-surface-sunken)');
