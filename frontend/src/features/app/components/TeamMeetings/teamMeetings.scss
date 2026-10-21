@@ -3,92 +3,14 @@
    classes and `--gt-*` tokens only (lint:design). Every rule below is copied unchanged from the design
    CSS; only these comments are new.
    Copied:
-     design/components/primitives/primitives.css — the field shell 76-83 and 97-101,
-       Input / Textarea 103-128 and 130-136, Select 138-162.
      design/components/feedback/feedback.css — Alert 65-76, 78 and 96 (the error tone, no title or
        dismiss).
      design/components/domain/domain.css — Team meetings 516-614, whole.
-   The buttons are the shared Button (components/Button); the rules below that name `.gt-button` only
-   place it in this layout. The codebase has no Select / Textarea / Alert component yet, so the
-   components render plain elements with these classes. When those components land, drop the
-   primitives and Alert blocks.
-   Left out: the field's icon and suffix slots, the other Alert tones, its title and dismiss button.
+   The buttons and fields are the shared Button, Input, Select and Textarea (components/); the rules
+   below that name their classes only place them in this layout. The codebase has no Alert component
+   yet, so the form renders a plain element with these classes. When it lands, drop the Alert block.
+   Left out: the other Alert tones, its title and dismiss button.
    The schedule rows the card reuses are styled by features/schedule/schedule.scss. */
-
-/* ── Primitives (design/components/primitives/primitives.css) ─────────────────────────────── */
-/* ── Field shell (Input / Textarea / Select share this) ─── */
-.gt-field { display: flex; flex-direction: column; gap: var(--gt-space-xs); font-family: var(--gt-font-sans); }
-.gt-field__label {
-  font-size: var(--gt-text-body);
-  font-weight: var(--gt-weight-medium);
-  color: var(--gt-text-secondary);
-}
-.gt-field__required { color: var(--gt-error); }
-.gt-field__help  { margin: 0; font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
-.gt-field__error { margin: 0; font-size: var(--gt-text-caption); color: var(--gt-error); font-weight: var(--gt-weight-medium); }
-.gt-field__footer { display: flex; justify-content: space-between; align-items: baseline; gap: var(--gt-space-sm); }
-.gt-field__count { font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); font-variant-numeric: tabular-nums; }
-.gt-field--disabled .gt-field__label { color: var(--gt-text-tertiary); }
-
-/* ── Input / Textarea ───────────────────────────────────── */
-.gt-input, .gt-textarea {
-  width: 100%;
-  padding: 9px 13px;
-  border: 1px solid var(--gt-border);
-  border-radius: var(--gt-radius-sm);
-  background: var(--gt-gray-0);
-  font-family: var(--gt-font-sans);
-  font-size: var(--gt-text-body);
-  color: var(--gt-text-primary);
-  line-height: 1.5;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
-}
-.gt-input::placeholder, .gt-textarea::placeholder { color: var(--gt-text-tertiary); }
-.gt-input:hover:not(:disabled), .gt-textarea:hover:not(:disabled) { border-color: var(--gt-border-strong); }
-.gt-input:focus, .gt-textarea:focus {
-  border-color: var(--gt-accent);
-  box-shadow: var(--gt-focus-ring-tight);
-}
-.gt-input:disabled, .gt-textarea:disabled {
-  background-color: var(--gt-gray-100);
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-.gt-textarea { resize: vertical; min-height: 90px; }
-.gt-field--error .gt-input, .gt-field--error .gt-textarea {
-  border-color: var(--gt-error);
-}
-.gt-field--error .gt-input:focus, .gt-field--error .gt-textarea:focus {
-  box-shadow: 0 0 0 2px var(--gt-error);
-}
-
-/* ── Select ─────────────────────────────────────────────── */
-.gt-select { position: relative; display: flex; align-items: center; }
-.gt-select__control {
-  width: 100%;
-  padding: 9px 36px 9px 13px;
-  border: 1px solid var(--gt-border);
-  border-radius: var(--gt-radius-sm);
-  background: var(--gt-gray-0);
-  font-family: var(--gt-font-sans);
-  font-size: var(--gt-text-body);
-  color: var(--gt-text-primary);
-  appearance: none;
-  outline: none;
-  cursor: pointer;
-  transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast);
-}
-.gt-select__control:hover:not(:disabled) { border-color: var(--gt-border-strong); }
-.gt-select__control:focus { border-color: var(--gt-accent); box-shadow: var(--gt-focus-ring-tight); }
-.gt-select__control:disabled { background-color: var(--gt-gray-100); cursor: not-allowed; opacity: 0.6; }
-.gt-select__chevron {
-  position: absolute; right: 12px;
-  color: var(--gt-text-tertiary);
-  pointer-events: none;
-}
-.gt-field--error .gt-select__control { border-color: var(--gt-error); }
 
 /* ── Alert (design/components/feedback/feedback.css) ─────────────────────────────────────── */
 /* ── Alert (inline) ──────────────────────────────────────── */

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Popover } from '@/components/Popover/Popover';
-import DatePickerField from '@features/app/components/Fields/DatePickerField';
+import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
 import type { AnalyticsRangePreset } from '@/lib/api/types';
 import type { AnalyticsFilters } from '../hooks/useAnalyticsDashboard';
 import { rangeLabel } from '../utils/analyticsFormat';
@@ -30,14 +30,9 @@ export function AnalyticsFilterRow({ institutions, institutionId, classes, class
   const [from, setFrom] = useState(range.from ?? '');
   const [to, setTo] = useState(range.to ?? '');
   const chipRefs = useRef<Partial<Record<AnalyticsRangePreset, HTMLButtonElement | null>>>({});
-  // The date fields portal their calendars to <body>, so the Popover's outside-press check (DOM containment) takes a
-  // press on a day for an outside press and would close the panel under it. React still bubbles that press through the
-  // panel, which marks it; the close it triggers is skipped.
-  const calendarPress = useRef(false);
-  const closeCustom = () => {
-    if (calendarPress.current) calendarPress.current = false;
-    else setCustomOpen(false);
-  };
+  // A press on a date field's calendar stops at the calendar, so the Popover's outside press never closes the panel
+  // under it.
+  const closeCustom = () => setCustomOpen(false);
   // Escape sends focus back to the Custom chip; an outside press does not. The Popover takes Escape at document capture
   // and closes through onClose, which an outside press calls too, so Escape is caught first, on window, while the panel is open.
   useEffect(() => {
@@ -133,7 +128,7 @@ export function AnalyticsFilterRow({ institutions, institutionId, classes, class
             </button>
           }
         >
-          <div className="gt-filter__custom" onMouseDown={(e) => { calendarPress.current = !e.currentTarget.contains(e.target as Node); }}>
+          <div className="gt-filter__custom">
             <DatePickerField label="From" value={from} onChange={pickFrom} />
             <DatePickerField label="To" value={to} onChange={setTo} disabledBefore={from ? new Date(`${from}T00:00:00`) : undefined} />
             <div className="gt-filter__foot">

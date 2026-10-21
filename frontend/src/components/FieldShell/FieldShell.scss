@@ -1,0 +1,18 @@
+// FieldShell — ported from design/components/primitives/primitives.css so the two stay diffable: the
+// Field shell block. The file's phone and reduced-motion blocks have no lines for it: the 44px phone
+// height and the transitions belong to each control. A hidden label is the global
+// .gt-visually-hidden utility (index.css).
+
+/* ── Field shell (FieldShell: Input, Textarea, Select, PasswordField, Combobox, CodeInput, FileUpload, MarkdownEditor) ── */
+.gt-field { display: flex; flex-direction: column; gap: var(--gt-space-xs); min-width: 0; font-family: var(--gt-font-sans); }
+.gt-field__label { font-size: var(--gt-text-body); font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); }
+.gt-field__optional { margin-left: 4px; font-weight: var(--gt-weight-regular); color: var(--gt-text-tertiary); }
+.gt-field__control { position: relative; display: flex; align-items: center; }
+.gt-field__icon { position: absolute; left: 12px; display: inline-flex; align-items: center; color: var(--gt-text-tertiary); pointer-events: none; }
+.gt-field__help { margin: 0; font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
+.gt-field__error { display: flex; align-items: flex-start; gap: 5px; margin: 0; font-size: var(--gt-text-caption); font-weight: var(--gt-weight-medium); color: var(--gt-error-text); }
+.gt-field__error svg { flex-shrink: 0; margin-top: 1px; }
+.gt-field__footer { display: flex; justify-content: space-between; align-items: baseline; gap: var(--gt-space-sm); }
+.gt-field__count { margin-left: auto; font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gt-field__count--over { color: var(--gt-error-text); font-weight: var(--gt-weight-semibold); }
+.gt-field--disabled .gt-field__label { color: var(--gt-text-tertiary); }

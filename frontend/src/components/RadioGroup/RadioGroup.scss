@@ -1,0 +1,43 @@
+// RadioGroup — ported from design/components/primitives/primitives.css so the two stay diffable: the
+// Radio block (list and card), then its lines from the file's phone and reduced-motion blocks.
+
+/* ── Radio (list + card) ────────────────────────────────── */
+.gt-radio-group { display: flex; flex-direction: column; gap: 10px; min-width: 0; border: none; padding: 0; margin: 0; }
+.gt-radio-group--inline { flex-direction: row; flex-wrap: wrap; gap: var(--gt-space-md); }
+.gt-radio-group--card { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.gt-radio-group__legend { padding: 0; margin-bottom: var(--gt-space-sm); font-family: var(--gt-font-sans); font-size: var(--gt-text-body); font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); }
+.gt-radio-group--card .gt-radio-group__legend { grid-column: 1 / -1; margin-bottom: 0; }
+.gt-radio { position: relative; display: inline-flex; align-items: flex-start; gap: 10px; cursor: pointer; font-family: var(--gt-font-sans); }
+.gt-radio--disabled { cursor: not-allowed; opacity: var(--gt-opacity-disabled); }
+.gt-radio__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; }
+.gt-radio__dot {
+  position: relative; flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; box-sizing: border-box;
+  border: 1.5px solid var(--gt-border-control); border-radius: 50%; background: var(--gt-surface);
+  transition: border-color var(--gt-transition-fast);
+}
+.gt-radio__dot::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--gt-primary); opacity: 0; transition: opacity var(--gt-transition-fast); }
+.gt-radio:hover:not(.gt-radio--disabled) .gt-radio__dot { border-color: var(--gt-border-control-hover); }
+.gt-radio__input:checked + .gt-radio__dot { border-color: var(--gt-primary); }
+.gt-radio__input:checked + .gt-radio__dot::after { opacity: 1; }
+.gt-radio__input:focus-visible + .gt-radio__dot { box-shadow: var(--gt-focus-ring); }
+.gt-radio__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gt-radio__label { font-size: var(--gt-text-body); color: var(--gt-text-primary); }
+.gt-radio__desc { font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
+.gt-radio--card { display: flex; padding: 12px 14px; box-sizing: border-box; border: 1px solid var(--gt-border); border-radius: var(--gt-radius-md); background: var(--gt-surface); transition: border-color var(--gt-transition-fast), box-shadow var(--gt-transition-fast); }
+.gt-radio--card:hover:not(.gt-radio--disabled) { border-color: var(--gt-border-strong); }
+.gt-radio--card .gt-radio__label { font-weight: var(--gt-weight-semibold); }
+.gt-radio--card.gt-radio--checked { border-color: var(--gt-primary); box-shadow: inset 0 0 0 1px var(--gt-primary); }
+.gt-radio--card:has(.gt-radio__input:focus-visible) { box-shadow: var(--gt-focus-ring); }
+.gt-radio--card .gt-radio__input:focus-visible + .gt-radio__dot { box-shadow: none; }
+
+/* ── Phones (< 768px): 44px controls ─────────────────────── */
+@media (max-width: 767px) {
+  .gt-radio { min-height: 44px; align-items: center; }
+  .gt-radio__dot { margin-top: 0; }
+  .gt-radio--card { align-items: flex-start; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-radio__dot { transition: none; }
+}

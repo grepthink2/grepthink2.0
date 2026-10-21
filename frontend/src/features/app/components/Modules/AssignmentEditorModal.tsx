@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useEffectEvent } from 'react';
 import { format, parse, isValid } from 'date-fns';
 import { X, FileText, Globe, Trash2 } from 'lucide-react';
-import DatePickerField, { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
+import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
+import { DATETIME_FORMAT } from '@/components/DatePickerField/dateFormats';
 import { pickerTextToIso } from '@/lib/dateUtils';
 import { type Assignment, type AssignmentStatus } from './AssignmentList';
 import './AssignmentEditorModal.scss';
@@ -209,7 +210,6 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
               value={openDate}
               onChange={setOpenDate}
               showTime
-              labelClassName="aem__sublabel"
             />
 
             <DatePickerField
@@ -219,7 +219,6 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
               showTime
               disabled={deadlinePassed}
               disabledBefore={openDateObj && isValid(openDateObj) ? openDateObj : undefined}
-              labelClassName="aem__sublabel"
             />
 
             {deadlinePassed && (
@@ -234,7 +233,6 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
                   onChange={setAcceptUntil}
                   showTime
                   disabledBefore={assignment?.dueAt ? new Date(assignment.dueAt) : undefined}
-                  labelClassName="aem__sublabel"
                 />
                 {acceptUntil && (
                   <button

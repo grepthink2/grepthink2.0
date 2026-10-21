@@ -1,0 +1,27 @@
+// Toggle — ported from design/components/primitives/primitives.css so the two stay diffable: the
+// Toggle block, then its lines from the file's phone and reduced-motion blocks.
+
+/* ── Toggle ─────────────────────────────────────────────── */
+.gt-toggle { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-family: var(--gt-font-sans); }
+.gt-toggle--with-desc { align-items: flex-start; }
+.gt-toggle--disabled { cursor: not-allowed; opacity: var(--gt-opacity-disabled); }
+.gt-toggle__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; }
+.gt-toggle__track { position: relative; flex-shrink: 0; width: 36px; height: 20px; border-radius: var(--gt-radius-pill); background: var(--gt-border-control); transition: background-color var(--gt-transition-fast); }
+.gt-toggle--with-desc .gt-toggle__track { margin-top: 1px; }
+.gt-toggle__thumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--gt-surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2); transition: transform var(--gt-transition-fast); }
+.gt-toggle__input:checked + .gt-toggle__track { background: var(--gt-primary); }
+.gt-toggle__input:checked + .gt-toggle__track .gt-toggle__thumb { transform: translateX(16px); }
+.gt-toggle__input:focus-visible + .gt-toggle__track { box-shadow: var(--gt-focus-ring); }
+.gt-toggle__text { display: flex; flex-direction: column; gap: 2px; }
+.gt-toggle__label { font-size: var(--gt-text-body); color: var(--gt-text-primary); }
+.gt-toggle__desc { font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
+
+/* ── Phones (< 768px): 44px controls ─────────────────────── */
+@media (max-width: 767px) {
+  .gt-toggle { min-height: 44px; align-items: center; }
+}
+
+/* ── Reduced motion ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gt-toggle__track, .gt-toggle__thumb { transition: none; }
+}

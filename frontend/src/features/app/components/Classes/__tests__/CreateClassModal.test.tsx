@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiInstitution } from '@/lib/api';
+import { cssRules } from '@/test/cssRules';
 
 const UCSC: ApiInstitution = { id: 'ucsc', name: 'UC Santa Cruz', slug: 'ucsc', email_domains: ['ucsc.edu'] };
 const ISTINYE: ApiInstitution = { id: 'ist', name: 'İstinye University', slug: 'istinye', email_domains: ['istinye.edu.tr'] };
@@ -32,8 +33,8 @@ vi.mock('@/lib/classContext', () => ({
 }));
 vi.mock('@/lib/api', () => ({ api: { createClass: vi.fn(), uploadClassRoster: vi.fn() } }));
 // The real picker is a calendar popover; a button that picks a date is enough here.
-vi.mock('@/features/app/components/Fields/DatePickerField', () => ({
-  default: ({ label, onChange }: { label: string; onChange: (value: string) => void }) => (
+vi.mock('@/components/DatePickerField/DatePickerField', () => ({
+  DatePickerField: ({ label, onChange }: { label: string; onChange: (value: string) => void }) => (
     <button type="button" onClick={() => onChange(label === 'Last Day of Classes' ? picks.end : picks.start)}>
       {label}
     </button>
@@ -67,6 +68,15 @@ beforeEach(() => {
   state.classes = [];
   picks.start = '2026-09-28';
   picks.end = '2026-09-28'; // the last day may be the first day: a one-day course is still valid
+});
+
+describe('CreateClassModal — date labels', () => {
+  it('gives the term dates\' labels the look of the labels beside them', () => {
+    const [label] = cssRules('.create-class-modal .gt-field__label');
+    expect(label.getPropertyValue('font-size')).toBe('14px');
+    expect(label.getPropertyValue('font-weight')).toBe('600');
+    expect(label.getPropertyValue('color')).toBe('rgb(48, 48, 48)');
+  });
 });
 
 describe('CreateClassModal — school', () => {
