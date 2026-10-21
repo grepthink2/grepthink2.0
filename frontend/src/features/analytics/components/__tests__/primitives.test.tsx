@@ -22,7 +22,14 @@ describe('ChartCard', () => {
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.queryByText('body')).not.toBeInTheDocument();
     rerender(<ChartCard title="Messages" state="empty" emptyMessage={{ icon: Inbox, title: 'No sprints yet', hint: 'Boards fill in once teams create their first sprint.' }}><p>body</p></ChartCard>);
-    expect(screen.getByText('No sprints yet')).toBeInTheDocument();
+    // The shared EmptyState's card look, inside a status that announces it.
+    const empty = screen.getByRole('status');
+    expect(empty).toHaveTextContent('No sprints yet');
+    expect(empty).toHaveTextContent('Boards fill in once teams create their first sprint.');
+    expect(empty.firstElementChild).toHaveClass('gt-empty', 'gt-empty--card');
+    expect(empty.querySelector('.gt-empty__icon')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByText('Boards fill in once teams create their first sprint.')).toHaveClass('gt-empty__desc');
+    expect(screen.queryByRole('heading', { name: 'No sprints yet' })).not.toBeInTheDocument();
   });
   it('falls back to the default error copy, and an empty card never draws its children', () => {
     const { rerender } = render(<ChartCard title="Messages" state="error"><p>body</p></ChartCard>);

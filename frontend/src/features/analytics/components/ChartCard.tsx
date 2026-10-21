@@ -1,8 +1,8 @@
 import { Inbox, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { EmptyState } from '@/components/EmptyState/EmptyState';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import { DefinitionPopover } from './DefinitionPopover';
-import { EmptyState } from './EmptyState';
 import { LivePill } from './LivePill';
 
 export type ChartCardState = 'loading' | 'refetching' | 'ready' | 'empty' | 'error';
@@ -24,7 +24,15 @@ export function ChartCard({ title, subtitle, definition, live, actions, state, e
   let body: ReactNode = children;
   if (state === 'loading') body = <Skeleton width="100%" height={220} />;
   else if (state === 'error') body = <div className="gt-chart-card__error" role="status">{errorMessage ?? 'This card could not load.'}</div>;
-  else if (state === 'empty') body = <EmptyState {...(emptyMessage ?? GENERIC_EMPTY)} />;
+  else if (state === 'empty') {
+    const { icon: Icon, title: emptyTitle, hint } = emptyMessage ?? GENERIC_EMPTY;
+    // The status wrapper keeps announcing the card's empty state as it did; the region is the shared card one.
+    body = (
+      <div role="status">
+        <EmptyState variant="card" titleAs="p" icon={<Icon size={18} strokeWidth={2} aria-hidden="true" />} title={emptyTitle} description={hint} />
+      </div>
+    );
+  }
   return (
     <section className={`gt-chart-card${className ? ` ${className}` : ''}`} data-state={state} aria-busy={state === 'loading' || state === 'refetching'}>
       <header className="gt-chart-card__head">

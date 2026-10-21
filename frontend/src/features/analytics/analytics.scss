@@ -70,9 +70,6 @@
   &__label { color: var(--gt-text-tertiary); flex: 1; }
   &__value { color: var(--gt-text-primary); font-weight: 600; font-variant-numeric: tabular-nums; } }
 
-.gt-empty { display: grid; place-items: center; gap: 4px; padding: 32px 16px; text-align: center; color: var(--gt-text-tertiary);
-  &__icon { color: var(--gt-gray-400); } &__title { margin: 0; font-size: 13px; font-weight: 600; color: var(--gt-text-secondary); } &__hint { margin: 0; font-size: 12px; } }
-
 .gt-definition { width: min(320px, calc(100vw - 48px)); font-size: 12.5px; color: var(--gt-text-secondary);
   &__trigger { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 0; background: transparent; color: var(--gt-text-tertiary); padding: 0; cursor: pointer; border-radius: 4px; }
   &__title { margin: 0 0 6px; font-weight: 600; color: var(--gt-text-primary); } &__body { margin: 0; line-height: 1.45; } }
