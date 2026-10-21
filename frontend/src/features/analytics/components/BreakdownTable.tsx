@@ -6,7 +6,7 @@ import { percent } from '../utils/analyticsFormat';
 
 export interface BreakdownColumn { key: keyof ApiAnalyticsBreakdownRow; label: string; kind: 'text' | 'number' | 'percent' }
 
-// eslint-disable-next-line react-refresh/only-export-components -- the page's CSV export uses the table's own columns
+// oxlint-disable-next-line react/only-export-components -- the page's CSV export uses the table's own columns
 export function breakdownColumns(kind: 'class' | 'team'): BreakdownColumn[] {
   const head: BreakdownColumn[] = kind === 'class'
     ? [{ key: 'name', label: 'Class', kind: 'text' }, { key: 'teams', label: 'Teams', kind: 'number' }, { key: 'students', label: 'Students', kind: 'number' }]
@@ -17,7 +17,7 @@ export function breakdownColumns(kind: 'class' | 'team'): BreakdownColumn[] {
 }
 
 /** The visible columns as CSV-ready values (percentages formatted, null → ''). */
-// eslint-disable-next-line react-refresh/only-export-components -- the page's CSV export uses the table's own columns
+// oxlint-disable-next-line react/only-export-components -- the page's CSV export uses the table's own columns
 export function breakdownCsvRows(kind: 'class' | 'team', rows: ApiAnalyticsBreakdownRow[]): Record<string, unknown>[] {
   const cols = breakdownColumns(kind);
   return rows.map((r) => Object.fromEntries(cols.map((c) => [c.key, c.kind === 'percent' ? (r[c.key] == null ? '' : percent(r[c.key] as number)) : r[c.key]])));

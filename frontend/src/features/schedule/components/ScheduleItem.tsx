@@ -61,6 +61,8 @@ export function ScheduleItem({
   item, lens = 'student', now, zone = SCHOOL_ZONE, schoolZone = SCHOOL_ZONE, showSchoolTime = false,
   overlaps = [], onJoin, onMarkAttendance, onSetTime, onOpen, className = '',
 }: ScheduleItemProps) {
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const nowD = now ?? new Date();
   const meta = kindMeta(item.kind);
   const status = statusOf(item, nowD, zone);

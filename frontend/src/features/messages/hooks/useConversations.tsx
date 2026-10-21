@@ -122,7 +122,7 @@ export const ConversationsProvider: React.FC<{ children: ReactNode }> = ({ child
   return <ConversationsContext.Provider value={value}>{children}</ConversationsContext.Provider>;
 };
 
-// eslint-disable-next-line react-refresh/only-export-components -- hook lives beside its provider
+// oxlint-disable-next-line react/only-export-components -- hook lives beside its provider
 export const useConversations = (): ConversationsValue => {
   const ctx = useContext(ConversationsContext);
   if (!ctx) {
