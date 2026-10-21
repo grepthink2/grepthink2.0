@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { lazyModal } from '@/lib/lazyModal';
 import { CLASS_ROLE_LABELS, classLandingPath } from '@features/app/config/routePermissions';
 import ClassSettingsModal from '@features/app/components/Classes/ClassSettingsModal';
-import ConfirmModal from '@features/app/components/Overlays/ConfirmModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
 import { pickClassBannerPreset, presetToCssBackground } from '@/lib/classBannerGradients';
 import { Skeleton } from '@/components/Skeleton/Skeleton';
 import './MyClasses.scss';
@@ -116,7 +116,10 @@ const MyClasses: React.FC = () => {
     const [courseFilter, setCourseFilter] = useState<CourseFilter>('all');
     const [isCreateClassOpen, setIsCreateClassOpen] = useState(false);
     const [settingsClass, setSettingsClass] = useState<Class | null>(null);
+    // The class the Leave question is about: kept while the question fades out, so its title holds.
     const [leavingClass, setLeavingClass] = useState<Class | null>(null);
+    const [leaveOpen, setLeaveOpen] = useState(false);
+    const [leaveError, setLeaveError] = useState<string | null>(null);
 
     const filteredClasses = useMemo(
         () => visibleClasses.filter((c) => classMatchesFilter(c, courseFilter, getClassStatus)),
@@ -177,18 +180,27 @@ const MyClasses: React.FC = () => {
         setSettingsClass(cls);
     };
 
+    const askToLeave = (cls: Class) => {
+        setLeavingClass(cls);
+        setLeaveError(null);
+        setLeaveOpen(true);
+    };
+
+    // The question stays up, busy, until the class answers; a refusal stays in it.
     const handleConfirmLeave = async () => {
         if (!leavingClass) return;
         const cls = leavingClass;
-        setLeavingClass(null);
+        setLeaveError(null);
         try {
             await api.leaveClass(cls.id);
-            await refreshClasses(false);
-            setSuccessMessage(`You have left ${cls.name}.`);
         } catch (error) {
             console.error('Failed to leave class:', error);
-            setSuccessMessage(`Could not leave ${cls.name}. Please try again.`);
+            setLeaveError(`Could not leave ${cls.name}. Please try again.`);
+            return;
         }
+        setLeaveOpen(false);
+        await refreshClasses(false);
+        setSuccessMessage(`You have left ${cls.name}.`);
     };
 
     // Each card follows your role in its class: the owner card (code and settings) for a class you
@@ -295,7 +307,7 @@ const MyClasses: React.FC = () => {
                         className="my-classes-card-hero-leave"
                         onClick={(e) => {
                             e.stopPropagation();
-                            setLeavingClass(cls);
+                            askToLeave(cls);
                         }}
                         aria-label={`Leave ${cls.name}`}
                         data-tooltip="Leave Class"
@@ -431,14 +443,16 @@ const MyClasses: React.FC = () => {
                 classItem={settingsClass}
                 onClose={() => setSettingsClass(null)}
             />
-            <ConfirmModal
-                isOpen={leavingClass !== null}
-                onClose={() => setLeavingClass(null)}
-                onConfirm={() => void handleConfirmLeave()}
+            <ConfirmDialog
+                open={leaveOpen}
+                destructive
                 title={leavingClass ? `Leave ${leavingClass.name}?` : 'Leave class?'}
                 message="You'll be removed from this class, along with any project you're assigned to in it and any pending project requests. You can rejoin later with the course code."
-                confirmText="Leave class"
-                cancelText="Cancel"
+                confirmLabel="Leave class"
+                busyLabel="Leaving…"
+                error={leaveError}
+                onCancel={() => setLeaveOpen(false)}
+                onConfirm={handleConfirmLeave}
             />
         </div>
     );

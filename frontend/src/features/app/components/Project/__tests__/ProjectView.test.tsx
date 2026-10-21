@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitForElementToBeRemoved, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -59,18 +59,24 @@ describe('ProjectView — a project nobody is left in', () => {
 
   it('lets its creator delete it after confirming', async () => {
     const user = userEvent.setup();
-    deleteProject.mockResolvedValue({ message: 'Project deleted successfully' });
+    let finish: () => void = () => {};
+    deleteProject.mockReturnValue(new Promise((resolve) => (finish = () => resolve({ message: 'Project deleted successfully' }))));
     const { onDelete } = renderView();
 
     await user.click(screen.getByRole('button', { name: 'Delete Project' }));
     expect(deleteProject).not.toHaveBeenCalled(); // nothing happens before the confirmation
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    const question = screen.getByRole('alertdialog', { name: 'Delete project?' });
+    expect(within(question).getByRole('button', { name: 'Cancel' })).toHaveFocus();
+    await user.click(within(question).getByRole('button', { name: 'Delete' }));
 
     expect(deleteProject).toHaveBeenCalledWith('p1');
+    // The question waits, busy, until the deletion answers.
+    expect(within(question).getByRole('button', { name: 'Deleting…' })).toHaveAttribute('aria-busy', 'true');
+    await act(async () => finish());
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the page and says why when the deletion is refused', async () => {
+  it('keeps the page and says why in the question when the deletion is refused', async () => {
     const user = userEvent.setup();
     deleteProject.mockRejectedValue(new Error('You are not enrolled in this class'));
     const { onDelete } = renderView();
@@ -78,8 +84,15 @@ describe('ProjectView — a project nobody is left in', () => {
     await user.click(screen.getByRole('button', { name: 'Delete Project' }));
     await user.click(screen.getByRole('button', { name: 'Delete' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('You are not enrolled in this class');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('You are not enrolled in this class');
+    expect(within(screen.getByRole('alertdialog', { name: 'Delete project?' })).getByRole('alert')).toBe(alert);
     expect(onDelete).not.toHaveBeenCalled();
+
+    // Asked again, it starts without the old reason.
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Delete Project' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('is not offered while members remain', () => {

@@ -1,0 +1,20 @@
+// ConfirmDialog and InlineConfirm — ported from design/components/feedback/feedback.css so the two
+// stay diffable: the inline confirm row and ConfirmDialog blocks, then the row's lines from the file's
+// phone block. ConfirmDialog is the Modal shell (components/Modal) with these two classes inside it;
+// the buttons are Button and the error is Alert, which bring their own styles.
+
+/* Inline confirm row — a row-level delete inside a dialog (never a dialog over a dialog) */
+.gt-inline-confirm { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin: 4px 0; padding: 10px 12px; border-radius: var(--gt-radius-sm); background: var(--gt-surface-muted); font-family: var(--gt-font-sans); }
+.gt-inline-confirm__icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--gt-error-soft); color: var(--gt-error); }
+.gt-inline-confirm__text { flex: 1 1 220px; min-width: 0; margin: 0; font-size: 13px; color: var(--gt-text-primary); }
+.gt-inline-confirm__actions { display: flex; gap: 8px; margin-left: auto; }
+
+/* ── ConfirmDialog (alertdialog on the Modal shell, sm) ──── */
+.gt-confirm__message { margin: 0; font-size: var(--gt-text-body); line-height: var(--gt-leading-normal); color: var(--gt-text-secondary); }
+.gt-confirm__error { margin-top: 12px; }
+
+/* ── Phones ───────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .gt-inline-confirm__actions { width: 100%; }
+  .gt-inline-confirm__actions .gt-button { flex: 1 1 auto; }
+}
