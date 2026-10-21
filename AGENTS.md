@@ -123,8 +123,11 @@ frontend/src/
   lib/institutions.ts   # useInstitutions(): the public schools list, fetched once
   lib/schoolEmail.ts   # isSchoolEmail(): .edu or an institution domain
   lib/lazyModal.ts    # load a heavy modal's code the first time it opens
+  lib/openClassSelector.ts # openClassSelector(): the shell opens its class selector (NoClassSelected)
   components/         # shared UI (Button, IconButton, Spinner, the fields from FieldShell to DatePickerField,
-                      # Slider, Skeleton, ErrorBoundary, Popover, Menu, Tooltip, Toast, Markdown)
+                      # Slider, Modal (+useDialog), Drawer, ConfirmDialog (+InlineConfirm), Alert, EmptyState
+                      # (+NoClassSelected), InfoPopover, Skeleton, ErrorBoundary, Popover, Menu, Tooltip, Toast,
+                      # Markdown)
   styles/             # design tokens (@use '@styles/index.scss' as *)
   App.tsx             # router config: lazy routes, ErrorBoundary
 frontend/public/      # served at site root (llms.txt, .well-known/grepthink-actions.json)
@@ -353,9 +356,13 @@ The full agent-facing action catalog (method, params, role) lives at
 - **Shared UI components.** Basic elements (buttons, fields, dialogs, alerts, badges, avatars, cards,
   tabs) come from `frontend/src/components/` as each one is ported from `design/components/`; today
   the kit holds Button, IconButton, Spinner, the fields (FieldShell, Input, Textarea, Select,
-  SearchField, PasswordField, CodeInput, Checkbox, Toggle, RadioGroup, DatePickerField, Slider), Popover,
-  Menu, Tooltip, Toast, Skeleton and Markdown. A field's `maxLength` is a soft limit: the text past it
-  is kept and flagged, so the form's own validation must refuse it. A
+  SearchField, PasswordField, CodeInput, Checkbox, Toggle, RadioGroup, DatePickerField, Slider), the
+  dialogs (Modal, Drawer, ConfirmDialog with InlineConfirm), Alert, EmptyState with NoClassSelected,
+  InfoPopover, Popover, Menu, Tooltip, Toast, Skeleton and Markdown. A field's `maxLength` is a soft
+  limit: the text past it is kept and flagged, so the form's own validation must refuse it. The dialogs
+  share `useDialog` (`components/Modal/`): Esc and the scrim close only the topmost, so a layer inside a
+  dialog that handles Esc itself (a popover, a calendar, an inline form) must take it first: in the
+  capture phase, or with `stopPropagation()` in its own handler. A
   feature stylesheet never re-declares a shared component's classes, and feature markup never renders
   them by hand: `npm run lint:design` fails if either happens. Adjust a shared component from your
   feature's own class (`.my-feature__head .gt-button`). Until an element has its shared component,
