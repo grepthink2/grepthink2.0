@@ -87,6 +87,8 @@ describe('ConfirmDialog', () => {
     fireEvent.mouseDown(screen.getByRole('alertdialog').parentElement as HTMLElement);
     await user.click(screen.getByRole('button', { name: 'Close' }));
     expect(onCancel).toHaveBeenCalledTimes(4);
+    // Never with the click event: onCancel={setTarget} would store it.
+    expect(onCancel.mock.calls.every((call) => call.length === 0)).toBe(true);
   });
 
   it('while onConfirm is pending, Esc and the scrim do nothing, Cancel waits and Confirm stays focused and busy', async () => {
@@ -244,6 +246,8 @@ describe('InlineConfirm', () => {
     render(<InlineConfirm message="Remove Ana Ruiz from the team?" confirmLabel="Remove" cancelLabel="Keep" onConfirm={onConfirm} onCancel={onCancel} />);
     await user.click(screen.getByRole('button', { name: 'Remove' }));
     await user.click(screen.getByRole('button', { name: 'Keep' }));
+    expect(onConfirm).toHaveBeenCalledWith();
+    expect(onCancel).toHaveBeenCalledWith();
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onCancel).toHaveBeenCalledTimes(1);
   });

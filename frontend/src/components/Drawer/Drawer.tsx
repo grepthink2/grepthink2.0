@@ -94,7 +94,7 @@ export function Drawer({
         <div className="gt-drawer__head">
           {title && <h2 className="gt-drawer__title" id={titleId}>{title}</h2>}
           {subtitle && <p className="gt-drawer__subtitle" id={subtitleId}>{subtitle}</p>}
-          <IconButton className="gt-drawer__close" ariaLabel="Close" tooltip={false} onClick={onClose} disabled={closeDisabled}>
+          <IconButton className="gt-drawer__close" ariaLabel="Close" tooltip={false} onClick={() => onClose?.()} disabled={closeDisabled}>
             <X size={18} aria-hidden="true" />
           </IconButton>
         </div>

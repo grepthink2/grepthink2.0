@@ -118,7 +118,7 @@ export function ConfirmDialog({
       ref={ref}
       footer={(
         <>
-          <Button variant="outline" onClick={onCancel} disabled={busy} data-autofocus>{cancelLabel}</Button>
+          <Button variant="outline" onClick={() => onCancel?.()} disabled={busy} data-autofocus>{cancelLabel}</Button>
           <Button variant={destructive ? 'danger' : 'primary'} onClick={confirm} loading={busy} loadingLabel={busyLabel}>
             {confirmLabel}
           </Button>
@@ -198,8 +198,8 @@ export function InlineConfirm({
       <span className="gt-inline-confirm__icon"><CircleAlert size={14} strokeWidth={2.2} aria-hidden="true" /></span>
       <p className="gt-inline-confirm__text" id={messageId}>{message}</p>
       <span className="gt-inline-confirm__actions">
-        <Button variant="outline" size="sm" onClick={onCancel} disabled={busy} ref={cancelRef}>{cancelLabel}</Button>
-        <Button variant="danger" size="sm" onClick={onConfirm} loading={busy} loadingLabel={busyLabel}>{confirmLabel}</Button>
+        <Button variant="outline" size="sm" onClick={() => onCancel?.()} disabled={busy} ref={cancelRef}>{cancelLabel}</Button>
+        <Button variant="danger" size="sm" onClick={() => onConfirm?.()} loading={busy} loadingLabel={busyLabel}>{confirmLabel}</Button>
       </span>
     </div>
   );

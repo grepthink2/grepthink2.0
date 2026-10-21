@@ -63,7 +63,7 @@ export function EmptyState({
         <div className="gt-empty__action">
           {action}
           {onRetry && (
-            <button type="button" className="gt-empty__retry" onClick={onRetry}>
+            <button type="button" className="gt-empty__retry" onClick={() => onRetry()}>
               <RefreshCw size={13} aria-hidden="true" />
               {retryLabel}
             </button>
@@ -99,7 +99,7 @@ export function NoClassSelected({ onSelectClass, variant = 'page', titleAs = 'h2
       icon={<GraduationCap size={28} aria-hidden="true" />}
       title="No class selected"
       description="Choose a class to see this page. You can switch classes any time from the class selector."
-      action={onSelectClass && <Button variant="outline" onClick={onSelectClass}>Choose a class</Button>}
+      action={onSelectClass && <Button variant="outline" onClick={() => onSelectClass()}>Choose a class</Button>}
     />
   );
 }

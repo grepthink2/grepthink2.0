@@ -47,6 +47,7 @@ describe('Alert', () => {
     expect(dismiss).toHaveClass('gt-alert__dismiss');
     await userEvent.click(dismiss);
     expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(onDismiss).toHaveBeenCalledWith();
   });
 
   it('renders actions after the text, outside it', async () => {

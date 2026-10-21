@@ -104,7 +104,7 @@ export function Modal({
           {title && <h2 className="gt-modal__title" id={titleId}>{title}</h2>}
           {subtitle && <p className="gt-modal__subtitle" id={subtitleId}>{subtitle}</p>}
           {!hideClose && (
-            <IconButton className="gt-modal__close" ariaLabel="Close" tooltip={false} onClick={onClose} disabled={closeDisabled}>
+            <IconButton className="gt-modal__close" ariaLabel="Close" tooltip={false} onClick={() => onClose?.()} disabled={closeDisabled}>
               <X size={18} aria-hidden="true" />
             </IconButton>
           )}

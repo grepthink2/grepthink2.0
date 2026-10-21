@@ -55,6 +55,7 @@ describe('Drawer', () => {
     fireEvent.mouseDown(screen.getByRole('dialog').parentElement as HTMLElement);
     await user.click(screen.getByRole('button', { name: 'Close' }));
     expect(onClose).toHaveBeenCalledTimes(3);
+    expect(onClose.mock.calls.every((call) => call.length === 0)).toBe(true);
 
     onClose.mockClear();
     rerender(<Drawer open onClose={onClose} title="Edit assignment" closeDisabled />);

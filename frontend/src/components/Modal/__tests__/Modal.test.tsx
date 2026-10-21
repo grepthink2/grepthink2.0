@@ -45,6 +45,7 @@ describe('Modal', () => {
     expect(close.parentElement).toHaveClass('gt-modal__head');
     await user.click(close);
     expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledWith(); // not with the click event: onClose={setOpen} stays safe
 
     rerender(<Modal open onClose={onClose} title="Edit project" closeDisabled />);
     expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled();

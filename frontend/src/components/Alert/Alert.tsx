@@ -48,7 +48,7 @@ export function Alert({ tone = 'info', title, children, actions, onDismiss, clas
         {actions && <div className="gt-alert__actions">{actions}</div>}
       </div>
       {onDismiss && (
-        <button type="button" className="gt-alert__dismiss" aria-label="Dismiss" onClick={onDismiss}>
+        <button type="button" className="gt-alert__dismiss" aria-label="Dismiss" onClick={() => onDismiss()}>
           <X size={14} aria-hidden="true" />
         </button>
       )}

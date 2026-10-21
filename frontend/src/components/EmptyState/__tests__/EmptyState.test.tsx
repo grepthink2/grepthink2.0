@@ -68,6 +68,7 @@ describe('EmptyState', () => {
     expect(retry.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     await userEvent.click(retry);
     expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(onRetry).toHaveBeenCalledWith();
 
     rerender(<EmptyState variant="error" title="Couldn’t load." onRetry={onRetry} retryLabel="Reload" />);
     expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument();
@@ -115,6 +116,7 @@ describe('NoClassSelected', () => {
     expect(choose).toHaveClass('gt-button--outline');
     await userEvent.click(choose);
     expect(onSelectClass).toHaveBeenCalledTimes(1);
+    expect(onSelectClass).toHaveBeenCalledWith();
   });
 
   it('renders no button without onSelectClass, and takes the card look, a heading level and a class', () => {
