@@ -58,14 +58,29 @@ def test_move_is_one_insert_that_the_trigger_applies(monkeypatch):
 def test_a_move_answers_the_movers_name_and_the_new_status(monkeypatch):
     """The board resolves moved_by_name from its bulk profile read; this single-row
     response resolves its own, or the client reconciles its optimistic audit line
-    down to "Unknown". The name comes embedded in the move's insert. A task embedded
-    there shows its status before the move (the fake's trigger runs as Postgres's does),
-    so the status in the answer must not come from it."""
+    down to "Unknown". The name comes embedded in the move's insert; the status comes
+    from the move, never from the task embedded there (see the next test)."""
     _board(monkeypatch)
     out = controller.move_task(task_id="t1", user_id=UID, to_status="done")
     assert (out["task"]["status"], out["task"]["moved_by_name"]) == ("done", "Tony Wu")
     assert out["task"]["moved_at"] == out["move"]["moved_at"]
     assert not {"mover", "task"} & set(out["move"])
+
+
+def test_a_task_embedded_on_a_moves_insert_shows_its_status_before_the_move(monkeypatch):
+    """PostgREST runs a write and its select as one statement on one snapshot, so the task
+    embedded on a move's insert still has its old status although the trigger has moved
+    it. The fake's trigger runs after its copy of the store, as Postgres's runs inside the
+    statement."""
+    db = _board(monkeypatch)
+    res = (
+        db.table("task_moves")
+        .insert({"task_id": "t1", "to_status": "done", "moved_by": UID})
+        .select("from_status, task:tasks!task_moves_task_id_fkey(status)")
+        .execute()
+    )
+    assert res.data == [{"from_status": "todo", "task": {"status": "todo"}}]
+    assert db.rows("tasks")[0]["status"] == "done"
 
 
 def test_a_mover_without_a_profile_is_unknown(monkeypatch):

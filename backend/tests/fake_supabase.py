@@ -57,7 +57,8 @@ Triggers stand in for what the database does on an insert:
 
 ``fn(db, row)`` runs once per inserted row, before the row is stored (like a
 BEFORE ROW trigger), and may change the row and other tables. Only insert
-triggers exist.
+triggers exist, and an upsert runs none (Postgres would run them for the rows it
+inserts; nothing upserts into a table that has one).
 """
 
 from __future__ import annotations

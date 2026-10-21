@@ -868,8 +868,8 @@ def test_student_edit_of_a_tsr_entry_after_close_is_refused_but_the_instructor_m
 
 
 def test_an_evaluator_edit_fails_closed_when_its_assignment_is_gone(db):
-    # The TSR's FK cascades, so this is a race (the assignment deleted mid-request): never skip
-    # the window check because there is no row to check against.
+    # The TSR's FK cascades, so Postgres never returns a TSR without its assignment; the branch
+    # is guarded anyway: never skip the window check because there is no row to check against.
     db.store["assignments"] = [a for a in db.rows("assignments") if a["id"] != A_TSR]
     with pytest.raises(HTTPException) as exc:
         assignments.update_tsr_entry(S1, A_TSR, "t-new", percent_contribution=40)
