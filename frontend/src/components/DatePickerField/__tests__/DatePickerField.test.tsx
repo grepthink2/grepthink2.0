@@ -6,8 +6,8 @@ import { cssRules } from '@/test/cssRules';
 import { Popover } from '@/components/Popover/Popover';
 import { DatePickerField, type DatePickerFieldProps } from '../DatePickerField';
 
-/** Tue Oct 20, 2026, at noon UTC: the same calendar day from UTC-11 to UTC+11. */
-const NOW = new Date('2026-10-20T12:00:00Z');
+/** Tue Oct 20, 2026, at noon on the runner's clock: the same calendar day in every zone. */
+const NOW = new Date(2026, 9, 20, 12);
 
 let user: ReturnType<typeof userEvent.setup>;
 beforeEach(() => {
