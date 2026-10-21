@@ -151,6 +151,14 @@ describe('FilterChipGroup', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('a multi group handed no list, as untyped code can, has nothing pressed and adds to an empty one', async () => {
+    const onChange = vi.fn();
+    render(<FilterChipGroup ariaLabel="Kinds" options={KINDS} value={undefined as unknown as string[]} onChange={onChange} />);
+    for (const chip of screen.getAllByRole('button')) expect(chip).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(screen.getByRole('button', { name: 'Final reviews' }));
+    expect(onChange).toHaveBeenCalledWith(['review']);
+  });
+
   it('count renders on its chip', () => {
     render(<Kinds />);
     expect(screen.getByText('3')).toHaveClass('gt-filter-chip__count');

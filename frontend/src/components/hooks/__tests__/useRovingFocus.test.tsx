@@ -168,6 +168,40 @@ describe('useRovingFocus', () => {
     expect(item('One')).toHaveFocus();
   });
 
+  it('treats every item as enabled without isDisabled', async () => {
+    function Plain() {
+      const [active, setActive] = useState(0);
+      const { getItemProps } = useRovingFocus({ count: 2, activeIndex: active, onMove: setActive });
+      return <>{['A', 'B'].map((n, i) => <button key={n} type="button" {...getItemProps(i)}>{n}</button>)}</>;
+    }
+    render(<Plain />);
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(item('B')).toHaveFocus();
+  });
+
+  it('stays on the one enabled item, and moves nowhere when none is enabled', () => {
+    const onMove = vi.fn();
+    // aria-disabled items keep focus, so keys still reach a group where every item is disabled.
+    function Disabled({ enabled }: { enabled: number[] }) {
+      const { getItemProps } = useRovingFocus({ count: 3, activeIndex: 0, isDisabled: (i) => !enabled.includes(i), onMove });
+      return <>{['A', 'B', 'C'].map((n, i) => <button key={n} type="button" aria-disabled={!enabled.includes(i)} {...getItemProps(i)}>{n}</button>)}</>;
+    }
+    const { rerender } = render(<Disabled enabled={[1]} />);
+    expect(screen.getAllByRole('button').map((b) => b.getAttribute('tabindex'))).toEqual(['-1', '0', '-1']);
+    item('B').focus();
+    expect(fireEvent.keyDown(item('B'), { key: 'ArrowRight' })).toBe(false);
+    expect(fireEvent.keyDown(item('B'), { key: 'ArrowLeft' })).toBe(false);
+    expect(item('B')).toHaveFocus();
+
+    rerender(<Disabled enabled={[]} />);
+    expect(screen.getAllByRole('button').map((b) => b.getAttribute('tabindex'))).toEqual(['-1', '-1', '-1']);
+    item('A').focus();
+    for (const key of ['Home', 'End', 'ArrowRight']) expect(fireEvent.keyDown(item('A'), { key })).toBe(false);
+    expect(item('A')).toHaveFocus();
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
   it('moves focus without selecting when onMove leaves the selection alone (manual tabs)', async () => {
     render(<Row selectOnMove={false} />);
     await userEvent.tab();

@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { cssRules } from '@/test/cssRules';
 import '@/styles/tokens/colors.css';
 import { Badge } from '../Badge';
-import { BADGE_STATUS, roleKey, toProjectRoleKey, type BadgeStatus, type BadgeTone } from '../badgeStatus';
+import { BADGE_STATUS, roleKey, toProjectRoleKey, type BadgeCategory, type BadgeStatus, type BadgeTone } from '../badgeStatus';
 
 const TONES: BadgeTone[] = ['neutral', 'success', 'warning', 'error', 'info', 'gold', 'merged'];
 
@@ -65,6 +65,18 @@ describe('Badge', () => {
     expect(icon).toHaveAttribute('aria-hidden', 'true');
     expect(icon?.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(icon?.querySelector('svg')).toHaveAttribute('width', '12');
+  });
+
+  it('a category with no preset keeps its own words, and icon replaces or drops a category’s', () => {
+    const { container, rerender } = render(<Badge category={'alumni' as BadgeCategory} />);
+    expect(screen.getByText('alumni')).toHaveClass('gt-badge--category');
+    expect(container.querySelector('.gt-badge__icon')).toBeNull();
+    rerender(<Badge category="ta" icon={null} />);
+    expect(screen.getByText('TA')).toHaveClass('gt-badge--category');
+    expect(container.querySelector('.gt-badge__icon')).toBeNull();
+    rerender(<Badge category="members" icon={<svg data-testid="count" />}>4 members</Badge>);
+    expect(screen.getByTestId('count').parentElement).toHaveClass('gt-badge__icon');
+    expect(container.querySelector('.lucide-users')).toBeNull();
   });
 
   it('projectRole takes the stored spaced value and wins over category and tone', () => {
