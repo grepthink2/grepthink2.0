@@ -161,6 +161,30 @@ describe('DatePickerField', () => {
     });
   });
 
+  it('takes a pick made inside a popover, which a press on the calendar leaves open', async () => {
+    const onChange = vi.fn();
+    function Panel() {
+      const [open, setOpen] = useState(true);
+      const [value, setValue] = useState('');
+      return (
+        <>
+          <p>Elsewhere</p>
+          <Popover open={open} onClose={() => setOpen(false)} anchor={<button type="button">Custom</button>}>
+            <DatePickerField label="From" value={value} onChange={(next) => { onChange(next); setValue(next); }} />
+          </Popover>
+        </>
+      );
+    }
+    render(<Panel />);
+    await user.click(trigger(/^From/));
+    await user.click(day('Saturday, October 24th, 2026'));
+    expect(onChange).toHaveBeenCalledWith('2026-10-24');
+    expect(trigger('From Oct 24, 2026')).toBeInTheDocument();
+    // A press outside both still closes the popover.
+    await user.click(screen.getByText('Elsewhere'));
+    expect(screen.queryByRole('button', { name: /^From/ })).toBeNull();
+  });
+
   it('moves the focused day with the arrow keys, Home, End, PageUp and PageDown', async () => {
     render(<Field initial="2026-10-20" />);
     await user.click(trigger());

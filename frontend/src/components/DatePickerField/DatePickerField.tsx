@@ -129,6 +129,16 @@ export function DatePickerField({
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
+  // The calendar is portaled to <body>, so a popover or panel the field sits in would take a press on
+  // a day for a press outside it and close, dropping the pick. The press stops at the calendar.
+  useEffect(() => {
+    const pop = popRef.current;
+    if (!open || !pop) return undefined;
+    const stop = (e: MouseEvent) => e.stopPropagation();
+    pop.addEventListener('mousedown', stop);
+    return () => pop.removeEventListener('mousedown', stop);
+  }, [open]);
+
   useLayoutEffect(() => {
     if (!open) return undefined;
     const place = () => {
