@@ -87,8 +87,11 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
   // A published assignment's deadline is fixed once it passes (the backend refuses a moved due date
   // or an unpublish), so a late-submission window takes the due date's place. A draft can always be
   // rescheduled, so it is never frozen.
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
+  const now = new Date();
   const deadlinePassed =
-    assignment?.status !== 'draft' && Boolean(assignment?.dueAt) && new Date(assignment!.dueAt!) <= new Date();
+    assignment?.status !== 'draft' && Boolean(assignment?.dueAt) && new Date(assignment!.dueAt!) <= now;
 
   const isDirty =
     name.trim() !== origName.trim() ||
@@ -163,7 +166,7 @@ const AssignmentEditorModal: React.FC<AssignmentEditorModalProps> = ({
     }
   };
 
-  const openDateObj = openDate ? parse(openDate, DATETIME_FORMAT, new Date()) : undefined;
+  const openDateObj = openDate ? parse(openDate, DATETIME_FORMAT, now) : undefined;
 
   if (!isOpen && !isClosing) return null;
 

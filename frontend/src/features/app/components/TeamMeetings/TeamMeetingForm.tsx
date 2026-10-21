@@ -101,6 +101,8 @@ export function TeamMeetingForm({
     titleRef.current?.focus();
   }, []);
 
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const nowD = now ?? new Date();
   const creating = mode === 'create';
   const differs = zoneDiffers(vz, schoolZone, nowD);

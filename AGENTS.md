@@ -79,7 +79,7 @@ review shape below, not the skill's own.
 
 | Layer     | Technology                                  |
 | --------- | ------------------------------------------- |
-| Frontend  | React 19, TypeScript 5.9, Vite 8 (rolldown) |
+| Frontend  | React 19, TypeScript 7, Vite 8 (rolldown)   |
 | Styling   | SCSS + design tokens (`src/styles/`), lucide-react icons |
 | Routing   | React Router DOM v7                         |
 | State     | React Context (auth, class, preview, conversations, notifications) |
@@ -87,7 +87,7 @@ review shape below, not the skill's own.
 | Database  | Supabase (managed PostgreSQL) through supabase-py / PostgREST |
 | Auth      | Supabase Auth (JWT); PyJWT verification (HS256 + ES256) |
 | Tests     | pytest + `tests/fake_supabase.py` (backend), Vitest 5 + Testing Library (frontend) |
-| Lint      | ruff check + format (backend), ESLint 10 + `lint:design` (frontend) |
+| Lint      | ruff check + format (backend), oxlint 1.89 + `lint:design` (frontend) |
 | Coverage  | pytest-cov (`backend/.coveragerc`: branch, `fail_under`), @vitest/coverage-v8 (`vite.config.ts` thresholds), Codecov |
 | Tooling   | Node 24 in CI (`engines` >= 22.12), `backend/requirements-dev.txt` |
 
@@ -209,7 +209,7 @@ cd backend && .venv/bin/pip install -r requirements-dev.txt   # runtime + test/l
 # Frontend (Node 24)
 cd frontend && npm ci
 npm run dev                                 # Vite dev server on :5173 (proxies /api)
-npm run lint                                # ESLint: any finding fails (react-hooks rules are errors)
+npm run lint                                # oxlint: any finding fails (the react-hooks and React Compiler rules are errors)
 npm run build                               # tsc -b && vite build  (the typecheck gate)
 npx vitest run                              # unit + component tests
 npm run test:coverage                       # same, plus coverage (thresholds in vite.config.ts)
@@ -372,6 +372,25 @@ The full agent-facing action catalog (method, params, role) lives at
   them by hand: `npm run lint:design` fails if either happens. Adjust a shared component from your
   feature's own class (`.my-feature__head .gt-button`). Until an element has its shared component,
   build it with your feature's own class names; never copy a design component's CSS block.
+- **The frontend lints with oxlint and type-checks with TypeScript 7.** `frontend/.oxlintrc.json`
+  lists the rules it runs, each as an error; nothing is enabled by category (its `off` entries are
+  typescript-eslint's overlay, which turns core rules off on TypeScript files). The rule names are
+  `typescript/*` and `react/*` (`react/only-export-components` is the old `react-refresh` rule, and
+  the output prints the classic hooks rules as `react-hooks(...)`). The React rules are native ports
+  of `eslint-plugin-react-hooks`, the React Compiler rules included; they run on every TypeScript
+  file, tests too, and find more than the ESLint plugin did (a clock read during render, a ref
+  written during render). A suppression is `// oxlint-disable-next-line <rule> -- <reason>` and
+  hides one finding; a reason that wraps needs a block comment, because the directive covers the
+  line after the comment ends. Never suppress `react/exhaustive-deps` or `react/rules-of-hooks`
+  inside a component: in oxlint 1.89 such a directive also hides every React Compiler finding in
+  that component. Restructure the effect instead: a value that must not re-run it is read from a
+  ref that an earlier effect keeps current. `npm run lint` also fails on a suppression that hides
+  nothing.
+  oxlint is pinned to an exact version: its minor releases add rules and make existing ones
+  stricter, so an upgrade is a change of its own. TypeScript 7 has no stable JavaScript API
+  (`require("typescript")` returns only its version; the rest is under `typescript/unstable/*`), so
+  a tool that loads the compiler API, such as typescript-eslint, cannot be added without
+  TypeScript 6 beside it (Microsoft's `@typescript/typescript6` package, under an `npm:` alias).
 
 ## Path aliases (frontend)
 `@/`→`src/`, `@features/`→`src/features/`, `@components/`→`src/components/`,

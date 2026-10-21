@@ -42,8 +42,9 @@
  * relation to the DS's `Avatar`).
  *
  * What's genuinely usable from that config (restricted imports of DS
- * component internals, forbidden elements) is vendored as-is in
- * frontend/.oxlintrc-adherence.json and run by oxlint. This script
+ * component internals, forbidden elements) matched nothing here and was
+ * dropped, as above; the repo's own lint config, frontend/.oxlintrc.json, is
+ * unrelated to it. This script
  * reimplements the one part of the config's *intent* that actually has bite
  * in this codebase: catching raw hex color literals that bypass the
  * `--gt-*` design-token layer, across the stylesheet layer (.scss/.css) and

@@ -29,6 +29,8 @@ export interface ScheduleDayHeaderProps {
 export function ScheduleDayHeader({
   dayKey, now, zone = SCHOOL_ZONE, title, date, isToday, aside, id, as: Tag = 'h3', className = '',
 }: ScheduleDayHeaderProps) {
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const derived = dayKey ? fmtDayLabel(dayKey, now ?? new Date(), zone) : null;
   const heading: ReactNode = title !== undefined ? title : derived?.title;
   const when: ReactNode = date !== undefined ? date : derived?.date;

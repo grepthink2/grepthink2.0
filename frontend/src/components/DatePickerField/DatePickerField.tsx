@@ -74,6 +74,8 @@ export function DatePickerField({
   optional = false, error, helperText, placeholder, className = '', ref,
 }: DatePickerFieldProps) {
   const parsed = parseDateValue(value);
+  /* oxlint-disable-next-line react/purity -- reads the clock for this render;
+     move it out of render before renders are memoized */
   const today = startOfDay(new Date());
   const [open, setOpen] = useState(false);
   const [focusDay, setFocusDay] = useState<Date>(() => parsed?.date ?? today);
