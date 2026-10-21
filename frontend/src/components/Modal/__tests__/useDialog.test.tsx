@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -397,6 +397,25 @@ describe('useDialog', () => {
     expect(document.body.style.overflow).toBe('scroll');
   });
 
+  it('leaves the overflow a hand-built modal around it set, when both close at once', () => {
+    // A hand-built modal (Class Settings) that locks the page itself: hidden on mount, unset on cleanup.
+    function HandBuilt({ asking }: { asking: boolean }) {
+      useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+          document.body.style.overflow = 'unset';
+        };
+      }, []);
+      return <TestDialog open={asking} label="Question" />;
+    }
+    const { rerender, unmount } = render(<HandBuilt asking={false} />);
+    rerender(<HandBuilt asking />);
+    expect(document.body.style.overflow).toBe('hidden');
+    // A route change takes both away, the modal's cleanup first: the next page must scroll.
+    unmount();
+    expect(document.body.style.overflow).toBe('unset');
+  });
+
   it('leaves focus alone when the opener no longer exists', async () => {
     const user = userEvent.setup();
     function GoneOpener() {
@@ -528,6 +547,14 @@ describe('dialogStack', () => {
 });
 
 describe('lockBodyScroll', () => {
+  it('leaves an overflow that something else set while it held the lock', () => {
+    document.body.style.overflow = 'auto';
+    const release = lockBodyScroll();
+    document.body.style.overflow = 'unset';
+    release();
+    expect(document.body.style.overflow).toBe('unset');
+  });
+
   it('counts each release once', () => {
     document.body.style.overflow = 'auto';
     const first = lockBodyScroll();
