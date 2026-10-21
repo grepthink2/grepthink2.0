@@ -8,6 +8,9 @@ import { ConfirmDialog, InlineConfirm, type ConfirmDialogProps } from '../Confir
 
 const DEFAULT_ERROR = 'That didn’t work. Try again.';
 
+/** The dialog moves focus in a moment after it opens: let that moment pass. */
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
+
 /** A promise the test settles. */
 function deferred() {
   let resolve!: () => void;
@@ -46,13 +49,14 @@ function Asking(props: Partial<ConfirmDialogProps> & { onDone?: () => void }) {
 }
 
 describe('ConfirmDialog', () => {
-  it('is an alertdialog named by its title and described by its message, with Cancel focused first', () => {
+  it('is an alertdialog named by its title and described by its message, with Cancel focused first', async () => {
     render(<ConfirmDialog open title="Delete project?" message="This cannot be undone." onCancel={() => {}} />);
     const dialog = screen.getByRole('alertdialog', { name: 'Delete project?' });
     expect(dialog).toHaveAccessibleDescription('This cannot be undone.');
     expect(dialog).toHaveClass('gt-modal', 'gt-modal--sm');
     expect(screen.getByText('This cannot be undone.')).toHaveClass('gt-confirm__message');
     const cancel = screen.getByRole('button', { name: 'Cancel' });
+    await settle();
     expect(cancel).toHaveFocus();
     expect(cancel).toHaveClass('gt-button--outline');
     const confirm = screen.getByRole('button', { name: 'Confirm' });
@@ -61,11 +65,44 @@ describe('ConfirmDialog', () => {
     expect(cancel.compareDocumentPosition(confirm) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('labels its buttons, and Confirm is the solid danger button when destructive', () => {
+  it('opened by Enter in a field, leaves that Enter to the field and then focuses Cancel', async () => {
+    const user = userEvent.setup();
+    const onCancel = vi.fn();
+    function AsksOnEnter() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <input
+            aria-label="Sprint name"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setOpen(true);
+            }}
+          />
+          <ConfirmDialog
+            open={open}
+            title="Rename Sprint 3?"
+            message="Its board link changes."
+            onCancel={() => {
+              onCancel();
+              setOpen(false);
+            }}
+          />
+        </>
+      );
+    }
+    render(<AsksOnEnter />);
+    await user.type(screen.getByRole('textbox', { name: 'Sprint name' }), '{Enter}');
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(screen.getByRole('alertdialog', { name: 'Rename Sprint 3?' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus());
+  });
+
+  it('labels its buttons, and Confirm is the solid danger button when destructive', async () => {
     render(
       <ConfirmDialog open destructive title="Switch to template?" message="Other content is dropped." confirmLabel="Switch to template" cancelLabel="Stay" />,
     );
     expect(screen.getByRole('button', { name: 'Switch to template' })).toHaveClass('gt-button--danger');
+    await settle();
     expect(screen.getByRole('button', { name: 'Stay' })).toHaveFocus();
   });
 

@@ -11,6 +11,9 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/** The dialog moves focus in a moment after it opens: let that moment pass. */
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
+
 describe('Modal', () => {
   it('is a dialog on its sheet, in <body>, named by its title and described by its subtitle', () => {
     const { container } = render(
@@ -81,12 +84,13 @@ describe('Modal', () => {
     expect(dialog.style.color).toBe('red');
   });
 
-  it('focuses the first field in the body', () => {
+  it('focuses the first field in the body', async () => {
     render(
       <Modal open title="Join a class" footer={<Button>Join</Button>}>
         <label>Class code <input /></label>
       </Modal>,
     );
+    await settle();
     expect(screen.getByRole('textbox', { name: 'Class code' })).toHaveFocus();
   });
 

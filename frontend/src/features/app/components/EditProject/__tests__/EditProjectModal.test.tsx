@@ -45,20 +45,24 @@ function Page(props: Partial<EditProjectModalProps>) {
 
 const dialog = () => screen.getByRole('dialog', { name: 'Edit Project' });
 
+/** The dialog moves focus in a moment after it opens: let that moment pass. */
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
+
 beforeEach(() => {
   updateProject.mockReset();
   deleteProject.mockReset();
 });
 
 describe('EditProjectModal', () => {
-  it('is a dialog named Edit Project, described by its subtitle, on the shared Modal', () => {
+  it('is a dialog named Edit Project, described by its subtitle, on the shared Modal', async () => {
     renderModal();
     expect(dialog()).toHaveAccessibleDescription('Manage your project configuration and team roles');
     expect(dialog()).toHaveClass('gt-modal', 'gt-modal--lg', 'edit-project');
     expect(within(dialog()).getByRole('button', { name: 'Close' })).toHaveClass('gt-icon-button');
     // The tab strip sits in the header's slot, under the title.
     expect(within(dialog()).getByRole('button', { name: 'Details' }).closest('.gt-modal__tabs')).not.toBeNull();
-    // Opened on Details, focus is in the first field.
+    // Opened on Details, focus moves to the first field.
+    await settle();
     expect(screen.getByRole('textbox', { name: 'Project name' })).toHaveFocus();
   });
 

@@ -100,9 +100,10 @@ function trapTab(e: KeyboardEvent, sheet: HTMLElement) {
  * design/components/feedback/Modal.jsx:
  *
  * - Open dialogs form a stack (dialogStack), and only the topmost answers Esc and its scrim.
- * - On open, focus moves in: `initialFocusRef`, else `[data-autofocus]`, else the first field, else
- *   the sheet. Tab and Shift+Tab wrap inside the sheet. On close, focus goes back to the element
- *   that had it, if that still exists and nothing has moved focus out of the dialog on purpose.
+ * - On open, focus moves in, a moment later (after the key or press that opened it): `initialFocusRef`,
+ *   else `[data-autofocus]`, else the first field, else the sheet. Tab and Shift+Tab wrap inside the
+ *   sheet. On close, focus goes back to the element that had it, if that still exists and nothing has
+ *   moved focus out of the dialog on purpose.
  * - Esc is heard on `document` in the bubble phase, so every layer inside that takes it first wins:
  *   Popover and the ⌘K palette (capture phase), Tooltip and the date picker's calendar (the window,
  *   capture phase), and a form or row that stops it (team meetings). An Esc that something already
@@ -142,7 +143,8 @@ export function useDialog({
   // This dialog's place on the stack while it is open.
   const token = useRef<symbol | null>(null);
 
-  // On open: the element given, else the focus a child already took inside (autoFocus), else the rest.
+  // On open: the element given, else a focus already inside (a field's autoFocus, or a press there
+  // before this ran), else the rest.
   const focusIn = useEffectEvent(() => {
     const sheet = sheetRef.current;
     const initial = initialFocusRef?.current;
@@ -178,10 +180,13 @@ export function useDialog({
     pushDialog(self);
     const unlock = lockBodyScroll();
     const returnTo = openedFrom();
-    focusIn();
+    // Once the key or press that opened the dialog has run its course: focused at once, the dialog's
+    // Cancel would take the same Enter's keypress and close it, and a first field the same keystroke.
+    const focusTimer = window.setTimeout(() => focusIn(), 0);
     const listener = (e: KeyboardEvent) => onKeyDown(e, self);
     document.addEventListener('keydown', listener);
     return () => {
+      window.clearTimeout(focusTimer);
       document.removeEventListener('keydown', listener);
       popDialog(self);
       unlock();

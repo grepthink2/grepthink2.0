@@ -58,6 +58,9 @@ afterEach(() => {
   document.body.style.overflow = '';
 });
 
+/** The dialog moves focus in a moment after it opens: let that moment pass. */
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
+
 describe('useDialog', () => {
   it('moves focus to the first field on open and back to the opener on close', async () => {
     const user = userEvent.setup();
@@ -74,7 +77,43 @@ describe('useDialog', () => {
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus();
   });
 
-  it('prefers initialFocusRef, then [data-autofocus], over the first field', () => {
+  it('moves focus in after the key that opened it, so that key stays with the field it was pressed in', async () => {
+    const user = userEvent.setup();
+    const onCancel = vi.fn();
+    function EnterOpens() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <input
+            aria-label="Title"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setOpen(true);
+            }}
+          />
+          <TestDialog open={open} onClose={() => setOpen(false)}>
+            <button
+              type="button"
+              data-autofocus
+              onClick={() => {
+                onCancel();
+                setOpen(false);
+              }}
+            >
+              Cancel
+            </button>
+          </TestDialog>
+        </>
+      );
+    }
+    render(<EnterOpens />);
+    await user.type(screen.getByRole('textbox', { name: 'Title' }), '{Enter}');
+    // Focused at once, Cancel would take the same Enter's keypress, and the dialog would close.
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus());
+  });
+
+  it('prefers initialFocusRef, then [data-autofocus], over the first field', async () => {
     function WithRef() {
       const ref = useRef<HTMLButtonElement>(null);
       return (
@@ -86,6 +125,7 @@ describe('useDialog', () => {
       );
     }
     const { unmount } = render(<WithRef />);
+    await settle();
     expect(screen.getByRole('button', { name: 'Chosen' })).toHaveFocus();
     unmount();
 
@@ -95,6 +135,7 @@ describe('useDialog', () => {
         <button type="button" data-autofocus>Marked</button>
       </TestDialog>,
     );
+    await settle();
     expect(screen.getByRole('button', { name: 'Marked' })).toHaveFocus();
   });
 
@@ -112,13 +153,14 @@ describe('useDialog', () => {
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus();
   });
 
-  it('focuses the sheet when it holds no field, and skips a field in a hidden panel', () => {
+  it('focuses the sheet when it holds no field, and skips a field in a hidden panel', async () => {
     const { unmount } = render(
       <TestDialog open label="Notes">
         <p>Read only.</p>
         <button type="button">OK</button>
       </TestDialog>,
     );
+    await settle();
     expect(screen.getByRole('dialog', { name: 'Notes' })).toHaveFocus();
     unmount();
 
@@ -129,10 +171,11 @@ describe('useDialog', () => {
         <select aria-label="Role"><option>Member</option></select>
       </TestDialog>,
     );
+    await settle();
     expect(screen.getByRole('combobox', { name: 'Role' })).toHaveFocus();
   });
 
-  it('falls past an initialFocusRef that cannot take focus', () => {
+  it('falls past an initialFocusRef that cannot take focus', async () => {
     function WithStaticRef() {
       const ref = useRef<HTMLParagraphElement>(null);
       return (
@@ -143,6 +186,7 @@ describe('useDialog', () => {
       );
     }
     render(<WithStaticRef />);
+    await settle();
     expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus();
   });
 
@@ -538,6 +582,7 @@ describe('useDialog', () => {
         <TestDialog open inPlace onClose={onClose}><input aria-label="Name" /></TestDialog>
       </>,
     );
+    await settle();
     expect(screen.getByRole('textbox', { name: 'Name' })).not.toHaveFocus();
     expect(document.body.style.overflow).toBe('');
     screen.getByRole('button', { name: 'Page' }).focus();

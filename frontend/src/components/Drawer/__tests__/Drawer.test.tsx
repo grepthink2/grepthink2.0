@@ -10,8 +10,11 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/** The dialog moves focus in a moment after it opens: let that moment pass. */
+const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)));
+
 describe('Drawer', () => {
-  it('is a modal dialog in <body>, named by its title and described by its subtitle', () => {
+  it('is a modal dialog in <body>, named by its title and described by its subtitle', async () => {
     render(
       <Drawer open onClose={() => {}} title="Edit assignment" subtitle="TSR 4 · due Oct 24">
         <input aria-label="Title" />
@@ -26,7 +29,8 @@ describe('Drawer', () => {
     expect(drawer.parentElement).toHaveClass('gt-drawer-backdrop');
     expect(drawer.parentElement?.parentElement).toBe(document.body);
     expect(screen.getByRole('heading', { level: 2, name: 'Edit assignment' })).toHaveClass('gt-drawer__title');
-    // useDialog moved focus to the first field.
+    // useDialog moves focus to the first field.
+    await settle();
     expect(screen.getByRole('textbox', { name: 'Title' })).toHaveFocus();
   });
 
