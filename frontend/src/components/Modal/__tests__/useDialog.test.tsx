@@ -762,7 +762,8 @@ describe('dialogStack', () => {
     const b = Symbol('b');
     expect(isTopDialog(a)).toBe(false);
     pushDialog(a);
-    pushDialog(b);
+    // Opened from the page: a dialog with no sheet to hold it is no parent.
+    pushDialog(b, document.body);
     expect(isTopDialog(b)).toBe(true);
     popDialog(a);
     expect(isTopDialog(b)).toBe(true);
