@@ -94,9 +94,10 @@ describe('ConfirmDialog', () => {
   it('while onConfirm is pending, Esc and the scrim do nothing, Cancel waits and Confirm stays focused and busy', async () => {
     const user = userEvent.setup();
     const job = deferred();
+    const onConfirm = vi.fn(() => job.promise);
     const onCancel = vi.fn();
     const onDone = vi.fn();
-    render(<Asking onConfirm={() => job.promise} onCancel={onCancel} onDone={onDone} />);
+    render(<Asking onConfirm={onConfirm} onCancel={onCancel} onDone={onDone} />);
     const confirm = screen.getByRole('button', { name: 'Remove' });
     await user.click(confirm);
 
@@ -110,6 +111,7 @@ describe('ConfirmDialog', () => {
     // A second click or Enter on the busy button sends nothing more.
     await user.click(confirm);
     await user.keyboard('{Enter}');
+    expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onCancel).not.toHaveBeenCalled();
 
     await act(async () => job.resolve());
