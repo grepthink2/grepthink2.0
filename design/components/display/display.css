@@ -125,9 +125,9 @@
 .gt-skeleton {
   display: inline-block; height: 0.9em; border-radius: var(--gt-radius-sm); background-color: var(--gt-gray-100);
   background-image: linear-gradient(90deg, var(--gt-gray-100) 25%, var(--gt-skeleton-shine) 37%, var(--gt-gray-100) 63%);
-  background-size: 400% 100%; animation: gt-skeleton-shimmer 1.4s linear infinite;
+  background-size: 400% 100%; animation: skeleton-shimmer 1.4s linear infinite;
 }
-@keyframes gt-skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+/* skeleton-shimmer is one of the four shared keyframes — keyframes.css (the codebase's skeleton-block mixin animates with it) */
 
 /* ── StatCard (= DashboardMetricCard; `compact` = analytics StatTile) ── */
 .gt-stat-card {
@@ -198,6 +198,8 @@
 .gt-tooltip__bubble--bottom { top: calc(100% + 6px); left: 50%; transform: translateX(-50%); }
 .gt-tooltip__bubble--left   { right: calc(100% + 6px); top: 50%; transform: translateY(-50%); }
 .gt-tooltip__bubble--right  { left: calc(100% + 6px); top: 50%; transform: translateY(-50%); }
+/* Esc hid the bubble (WCAG 1.4.13); it returns after the pointer leaves and focus moves on */
+.gt-tooltip.gt-tooltip--dismissed .gt-tooltip__bubble { opacity: 0; }
 
 /* ── InfoPopover (promoted from analytics' DefinitionPopover) ── */
 .gt-infopop { position: relative; display: inline-flex; }

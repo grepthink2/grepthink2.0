@@ -1,7 +1,14 @@
 import * as React from 'react';
 
-export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'aria-pressed'> {
+export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'aria-pressed' | 'aria-disabled' | 'aria-busy'> {
   children: React.ReactNode;
+  /**
+   * Set by the button from `loading` / `disabled` and `pressed`, after the caller's props. JSX takes any
+   * hyphenated prop a type leaves out, so they are declared `never` rather than only omitted (adopted from the codebase).
+   */
+  'aria-disabled'?: never;
+  'aria-busy'?: never;
+  'aria-pressed'?: never;
   /**
    * primary (one per view) · secondary (grey fill, inside white surfaces) · outline (white + 1px border:
    * Cancel, page-toolbar actions, anything on the grey canvas) · ghost (green text, low-emphasis links) ·
@@ -15,10 +22,11 @@ export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonE
   type?: 'button' | 'submit' | 'reset';
   /** Renders an <a> with the same look (Join Zoom, Browse projects). */
   href?: string;
-  /** Busy: spinner + `loadingLabel`; stays focusable, ignores clicks, keeps its width. @default false */
+  /** Busy: spinner + `loadingLabel`; stays focusable (never the native `disabled`, even with `disabled`), ignores clicks, keeps its width; the hidden face is `aria-hidden`. A busy `href` link keeps `tabIndex={0}`. @default false */
   loading?: boolean;
   /** The "-ing…" label shown while busy ("Saving…"). Pass it up front so the width is reserved. Defaults to the idle label. */
   loadingLabel?: React.ReactNode;
+  /** Native `disabled` on a button; on an `href` link: no destination, `role="link"`, `aria-disabled`, out of the tab order. */
   disabled?: boolean;
   /** Makes the button a toggle: rendered as `aria-pressed`. Leave undefined for a plain button. */
   pressed?: boolean;

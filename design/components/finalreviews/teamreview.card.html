@@ -1,0 +1,120 @@
+<!-- @dsCard group="Components" viewport="1000x2900" name="Final reviews — your team's review, header, teams without a slot, workspace header" subtitle="TeamReview every state (page + project card, India), FinalReviewsHeader per lens, UnbookedTeams, ReviewWorkspaceHeader per role" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../gallery.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../schedule/scheduleSrcLoader.js"></script>
+<script src="../domain/teamMeetingsSrcLoader.js"></script>
+<script src="./finalReviewsData.js"></script>
+<script src="./finalReviewsSrcLoader.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); color: var(--gt-text-primary); }
+  a { color: var(--gt-text-link); } a:hover { color: var(--gt-info-text); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 22px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--gt-surface); border-radius: var(--gt-radius-md); box-shadow: var(--gt-shadow-card); padding: 16px 18px; }
+  .card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .card__title { margin: 0; font-size: 16px; font-weight: 600; }
+  .card__link { font-size: 12px; font-weight: 500; }
+  .cap { margin: 0 0 6px; font-size: 11.5px; color: var(--gt-text-tertiary); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel-deferred">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { TeamReview, FinalReviewsHeader, ZoomRoomField, UnbookedTeams, ReviewWorkspaceHeader, FinalReviewsModel } = NS;
+const { boardCounts, indexTeams, unbookedTeams } = FinalReviewsModel;
+const S = window.GT_FINAL_REVIEWS_SAMPLE, F = window.GT_FR;
+const WEEK = new Date(F.CLOCKS.booking_week), DAY = new Date(F.CLOCKS.review_day), AFTER = new Date(F.CLOCKS.after);
+const world = F.worldFrom(S);
+const closed = { ...world, signupsOpen: false };
+const full = { ...world, slots: world.slots.filter((s) => s.teamId) };
+const emptyOpen = { ...F.worldFrom(F.emptySource()), signupsOpen: true };
+const T = ({ w = world, who, now = WEEK, zone = F.PT, variant = 'page', ...rest }) => {
+  const p = F.payloadFor(w, who);
+  return <TeamReview variant={variant} myTeam={p.myTeam} slots={p.reviewSlots.slots} signupsOpen={p.reviewSlots.signups_open} now={now} zone={zone}
+    boardHref="#board" onChooseSlot={() => {}} onChangeSlot={() => {}} onRelease={() => {}} {...rest} />;
+};
+const Card = ({ children }) => <section className="card"><div className="card__head"><h2 className="card__title">Final review</h2><a className="card__link" href="#board">See all slots</a></div>{children}</section>;
+const H = ({ w = world, who, ...rest }) => {
+  const p = F.payloadFor(w, who);
+  return <FinalReviewsHeader lens={p.lens} signupsOpen={p.reviewSlots.signups_open} counts={boardCounts(p.reviewSlots, indexTeams(p.reviewSlots, p.schedule))}
+    myReviewCount={p.schedule ? p.schedule.my_review_count : 0} zoomUrl={p.reviewSlots.review_zoom_url} onPostSlots={() => {}} onToggleSignups={() => {}} onSaveZoom={() => {}} {...rest} />;
+};
+const staff = F.payloadFor(world, 'instructor');
+const teams = unbookedTeams(staff.reviewSlots, indexTeams(staff.reviewSlots, staff.schedule));
+const tr = staff.schedule.teams.find((t) => t.project_id === 'p-trailhead');
+
+function Demo() {
+  return (
+    <div>
+      <p className="lbl">TeamReview — top of the board (page)</p>
+      <div className="stack">
+        <div><p className="cap">Product Owner, no slot, sign-ups open — the call to book</p><T who="po" /></div>
+        <div><p className="cap">Booked, Product Owner — Change slot + Release while the rules allow</p><T who="po_booked" /></div>
+        <div><p className="cap">Booked, member, no Review TA yet (the team presents to its Review TA; the Home TA isn't named here)</p><T who="member" /></div>
+        <div><p className="cap">Booked, sign-ups closed — read-only; the Product Owner is told to ask the instructor</p><T who="po_booked" w={closed} now={new Date('2026-12-05T18:00:00Z')} /></div>
+        <div><p className="cap">Joinable (from 10 minutes before) → primary Join Zoom</p><T who="po_booked" w={closed} now={new Date('2026-12-07T16:53:00Z')} /></div>
+        <div><p className="cap">Live</p><T who="po_booked" w={closed} now={DAY} /></div>
+        <div><p className="cap">Past</p><T who="po_booked" w={closed} now={AFTER} /></div>
+        <div><p className="cap">Viewer in India — the 1:00 PM PT Monday review reads Tuesday 2:30 AM, campus day beside it</p><T who="member" zone={F.IST} /></div>
+      </div>
+      <div className="cols">
+        <div><p className="cap">Member, no slot — who books</p><T who="member_wait" /></div>
+        <div><p className="cap">No Product Owner</p><T who="no_po" /></div>
+        <div><p className="cap">No slot, sign-ups closed (before opening and after closing alike)</p><T who="po" w={closed} /></div>
+        <div><p className="cap">Every slot taken</p><T who="po" w={full} /></div>
+        <div><p className="cap">Sign-ups open, no slots posted yet</p><T who="po" w={emptyOpen} /></div>
+        <div><p className="cap">On no team (also the instructor's student preview)</p><T who="no_team" /></div>
+        <div><p className="cap">Loading</p><T who="po" status="loading" /></div>
+        <div><p className="cap">Error</p><T who="po" status="error" onRetry={() => {}} /></div>
+      </div>
+      <p className="lbl">TeamReview card — the project page's aside (after Sprint progress, before Team meetings)</p>
+      <div className="cols3">
+        <Card><T variant="card" who="po" /></Card>
+        <Card><T variant="card" who="po_booked" /></Card>
+        <Card><T variant="card" who="member" zone={F.IST} /></Card>
+        <Card><T variant="card" who="po_booked" w={closed} now={new Date('2026-12-07T16:53:00Z')} /></Card>
+        <Card><T variant="card" who="member_wait" /></Card>
+        <Card><T variant="card" who="po" w={closed} /></Card>
+      </div>
+      <p className="lbl">FinalReviewsHeader</p>
+      <div className="stack">
+        <div><p className="cap">Instructor · sign-ups open</p><H who="instructor" /></div>
+        <div><p className="cap">Instructor · sign-ups closed, slots posted (Open sign-ups is the primary)</p><H who="instructor" w={closed} /></div>
+        <div><p className="cap">Instructor · sign-ups open, nothing posted (Post slots is the primary)</p><H who="instructor" w={emptyOpen} /></div>
+        <div><p className="cap">Instructor · editing the shared Zoom room</p><div className="card"><ZoomRoomField zoomUrl={S.review_slots_staff.review_zoom_url} canEdit defaultEditing onSave={() => {}} /></div></div>
+        <div><p className="cap">TA · "You're reviewing 1 team", Zoom room read-only</p><H who="ta" /></div>
+        <div><p className="cap">Student · state and counts only</p><H who="member" /></div>
+        <div><p className="cap">A class marked complete</p><H who="instructor" w={F.worldFrom(S.history, { complete: true })} complete /></div>
+      </div>
+      <p className="lbl">UnbookedTeams — staff</p>
+      <div className="cols">
+        <UnbookedTeams teams={teams} lens="instructor" onAction={() => {}} />
+        <UnbookedTeams teams={teams} lens="ta" />
+      </div>
+      <p className="lbl">ReviewWorkspaceHeader — /app/final-reviews/:projectId</p>
+      <div className="stack">
+        <ReviewWorkspaceHeader team={tr} viewerRole="instructor" startsAt={tr.final_review_at} homeTa={tr.home_ta} reviewTa={tr.review_ta} zoomUrl={S.review_slots_staff.review_zoom_url} now={WEEK} />
+        <ReviewWorkspaceHeader team={tr} viewerRole="home" startsAt={tr.final_review_at} homeTa={tr.home_ta} reviewTa={tr.review_ta} zoomUrl={S.review_slots_staff.review_zoom_url} now={DAY} />
+        <ReviewWorkspaceHeader team={tr} viewerRole="review" startsAt={tr.final_review_at} homeTa={tr.home_ta} reviewTa={tr.review_ta} zoomUrl={S.review_slots_staff.review_zoom_url} now={new Date('2026-12-05T18:00:00Z')} zone={F.IST} />
+        <ReviewWorkspaceHeader team={{ project_id: 'p-arboretum', name: 'Arboretum' }} viewerRole="ta" startsAt={null} homeTa={null} reviewTa={null} zoomUrl={null} now={WEEK} />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+<script>loadFinalReviewSources('../..').then(runDeferredBabel);</script>
+</body>
+</html>

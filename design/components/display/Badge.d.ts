@@ -14,6 +14,8 @@ export type BadgeStatus =
   | 'request.incoming' | 'request.invitation' | 'request.pending' | 'request.denied'
   | 'health.excellent' | 'health.warning' | 'health.poor'
   | 'sentiment.positive' | 'sentiment.neutral' | 'sentiment.negative'
+  /** Final reviews (C2, 2026-10-20): the sign-ups switch, slot states, and the two staff gaps. */
+  | 'signups.open' | 'signups.closed' | 'slot.free' | 'slot.yours' | 'slot.past' | 'review.no_review_ta' | 'review.no_product_owner'
   | 'live';
 
 export type BadgeCategory = 'ta' | 'instructor' | 'team' | 'sponsored' | 'manual' | 'members';

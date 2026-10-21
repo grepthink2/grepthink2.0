@@ -37,7 +37,7 @@ function Phone() {
   return (
     <div className="col">
       <p className="lbl">Phone — tables scroll inside their card (focusable region when they overflow)</p>
-      <StatCard label="TSRs submitted" value="24/31" hint="7 outstanding" icon={<Check />} info={{ body: 'Reports submitted this sprint out of everyone enrolled.' }} />
+      <StatCard label="TSRs submitted" value="24/31" hint="7 outstanding" icon={<Check />} />
       <Card shadow="hairline" padded={false}><Table caption="Class roster" columns={[...COLS, { key: 'x', label: 'Last active' }, { key: 'y', label: 'Email' }]} rows={ROWS.map((r) => ({ ...r, x: 'Today', y: `${r.name.split(' ')[0].toLowerCase()}@ucsc.edu` }))} rowHref={(r) => `#s${r.id}`} /></Card>
     </div>
   );
@@ -76,7 +76,7 @@ function Demo() {
       <div className="sec">
         <p className="lbl">StatCard — dashboard (info ⓘ, clickable) · compact analytics tiles (delta good / bad / flat, trend) · loading · failed · null</p>
         <div className="grid3">
-          <StatCard label="TSRs submitted" value="24/31" hint="7 outstanding" icon={<Check />} info={{ body: 'Reports submitted this sprint out of everyone enrolled. Late submissions count.' }} />
+          <StatCard label="Registered Students" value={62} hint="58 enrolled · 4 invited" icon={<Users />} info={{ body: 'Students registered in GrepThink' }} />
           <StatCard label="Teams formed" value={8} hint="2 pending requests" icon={<Users />} accent="blue" onClick={() => {}} />
           <StatCard label="Unread messages" value={12} hint="3 conversations" icon={<Msg />} accent="amber" />
           <StatCard compact format="compact" label="Messages" value={12900} icon={<Msg />} delta={{ value: 0.18, vsLabel: 'vs the 7 days before' }} trend={[40, 52, 47, 61, 58, 72, 80]} />

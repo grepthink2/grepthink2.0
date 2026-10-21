@@ -1,0 +1,124 @@
+<!-- @dsCard group="Components" viewport="1000x2600" name="Final reviews — the board" subtitle="SlotBoard + SlotRow in every lens (instructor, TA, Product Owner, member, no team), review day (live · past days folded), a viewer in India, 40 slots in a narrow column, a pre-slots class, loading · refetching · error · no slots" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../gallery.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../schedule/scheduleSrcLoader.js"></script>
+<script src="../domain/teamMeetingsSrcLoader.js"></script>
+<script src="./finalReviewsData.js"></script>
+<script src="./finalReviewsSrcLoader.js"></script>
+<style>
+  body { margin: 0; padding: 20px; background: var(--gt-canvas); font-family: var(--gt-font-sans); color: var(--gt-text-primary); }
+  a { color: var(--gt-text-link); } a:hover { color: var(--gt-info-text); }
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gt-gray-500); margin: 22px 0 8px; }
+  .lbl:first-child { margin-top: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  .narrow { max-width: 375px; }
+  .board-scroll { max-height: 520px; overflow: auto; border-radius: var(--gt-radius-md); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel-deferred">
+const NS = window.GrepThinkDesignSystem_36e7e3;
+const { SlotBoard } = NS;
+const S = window.GT_FINAL_REVIEWS_SAMPLE, F = window.GT_FR;
+const WEEK = new Date(F.CLOCKS.booking_week), DAY = new Date(F.CLOCKS.review_day), AFTER = new Date(F.CLOCKS.after);
+const world = F.worldFrom(S);
+const closed = { ...world, signupsOpen: false };
+const many = F.worldFrom(S.many);
+const hist = F.worldFrom(S.history, { complete: true });
+const empty = F.worldFrom(F.emptySource());
+const P = (w, key) => F.payloadFor(w, key);
+const Board = ({ w = world, who, now = WEEK, zone = F.PT, ...rest }) => {
+  const p = P(w, who);
+  return <SlotBoard data={p.reviewSlots} schedule={p.schedule} lens={p.lens} viewerId={p.viewerId} now={now} zone={zone} complete={w.complete} reviewHref={(t) => `#review-${t.project_id}`} onAction={() => {}} onDayAction={() => {}} onPostSlots={() => {}} onRetry={() => {}} {...rest} />;
+};
+
+function Demo() {
+  return (
+    <div>
+      <p className="lbl">Instructor · booking week, sign-ups open — Place a team… + Delete on free slots, Open review + ⋯ (Review TA, Move, Release) on booked ones, amber "No Review TA", day ⋯ deletes a day's free slots</p>
+      <Board who="instructor" />
+      <p className="lbl">TA (Maya Chen) · Sign up to review where the rules allow, "You're the Home TA" where they don't, Step down on her own review · filter: Teams I review (Review TA teams only)</p>
+      <Board who="ta" defaultFilter="mine" />
+      <div className="cols">
+        <div>
+          <p className="lbl">Product Owner, not booked · Book on every free slot</p>
+          <Board who="po" />
+        </div>
+        <div>
+          <p className="lbl">Product Owner, booked · Move here on free slots, Release on their own (Your team)</p>
+          <Board who="po_booked" />
+        </div>
+        <div>
+          <p className="lbl">Member · read-only, own row marked with the Review TA the team presents to</p>
+          <Board who="member" />
+        </div>
+        <div>
+          <p className="lbl">Sign-ups closed · the Product Owner gets no actions (Your team's review says why)</p>
+          <Board who="po_booked" w={closed} />
+        </div>
+      </div>
+      <p className="lbl">Review day, 9:20 AM PT · Trailhead live (aria-current), Night Owls joinable from 9:50 — instructor sees Join Zoom inside the window</p>
+      <Board who="instructor" w={closed} now={new Date('2026-12-07T17:55:00Z')} />
+      <div className="cols">
+        <div>
+          <p className="lbl">After the reviews · every day past, shown in full</p>
+          <Board who="member" w={closed} now={AFTER} />
+        </div>
+        <div>
+          <p className="lbl">Tuesday, with Monday past · "Past days (1)" folded</p>
+          <Board who="ta" w={closed} now={new Date('2026-12-08T18:30:00Z')} />
+        </div>
+      </div>
+      <p className="lbl">Viewer in India (GMT+5:30) · times in IST with the campus time beside them; the 3:00 PM PT Monday slot lists under Tuesday</p>
+      <Board who="po" zone={F.IST} />
+      <div className="cols">
+        <div className="narrow">
+          <p className="lbl">40 slots, 375px column (instructor) · day links scroll, sticky day headers</p>
+          <div className="board-scroll"><Board who="instructor" w={many} /></div>
+        </div>
+        <div className="narrow">
+          <p className="lbl">40 slots, 375px column (Product Owner)</p>
+          <div className="board-scroll"><Board who="po" w={many} /></div>
+        </div>
+      </div>
+      <div className="cols">
+        <div>
+          <p className="lbl">A class from before slots (staff) · recorded times, read-only history</p>
+          <Board who="instructor" w={hist} now={new Date(S.history.now)} />
+        </div>
+        <div>
+          <p className="lbl">Loading · Error</p>
+          <Board who="instructor" status="loading" />
+          <div style={{ height: 16 }} />
+          <Board who="instructor" status="error" />
+        </div>
+        <div>
+          <p className="lbl">No slots posted · instructor (leads to Post slots)</p>
+          <Board who="instructor" w={empty} />
+        </div>
+        <div>
+          <p className="lbl">No slots posted · student · TA</p>
+          <Board who="member_wait" w={empty} />
+          <div style={{ height: 16 }} />
+          <Board who="ta" w={empty} />
+        </div>
+      </div>
+      <p className="lbl">Refetching after an action · the board holds its frame (aria-busy), with the race alert</p>
+      <Board who="po" status="refetching" alert="That slot was just taken. The board is up to date — pick another free slot." onDismissAlert={() => {}} />
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+<script>loadFinalReviewSources('../..').then(runDeferredBabel);</script>
+</body>
+</html>

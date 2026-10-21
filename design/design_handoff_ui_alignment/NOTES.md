@@ -71,3 +71,30 @@ The checkout read was the local working tree, not `b6fff628`.
 8. **StatCard `info` copy** — the Dashboard's metric explanations need wording from the maintainer (today they only exist in hover tooltips).
 9. **Team meetings** should drop its copied Button / field / Select / Alert CSS and `.gt-tm-row--confirm` in favour of the shared components and InlineConfirm.
 10. **`--gt-border-control`**: confirm #858585 (or choose a ramp step) when it lands in `frontend/src/styles/tokens/colors.css`.
+
+## 6. The port's answers to §5 (follow-up round, 2026-10-20)
+From the follow-up brief (PR #257). Where an answer asked for a change, it was made this round.
+1. **`title` props** stay as they are.
+2. **⌘K palette and the dialog stack** — the palette joins the stack when its area migrates. The design's CommandPalette now
+   runs on `useDialog` (as Modal and Drawer do): Esc and the scrim close only the topmost layer, Tab stays inside, focus returns
+   to the trigger, and it portals to `<body>`; `inline` renders it in place for galleries. The search gallery shows the order:
+   open "Edit project", search from inside it, the first Esc closes the palette, the second the dialog.
+3. **PasswordField** keeps the constant name "Show password" with `aria-pressed` — accepted.
+4. **Tooltip** hides an open bubble on Esc (WCAG 1.4.13) — added to `Tooltip.jsx` (`useTooltipDismiss`) and to IconButton's
+   built-in tooltip; captured and stopped only while a bubble shows.
+5. **`loadingLabel`** gets no lint rule.
+6. **Single-choice filters** are `FilterChipGroup type="single"` (radio group: one tab stop, arrows move and select): the palette's
+   scopes, the analytics range (with "Custom…" a separate chip button after the group: `aria-haspopup="dialog"`, `aria-expanded`,
+   reading "Custom: Sep 1 – Sep 30" once applied), and the kit roster's All students / Unteamed / Invited (formerly Tabs).
+7. **StatCard `info`** — only Registered Students has an explanation: "Students registered in GrepThink". The kit Dashboard's
+   tile is now "Registered Students" with that ⓘ; the galleries and `StatCard.prompt.md` use it; no other tile carries one.
+8. **Team meetings** — the kit screen is rebuilt from the shared Button, fields, Alert and InlineConfirm, as the codebase does.
+9. **`--gt-border-control`** at #858585 is accepted.
+
+## 7. Found this round
+- **The logo.** This design tool removes `<style>` elements from any SVG it saves (tested with a two-rule file: both rules gone,
+  the shapes fell back to black). The logo's colours lived in such a block, so every save — the 2026-09-24 copy-in and the
+  2026-10-19 export — blackened it; the no-raw-hex rule was not involved. A copy saved as plain bytes keeps the block but is no
+  longer served as an image, so byte-for-byte restoration isn't possible here. Both logo files now carry the original colours as
+  `fill` attributes on the same shapes (27 `#fff`, 7 `#006837`, from the originals' `.cls-*` rules, nothing else changed). The
+  repo's own files stay the originals; PORTING.md → "Assets keep their colours".

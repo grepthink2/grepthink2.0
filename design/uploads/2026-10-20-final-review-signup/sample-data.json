@@ -1,0 +1,556 @@
+{
+  "about": "Sample data for the C2 final-review sign-up round (brief: README.md in this folder). One class at UC Santa Cruz in the API's shapes (brief section 8). Ids are readable stand-ins for UUIDs; people, teams and the Zoom link are made up. Times are instants in UTC; the campus zone is America/Los_Angeles, PST (UTC-8) in December, so 17:00Z is 9:00 AM on campus.",
+  "class": {
+    "id": "c-cse115a-f26",
+    "label": "CSE 115A · Fall 2026",
+    "school": "UC Santa Cruz",
+    "school_zone": "America/Los_Angeles",
+    "instructor": {
+      "user_id": "u-dana-whitfield",
+      "name": "Dana Whitfield"
+    }
+  },
+  "clocks": {
+    "booking_week": {
+      "now": "2026-11-30T18:00:00Z",
+      "note": "Mon Nov 30, 10:00 AM PT. Sign-ups open; 7 of 10 teams have booked."
+    },
+    "review_day": {
+      "now": "2026-12-07T17:20:00Z",
+      "note": "Mon Dec 7, 9:20 AM PT. Render with signups_open false (the instructor closed sign-ups on Friday). Trailhead's review is live; Night Owls' becomes joinable at 9:50 AM."
+    },
+    "after": {
+      "now": "2026-12-09T20:00:00Z",
+      "note": "Wed Dec 9, 12:00 PM PT. Every review is past."
+    }
+  },
+  "viewer_zones": {
+    "campus": "America/Los_Angeles",
+    "abroad": "Asia/Kolkata",
+    "note": "In India (GMT+5:30) the 9:00 AM PT slot reads 10:30 PM the same day; the 3:00 PM PT slot reads 4:30 AM the next day."
+  },
+  "review_slots_staff": {
+    "class_id": "c-cse115a-f26",
+    "signups_open": true,
+    "slots": [
+      {
+        "id": "s-1207-0900",
+        "starts_at": "2026-12-07T17:00:00+00:00",
+        "duration_minutes": 60,
+        "team": {
+          "project_id": "p-trailhead",
+          "name": "Trailhead"
+        }
+      },
+      {
+        "id": "s-1207-1000",
+        "starts_at": "2026-12-07T18:00:00+00:00",
+        "duration_minutes": 60,
+        "team": {
+          "project_id": "p-night-owls",
+          "name": "Night Owls"
+        }
+      },
+      {
+        "id": "s-1207-1100",
+        "starts_at": "2026-12-07T19:00:00+00:00",
+        "duration_minutes": 60,
+        "team": null
+      },
+      {
+        "id": "s-1207-1300",
+        "starts_at": "2026-12-07T21:00:00+00:00",
+        "duration_minutes": 60,
+        "team": {
+          "project_id": "p-redwood-labs",
+          "name": "Redwood Labs"
+        }
+      },
+      {
+        "id": "s-1207-1400",
+        "starts_at": "2026-12-07T22:00:00+00:00",
+        "duration_minutes": 60,
+        "team": null
+      },
+      {
+        "id": "s-1207-1500",
+        "starts_at": "2026-12-07T23:00:00+00:00",
+        "duration_minutes": 60,
+        "team": {
+          "project_id": "p-tidepool",
+          "name": "Tidepool"
+        }
+      },
+      {
+        "id": "s-1208-0900",
+        "starts_at": "2026-12-08T17:00:00+00:00",
+        "duration_minutes": 60,
+        "team": {
+          "project_id": "p-lighthouse",
+          "name": "Lighthouse"
+        }
+      },
+      {
+        "id": "s-1208-1000",
+        "starts_at": "2026-12-08T18:00:00+00:00",
+        "duration_minutes": 60,
+        "team": null
+      },
+      {
+        "id": "s-1208-1100",
+        "starts_at": "2026-12-08T19:00:00+00:00",
+        "duration_minutes": 60,
+        "team": {
+          "project_id": "p-seabright",
+          "name": "Seabright"
+        }
+      },
+      {
+        "id": "s-1208-1300",
+        "starts_at": "2026-12-08T21:00:00+00:00",
+        "duration_minutes": 60,
+        "team": null
+      },
+      {
+        "id": "s-1208-1400",
+        "starts_at": "2026-12-08T22:00:00+00:00",
+        "duration_minutes": 60,
+        "team": {
+          "project_id": "p-fog-city",
+          "name": "Fog City"
+        }
+      },
+      {
+        "id": "s-1208-1500",
+        "starts_at": "2026-12-08T23:00:00+00:00",
+        "duration_minutes": 60,
+        "team": null
+      }
+    ],
+    "my_team": null,
+    "unbooked_teams": [
+      {
+        "project_id": "p-arboretum",
+        "name": "Arboretum",
+        "product_owner": null
+      },
+      {
+        "project_id": "p-slug-scheduler",
+        "name": "Slug Scheduler",
+        "product_owner": {
+          "user_id": "u-ana-ruiz",
+          "name": "Ana Ruiz"
+        }
+      },
+      {
+        "project_id": "p-wharf-rats",
+        "name": "Wharf Rats",
+        "product_owner": {
+          "user_id": "u-jordan-lee",
+          "name": "Jordan Lee"
+        }
+      }
+    ],
+    "review_zoom_url": "https://zoom.example.edu/j/123456789"
+  },
+  "students": {
+    "note": "Students get the staff payload's class_id, signups_open and slots, with unbooked_teams [] and review_zoom_url null, plus the my_team of their case below. my_team.product_owner is the field the C2 implementation adds (brief section 8).",
+    "product_owner_not_booked": {
+      "viewer": {
+        "user_id": "u-ana-ruiz",
+        "name": "Ana Ruiz"
+      },
+      "my_team": {
+        "project_id": "p-slug-scheduler",
+        "name": "Slug Scheduler",
+        "is_product_owner": true,
+        "slot_id": null,
+        "starts_at": null,
+        "zoom_url": null,
+        "home_ta": null,
+        "review_ta": null,
+        "product_owner": {
+          "user_id": "u-ana-ruiz",
+          "name": "Ana Ruiz"
+        }
+      }
+    },
+    "product_owner_booked": {
+      "viewer": {
+        "user_id": "u-kai-moreno",
+        "name": "Kai Moreno"
+      },
+      "my_team": {
+        "project_id": "p-trailhead",
+        "name": "Trailhead",
+        "is_product_owner": true,
+        "slot_id": "s-1207-0900",
+        "starts_at": "2026-12-07T17:00:00+00:00",
+        "zoom_url": "https://zoom.example.edu/j/123456789",
+        "home_ta": {
+          "user_id": "u-maya-chen",
+          "name": "Maya Chen"
+        },
+        "review_ta": {
+          "user_id": "u-luis-ortega",
+          "name": "Luis Ortega"
+        },
+        "product_owner": {
+          "user_id": "u-kai-moreno",
+          "name": "Kai Moreno"
+        }
+      }
+    },
+    "member_booked_no_review_ta": {
+      "viewer": {
+        "user_id": "u-noor-haddad",
+        "name": "Noor Haddad"
+      },
+      "my_team": {
+        "project_id": "p-redwood-labs",
+        "name": "Redwood Labs",
+        "is_product_owner": false,
+        "slot_id": "s-1207-1300",
+        "starts_at": "2026-12-07T21:00:00+00:00",
+        "zoom_url": "https://zoom.example.edu/j/123456789",
+        "home_ta": {
+          "user_id": "u-maya-chen",
+          "name": "Maya Chen"
+        },
+        "review_ta": null,
+        "product_owner": {
+          "user_id": "u-eli-brooks",
+          "name": "Eli Brooks"
+        }
+      }
+    },
+    "member_not_booked": {
+      "viewer": {
+        "user_id": "u-rio-santos",
+        "name": "Rio Santos"
+      },
+      "my_team": {
+        "project_id": "p-wharf-rats",
+        "name": "Wharf Rats",
+        "is_product_owner": false,
+        "slot_id": null,
+        "starts_at": null,
+        "zoom_url": null,
+        "home_ta": null,
+        "review_ta": null,
+        "product_owner": {
+          "user_id": "u-jordan-lee",
+          "name": "Jordan Lee"
+        }
+      }
+    },
+    "member_no_product_owner": {
+      "viewer": {
+        "user_id": "u-tess-park",
+        "name": "Tess Park"
+      },
+      "my_team": {
+        "project_id": "p-arboretum",
+        "name": "Arboretum",
+        "is_product_owner": false,
+        "slot_id": null,
+        "starts_at": null,
+        "zoom_url": null,
+        "home_ta": null,
+        "review_ta": null,
+        "product_owner": null
+      }
+    },
+    "no_team": {
+      "viewer": {
+        "user_id": "u-lee-student",
+        "name": "Lee Student"
+      },
+      "my_team": null
+    }
+  },
+  "final_review_schedule": {
+    "class_id": "c-cse115a-f26",
+    "review_zoom_url": "https://zoom.example.edu/j/123456789",
+    "review_period_open": true,
+    "my_review_count": 0,
+    "teams": [
+      {
+        "project_id": "p-trailhead",
+        "name": "Trailhead",
+        "final_review_at": "2026-12-07T17:00:00+00:00",
+        "home_ta": {
+          "user_id": "u-maya-chen",
+          "name": "Maya Chen",
+          "email": "maya.chen@example.edu"
+        },
+        "review_ta": {
+          "user_id": "u-luis-ortega",
+          "name": "Luis Ortega",
+          "email": "luis.ortega@example.edu",
+          "claimed_at": "2026-11-30T17:05:00+00:00"
+        }
+      },
+      {
+        "project_id": "p-night-owls",
+        "name": "Night Owls",
+        "final_review_at": "2026-12-07T18:00:00+00:00",
+        "home_ta": {
+          "user_id": "u-luis-ortega",
+          "name": "Luis Ortega",
+          "email": "luis.ortega@example.edu"
+        },
+        "review_ta": {
+          "user_id": "u-maya-chen",
+          "name": "Maya Chen",
+          "email": "maya.chen@example.edu",
+          "claimed_at": "2026-11-30T17:05:00+00:00"
+        }
+      },
+      {
+        "project_id": "p-redwood-labs",
+        "name": "Redwood Labs",
+        "final_review_at": "2026-12-07T21:00:00+00:00",
+        "home_ta": {
+          "user_id": "u-maya-chen",
+          "name": "Maya Chen",
+          "email": "maya.chen@example.edu"
+        },
+        "review_ta": null
+      },
+      {
+        "project_id": "p-tidepool",
+        "name": "Tidepool",
+        "final_review_at": "2026-12-07T23:00:00+00:00",
+        "home_ta": {
+          "user_id": "u-priya-nair",
+          "name": "Priya Nair",
+          "email": "priya.nair@example.edu"
+        },
+        "review_ta": {
+          "user_id": "u-sam-okafor",
+          "name": "Sam Okafor",
+          "email": "sam.okafor@example.edu",
+          "claimed_at": "2026-11-30T17:05:00+00:00"
+        }
+      },
+      {
+        "project_id": "p-lighthouse",
+        "name": "Lighthouse",
+        "final_review_at": "2026-12-08T17:00:00+00:00",
+        "home_ta": {
+          "user_id": "u-sam-okafor",
+          "name": "Sam Okafor",
+          "email": "sam.okafor@example.edu"
+        },
+        "review_ta": null
+      },
+      {
+        "project_id": "p-seabright",
+        "name": "Seabright",
+        "final_review_at": "2026-12-08T19:00:00+00:00",
+        "home_ta": {
+          "user_id": "u-luis-ortega",
+          "name": "Luis Ortega",
+          "email": "luis.ortega@example.edu"
+        },
+        "review_ta": {
+          "user_id": "u-priya-nair",
+          "name": "Priya Nair",
+          "email": "priya.nair@example.edu",
+          "claimed_at": "2026-11-30T17:05:00+00:00"
+        }
+      },
+      {
+        "project_id": "p-fog-city",
+        "name": "Fog City",
+        "final_review_at": "2026-12-08T22:00:00+00:00",
+        "home_ta": {
+          "user_id": "u-priya-nair",
+          "name": "Priya Nair",
+          "email": "priya.nair@example.edu"
+        },
+        "review_ta": null
+      },
+      {
+        "project_id": "p-arboretum",
+        "name": "Arboretum",
+        "final_review_at": null,
+        "home_ta": null,
+        "review_ta": null
+      },
+      {
+        "project_id": "p-slug-scheduler",
+        "name": "Slug Scheduler",
+        "final_review_at": null,
+        "home_ta": {
+          "user_id": "u-sam-okafor",
+          "name": "Sam Okafor",
+          "email": "sam.okafor@example.edu"
+        },
+        "review_ta": null
+      },
+      {
+        "project_id": "p-wharf-rats",
+        "name": "Wharf Rats",
+        "final_review_at": null,
+        "home_ta": {
+          "user_id": "u-maya-chen",
+          "name": "Maya Chen",
+          "email": "maya.chen@example.edu"
+        },
+        "review_ta": null
+      }
+    ]
+  },
+  "ta_viewer": {
+    "viewer": {
+      "user_id": "u-maya-chen",
+      "name": "Maya Chen"
+    },
+    "my_review_count": 1,
+    "note": "A TA gets the same two payloads as the instructor; final-reviews differs only in my_review_count. Maya Chen is the Home TA of Trailhead, Redwood Labs and Wharf Rats, and the Review TA of Night Owls."
+  },
+  "class_tas": {
+    "tas": [
+      {
+        "id": "u-luis-ortega",
+        "name": "Luis Ortega",
+        "email": "luis.ortega@example.edu",
+        "projects": [
+          {
+            "id": "p-night-owls",
+            "name": "Night Owls"
+          },
+          {
+            "id": "p-seabright",
+            "name": "Seabright"
+          }
+        ]
+      },
+      {
+        "id": "u-maya-chen",
+        "name": "Maya Chen",
+        "email": "maya.chen@example.edu",
+        "projects": [
+          {
+            "id": "p-redwood-labs",
+            "name": "Redwood Labs"
+          },
+          {
+            "id": "p-trailhead",
+            "name": "Trailhead"
+          },
+          {
+            "id": "p-wharf-rats",
+            "name": "Wharf Rats"
+          }
+        ]
+      },
+      {
+        "id": "u-priya-nair",
+        "name": "Priya Nair",
+        "email": "priya.nair@example.edu",
+        "projects": [
+          {
+            "id": "p-fog-city",
+            "name": "Fog City"
+          },
+          {
+            "id": "p-tidepool",
+            "name": "Tidepool"
+          }
+        ]
+      },
+      {
+        "id": "u-sam-okafor",
+        "name": "Sam Okafor",
+        "email": "sam.okafor@example.edu",
+        "projects": [
+          {
+            "id": "p-lighthouse",
+            "name": "Lighthouse"
+          },
+          {
+            "id": "p-slug-scheduler",
+            "name": "Slug Scheduler"
+          }
+        ]
+      }
+    ]
+  },
+  "empty_class": {
+    "note": "No slots posted yet and sign-ups closed: every team is without a slot.",
+    "review_slots_staff": {
+      "class_id": "c-cse115a-f26",
+      "signups_open": false,
+      "slots": [],
+      "my_team": null,
+      "unbooked_teams": [
+        {
+          "project_id": "p-arboretum",
+          "name": "Arboretum",
+          "product_owner": null
+        },
+        {
+          "project_id": "p-fog-city",
+          "name": "Fog City",
+          "product_owner": null
+        },
+        {
+          "project_id": "p-lighthouse",
+          "name": "Lighthouse",
+          "product_owner": null
+        },
+        {
+          "project_id": "p-night-owls",
+          "name": "Night Owls",
+          "product_owner": null
+        },
+        {
+          "project_id": "p-redwood-labs",
+          "name": "Redwood Labs",
+          "product_owner": {
+            "user_id": "u-eli-brooks",
+            "name": "Eli Brooks"
+          }
+        },
+        {
+          "project_id": "p-seabright",
+          "name": "Seabright",
+          "product_owner": null
+        },
+        {
+          "project_id": "p-slug-scheduler",
+          "name": "Slug Scheduler",
+          "product_owner": {
+            "user_id": "u-ana-ruiz",
+            "name": "Ana Ruiz"
+          }
+        },
+        {
+          "project_id": "p-tidepool",
+          "name": "Tidepool",
+          "product_owner": null
+        },
+        {
+          "project_id": "p-trailhead",
+          "name": "Trailhead",
+          "product_owner": {
+            "user_id": "u-kai-moreno",
+            "name": "Kai Moreno"
+          }
+        },
+        {
+          "project_id": "p-wharf-rats",
+          "name": "Wharf Rats",
+          "product_owner": {
+            "user_id": "u-jordan-lee",
+            "name": "Jordan Lee"
+          }
+        }
+      ],
+      "review_zoom_url": null
+    }
+  }
+}

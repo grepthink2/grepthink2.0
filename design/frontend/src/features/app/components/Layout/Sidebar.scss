@@ -1,111 +1,102 @@
 @use '@styles/index.scss' as *;
 
+// The closed rail and the open sidebar share one horizontal rhythm: a 12px gutter around the item
+// lists and 11px inside each item, which centres an 18px icon in the 64px rail and keeps every icon
+// in place while the labels fade in beside it.
+$sidebar-rail-width: 64px;
+$sidebar-open-width: 256px;
+$sidebar-gutter: 0.75rem;
+$sidebar-item-pad-x: 0.6875rem;
+$sidebar-divider: rgba(255, 255, 255, 0.18);
+
 .sidebar {
   background-color: var(--gt-primary);
-  width: 256px;
+  width: $sidebar-rail-width;
   display: flex;
   flex-direction: column;
-  @include gt-transition-medium(width);
   position: fixed;
   top: 0;
   bottom: 0;
+  left: 0;
   z-index: $z-index-modal - 1; // over the page and its dropdowns, under every modal
   font-family: $primary-font; // Use Poppins from system
+  overflow: hidden; // the labels sit beside their icons at full width even while the rail is closed
+  @include gt-transition-medium(width, box-shadow);
 
-  &.collapsed {
-    width: 64px;
-
-    .sidebar-logo {
-      display: none;
-    }
-
-    .sidebar-item span {
-      display: none;
-    }
-
-    .control-label {
-      display: none;
-    }
+  // Open: over the page, which keeps its 64px gutter and never moves (see AppView.scss).
+  &.expanded {
+    width: $sidebar-open-width;
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.18);
   }
 }
 
-/* Mobile: turn the sidebar into an off-canvas drawer */
+/* Mobile: the sidebar is an off-canvas drawer, always open, toggled from the header */
 @media (max-width: 768px) {
-  .sidebar {
+  .sidebar,
+  .sidebar.expanded {
     width: 264px;
     transform: translateX(-100%);
-    @include gt-transition-medium(transform);
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.35);
+    @include gt-transition-medium(transform);
+  }
 
-    &.mobile-open {
-      transform: translateX(0);
-    }
-
-    // Collapsing is a desktop-only affordance; the drawer is always full width.
-    // Nested under `.sidebar` so it outranks the base `.collapse-button` rule
-    // regardless of source order.
-    .collapse-button {
-      display: none;
-    }
+  .sidebar.mobile-open {
+    transform: translateX(0);
   }
 }
 
-/* Header */
+/* Brand: the mascot stays put in the rail; the title fades in beside it once open */
 .sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.875rem 1rem;
-  padding-bottom: 0;
-
-  .sidebar.collapsed & {
-    justify-content: center;
-    padding: 0.875rem 0.5rem;
-  }
+  padding: 0.875rem $sidebar-gutter 0;
 }
 
-.sidebar-logo {
-  flex: 1;
-  display: flex;
-  align-items: center;
+.sidebar-brand {
+  position: relative;
+  height: 44px;
 
   img {
-    width: 180px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  // The mascot never moves: open or closed it sits where the rail shows it.
+  &__mark {
+    left: 6px; // centred in the 40px column, like the icons below
+    width: 28px;
     height: auto;
   }
-}
 
-.collapse-button {
-  background: transparent;
-  border: none;
-  color: var(--gt-text-inverse);
-  cursor: pointer;
-  padding: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  @include gt-transition(background-color);
+  // The title at the mascot's scale (28px for its 304-unit width), in the place it holds in the
+  // full wordmark: 35px in and 4px below centre. Only this fades in while the rail opens.
+  &__wordmark {
+    left: 35px;
+    top: calc(50% + 4px);
+    width: 119px;
+    height: auto;
+    opacity: 0;
+    @include gt-transition(opacity);
+  }
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+  .sidebar.expanded &__wordmark {
+    opacity: 1;
   }
 }
 
-/* Class Selector */
+/* Class Selector: an icon tile in the rail, the class's name and its menu once open */
 .class-selector {
   position: relative;
-  margin: 0.875rem 1rem;
+  margin: 0.5rem $sidebar-gutter 0.25rem;
 }
 
 .class-selector-header {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.625rem;
   background-color: var(--gt-canvas);
   border-radius: 8px;
-  padding: 0.625rem 0.875rem;
+  padding: 0.625rem $sidebar-item-pad-x;
   cursor: pointer;
   @include gt-transition(background-color);
   border: none;
@@ -115,30 +106,51 @@
     background-color: var(--gt-gray-200);
   }
 
-  // The title column may shrink (min-width: 0 below); the chevron must not.
+  // The title column may shrink (min-width: 0 below); the icons must not.
   > svg {
     flex-shrink: 0;
   }
+}
 
-  .rotated {
-    transform: rotate(180deg);
-    @include gt-transition(transform);
-  }
+.class-selector-icon {
+  color: var(--gt-primary);
 }
 
 // The selected class's name, with its school under it for accounts at two or more schools.
 .class-selector-title {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
   min-width: 0;
   text-align: left;
+  opacity: 0;
+  @include gt-transition(opacity);
+}
+
+.class-selector-chevron {
+  opacity: 0;
+  @include gt-transition(opacity, transform);
+
+  &.rotated {
+    transform: rotate(180deg);
+  }
+}
+
+.sidebar.expanded {
+  .class-selector-title,
+  .class-selector-chevron {
+    opacity: 1;
+  }
 }
 
 .class-name {
   font-size: 0.8125rem;
   font-weight: 500;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .class-selector-dropdown {
@@ -207,73 +219,128 @@
   color: var(--gt-text-tertiary);
 }
 
+.class-school {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Navigation */
 .sidebar-nav {
   flex: 1;
   min-height: 0; // flex children default to min-height:auto — without this the
                  // nav can't shrink below its content and overflow never engages
-  padding: 0.375rem 0;
-  padding-top: 0;
-  // Scroll for every role: expandable sections (e.g. TA review) can exceed the
-  // fixed-position sidebar's viewport height regardless of who is logged in.
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 0.5rem;
+  // Scroll for every role: the sections can exceed the fixed-position sidebar's
+  // viewport height regardless of who is logged in.
   overflow-y: auto;
+  overflow-x: hidden; // the labels overflow the closed rail
   overscroll-behavior: contain;
 
-  // Scroll affordance: keep the rail calm at rest, but stop hiding that it
-  // scrolls entirely — a thin thumb fades in on hover instead of the
-  // previous blanket hide.
+  // The scrollbar must not reserve width: a gutter (11px in Chromium's thin one) narrows the items
+  // against the class tile above them, which does not scroll. Wheel, touch and keyboard scrolling
+  // still work; the clipped last item is the cue that there is more.
+  scrollbar-width: none;
+
   &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 2px;
-  }
-
-  &:hover::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.25);
-  }
-
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-
-  &:hover {
-    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    display: none;
   }
 }
 
 .sidebar-section {
-  margin-bottom: 0.25rem;
+  flex-shrink: 0;
 
-  .sidebar.collapsed & {
-    margin-bottom: 1rem;
+  // Settings and help sit at the bottom.
+  &--footer {
+    margin-top: auto;
   }
 }
 
-.section-title {
+// Headings: a section's (the selected class's name) and its categories'. Each keeps one height
+// open or closed, so nothing shifts as the rail opens; closed, it shows as a divider between the
+// icon clusters instead of its text.
+.section-title,
+.group-title {
+  position: relative;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  margin: 0.25rem 0 0;
+  padding: 0 $sidebar-gutter 0 calc(#{$sidebar-gutter} + #{$sidebar-item-pad-x});
   color: var(--gt-text-inverse);
   font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 0.375rem 1rem;
-  margin: 0;
+  white-space: nowrap;
+
+  span {
+    opacity: 0;
+    @include gt-transition(opacity);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    top: 50%;
+    height: 1px;
+    background: $sidebar-divider;
+    @include gt-transition(opacity);
+  }
+
+  .sidebar.expanded & {
+    span {
+      opacity: 1;
+    }
+
+    &::before {
+      opacity: 0;
+    }
+  }
+}
+
+.group-title {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+// A category heading right under its section's: one divider between them is enough.
+.section-title + .sidebar-group > .group-title::before {
+  display: none;
+}
+
+// The class section has no heading of its own. Where its first group has none either (the
+// instructor's Dashboard), the rail still gets a divider between the account items and the
+// class's; open, the gap alone separates them, like every other divider.
+.sidebar-section--class > .sidebar-group:first-child > .section-items:first-child {
+  position: relative;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    top: 0;
+    height: 1px;
+    background: $sidebar-divider;
+    @include gt-transition(opacity);
+  }
+
+  .sidebar.expanded &::before {
+    opacity: 0;
+  }
 }
 
 .section-items {
   list-style: none;
-  padding: 0 1.2rem; // Add horizontal padding to the list
+  padding: 0 $sidebar-gutter;
   margin: 0;
-  overflow: visible; // Allow ::before pseudo-elements to extend beyond
-
-  .sidebar.collapsed & {
-    padding: 0 0.5rem; // Reduced padding for collapsed state
-  }
-
-  li {
-    overflow: visible; // Ensure list items don't clip the ::before element
-  }
 }
 
 .sidebar-item {
@@ -281,8 +348,8 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 0.75rem;
+  gap: 0.625rem;
+  padding: 0.625rem $sidebar-item-pad-x;
   background: transparent;
   border: none;
   color: var(--gt-text-inverse);
@@ -292,16 +359,25 @@
   text-align: left;
   border-radius: 8px; // Rounded corners for the button
   white-space: nowrap;
-  overflow: visible; // Allow ::before pseudo-element to extend beyond button bounds
+  // The class's "Tasks - External" item is a link: no underline, and a button's line height.
+  text-decoration: none;
+  line-height: normal;
 
-  span {
-    min-width: 0;
+  > svg {
+    flex-shrink: 0;
   }
 
-  .icon-svg {
-    width: 18px;
-    height: 18px;
-    filter: brightness(0) invert(1); // Make SVG white
+  &__label {
+    min-width: 0;
+    opacity: 0;
+    @include gt-transition(opacity);
+  }
+
+  // The "opens in a new tab" arrow at the end of an external item, shown with the label.
+  &__external {
+    margin-left: auto;
+    opacity: 0;
+    @include gt-transition(opacity);
   }
 
   // Unread message count badge — appears next to the Messages item.
@@ -323,20 +399,21 @@
     background-color: rgba(255, 255, 255, 0.1);
   }
 
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+  }
+
   &.active {
     background-color: var(--gt-canvas);
     color: var(--gt-text-primary);
     font-weight: 500;
 
-    .icon-svg {
-      filter: brightness(0); // Make SVG black for active state
-    }
-
-    // Left-hand half pill indicator
+    // Left-hand half pill indicator, flush with the sidebar's edge
     &::before {
       content: '';
       position: absolute;
-      left: -1.2rem; // Offset to align with sidebar edge (matches section-items padding)
+      left: -$sidebar-gutter; // past the list's padding, to the sidebar's edge
       top: 50%;
       transform: translateY(-50%);
       width: 6px;
@@ -344,71 +421,34 @@
       background-color: var(--gt-canvas); // Same as button background
       border-radius: 0 8px 8px 0; // Rounded on the right side (facing the button)
       z-index: 1;
+      opacity: 0;
+      @include gt-transition(opacity);
     }
   }
 
-  .sidebar.collapsed & {
-    justify-content: center;
-    padding: 0.75rem;
-    width: 100%;
+  .sidebar.expanded & {
+    &__label {
+      opacity: 1;
+    }
+
+    &__external {
+      opacity: 0.6;
+    }
 
     &.active::before {
-      display: none; // Hide indicator in collapsed state
+      opacity: 1;
     }
   }
-}
 
-/* Expandable item (chevron + nested children, e.g. TA Review → TSRs / Final Reviews) */
-.sidebar-item--group .sidebar-item__chevron {
-  margin-left: auto;
-  @include gt-transition(transform);
-  flex-shrink: 0;
-
-  &.rotated {
-    transform: rotate(180deg);
+  // In the rail the count sits on the icon's shoulder.
+  .sidebar:not(.expanded) &__badge {
+    position: absolute;
+    top: 3px;
+    left: calc(50% + 2px);
+    margin: 0;
+    min-width: 16px;
+    padding: 0 4px;
+    font-size: 0.6rem;
+    line-height: 1.5;
   }
 }
-
-// Animated expand/collapse: the grid-rows technique (0fr closed → 1fr open)
-// transitions height without knowing the content's height up front. The
-// wrapper is always mounted (while the sidebar itself isn't collapsed) so
-// there's something to animate between — React never unmounts the child
-// list on toggle, only the CSS state changes.
-.sidebar-subitems-wrap {
-  display: grid;
-  grid-template-rows: 0fr;
-  @include gt-transition-medium(grid-template-rows);
-
-  &.open {
-    grid-template-rows: 1fr;
-  }
-}
-
-.sidebar-subitems {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 0 1.65rem; // Indent children under the parent's label
-  // Required by the grid-rows technique above: this is the grid item whose
-  // track actually shrinks to 0, so it must clip its own content (otherwise
-  // the "collapsed" list would just render in full, un-clipped) and must be
-  // allowed to shrink past its content's intrinsic height (grid items default
-  // to a content-based min-height, same footgun as flex items).
-  overflow: hidden;
-  min-height: 0;
-
-  .sidebar-item--child {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8125rem;
-
-    // Children reuse the half-pill indicator, but unlike the top-level pill
-    // (which escapes all the way past the sidebar's own edge) this one can't
-    // cross the ul's border edge — the overflow:hidden above (needed for the
-    // collapse animation) clips anything past it. -1.65rem lands exactly ON
-    // that edge (overflow clips past the edge, not at it), which is the same
-    // rail-flush position as the top-level pill.
-    &.active::before {
-      left: -1.65rem;
-    }
-  }
-}
-

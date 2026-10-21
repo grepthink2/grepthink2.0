@@ -2,7 +2,7 @@
    GrepThink · Primitives layer
    .gt-visually-hidden · .gt-button · .gt-icon-button · .gt-field (shell) · .gt-input-group
    .gt-input · .gt-textarea · .gt-select · .gt-search-field · .gt-code · .gt-combobox
-   .gt-check · .gt-radio · .gt-toggle · .gt-upload-* · .gt-mde · .dpf
+   .gt-check · .gt-radio · .gt-toggle · .gt-slider · .gt-upload-* · .gt-mde · .dpf
    Each block ports 1:1 to frontend/src/components/<Name>/<Name>.scss.
    Phone rule (< 768px): every control here is at least 44px tall, met with min-height
    (never a hidden hit area), so features never repeat it.
@@ -379,6 +379,39 @@
 .dpf__time .gt-field { flex: 1; }
 .dpf__footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 10px; }
 
+/* ── Slider (labelled range; TSR contributions) ─────────── */
+/* --gt-slider-frac (0–1) and the optional --gt-slider-accent are set inline by Slider.jsx */
+.gt-slider__row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.gt-slider__control { position: relative; flex: 1; min-width: 120px; height: 24px; }
+.gt-slider__track { position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; overflow: hidden; border-radius: var(--gt-radius-pill); background: var(--gt-border-control); pointer-events: none; }
+.gt-slider__fill { position: absolute; top: 0; bottom: 0; left: 0; width: calc(var(--gt-slider-frac, 0) * (100% - 20px) + 10px); background: var(--gt-slider-accent, var(--gt-primary)); }
+.gt-slider__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
+.gt-slider__input:focus { outline: none; }
+.gt-slider__input::-webkit-slider-runnable-track { height: 24px; background: transparent; border: none; }
+.gt-slider__input::-moz-range-track { height: 24px; background: transparent; border: none; }
+.gt-slider__input::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; box-sizing: border-box; width: 20px; height: 20px; margin-top: 2px;
+  border: 2px solid var(--gt-surface); border-radius: 50%; background: var(--gt-slider-accent, var(--gt-primary)); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); cursor: grab;
+  transition: transform var(--gt-transition-fast);
+}
+.gt-slider__input::-moz-range-thumb { box-sizing: border-box; width: 20px; height: 20px; border: 2px solid var(--gt-surface); border-radius: 50%; background: var(--gt-slider-accent, var(--gt-primary)); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); cursor: grab; transition: transform var(--gt-transition-fast); }
+.gt-field--error .gt-slider__fill { background: var(--gt-error); }
+.gt-field--error .gt-slider__input::-webkit-slider-thumb { background: var(--gt-error); }
+.gt-field--error .gt-slider__input::-moz-range-thumb { background: var(--gt-error); }
+.gt-slider__input:hover:not(:disabled)::-webkit-slider-thumb { transform: scale(1.1); }
+.gt-slider__input:hover:not(:disabled)::-moz-range-thumb { transform: scale(1.1); }
+.gt-slider__input:active:not(:disabled)::-webkit-slider-thumb { cursor: grabbing; }
+.gt-slider__input:focus-visible::-webkit-slider-thumb { box-shadow: var(--gt-focus-ring); }
+.gt-slider__input:focus-visible::-moz-range-thumb { box-shadow: var(--gt-focus-ring); }
+.gt-slider__input:disabled { cursor: not-allowed; }
+.gt-slider__input:disabled::-webkit-slider-thumb { cursor: not-allowed; }
+.gt-slider--disabled .gt-slider__row { opacity: var(--gt-opacity-disabled); }
+.gt-slider__value { min-width: 4ch; font-size: var(--gt-text-body); font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.gt-slider__number { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.gt-slider__number-input { width: 64px; text-align: right; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+.gt-slider__number-input::-webkit-inner-spin-button, .gt-slider__number-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.gt-slider__unit { font-size: var(--gt-text-body); color: var(--gt-text-tertiary); }
+
 /* ── Phones (< 768px): 44px controls ─────────────────────── */
 @media (max-width: 767px) {
   .gt-button { min-height: 44px; }
@@ -393,10 +426,16 @@
   .gt-code { gap: 6px; }
   .dpf__cal-day { width: 2.75rem; height: 2.75rem; }
   .gt-upload-image { align-items: flex-start; }
+  .gt-slider__control { height: 44px; }
+  .gt-slider__input::-webkit-slider-runnable-track { height: 44px; }
+  .gt-slider__input::-moz-range-track { height: 44px; }
+  .gt-slider__input::-webkit-slider-thumb { margin-top: 12px; }
 }
 
 /* ── Reduced motion ─────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .gt-combobox__popup, .dpf__popover { animation: gt-fade-in 0.15s ease-out; }
   .gt-button, .gt-icon-button, .gt-input, .gt-textarea, .gt-select__control, .gt-input-group, .gt-check__box, .gt-radio__dot, .gt-toggle__track, .gt-toggle__thumb { transition: none; }
+  .gt-slider__input::-webkit-slider-thumb { transition: none; }
+  .gt-slider__input::-moz-range-thumb { transition: none; }
 }

@@ -27,19 +27,21 @@
 <div id="root"></div>
 <script type="text/babel">
 const NS = window.GrepThinkDesignSystem_36e7e3;
-const { SearchTrigger, SearchField, CommandPalette, ResultRow, ResultGroup, SearchPagination, Kbd, EntityIcon, ModKey } = NS;
+const { SearchTrigger, SearchField, CommandPalette, ResultRow, ResultGroup, SearchPagination, Kbd, EntityIcon, ModKey, Modal, Button } = NS;
 const modKey = ModKey || (() => '⌘');
 const { items, recent } = window.GT_SEARCH_SAMPLE;
 const byId = (id) => items.find((i) => i.id === id);
 
 function StaticPalette(props) {
   // open palette rendered in-flow (no fixed overlay) so the card can show several states side by side
-  return <div className="frame"><CommandPalette open hotkey={false} onClose={() => {}} {...props} /></div>;
+  return <div className="frame"><CommandPalette open inline hotkey={false} onClose={() => {}} {...props} /></div>;
 }
 
 function Demo() {
   const [q, setQ] = React.useState('ashton');
   const [page, setPage] = React.useState(2);
+  const [dlg, setDlg] = React.useState(false);
+  const [pal, setPal] = React.useState(false);
   const [open, setOpen] = React.useState(false);
   const slowSearch = React.useCallback(() => new Promise(() => {}), []);          // never resolves → loading
   const failSearch = React.useCallback(() => Promise.reject(new Error('offline')), []);
@@ -54,6 +56,21 @@ function Demo() {
         <SearchField value="" onChange={() => {}} placeholder="Search…" disabled />
       </div>
       <CommandPalette open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)} items={items} recent={recent} onSelect={(it, route) => console.log('open', route)} />
+
+      <p className="lbl">Dialog stack — the palette over a dialog closes first</p>
+      <div className="panel" style={{ padding: '12px 14px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14 }}>
+        <Button variant="outline" size="sm" onClick={() => setDlg(true)}>Open “Edit project”</Button>
+        <ol style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, lineHeight: 1.6, color: 'var(--gt-text-secondary)' }}>
+          <li>In the dialog, open search: the palette joins the dialog stack on top.</li>
+          <li><Kbd>esc</Kbd> closes the palette; focus returns to “Search” in the dialog.</li>
+          <li><Kbd>esc</Kbd> again closes the dialog; focus returns to the button above.</li>
+        </ol>
+      </div>
+      <Modal open={dlg} onClose={() => setDlg(false)} title="Edit project" subtitle="The palette opens over this dialog" size="sm"
+        footer={<Button variant="outline" onClick={() => setDlg(false)}>Close</Button>}>
+        <SearchTrigger onOpen={() => setPal(true)} />
+      </Modal>
+      <CommandPalette open={pal} onOpen={() => setPal(true)} onClose={() => setPal(false)} hotkey={false} items={items} recent={recent} />
 
       <p className="lbl">CommandPalette — results for “roster” (All scope, page 1 of ranked list, group labels at type boundaries)</p>
       <StaticPalette items={items} initialQuery="roster" />

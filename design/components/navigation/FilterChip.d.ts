@@ -21,6 +21,8 @@ export interface FilterChipOption {
   count?: number;
   icon?: React.ReactNode;
   disabled?: boolean;
+  /** Pointer hint, e.g. why the option is disabled ("Select a class first"). Not reachable by keyboard — say it in text too when it matters. */
+  title?: string;
 }
 
 export interface FilterChipGroupProps {

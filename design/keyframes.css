@@ -1,0 +1,29 @@
+/* ============================================================
+   GrepThink · Shared keyframes — mirrors frontend/src/styles/keyframes.css (2026-10-20),
+   which main.tsx loads once. These are the only keyframes several components share.
+   Every other keyframe is named after its component and defined once, in that component's
+   block (gt-toast-rise-in, gt-drawer-in-right, gt-palette-in …): one name, one definition.
+   ============================================================ */
+
+/* Popover / dropdown entrance: 6px slide + fade (the gt-popover-enter mixin). */
+@keyframes gt-pop-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Message / list-item entrance: 4px rise + fade. */
+@keyframes gt-rise-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* The busy spinner's turn (the gt-spinner mixin). */
+@keyframes gt-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* The skeleton loader's sweep (the skeleton-block mixin; .gt-skeleton). */
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
