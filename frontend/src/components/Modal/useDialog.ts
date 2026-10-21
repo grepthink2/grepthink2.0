@@ -103,7 +103,8 @@ function trapTab(e: KeyboardEvent, sheet: HTMLElement) {
  * - On open, focus moves in, a moment later (after the key or press that opened it): `initialFocusRef`,
  *   else `[data-autofocus]`, else the first field, else the sheet. Tab and Shift+Tab wrap inside the
  *   sheet. On close, focus goes back to the element that had it, if that still exists and nothing has
- *   moved focus out of the dialog on purpose.
+ *   moved focus out of the dialog on purpose; past a dialog under it that closed in the same update,
+ *   to where that one came from (dialogStack).
  * - Esc is heard on `document` in the bubble phase, so every layer inside that takes it first wins:
  *   Popover and the ⌘K palette (capture phase), Tooltip and the date picker's calendar (the window,
  *   capture phase), and a form or row that stops it (team meetings). An Esc that something already
@@ -123,9 +124,9 @@ export function useDialog({
   open, onClose, closeDisabled = false, initialFocusRef, sheetRef, exitMs = 150, inPlace = false,
 }: UseDialogOptions): UseDialogResult {
   // The exit: `closing` keeps the sheet up for the fade once `open` turns false. And the element
-  // focus goes back to: whatever had it as the dialog opened, read while rendering the open, before
-  // anything inside (a field with autoFocus) can take focus. Both adjusted while rendering the change
-  // rather than in an effect, so they hold from the commit that opens or closes the dialog.
+  // that had focus as the dialog opened, read while rendering the open, before anything inside (a
+  // field with autoFocus) can take focus. Both adjusted while rendering the change rather than in an
+  // effect, so they hold from the commit that opens or closes the dialog.
   const [closing, setClosing] = useState(false);
   const [opener, setOpener] = useState<Element | null>(() => (open ? document.activeElement : null));
   const [wasOpen, setWasOpen] = useState(open);
@@ -152,7 +153,15 @@ export function useDialog({
     focusInside(sheet, initial);
   });
 
-  const openedFrom = useEffectEvent(() => opener);
+  // Onto the stack, with where focus goes back. What has focus now, when that is outside this sheet
+  // and not the page itself: a dialog that closed in this same update (the one this confirm took
+  // over from) has just given focus back to its own opener, and that is where this one goes back to
+  // too. Otherwise the element read while rendering the open.
+  const openLayer = useEffectEvent((self: symbol) => {
+    const active = document.activeElement;
+    const outside = active !== null && active !== document.body && !sheetRef.current?.contains(active);
+    pushDialog(self, outside ? active : opener, (el) => sheetRef.current?.contains(el) ?? false);
+  });
 
   const onKeyDown = useEffectEvent((e: KeyboardEvent, self: symbol) => {
     if (e.defaultPrevented || !isTopDialog(self)) return;
@@ -165,21 +174,21 @@ export function useDialog({
     }
   });
 
-  const giveFocusBack = useEffectEvent((returnTo: Element | null) => {
+  // Focus still in the closing sheet, or lost with it, goes back (dialogStack says where). Focus
+  // anywhere else stays: moved there on purpose, or in a dialog above this one, which gives it back.
+  const giveFocusBack = useEffectEvent((back: HTMLElement | null) => {
     const sheet = sheetRef.current;
     const active = document.activeElement;
-    // Still in the closing sheet, or lost with it: back to where it came from.
     const stranded = !active || active === document.body || (sheet !== null && sheet.contains(active));
-    if (stranded && returnTo instanceof HTMLElement && returnTo.isConnected) returnTo.focus();
+    if (stranded && back) back.focus();
   });
 
   useEffect(() => {
     if (!open || inPlace) return undefined;
     const self = Symbol('dialog');
     token.current = self;
-    pushDialog(self);
+    openLayer(self);
     const unlock = lockBodyScroll();
-    const returnTo = openedFrom();
     // Once the key or press that opened the dialog has run its course: focused at once, the dialog's
     // Cancel would take the same Enter's keypress and close it, and a first field the same keystroke.
     const focusTimer = window.setTimeout(() => focusIn(), 0);
@@ -188,9 +197,9 @@ export function useDialog({
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener('keydown', listener);
-      popDialog(self);
+      const back = popDialog(self);
       unlock();
-      giveFocusBack(returnTo);
+      giveFocusBack(back);
     };
   }, [open, inPlace]);
 

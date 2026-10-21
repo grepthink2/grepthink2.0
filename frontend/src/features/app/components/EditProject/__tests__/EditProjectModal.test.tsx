@@ -178,6 +178,19 @@ describe('EditProjectModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('gives focus back to the page button after a delete closes the confirm and the modal together', async () => {
+    const user = userEvent.setup();
+    deleteProject.mockResolvedValue(undefined);
+    render(<Page onDelete={() => {}} />);
+    const opener = screen.getByRole('button', { name: 'Edit Project/Roles' });
+    await user.click(opener);
+    await user.click(within(dialog()).getByRole('button', { name: 'Delete Project' }));
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete Project' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+  });
+
   it('keeps a refused delete in the confirm, with the reason, and starts clean when asked again', async () => {
     const user = userEvent.setup();
     deleteProject.mockRejectedValue(new Error('Only the owner can delete this project'));

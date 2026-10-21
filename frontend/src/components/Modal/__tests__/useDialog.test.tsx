@@ -592,6 +592,79 @@ describe('useDialog', () => {
   });
 });
 
+/**
+ * A page button that opens a dialog, with a confirm over it, as Edit Project and its delete question
+ * are: siblings, rendered in either order. `handsOver`: the dialog's Delete closes it as it opens the
+ * confirm, in one update; otherwise the confirm's Yes closes both in one update.
+ */
+function Stacked({ confirmFirst, handsOver }: { confirmFirst: boolean; handsOver: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const edit = (
+    <TestDialog key="edit" open={editing} label="Edit" onClose={() => setEditing(false)}>
+      <button
+        type="button"
+        onClick={() => {
+          if (handsOver) setEditing(false);
+          setAsking(true);
+        }}
+      >
+        Delete
+      </button>
+    </TestDialog>
+  );
+  const ask = (
+    <TestDialog key="ask" open={asking} label="Delete?" onClose={() => setAsking(false)}>
+      <button
+        type="button"
+        onClick={() => {
+          setAsking(false);
+          setEditing(false);
+        }}
+      >
+        Yes
+      </button>
+      <button type="button" onClick={() => setAsking(false)}>No</button>
+    </TestDialog>
+  );
+  return (
+    <>
+      <button type="button" onClick={() => setEditing(true)}>Edit</button>
+      {confirmFirst ? [ask, edit] : [edit, ask]}
+    </>
+  );
+}
+
+describe.each([
+  ['after', false],
+  ['before', true],
+])('focus given back past a dialog that closes in the same update, the confirm rendered %s it', (_, confirmFirst) => {
+  it('a confirm that closes the dialog under it as it succeeds gives focus to the page button', async () => {
+    const user = userEvent.setup();
+    render(<Stacked confirmFirst={confirmFirst} handsOver={false} />);
+    const edit = screen.getByRole('button', { name: 'Edit' });
+    await user.click(edit);
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Yes' }));
+    expect(edit).toHaveFocus();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(edit).toHaveFocus();
+  });
+
+  it('a confirm opened as the dialog under it closes gives focus to the page button when it closes', async () => {
+    const user = userEvent.setup();
+    render(<Stacked confirmFirst={confirmFirst} handsOver />);
+    const edit = screen.getByRole('button', { name: 'Edit' });
+    await user.click(edit);
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    // The dialog has gone; the confirm stays.
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Edit' })).not.toBeInTheDocument());
+    expect(screen.getByRole('dialog', { name: 'Delete?' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'No' }));
+    expect(edit).toHaveFocus();
+  });
+});
+
 describe('dialogStack', () => {
   it('knows the topmost dialog, and pops out of order', () => {
     const a = Symbol('a');
@@ -602,9 +675,39 @@ describe('dialogStack', () => {
     expect(isTopDialog(b)).toBe(true);
     popDialog(a);
     expect(isTopDialog(b)).toBe(true);
-    popDialog(a); // gone already: nothing to do
+    expect(popDialog(a)).toBeNull(); // gone already: nothing to do
     popDialog(b);
     expect(isTopDialog(b)).toBe(false);
+  });
+
+  it('says where focus goes back: the opener, past a dialog under it that closed first, never a detached one', () => {
+    const page = document.body.appendChild(document.createElement('button'));
+    const sheet = document.body.appendChild(document.createElement('div'));
+    const inside = sheet.appendChild(document.createElement('button'));
+    const holds = (el: Element) => sheet.contains(el);
+    try {
+      const dialog = Symbol('dialog');
+      const confirm = Symbol('confirm');
+      // The dialog under it still open: back to the button in it.
+      pushDialog(dialog, page, holds);
+      pushDialog(confirm, inside);
+      expect(popDialog(confirm)).toBe(inside);
+      expect(popDialog(dialog)).toBe(page);
+
+      // The dialog under it closed first: back to where that one came from.
+      pushDialog(dialog, page, holds);
+      pushDialog(confirm, inside);
+      expect(popDialog(dialog)).toBe(page);
+      expect(popDialog(confirm)).toBe(page);
+
+      // An opener no longer on the page: nowhere.
+      pushDialog(confirm, inside);
+      inside.remove();
+      expect(popDialog(confirm)).toBeNull();
+    } finally {
+      page.remove();
+      sheet.remove();
+    }
   });
 });
 
