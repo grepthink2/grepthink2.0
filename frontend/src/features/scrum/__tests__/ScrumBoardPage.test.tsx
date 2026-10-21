@@ -193,7 +193,7 @@ describe('ScrumBoardPage story detail', () => {
   });
 
   it("moves a task from the task editor's status select", async () => {
-    vi.mocked(api.moveScrumTask).mockResolvedValue({ message: 'ok', task: makeTask({ id: 'a', status: 'done' }) });
+    vi.mocked(api.moveScrumTask).mockResolvedValue(makeTask({ id: 'a', status: 'done' }));
     renderAt();
     await userEvent.click(await screen.findByText('Build form'));
     const editor = await screen.findByRole('dialog', { name: /edit t-1/i });

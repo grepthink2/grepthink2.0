@@ -184,7 +184,7 @@ export function useScrumBoard(
         backlog: syncRefStatus(prev.backlog, taskId, to),
       } : prev));
       try {
-        const { task } = await api.moveScrumTask(taskId, to);
+        const task = await api.moveScrumTask(taskId, to);
         setBoard((prev) => (prev ? {
           ...prev,
           stories: syncRefStatus(confirmMove(prev.stories, taskId, task), taskId, task.status),

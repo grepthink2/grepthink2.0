@@ -82,7 +82,7 @@ describe('useScrumBoard', () => {
 
   it('moves optimistically then reconciles with the server row', async () => {
     const serverTask = makeTask({ status: 'done', moved_by_name: 'Tony W.', moved_at: '2026-08-28T12:00:00Z' });
-    let resolveMove: (v: { message: string; task: ApiScrumTask }) => void = () => {};
+    let resolveMove: (v: ApiScrumTask) => void = () => {};
     vi.mocked(api.moveScrumTask).mockReturnValue(
       new Promise((res) => { resolveMove = res; }) as ReturnType<typeof api.moveScrumTask>,
     );
@@ -95,7 +95,7 @@ describe('useScrumBoard', () => {
     await waitFor(() => expect(result.current.board!.stories[0].tasks[0].status).toBe('done'));
     expect(result.current.board!.stories[0].tasks[0].moved_by_name).toBe('Tony Wu');
 
-    await act(async () => { resolveMove({ message: 'ok', task: serverTask }); });
+    await act(async () => { resolveMove(serverTask); });
     expect(result.current.board!.stories[0].tasks[0].moved_by_name).toBe('Tony W.');
   });
 
@@ -344,7 +344,7 @@ describe('useScrumBoard dependencies', () => {
 
   it('moving the blocker to done unblocks its dependent at once', async () => {
     vi.mocked(api.getScrumBoard).mockResolvedValue(dependencyBoard());
-    let resolveMove: (v: { message: string; task: ApiScrumTask }) => void = () => {};
+    let resolveMove: (v: ApiScrumTask) => void = () => {};
     vi.mocked(api.moveScrumTask)
       .mockReturnValueOnce(new Promise((res) => { resolveMove = res; }) as ReturnType<typeof api.moveScrumTask>)
       .mockReturnValueOnce(new Promise(() => {}) as ReturnType<typeof api.moveScrumTask>);
@@ -361,7 +361,7 @@ describe('useScrumBoard dependencies', () => {
 
     // GT-1's own response carries no lists: it still names GT-2 in its blocks.
     await act(async () => {
-      resolveMove({ message: 'ok', task: makeTask({ id: 'b', key: 'GT-1', status: 'done' }) });
+      resolveMove(makeTask({ id: 'b', key: 'GT-1', status: 'done' }));
     });
     expect(task('b').blocks!.map((r) => r.id)).toEqual(['a']);
     expect(task('a').depends_on![0].status).toBe('done');
