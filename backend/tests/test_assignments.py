@@ -20,7 +20,7 @@ from app.assignments import deadlines
 from app.core import authz
 from app.tsr import controller as tsr_controller
 from app.tsr.models import CreateTSRRequest
-from tests.conftest import ISTINYE_INSTITUTION
+from tests.conftest import ISTINYE_INSTITUTION, header_for
 from tests.fake_supabase import FakeSupabase
 
 INSTR, OTHER_INSTR = "00000000-0000-4000-8000-0000000000a1", "00000000-0000-4000-8000-0000000000a2"
@@ -338,6 +338,21 @@ def test_self_review_edit_names_both_sides(db, clock):
     entry = assignments.update_tsr_entry(S1, A_TSR, "t-self", positive_feedback="still me")
     assert (entry["evaluator_name"], entry["evaluatee_name"]) == ("Sam X", "Sam X")
     assert entry["positive_feedback"] == "still me"
+
+
+def test_editing_a_tsr_entry_answers_the_entry(db, client):
+    # The route takes UUIDs, so this edit is of a copy of t-s2 under one.
+    tsr_id = "00000000-0000-4000-8000-0000000000f1"
+    db.rows("TSRs").append(dict(next(r for r in db.rows("TSRs") if r["id"] == "t-s2"), id=tsr_id))
+    res = client.patch(
+        f"/api/assignments/{A_TSR}/tsrs/{tsr_id}",
+        headers=header_for(f"{INSTR}@ucsc.edu", sub=INSTR),
+        json={"positive_feedback": "edited"},
+    )
+    assert res.status_code == 200
+    body = res.json()  # the entry itself, not wrapped in {message, tsr}
+    assert (body["tsr_id"], body["positive_feedback"]) == (tsr_id, "edited")
+    assert not {"message", "tsr"} & set(body)
 
 
 def test_tsr_edit_validation(db):
