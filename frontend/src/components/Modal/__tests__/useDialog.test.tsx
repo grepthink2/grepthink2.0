@@ -98,6 +98,20 @@ describe('useDialog', () => {
     expect(screen.getByRole('button', { name: 'Marked' })).toHaveFocus();
   });
 
+  it('keeps the focus a field took as it mounted, and still gives focus back to the opener', async () => {
+    const user = userEvent.setup();
+    render(
+      <Opener>
+        <input aria-label="Title" />
+        <input aria-label="Code" autoFocus />
+      </Opener>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    expect(screen.getByRole('textbox', { name: 'Code' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus();
+  });
+
   it('focuses the sheet when it holds no field, and skips a field in a hidden panel', () => {
     const { unmount } = render(
       <TestDialog open label="Notes">

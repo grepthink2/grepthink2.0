@@ -106,20 +106,25 @@ function trapTab(e: KeyboardEvent, sheet: HTMLElement) {
  * - After `open` turns false the sheet stays mounted `exitMs` with `closing` set, for the fade, and
  *   unmounts at once under reduced motion.
  *
- * Codebase-side: an Esc or Tab whose default was prevented is left alone, the trap counts only what
- * is drawn (`checkVisibility`, where the browser has it), and focus moved on purpose as the dialog
- * closes stays where it went.
+ * Codebase-side: an Esc or Tab whose default was prevented is left alone; the trap counts only what
+ * is drawn (`checkVisibility`, where the browser has it); a field inside that takes focus as it
+ * mounts (`autoFocus`) keeps it, unless `initialFocusRef` names another; and focus moved on purpose
+ * as the dialog closes stays where it went.
  */
 export function useDialog({
   open, onClose, closeDisabled = false, initialFocusRef, sheetRef, exitMs = 150, inPlace = false,
 }: UseDialogOptions): UseDialogResult {
-  // The exit: `closing` keeps the sheet up for the fade once `open` turns false. Adjusted while
-  // rendering the change rather than in an effect, so the fade starts in the same commit.
+  // The exit: `closing` keeps the sheet up for the fade once `open` turns false. And the element
+  // focus goes back to: whatever had it as the dialog opened, read while rendering the open, before
+  // anything inside (a field with autoFocus) can take focus. Both adjusted while rendering the change
+  // rather than in an effect, so they hold from the commit that opens or closes the dialog.
   const [closing, setClosing] = useState(false);
+  const [opener, setOpener] = useState<Element | null>(() => (open ? document.activeElement : null));
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
     setClosing(!open && !reducedMotion());
+    if (open) setOpener(document.activeElement);
   }
   useEffect(() => {
     if (!closing) return undefined;
@@ -130,10 +135,15 @@ export function useDialog({
   // This dialog's place on the stack while it is open.
   const token = useRef<symbol | null>(null);
 
+  // On open: the element given, else the focus a child already took inside (autoFocus), else the rest.
   const focusIn = useEffectEvent(() => {
     const sheet = sheetRef.current;
-    if (sheet) focusInside(sheet, initialFocusRef?.current);
+    const initial = initialFocusRef?.current;
+    if (!sheet || (!initial && sheet.contains(document.activeElement))) return;
+    focusInside(sheet, initial);
   });
+
+  const openedFrom = useEffectEvent(() => opener);
 
   const onKeyDown = useEffectEvent((e: KeyboardEvent, self: symbol) => {
     if (e.defaultPrevented || !isTopDialog(self)) return;
@@ -160,7 +170,7 @@ export function useDialog({
     token.current = self;
     pushDialog(self);
     const unlock = lockBodyScroll();
-    const returnTo = document.activeElement;
+    const returnTo = openedFrom();
     focusIn();
     const listener = (e: KeyboardEvent) => onKeyDown(e, self);
     document.addEventListener('keydown', listener);
