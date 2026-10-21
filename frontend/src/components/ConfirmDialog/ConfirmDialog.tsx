@@ -29,7 +29,10 @@ export interface ConfirmDialogProps {
   onConfirm?: () => void | Promise<unknown>;
   /** Cancel, Esc, the scrim and the ×; none of them while busy. */
   onCancel?: () => void;
-  /** Busy from the caller, in place of the state onConfirm's promise gives. */
+  /**
+   * Busy from the caller, in place of the state onConfirm's promise gives: `busy={false}` re-enables
+   * Confirm even while that promise is still pending.
+   */
   busy?: boolean;
   /** An error from the caller (an API's message), in place of `errorText` after a rejection. */
   error?: ReactNode;

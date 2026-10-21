@@ -13,7 +13,8 @@ import EditProjectModal, { type EditProjectModalProps } from '../EditProjectModa
 
 const project = { id: 'p1', class_id: 'c1', name: 'Alpha', created_by: 'u-po', team_size: 4 } as ApiProject;
 const NOW = new Date('2026-10-20T22:12:00Z');
-const LA = 'America/Los_Angeles';
+// A fixed-offset zone: no daylight-saving rules to change under the test (AGENTS.md).
+const ZONE = 'Etc/GMT+8';
 
 /** A pending promise the test settles. */
 function pending<T = unknown>() {
@@ -109,7 +110,7 @@ describe('EditProjectModal', () => {
     const user = userEvent.setup();
     const { onClose } = renderModal({
       viewerIsProductOwner: true,
-      meetingsList: { meetings: [], now: NOW, zone: LA, schoolZone: LA, onCreate: vi.fn() },
+      meetingsList: { meetings: [], now: NOW, zone: ZONE, schoolZone: ZONE, onCreate: vi.fn() },
     });
     await user.click(screen.getByRole('button', { name: 'Meetings' }));
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
