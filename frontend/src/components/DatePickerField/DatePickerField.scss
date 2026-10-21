@@ -70,6 +70,9 @@
 @media (max-width: 767px) {
   .dpf__trigger { min-height: 44px; }
   .dpf__cal-day { width: 2.75rem; height: 2.75rem; }
+  // Codebase-side: the month buttons reach 44px too, as the design's phone rule does for every other
+  // control here; its 32px buttons are left out of it.
+  .dpf__cal-nav { min-width: 44px; min-height: 44px; }
 }
 
 /* ── Reduced motion ─────────────────────────────────────── */

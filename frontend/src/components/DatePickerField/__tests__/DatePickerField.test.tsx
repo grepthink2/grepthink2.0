@@ -463,6 +463,9 @@ describe('DatePickerField', () => {
     expect(days.getPropertyValue('width')).toBe('2.75rem');
     const [phone] = cssRules('.dpf__trigger', 'max-width: 767px');
     expect(phone.getPropertyValue('min-height')).toBe('44px');
+    const [nav] = cssRules('.dpf__cal-nav', 'max-width: 767px');
+    expect(nav.getPropertyValue('min-width')).toBe('44px');
+    expect(nav.getPropertyValue('min-height')).toBe('44px');
     const [reduced] = cssRules('.dpf__popover', 'prefers-reduced-motion');
     expect(reduced.getPropertyValue('animation')).toContain('gt-fade-in');
   });
