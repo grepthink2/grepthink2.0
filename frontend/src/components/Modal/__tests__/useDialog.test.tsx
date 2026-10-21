@@ -175,18 +175,23 @@ describe('useDialog', () => {
   it('wraps Shift+Tab from the sheet itself, and brings a Tab from the page body back in', async () => {
     const user = userEvent.setup();
     render(
-      <TestDialog open label="Notes">
-        <p>Read only.</p>
-        <button type="button">First</button>
-        <button type="button">Last</button>
-      </TestDialog>,
+      <>
+        <button type="button">Page</button>
+        <TestDialog open label="Notes">
+          <p>Read only.</p>
+          <button type="button">First</button>
+          <button type="button">Last</button>
+        </TestDialog>
+        <button type="button">Page end</button>
+      </>,
     );
     const sheet = screen.getByRole('dialog', { name: 'Notes' });
-    expect(sheet).toHaveFocus();
+    sheet.focus();
     await user.tab({ shift: true });
     expect(screen.getByRole('button', { name: 'Last' })).toHaveFocus();
 
-    // Focus lost to the page (its element went away): the next Tab lands back in the sheet.
+    // Focus lost to the page (its element went away): the next Tab or Shift+Tab lands back in the
+    // sheet, not on the page's own buttons before and after it.
     (document.activeElement as HTMLElement).blur();
     expect(document.body).toHaveFocus();
     await user.tab();
@@ -238,21 +243,35 @@ describe('useDialog', () => {
 
   it('does not trap Tab from a portaled layer opened inside the dialog', async () => {
     const user = userEvent.setup();
-    render(
-      <TestDialog open>
-        <button type="button">Inside</button>
-        {createPortal(
-          <>
-            <button type="button">A</button>
-            <button type="button">B</button>
-          </>,
-          document.body,
-        )}
-      </TestDialog>,
-    );
-    screen.getByRole('button', { name: 'A' }).focus();
+    function WithLayer() {
+      const [layer, setLayer] = useState(false);
+      return (
+        <TestDialog open>
+          <button type="button" onClick={() => setLayer(true)}>Pick a day</button>
+          {layer && createPortal(
+            <>
+              <button type="button">A</button>
+              <button type="button">B</button>
+            </>,
+            document.body,
+          )}
+        </TestDialog>
+      );
+    }
+    render(<WithLayer />);
+    await user.click(screen.getByRole('button', { name: 'Pick a day' }));
+    const a = screen.getByRole('button', { name: 'A' });
+    // Opened from inside the dialog, the layer comes after the sheet in the document, as the date
+    // picker's calendar does: nothing in the sheet lies ahead of it.
+    expect(screen.getByRole('dialog').compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    a.focus();
     await user.tab();
-    expect(screen.getByRole('button', { name: 'B' })).toHaveFocus();
+    const b = screen.getByRole('button', { name: 'B' });
+    expect(b).toHaveFocus();
+    // From the layer's last stop, Tab is the browser's too: it leaves, and is not pulled into the sheet.
+    await user.tab();
+    expect(b).not.toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Pick a day' })).not.toHaveFocus();
   });
 
   it('closes on a mousedown on the scrim only, and a mousedown on a portaled layer does not close it', () => {
@@ -443,10 +462,11 @@ describe('useDialog', () => {
   it('leaves focus that the close moved on purpose where it is', async () => {
     const user = userEvent.setup();
     function MovesFocus() {
-      const [open, setOpen] = useState(true);
+      const [open, setOpen] = useState(false);
       const target = useRef<HTMLButtonElement>(null);
       return (
         <>
+          <button type="button" onClick={() => setOpen(true)}>Opener</button>
           <button type="button" ref={target}>New row</button>
           <TestDialog open={open} onClose={() => setOpen(false)}>
             <button
@@ -462,12 +482,9 @@ describe('useDialog', () => {
         </>
       );
     }
-    render(
-      <>
-        <button type="button">Opener</button>
-        <MovesFocus />
-      </>,
-    );
+    render(<MovesFocus />);
+    // Opened from a real button, so a dialog that always gave focus back would land on it.
+    await user.click(screen.getByRole('button', { name: 'Opener' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(screen.getByRole('button', { name: 'New row' })).toHaveFocus();
   });
