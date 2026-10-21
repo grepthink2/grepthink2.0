@@ -45,13 +45,38 @@ const reducedMotion = () =>
 
 /**
  * Whether focus can land on an element: outside hidden and inert subtrees, and drawn. The browser's
- * `checkVisibility` answers the last part where it exists; elsewhere the element's own computed style.
+ * `checkVisibility` answers the last part where it exists; elsewhere (Safari before 17.4, jsdom) the
+ * computed styles do: not `visibility: hidden`, and no `display: none` on it or on a box around it.
  */
 function canTakeFocus(el: HTMLElement): boolean {
   if (el.closest('[hidden], [inert]')) return false;
   if (typeof el.checkVisibility === 'function') return el.checkVisibility({ checkVisibilityCSS: true, visibilityProperty: true });
-  const style = window.getComputedStyle(el);
-  return style.display !== 'none' && style.visibility !== 'hidden';
+  if (window.getComputedStyle(el).visibility === 'hidden') return false;
+  for (let box: Element | null = el; box; box = box.parentElement) {
+    if (window.getComputedStyle(box).display === 'none') return false;
+  }
+  return true;
+}
+
+const isGroupedRadio = (el: HTMLElement): el is HTMLInputElement =>
+  el instanceof HTMLInputElement && el.type === 'radio' && el.name !== '';
+
+/**
+ * Where Tab stops in the sheet, in order, as the browser counts them: what can take focus and is in
+ * the tab order (`tabIndex` 0 or more, so the resting items of a roving group drop out), and a
+ * radio group once, by its checked radio or else its first.
+ */
+function tabStops(sheet: HTMLElement): HTMLElement[] {
+  const focusable = Array.from(sheet.querySelectorAll<HTMLElement>(FOCUSABLE))
+    .filter((el) => el.tabIndex >= 0 && canTakeFocus(el));
+  const standIns: HTMLInputElement[] = [];
+  for (const el of focusable) {
+    if (!isGroupedRadio(el)) continue;
+    const at = standIns.findIndex((radio) => radio.name === el.name && radio.form === el.form);
+    if (at === -1) standIns.push(el);
+    else if (el.checked && !standIns[at].checked) standIns[at] = el;
+  }
+  return focusable.filter((el) => !isGroupedRadio(el) || standIns.includes(el));
 }
 
 /**
@@ -77,7 +102,7 @@ function trapTab(e: KeyboardEvent, sheet: HTMLElement) {
   const active = document.activeElement;
   const lost = !active || active === document.body || active === document.documentElement;
   if (!lost && !sheet.contains(active)) return;
-  const stops = Array.from(sheet.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(canTakeFocus);
+  const stops = tabStops(sheet);
   if (stops.length === 0) {
     e.preventDefault();
     sheet.focus();

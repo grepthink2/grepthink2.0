@@ -257,6 +257,74 @@ describe('useDialog', () => {
     expect(screen.getByRole('dialog', { name: 'Notes' })).toHaveFocus();
   });
 
+  it('counts a roving group at the end of the sheet as one stop, so Tab from it wraps', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <TestDialog open>
+          <button type="button">First</button>
+          <div role="toolbar" aria-label="Format">
+            <button type="button" tabIndex={0}>Bold</button>
+            <button type="button" tabIndex={-1}>Italic</button>
+            <button type="button" tabIndex={-1}>Link</button>
+          </div>
+        </TestDialog>
+        <button type="button">Page</button>
+      </>,
+    );
+    screen.getByRole('button', { name: 'Bold' }).focus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'First' })).toHaveFocus();
+  });
+
+  it('counts a radio group at the end of the sheet as one stop: the checked radio, else the first', async () => {
+    const user = userEvent.setup();
+    function Choice({ checked }: { checked?: string }) {
+      return (
+        <TestDialog open>
+          <button type="button">First</button>
+          <fieldset>
+            <legend>Visibility</legend>
+            {['Draft', 'Published', 'Archived'].map((option) => (
+              <label key={option}>
+                <input type="radio" name="visibility" value={option} defaultChecked={option === checked} />
+                {option}
+              </label>
+            ))}
+          </fieldset>
+        </TestDialog>
+      );
+    }
+    const { unmount } = render(<Choice checked="Published" />);
+    screen.getByRole('radio', { name: 'Published' }).focus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'First' })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole('radio', { name: 'Published' })).toHaveFocus();
+    unmount();
+
+    render(<Choice />);
+    screen.getByRole('radio', { name: 'Draft' }).focus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'First' })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole('radio', { name: 'Draft' })).toHaveFocus();
+  });
+
+  it('skips a stop inside a box that is display: none, where the browser has no checkVisibility', async () => {
+    const user = userEvent.setup();
+    render(
+      <TestDialog open>
+        <button type="button">First</button>
+        <button type="button">Last</button>
+        <div style={{ display: 'none' }}><button type="button">Collapsed</button></div>
+      </TestDialog>,
+    );
+    screen.getByRole('button', { name: 'Last' }).focus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'First' })).toHaveFocus();
+  });
+
   it('uses checkVisibility where the browser has it', async () => {
     const user = userEvent.setup();
     // jsdom has no checkVisibility: this one says a collapsed button is not drawn.
