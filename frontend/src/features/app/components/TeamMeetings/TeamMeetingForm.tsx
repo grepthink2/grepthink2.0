@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
-import { CircleX } from 'lucide-react';
+import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Input } from '@/components/Input/Input';
 import { Select } from '@/components/Select/Select';
@@ -254,12 +254,7 @@ export function TeamMeetingForm({
         disabled={saving}
       />
 
-      {error && (
-        <div className="gt-alert gt-alert--error" role="alert">
-          <span className="gt-alert__icon"><CircleX size={16} aria-hidden="true" /></span>
-          <div className="gt-alert__content"><p className="gt-alert__text">{error}</p></div>
-        </div>
-      )}
+      {error && <Alert tone="error">{error}</Alert>}
 
       <div className="gt-tmform__foot">
         <Button variant="outline" size="sm" onClick={onCancel} disabled={saving}>Cancel</Button>

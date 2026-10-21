@@ -1,0 +1,26 @@
+// EmptyState — ported from design/components/feedback/feedback.css so the two stay diffable: the
+// EmptyState block (page · card · quiet · error). The retry link's own padding, border, background,
+// radius and font beat index.css's global button rule. One change, marked below: the card's height.
+
+/* ── EmptyState — page · card · quiet · error ─────────── */
+.gt-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gt-space-sm); padding: var(--gt-space-xxl) var(--gt-space-lg); text-align: center; font-family: var(--gt-font-sans); }
+.gt-empty--compact { padding: var(--gt-space-lg); }
+.gt-empty__icon { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; margin-bottom: var(--gt-space-xs); border-radius: 50%; background-color: var(--gt-primary-soft); color: var(--gt-primary); }
+.gt-empty__title { margin: 0; font-size: 1.25rem; font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); }
+.gt-empty__desc { max-width: 400px; margin: 0; font-size: var(--gt-text-body); color: var(--gt-text-secondary); }
+.gt-empty__action { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--gt-space-sm); margin-top: var(--gt-space-md); }
+// Codebase change: the design's min-height is 120px on a content box (its .gt-empty sets no
+// box-sizing); index.css makes every box border-box, so the 28px top and bottom padding go back in:
+// 120 + 56 = 176, the design's height.
+.gt-empty--card { min-height: 176px; padding: 28px 16px; gap: 6px; }
+.gt-empty--card .gt-empty__icon { width: 36px; height: 36px; margin-bottom: 4px; background: var(--gt-surface-sunken); color: var(--gt-text-tertiary); }
+.gt-empty--card .gt-empty__title { font-size: 13px; }
+.gt-empty--card .gt-empty__desc, .gt-empty__hint { max-width: 320px; margin: 0; font-size: var(--gt-text-caption); line-height: var(--gt-leading-snug); color: var(--gt-text-tertiary); }
+.gt-empty--card .gt-empty__action { margin-top: 6px; }
+.gt-empty--quiet, .gt-empty--error { align-items: flex-start; gap: 4px; padding: 12px 0; text-align: left; }
+.gt-empty--quiet .gt-empty__title, .gt-empty--error .gt-empty__title { font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-secondary); }
+.gt-empty--quiet .gt-empty__desc, .gt-empty--error .gt-empty__desc { font-size: var(--gt-text-caption); color: var(--gt-text-tertiary); }
+.gt-empty--quiet .gt-empty__action, .gt-empty--error .gt-empty__action { justify-content: flex-start; margin-top: 2px; }
+.gt-empty__retry { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: none; border-radius: 4px; background: none; font-family: var(--gt-font-sans); font-size: 12.5px; font-weight: var(--gt-weight-medium); color: var(--gt-text-link); cursor: pointer; }
+.gt-empty__retry:hover { text-decoration: underline; }
+.gt-empty__retry:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }

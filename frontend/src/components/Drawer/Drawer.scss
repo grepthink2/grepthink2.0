@@ -1,0 +1,37 @@
+// Drawer — ported from design/components/feedback/feedback.css so the two stay diffable: the Drawer
+// block, then its lines from the file's phone and reduced-motion blocks. The × is IconButton
+// (components/IconButton), which brings its own styles. The slides and fades are named after the
+// component and defined once, here.
+
+/* ── Drawer — side sheet with the Modal's behaviour ──────── */
+.gt-drawer-backdrop { position: fixed; inset: 0; z-index: var(--gt-z-modal); display: flex; justify-content: flex-end; background-color: var(--gt-scrim); animation: gt-drawer-fade-in 0.2s ease-out; }
+.gt-drawer-backdrop--left { justify-content: flex-start; }
+.gt-drawer-backdrop--closing { animation: gt-drawer-fade-out 0.2s ease-out forwards; pointer-events: none; }
+.gt-drawer-backdrop--inline { position: relative; inset: auto; z-index: auto; height: 100%; animation: none; }
+.gt-drawer { display: flex; flex-direction: column; width: 420px; max-width: 100%; height: 100%; box-sizing: border-box; background: var(--gt-surface); box-shadow: var(--gt-shadow-modal); font-family: var(--gt-font-sans); color: var(--gt-text-primary); outline: none; animation: gt-drawer-in-right 0.2s ease-out; }
+.gt-drawer--left { animation-name: gt-drawer-in-left; }
+.gt-drawer-backdrop--closing .gt-drawer { animation: gt-drawer-out-right 0.2s ease-in forwards; }
+.gt-drawer-backdrop--closing .gt-drawer--left { animation-name: gt-drawer-out-left; }
+.gt-drawer__head { position: relative; display: flex; flex-direction: column; flex-shrink: 0; padding: 18px 56px 14px 20px; border-bottom: 1px solid var(--gt-border-subtle); }
+.gt-drawer__title { margin: 0; font-size: 16px; font-weight: var(--gt-weight-semibold); line-height: 1.35; }
+.gt-drawer__subtitle { margin: 2px 0 0; font-size: 12.5px; color: var(--gt-text-secondary); }
+.gt-drawer__close { position: absolute; top: 10px; right: 10px; }
+.gt-drawer__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px 20px; }
+.gt-drawer__footer { display: flex; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; gap: var(--gt-space-sm); padding: 12px 20px; border-top: 1px solid var(--gt-border-subtle); }
+@keyframes gt-drawer-in-right { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes gt-drawer-in-left { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes gt-drawer-out-right { to { transform: translateX(24px); opacity: 0; } }
+@keyframes gt-drawer-out-left { to { transform: translateX(-24px); opacity: 0; } }
+@keyframes gt-drawer-fade-in { from { opacity: 0; } }
+@keyframes gt-drawer-fade-out { to { opacity: 0; } }
+
+/* ── Phones + reduced motion ──────────────────────────────── */
+@media (max-width: 767px) {
+  .gt-drawer__footer .gt-button { flex: 1 1 auto; }
+  .gt-drawer { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gt-drawer-backdrop, .gt-drawer { animation: gt-drawer-fade-in 0.15s ease-out; }
+  .gt-drawer-backdrop--closing .gt-drawer { animation: none; }
+  .gt-drawer-backdrop--closing { animation: none; opacity: 0; }
+}

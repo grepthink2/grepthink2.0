@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Class } from '@/lib/classContext';
@@ -358,5 +358,31 @@ describe('ClassSettingsModal — last day of classes', () => {
     rerender(<ClassSettingsModal isOpen onClose={() => {}} classItem={cls('cse-115a', null)} />);
     expect(endDateField()).toHaveTextContent('Last Day of Classes: not set');
     expect(endDateSave()).toBeDisabled();
+  });
+});
+
+describe('ClassSettingsModal — Delete class', () => {
+  it('asks first: Esc closes only the question, and Remove from my view hides the class', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<ClassSettingsModal isOpen onClose={onClose} classItem={job} />);
+    const del = screen.getByRole('button', { name: 'Delete class' });
+    await user.click(del);
+    const question = screen.getByRole('alertdialog', { name: 'Delete class?' });
+    expect(question).toHaveAccessibleDescription(/only hides it for you/);
+    expect(within(question).getByRole('button', { name: 'Cancel' })).toHaveFocus();
+    expect(within(question).getByRole('button', { name: 'Remove from my view' })).toHaveClass('gt-button--danger');
+
+    await user.keyboard('{Escape}');
+    expect(del).toHaveFocus();
+    // The settings dialog closes 200ms after its own Esc; this one was the question's alone.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(onClose).not.toHaveBeenCalled();
+    expect(ctx.hideClassFromUI).not.toHaveBeenCalled();
+
+    await user.click(del);
+    await user.click(screen.getByRole('button', { name: 'Remove from my view' }));
+    expect(ctx.hideClassFromUI).toHaveBeenCalledWith('job-191');
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 });

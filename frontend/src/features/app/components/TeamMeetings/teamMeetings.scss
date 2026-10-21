@@ -3,30 +3,10 @@
    classes and `--gt-*` tokens only (lint:design). Every rule below is copied unchanged from the design
    CSS; only these comments are new.
    Copied:
-     design/components/feedback/feedback.css — Alert 65-76, 78 and 96 (the error tone, no title or
-       dismiss).
      design/components/domain/domain.css — Team meetings 516-614, whole.
-   The buttons and fields are the shared Button, Input, Select and Textarea (components/); the rules
-   below that name their classes only place them in this layout. The codebase has no Alert component
-   yet, so the form renders a plain element with these classes. When it lands, drop the Alert block.
-   Left out: the other Alert tones, its title and dismiss button.
+   The buttons, fields and the form's error alert are the shared Button, Input, Select, Textarea and
+   Alert (components/); the rules below that name their classes only place them in this layout.
    The schedule rows the card reuses are styled by features/schedule/schedule.scss. */
-
-/* ── Alert (design/components/feedback/feedback.css) ─────────────────────────────────────── */
-/* ── Alert (inline) ──────────────────────────────────────── */
-.gt-alert {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 0.75rem 1rem;
-  border-radius: var(--gt-radius-sm);
-  font-family: var(--gt-font-sans);
-  font-size: var(--gt-text-body);
-}
-.gt-alert__icon { display: inline-flex; margin-top: 1px; flex-shrink: 0; }
-.gt-alert__content { flex: 1; min-width: 0; }
-.gt-alert__text { margin: 0; font-size: var(--gt-text-caption); line-height: var(--gt-leading-normal); }
-.gt-alert--error   { background-color: var(--gt-error-soft);   color: var(--gt-error-text); }
 
 /* ── Team meetings (TeamMeetingsList · TeamMeetingForm) ─────
    .gt-tm = the list (--manage: Edit Project → Meetings tab · --card: project-page card body, which

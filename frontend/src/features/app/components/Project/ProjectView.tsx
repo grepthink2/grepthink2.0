@@ -27,7 +27,7 @@ import type { ProjectMember } from './projectMembers';
 import RequestModal from './RequestModal';
 import MemberManagerModal from './MemberManagerModal';
 import EditProjectModal, { type EditProjectTab } from '../EditProject/EditProjectModal';
-import ConfirmModal from '../Overlays/ConfirmModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
 import { TeamMeetingsList } from '../TeamMeetings/TeamMeetingsList';
 import { toProjectMeetingPayload, toTeamMeeting } from '../TeamMeetings/teamMeetingRows';
 import { showTeamMeetingsCard, type TeamMeeting, type TeamMeetingPayload } from '../TeamMeetings/teamMeetingsModel';
@@ -273,7 +273,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     project?.created_by === user?.id &&
     projectMembers.length === 0;
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [deletingProject, setDeletingProject] = useState(false);
+  // Why the last deletion was refused, shown in the confirm dialog.
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestedHovered, setRequestedHovered] = useState(false);
@@ -337,18 +337,18 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     }
   }, [pendingRequestId, cancellingRequest, onRequestCancelled]);
 
+  // The confirm dialog is busy while this runs; a refusal stays in it, with the API's reason.
   const handleDeleteEmptyProject = async () => {
-    if (!projectId || deletingProject) return;
-    setDeletingProject(true);
+    if (!projectId) return;
     setDeleteError(null);
     try {
       await api.deleteProject(projectId);
-      onDelete?.();
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Failed to delete project');
-    } finally {
-      setDeletingProject(false);
+      return;
     }
+    setConfirmDeleteOpen(false);
+    onDelete?.();
   };
 
   const displayTitle = projectTitle.trim() ? projectTitle : 'Project Title';
@@ -500,17 +500,14 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 <button
                   type="button"
                   className="project-view__request-button project-view__request-button--danger"
-                  onClick={() => setConfirmDeleteOpen(true)}
-                  disabled={deletingProject}
+                  onClick={() => {
+                    setDeleteError(null);
+                    setConfirmDeleteOpen(true);
+                  }}
                 >
                   <Trash2 size={18} />
-                  {deletingProject ? 'Deleting…' : 'Delete Project'}
+                  Delete Project
                 </button>
-                {deleteError && (
-                  <p className="project-view__action-error" role="alert">
-                    {deleteError}
-                  </p>
-                )}
               </div>
             ) : (
               <button
@@ -629,14 +626,16 @@ const ProjectView: React.FC<ProjectViewProps> = ({
         />
       )}
       {canDeleteEmptyProject && (
-        <ConfirmModal
-          isOpen={confirmDeleteOpen}
-          onClose={() => setConfirmDeleteOpen(false)}
-          onConfirm={() => void handleDeleteEmptyProject()}
+        <ConfirmDialog
+          open={confirmDeleteOpen}
+          destructive
           title="Delete project?"
           message={`Nobody is left in "${project?.name ?? projectTitle}". Deleting it removes the project for good; this cannot be undone.`}
-          confirmText="Delete"
-          cancelText="Cancel"
+          confirmLabel="Delete"
+          busyLabel="Deleting…"
+          error={deleteError}
+          onCancel={() => setConfirmDeleteOpen(false)}
+          onConfirm={handleDeleteEmptyProject}
         />
       )}
     </div>

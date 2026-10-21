@@ -1,6 +1,9 @@
-import React, { useEffect, useId, useState } from 'react';
-import { CalendarDays, Settings, Trash2, Users, X } from 'lucide-react';
-import ConfirmModal from '../Overlays/ConfirmModal';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { CalendarDays, Settings, Trash2, Users } from 'lucide-react';
+import { Alert } from '@/components/Alert/Alert';
+import { Button } from '@/components/Button/Button';
+import { ConfirmDialog } from '@/components/ConfirmDialog/ConfirmDialog';
+import { Modal } from '@/components/Modal/Modal';
 import DetailsTab from './DetailsTab';
 import TeamTab from './TeamTab';
 import {
@@ -108,6 +111,9 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
   const [apiError, setApiError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  /** Why the last delete was refused, shown in the delete confirm. */
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const saveErrorRef = useRef<HTMLDivElement>(null);
   /** The Meetings tab's editor: a meeting with unsaved input, or a meeting request in flight. */
   const [meetingEditor, setMeetingEditor] = useState<TeamMeetingsEditorState>({ dirty: false, busy: false });
   const meetingHintId = useId();
@@ -136,6 +142,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
       setSaving(false);
       setActiveTab(openingTab(initialTab, canEditProjectDetails, viewerIsProductOwner));
       setShowDeleteConfirm(false);
+      setDeleteError(null);
 
       const roles = roleHoldersOf(projectMembers);
       setInitialRoles(roles);
@@ -151,14 +158,10 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
     };
   }, [logoPreview]);
 
+  // A refused save shows above the actions, at the end of the body: scrolled into view, wherever the body is.
   useEffect(() => {
-    if (!isOpen) return;
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+    if (apiError) saveErrorRef.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [apiError]);
 
   const toggleAdmin = (userId: string) => {
     setAdminIds((prev) => {
@@ -291,21 +294,24 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
     }
   };
 
-  const handleDelete = async () => {
-    setApiError(null);
-    setSaving(true);
-    try {
-      await api.deleteProject(project.id);
-      onDelete?.();
-      onClose();
-    } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Failed to delete project');
-    } finally {
-      setSaving(false);
-    }
+  const askToDelete = () => {
+    setDeleteError(null);
+    setShowDeleteConfirm(true);
   };
 
-  if (!isOpen) return null;
+  // The delete confirm is busy while this runs; a refusal stays in it, with the API's reason.
+  const handleDelete = async () => {
+    setDeleteError(null);
+    try {
+      await api.deleteProject(project.id);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete project');
+      return;
+    }
+    setShowDeleteConfirm(false);
+    onDelete?.();
+    onClose();
+  };
 
   // Edits on Details or Team that only Save Changes sends: the fields against what they were seeded
   // with. While there are any, the Meetings tab keeps Cancel / Save Changes, so they are never dropped
@@ -335,30 +341,21 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
 
   return (
     <>
-      <div className="edit-project-backdrop" onClick={onClose}>
-        <div className="edit-project" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            className="edit-project__close"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <X size={24} />
-          </button>
-
-          <header className="edit-project__header">
-            <h2 className="edit-project__title">
-              {canEditProjectDetails ? 'Edit Project' : 'Manage Project Admins'}
-            </h2>
-            <p className="edit-project__subtitle">
-              {canEditProjectDetails
-                ? 'Manage your project configuration and team roles'
-                : 'Assign or revoke admin access for project members'}
-            </p>
-          </header>
-
-          {/* ── Tabs ── */}
-          {canEditProjectDetails && (
+      <Modal
+        open={isOpen}
+        onClose={onClose}
+        size="lg"
+        className="edit-project"
+        title={canEditProjectDetails ? 'Edit Project' : 'Manage Project Admins'}
+        subtitle={
+          canEditProjectDetails
+            ? 'Manage your project configuration and team roles'
+            : 'Assign or revoke admin access for project members'
+        }
+        // Saving holds the modal open: the ×, Esc and the backdrop wait for the answer.
+        closeDisabled={saving}
+        tabs={
+          canEditProjectDetails && (
             <div className="edit-project__tabs">
               <button
                 type="button"
@@ -387,64 +384,20 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
                 </button>
               )}
             </div>
-          )}
-
-          {/* ── Body ── */}
-          <div className="edit-project__body">
-            {apiError && (
-              <p className="edit-project__api-error" role="alert">{apiError}</p>
-            )}
-            {activeTab === 'details' && (
-              <DetailsTab
-                name={name}
-                onNameChange={setName}
-                nameError={nameError}
-                description={description}
-                onDescriptionChange={setDescription}
-                teamSize={teamSize}
-                onTeamSizeChange={setTeamSize}
-                teamSizeError={teamSizeError}
-                logoPreview={logoPreview}
-                logoUrl={logoUrl}
-                onLogoFileChange={handleLogoFileChange}
-                onRemoveLogo={handleRemoveLogo}
-              />
-            )}
-            {(activeTab === 'team' || !canEditProjectDetails) && (
-              <TeamTab
-                memberOptions={memberOptions}
-                projectOwnerId={initialRoles.projectOwnerId}
-                productOwnerId={productOwnerId}
-                onProductOwnerChange={setProductOwnerId}
-                scrumMasterId={scrumMasterId}
-                onScrumMasterChange={setScrumMasterId}
-                adminIds={adminIds}
-                onToggleAdmin={toggleAdmin}
-                canManageAdmins={canManageAdmins}
-                canEditProjectDetails={canEditProjectDetails}
-              />
-            )}
-            {canEditProjectDetails && viewerIsProductOwner && (
-              // Mounted behind the other tabs, so a meeting draft survives a tab switch as Details and
-              // Team edits do.
-              <div hidden={activeTab !== 'meetings'}>
-                <TeamMeetingsList variant="manage" canManage {...meetingsList} onEditorChange={setMeetingEditor} />
-              </div>
-            )}
-          </div>
-
-          {/* ── Footer ── */}
-          <footer className={`edit-project__footer ${meetingEditor.dirty ? 'edit-project__footer--hint' : ''}`}>
+          )
+        }
+        footer={
+          <div className={`edit-project__footer ${meetingEditor.dirty ? 'edit-project__footer--hint' : ''}`}>
             {canEditProjectDetails && (
-              <button
-                type="button"
-                className="edit-project__btn edit-project__btn--delete"
-                onClick={() => setShowDeleteConfirm(true)}
+              <Button
+                variant="danger-ghost"
+                className="edit-project__delete"
+                iconLeft={<Trash2 size={16} />}
+                onClick={askToDelete}
                 disabled={saving}
               >
-                <Trash2 size={16} />
                 Delete Project
-              </button>
+              </Button>
             )}
             <div className="edit-project__footer-right">
               {meetingEditor.dirty && (
@@ -454,52 +407,83 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({
               )}
               {activeTab === 'meetings' && !hasStagedEdits ? (
                 // Each meeting saves on its own, so with nothing staged elsewhere Done just closes.
-                <button
-                  type="button"
-                  className="edit-project__btn edit-project__btn--save"
-                  onClick={onClose}
-                  disabled={saving || meetingHolds}
-                  aria-describedby={meetingHint}
-                >
+                <Button onClick={onClose} disabled={saving || meetingHolds} aria-describedby={meetingHint}>
                   Done
-                </button>
+                </Button>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    className="edit-project__btn edit-project__btn--secondary"
-                    onClick={onClose}
-                    disabled={saving}
-                  >
+                  <Button variant="outline" onClick={onClose} disabled={saving}>
                     Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="edit-project__btn edit-project__btn--save"
+                  </Button>
+                  <Button
                     onClick={handleSave}
-                    disabled={saving || meetingHolds}
+                    loading={saving}
+                    loadingLabel="Saving…"
+                    disabled={meetingHolds}
                     aria-describedby={meetingHint}
                   >
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </button>
+                    Save Changes
+                  </Button>
                 </>
               )}
             </div>
-          </footer>
-        </div>
-      </div>
+          </div>
+        }
+      >
+        {activeTab === 'details' && (
+          <DetailsTab
+            name={name}
+            onNameChange={setName}
+            nameError={nameError}
+            description={description}
+            onDescriptionChange={setDescription}
+            teamSize={teamSize}
+            onTeamSizeChange={setTeamSize}
+            teamSizeError={teamSizeError}
+            logoPreview={logoPreview}
+            logoUrl={logoUrl}
+            onLogoFileChange={handleLogoFileChange}
+            onRemoveLogo={handleRemoveLogo}
+          />
+        )}
+        {(activeTab === 'team' || !canEditProjectDetails) && (
+          <TeamTab
+            memberOptions={memberOptions}
+            projectOwnerId={initialRoles.projectOwnerId}
+            productOwnerId={productOwnerId}
+            onProductOwnerChange={setProductOwnerId}
+            scrumMasterId={scrumMasterId}
+            onScrumMasterChange={setScrumMasterId}
+            adminIds={adminIds}
+            onToggleAdmin={toggleAdmin}
+            canManageAdmins={canManageAdmins}
+            canEditProjectDetails={canEditProjectDetails}
+          />
+        )}
+        {canEditProjectDetails && viewerIsProductOwner && (
+          // Mounted behind the other tabs, so a meeting draft survives a tab switch as Details and
+          // Team edits do.
+          <div hidden={activeTab !== 'meetings'}>
+            <TeamMeetingsList variant="manage" canManage {...meetingsList} onEditorChange={setMeetingEditor} />
+          </div>
+        )}
+        {apiError && (
+          <Alert tone="error" className="edit-project__save-error" ref={saveErrorRef}>
+            {apiError}
+          </Alert>
+        )}
+      </Modal>
 
-      <ConfirmModal
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={() => {
-          setShowDeleteConfirm(false);
-          handleDelete();
-        }}
+      <ConfirmDialog
+        open={isOpen && showDeleteConfirm}
+        destructive
         title="Delete project?"
         message={`This will permanently delete "${project.name}" and remove all members. This action cannot be undone.`}
-        confirmText="Delete Project"
-        cancelText="Cancel"
+        confirmLabel="Delete Project"
+        busyLabel="Deleting…"
+        error={deleteError}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
       />
     </>
   );

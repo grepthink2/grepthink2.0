@@ -1,0 +1,29 @@
+// InfoPopover — ported from design/components/display/display.css so the two stay diffable: the
+// InfoPopover block, then its line from the file's phone block. The panel is the shared Popover's
+// surface (components/Popover), which the component renders. The trigger's own padding, border,
+// background and radius beat index.css's global button rule; its font is unused (an icon). One
+// addition, marked below: the panel resets the text styles of the label it sits in.
+
+/* ── InfoPopover (promoted from analytics' DefinitionPopover) ── */
+.gt-infopop { position: relative; display: inline-flex; }
+.gt-infopop__trigger {
+  display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0;
+  border: none; border-radius: 50%; background: transparent; color: var(--gt-text-tertiary); cursor: pointer;
+  transition: background-color var(--gt-transition-fast), color var(--gt-transition-fast);
+}
+.gt-infopop__trigger:hover, .gt-infopop__trigger[aria-expanded="true"] { background: var(--gt-surface-sunken); color: var(--gt-text-primary); }
+.gt-infopop__trigger:focus-visible { outline: none; box-shadow: var(--gt-focus-ring-tight); }
+.gt-infopop__panel { width: 352px; max-width: calc(100vw - 16px); padding: 16px; box-sizing: border-box; text-align: left; }
+// Codebase addition: the panel renders inside its trigger's context and inherits its text styles, so
+// an uppercase, tracked, bold caption (a StatCard label) would reach "Learn more" and the title.
+// Reset them here; every child sets its own size.
+.gt-infopop__panel { text-transform: none; letter-spacing: normal; font-weight: var(--gt-weight-regular); font-style: normal; line-height: var(--gt-leading-normal); white-space: normal; }
+.gt-infopop__title { margin: 0 0 6px; font-size: var(--gt-text-caption); font-weight: var(--gt-weight-semibold); color: var(--gt-text-primary); text-transform: none; letter-spacing: 0; }
+.gt-infopop__body { margin: 0; font-size: 12.5px; font-weight: var(--gt-weight-regular); line-height: var(--gt-leading-normal); color: var(--gt-text-secondary); text-transform: none; letter-spacing: 0; white-space: normal; }
+.gt-infopop__more { display: inline-block; margin-top: 8px; font-size: var(--gt-text-caption); font-weight: var(--gt-weight-medium); color: var(--gt-text-link); text-decoration: none; }
+.gt-infopop__more:hover { text-decoration: underline; }
+
+/* ── Phones ───────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .gt-infopop__trigger { width: 44px; height: 44px; }
+}

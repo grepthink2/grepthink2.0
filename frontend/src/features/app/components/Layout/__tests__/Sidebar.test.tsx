@@ -22,6 +22,7 @@ vi.mock('@/lib/classContext', () => ({
 }));
 vi.mock('@features/messages/hooks/useUnreadTotal', () => ({ useUnreadTotal: () => 0 }));
 
+import { openClassSelector } from '@/lib/openClassSelector';
 import Sidebar from '../Sidebar';
 import { SIDEBAR_HOVER } from '../../../config/sidebar';
 
@@ -151,6 +152,19 @@ describe('Sidebar', () => {
     expect(screen.getByText('Join Class')).toBeInTheDocument();
     expect(screen.queryByText('My Project')).not.toBeInTheDocument();
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+  });
+
+  it('the event opens the class selector and focuses it, holding the rail open', () => {
+    state.ctx.selectedClass = null;
+    renderAt('/app/home');
+    const selector = screen.getByRole('button', { name: 'No class selected' });
+    expect(selector).toHaveAttribute('aria-expanded', 'false');
+
+    act(() => openClassSelector());
+    expect(selector).toHaveAttribute('aria-expanded', 'true');
+    expect(selector).toHaveFocus();
+    expect(screen.getByRole('button', { name: /^Alpha/ })).toBeInTheDocument();
+    expect(document.querySelector('.sidebar')).toHaveAttribute('data-expanded', 'true');
   });
 
   it("lands on your role's page after switching to a class where this page is not allowed", () => {
