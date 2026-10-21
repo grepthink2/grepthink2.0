@@ -105,11 +105,11 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(screen.getByRole('heading', { name: 'New meeting' })).toBeInTheDocument();
     expect(titleBox()).toHaveFocus();
     await user.type(titleBox(), 'Design review');
-    expect(screen.getByText('13/80')).toBeInTheDocument();
+    expect(screen.getByText('13 / 80')).toBeInTheDocument();
     fireEvent.change(dateInput(), { target: { value: '2026-10-22' } });
     fireEvent.change(timeInput(), { target: { value: '15:00' } });
     expect(screen.getByRole('combobox', { name: 'Duration' })).toHaveValue('60');
-    await user.type(screen.getByRole('textbox', { name: 'Room' }), 'E2 room 180');
+    await user.type(screen.getByRole('textbox', { name: 'Room (optional)' }), 'E2 room 180');
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
 
     expect(onCreate).toHaveBeenCalledTimes(1);
@@ -134,8 +134,8 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     fireEvent.change(dateInput(), { target: { value: '2026-10-23' } });
     fireEvent.change(timeInput(), { target: { value: '09:30' } });
     await user.selectOptions(screen.getByRole('combobox', { name: 'Duration' }), '45');
-    await user.type(screen.getByRole('textbox', { name: 'Zoom link' }), ' https://ucsc.zoom.us/j/42 ');
-    await user.type(screen.getByRole('textbox', { name: 'Note' }), 'Bring the demo');
+    await user.type(screen.getByRole('textbox', { name: 'Zoom link (optional)' }), ' https://ucsc.zoom.us/j/42 ');
+    await user.type(screen.getByRole('textbox', { name: 'Note (optional)' }), 'Bring the demo');
     await user.type(titleBox(), 'Retro{Enter}');
 
     expect(onCreate).toHaveBeenCalledWith({
@@ -162,7 +162,8 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(screen.getByText('Pick a start time.')).toBeInTheDocument();
     expect(titleBox()).toHaveFocus();
     expect(titleBox()).toHaveAttribute('aria-invalid', 'true');
-    expect(titleBox()).toHaveAccessibleDescription('Give the meeting a title.');
+    // The title's counter is part of its description, after the error.
+    expect(titleBox()).toHaveAccessibleDescription('Give the meeting a title. 0 of 80 characters');
 
     // Typing in a field clears its error.
     await user.type(titleBox(), 'Retro');
@@ -195,7 +196,7 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     await user.type(titleBox(), 'Design review');
     fireEvent.change(dateInput(), { target: { value: '2026-10-22' } });
     fireEvent.change(timeInput(), { target: { value: '15:00' } });
-    const zoom = screen.getByRole('textbox', { name: 'Zoom link' });
+    const zoom = screen.getByRole('textbox', { name: 'Zoom link (optional)' });
     // A space in the path: new URL() takes it, the API answers 422.
     await user.type(zoom, 'https://ucsc.zoom.us/j/1 2');
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
@@ -211,23 +212,35 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(screen.getByText(LINK_ERROR)).toBeInTheDocument();
   });
 
-  it('holds each field to the server’s length limits', async () => {
+  it('holds each field to the server’s length limits, keeping what was typed past one', async () => {
     const user = userEvent.setup();
     const onCreate = vi.fn();
     renderManage({ onCreate });
 
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
-    expect(titleBox()).toHaveAttribute('maxLength', '80');
-    const room = screen.getByRole('textbox', { name: 'Room' });
-    expect(room).toHaveAttribute('maxLength', '120');
-    expect(screen.getByRole('textbox', { name: 'Zoom link' })).toHaveAttribute('maxLength', '500');
-    expect(screen.getByRole('textbox', { name: 'Note' })).toHaveAttribute('maxLength', '500');
+    // The limits are soft, as the shared fields keep them: nothing is cut, the field past its limit
+    // is flagged, and the save waits for it.
+    const room = screen.getByRole('textbox', { name: 'Room (optional)' });
+    for (const field of [titleBox(), room, screen.getByRole('textbox', { name: 'Zoom link (optional)' }), screen.getByRole('textbox', { name: 'Note (optional)' })]) {
+      expect(field).not.toHaveAttribute('maxLength');
+    }
 
-    // A value past maxLength (pasted by script, or an old row) still gets a field error.
-    await user.type(titleBox(), 'Design review');
+    fireEvent.change(titleBox(), { target: { value: 'x'.repeat(81) } });
+    expect(titleBox()).toHaveValue('x'.repeat(81));
+    expect(titleBox()).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('81 / 80')).toBeInTheDocument();
     fireEvent.change(dateInput(), { target: { value: '2026-10-22' } });
     fireEvent.change(timeInput(), { target: { value: '15:00' } });
+    await user.click(screen.getByRole('button', { name: 'Add meeting' }));
+    expect(onCreate).not.toHaveBeenCalled();
+    expect(screen.getByText('Keep it under 80 characters.')).toBeInTheDocument();
+    expect(titleBox()).toHaveFocus();
+
+    await user.clear(titleBox());
+    await user.type(titleBox(), 'Design review');
     fireEvent.change(room, { target: { value: 'x'.repeat(121) } });
+    expect(room).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('121 / 120')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
 
     expect(onCreate).not.toHaveBeenCalled();
@@ -235,7 +248,7 @@ describe('TeamMeetingsList — the Meetings tab', () => {
     expect(room).toHaveFocus();
 
     fireEvent.change(room, { target: { value: 'x'.repeat(120) } });
-    fireEvent.change(screen.getByRole('textbox', { name: 'Zoom link' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'Zoom link (optional)' }), {
       target: { value: `https://ucsc.zoom.us/j/${'1'.repeat(478)}` }, // 501 characters
     });
     await user.click(screen.getByRole('button', { name: 'Add meeting' }));
