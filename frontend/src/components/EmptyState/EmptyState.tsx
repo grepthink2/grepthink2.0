@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode, Ref } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { GraduationCap, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/Button/Button';
 import './EmptyState.scss';
 
 export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'role' | 'children'> {
@@ -70,5 +71,35 @@ export function EmptyState({
         </div>
       )}
     </div>
+  );
+}
+
+export interface NoClassSelectedProps {
+  /** Opens the class selector, and renders the "Choose a class" button. */
+  onSelectClass?: () => void;
+  /** @default 'page' */
+  variant?: 'page' | 'card';
+  /** @default 'h2' */
+  titleAs?: 'h1' | 'h2' | 'h3';
+  className?: string;
+}
+
+/**
+ * The one "No class selected" state for the pages that need a class, ported from
+ * design/components/feedback/EmptyState.jsx: a graduation cap, "No class selected", how to pick
+ * one, and an outline "Choose a class" when `onSelectClass` is given. The app passes
+ * `openClassSelector` (lib/openClassSelector); the component knows nothing about the shell.
+ */
+export function NoClassSelected({ onSelectClass, variant = 'page', titleAs = 'h2', className = '' }: NoClassSelectedProps) {
+  return (
+    <EmptyState
+      variant={variant}
+      titleAs={titleAs}
+      className={className}
+      icon={<GraduationCap size={28} aria-hidden="true" />}
+      title="No class selected"
+      description="Choose a class to see this page. You can switch classes any time from the class selector."
+      action={onSelectClass && <Button variant="outline" onClick={onSelectClass}>Choose a class</Button>}
+    />
   );
 }

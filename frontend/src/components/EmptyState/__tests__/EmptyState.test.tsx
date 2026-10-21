@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { FolderOpen } from 'lucide-react';
 import { cssRules } from '@/test/cssRules';
 import { Button } from '@/components/Button/Button';
-import { EmptyState } from '../EmptyState';
+import { EmptyState, NoClassSelected } from '../EmptyState';
 
 describe('EmptyState', () => {
   it('renders the title at the requested heading level, h3 by default, or as a paragraph', () => {
@@ -98,5 +98,29 @@ describe('EmptyState', () => {
     const [retry] = cssRules('.gt-empty__retry');
     expect(retry.getPropertyValue('padding')).toBe('0px');
     expect(retry.getPropertyValue('font-weight')).toBe('var(--gt-weight-medium)');
+  });
+});
+
+describe('NoClassSelected', () => {
+  it('renders its copy at h2 under a graduation cap, and Choose a class asks for the selector', async () => {
+    const onSelectClass = vi.fn();
+    const { container } = render(<NoClassSelected onSelectClass={onSelectClass} />);
+    expect(screen.getByRole('heading', { level: 2, name: 'No class selected' })).toBeInTheDocument();
+    expect(
+      screen.getByText('Choose a class to see this page. You can switch classes any time from the class selector.'),
+    ).toHaveClass('gt-empty__desc');
+    expect(container.firstChild).toHaveClass('gt-empty');
+    expect(container.querySelector('.gt-empty__icon svg')).toHaveClass('lucide-graduation-cap');
+    const choose = screen.getByRole('button', { name: 'Choose a class' });
+    expect(choose).toHaveClass('gt-button--outline');
+    await userEvent.click(choose);
+    expect(onSelectClass).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders no button without onSelectClass, and takes the card look, a heading level and a class', () => {
+    const { container } = render(<NoClassSelected variant="card" titleAs="h3" className="x" />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'No class selected' })).toBeInTheDocument();
+    expect(container.firstChild).toHaveClass('gt-empty', 'gt-empty--card', 'x');
   });
 });
