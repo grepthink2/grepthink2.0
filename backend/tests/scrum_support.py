@@ -31,6 +31,8 @@ RELATIONS = {
     # Embedded on a move's insert: the mover's name and the task's story (for its sprint).
     ("task_moves", "profiles!task_moves_moved_by_fkey"): ("moved_by", "id", False),
     ("task_moves", "tasks!task_moves_task_id_fkey"): ("task_id", "id", False),
+    # Embedded on a comment's insert: its author's name.
+    ("scrum_comments", "profiles!scrum_comments_author_id_fkey"): ("author_id", "id", False),
 }
 
 

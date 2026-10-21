@@ -1192,10 +1192,12 @@ def _fanout_mentions(
     parent_id: str,
     parent_key: str,
     author_id: str,
+    author_name: str,
     body_md: str,
 ) -> None:
     """Notify the people a comment @-mentions (issue #191): the mentioned ids on the
     team or among the project's staff (as in :func:`_board_access`), minus the author.
+    ``author_name`` came with the comment's insert.
 
     Best-effort: the comment is already stored, so a failure here is logged and never
     raised. A body without mention tokens returns before any query.
@@ -1226,7 +1228,7 @@ def _fanout_mentions(
             return
         notify_mention(
             recipient_ids=sorted(recipients),
-            author_name=_name_for(client, author_id) or "Someone",
+            author_name=author_name,
             label=parent_key,
             project_name=reads["project"].get("name") or "",
             body_md=body_md,
@@ -1254,9 +1256,17 @@ def create_comment(*, parent_kind: str, parent_id: str, user_id: str, body_md: s
         "body_md": body_md,
         ("story_id" if parent_kind == "story" else "task_id"): str(parent_id),
     }
-    res = client.table("scrum_comments").insert(row).execute()
+    # The insert answers with its author's profile, for the answer and the mentions.
+    res = (
+        client.table("scrum_comments")
+        .insert(row)
+        .select("*, author:profiles!scrum_comments_author_id_fkey(first_name, last_name, email)")
+        .execute()
+    )
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create comment")
+    comment = res.data[0]
+    author_name = _display_name(comment.pop("author", None))
     _fanout_mentions(
         client,
         project_id=parent["project_id"],
@@ -1264,9 +1274,10 @@ def create_comment(*, parent_kind: str, parent_id: str, user_id: str, body_md: s
         parent_id=parent_id,
         parent_key=parent.get("key", ""),
         author_id=user_id,
+        author_name=author_name,
         body_md=body_md,
     )
-    return {**res.data[0], "author_name": _name_for(client, user_id)}
+    return {**comment, "author_name": author_name}
 
 
 def list_comments(*, parent_kind: str, parent_id: str, user_id: str) -> list[dict]:
