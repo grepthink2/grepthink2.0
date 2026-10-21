@@ -1,8 +1,10 @@
 # Fewer Round Trips on Four Hot Routes (select-on-write) — Design Spec
 
 **Date:** 2026-10-21
-**Branch:** `perf/select-on-write`, from `origin/beta` `7848d920`. Code references are to that commit.
-**Status:** Draft for the maintainer's review.
+**Branch:** `perf/select-on-write`, on `origin/beta` `2633e901`. Code references are to `7848d920`; none of
+the files they cite changed between the two.
+**Status:** Approved in conversation (maintainer, 2026-10-21), with D7 changed: the response shapes move
+in this batch.
 
 ## The ask (maintainer, 2026-10-20)
 
@@ -78,22 +80,18 @@ frequent routes have a read after the write that the write's response can carry;
 - **D6. Names fall back as they do today.** Scrum names go through `_display_name` ("Unknown"). The
   message notification's title uses `profile_display_name(…) or "Someone"`. TSR entries go through
   `profile_display_name` with an empty profile when one is missing.
-- **D7. The three response shapes move in a follow-up, one release later.** The move, comment and TSR-edit
-  routes still answer `{message, <resource>}` (`app/scrum/views.py:166`, `:200`, `:214`;
+- **D7. The three response shapes move in this batch (the maintainer's call).** The move, comment and
+  TSR-edit routes still answer `{message, <resource>}` (`app/scrum/views.py:166`, `:200`, `:214`;
   `app/assignments/views.py:79`), and the repo rule moves a touched endpoint to the current shape in the
-  same pull request. But the two Vercel projects deploy separately, and the web client never reloads
+  same pull request, so they move here. The two Vercel projects deploy separately, and the web client never reloads
   itself after a release, so a tab opened before the release keeps the old bundle. On a bare task the
   board's `const { task } = await api.moveScrumTask(…)` (`frontend/src/features/scrum/hooks/useScrumBoard.ts:187`)
   gets `undefined`, and `task.status` then throws while the board re-renders, which drops the app to its
   one error boundary (`frontend/src/App.tsx:76`). The TSR page and the comment thread destructure the same way (`TSRS.tsx:309`,
-  `CommentThread.tsx:56`). So:
-  - **this batch:** the three web-client methods accept both shapes and return the resource, and their
-    callers take the resource. The backend still answers the old shape.
-  - **the follow-up,** once this batch is on PROD: the three routes answer the resource itself, and their
-    endpoint tests follow (section The follow-up).
-
-  If you would rather keep the rule's letter, the shapes move in this batch instead, and a tab opened
-  before the release fails on those three actions until it is reloaded.
+  `CommentThread.tsx:56`). The maintainer accepted that, since traffic is light: such a tab fails on those
+  three actions until it is reloaded. So the three routes answer the resource itself (section Response
+  shapes), and the web client's three methods accept either shape and return the resource, so the frontend
+  can deploy before the backend without breaking.
 - **D8. The test double comes first.** `FakeSupabase` learns what DEV checks 1–4 showed (section Test
   double) before any fold is written, so each fold's test sees the shape PostgREST returns, including the
   pre-write snapshot.
@@ -312,7 +310,7 @@ The tests these folds touch register these relations:
 The four scrum keys go in `scrum_support.RELATIONS`. `tests/test_messages_send.py` stubs the insert chain
 with `MagicMock` (`:29`, `:83`, `:156`), and those stubs gain the `.select` link.
 
-## Web client (this batch, D7)
+## Web client (D7)
 
 - **The methods.** `moveScrumTask` and `createScrumComment` (`frontend/src/lib/api/scrum.ts:99-104`,
   `:125-130`) and `updateAssignmentTsr` (`frontend/src/lib/api/assignments.ts:65-77`) answer the resource:
@@ -338,15 +336,18 @@ with `MagicMock` (`:29`, `:83`, `:156`), and those stubs gain the `.select` link
   `lib/__tests__/responseShapes.test.ts`, in the pattern of `emailApi.test.ts` (`apiRequest` mocked), shows
   that each of the three methods returns the resource for both shapes.
 
-## The follow-up (one release later, D7)
+## Response shapes (D7)
 
 - `move_task`, `create_story_comment` and `create_task_comment` (`app/scrum/views.py:162`, `:194`, `:208`)
-  return `TaskOut` and `CommentOut`.
+  return `TaskOut` and `CommentOut`. FastAPI takes the response model from the return annotation, since
+  the routes (`app/scrum/url.py:24`, `:28`, `:30`) name none.
 - `update_tsr_entry` (`app/assignments/views.py:62`) returns the entry.
-- `CommentResponse` goes. `TaskResponse` stays for creating and updating a task.
-- The endpoint tests that read `body["task"]`, `body["comment"]` or `body["tsr"]` follow.
-- The web client keeps accepting both shapes, for an older backend, as the dependencies spec keeps its
-  optional fields (D11 there).
+- `CommentResponse` goes. `TaskResponse` stays for creating and updating a task, which this batch doesn't
+  touch. Status codes stay as they are.
+- `tests/test_scrum_endpoints.py:70` reads the moved task at the top level. New endpoint tests show a
+  comment and a TSR edit answering their resource at the top level.
+- The web client accepts both shapes, for the minutes when the frontend is live and the backend is not,
+  as the dependencies spec keeps its optional fields (D11 there).
 
 ## Round trips
 
@@ -420,6 +421,6 @@ Counted in executes, as `FakeSupabase` counts them.
    `TSRs_evaluatee_id_fkey`). That takes one read-only catalog query, with the maintainer's approval. The
    migrations that created them used Postgres's default names, so they should match. If one doesn't, PROD
    would refuse that write.
-3. Release as usual, `beta` to `main`. The web client accepts both response shapes, so either Vercel
-   project can deploy first.
-4. After the release, the follow-up (D7).
+3. Release as usual, `beta` to `main`. The web client accepts both response shapes, so the frontend can
+   deploy before the backend. A tab opened before the release fails on a move, a comment or a TSR edit
+   until it is reloaded (D7).
