@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Popover } from '@/components/Popover/Popover';
-import DatePickerField from '@features/app/components/Fields/DatePickerField';
+import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
 import type { AnalyticsRangePreset } from '@/lib/api/types';
 import type { AnalyticsFilters } from '../hooks/useAnalyticsDashboard';
 import { rangeLabel } from '../utils/analyticsFormat';

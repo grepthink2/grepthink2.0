@@ -5,7 +5,7 @@ import type { ClassLifecycleStatus } from '@/lib/classPreferences';
 import { useClass } from '@/lib/classContext';
 import { api } from '@/lib/api';
 import { isExternalTasksUrlRefusal, LINK_REFUSED_BY_API, parseExternalTasksUrl } from '@/lib/externalTasksUrl';
-import DatePickerField from '@features/app/components/Fields/DatePickerField';
+import { DatePickerField } from '@/components/DatePickerField/DatePickerField';
 import ConfirmModal from '@features/app/components/Overlays/ConfirmModal';
 import {
   buildClassExportCsv,
@@ -304,7 +304,6 @@ const ClassSettingsModal: React.FC<ClassSettingsModalProps> = ({ isOpen, onClose
                   setEndDateSaveError(null);
                   setEndDateNotice(null);
                 }}
-                labelClassName="class-settings-modal__label"
                 // A day picked while the save is in flight would be written over by the day being saved.
                 disabled={isSavingEndDate}
               />

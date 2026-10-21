@@ -404,7 +404,7 @@ $panel-width: 420px;
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
-// Date picker styles live in DatePickerField.scss (shared component)
+// Date picker styles live in components/DatePickerField/DatePickerField.scss (the shared component)
 
 @media (max-width: 480px) {
   .aem {

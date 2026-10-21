@@ -15,8 +15,8 @@ const picks = vi.hoisted(() => ({ day: '' }));
 vi.mock('@/lib/classContext', () => ({ useClass: () => ctx }));
 vi.mock('@/lib/api', () => ({ api: { getClassRoster: vi.fn() } }));
 // The real picker is a calendar popover; a button that shows its day and picks another is enough here.
-vi.mock('@features/app/components/Fields/DatePickerField', () => ({
-  default: ({
+vi.mock('@/components/DatePickerField/DatePickerField', () => ({
+  DatePickerField: ({
     label,
     value,
     onChange,

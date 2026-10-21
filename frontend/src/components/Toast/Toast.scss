@@ -61,7 +61,8 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes gt-fade-out { to { opacity: 0; } }
-@keyframes gt-fade-in { from { opacity: 0; } }
+// The design's gt-fade-in, beside it here, lives in styles/keyframes.css, which main.tsx loads once:
+// the date picker's calendar and the scrum mention box fade with it too, wherever a toast never shows.
 .gt-toast-stack {
   position: fixed;
   bottom: var(--gt-space-lg);

@@ -32,8 +32,8 @@ vi.mock('@/lib/classContext', () => ({
 }));
 vi.mock('@/lib/api', () => ({ api: { createClass: vi.fn(), uploadClassRoster: vi.fn() } }));
 // The real picker is a calendar popover; a button that picks a date is enough here.
-vi.mock('@/features/app/components/Fields/DatePickerField', () => ({
-  default: ({ label, onChange }: { label: string; onChange: (value: string) => void }) => (
+vi.mock('@/components/DatePickerField/DatePickerField', () => ({
+  DatePickerField: ({ label, onChange }: { label: string; onChange: (value: string) => void }) => (
     <button type="button" onClick={() => onChange(label === 'Last Day of Classes' ? picks.end : picks.start)}>
       {label}
     </button>

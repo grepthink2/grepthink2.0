@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { describe, expect, it } from 'vitest';
-import { DATETIME_FORMAT } from '@/features/app/components/Fields/DatePickerField';
+import { DATETIME_FORMAT } from '@/components/DatePickerField/dateFormats';
 import {
   assignmentClosesAt,
   assignmentDeadline,
