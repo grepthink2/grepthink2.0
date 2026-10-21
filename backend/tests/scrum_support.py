@@ -43,8 +43,10 @@ class ScrumFake(FakeSupabase):
     """FakeSupabase plus what the scrum migration makes Postgres do on a task move
     (2026-08-12_scrum_board.sql): ``task_moves.moved_at`` defaults to now(), and the
     ``scrum_apply_task_move`` BEFORE INSERT trigger copies the task's status into
-    ``from_status`` and applies the move to the task. ``scrum_next_key`` hands out
-    1, 2, 3… per project and kind, like the counter table behind it.
+    ``from_status`` and applies the move to the task. Both run as the fake's insert
+    trigger, so a task embedded on the move's insert shows its status before the move,
+    as in Postgres. ``scrum_next_key`` hands out 1, 2, 3… per project and kind, like the
+    counter table behind it.
     """
 
     def __init__(self, **kwargs):
@@ -55,32 +57,24 @@ class ScrumFake(FakeSupabase):
             counters[k] = counters.get(k, 0) + 1
             return counters[k]
 
-        super().__init__(rpc={"scrum_next_key": next_key}, **kwargs)
+        def apply_move(db: FakeSupabase, row: dict) -> None:
+            task = next((t for t in db.rows("tasks") if t["id"] == row["task_id"]), None)
+            if task is None:  # the trigger raises too
+                raise RuntimeError(f"task {row['task_id']} not found")
+            row.setdefault("moved_at", datetime.now(UTC).isoformat())
+            row["from_status"] = task["status"]
+            task.update(
+                status=row["to_status"],
+                moved_by=row.get("moved_by"),
+                moved_at=row["moved_at"],
+                updated_at=row["moved_at"],
+            )
 
-    def table(self, name):
-        query = super().table(name)
-        if name != "task_moves":
-            return query
-        insert = query.insert
-
-        def insert_move(payload):
-            now = datetime.now(UTC).isoformat()
-            for row in payload if isinstance(payload, list) else [payload]:
-                task = next((t for t in self.rows("tasks") if t["id"] == row["task_id"]), None)
-                if task is None:  # the trigger raises too
-                    raise RuntimeError(f"task {row['task_id']} not found")
-                row.setdefault("moved_at", now)
-                row["from_status"] = task["status"]
-                task.update(
-                    status=row["to_status"],
-                    moved_by=row.get("moved_by"),
-                    moved_at=row["moved_at"],
-                    updated_at=row["moved_at"],
-                )
-            return insert(payload)
-
-        query.insert = insert_move
-        return query
+        super().__init__(
+            rpc={"scrum_next_key": next_key},
+            triggers={("task_moves", "insert"): apply_move},
+            **kwargs,
+        )
 
 
 def scrum_db(monkeypatch, **tables) -> ScrumFake:
