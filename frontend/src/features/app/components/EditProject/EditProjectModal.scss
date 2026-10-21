@@ -4,80 +4,14 @@
 // predates the --gt-* design-token system; left as-is rather than churned as
 // a side effect of wiring the adherence lint.
 
-.edit-project-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  backdrop-filter: blur(4px);
-}
-
+// The sheet, header, ×, body scrolling and footer chrome are the shared Modal's (components/Modal);
+// `.edit-project` is this feature's class on its sheet, and the rules below lay out what goes inside.
 .edit-project {
-  background: $white;
-  border-radius: $border-radius-md;
-  padding: $spacing-lg;
-  max-width: 580px;
-  width: 90%;
-  max-height: 88vh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  font-family: $primary-font;
-
-  // ── Close ──────────────────────────────────────────
-  &__close {
-    position: absolute;
-    top: $spacing-md;
-    right: $spacing-md;
-    background: transparent;
-    border: none;
-    color: $text-secondary;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color $transition-fast, color $transition-fast;
-
-    &:hover {
-      background-color: $background;
-      color: $text-primary;
-    }
-  }
-
-  // ── Header ─────────────────────────────────────────
-  &__header {
-    margin-bottom: $spacing-md;
-    padding-right: 2rem;
-  }
-
-  &__title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: $text-primary;
-    margin: 0 0 $spacing-xs 0;
-  }
-
-  &__subtitle {
-    font-size: 0.875rem;
-    color: $text-secondary;
-    margin: 0;
-  }
-
-  // ── Tabs ───────────────────────────────────────────
+  // ── Tabs (in the Modal's header slot, under the title) ──────────
   &__tabs {
     display: flex;
     gap: 0;
     padding: 4px;
-    margin-bottom: $spacing-md;
     background: $background;
     border-radius: $border-radius-sm;
     flex-shrink: 0;
@@ -114,13 +48,6 @@
         box-shadow: var(--gt-focus-ring), 0 1px 2px rgba(0, 0, 0, 0.06);
       }
     }
-  }
-
-  // ── Body ───────────────────────────────────────────
-  &__body {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
   }
 
   // ── Sections ───────────────────────────────────────
@@ -217,14 +144,9 @@
     margin: $spacing-xs 0 0;
   }
 
-  &__api-error {
-    font-size: 0.875rem;
-    color: $error-color;
-    background: rgba($error-color, 0.06);
-    border: 1px solid rgba($error-color, 0.2);
-    border-radius: $border-radius-sm;
-    padding: $spacing-sm $spacing-md;
-    margin-bottom: $spacing-md;
+  // A refused save: the shared Alert, at the end of the body, above the actions.
+  &__save-error {
+    margin-top: $spacing-md;
   }
 
   // ── Role rows (dropdowns) ──────────────────────────
@@ -509,66 +431,14 @@
     margin: 0;
   }
 
-  // ── Buttons ────────────────────────────────────────
-  &__btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-radius: $border-radius-sm;
-    border: none;
-    cursor: pointer;
-    transition: background-color $transition-fast, opacity $transition-fast;
-    font-family: inherit;
-
-    &--save {
-      background: $primary-color;
-      color: white;
-
-      &:hover {
-        background: $primary-hover;
-      }
-    }
-
-    &--secondary {
-      background: $white;
-      color: $text-secondary;
-      border: 1px solid $border-color;
-
-      &:hover {
-        background: $background;
-        color: $text-primary;
-      }
-    }
-
-    &--delete {
-      background: $white;
-      color: $error-color;
-      border: 1px solid rgba($error-color, 0.4);
-
-      &:hover {
-        background: rgba($error-color, 0.08);
-        border-color: $error-color;
-      }
-    }
-
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  }
-
-  // ── Footer ─────────────────────────────────────────
+  // ── Footer (inside the Modal's pinned footer, which draws the rule) ──
+  // Delete Project on the left, the closing actions on the right.
   &__footer {
+    flex: 1 1 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: $spacing-md;
-    margin-top: $spacing-md;
-    border-top: 1px solid $border-color;
-    flex-shrink: 0;
+    gap: $spacing-sm;
   }
 
   &__footer-right {
@@ -592,7 +462,7 @@
     align-items: flex-end;
     column-gap: var(--gt-space-md);
 
-    .edit-project__btn--delete {
+    .edit-project__delete {
       flex-shrink: 0;
     }
 

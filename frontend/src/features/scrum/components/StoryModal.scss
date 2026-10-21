@@ -1,7 +1,7 @@
 @use '@styles/index.scss' as *;
 
-// Story detail overlay — 640px per the design handoff, on the app's existing
-// backdrop idiom (ConfirmModal). Values follow the scrum layer's scale.
+// Story detail overlay — 640px per the design handoff, on a hand-built backdrop
+// (the shared Modal, components/Modal, is its successor). Values follow the scrum layer's scale.
 .story-modal-backdrop {
   position: fixed;
   inset: 0;

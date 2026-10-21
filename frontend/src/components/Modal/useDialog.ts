@@ -43,17 +43,24 @@ export interface UseDialogResult {
 const reducedMotion = () =>
   typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/** Whether focus can land on an element: outside hidden and inert subtrees, and drawn, where the browser can tell. */
+/**
+ * Whether focus can land on an element: outside hidden and inert subtrees, and drawn. The browser's
+ * `checkVisibility` answers the last part where it exists; elsewhere the element's own computed style.
+ */
 function canTakeFocus(el: HTMLElement): boolean {
   if (el.closest('[hidden], [inert]')) return false;
-  return typeof el.checkVisibility === 'function' ? el.checkVisibility({ checkVisibilityCSS: true, visibilityProperty: true }) : true;
+  if (typeof el.checkVisibility === 'function') return el.checkVisibility({ checkVisibilityCSS: true, visibilityProperty: true });
+  const style = window.getComputedStyle(el);
+  return style.display !== 'none' && style.visibility !== 'hidden';
 }
 
-/** Focus on open: `initialFocusRef`, else `[data-autofocus]`, else the first field, else the sheet, whichever takes it first. */
+/**
+ * Focus on open: `initialFocusRef`, else `[data-autofocus]`, else the first field that takes it (a
+ * file input styled away does not), else the sheet.
+ */
 function focusInside(sheet: HTMLElement, initial: HTMLElement | null | undefined) {
-  const marked = sheet.querySelector<HTMLElement>('[data-autofocus]');
-  const field = Array.from(sheet.querySelectorAll<HTMLElement>(FIELDS)).find(canTakeFocus);
-  for (const el of [initial, marked, field]) {
+  const candidates = [initial, sheet.querySelector<HTMLElement>('[data-autofocus]'), ...sheet.querySelectorAll<HTMLElement>(FIELDS)];
+  for (const el of candidates) {
     if (!el || !canTakeFocus(el)) continue;
     el.focus();
     if (document.activeElement === el) return;

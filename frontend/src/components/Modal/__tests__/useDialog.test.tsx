@@ -125,10 +125,25 @@ describe('useDialog', () => {
     render(
       <TestDialog open>
         <div hidden><input aria-label="Hidden tab" /></div>
+        <input type="file" aria-label="Logo" style={{ display: 'none' }} />
         <select aria-label="Role"><option>Member</option></select>
       </TestDialog>,
     );
     expect(screen.getByRole('combobox', { name: 'Role' })).toHaveFocus();
+  });
+
+  it('falls past an initialFocusRef that cannot take focus', () => {
+    function WithStaticRef() {
+      const ref = useRef<HTMLParagraphElement>(null);
+      return (
+        <TestDialog open initialFocusRef={ref}>
+          <p ref={ref}>Not focusable</p>
+          <input aria-label="Name" />
+        </TestDialog>
+      );
+    }
+    render(<WithStaticRef />);
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus();
   });
 
   it('traps Tab and Shift+Tab inside the sheet', async () => {
