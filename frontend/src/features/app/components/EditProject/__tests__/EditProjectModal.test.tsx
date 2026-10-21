@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiProject } from '@/lib/api';
+import { cssRules } from '@/test/cssRules';
 
 const updateProject = vi.hoisted(() => vi.fn());
 const deleteProject = vi.hoisted(() => vi.fn());
@@ -206,6 +207,17 @@ describe('EditProjectModal', () => {
     await user.click(within(question).getByRole('button', { name: 'Cancel' }));
     await user.click(within(dialog()).getByRole('button', { name: 'Delete Project' }));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('gives Delete Project its own row on phones, with Cancel and Save Changes sharing the next', () => {
+    renderModal();
+    // The Modal stretches every footer button on phones; three in one row overflowed it.
+    const [footer] = cssRules('.edit-project__footer', 'max-width: 767px');
+    expect(footer.getPropertyValue('flex-wrap')).toBe('wrap');
+    const [actions] = cssRules('.edit-project__footer-right', 'max-width: 767px');
+    expect(actions.getPropertyValue('flex')).toBe('1 1 100%');
+    expect(within(dialog()).getByRole('button', { name: 'Save Changes' }).parentElement).toHaveClass('edit-project__footer-right');
+    expect(within(dialog()).getByRole('button', { name: 'Delete Project' }).parentElement).toHaveClass('edit-project__footer');
   });
 
   it('closes the confirm with the modal when the page closes it', async () => {

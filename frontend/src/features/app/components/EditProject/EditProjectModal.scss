@@ -472,4 +472,16 @@
       row-gap: var(--gt-space-xs);
     }
   }
+
+  // Phones: the Modal's footer stretches every button, which overflowed three in one row. Delete
+  // Project takes the first row, and Cancel and Save Changes (or Done) share the next.
+  @media (max-width: 767px) {
+    &__footer {
+      flex-wrap: wrap;
+    }
+
+    &__footer-right {
+      flex: 1 1 100%;
+    }
+  }
 }
