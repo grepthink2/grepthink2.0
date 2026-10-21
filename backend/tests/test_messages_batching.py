@@ -10,6 +10,9 @@ Before:
   the profiles of everyone found.
 * ``_require_participant`` (thread reads, mark-read, hide, channel sends) read
   the conversation, then its participants.
+* ``send_message`` read a conversation's participants again after
+  ``_require_participant`` had, and each recipient's notification read the
+  sender's profile.
 
 ``FakeSupabase`` counts every ``.execute()``; each test pins the answer and an
 upper bound on round trips. Reads fanned out with ``fan_out`` run on the query
@@ -359,21 +362,24 @@ def _reads_wait_for_each_other(db, n: int = 2) -> None:
     db.table = table
 
 
-def test_require_participant_returns_the_conversation(conv_db):
-    assert messages._require_participant(CONV_TEAM, TA) == {
+def test_require_participant_returns_the_conversation_and_its_participants(conv_db):
+    conv, participant_ids = messages._require_participant(CONV_TEAM, TA)
+    assert conv == {
         "id": CONV_TEAM,
         "type": "team_ta",
         "user_a": None,
         "user_b": None,
         "project_id": "proj-1",
     }
+    assert participant_ids == [S1, S3, TA]
     assert conv_db.executes <= 2, _trace(conv_db)
 
 
 def test_require_participant_reads_the_conversation_and_participants_in_one_wave(conv_db):
     """Both reads are in flight together; they used to run one after the other."""
     _reads_wait_for_each_other(conv_db)
-    assert messages._require_participant(CONV_DM, S2)["type"] == "dm"
+    conv, _participant_ids = messages._require_participant(CONV_DM, S2)
+    assert conv["type"] == "dm"
 
 
 @pytest.mark.parametrize(
@@ -419,3 +425,88 @@ def test_list_messages_pages_newest_first_with_the_keyset_cursor(conv_db):
     assert [m["id"] for m in rest["messages"]] == ["m2", "m1"]
     assert rest["next_cursor"] == "2026-07-10T00:00:01+00:00|m1"
     assert conv_db.executes <= 3, _trace(conv_db)
+
+
+# ---------------------------------------------------------------- send_message
+
+CONV_CHANNEL, CONV_SOLO = "conv-channel", "conv-solo"
+
+
+def _message_defaults(_db, row) -> None:
+    """``messages.created_at`` defaults to now() in Postgres."""
+    row.setdefault("created_at", "2026-07-11T00:00:00+00:00")
+
+
+@pytest.fixture
+def send_db(db):
+    """``db`` plus a DM between S1 and S2, a TA channel for S1, S2, S3 and TA, and a team
+    channel S1 has to themselves. Nothing has been sent yet."""
+    db.relations[("messages", "profiles!messages_sender_id_fkey")] = ("sender_id", "id", False)
+    db.triggers[("messages", "insert")] = _message_defaults
+    db.store.update(
+        conversations=[
+            {"id": CONV_DM, "type": "dm", "user_a": S1, "user_b": S2, "project_id": None},
+            {"id": CONV_CHANNEL, "type": "team_ta", "user_a": None, "user_b": None},
+            {"id": CONV_SOLO, "type": "team_members", "user_a": None, "user_b": None},
+        ],
+        conversation_participants=[
+            {"conversation_id": CONV_DM, "user_id": S1, "role": "member"},
+            {"conversation_id": CONV_DM, "user_id": S2, "role": "member"},
+            *(
+                {"conversation_id": CONV_CHANNEL, "user_id": uid, "role": "member"}
+                for uid in (S1, S2, S3, TA)
+            ),
+            {"conversation_id": CONV_SOLO, "user_id": S1, "role": "member"},
+        ],
+        messages=[],
+        conversation_reads=[],
+        notifications=[],
+    )
+    return db
+
+
+def _titles(db) -> dict[str, str]:
+    return {n["user_id"]: n["title"] for n in db.rows("notifications")}
+
+
+def test_send_reply_in_a_dm_reads_the_participants_once(send_db):
+    out = messages.send_message(sender_id=S1, body="hello", conversation_id=CONV_DM)
+
+    assert out["conversation_id"] == CONV_DM
+    # The sender's profile came back with the insert, and stays out of the answer.
+    assert set(out["message"]) == {"id", "conversation_id", "sender_id", "body", "created_at"}
+    assert _titles(send_db) == {S2: "New message from Sam Stone"}
+    assert [q["table"] for q in send_db.queries].count("conversation_participants") == 1
+    # The conversation and its participants, the two can_message reads, the insert, the
+    # sender's read mark, and the recipient's notification lookup and insert.
+    assert send_db.executes == 8, _trace(send_db)
+
+
+def test_send_to_a_team_channel_costs_two_per_recipient(send_db):
+    messages.send_message(sender_id=S1, body="standup at 10", conversation_id=CONV_CHANNEL)
+
+    assert _titles(send_db) == dict.fromkeys((S2, S3, TA), "New message from Sam Stone")
+    # The conversation and its participants, the insert and the read mark, then a
+    # notification lookup and insert for each of the three recipients.
+    assert send_db.executes == 10, _trace(send_db)
+
+
+def test_send_to_a_channel_with_no_one_else_writes_no_notification(send_db):
+    messages.send_message(sender_id=S1, body="note to self", conversation_id=CONV_SOLO)
+
+    assert send_db.rows("notifications") == []
+    assert send_db.executes == 4, _trace(send_db)
+
+
+@pytest.mark.parametrize(
+    ("sender", "title"),
+    [
+        pytest.param(S2, "New message from bea@ucsc.edu", id="no-names-so-the-email"),
+        pytest.param(ORPHAN, "New message from Someone", id="no-profile-row"),
+    ],
+)
+def test_send_by_a_sender_without_names_uses_the_display_name_fallback(send_db, sender, title):
+    out = messages.send_message(sender_id=sender, body="hi", to_user_id=S1)
+
+    assert _titles(send_db) == {S1: title}
+    assert "sender" not in out["message"]

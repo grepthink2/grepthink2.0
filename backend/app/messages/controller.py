@@ -15,6 +15,7 @@ from datetime import UTC
 from fastapi import HTTPException
 
 from app.core.db import fan_out, get_client
+from app.utils.profiles import profile_display_name
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +140,7 @@ def _get_or_create_conversation(a_id: str, b_id: str) -> str:
 def notify_recipients(
     *,
     recipient_ids: list[str],
-    sender_id: str,
+    sender_name: str | None,
     conversation_id: str,
     body: str,
 ) -> None:
@@ -150,7 +151,7 @@ def notify_recipients(
         try:
             notify_new_message(
                 recipient_id=recipient_id,
-                sender_id=sender_id,
+                sender_name=sender_name,
                 conversation_id=conversation_id,
                 body=body,
             )
@@ -195,8 +196,7 @@ def send_message(
         )
 
     if conversation_id:
-        conv = _require_participant(conversation_id, sender_id)
-        participant_ids = _participant_ids(conversation_id)
+        conv, participant_ids = _require_participant(conversation_id, sender_id)
         if conv["type"] == "dm":
             other_id = conv["user_b"] if conv["user_a"] == sender_id else conv["user_a"]
             if not can_message(sender_id, other_id):
@@ -221,6 +221,8 @@ def send_message(
         recipient_ids = [to_user_id]
 
     client = get_client()
+    # The insert answers with the sender's profile, for the notifications' title. Those five
+    # columns are all of the table's: with the embed popped, the row is the whole message.
     inserted = (
         client.table("messages")
         .insert(
@@ -230,9 +232,14 @@ def send_message(
                 "body": body,
             }
         )
+        .select(
+            "id, conversation_id, sender_id, body, created_at, "
+            "sender:profiles!messages_sender_id_fkey(first_name, last_name, email)"
+        )
         .execute()
     )
     message_row = inserted.data[0]
+    sender_name = profile_display_name(message_row.pop("sender", None))
 
     # Sender is implicitly "read" through their own latest send.
     client.table("conversation_reads").upsert(
@@ -253,7 +260,7 @@ def send_message(
 
     notify_recipients(
         recipient_ids=recipient_ids,
-        sender_id=sender_id,
+        sender_name=sender_name,
         conversation_id=conversation_id,
         body=body,
     )
@@ -279,11 +286,12 @@ def _participant_ids(conversation_id: str) -> list[str]:
     return [r["user_id"] for r in (res.data or [])]
 
 
-def _require_participant(conversation_id: str, caller_id: str) -> dict:
+def _require_participant(conversation_id: str, caller_id: str) -> tuple[dict, list[str]]:
     """Load conversation, ensuring caller is a participant.
 
-    Raises 404 if the conversation doesn't exist, 403 if caller isn't a
-    participant. Read-only conversations stay readable by participants.
+    Returns the conversation and its participant ids. Raises 404 if the
+    conversation doesn't exist, 403 if caller isn't a participant. Read-only
+    conversations stay readable by participants.
 
     The conversation and its participant ids are read in one wave (they used
     to be read one after the other); a missing conversation still answers 404
@@ -314,7 +322,7 @@ def _require_participant(conversation_id: str, caller_id: str) -> dict:
             conversation_id,
         )
         raise HTTPException(status_code=403, detail="Not a participant")
-    return conv
+    return conv, reads["participant_ids"]
 
 
 def list_messages(

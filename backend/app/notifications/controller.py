@@ -509,15 +509,15 @@ def notify_join_request(
 def notify_new_message(
     *,
     recipient_id: str,
-    sender_id: str,
+    sender_name: str | None,
     conversation_id: str,
     body: str,
 ) -> None:
     """Notify a participant when they receive a new message.
 
-    All roles get message notifications — TA/instructor channels mean staff
-    must hear replies (changed 2026-07-14; was students-only)."""
-    sender_name = profile_display_name(_get_profile(sender_id)) or "Someone"
+    ``sender_name`` comes with the send (the message insert returns it); without
+    one the title says "Someone". All roles get message notifications — TA/instructor
+    channels mean staff must hear replies (changed 2026-07-14; was students-only)."""
     preview = body.strip()
     if len(preview) > 120:
         preview = preview[:117] + "..."
@@ -525,7 +525,7 @@ def notify_new_message(
     _upsert_unread_notification(
         user_id=recipient_id,
         type="message",
-        title=f"New message from {sender_name}",
+        title=f"New message from {sender_name or 'Someone'}",
         body=preview or "You have a new message.",
         entity_type="conversation",
         entity_id=conversation_id,

@@ -19,24 +19,28 @@ def test_send_to_a_user_inserts_marks_the_sender_read_and_notifies_the_recipient
 ):
     from app.messages.controller import send_message
 
-    inserted = {
+    message = {
         "id": "msg-1",
         "conversation_id": "conv-x",
         "sender_id": "alice",
         "body": "hi",
         "created_at": "now",
     }
-    client.table.return_value.insert.return_value.execute.return_value = MagicMock(data=[inserted])
+    sender = {"first_name": "Alice", "last_name": "Adams", "email": "alice@ucsc.edu"}
+    client.table.return_value.insert.return_value.select.return_value.execute.return_value = (
+        MagicMock(data=[{**message, "sender": sender}])
+    )
 
     result = send_message(sender_id="alice", to_user_id="bob", body="hi")
 
     assert result["conversation_id"] == "conv-x"
-    assert result["message"] == inserted
+    assert result["message"] == message  # the embedded sender is popped off
     # Verify both inserts happened: messages + conversation_reads upsert
     table_calls = [c.args[0] for c in client.table.call_args_list]
     assert "messages" in table_calls
     assert "conversation_reads" in table_calls
     assert notify.call_args.kwargs["recipient_ids"] == ["bob"]
+    assert notify.call_args.kwargs["sender_name"] == "Alice Adams"
 
 
 @pytest.mark.parametrize(
@@ -80,16 +84,18 @@ def test_send_message_accepts_1024_codepoints_with_emoji(_can):
         patch("app.messages.controller._get_or_create_conversation", return_value="c"),
         patch("app.core.db.service_client") as client,
     ):
-        client.table.return_value.insert.return_value.execute.return_value = MagicMock(
-            data=[
-                {
-                    "id": "m",
-                    "conversation_id": "c",
-                    "sender_id": "a",
-                    "body": body,
-                    "created_at": "t",
-                }
-            ]
+        client.table.return_value.insert.return_value.select.return_value.execute.return_value = (
+            MagicMock(
+                data=[
+                    {
+                        "id": "m",
+                        "conversation_id": "c",
+                        "sender_id": "a",
+                        "body": body,
+                        "created_at": "t",
+                    }
+                ]
+            )
         )
         send_message(sender_id="alice", to_user_id="bob", body=body)
     # No exception = pass
@@ -153,27 +159,32 @@ def test_get_or_create_inserts_when_absent(client, no_row):
 
 
 def _wire_insert(client, conv="conv-t"):
-    client.table.return_value.insert.return_value.execute.return_value = MagicMock(
-        data=[
-            {
-                "id": "msg-1",
-                "conversation_id": conv,
-                "sender_id": "alice",
-                "body": "hi",
-                "created_at": "now",
-            }
-        ]
+    client.table.return_value.insert.return_value.select.return_value.execute.return_value = (
+        MagicMock(
+            data=[
+                {
+                    "id": "msg-1",
+                    "conversation_id": conv,
+                    "sender_id": "alice",
+                    "body": "hi",
+                    "created_at": "now",
+                    "sender": {"first_name": "Alice", "last_name": "Adams", "email": None},
+                }
+            ]
+        )
     )
 
 
 @patch("app.messages.controller.notify_recipients")
-@patch("app.messages.controller._participant_ids", return_value=["alice", "bob", "carol"])
 @patch(
     "app.messages.controller._require_participant",
-    return_value={"id": "conv-t", "type": "team_members", "user_a": None, "user_b": None},
+    return_value=(
+        {"id": "conv-t", "type": "team_members", "user_a": None, "user_b": None},
+        ["alice", "bob", "carol"],
+    ),
 )
 @patch("app.core.db.service_client")
-def test_team_channel_send_notifies_others(client, _conv, _ids, notify):
+def test_team_channel_send_notifies_others(client, _conv, notify):
     from app.messages.controller import send_message
 
     _wire_insert(client)
@@ -181,16 +192,19 @@ def test_team_channel_send_notifies_others(client, _conv, _ids, notify):
     assert result["conversation_id"] == "conv-t"
     _, kwargs = notify.call_args
     assert sorted(kwargs["recipient_ids"]) == ["bob", "carol"]
+    assert kwargs["sender_name"] == "Alice Adams"
 
 
 @patch("app.messages.controller.can_message", return_value=False)
-@patch("app.messages.controller._participant_ids", return_value=["alice", "bob"])
 @patch(
     "app.messages.controller._require_participant",
-    return_value={"id": "conv-d", "type": "dm", "user_a": "alice", "user_b": "bob"},
+    return_value=(
+        {"id": "conv-d", "type": "dm", "user_a": "alice", "user_b": "bob"},
+        ["alice", "bob"],
+    ),
 )
 @patch("app.core.db.service_client")
-def test_dm_via_conversation_id_rechecks_eligibility(client, _conv, _ids, _can):
+def test_dm_via_conversation_id_rechecks_eligibility(client, _conv, _can):
     from app.messages.controller import send_message
 
     with pytest.raises(HTTPException) as exc:
@@ -224,13 +238,15 @@ def test_send_403_for_non_participant_wired(client):
     assert exc.value.status_code == 403
 
 
-@patch("app.messages.controller._participant_ids", return_value=["alice", "bob", "carol"])
 @patch(
     "app.messages.controller._require_participant",
-    return_value={"id": "conv-t", "type": "team_members", "user_a": None, "user_b": None},
+    return_value=(
+        {"id": "conv-t", "type": "team_members", "user_a": None, "user_b": None},
+        ["alice", "bob", "carol"],
+    ),
 )
 @patch("app.core.db.service_client")
-def test_notify_failure_does_not_fail_send(client, _conv, _ids):
+def test_notify_failure_does_not_fail_send(client, _conv):
     """One recipient's notify blowing up must not 500 the send or starve the rest."""
     from app.messages import controller
 
