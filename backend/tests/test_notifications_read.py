@@ -1,9 +1,9 @@
 """Marking a notification read, and the list with its unread count.
 
 ``POST /api/notifications/{id}/read`` is one update filtered by the id and the owner: a
-notification that is gone, or another user's, matches nothing and answers 404. The list
-and the unread count are independent reads, run in one wave after the reminders they
-must see.
+notification that is gone, or another user's, matches nothing and answers 404, and an id
+that is not a UUID is refused (422) before any query. The list and the unread count are
+independent reads, run in one wave after the reminders they must see.
 """
 
 from __future__ import annotations
@@ -18,6 +18,8 @@ from tests.conftest import header_for
 from tests.fake_supabase import FakeSupabase
 
 ME, OTHER = "user-me", "user-other"
+N1, N2, N3, N4 = (f"00000000-0000-0000-0000-00000000000{i}" for i in range(1, 5))
+GONE = "00000000-0000-0000-0000-0000000000ff"
 
 
 def _notification(nid: str, user_id: str, created_at: str, read_at: str | None = None) -> dict:
@@ -51,10 +53,10 @@ def db(monkeypatch):
         ],
         classes=[],
         notifications=[
-            _notification("n1", ME, "2026-10-01T00:00:00+00:00"),
-            _notification("n2", ME, "2026-10-03T00:00:00+00:00", "2026-10-04T00:00:00+00:00"),
-            _notification("n3", ME, "2026-10-02T00:00:00+00:00"),
-            _notification("n4", OTHER, "2026-10-05T00:00:00+00:00"),
+            _notification(N1, ME, "2026-10-01T00:00:00+00:00"),
+            _notification(N2, ME, "2026-10-03T00:00:00+00:00", "2026-10-04T00:00:00+00:00"),
+            _notification(N3, ME, "2026-10-02T00:00:00+00:00"),
+            _notification(N4, OTHER, "2026-10-05T00:00:00+00:00"),
         ],
     )
     monkeypatch.setattr("app.core.db.service_client", fake, raising=False)
@@ -66,27 +68,35 @@ def _read_at(db, nid: str) -> str | None:
 
 
 def test_marking_a_notification_read_is_one_update(db, client):
-    res = client.post("/api/notifications/n1/read", headers=header_for("mia@ucsc.edu", sub=ME))
+    res = client.post(f"/api/notifications/{N1}/read", headers=header_for("mia@ucsc.edu", sub=ME))
     assert res.status_code == 204
-    assert _read_at(db, "n1") is not None
+    assert _read_at(db, N1) is not None
     assert [(q["table"], q["op"]) for q in db.queries] == [("notifications", "update")]
 
 
 def test_marking_an_unknown_notification_read_is_404(db, client):
-    res = client.post("/api/notifications/n-gone/read", headers=header_for("mia@ucsc.edu", sub=ME))
+    res = client.post(f"/api/notifications/{GONE}/read", headers=header_for("mia@ucsc.edu", sub=ME))
     assert (res.status_code, res.json()["detail"]) == (404, "Notification not found")
+
+
+def test_marking_a_malformed_id_read_is_refused_before_any_query(db, client):
+    res = client.post(
+        "/api/notifications/not-a-uuid/read", headers=header_for("mia@ucsc.edu", sub=ME)
+    )
+    assert res.status_code == 422
+    assert db.executes == 0
 
 
 def test_marking_another_users_notification_read_is_404_and_leaves_it_unread(db):
     with pytest.raises(HTTPException) as exc:
-        notifications.mark_notification_read("n4", ME)
+        notifications.mark_notification_read(N4, ME)
     assert (exc.value.status_code, exc.value.detail) == (404, "Notification not found")
-    assert _read_at(db, "n4") is None
+    assert _read_at(db, N4) is None
 
 
 def test_the_list_and_unread_count_come_back_as_before(db):
     out = notifications.list_notifications(ME)
-    assert [n["id"] for n in out["notifications"]] == ["n2", "n3", "n1"]  # newest first
+    assert [n["id"] for n in out["notifications"]] == [N2, N3, N1]  # newest first
     assert set(out["notifications"][0]) == {
         "id",
         "type",
