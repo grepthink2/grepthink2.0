@@ -59,8 +59,11 @@ export function UserPair({
   size?: 'xs' | 'sm';
   tooltipSide?: TooltipProps['side'];
 }) {
-  // Not focusable, and the avatars decorative: cards are buttons (or draggable cards),
-  // and the bubble's text already names each person in the card's accessible name.
+  // Not focusable, and the avatars decorative: a screen reader hears each name once, from its
+  // bubble ("Reporter: Tony Wu"). On the board's cards, which are the control (a button, or a
+  // draggable card), that text is part of the card's accessible name, and a focusable span would
+  // nest one control in another; in a backlog row and the story modal the bubble's text sits in
+  // the reading order beside the pair.
   return (
     <span className="gt-userpair">
       <Tooltip content={`Reporter: ${reporter.name}`} side={tooltipSide} focusable={false}>

@@ -32,8 +32,9 @@ const presetIcon = (Icon: LucideIcon | null) => (Icon ? <Icon size={12} strokeWi
  * Status, category and role pill, ported from design/components/display/Badge.jsx. Not interactive.
  * A feature names what the thing is and the presets decide the look: `status` (soft fill and text
  * colour from BADGE_STATUS, with its label), `category` and `projectRole` (white, outlined, a 12px
- * icon). The first of status, projectRole and category that is set decides, and `tone` applies only
- * when none is; children replace the preset's label.
+ * icon). A `status` decides when it is a known key, and an unknown one falls through; then any
+ * `projectRole`, then any `category`, which keep their own words when no preset matches. `tone`
+ * applies only when none of them decides; children replace the preset's label.
  *
  * It never sets an ARIA role: `projectRole` replaced the design's old `role` prop, so a `role` passed
  * here reaches the DOM like any other attribute. Native props and `ref` reach the span; each
