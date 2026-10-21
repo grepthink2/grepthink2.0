@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { compactNumber } from '../utils/analyticsFormat';
+import { compactNumber } from '@/lib/numberFormat';
 import { linearScale, niceMax, roundedTopRect, textWidth } from '../utils/chartGeometry';
 import { useMeasuredWidth } from '../utils/useMeasuredWidth';
 

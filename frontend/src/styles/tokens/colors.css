@@ -120,6 +120,9 @@
   --gt-border-control: #858585;                /* field, checkbox, radio, toggle boundary: 3.7:1 on white, 3.2:1 on the canvas (WCAG 1.4.11) */
   --gt-border-control-hover: var(--gt-gray-600);
 
+  /* ---- Chart palette (analytics handoff §6): the slots in use ---- */
+  --gt-chart-context: var(--gt-gray-400);   /* de-emphasis: sparkline history (StatCard) */
+
   /* Avatar palette — every slot passes 4.5:1 behind white initials (AVATAR_COLORS reads these) */
   --gt-avatar-1: var(--gt-green-500);  /* 4.9:1 */
   --gt-avatar-2: var(--gt-blue-600);   /* 6.2:1 */
