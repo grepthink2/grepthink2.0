@@ -21,7 +21,6 @@
     "date-fns": "^4.4.0",
     "lucide-react": "^1.57.0",
     "react": "^19.3.1",
-    "react-day-picker": "^10.0.2",
     "react-dom": "^19.3.1",
     "react-gradient-animation": "^1.0.14",
     "react-markdown": "^10.1.0",
